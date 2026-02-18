@@ -4,11 +4,23 @@ from .downloader import base_video_downloader
 from services.optimization.youtube_publisher import base_youtube_publisher
 from services.optimization.service import base_optimization_service
 import asyncio
+import os
+import logging
 
 # Bridge to use async code in synchronous Celery worker
 def run_async(coro):
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(coro)
+
+def cleanup_local_files(*paths):
+    """Safely removes local files to prevent disk bloat."""
+    for path in paths:
+        if path and os.path.exists(path):
+            try:
+                os.remove(path)
+                logging.info(f"[Cleanup] Deleted temporary file: {path}")
+            except Exception as e:
+                logging.error(f"[Cleanup] Failed to delete {path}: {e}")
 
 @celery_app.task(name="video.download_and_process", bind=True)
 def download_and_process_task(self, source_url: str, niche: str, platform: str):
@@ -87,6 +99,15 @@ def download_and_process_task(self, source_url: str, niche: str, platform: str):
             
             
         update_job(status="Completed", progress=100, output_path=public_url)
+        
+        # 5. Cleanup local artifacts (ONLY if cloud storage is active)
+        from api.config import settings
+        if settings.STORAGE_PROVIDER != "LOCAL":
+            cleanup_local_files(video_path, processed_path)
+        else:
+            # If local, only delete the raw download
+            cleanup_local_files(video_path)
+
         return {
             "status": "success",
             "url": url,
@@ -96,6 +117,10 @@ def download_and_process_task(self, source_url: str, niche: str, platform: str):
     except Exception as e:
         update_job(status="Failed")
         print(f"[Celery Task] ERROR: {e}")
+        # Ensure cleanup on failure
+        if 'video_path' in locals(): cleanup_local_files(video_path)
+        if 'processed_path' in locals() and settings.STORAGE_PROVIDER != "LOCAL":
+             cleanup_local_files(processed_path)
         return {"status": "error", "message": str(e)}
     finally:
         db.close()
