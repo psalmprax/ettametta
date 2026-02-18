@@ -68,6 +68,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
+                // Fetching source code
                 git(
                     branch: 'master',
                     url: "https://github.com/psalmprax/viral_forge.git",
