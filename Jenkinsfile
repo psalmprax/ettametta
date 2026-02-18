@@ -45,7 +45,8 @@ pipeline {
         
         // Deployment directory on the SAME server
         DEPLOY_DIR            = "/home/ubuntu/viralforge"
-        HEALTH_CHECK_URL      = "http://localhost:8000/health"
+        PUBLIC_IP             = "130.61.26.105"
+        HEALTH_CHECK_URL      = "http://172.17.0.1:8000/health"
         
         // Ensure tools in /usr/bin are found
         PATH                  = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"

@@ -59,11 +59,14 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
 
   dashboard:
-    build: ./apps/dashboard
+    build:
+      context: ./apps/dashboard
+      args:
+        - NEXT_PUBLIC_API_URL=http://130.61.26.105:8000
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://130.61.26.105:8000
 
   redis:
     image: redis:alpine
