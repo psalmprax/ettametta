@@ -48,7 +48,6 @@ Go to **Manage Jenkins → Plugins → Available plugins**, search and install:
 - ✅ **Pipeline** (usually pre-installed)
 - ✅ **Git**
 - ✅ **GitHub Integration**
-- ✅ **SSH Agent** (for OCI deployment via SSH)
 - ✅ **Credentials Binding**
 - ✅ **Docker Pipeline**
 
@@ -70,15 +69,8 @@ Add each one below:
   - Scopes needed: `repo`, `workflow`
 - **ID**: `GITHUB_CREDENTIALS`
 
-### 2. OCI SSH Key
-- **Kind**: SSH Username with private key
-- **Username**: `ubuntu`
-- **Private Key**: Enter directly → paste contents of your `.pem` file
-  ```bash
-  # On your local machine, print the key:
-  cat /home/psalmprax/.oci/samuelolle@yahoo.com-2026-02-17T13_44_42.909Z.pem
-  ```
-- **ID**: `OCI_SSH_KEY`
+### 2. OCI SSH Key (NOT NEEDED)
+> Skipped — Pipeline runs locally on the server.
 
 ### 3. Docker Hub Credentials (Optional)
 - **Kind**: Username with password

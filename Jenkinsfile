@@ -36,26 +36,24 @@
  * PIPELINE VARIABLES (edit these to match your setup):
  */
 
-def OCI_HOST        = "130.61.26.105"           // Your OCI instance public IP
-def OCI_USER        = "ubuntu"                   // SSH user on OCI
-def GITHUB_REPO     = "psalmprax/viral_forge" // e.g. psalmprax/viral_forge
-def DOCKER_IMAGE    = "psalmprax/viralforge" // e.g. psalmprax/viralforge
-def DEPLOY_DIR      = "/home/ubuntu/viralforge"  // Deployment path on OCI server
-
 pipeline {
     agent any
 
     environment {
         PROJECT_NAME          = "viral_forge"
         DOCKER_COMPOSE_FILE   = "docker-compose.yml"
+        
+        // Deployment directory on the SAME server
+        DEPLOY_DIR            = "/home/ubuntu/viralforge"
         HEALTH_CHECK_URL      = "http://localhost:8000/health"
 
-        // Injected from Jenkins credentials store (never hardcode these)
+        // Injected from Jenkins credentials store
         GROQ_API_KEY          = credentials('GROQ_API_KEY')
         TELEGRAM_BOT_TOKEN    = credentials('TELEGRAM_BOT_TOKEN')
         POSTGRES_PASSWORD     = credentials('POSTGRES_PASSWORD')
         REDIS_PASSWORD        = credentials('REDIS_PASSWORD')
         JWT_SECRET_KEY        = credentials('JWT_SECRET_KEY')
+        DOCKER_HUB_CREDENTIALS = credentials('DOCKER_HUB_CREDENTIALS') // Optional for base images
     }
 
     options {
@@ -70,7 +68,7 @@ pipeline {
             steps {
                 git(
                     branch: 'master',
-                    url: "https://github.com/${GITHUB_REPO}.git",
+                    url: "https://github.com/psalmprax/viral_forge.git",
                     credentialsId: 'GITHUB_CREDENTIALS'
                 )
                 echo "Checked out branch: ${env.GIT_BRANCH} @ ${env.GIT_COMMIT?.take(7)}"
@@ -102,65 +100,58 @@ pipeline {
 
         stage('Deploy & Build Locally') {
             steps {
-                withCredentials([
-                    sshUserPrivateKey(credentialsId: 'OCI_SSH_KEY', keyFileVariable: 'SSH_KEY_FILE'),
-                    usernamePassword(credentialsId: 'DOCKER_HUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS') // Optional if base images are public
-                ]) {
+                script {
+                    // 1. Prepare Deployment Directory (Local)
+                    sh "mkdir -p ${DEPLOY_DIR}"
+                    
+                    // 2. Sync Files Locally (Workspace -> Deploy Dir)
+                    // Using rsync locally to exclude git/venv/etc
                     sh """
-                        # Create deployment directory if not exists
-                        ssh -i \$SSH_KEY_FILE -o StrictHostKeyChecking=no ${OCI_USER}@${OCI_HOST} "mkdir -p ${DEPLOY_DIR}"
-
-                        # Sync source code to server (excluding git history and local artifacts)
                         rsync -avz --delete \\
-                            -e "ssh -i \$SSH_KEY_FILE -o StrictHostKeyChecking=no" \\
                             --exclude '.git' \\
                             --exclude 'venv' \\
                             --exclude '__pycache__' \\
                             --exclude '.env' \\
                             --exclude 'terraform' \\
-                            . ${OCI_USER}@${OCI_HOST}:${DEPLOY_DIR}
+                            . ${DEPLOY_DIR}
+                    """
 
-                        # Write .env on server (from Jenkins secrets)
-                        ssh -i \$SSH_KEY_FILE -o StrictHostKeyChecking=no ${OCI_USER}@${OCI_HOST} \\
-                        "cat > ${DEPLOY_DIR}/.env << 'ENVEOF'
+                    // 3. Write .env file Locally
+                    sh """
+                        cat > ${DEPLOY_DIR}/.env <<EOF
 GROQ_API_KEY=${GROQ_API_KEY}
 TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 REDIS_PASSWORD=${REDIS_PASSWORD}
 JWT_SECRET_KEY=${JWT_SECRET_KEY}
-ENVEOF"
-
-                        # Build and Deploy on Server
-                        ssh -i \$SSH_KEY_FILE -o StrictHostKeyChecking=no ${OCI_USER}@${OCI_HOST} \\
-                        "cd ${DEPLOY_DIR} && \\
-                         # Log in to Docker Hub ONLY if needed for base images (e.g. rate limits)
-                         echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin || true && \\
-                         
-                         # Build images locally using the synced code
-                         docker-compose build --no-cache && \\
-                         
-                         # Start services
-                         docker-compose up -d --remove-orphans && \\
-                         
-                         # Clean up unused images/layers to save space
-                         docker system prune -f"
+EOF
                     """
+
+                    // 4. Build and Launch
+                    withCredentials([usernamePassword(
+                        credentialsId: 'DOCKER_HUB_CREDENTIALS',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        sh """
+                            cd ${DEPLOY_DIR}
+                            
+                            # Login if needed for base images
+                            echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin || true
+                            
+                            # Build & Up
+                            docker-compose build --no-cache
+                            docker-compose up -d --remove-orphans
+                            docker system prune -f
+                        """
+                    }
                 }
             }
         }
 
         stage('Health Check') {
             steps {
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'OCI_SSH_KEY',
-                    keyFileVariable: 'SSH_KEY_FILE'
-                )]) {
-                    sh """
-                        sleep 15
-                        ssh -i \$SSH_KEY_FILE -o StrictHostKeyChecking=no ${OCI_USER}@${OCI_HOST} \\
-                        "curl -sf ${HEALTH_CHECK_URL} && echo 'API healthy' || exit 1"
-                    """
-                }
+                sh "sleep 15 && curl -sf ${HEALTH_CHECK_URL} && echo 'API healthy' || exit 1"
             }
         }
     }
