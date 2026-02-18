@@ -82,7 +82,7 @@ services:
       args:
         - BASE_IMAGE=python:3.10-slim
 
-    command: celery -A api.utils.celery worker --loglevel=info
+    command: celery -A api.utils.celery worker --loglevel=info --concurrency=10
     volumes:
       - .:/app
     environment:
