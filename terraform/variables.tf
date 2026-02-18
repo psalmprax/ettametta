@@ -20,6 +20,11 @@ variable "boot_volume_size_in_gbs" {
   default     = 100
 }
 
+variable "allowed_ports" {
+  type    = list(number)
+  default = [80, 443, 8000, 8080]
+}
+
 variable "bucket_name" {
   description = "Name for the Object Storage bucket"
   default     = "viral-forge-assets"

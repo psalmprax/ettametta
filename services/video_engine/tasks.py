@@ -60,16 +60,35 @@ def download_and_process_task(self, source_url: str, niche: str, platform: str):
             update_job(status="Failed", progress=0)
             return {"status": "error", "message": "Download failed"}
         
-        # 2. Process (Apply originality filters)
-        update_job(status="Rendering", progress=30)
+        # 2. Process (Apply Dynamic AI Strategy)
+        update_job(status="Strategizing", progress=30)
         
-        # Fetch enabled filters from DB
+        # A. Transcribe first (needed for strategy)
+        from .transcription import transcription_service
+        transcript = run_async(transcription_service.transcribe_video(video_path))
+        
+        # B. Generate Strategy via Groq
+        from services.decision_engine.service import base_strategy_service
+        strategy_obj = run_async(base_strategy_service.generate_visual_strategy(transcript, niche))
+        strategy = strategy_obj.dict()
+        logging.info(f"[Task] AI Strategy: {strategy['vibe']} (Speed: {strategy['speed_range']}, Jitter: {strategy['jitter_intensity']})")
+        
+        update_job(status="Rendering", progress=50)
+        
+        # C. Render with Full Pipeline
+        processor = VideoProcessor()
+        output_name = f"{uuid.uuid4()}.mp4"
+        
+        # Dashboard filters (manual) + AI filters (autonomous)
         from api.utils.models import VideoFilterDB
         enabled_filters = [f.id for f in db.query(VideoFilterDB).filter(VideoFilterDB.enabled == True).all()]
         
-        processor = VideoProcessor()
-        output_name = f"{uuid.uuid4()}.mp4"
-        processed_path = run_async(processor.process_full_pipeline(video_path, output_name, enabled_filters=enabled_filters))
+        processed_path = run_async(processor.process_full_pipeline(
+            video_path, 
+            output_name, 
+            enabled_filters=enabled_filters,
+            strategy=strategy
+        ))
         
         # 3. Generate SEO metadata/package (USING REAL SERVICE)
         update_job(status="Optimizing", progress=70)

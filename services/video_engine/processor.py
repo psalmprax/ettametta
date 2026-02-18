@@ -80,27 +80,27 @@ class VideoProcessor:
             final_clip.write_videofile(output_path, codec="libx264")
         return output_path
 
-    def apply_speed_ramping(self, clip: VideoFileClip) -> VideoFileClip:
+    def apply_speed_ramping(self, clip: VideoFileClip, speed_range: List[float] = [0.95, 1.05]) -> VideoFileClip:
         """
-        Randomly shifts speed between 0.9x and 1.1x to reset algorithm clocks.
+        Randomly shifts speed based on AI strategy range to reset algorithm clocks.
         """
-        # Simplistic implementation: change overall speed slightly
-        speed = random.uniform(0.95, 1.05)
+        speed = random.uniform(speed_range[0], speed_range[1])
         return clip.with_effects([vfx.MultiplySpeed(speed)])
 
-    def apply_dynamic_jitter(self, clip: VideoFileClip) -> VideoFileClip:
+    def apply_dynamic_jitter(self, clip: VideoFileClip, intensity: float = 1.0) -> VideoFileClip:
         """
         Simulates handheld motion by applying small random position offsets.
-        Uses a slightly larger canvas to avoid black edges.
+        Uses intensity from AI strategy.
         """
         def jitter(t):
-            # Reduced jitter intensity for organic feel
-            x = int(random.uniform(-1, 1))
-            y = int(random.uniform(-1, 1))
+            # Scale jitter by intensity
+            x = int(random.uniform(-1 * intensity, 1 * intensity))
+            y = int(random.uniform(-1 * intensity, 1 * intensity))
             return (x, y)
         
-        # Increase zoom slightly more to ensure zero black edge bleeding during jitter
-        zoomed = clip.resized(height=int(clip.h * 1.04))
+        # Increase zoom slightly more as intensity increases to avoid black edges
+        zoom_factor = 1.04 + (intensity * 0.01)
+        zoomed = clip.resized(height=int(clip.h * zoom_factor))
         return zoomed.with_position(jitter)
 
     def apply_cinematic_overlays(self, clip: VideoFileClip) -> VideoFileClip:
@@ -115,9 +115,9 @@ class VideoProcessor:
         
         return CompositeVideoClip([clip, leak.with_position('center')])
 
-    async def process_full_pipeline(self, input_path: str, output_name: str, enabled_filters: Optional[List[str]] = None) -> str:
+    async def process_full_pipeline(self, input_path: str, output_name: str, enabled_filters: Optional[List[str]] = None, strategy: Optional[Dict] = None) -> str:
         """
-        Full ViralForge Pipeline with Dynamic Filters and Ultra-High Quality Render.
+        Full ViralForge Pipeline with Dynamic AI Strategies.
         """
         # 1. Transcribe
         transcript = await transcription_service.transcribe_video(input_path)
@@ -129,13 +129,19 @@ class VideoProcessor:
         # Default core transforms
         transformed = clip.with_effects([vfx.MirrorX()]).resized(height=int(clip.h * (1.05)))
         
-        # Optional Add-ons (Pro Filters)
-        if enabled_filters:
-            if "f6" in enabled_filters:
-                transformed = self.apply_speed_ramping(transformed)
-            if "f8" in enabled_filters:
-                transformed = self.apply_dynamic_jitter(transformed)
-            if "f7" in enabled_filters:
+        # Merge Dashboard filters with AI recommendations if strategy exists
+        active_filters = enabled_filters or []
+        if strategy and strategy.get("recommended_filters"):
+            # Add AI recommendations (avoid duplicates)
+            active_filters = list(set(active_filters + strategy["recommended_filters"]))
+
+        # 4. Optional Add-ons (Pro Filters) with Dynamic Intensity
+        if active_filters:
+            if "f6" in active_filters:
+                transformed = self.apply_speed_ramping(transformed, speed_range=strategy.get("speed_range", [0.95, 1.05]) if strategy else [0.95, 1.05])
+            if "f8" in active_filters:
+                transformed = self.apply_dynamic_jitter(transformed, intensity=strategy.get("jitter_intensity", 1.0) if strategy else 1.0)
+            if "f7" in active_filters:
                 transformed = self.apply_cinematic_overlays(transformed)
 
         # 4. Pattern Interrupts & Audio Integration

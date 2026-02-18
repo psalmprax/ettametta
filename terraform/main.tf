@@ -18,6 +18,7 @@ provider "oci" {
 module "network" {
   source         = "./modules/network"
   compartment_id = var.compartment_id
+  allowed_ports  = var.allowed_ports
 }
 
 module "compute" {
@@ -27,6 +28,7 @@ module "compute" {
   ssh_public_key_path     = var.ssh_public_key_path
   image_id                = var.image_id
   boot_volume_size_in_gbs = var.boot_volume_size_in_gbs
+  instance_display_name   = "ViralForgeServer-v2"
 }
 
 module "storage" {
