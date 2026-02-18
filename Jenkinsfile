@@ -53,7 +53,6 @@ pipeline {
         POSTGRES_PASSWORD     = credentials('POSTGRES_PASSWORD')
         REDIS_PASSWORD        = credentials('REDIS_PASSWORD')
         JWT_SECRET_KEY        = credentials('JWT_SECRET_KEY')
-        DOCKER_HUB_CREDENTIALS = credentials('DOCKER_HUB_CREDENTIALS') // Optional for base images
     }
 
     options {
@@ -128,16 +127,21 @@ EOF
                     """
 
                     // 4. Build and Launch
-                    withCredentials([usernamePassword(
-                        credentialsId: 'DOCKER_HUB_CREDENTIALS',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )]) {
+                    script {
+                        try {
+                            withCredentials([usernamePassword(
+                                credentialsId: 'DOCKER_HUB_CREDENTIALS',
+                                usernameVariable: 'DOCKER_USER',
+                                passwordVariable: 'DOCKER_PASS'
+                            )]) {
+                                sh "echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin"
+                            }
+                        } catch (Exception e) {
+                            echo "⚠️ Docker Hub credentials not found or login failed. Skipping login (this is fine if base images are public)."
+                        }
+
                         sh """
                             cd ${DEPLOY_DIR}
-                            
-                            # Login if needed for base images
-                            echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin || true
                             
                             # Build & Up
                             docker-compose build --no-cache
