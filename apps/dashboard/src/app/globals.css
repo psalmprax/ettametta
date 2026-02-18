@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+:root {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --background: 240 15% 2%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 4%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 4%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 263.4 85% 60%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 240 10% 4%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 5% 75%;
+  --muted-foreground: 240 5% 75%;
+  --accent: 263.4 75% 55%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 6% 10%;
+  --input: 240 6% 10%;
+  --ring: 263.4 85% 60%;
+  --radius: 1.25rem;
+  --primary-rgb: 139, 92, 246;
+
+  /* Elite Spacing Tokens */
+  --space-card: 2.5rem;
+  --space-card-inner: 1.75rem;
+  --space-section: 4rem;
+  --space-gap: 2rem;
+  --radius-card: 3rem;
+  --radius-inner: 1.75rem;
+
+  /* Elite Effect Tokens */
+  --scanline-opacity: 0.03;
+  --shimmer-opacity: 0.05;
+  --glow-opacity: 0.5;
+  --texture-opacity: 0.02;
+}
+
+.pro-mode {
+  --space-card: 1.75rem;
+  --radius-card: 1.25rem;
+  --scanline-opacity: 0;
+  --shimmer-opacity: 0;
+  --glow-opacity: 0.15;
+  --background: 240 10% 4%;
+}
+
+@layer base {
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: linear-gradient(135deg, rgba(20, 20, 25, 0.7), rgba(10, 10, 12, 0.4));
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 20px 50px -12px rgba(0, 0, 0, 0.5),
+      inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    padding: var(--space-card);
+    border-radius: var(--radius-card);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: var(--texture-opacity);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .glass-sidebar {
+    background-color: rgba(5, 5, 7, 0.85);
+    backdrop-filter: blur(60px) saturate(200%);
+    -webkit-backdrop-filter: blur(60px) saturate(200%);
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: 10px 0 50px rgba(0, 0, 0, 0.6);
+  }
+
+  .neon-glow {
+    filter: drop-shadow(0 0 12px rgba(var(--primary-rgb), var(--glow-opacity)));
+  }
+
+  .elite-mesh {
+    background:
+      radial-gradient(at 0% 0%, hsla(263, 70%, 50%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(280, 70%, 50%, 0.1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(263, 70%, 50%, 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(263, 70%, 50%, 0.1) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  .scanline {
+    background: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(var(--primary-rgb), var(--scanline-opacity)) 50%,
+        transparent 100%);
+    background-size: 100% 8px;
+    animation: scanline 8s linear infinite;
+  }
+
+  @keyframes scanline {
+    from {
+      background-position: 0 0;
+    }
+
+    to {
+      background-position: 0 100%;
+    }
+  }
+
+  .shimmer-elite {
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, var(--shimmer-opacity)) 50%,
+        transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 3s infinite linear;
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  .elite-grain-overlay {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.02;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+
+  .section-container {
+    margin-bottom: var(--space-section);
+  }
+
+  .pro-hide {
+    display: block;
+  }
+
+  .pro-mode .pro-hide {
+    display: none;
+  }
+
+  .text-hollow {
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
+    color: transparent;
+    transition: all 0.3s ease;
+  }
+
+  .text-hollow:hover {
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.4);
+  }
+}

@@ -1,0 +1,11 @@
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars — it contains real credentials
+
+tenancy_ocid        = "ocid1.tenancy.oc1..xxxxxxxxxxxx"
+user_ocid           = "ocid1.user.oc1..xxxxxxxxxxxx"
+compartment_id      = "ocid1.tenancy.oc1..xxxxxxxxxxxx"
+fingerprint         = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
+private_key_path    = "/home/YOUR_USER/.oci/your-key.pem"
+region              = "eu-frankfurt-1"
+ssh_public_key_path = "/home/YOUR_USER/.oci/id_rsa_oci.pub"
+image_id            = "ocid1.image.oc1.eu-frankfurt-1.xxxxxxxxxxxx"

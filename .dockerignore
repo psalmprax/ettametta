@@ -1,0 +1,96 @@
+# ============================================================
+# ViralForge .dockerignore
+# Keeps build context lean — only ship what the app needs
+# ============================================================
+
+# --- Secrets & Environment ---
+.env
+.env.*
+!.env.production.template
+*.pem
+*.key
+token.json
+credentials.json
+service_account.json
+
+# --- Python dev artifacts ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+.tox/
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+
+# --- Virtual Environments ---
+.venv/
+venv/
+env/
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-error.log*
+
+# --- Terraform (never in Docker) ---
+terraform/
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+
+# --- Git ---
+.git/
+.gitignore
+.github/
+
+# --- CI/CD ---
+Jenkinsfile
+.agent/
+
+# --- Logs & Temp ---
+*.log
+logs/
+temp/
+tmp/
+tmp_verify/
+outputs/
+curl_error.log
+curl_success.log
+final_build_log.txt
+celerybeat-schedule.db
+celerybeat.pid
+
+# --- Media artifacts ---
+*.mp4
+*.mp3
+*.wav
+*.webm
+TEMP_MPY_wvf_snd.*
+
+# --- Docs (not needed at runtime) ---
+docs/
+README.md
+*.md
+!alembic/README
+
+# --- IDE & OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+
+# --- Scripts (run locally, not in container) ---
+fix_frontend.sh
+scripts/
+
+# --- Jupyter ---
+*.ipynb
+.ipynb_checkpoints/

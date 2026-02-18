@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./api
+      args:
+        - BASE_IMAGE=python:3.10-slim
+
+    ports:
+      - "8000:8000"
+    command: python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/app
+    environment:
+      - ENV=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-viral_forge_pass}@db:5432/viral_forge
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/0
+      # Pass-through credentials
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+      - TIKTOK_CLIENT_KEY
+      - TIKTOK_CLIENT_SECRET
+      - PRODUCTION_DOMAIN
+      - YOUTUBE_API_KEY
+      - TIKTOK_API_KEY
+      - OPENAI_API_KEY
+      - ELEVENLABS_API_KEY
+      - PEXELS_API_KEY
+      - GROQ_API_KEY
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_STORAGE_BUCKET_NAME
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-psalmprax}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-viral_forge_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-viral_forge}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  discovery-go:
+    build: ./services/discovery-go
+    ports:
+      - "8081:8080"
+    environment:
+      - PORT=8080
+      - REDIS_URL=redis://redis:6379/0
+
+  dashboard:
+    build: ./apps/dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  celery_worker:
+    build:
+      context: ./api
+      args:
+        - BASE_IMAGE=python:3.10-slim
+
+    command: celery -A api.utils.celery worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - ENV=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-viral_forge_pass}@db:5432/viral_forge
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/0
+      # Pass-through credentials
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+      - TIKTOK_CLIENT_KEY
+      - TIKTOK_CLIENT_SECRET
+      - PRODUCTION_DOMAIN
+      - YOUTUBE_API_KEY
+      - TIKTOK_API_KEY
+      - OPENAI_API_KEY
+      - ELEVENLABS_API_KEY
+      - PEXELS_API_KEY
+      - GROQ_API_KEY
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_STORAGE_BUCKET_NAME
+    depends_on:
+      - redis
+      - db
+
+  celery_beat:
+    build:
+      context: ./api
+      args:
+        - BASE_IMAGE=python:3.10-slim
+
+    command: celery -A api.utils.celery beat --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - ENV=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-viral_forge_pass}@db:5432/viral_forge
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+
+volumes:
+  postgres_data:
