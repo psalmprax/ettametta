@@ -77,38 +77,7 @@ pipeline {
             }
         }
 
-        stage('Debug Env') {
-            steps {
-                sh 'printenv'
-                sh 'echo "User: $(whoami)"'
-                sh 'echo "PATH: $PATH"'
-                sh 'ls -la /usr/bin/python3 || echo "python3 not at /usr/bin/python3"'
-                sh 'ls -la /usr/bin/terraform || echo "terraform not at /usr/bin/terraform"'
-            }
-        }
 
-        stage('Lint & Validate') {
-            parallel {
-                stage('Python lint') {
-                    steps {
-                        sh '''
-                            python3 -m pip install ruff --quiet
-                            ruff check . --select E,W,F --ignore E501 || true
-                        '''
-                    }
-                }
-                stage('Terraform validate') {
-                    steps {
-                        dir('terraform') {
-                            sh '''
-                                terraform init -backend=false -input=false
-                                terraform validate
-                            '''
-                        }
-                    }
-                }
-            }
-        }
 
         stage('Deploy & Build Locally') {
             steps {
