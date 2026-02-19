@@ -131,6 +131,9 @@ export default function DiscoveryPage() {
         });
     }, [candidates, filter]);
 
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isSearching, setIsSearching] = useState(false);
+
     const handleSearch = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!searchQuery.trim()) {
