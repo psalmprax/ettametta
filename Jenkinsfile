@@ -114,7 +114,7 @@ STORAGE_ACCESS_KEY=${env.STORAGE_ACCESS_KEY ?: ''}
 STORAGE_SECRET_KEY=${env.STORAGE_SECRET_KEY ?: ''}
 STORAGE_REGION=${env.STORAGE_REGION ?: ''}
 """
-                        sh "echo '${envContent}' > ${DEPLOY_DIR}/.env"
+                        sh "umask 077 && echo '${envContent}' > ${DEPLOY_DIR}/.env"
                     }
 
                     // 4. Build and Launch

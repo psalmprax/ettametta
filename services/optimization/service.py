@@ -1,20 +1,19 @@
-import groq
+from .models import PostMetadata
+from api.config import settings
+from api.utils.os_worker import ai_worker
+from api.utils.database import SessionLocal
+from api.utils.models import AffiliateLinkDB, SystemSettings
+from services.monetization.service import base_monetization_engine
 import json
 import logging
-from api.config import settings
-from .models import PostMetadata
-from services.monetization.service import base_monetization_engine
+import random
 
 class OptimizationService:
     async def generate_viral_package(self, content_id: str, niche: str, platform: str) -> PostMetadata:
         """
-        Uses LLM (Groq) to generate SEO-optimized title, description, and hashtags.
+        Uses shared AIWorker to generate SEO-optimized title, description, and hashtags.
         Automatically injects relevant affiliate links and CTAs if available.
         """
-        from api.utils.database import SessionLocal
-        from api.utils.models import AffiliateLinkDB, SystemSettings
-        import random
-
         db = SessionLocal()
         affiliate_info = ""
         commerce_info = ""
@@ -31,7 +30,7 @@ class OptimizationService:
 
             if should_harvest:
                 # 2. Source Commerce Product (Priority)
-                product = await base_monetization_engine.match_viral_to_product(niche, content_id) # Using title as content_id in many contexts
+                product = await base_monetization_engine.match_viral_to_product(niche, content_id)
                 if product:
                     commerce_info = f"\n- COMMERCE_PRODUCT: {product['name']}\n- CHECKOUT_LINK: {product['url']}"
                 
@@ -43,10 +42,9 @@ class OptimizationService:
 
             # Fallback if no real key is configured
             if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
-                return self._get_fallback_package(niche, platform, product if should_harvest and product else None)
+                # We still want UI to look good, so we try fallback via AIWorker if possible or default hardcoded
+                return self._get_fallback_package(niche, platform, None)
 
-            client = groq.Groq(api_key=settings.GROQ_API_KEY)
-            
             prompt = f"""
             You are a viral content strategist. Generate a high-velocity viral metadata package for a {platform} video in the {niche} niche.
             
@@ -57,18 +55,25 @@ class OptimizationService:
             - description: A compelling description with highly relevant hashtags and the CTA/link merged naturally (max 250 chars)
             - hashtags: A list of 4 highly relevant trending hashtags
             - cta: A strong, urgent call to action
-            
-            Niche: {niche}
-            Platform: {platform}
             """
 
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"}
-            )
+            response_content = await ai_worker.analyze_viral_pattern(prompt)
             
-            data = json.loads(completion.choices[0].message.content)
+            if "Error" in response_content:
+                return self._get_fallback_package(niche, platform)
+
+            try:
+                # Attempt to parse JSON if model returned it
+                if "{" in response_content:
+                    start = response_content.find("{")
+                    end = response_content.rfind("}") + 1
+                    data = json.loads(response_content[start:end])
+                else:
+                    raise ValueError("No JSON found in response")
+                    
+            except (json.JSONDecodeError, ValueError):
+                # Fallback to simple parsing or just use defaults
+                return self._get_fallback_package(niche, platform)
             
             return PostMetadata(
                 title=data.get("title", f"Secret of {niche} in 2026"),
@@ -79,7 +84,7 @@ class OptimizationService:
                 platform=platform
             )
         except Exception as e:
-            logging.error(f"Groq Optimization Error: {e}")
+            logging.error(f"Optimization Job Error: {e}")
             return self._get_fallback_package(niche, platform)
         finally:
             db.close()

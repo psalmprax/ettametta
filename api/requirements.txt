@@ -30,3 +30,4 @@ groq
 aiohttp
 beautifulsoup4
 gtts
+slowapi

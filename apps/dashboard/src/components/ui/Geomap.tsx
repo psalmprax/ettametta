@@ -44,26 +44,35 @@ export default React.memo(function Geomap({ points = [] }: GeomapProps) {
         return () => window.removeEventListener('resize', updateDimensions);
     }, []);
 
+    const cachedWorldData = useRef<any>(null);
+    const projectionRef = useRef<any>(null);
+    const timerRef = useRef<any>(null);
+
     const renderMap = useCallback(async () => {
         if (!svgRef.current) return;
 
         const svg = d3.select(svgRef.current);
         const { width, height } = dimensions;
 
-        svg.selectAll("*").remove();
+        // Clear only if needed or just update
+        svg.selectAll(".map-elements").remove();
+        const mainGroup = svg.append("g").attr("class", "map-elements");
+
         setError(null);
 
         try {
-            // Projection: Orthographic for that "Elite Global" feel
+            // Internal Projection
             const projection = d3.geoOrthographic()
                 .scale(Math.min(width, height) / 2.5)
                 .translate([width / 2, height / 2])
                 .rotate([0, -20]);
 
+            projectionRef.current = projection;
+
             const pathGenerator = d3.geoPath().projection(projection);
 
             // Background Sphere
-            svg.append("circle")
+            mainGroup.append("circle")
                 .attr("cx", width / 2)
                 .attr("cy", height / 2)
                 .attr("r", projection.scale())
@@ -71,48 +80,45 @@ export default React.memo(function Geomap({ points = [] }: GeomapProps) {
                 .attr("stroke", "rgba(255,255,255,0.05)")
                 .attr("stroke-width", 1);
 
-            // Fetch World Data
-            const worldData = await d3.json<GeoData>(
-                "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
-            );
+            // Fetch World Data (Cached)
+            let worldData = cachedWorldData.current;
+            if (!worldData) {
+                worldData = await d3.json(
+                    "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"
+                );
+                cachedWorldData.current = worldData;
+            }
 
             if (!worldData) {
                 throw new Error("Failed to load map data");
             }
 
             // Parse TopoJSON
-            // @ts-ignore - topojson types can be tricky, trusting the library here
-            const countries = topojson.feature(worldData as any, worldData.objects.countries as any) as unknown as GeoJSON.FeatureCollection;
+            const countries = topojson.feature(worldData, worldData.objects.countries) as any;
 
             // Graticule
             const graticule = d3.geoGraticule();
-            svg.append("path")
+            mainGroup.append("path")
                 .datum(graticule)
                 .attr("class", "graticule")
-                .attr("d", pathGenerator as unknown as string)
+                .attr("d", pathGenerator as any)
                 .attr("fill", "none")
                 .attr("stroke", "rgba(255,255,255,0.05)")
                 .attr("stroke-width", 0.5);
 
             // Countries
-            svg.selectAll<SVGPathElement, GeoJSON.Feature>(".country")
+            mainGroup.selectAll<SVGPathElement, GeoJSON.Feature>(".country")
                 .data(countries.features)
                 .enter()
                 .append("path")
                 .attr("class", "country")
-                .attr("d", pathGenerator)
+                .attr("d", pathGenerator as any)
                 .attr("fill", "rgba(255,255,255,0.02)")
                 .attr("stroke", "rgba(255,255,255,0.1)")
-                .attr("stroke-width", 0.5)
-                .on("mouseover", function () {
-                    d3.select(this).attr("fill", "rgba(0, 242, 255, 0.1)");
-                })
-                .on("mouseout", function () {
-                    d3.select(this).attr("fill", "rgba(255,255,255,0.02)");
-                });
+                .attr("stroke-width", 0.5);
 
             // Pulse Points
-            const pulseGroups = svg.selectAll<SVGGElement, Point>(".pulse")
+            const pulseGroups = mainGroup.selectAll<SVGGElement, Point>(".pulse")
                 .data(points)
                 .enter()
                 .append("g")
@@ -120,79 +126,44 @@ export default React.memo(function Geomap({ points = [] }: GeomapProps) {
 
             pulseGroups.append("circle")
                 .attr("class", "pulse-core")
-                .attr("cx", d => {
-                    const coords = projection([d.lng, d.lat]);
-                    return coords ? coords[0] : 0;
-                })
-                .attr("cy", d => {
-                    const coords = projection([d.lng, d.lat]);
-                    return coords ? coords[1] : 0;
-                })
                 .attr("r", d => 2 + d.intensity * 5)
                 .attr("fill", "#00f2ff")
                 .attr("filter", "drop-shadow(0 0 5px #00f2ff)");
 
             pulseGroups.append("circle")
                 .attr("class", "pulse-ring")
-                .attr("cx", d => {
-                    const coords = projection([d.lng, d.lat]);
-                    return coords ? coords[0] : 0;
-                })
-                .attr("cy", d => {
-                    const coords = projection([d.lng, d.lat]);
-                    return coords ? coords[1] : 0;
-                })
                 .attr("r", 0)
                 .attr("fill", "none")
                 .attr("stroke", "#00f2ff")
                 .attr("stroke-width", 1)
-                .transition()
-                .duration(2000)
-                .delay((_d, i) => i * 200)
-                .attr("r", 20)
-                .attr("opacity", 0)
-                .on("end", function repeat() {
-                    d3.select(this)
-                        .attr("r", 0)
-                        .attr("opacity", 1)
-                        .transition()
-                        .duration(2000)
-                        .attr("r", 20)
-                        .attr("opacity", 0)
-                        .on("end", repeat);
+                .each(function () {
+                    const ring = d3.select(this);
+                    const repeat = () => {
+                        ring.attr("r", 0).attr("opacity", 1)
+                            .transition().duration(2000)
+                            .attr("r", 20).attr("opacity", 0)
+                            .on("end", repeat);
+                    };
+                    repeat();
                 });
 
             // Rotation Animation
-            const timer = d3.timer((elapsed) => {
+            if (timerRef.current) timerRef.current.stop();
+
+            timerRef.current = d3.timer((elapsed) => {
                 projection.rotate([elapsed * 0.01, -20]);
 
-                svg.selectAll<SVGPathElement, unknown>("path.country, path.graticule")
-                    .attr("d", pathGenerator as unknown as string);
+                mainGroup.selectAll<SVGPathElement, any>("path.country, path.graticule")
+                    .attr("d", pathGenerator as any);
 
-                svg.selectAll<SVGCircleElement, Point>("circle.pulse-core")
-                    .attr("cx", d => {
+                mainGroup.selectAll<SVGGElement, Point>(".pulse")
+                    .attr("transform", d => {
                         const coords = projection([d.lng, d.lat]);
-                        return coords ? coords[0] : 0;
-                    })
-                    .attr("cy", d => {
-                        const coords = projection([d.lng, d.lat]);
-                        return coords ? coords[1] : 0;
-                    });
-
-                svg.selectAll<SVGCircleElement, Point>("circle.pulse-ring")
-                    .attr("cx", d => {
-                        const coords = projection([d.lng, d.lat]);
-                        return coords ? coords[0] : 0;
-                    })
-                    .attr("cy", d => {
-                        const coords = projection([d.lng, d.lat]);
-                        return coords ? coords[1] : 0;
+                        return coords ? `translate(${coords[0]},${coords[1]})` : "translate(-100,-100)";
                     });
             });
 
             setIsLoading(false);
-            return () => timer.stop();
-
         } catch (err) {
             console.error("Geomap error:", err);
             setError(err instanceof Error ? err.message : "Failed to load map");

@@ -10,7 +10,7 @@ celery_app = Celery(
     "viral_forge",
     broker=CELERY_BROKER_URL,
     backend=CELERY_RESULT_BACKEND,
-    include=["services.video_engine.tasks", "services.discovery.tasks", "services.optimization.scheduler_tasks"]
+    include=["services.video_engine.tasks", "services.discovery.tasks", "services.optimization.scheduler_tasks", "services.security.tasks"]
 )
 
 celery_app.conf.update(
@@ -27,6 +27,10 @@ celery_app.conf.update(
         "check-scheduled-posts-5m": {
             "task": "optimization.check_and_post_scheduled",
             "schedule": 300.0, # Every 5 minutes
+        },
+        "system-security-audit-daily": {
+            "task": "security.system_audit",
+            "schedule": 86400.0, # Every 24 hours
         },
     }
 )

@@ -47,13 +47,20 @@ async def trigger_scan(request: ScanRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Go Bridge Error: {str(e)}")
 
-@router.post("/analyze", response_model=ViralPattern)
+@router.post("/analyze")
 async def analyze_candidate(candidate: ContentCandidate):
-    try:
-        pattern = await base_discovery_service.analyze_viral_pattern(candidate)
-        return pattern
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """
+    Asynchronous deconstruction: Dispatches deep AI analysis to Celery 
+    and returns a task ID for UI polling.
+    """
+    from services.discovery.tasks import analyze_viral_pattern_task
+    task = analyze_viral_pattern_task.delay(candidate.dict())
+    return {
+        "status": "Task Dispatched",
+        "task_id": task.id,
+        "candidate_id": candidate.id,
+        "message": "AI Deconstruction in progress..."
+    }
 
 @router.get("/niche-trends/{niche}")
 async def get_niche_trends(niche: str):

@@ -55,3 +55,21 @@ def scan_trends_task(niche: str):
         "niche": niche, 
         "found_count": len(candidates)
     }
+
+@celery_app.task(name="discovery.analyze_pattern")
+def analyze_viral_pattern_task(candidate_data: dict):
+    """
+    Background task for deep AI deconstruction of a viral candidate.
+    """
+    from services.discovery.models import ContentCandidate
+    candidate = ContentCandidate(**candidate_data)
+    
+    print(f"[Discovery Task] Async analysis for: {candidate.url}")
+    loop = asyncio.get_event_loop()
+    pattern = loop.run_until_complete(base_discovery_service.analyze_viral_pattern(candidate))
+    
+    return {
+        "status": "success",
+        "candidate_id": candidate.id,
+        "pattern": pattern.dict()
+    }

@@ -1,6 +1,6 @@
 # ViralForge 🚀
 
-Autonomous multi-platform viral content discovery, transformation, optimization, and publishing engine — powered by AI.
+Autonomous multi-platform viral content discovery, transformation, optimization, and publishing engine — powered by AI. Now with **Neural Security Sentinel** and **Consolidated AIWorker**.
 
 ## 📁 Project Structure
 
@@ -25,7 +25,7 @@ viral_forge/
 |---|---|
 | **Backend** | Python 3.10+, FastAPI, Uvicorn |
 | **Frontend** | Next.js 14, Tailwind CSS, Lucide Icons |
-| **AI / LLM** | Groq (`llama-3.1-8b-instant`), OpenAI fallback |
+| **AI / LLM** | Groq (`llama-3.3-70b`), AIWorker Consolidation |
 | **Video** | FFmpeg, MoviePy, Fast-Whisper |
 | **Queue** | Celery + Redis |
 | **Database** | PostgreSQL (primary), Redis (cache) |

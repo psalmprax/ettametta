@@ -70,7 +70,7 @@ export default function DiscoveryPage() {
         fetchTrends();
     }, [activeNiche, timeHorizon]);
 
-    const fetchTrends = async () => {
+    const fetchTrends = useCallback(async () => {
         setIsLoading(true);
         try {
             const token = localStorage.getItem("vf_token");
@@ -81,7 +81,6 @@ export default function DiscoveryPage() {
                 const data = await res.json();
                 setCandidates(data);
             } else {
-                // If 401, handle gracefully (auth context handles redirect, but we prevent crash)
                 console.error("Failed to fetch trends", res.status);
                 setCandidates([]);
             }
@@ -91,14 +90,17 @@ export default function DiscoveryPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [activeNiche, timeHorizon]);
 
-    const handleAnalyze = async (candidate: ContentCandidate) => {
-        // Optimistic update or toast here
+    useEffect(() => {
+        fetchTrends();
+    }, [fetchTrends]);
+
+    const handleAnalyze = useCallback(async (candidate: ContentCandidate) => {
         alert(`Analysing viral DNA for: ${candidate.description.substring(0, 30)}...`);
-    };
+    }, []);
 
-    const handleAddToQueue = async (candidate: ContentCandidate) => {
+    const handleAddToQueue = useCallback(async (candidate: ContentCandidate) => {
         try {
             const token = localStorage.getItem("vf_token");
             const res = await fetch(`${API_BASE}/video/transform`, {
@@ -119,17 +121,17 @@ export default function DiscoveryPage() {
         } catch (err) {
             console.error(err);
         }
-    };
+    }, [activeNiche, router]);
 
-    const filteredCandidates = Array.isArray(candidates) ? candidates.filter(c => {
-        if (filter === 'all') return true;
-        return c.platform.toLowerCase() === filter.toLowerCase();
-    }) : [];
+    const filteredCandidates = React.useMemo(() => {
+        if (!Array.isArray(candidates)) return [];
+        return candidates.filter(c => {
+            if (filter === 'all') return true;
+            return c.platform.toLowerCase() === filter.toLowerCase();
+        });
+    }, [candidates, filter]);
 
-    const [searchQuery, setSearchQuery] = useState("");
-    const [isSearching, setIsSearching] = useState(false);
-
-    const handleSearch = async (e: React.FormEvent) => {
+    const handleSearch = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!searchQuery.trim()) {
             fetchTrends();
@@ -153,7 +155,7 @@ export default function DiscoveryPage() {
             setIsLoading(false);
             setIsSearching(false);
         }
-    };
+    }, [searchQuery, fetchTrends]);
 
     const [mapPoints, setMapPoints] = useState<any[]>([
         { lat: 40.7128, lng: -74.006, intensity: 0.8, label: "NY Cluster" },

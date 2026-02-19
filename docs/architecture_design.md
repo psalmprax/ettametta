@@ -1,7 +1,7 @@
 # ViralForge: Architecture Design
 
-> **Last Updated**: 2026-02-18  
-> **Version**: 2.0 — Production-Grade Autonomous Platform
+> **Last Updated**: 2026-02-19  
+> **Version**: 2.1 — Production-Hardened Autonomous Platform
 
 ---
 
@@ -13,14 +13,14 @@
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────────┐  │
 │  │  Discovery   │    │  AI Brain    │    │  Video Engine    │  │
-│  │  (Go + Py)   │───▶│  (Groq API)  │───▶│  (FFmpeg+MoviePy)│  │
+│  │  (Go + Py)   │───▶│ (AIWorker)   │───▶│  (FFmpeg+MoviePy)│  │
 │  └──────────────┘    └──────────────┘    └──────────────────┘  │
-│         │                                        │              │
-│         ▼                                        ▼              │
-│  ┌──────────────┐                      ┌──────────────────┐    │
-│  │  PostgreSQL  │◀─────────────────────│  Publishing Hub  │    │
-│  │  + Redis     │                      │  (YT + TikTok)   │    │
-│  └──────────────┘                      └──────────────────┘    │
+│         │                  │                     │              │
+│         ▼                  ▼                     ▼              │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────────┐  │
+│  │  PostgreSQL  │◀───│ Security     │───▶│  Publishing Hub  │  │
+│  │  + Redis     │    │ Sentinel     │    │  (YT + TikTok)   │  │
+│  └──────────────┘    └──────────────┘    └──────────────────┘  │
 │         │                                        │              │
 │         ▼                                        ▼              │
 │  ┌──────────────┐                      ┌──────────────────┐    │

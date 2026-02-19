@@ -1,8 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import discovery, video, publish, analytics, auth, settings as settings_router, ws, no_face, monetization, nexus, ab_testing
+from api.routes import discovery, video, publish, analytics, auth, settings as settings_router, ws, no_face, monetization, nexus, ab_testing, security
 from api.config import settings
 import os
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 app = FastAPI(title=settings.APP_NAME)
 
@@ -39,33 +42,10 @@ async def seed_monitored_niches():
     finally:
         db.close()
 
-@app.on_event("startup")
-async def seed_default_user():
-    """
-    Ensures a default admin user exists for recovery purposes.
-    """
-    from api.utils.database import SessionLocal
-    from api.utils.user_models import UserDB, UserRole, SubscriptionTier
-    from api.utils.security import get_password_hash
-    
-    db = SessionLocal()
-    try:
-        user_count = db.query(UserDB).count()
-        if user_count == 0:
-            print("[Startup] Seeding default admin user...")
-            admin = UserDB(
-                username="psalmprax",
-                email="psalmprax@example.com",
-                hashed_password=get_password_hash("viral_forge_pass"),
-                role=UserRole.ADMIN,
-                subscription=SubscriptionTier.PREMIUM
-            )
-            db.add(admin)
-            db.commit()
-    except Exception as e:
-        print(f"[Startup] Error seeding admin: {e}")
-    finally:
-        db.close()
+# Rate Limiter setup
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # Add CORS middleware
@@ -91,9 +71,27 @@ app.add_middleware(
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
+    # Skip recording for WebSockets to prevent handshake interference
+    if request.scope.get("type") == "websocket" or request.url.path.startswith("/ws/"):
+        return await call_next(request)
+        
+    from services.security.service import base_security_sentinel
     response = await call_next(request)
+    
+    # Sentinel Monitoring
     if response.status_code == 401:
-        print(f"[DEBUG AUTH] 401 at {request.url.path} | Headers: {dict(request.headers)}")
+        base_security_sentinel.log_event(
+            "AUTH_FAILURE", 
+            "medium", 
+            {"path": request.url.path, "ip": request.client.host}
+        )
+    elif response.status_code == 429:
+        base_security_sentinel.log_event(
+            "RATE_LIMIT_EXCEEDED", 
+            "high", 
+            {"path": request.url.path, "ip": request.client.host}
+        )
+        
     return response
 
 
@@ -110,6 +108,7 @@ app.include_router(no_face.router)
 app.include_router(monetization.router)
 app.include_router(nexus.router)
 app.include_router(ab_testing.router)
+app.include_router(security.router)
 
 @app.get("/")
 async def root():

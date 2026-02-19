@@ -88,60 +88,114 @@ class DiscoveryService:
 
         print(f"[Discovery] Cache MISS for {niche} ({horizon}), scanning...")
 
-        all_candidates = []
+        # 2. Parallel Scanning
+        import asyncio
+        
+        # Prepare scanner tasks
+        tasks = []
         for scanner in self.scanners:
-            candidates = await scanner.scan_trends(niche, published_after=published_after)
-            all_candidates.extend(candidates)
+            tasks.append(scanner.scan_trends(niche, published_after=published_after))
         
-        # Add Global Aggregator Sources
         for g_scanner in self.global_scanners:
-            g_candidates = await g_scanner.scan_trends(niche, published_after=published_after)
-            all_candidates.extend(g_candidates)
+            tasks.append(g_scanner.scan_trends(niche, published_after=published_after))
+            
+        # Execute all scans concurrently
+        results = await asyncio.gather(*tasks, return_exceptions=True)
         
-        # 2. Persistence Logic
+        all_candidates = []
+        for res in results:
+            if isinstance(res, list):
+                all_candidates.extend(res)
+            elif isinstance(res, Exception):
+                print(f"[Discovery] Scanner Exception: {res}")
+        
+        # 3. Persistence Logic (Efficient Batch Integration)
         db = SessionLocal()
         try:
+            # Prepare all candidates for the database
+            db_candidates = []
             for c in all_candidates:
-                db_candidate = ContentCandidateDB(
+                db_candidates.append(ContentCandidateDB(
                     id=c.id,
                     platform=c.platform,
                     url=c.url,
                     author=c.author,
-                    view_count=c.views, # Backward compatibility
-                    engagement_rate=c.engagement_score, # Backward compatibility
+                    title=c.title,
+                    description=c.description,
+                    view_count=c.views,
+                    engagement_rate=c.engagement_score,
                     views=c.views,
                     engagement_score=c.engagement_score,
                     viral_score=c.viral_score,
                     duration_seconds=c.duration_seconds,
+                    thumbnail_url=c.thumbnail_url,
                     metadata_json=c.metadata,
                     niche=niche
-                )
-                db.merge(db_candidate)
+                ))
+            
+            # Efficient Merge (UPSERT pattern)
+            for db_c in db_candidates:
+                db.merge(db_c)
+            
             db.commit()
+            print(f"[Discovery] Successfully persisted {len(db_candidates)} candidates for {niche}.")
+        except Exception as e:
+            print(f"[Discovery] Persistence Error: {e}")
+            db.rollback()
         finally:
             db.close()
 
-        all_candidates.sort(key=lambda x: x.views, reverse=True)
-
-        # 3. Neural Ranking (The "Brain")
-        # We use Groq to pick the absolute best opportunities from the combined list
-        if settings.GROQ_API_KEY and len(all_candidates) > 2:
-             all_candidates = await self._rank_candidates_with_ai(niche, all_candidates)
-
-        # 4. Cache Results (1 hour)
-        if r:
-            try:
-                serialized = [c.dict() for c in all_candidates]
-                r.setex(cache_key, 3600, json.dumps(serialized, default=json_serial))
-            except Exception as e:
-                print(f"[Discovery] Failed to cache results: {e}")
+        # 5. Recursive Discovery Expansion (Autonomous Scaling)
+        if len(all_candidates) > 0:
+            asyncio.create_task(self._trigger_recursive_expansion(niche, all_candidates))
 
         return all_candidates
 
+    async def _trigger_recursive_expansion(self, niche: str, candidates: List[ContentCandidate]):
+        """
+        AI identifies related sub-niches and triggers background scans to hit transparency targets.
+        """
+        from groq import Groq
+        from api.config import settings
+        import json
+        
+        if not settings.GROQ_API_KEY:
+            return
+
+        try:
+            client = Groq(api_key=settings.GROQ_API_KEY)
+            titles = [c.title for c in candidates[:10]]
+            
+            prompt = f"""
+            Based on these trending videos in the '{niche}' niche:
+            {json.dumps(titles)}
+            
+            Identify 3 hyper-targeted sub-niches or related keywords that should be scanned to find more high-velocity content.
+            Return ONLY a JSON array of strings. Example: ["Sub-Niche 1", "Keyword 2", "Topic 3"]
+            """
+            
+            completion = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
+            
+            response = json.loads(completion.choices[0].message.content)
+            sub_niches = response.get("sub_niches") or response.get("keywords") or list(response.values())[0]
+            
+            if sub_niches and isinstance(sub_niches, list):
+                print(f"[Discovery] Recursive expansion triggered for: {sub_niches}")
+                from api.utils.celery import celery_app
+                for sn in sub_niches[:3]:
+                    # Offload to Celery to avoid blocking
+                    celery_app.send_task("discovery.scan_trends", args=[sn])
+                    
+        except Exception as e:
+            print(f"[Discovery] Recursive expansion error: {e}")
+
     async def _rank_candidates_with_ai(self, niche: str, candidates: List[ContentCandidate]) -> List[ContentCandidate]:
         """
-        Uses Groq to analyze the psychological hook of discovered content 
-        and rank them by viral potential.
+        Uses Groq with parallel batching and high-speed models to rank candidates.
         """
         from groq import Groq
         from api.config import settings
@@ -150,71 +204,50 @@ class DiscoveryService:
         try:
             client = Groq(api_key=settings.GROQ_API_KEY)
             
-            # Prepare a summary of candidates for the LLM
+            # Analyze top 20 candidates in a single high-speed batch
             candidate_summaries = []
-            for i, c in enumerate(candidates[:15]): # Analyze top 15 candidates
+            for i, c in enumerate(candidates[:20]):
                  candidate_summaries.append({
-                     "index": i,
-                     "platform": c.platform,
+                     "idx": i,
                      "title": c.title,
-                     "author": c.author,
-                     "engagement": f"{c.engagement_rate:.2%}"
+                     "engagement": f"{c.engagement_rate:.2%}" if hasattr(c, 'engagement_rate') else "0%"
                  })
 
             prompt = f"""
-            You are a Viral Content Strategist. Analyze these {len(candidate_summaries)} content candidates in the {niche} niche.
-            
-            Goal: Identify which candidates have the most "translatability" (the best psychological hook that can be remixed) AND identify high-potential "Pillar Content" (5-10 min) that should be chopped into clips.
+            Rank these {len(candidate_summaries)} candidates for the '{niche}' niche by 'Viral Potential' (Hook + Translatability).
+            Return a JSON array of indices: [idx1, idx2, ...]
             
             Candidates:
-            {json.dumps(candidate_summaries, indent=2)}
-            
-            Return ONLY a JSON array of indices in order of Priority (most viral/profitable first). 
-            If a candidate is long-form (Pillar), prioritize it if it contains multiple high-intensity moments.
-            
-            Example output format: [4, 0, 2, 1, 3]
+            {json.dumps(candidate_summaries)}
             """
 
+            # Use the faster llama-3.1-70b-versatile for high-quality ranking at speed
             completion = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[
-                    {"role": "system", "content": "You are a Viral Content Strategist."},
-                    {"role": "user", "content": prompt}
-                ],
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"}
             )
             
-            # The model might return {"indices": [0,1,2]} or just the array [0,1,2]
-            # We'll try to handle both.
             response_json = json.loads(completion.choices[0].message.content)
-            indices = []
-            if isinstance(response_json, list):
-                indices = response_json
-            elif isinstance(response_json, dict):
-                # Try common keys
-                indices = response_json.get("indices") or response_json.get("priority_order") or list(response_json.values())[0]
+            indices = response_json.get("indices") or list(response_json.values())[0]
 
             if not indices or not isinstance(indices, list):
                 return candidates
 
-            # Re-order candidates based on AI ranking
             ranked = []
-            seen_indices = set()
+            seen = set()
             for idx in indices:
-                if isinstance(idx, int) and 0 <= idx < len(candidates) and idx not in seen_indices:
+                if isinstance(idx, int) and 0 <= idx < len(candidates) and idx not in seen:
                     ranked.append(candidates[idx])
-                    seen_indices.add(idx)
+                    seen.add(idx)
             
-            # Append any remaining candidates that AI didn't explicitly rank
             for i, c in enumerate(candidates):
-                if i not in seen_indices:
+                if i not in seen:
                     ranked.append(c)
             
-            print(f"[Discovery] Neural Ranking complete: Prioritized {len(seen_indices)} candidates.")
             return ranked
-
         except Exception as e:
-            print(f"[Discovery] Neural Ranking Error: {e}")
+            print(f"[Discovery] Neural Ranking Boost Error: {e}")
             return candidates
 
     async def analyze_viral_pattern(self, candidate: ContentCandidate) -> ViralPattern:
