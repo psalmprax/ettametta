@@ -29,7 +29,7 @@ ViralForge is a **fully autonomous, cloud-deployed content intelligence platform
 - **High-Speed Rendering**: Dashboard Geomap and Discovery components optimized with memoization and data caching for "extra high" speed.
 - **Production Resilience**: Increased Nginx rate limits to 50r/s and optimized security middleware to handle industrial-scale dashboard polling.
 - **WebSocket Stability**: Fixed 502 Bad Gateway on telemetry streams by refactoring Nginx proxy pathing and Upgrade handling.
-- **Frontend Assets**: Relaxed CSP headers to allow secure fetching of external map data from jsdelivr.
+- **Frontend Assets**: Relaxed CSP headers to allow secure fetching of external map data (jsdelivr) and image discovery assets (HTTP/HTTPS).
 - **Self-Healing Infra**: Corrected Celery healthchecks to ensure accurate container orchestration status.
 - **E2E Scaling**: Verified the Go-based discovery bridge for high-concurrency social scanning.
 
