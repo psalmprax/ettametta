@@ -7,8 +7,7 @@ services:
       args:
         - BASE_IMAGE=python:3.10-slim
 
-    ports:
-      - "8000:8000"
+    # No host ports mapped directly to API anymore
     command: python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - .:/app
@@ -62,11 +61,10 @@ services:
     build:
       context: ./apps/dashboard
       args:
-        - NEXT_PUBLIC_API_URL=http://130.61.26.105:8000
-    ports:
-      - "3000:3000"
+        - NEXT_PUBLIC_API_URL=http://130.61.26.105:3000/api
+    # No host ports mapped directly to Dashboard anymore
     environment:
-      - NEXT_PUBLIC_API_URL=http://130.61.26.105:8000
+      - NEXT_PUBLIC_API_URL=http://130.61.26.105:3000/api
 
   redis:
     image: redis:alpine
@@ -129,6 +127,16 @@ services:
     depends_on:
       - redis
       - db
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - dashboard
 
 volumes:
   postgres_data:
