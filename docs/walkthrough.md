@@ -226,7 +226,7 @@ open http://localhost:3000
 | TikTok Publishing | ✅ Live |
 | Analytics Dashboard | ✅ Live |
 | Authentication (JWT) | ✅ Live |
-| OCI ARM Infrastructure | ✅ Provisioned |
+| OCI ARM Infrastructure | ✅ Provisioned (200GB Expanded) |
 | OpenClaw Telegram Bot | ✅ Live (@Psalmpraxbot) |
 | CI/CD Pipeline | ✅ Live |
 | Production Go-Live | ✅ Mission Complete |
