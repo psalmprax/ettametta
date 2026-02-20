@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     
     # Neural Asset Keys
     ELEVENLABS_API_KEY: str = ""
+    FISH_SPEECH_ENDPOINT: str = "http://voiceover:8080"
+    VOICE_ENGINE: str = "fish_speech" # Options: elevenlabs, fish_speech
+    MONETIZATION_MODE: str = "selective" # Options: selective, all
     PEXELS_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     

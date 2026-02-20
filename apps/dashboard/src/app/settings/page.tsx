@@ -42,7 +42,8 @@ export default function SettingsPage() {
         aws_secret_access_key: "",
         aws_region: "us-east-1",
         aws_storage_bucket_name: "",
-        active_monetization_strategy: "commerce"
+        active_monetization_strategy: "commerce",
+        monetization_mode: "selective"
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -401,128 +402,168 @@ export default function SettingsPage() {
                                                 </button>
                                             </div>
                                         </div>
-                                        <div className="space-y-2 col-span-1 md:col-span-2">
-                                            <div className="flex justify-between items-center">
-                                                <label className="text-sm font-bold text-zinc-400">Monetization Strategy</label>
-                                                <span className="text-[10px] text-zinc-500 uppercase font-black px-2 py-0.5 bg-zinc-800 rounded-full">Decoupled Scaling Mode</span>
-                                            </div>
-                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                                {["commerce", "affiliate", "lead_gen", "digital_product"].map((strategy) => (
+                                        <div className="mb-8 p-6 bg-zinc-950/50 border border-zinc-800 rounded-2xl">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className="space-y-1">
+                                                    <label className="text-sm font-bold text-white flex items-center gap-2">
+                                                        Monetization Mode
+                                                        <div className="group relative">
+                                                            <Shield className="h-3 w-3 text-zinc-500 cursor-help" />
+                                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-[10px] text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl">
+                                                                Selective mode only monetizes videos that achieve a high predicted Viral Score.
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                    <p className="text-[10px] text-zinc-600 uppercase font-black">Exposure Integrity Control</p>
+                                                </div>
+
+                                                <div className="flex bg-zinc-900 p-1 rounded-xl border border-zinc-800">
                                                     <button
-                                                        key={strategy}
-                                                        onClick={() => updateSetting("active_monetization_strategy", strategy)}
+                                                        onClick={() => updateSetting("monetization_mode", "selective")}
                                                         className={cn(
-                                                            "p-3 rounded-xl border text-xs font-bold transition-all capitalize",
-                                                            settings.active_monetization_strategy === strategy
-                                                                ? "bg-primary/20 border-primary text-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)]"
-                                                                : "bg-zinc-800 border-zinc-700 text-zinc-500 hover:border-zinc-600"
+                                                            "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                                            settings.monetization_mode === "selective" ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-zinc-600 hover:text-zinc-400"
                                                         )}
                                                     >
-                                                        {strategy.replace("_", " ")}
+                                                        Selective
                                                     </button>
-                                                ))}
-                                            </div>
-                                            <p className="text-[10px] text-zinc-600 mt-1">
-                                                {settings.active_monetization_strategy === "commerce" && "Focuses on Shopify/Printful product integration."}
-                                                {settings.active_monetization_strategy === "affiliate" && "Prioritizes high-commission affiliate network links."}
-                                                {settings.active_monetization_strategy === "lead_gen" && "Builds lists via newsletter and lead magnet signups."}
-                                                {settings.active_monetization_strategy === "digital_product" && "Scales high-margin courses, SaaS, and digital downloads."}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                {/* DB Status */}
-                                <div className="flex items-center justify-between p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl">
-                                    <div className="flex items-center gap-4">
-                                        <Database className="h-6 w-6 text-emerald-500" />
-                                        <div>
-                                            <h4 className="font-bold">PostgreSQL Persistence</h4>
-                                            <p className="text-xs text-zinc-500">Connected to db:5432 • Live Mode active</p>
-                                        </div>
-                                    </div>
-                                    <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                                </div>
-                            </>
-                        ) : activeTab === "Interface" ? (
-                            <section className="space-y-6">
-                                <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 space-y-8">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                                            <Layout className="h-5 w-5 text-primary" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold">Workspace Appearance</h3>
-                                            <p className="text-zinc-500 text-sm">Customize visual density and engine terminology.</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        {/* Pro Mode Toggle */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-1">
-                                                    <h4 className="font-bold">Pro Mode</h4>
-                                                    <p className="text-xs text-zinc-500">Cleaner, high-density interface for enterprise workflows. Removes scanlines and heavy glows.</p>
+                                                    <button
+                                                        onClick={() => updateSetting("monetization_mode", "all")}
+                                                        className={cn(
+                                                            "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                                            settings.monetization_mode === "all" ? "bg-red-500 text-white shadow-lg shadow-red-500/20" : "text-zinc-600 hover:text-zinc-400"
+                                                        )}
+                                                    >
+                                                        All Content
+                                                    </button>
                                                 </div>
+                                            </div>
+                                            <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
+                                                <div className={cn("h-full transition-all duration-500", settings.monetization_mode === "selective" ? "w-1/2 bg-primary" : "w-full bg-red-500")} />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-sm font-bold text-zinc-400">Monetization Strategy</label>
+                                            <span className="text-[10px] text-zinc-500 uppercase font-black px-2 py-0.5 bg-zinc-800 rounded-full">Decoupled Scaling Mode</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                            {["commerce", "affiliate", "lead_gen", "digital_product"].map((strategy) => (
                                                 <button
-                                                    onClick={toggleProMode}
+                                                    key={strategy}
+                                                    onClick={() => updateSetting("active_monetization_strategy", strategy)}
                                                     className={cn(
-                                                        "w-12 h-6 rounded-full relative transition-all duration-300",
-                                                        isProMode ? "bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" : "bg-zinc-800"
+                                                        "p-3 rounded-xl border text-xs font-bold transition-all capitalize",
+                                                        settings.active_monetization_strategy === strategy
+                                                            ? "bg-primary/20 border-primary text-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)]"
+                                                            : "bg-zinc-800 border-zinc-700 text-zinc-500 hover:border-zinc-600"
                                                     )}
                                                 >
-                                                    <div className={cn(
-                                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300",
-                                                        isProMode ? "right-1" : "left-1"
-                                                    )} />
+                                                    {strategy.replace("_", " ")}
                                                 </button>
-                                            </div>
+                                            ))}
                                         </div>
-
-                                        {/* Accessibility / High Contrast */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-1">
-                                                    <h4 className="font-bold">High Contrast Borders</h4>
-                                                    <p className="text-xs text-zinc-500">Sharper distinction between cards and background for better visibility.</p>
-                                                </div>
-                                                <button
-                                                    disabled
-                                                    className="w-12 h-6 rounded-full bg-zinc-800/50 cursor-not-allowed relative"
-                                                >
-                                                    <div className="absolute top-1 left-1 w-4 h-4 bg-zinc-600 rounded-full" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl flex items-start gap-4">
-                                        <div className="p-2 bg-primary/10 rounded-lg">
-                                            <Shield className="h-4 w-4 text-primary" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-bold text-primary">Preview Engine Injected</p>
-                                            <p className="text-xs text-zinc-400">Settings applied globally to all `glass-card` elements using standardized spacing variables.</p>
-                                        </div>
+                                        <p className="text-[10px] text-zinc-600 mt-1">
+                                            {settings.active_monetization_strategy === "commerce" && "Focuses on Shopify/Printful product integration."}
+                                            {settings.active_monetization_strategy === "affiliate" && "Prioritizes high-commission affiliate network links."}
+                                            {settings.active_monetization_strategy === "lead_gen" && "Builds lists via newsletter and lead magnet signups."}
+                                            {settings.active_monetization_strategy === "digital_product" && "Scales high-margin courses, SaaS, and digital downloads."}
+                                        </p>
                                     </div>
                                 </div>
                             </section>
-                        ) : (
-                            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-12 text-center space-y-4">
-                                <div className="h-16 w-16 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto">
-                                    <Server className="h-8 w-8 text-zinc-600" />
+
+                        {/* DB Status */}
+                        <div className="flex items-center justify-between p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl">
+                            <div className="flex items-center gap-4">
+                                <Database className="h-6 w-6 text-emerald-500" />
+                                <div>
+                                    <h4 className="font-bold">PostgreSQL Persistence</h4>
+                                    <p className="text-xs text-zinc-500">Connected to db:5432 • Live Mode active</p>
                                 </div>
-                                <h3 className="text-xl font-bold text-zinc-400">{activeTab} Configuration</h3>
-                                <p className="text-zinc-500 max-w-sm mx-auto">
-                                    Direct access to {activeTab.toLowerCase()} parameters is coming soon. ViralForge is currently using optimized default parameters for high-velocity distribution.
-                                </p>
                             </div>
-                        )}
+                            <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                        </div>
+                    </>
+                    ) : activeTab === "Interface" ? (
+                    <section className="space-y-6">
+                        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 space-y-8">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                                    <Layout className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold">Workspace Appearance</h3>
+                                    <p className="text-zinc-500 text-sm">Customize visual density and engine terminology.</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Pro Mode Toggle */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <h4 className="font-bold">Pro Mode</h4>
+                                            <p className="text-xs text-zinc-500">Cleaner, high-density interface for enterprise workflows. Removes scanlines and heavy glows.</p>
+                                        </div>
+                                        <button
+                                            onClick={toggleProMode}
+                                            className={cn(
+                                                "w-12 h-6 rounded-full relative transition-all duration-300",
+                                                isProMode ? "bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" : "bg-zinc-800"
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300",
+                                                isProMode ? "right-1" : "left-1"
+                                            )} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Accessibility / High Contrast */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <h4 className="font-bold">High Contrast Borders</h4>
+                                            <p className="text-xs text-zinc-500">Sharper distinction between cards and background for better visibility.</p>
+                                        </div>
+                                        <button
+                                            disabled
+                                            className="w-12 h-6 rounded-full bg-zinc-800/50 cursor-not-allowed relative"
+                                        >
+                                            <div className="absolute top-1 left-1 w-4 h-4 bg-zinc-600 rounded-full" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl flex items-start gap-4">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Shield className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-bold text-primary">Preview Engine Injected</p>
+                                    <p className="text-xs text-zinc-400">Settings applied globally to all `glass-card` elements using standardized spacing variables.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    ) : (
+                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-12 text-center space-y-4">
+                        <div className="h-16 w-16 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto">
+                            <Server className="h-8 w-8 text-zinc-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-zinc-400">{activeTab} Configuration</h3>
+                        <p className="text-zinc-500 max-w-sm mx-auto">
+                            Direct access to {activeTab.toLowerCase()} parameters is coming soon. ViralForge is currently using optimized default parameters for high-velocity distribution.
+                        </p>
                     </div>
+                        )}
                 </div>
             </div>
-        </DashboardLayout>
+        </div>
+        </DashboardLayout >
     );
 }
 

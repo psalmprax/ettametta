@@ -48,7 +48,8 @@ async def get_settings(db: Session = Depends(get_db), _admin = Depends(admin_req
         "aws_secret_access_key": app_settings.AWS_SECRET_ACCESS_KEY,
         "aws_region": app_settings.AWS_REGION,
         "aws_storage_bucket_name": app_settings.AWS_STORAGE_BUCKET_NAME,
-        "active_monetization_strategy": "commerce"
+        "active_monetization_strategy": "commerce",
+        "monetization_mode": "selective"
     }
     
     # Merge: DB takes precedence
