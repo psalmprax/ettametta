@@ -44,9 +44,13 @@ ViralForge is a **fully autonomous, cloud-deployed content intelligence platform
 - **Retention Policy**: Enforced a 90-day cloud retention policy for video assets to minimize storage costs while maintaining platform presence.
 
 ### 14. Storage Monitoring UI & OpenClaw Tool
-- **Dashboard Telemetry**: Added a real-time "Storage Lifecycle Manager" health bar to the main dashboard, displaying GB usage and threshold percentage.
-- **OpenClaw Integration**: Developed the `/storage` command for the Telegram bot. The agent now reports current disk usage, cloud provider status, and archival health via natural language.
-- **Alert System**: The bot and UI now trigger "Warning" and "Critical" states when local storage exceeds 90% and 100% of the threshold respectively.
+- **Dashboard Telemetry**: Added a real-time "Storage Lifecycle Manager" health bar to the main dashboard.
+- **OpenClaw Integration**: Developed the `/storage` command for the Telegram bot.
+- **Alert System**: Bot and UI trigger states when local storage exceeds 90% (Warning) and 100% (Critical).
+
+### 15. Production Networking (sslip.io)
+- **Domain Mapping**: Implemented a zero-cost domain mapping strategy using `sslip.io` to bypass Google OAuth's raw IP restrictions.
+- **Environment Agnostic**: The system uses `PRODUCTION_DOMAIN` to dynamically generate callback URLs, enabling seamless transitions between OCI ARM and local environments.
 
 ---
 ...
