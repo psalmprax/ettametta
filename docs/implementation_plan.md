@@ -47,6 +47,12 @@ ViralForge is a fully autonomous viral content engine for solo creators. It uses
 - **Visualization**: D3.js (Geomap, NetworkMesh), Three.js Globe, Recharts
 - **Export**: PDF/CSV report generation
 
+### Component 8: Autonomous Storage Lifecycle Manager
+- **Enforcement**: 140GB local threshold monitoring via `os.walk`.
+- **Archival**: Background migration to OCI Object Storage for older assets.
+- **Retention**: Automated 90-day cloud purging policy.
+- **Independence**: Background archival active even during local-only generation bursts.
+
 ### Component 6: Authentication & Security
 - **JWT**: `python-jose` with role-based access control
 - **Roles**: ADMIN, CREATOR, VIEWER
@@ -198,6 +204,6 @@ cd terraform && terraform validate && terraform plan
 
 | Phase | Feature | Priority |
 |---|---|---|
-| 95 | DNS & HTTPS final binding | HIGH |
-| 96 | Mobile App (React Native) | MEDIUM |
-| 97 | Marketplace for Skills/Templates | LOW |
+| 96 | DNS & HTTPS final binding | HIGH |
+| 97 | Mobile App (React Native) | MEDIUM |
+| 98 | Marketplace for Skills/Templates | LOW |

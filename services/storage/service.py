@@ -18,43 +18,38 @@ class StorageService:
             logging.info("[StorageService] Initialized in LOCAL mode.")
             return
 
-        try:
-            from botocore import UNSIGNED
-            from botocore.config import Config
-            
-            # Most providers (OCI, GCP, MinIO, NAS) are S3-compatible
-            client_kwargs = {
-                'service_name': 's3',
-                'region_name': settings.STORAGE_REGION or settings.AWS_REGION
-            }
-            
-            # Use credentials if provided, otherwise prepare for UNSIGNED access
-            if access_key and secret_key:
-                client_kwargs['aws_access_key_id'] = access_key
-                client_kwargs['aws_secret_access_key'] = secret_key
-            else:
-                logging.warning(f"[StorageService] No access keys provided for {self.provider}. Attempting unsigned access.")
-                client_kwargs['config'] = Config(signature_version=UNSIGNED)
-            
-            # Handle Custom Endpoints (OCI, NAS, GCP Interoperability)
-            endpoint = settings.STORAGE_ENDPOINT
-            
-            if self.provider == "OCI":
-                # Auto-fallback to standard OCI endpoint logic if not provided
-                # Example: https://{namespace}.compat.objectstorage.{region}.oraclecloud.com
-                if not endpoint:
-                    logging.warning("[StorageService] OCI selected but STORAGE_ENDPOINT is missing.")
-            
-            if endpoint:
-                client_kwargs['endpoint_url'] = endpoint
-                logging.info(f"[StorageService] Using custom endpoint: {endpoint}")
+        # Initialize S3 client for OCI/Cloud regardless of primary provider
+        # This allows background migration even if primary is LOCAL
+        if self.provider != "LOCAL" or (settings.STORAGE_ENDPOINT and settings.STORAGE_BUCKET):
+            try:
+                from botocore import UNSIGNED
+                from botocore.config import Config
+                
+                # Most providers (OCI, GCP, MinIO, NAS) are S3-compatible
+                client_kwargs = {
+                    'service_name': 's3',
+                    'region_name': settings.STORAGE_REGION or settings.AWS_REGION
+                }
+                
+                # Use credentials if provided, otherwise prepare for UNSIGNED access
+                if access_key and secret_key:
+                    client_kwargs['aws_access_key_id'] = access_key
+                    client_kwargs['aws_secret_access_key'] = secret_key
+                else:
+                    logging.warning(f"[StorageService] No access keys provided. Attempting unsigned access.")
+                    client_kwargs['config'] = Config(signature_version=UNSIGNED)
+                
+                # Handle Custom Endpoints (OCI, NAS, GCP Interoperability)
+                endpoint = settings.STORAGE_ENDPOINT
+                if endpoint:
+                    client_kwargs['endpoint_url'] = endpoint
+                    logging.info(f"[StorageService] Using custom endpoint: {endpoint}")
 
-            self.s3_client = boto3.client(**client_kwargs)
-            logging.info(f"[StorageService] Initialized {self.provider} storage (Bucket: {self.bucket})")
-            
-        except Exception as e:
-            logging.error(f"[StorageService] Failed to initialize {self.provider} storage: {e}")
-            self.provider = "LOCAL"
+                self.s3_client = boto3.client(**client_kwargs)
+                logging.info(f"[StorageService] Cloud client initialized (Bucket: {self.bucket})")
+                
+            except Exception as e:
+                logging.error(f"[StorageService] Failed to initialize cloud client: {e}")
 
     def upload_file(self, file_path: str, object_name: Optional[str] = None) -> str:
         """
@@ -65,16 +60,27 @@ class StorageService:
             object_name = os.path.basename(file_path)
 
         if self.provider != "LOCAL" and self.s3_client:
-            try:
-                self.s3_client.upload_file(file_path, self.bucket, object_name)
-                logging.info(f"[StorageService] Uploaded {file_path} to {self.provider}://{self.bucket}/{object_name}")
-                return object_name
-            except Exception as e:
-                logging.error(f"[StorageService] {self.provider} upload failed: {e}")
-                return file_path
+            return self.upload_to_cloud(file_path, object_name)
         else:
             # Local storage fallback
             return os.path.abspath(file_path)
+
+    def upload_to_cloud(self, file_path: str, object_name: Optional[str] = None) -> Optional[str]:
+        """Forces an upload to the cloud provider, regardless of self.provider setting."""
+        if not self.s3_client:
+            logging.error("[StorageService] Cannot upload to cloud: s3_client not initialized.")
+            return None
+            
+        if object_name is None:
+            object_name = os.path.basename(file_path)
+            
+        try:
+            self.s3_client.upload_file(file_path, self.bucket, object_name)
+            logging.info(f"[StorageService] Force-uploaded {file_path} to {self.bucket}/{object_name}")
+            return object_name
+        except Exception as e:
+            logging.error(f"[StorageService] Cloud upload failed: {e}")
+            return None
 
     def get_public_url(self, object_key_or_path: str, expiration: int = 3600) -> str:
         """

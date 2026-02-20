@@ -182,12 +182,20 @@
 
 ---
 
+- [x] **Phase 95: Cloud Archival & Storage Lifecycle**
+    - [x] Implement autonomous local-to-cloud migration (140GB threshold)
+    - [x] Refactor `StorageService` for background neural archival
+    - [x] Implement 90-day cloud retention policy for video assets
+    - [x] Verification: Celery-scheduled disk monitoring active.
+
+---
+
 ## ⏳ Maintenance & Future Roadmap
 
-- [ ] **Phase 95: DNS & HTTPS final binding**
+- [ ] **Phase 96: DNS & HTTPS final binding**
     - [ ] Certbot SSL integration for custom domain
     - [ ] Global CDN distribution for video assets
 
-- [ ] **Phase 96: Mobile App (React Native)**
+- [ ] **Phase 97: Mobile App (React Native)**
     - [ ] Hybrid app for iOS/Android
     - [ ] Push notifications for viral alerts

@@ -38,10 +38,10 @@ ViralForge is a **fully autonomous, cloud-deployed content intelligence platform
 - **Bootstrapping**: Implemented automated model weight fetching from HuggingFace on service start.
 - **Hybrid Support**: The dashboard now allows real-time switching between Cloud (ElevenLabs) and Local (Fish Speech) voice engines.
 
-### 12. Monetization Strategy Selection (Phase 94)
-- **Monetization Modes**: Introduced "Selective" and "All Content" modes to the autonomous parameters.
-- **Selective Mode**: Only monetizes content with a Viral Score > 85, protecting account reputation from being "too salesy".
-- **Dashboard UI**: Added a premium-styled mode toggle with exposure integrity monitoring.
+### 13. Cloud Archival & Storage Lifecycle (Phase 95)
+- **Autonomous Migration**: Implemented a 140GB local disk threshold. Older videos are moved to OCI Object Storage automatically once the limit is hit.
+- **Safe Move Logic**: A multi-stage verification process (Upload -> Verify -> DB Sync -> Delete Local) ensures no data loss during archival.
+- **Retention Policy**: Enforced a 90-day cloud retention policy for video assets to minimize storage costs while maintaining platform presence.
 
 ---
 ...
