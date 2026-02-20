@@ -41,6 +41,8 @@ async def get_settings(db: Session = Depends(get_db), _admin = Depends(admin_req
         "shopify_access_token": "shpat_xxxxxxxxxxxxxxxx",
         "shopify_shop_url": "your-store.myshopify.com",
         "elevenlabs_api_key": app_settings.ELEVENLABS_API_KEY,
+        "fish_speech_endpoint": "http://voiceover:8080",
+        "voice_engine": "fish_speech",
         "pexels_api_key": app_settings.PEXELS_API_KEY,
         "aws_access_key_id": app_settings.AWS_ACCESS_KEY_ID,
         "aws_secret_access_key": app_settings.AWS_SECRET_ACCESS_KEY,

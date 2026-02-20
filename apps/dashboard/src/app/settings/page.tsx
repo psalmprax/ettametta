@@ -35,6 +35,8 @@ export default function SettingsPage() {
         shopify_access_token: "",
         shopify_shop_url: "",
         elevenlabs_api_key: "",
+        fish_speech_endpoint: "http://voiceover:8080",
+        voice_engine: "fish_speech",
         pexels_api_key: "",
         aws_access_key_id: "",
         aws_secret_access_key: "",
@@ -195,14 +197,76 @@ export default function SettingsPage() {
                                                 isVisible={showKey["tiktok_client_secret"]}
                                                 onToggle={() => toggleKey("tiktok_client_secret")}
                                             />
-                                            <KeyInput
-                                                label="ElevenLabs API Key"
-                                                id="elevenlabs_api_key"
-                                                value={settings.elevenlabs_api_key}
-                                                onChange={(val) => updateSetting("elevenlabs_api_key", val)}
-                                                isVisible={showKey["elevenlabs_api_key"]}
-                                                onToggle={() => toggleKey("elevenlabs_api_key")}
-                                            />
+                                            <div className="pt-4 border-t border-zinc-800/50">
+                                                <label className="text-sm font-bold text-zinc-400 mb-4 block">Voice Synthesis Engine</label>
+                                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                                    <button
+                                                        onClick={() => updateSetting("voice_engine", "fish_speech")}
+                                                        className={cn(
+                                                            "p-4 rounded-2xl border transition-all text-left group",
+                                                            settings.voice_engine === "fish_speech"
+                                                                ? "bg-primary/10 border-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.2)]"
+                                                                : "bg-zinc-950/30 border-zinc-800 hover:border-zinc-700"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", settings.voice_engine === "fish_speech" ? "bg-primary text-white" : "bg-zinc-800 text-zinc-400")}>
+                                                                <Server className="h-4 w-4" />
+                                                            </div>
+                                                            {settings.voice_engine === "fish_speech" && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                                                        </div>
+                                                        <span className={cn("block font-bold text-sm", settings.voice_engine === "fish_speech" ? "text-white" : "text-zinc-500")}>Fish Speech</span>
+                                                        <span className="text-[10px] text-zinc-600 uppercase font-black">Local Infrastructure</span>
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => updateSetting("voice_engine", "elevenlabs")}
+                                                        className={cn(
+                                                            "p-4 rounded-2xl border transition-all text-left",
+                                                            settings.voice_engine === "elevenlabs"
+                                                                ? "bg-blue-500/10 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.2)]"
+                                                                : "bg-zinc-950/30 border-zinc-800 hover:border-zinc-700"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", settings.voice_engine === "elevenlabs" ? "bg-blue-500 text-white" : "bg-zinc-800 text-zinc-400")}>
+                                                                <Bell className="h-4 w-4" />
+                                                            </div>
+                                                            {settings.voice_engine === "elevenlabs" && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
+                                                        </div>
+                                                        <span className={cn("block font-bold text-sm", settings.voice_engine === "elevenlabs" ? "text-white" : "text-zinc-500")}>ElevenLabs</span>
+                                                        <span className="text-[10px] text-zinc-600 uppercase font-black">Cloud API</span>
+                                                    </button>
+                                                </div>
+
+                                                {settings.voice_engine === "fish_speech" ? (
+                                                    <div className="space-y-4 p-4 bg-primary/5 border border-primary/20 rounded-2xl">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[10px] text-primary font-black uppercase tracking-widest">OCI Neural Engine Active</span>
+                                                            <span className="text-[10px] text-zinc-500 font-bold bg-zinc-800 px-2 py-0.5 rounded-full">200GB Expanded</span>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-xs font-bold text-zinc-500 uppercase">Service Endpoint</label>
+                                                            <input
+                                                                type="text"
+                                                                value={settings.fish_speech_endpoint}
+                                                                onChange={(e) => updateSetting("fish_speech_endpoint", e.target.value)}
+                                                                className="w-full bg-zinc-950/50 border border-white/5 rounded-xl py-2 px-3 text-sm font-mono text-zinc-400"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <KeyInput
+                                                        label="ElevenLabs API Key"
+                                                        id="elevenlabs_api_key"
+                                                        value={settings.elevenlabs_api_key}
+                                                        onChange={(val) => updateSetting("elevenlabs_api_key", val)}
+                                                        isVisible={showKey["elevenlabs_api_key"]}
+                                                        onToggle={() => toggleKey("elevenlabs_api_key")}
+                                                    />
+                                                )}
+                                            </div>
+
                                             <KeyInput
                                                 label="Pexels/Pixabay API Key"
                                                 id="pexels_api_key"
