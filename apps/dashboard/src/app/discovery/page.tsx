@@ -211,6 +211,8 @@ export default function DiscoveryPage() {
                     <div className="flex items-center gap-4">
                         <form onSubmit={handleSearch} className="relative group">
                             <input
+                                id="neural-search"
+                                name="neural-search"
                                 type="text"
                                 placeholder="Neural Search..."
                                 aria-label="Search for viral content"
@@ -332,9 +334,11 @@ export default function DiscoveryPage() {
                         >
                             <div className="p-6 rounded-3xl bg-zinc-900/50 border border-white/5 grid grid-cols-1 md:grid-cols-3 gap-8">
                                 <div className="space-y-4">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Min Viral Score Threshold</label>
+                                    <label htmlFor="min-viral-score" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Min Viral Score Threshold</label>
                                     <div className="flex items-center gap-4">
                                         <input
+                                            id="min-viral-score"
+                                            name="min-viral-score"
                                             type="range"
                                             min="0"
                                             max="100"

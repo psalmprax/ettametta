@@ -59,22 +59,29 @@ manager = ConnectionManager()
 
 @router.websocket("/jobs")
 async def websocket_jobs_endpoint(websocket: WebSocket):
+    logging.info("[WS] Jobs Handshake Attempt Received")
     await manager.city_connect(websocket)
+    logging.info("[WS] Jobs Connection Accepted")
     try:
         while True:
-            # Keep connection alive
-            await websocket.receive_text()
+            # Send keep-alive ping every 30 seconds
+            await websocket.send_text(json.dumps({"type": "ping", "timestamp": asyncio.get_event_loop().time()}))
+            await asyncio.sleep(30)
     except WebSocketDisconnect:
+        logging.info("[WS] Jobs Disconnected (Client Closed)")
         manager.disconnect(websocket)
     except Exception as e:
-        logging.error(f"WebSocket error: {e}")
+        logging.error(f"[WS] Jobs Error: {e}")
         manager.disconnect(websocket)
+
+import random
 
 @router.websocket("/telemetry")
 async def websocket_telemetry_endpoint(websocket: WebSocket):
+    logging.info("[WS] Telemetry Handshake Attempt Received")
     await manager.city_connect(websocket)
+    logging.info("[WS] Telemetry Connection Accepted")
     try:
-        import random
         while True:
             # Generate high-velocity pulse telemetry
             pulse_data = {
@@ -102,11 +109,12 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                 ]
             }
             await websocket.send_text(json.dumps(pulse_data))
-            await asyncio.sleep(0.5) # High frequency pulse
+            await asyncio.sleep(1.0) # Balanced frequency pulse
     except WebSocketDisconnect:
+        logging.info("[WS] Telemetry Disconnected (Client Closed)")
         manager.disconnect(websocket)
     except Exception as e:
-        logging.error(f"Telemetry WebSocket error: {e}")
+        logging.error(f"[WS] Telemetry Error: {e}")
         manager.disconnect(websocket)
 
 def notify_job_update_sync(job_data: Dict):

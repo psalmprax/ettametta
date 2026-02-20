@@ -1,7 +1,7 @@
 # ViralForge: Architecture Design
 
-> **Last Updated**: 2026-02-19  
-> **Version**: 2.1 — Production-Hardened Autonomous Platform
+> **Last Updated**: 2026-02-20  
+> **Version**: 2.2 — Production-Hardened Autonomous Platform
 
 ---
 
@@ -268,6 +268,8 @@ GitHub (master branch)
 | SSH Access | PEM key authentication |
 | CORS | Configured per environment |
 | Secrets | `.env` file (never committed) |
+| WS Verification | `isMounted` hook guards + 101 Handshake validation |
+| Edge Stability | Standardized Nginx `Upgrade` mapping |
 
 ---
 

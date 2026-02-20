@@ -1,7 +1,7 @@
 # ViralForge: Implementation Plan (Current & Future)
 
-> **Last Updated**: 2026-02-19  
-> **Version**: 2.1 — Production-Hardened Autonomous Platform
+> **Last Updated**: 2026-02-20  
+> **Version**: 2.2 — Production-Hardened Autonomous Platform
 
 ---
 
@@ -135,6 +135,22 @@ pipeline {
 
 ---
 
+## Phase 91: Production Hardening & Final Audit
+- **AI Brain**: Consolidation of viral reasoning into `AIWorker`.
+- **Latency**: Introduction of memoized caching for D3 visualizations.
+- **Security**: Automated healthcheck remediation and circular import sanitization.
+
+---
+
+## Phase 92: WebSocket & Navigation Elasticity
+- **Client Guard**: Implementation of `isMounted` ref in `useWebSocket` hook to prevent background reconnection loops on unmounted components.
+- **Dynamic Routing**: Refactor of `config.ts` to use window-relative URLs for API and WebSocket bases, ensuring environment-agnostic handshakes.
+- **Nginx Handshake**: Standardization of proxy headers via `map $http_upgrade` and `proxy_set_header Connection $connection_upgrade`.
+- **Pathing**: Migration to `^~ /api/ws/` prefix in Nginx to ensure top-priority WebSocket routing without trailing-slash collisions.
+- **Stability**: Extension of `proxy_read_timeout` to 300s for general API and 1 day for WebSockets.
+
+---
+
 ## Verification Plan
 
 ### Automated Tests
@@ -162,6 +178,6 @@ cd terraform && terraform validate && terraform plan
 
 | Phase | Feature | Priority |
 |---|---|---|
-| 92 | DNS & HTTPS final binding | HIGH |
-| 93 | Mobile App (React Native) | MEDIUM |
-| 94 | Marketplace for Skills/Templates | LOW |
+| 93 | DNS & HTTPS final binding | HIGH |
+| 94 | Mobile App (React Native) | MEDIUM |
+| 95 | Marketplace for Skills/Templates | LOW |

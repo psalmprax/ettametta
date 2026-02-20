@@ -25,6 +25,8 @@ import { API_BASE } from "@/lib/config";
 import dynamic from "next/dynamic";
 
 const ProcessingFlow = dynamic(() => import("@/components/ui/ProcessingFlow"), { ssr: false });
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { WS_BASE } from "@/lib/config";
 
 interface VideoJob {
     id: string;
@@ -141,6 +143,32 @@ function TransformationPageContent() {
         }
     };
 
+    const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/ws/jobs`);
+
+    useEffect(() => {
+        if (!jobUpdate) return;
+
+        if (jobUpdate.type === "job_update") {
+            const updatedJob = jobUpdate.data;
+            setProcessingJobs(prev => {
+                const exists = prev.find(j => j.id === updatedJob.id);
+                if (exists) {
+                    return prev.map(j => j.id === updatedJob.id ? { ...j, ...updatedJob } : j);
+                } else {
+                    return [updatedJob, ...prev];
+                }
+            });
+
+            // Update selected job if it's the one that changed
+            setSelectedJob(prev => {
+                if (prev && prev.id === updatedJob.id) {
+                    return { ...prev, ...updatedJob };
+                }
+                return prev;
+            });
+        }
+    }, [jobUpdate]);
+
     React.useEffect(() => {
         const fetchData = async () => {
             try {
@@ -166,41 +194,7 @@ function TransformationPageContent() {
         };
 
         fetchData();
-
-        // WebSocket for real-time updates
-        const wsUrl = API_BASE.replace("http", "ws") + "/ws/jobs";
-        const socket = new WebSocket(wsUrl);
-
-        socket.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            if (message.type === "job_update") {
-                const updatedJob = message.data;
-                setProcessingJobs(prev => {
-                    const exists = prev.find(j => j.id === updatedJob.id);
-                    if (exists) {
-                        return prev.map(j => j.id === updatedJob.id ? { ...j, ...updatedJob } : j);
-                    } else {
-                        return [updatedJob, ...prev];
-                    }
-                });
-
-                // Update selected job if it's the one that changed
-                setSelectedJob(prev => {
-                    if (prev && prev.id === updatedJob.id) {
-                        return { ...prev, ...updatedJob };
-                    }
-                    return prev;
-                });
-            }
-        };
-
-        socket.onclose = () => {
-            console.log("WebSocket Disconnected. Reverting to basic polling baseline as fallback.");
-            // Optional: Re-implement interval here if robustness is preferred
-        };
-
-        return () => socket.close();
-    }, [selectedJob]);
+    }, []); // Only fetch initial data on mount
 
     const activeFilterCount = Array.isArray(activeFilters) ? activeFilters.filter(f => f.enabled).length : 0;
 
@@ -266,6 +260,8 @@ function TransformationPageContent() {
                                     <div className="relative group">
                                         <Video className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-zinc-600 group-focus-within:text-primary transition-all duration-300" />
                                         <input
+                                            id="video-url"
+                                            name="video-url"
                                             autoFocus
                                             type="url"
                                             placeholder="https://tiktok.com/video/123..."

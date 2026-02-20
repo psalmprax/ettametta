@@ -1,6 +1,6 @@
 # ViralForge: Complete System Walkthrough
 
-> **Last Updated**: 2026-02-19  
+> **Last Updated**: 2026-02-20  
 > **Status**: Mission Complete | Production-Hardened | Multi-Platform Optimized
 
 ---
@@ -32,6 +32,12 @@ ViralForge is a **fully autonomous, cloud-deployed content intelligence platform
 - **Frontend Assets**: Relaxed CSP headers to allow secure fetching of external map data (jsdelivr) and image discovery assets (HTTP/HTTPS).
 - **Self-Healing Infra**: Corrected Celery healthchecks to ensure accurate container orchestration status.
 - **E2E Scaling**: Verified the Go-based discovery bridge for high-concurrency social scanning.
+
+### 10. WebSocket & Navigation Elasticity (Phase 92)
+- **Mount-Guard Logic**: Implemented `isMounted` refs in the React `useWebSocket` hook to prevent "ghost" reconnection loops during rapid page navigation.
+- **Architectural Routing**: Standardized Nginx WebSocket proxying with explicit `Connection` upgrade mapping and `^~` prefix modifiers to ensure protocol switching (101) is prioritized.
+- **Environment Agnostic**: Dynamized API/WS base URLs in the frontend to resolve via `window.location`, eliminating IP-matching handshake failures.
+- **Elastic Timeouts**: Extended Nginx proxy read/send timeouts to 300s to support high-latency neural discovery and deep-analysis operations.
 
 ---
 ...
@@ -218,5 +224,5 @@ open http://localhost:3000
 | Authentication (JWT) | ✅ Live |
 | OCI ARM Infrastructure | ✅ Provisioned |
 | OpenClaw Telegram Bot | ✅ Live (@Psalmpraxbot) |
-| CI/CD Pipeline | 🔄 In Progress |
-| Production Go-Live | ⏳ Pending |
+| CI/CD Pipeline | ✅ Live |
+| Production Go-Live | ✅ Mission Complete |

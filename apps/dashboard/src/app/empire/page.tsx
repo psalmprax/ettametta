@@ -326,6 +326,8 @@ export default function EmpirePage() {
                                 <div className="space-y-4">
                                     <p className="text-xs text-zinc-500 font-medium">Enter product name to generate a high-conversion affiliate video script.</p>
                                     <input
+                                        id="promo-product"
+                                        name="promo-product"
                                         type="text"
                                         placeholder="e.g. Zen Stoic Journal"
                                         value={promoProduct}

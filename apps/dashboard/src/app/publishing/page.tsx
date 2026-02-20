@@ -251,8 +251,10 @@ export default function PublishingPage() {
 
                                     {/* A/B Testing */}
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">A/B Strategy (Variant B)</label>
+                                        <label htmlFor="variant-b-title" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">A/B Strategy (Variant B)</label>
                                         <input
+                                            id="variant-b-title"
+                                            name="variant-b-title"
                                             type="text"
                                             placeholder="Optimized Title Variant..."
                                             className="w-full glass-card bg-zinc-950 border-white/10 rounded-2xl p-5 text-sm font-bold text-primary placeholder:text-zinc-700 outline-none focus:ring-1 focus:ring-primary/40"
@@ -448,6 +450,8 @@ export default function PublishingPage() {
                         </div>
                         {isScheduled && (
                             <input
+                                id="schedule-time"
+                                name="schedule-time"
                                 type="datetime-local"
                                 value={scheduleTime}
                                 onClick={(e) => e.stopPropagation()}
@@ -478,6 +482,8 @@ export default function PublishingPage() {
                             </div>
                         </div>
                         <input
+                            id="variant-b-title-alt"
+                            name="variant-b-title-alt"
                             type="text"
                             placeholder="Enter Variant B Title..."
                             value={variantBTitle}

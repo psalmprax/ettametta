@@ -70,29 +70,7 @@ app.add_middleware(
 )
 
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    # Skip recording for WebSockets to prevent handshake interference
-    if request.scope.get("type") == "websocket" or request.url.path.startswith("/ws/"):
-        return await call_next(request)
-        
-    response = await call_next(request)
-    
-    # Sentinel Monitoring
-    if response.status_code == 401:
-        base_security_sentinel.log_event(
-            "AUTH_FAILURE", 
-            "medium", 
-            {"path": request.url.path, "ip": request.client.host}
-        )
-    elif response.status_code == 429:
-        base_security_sentinel.log_event(
-            "RATE_LIMIT_EXCEEDED", 
-            "high", 
-            {"path": request.url.path, "ip": request.client.host}
-        )
-        
-    return response
+# Removed log_requests middleware to prevent interference with WebSocket handshakes.
 
 
 # Router Includes

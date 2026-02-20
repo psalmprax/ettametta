@@ -471,6 +471,8 @@ export default function AnalyticsPage() {
                                     <div className="relative group">
                                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 group-focus-within:text-primary transition-colors" />
                                         <input
+                                            id="neural-filter"
+                                            name="neural-filter"
                                             placeholder="Neural Filter..."
                                             aria-label="Filter distribution list"
                                             value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}

@@ -230,8 +230,10 @@ export default function SettingsPage() {
 
                                         <div className="space-y-6">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-bold text-zinc-400">Shopify Store URL</label>
+                                                <label htmlFor="shopify-store-url" className="text-sm font-bold text-zinc-400">Shopify Store URL</label>
                                                 <input
+                                                    id="shopify-store-url"
+                                                    name="shopify-store-url"
                                                     type="text"
                                                     value={settings.shopify_shop_url}
                                                     onChange={(e) => updateSetting("shopify_shop_url", e.target.value)}
@@ -297,6 +299,8 @@ export default function SettingsPage() {
                                             </div>
                                             <div className="p-4 bg-zinc-950/50 border border-white/10 rounded-xl space-y-4">
                                                 <input
+                                                    id="monetization-aggression"
+                                                    name="monetization-aggression"
                                                     type="range"
                                                     min="0"
                                                     max="100"
@@ -493,9 +497,11 @@ interface MonetizationData {
 function KeyInput({ label, id, value, onChange, isVisible, onToggle }: { label: string, id: string, value: string, onChange: (val: string) => void, isVisible: boolean, onToggle: () => void }) {
     return (
         <div className="space-y-2">
-            <label className="text-sm font-bold text-zinc-400">{label}</label>
+            <label htmlFor={id} className="text-sm font-bold text-zinc-400">{label}</label>
             <div className="relative group">
                 <input
+                    id={id}
+                    name={id}
                     type={isVisible ? "text" : "password"}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}

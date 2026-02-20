@@ -249,10 +249,12 @@ export default function CreationPage() {
                             <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Objective / Topic</label>
+                                    <label htmlFor="topic" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Objective / Topic</label>
                                     <div className="relative group">
                                         <Target className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-600 group-focus-within:text-primary transition-all" />
                                         <input
+                                            id="topic"
+                                            name="topic"
                                             value={topic}
                                             onChange={(e) => setTopic(e.target.value)}
                                             placeholder="The History of Quantum AI..."
@@ -263,8 +265,10 @@ export default function CreationPage() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Niche</label>
+                                        <label htmlFor="niche" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Niche</label>
                                         <select
+                                            id="niche"
+                                            name="niche"
                                             value={niche}
                                             onChange={(e) => setNiche(e.target.value)}
                                             className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-5 focus:outline-none focus:ring-1 focus:ring-primary/40 text-xs font-black uppercase tracking-wider text-zinc-400 appearance-none cursor-pointer hover:bg-zinc-900/50"
@@ -290,8 +294,10 @@ export default function CreationPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Duration: {duration}s</label>
+                                    <label htmlFor="duration" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Duration: {duration}s</label>
                                     <input
+                                        id="duration"
+                                        name="duration"
                                         type="range"
                                         min="15"
                                         max="60"
