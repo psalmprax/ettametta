@@ -16,7 +16,7 @@
 ## Service Integration (Future steps)
 - [x] Create Fish Speech service skeleton
 - [x] Add Dockerfile for Fish Speech
-- [x] Create `download_models.py` script
+- [x_] Create `download_models.py` script
 - [x] Update `Dockerfile` with automated bootstrapping
 - [x] Automate Git push to trigger Jenkins
 - [x] Replace ElevenLabs in frontend Settings UI with Engine Selection
@@ -115,7 +115,7 @@
 
 ## Phase 16.2: Route Layer Hotfix
 - [x] Fix missing `Optional` import in `api/routes/video.py`
-- [x] Audit all route files for import consistency
+- [x] Audit all_ route files for import consistency
 
 ## Phase 17: Jenkins Production Sync
 - [x] Map all remaining production keys (OpenAI, Pexels, ElevenLabs) in `Jenkinsfile`
@@ -131,3 +131,16 @@
 - [x] Exclude `cookies/` from `rsync` in `Jenkinsfile`
 - [x] Add `cookies/` to `.gitignore`
 - [x] Push security updates to GitHub
+
+## Phase 18.2: OCI Permission Repair
+- [x] Fix `/home/ubuntu/viralforge` ownership on OCI instance
+- [x] Upload `youtube_cookies.txt` with correct permissions
+
+## Phase 18.3: Format Resiliency (Hotfix)
+- [x] Explicitly upgrade `yt-dlp` in `Dockerfile` to handle YouTube changes
+- [x] Refine `format` selector in `VideoDownloader` for Shorts compatibility
+- [x] Add `best` fallback to `verify_video_asset` logic
+
+## Phase 18.4: Hyper-Resiliency (Validation Fix)
+- [x] Remove restrictive `format: best` from `verify_video_asset`
+- [x] Broaden download fallback chain to `ydl_opts.pop('format')` as last resort
