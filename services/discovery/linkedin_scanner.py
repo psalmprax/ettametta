@@ -13,20 +13,9 @@ class LinkedInScanner:
         """
         logging.info(f"[LinkedInScanner] Sourcing authority content for: {niche}")
         
-        # LinkedIn is specialized for business/career/finance
-        if niche.lower() in ["business", "finance", "career", "productivity", "saas"]:
-            return [
-                ContentCandidate(
-                    id=f"li_{random.randint(100,999)}",
-                    title=f"Viral {niche} Insight for Professionals",
-                    url="https://www.linkedin.com/posts/mock",
-                    author=f"{niche}_Pulse",
-                    view_count=random.randint(10000, 100000),
-                    engagement_rate=random.uniform(0.08, 0.2),
-                    platform=self.platform,
-                    metadata={"reactions": random.randint(2000, 20000)}
-                )
-            ]
+        # TODO: Implement LinkedIn API integration
+        # For now, return empty list instead of mock data
+        logging.warning("[LinkedInScanner] LinkedIn API integration not implemented. Returning empty results.")
         return []
 
 base_linkedin_scanner = LinkedInScanner()

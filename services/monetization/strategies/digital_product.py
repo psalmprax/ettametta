@@ -8,7 +8,7 @@ class DigitalProductStrategy(BaseMonetizationStrategy):
         return [{
             "id": f"digi_{random.randint(100, 999)}",
             "name": f"{niche} Neural Accelerator (Course)",
-            "url": "https://viralforge.ai/products/neural-accelerator",
+            "url": "https://ettametta.ai/products/neural-accelerator",
             "price": "$197",
             "source": "viral_vault"
         }]

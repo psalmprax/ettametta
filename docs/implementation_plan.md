@@ -1,4 +1,4 @@
-# ViralForge: Implementation Plan (Current & Future)
+# ettametta: Implementation Plan (Current & Future)
 
 > **Last Updated**: 2026-02-21  
 > **Version**: 2.3 — Multimodal AI Director (VLM Integrated)
@@ -7,7 +7,7 @@
 
 ## System Overview
 
-ViralForge is a fully autonomous viral content engine for solo creators. It uses a hybrid Go+Python architecture for discovery, Groq AI for intelligence, FFmpeg for video transformation, and a Next.js dashboard for control. The system is deployed on Oracle Cloud Infrastructure (OCI) Always-Free ARM instances.
+ettametta is a fully autonomous viral content engine for solo creators. It uses a hybrid Go+Python architecture for discovery, Groq AI for intelligence, FFmpeg for video transformation, and a Next.js dashboard for control. The system is deployed on Oracle Cloud Infrastructure (OCI) Always-Free ARM instances.
 
 ---
 
@@ -62,6 +62,16 @@ ViralForge is a fully autonomous viral content engine for solo creators. It uses
 - **WebSocket Proxy**: Refactored Nginx to use trailing-slash stripping for robust protocol switching (101 Switching Protocols).
 - **CSP Policy**: Dynamic whitelist for `cdn.jsdelivr.net` to support global intelligence mapping.
 - **Healthchecks**: Custom Celery-aware health probes implemented for autonomous self-healing.
+
+### Component 13: Nexus Pipeline Architecture (Nexus V2)
+- **Graph Orchestrator**: Integrated React Flow in [Nexus](file:///home/psalmprax/ettametta/apps/dashboard/src/app/nexus/page.tsx) for visual pipeline composition.
+- **Blueprint System**: Reusable graph templates (`NexusBlueprint`) for consistent content production.
+- **Dynamic Execution**: Real-time node state telemetry and results streaming via main API.
+
+### Component 14: Multi-Bot White-Labeling (Phase 27)
+- **Private Agents**: Support for individual user Telegram bot tokens via [BotManager](file:///home/psalmprax/ettametta/services/openclaw/main.py).
+- **Lifecycle Orchestration**: Dynamic starting/stopping of bot instances without service restarts.
+- **Self-Service Onboarding**: Direct dashboard integration with @BotFather for token management.
 
 ---
 
@@ -181,20 +191,20 @@ Integrate **Fish Speech** (Open Source weights) as a containerized service.
 - **Signature Decryption (Phase 18.5)**: Integration of `nodejs` runtime into the API container to solve YouTube "n-challenge" signature decryption, ensuring full access to video streams on cloud infrastructure.
 
 ### Component 10: High-Artistry & VLM Intuition (Phase 19 & 20)
-- **OCR Awareness**: Implementation of [**`OCRService`**](file:///home/psalmprax/viral_forge/services/video_engine/ocr_service.py) for text-region detection, preventing caption overlap.
+- **OCR Awareness**: Implementation of [**`OCRService`**](file:///home/psalmprax/ettametta/services/video_engine/ocr_service.py) for text-region detection, preventing caption overlap.
 - **Semantic Trimming**: AI-driven "hook" detection to keep only high-energy segments.
-- **Visual Cortex**: Integration of **Gemini 1.5 Flash** via [**`VLMService`**](file:///home/psalmprax/viral_forge/services/video_engine/vlm_service.py) for true visual intuition (mood, lighting, subject analysis).
+- **Visual Cortex**: Integration of **Gemini 1.5 Flash** via [**`VLMService`**](file:///home/psalmprax/ettametta/services/video_engine/vlm_service.py) for true visual intuition (mood, lighting, subject analysis).
 - **Dynamic Aesthetics**: Automated caption color and grading selection based on visual mood.
 - **Stock Injection**: Pexels API integration for automated cinematic B-roll insertion.
 - **Infrastructural Scale**: Scaled `celery_worker` to 3 replicas for high-concurrency production.
 
 ### Component 11: Universal Niche & Style Expansion (Phase 21)
-- **Niche Persistence**: Automated registration of custom dashboard searches into the [**`MonitoredNiche`**](file:///home/psalmprax/viral_forge/api/utils/models.py) registry.
+- **Niche Persistence**: Automated registration of custom dashboard searches into the [**`MonitoredNiche`**](file:///home/psalmprax/ettametta/api/utils/models.py) registry.
 - **High-Art Suite**: Implementation of 12+ creative filters including Glitch, Noir, Atmospheric Glow, and Film Grain.
 - **Aesthetic Direction**: Expanded `DecisionEngine` prompts for style-specific intensity and color harmony logic.
 
 ### Component 12: Generative Dreamscapes (Phase 22)
-- **Synthesis Orchestration**: Implementation of [**`GenerativeService`**](file:///home/psalmprax/viral_forge/services/video_engine/synthesis_service.py) for text-to-video synthesis.
+- **Synthesis Orchestration**: Implementation of [**`GenerativeService`**](file:///home/psalmprax/ettametta/services/video_engine/synthesis_service.py) for text-to-video synthesis.
 - **Dual-Engine Support**: Integration with **Google Veo 3** (High-Tier) and **Wan2.2** (Open-Source) via SiliconFlow/Fal.ai.
 - **LTX-2 Integration**: Planned support for **LTX-2 (by Lightricks)** as a production-ready, native 4K open-source alternative.
 - **Prompt Director**: Intelligent LLM-driven prompt expansion for high-artistry video outcomes.

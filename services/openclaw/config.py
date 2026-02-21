@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     MODEL: str = "llama-3.3-70b-versatile"
     
-    # ViralForge Internal APIs
+    # ettametta Internal APIs
     API_URL: str = "http://api:8000"
     
     # Service Config

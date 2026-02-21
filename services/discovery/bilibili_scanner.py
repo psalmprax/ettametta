@@ -14,20 +14,9 @@ class BilibiliScanner:
         """
         logging.info(f"[BilibiliScanner] Sourcing global signals for: {niche}")
         
-        # Bilibili is a powerhouse for Tech and Animation
-        if niche.lower() in ["tech", "gaming", "animation", "future", "ai"]:
-            return [
-                ContentCandidate(
-                    id=f"bili_{random.randint(100,999)}",
-                    title=f"Early Global Trend: {niche}",
-                    url="https://www.bilibili.com/video/mock",
-                    author=f"Bili_Tech_{niche}",
-                    view_count=random.randint(20000, 200000),
-                    engagement_rate=random.uniform(0.05, 0.12),
-                    platform=self.platform,
-                    metadata={"coin_count": random.randint(500, 5000)}
-                )
-            ]
+        # TODO: Implement Bilibili API integration
+        # For now, return empty list instead of mock data
+        logging.warning("[BilibiliScanner] Bilibili API integration not implemented. Returning empty results.")
         return []
 
 base_bilibili_scanner = BilibiliScanner()

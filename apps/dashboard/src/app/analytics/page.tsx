@@ -101,6 +101,63 @@ export default function AnalyticsPage() {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [globalFilter, setGlobalFilter] = useState("");
 
+    // --- DATA FETCHING ---
+    useEffect(() => {
+        const fetchPosts = async () => {
+            try {
+                const token = localStorage.getItem("vf_token");
+                const response = await fetch(`${API_BASE}/analytics/posts`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setPosts(data);
+                    if (data.length > 0 && !selectedPostId) {
+                        setSelectedPostId(data[0].id.toString());
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch posts:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchPosts();
+    }, []);
+
+    useEffect(() => {
+        if (!selectedPostId) return;
+
+        const fetchData = async () => {
+            try {
+                const token = localStorage.getItem("vf_token");
+                const headers = { Authorization: `Bearer ${token}` };
+
+                // Fetch Performance Report
+                const reportRes = await fetch(`${API_BASE}/analytics/report/${selectedPostId}`, { headers });
+                if (reportRes.ok) {
+                    setReport(await reportRes.json());
+                }
+
+                // Fetch A/B Results
+                try {
+                    const abRes = await fetch(`${API_BASE}/analytics/ab/results/${selectedPostId}`, { headers });
+                    if (abRes.ok) {
+                        setAbResults(await abRes.json());
+                    } else {
+                        setAbResults(null);
+                    }
+                } catch (e) {
+                    setAbResults(null);
+                }
+            } catch (error) {
+                console.error("Failed to fetch selection data:", error);
+            }
+        };
+        fetchData();
+    }, [selectedPostId]);
+    // --- END DATA FETCHING ---
+
     // Real-time Telemetry Stream
     const { data: telemetry } = useWebSocket<any>(`${WS_BASE}/ws/telemetry`);
     const pulseIntensity = telemetry?.metrics?.signal_strength || 0;
@@ -421,6 +478,54 @@ export default function AnalyticsPage() {
                                     </p>
                                 </div>
                             </div>
+
+                            {/* A/B Comparison Node (Dynamic) */}
+                            {abResults && (
+                                <motion.div
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    className="col-span-1 lg:col-span-3 glass-card p-10 grid grid-cols-1 md:grid-cols-2 gap-12 relative overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 scanline opacity-5" />
+                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-20 rounded-full bg-zinc-950 border border-white/10 flex items-center justify-center z-10 hidden md:flex">
+                                        <span className="text-primary font-black italic text-xl">VS</span>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className={cn("h-3 w-3 rounded-full", abResults.winner === 'A' ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-zinc-800")} />
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Variant A (Standard)</p>
+                                        </div>
+                                        <h4 className="text-2xl font-black text-white tracking-tighter uppercase italic truncate">{abResults.variant_a_title}</h4>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between text-[10px] font-bold text-zinc-400">
+                                                <span>Reach</span>
+                                                <span className="text-white">{(abResults.variant_a_views || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden">
+                                                <div className="h-full bg-zinc-500" style={{ width: `${(abResults.variant_a_views / (abResults.variant_a_views + abResults.variant_b_views || 1)) * 100}%` }} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6 text-right">
+                                        <div className="flex items-center gap-3 justify-end">
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Variant B (Optimized)</p>
+                                            <div className={cn("h-3 w-3 rounded-full", abResults.winner === 'B' ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-zinc-800")} />
+                                        </div>
+                                        <h4 className="text-2xl font-black text-primary tracking-tighter uppercase italic truncate">{abResults.variant_b_title}</h4>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between text-[10px] font-bold text-zinc-400">
+                                                <span className="text-white">{(abResults.variant_b_views || 0).toLocaleString()}</span>
+                                                <span>Reach</span>
+                                            </div>
+                                            <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden flex justify-end">
+                                                <div className="h-full bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" style={{ width: `${(abResults.variant_b_views / (abResults.variant_a_views + abResults.variant_b_views || 1)) * 100}%` }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-10 mt-10">

@@ -4,8 +4,9 @@ from typing import Optional
 from api.utils.database import SessionLocal
 from api.utils.models import VideoJobDB
 from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from services.video_engine.tasks import download_and_process_task, generate_video_task
+from api.utils.user_models import UserDB, SubscriptionTier
+from api.utils.subscription import subscription_required, check_daily_limit
+from services.video_engine.tasks import download_and_process_task, generate_video_task, generate_story_task
 from services.video_engine.synthesis_service import generative_service
 import logging
 
@@ -23,6 +24,11 @@ class GenerationRequest(BaseModel):
     style: str = "Cinematic"
     aspect_ratio: str = "9:16"
 
+class StoryRequest(BaseModel):
+    prompt: str
+    engine: str = "veo3"
+    style: str = "Cinematic"
+
 
 @router.post("/transform")
 async def start_transformation(request: TransformationRequest, current_user: UserDB = Depends(get_current_user)):
@@ -31,6 +37,9 @@ async def start_transformation(request: TransformationRequest, current_user: Use
     """
     db = SessionLocal()
     try:
+        # Enforce daily generation limits
+        await check_daily_limit(current_user, db)
+        
         task = download_and_process_task.delay(
             source_url=request.input_url,
             niche=request.niche,
@@ -126,6 +135,9 @@ async def test_drive(request: TestDriveRequest, current_user: UserDB = Depends(g
     
     db = SessionLocal()
     try:
+        # Enforce daily generation limits
+        await check_daily_limit(current_user, db)
+
         # 1. Find top candidate with strict guardrails
         # - Must have a thumbnail
         # - Must have a niche
@@ -191,12 +203,18 @@ async def test_drive(request: TestDriveRequest, current_user: UserDB = Depends(g
         db.close()
 
 @router.post("/generate")
-async def start_generation(request: GenerationRequest, current_user: UserDB = Depends(get_current_user)):
+async def start_generation(
+    request: GenerationRequest, 
+    current_user: UserDB = Depends(subscription_required(SubscriptionTier.BASIC))
+):
     """
-    Triggers an AI video synthesis task.
+    Triggers an AI video synthesis task. Restricted to BASIC tier and above.
     """
     db = SessionLocal()
     try:
+        # Enforce daily limits
+        await check_daily_limit(current_user, db)
+        
         # 1. Optimize Prompt
         optimized_prompt = generative_service.optimize_prompt(request.prompt, request.style)
         
@@ -225,6 +243,46 @@ async def start_generation(request: GenerationRequest, current_user: UserDB = De
             "message": "Generation started",
             "task_id": task.id,
             "optimized_prompt": optimized_prompt
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
+@router.post("/generate-story")
+async def start_story_generation(
+    request: StoryRequest, 
+    current_user: UserDB = Depends(subscription_required(SubscriptionTier.BASIC))
+):
+    """
+    Triggers a multi-scene storytelling narrative task. Restricted to BASIC tier and above.
+    """
+    db = SessionLocal()
+    try:
+        # Enforce daily limits
+        await check_daily_limit(current_user, db)
+
+        task = generate_story_task.delay(
+            prompt=request.prompt,
+            engine=request.engine,
+            style=request.style,
+            user_id=current_user.id
+        )
+        
+        new_job = VideoJobDB(
+            id=task.id,
+            title=f"Storytelling - {request.style}",
+            status="Queued",
+            progress=0,
+            input_url="Narrative Prompt",
+            user_id=current_user.id
+        )
+        db.add(new_job)
+        db.commit()
+        
+        return {
+            "message": "Storytelling narrative started",
+            "task_id": task.id
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

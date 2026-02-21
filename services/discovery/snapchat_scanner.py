@@ -14,20 +14,9 @@ class SnapchatScanner:
         """
         logging.info(f"[SnapchatScanner] Sourcing Spotlight trends for: {niche}")
         
-        # Snapchat is king of "Lifestyle" and "Viral Humor"
-        if niche.lower() in ["lifestyle", "humor", "challenge", "aesthetic"]:
-            return [
-                ContentCandidate(
-                    id=f"snap_{random.randint(100,999)}",
-                    title=f"Viral Spotlight {niche} Trend",
-                    url="https://www.snapchat.com/spotlight/mock",
-                    author=f"Snap_{niche}_Star",
-                    view_count=random.randint(100000, 1000000),
-                    engagement_rate=random.uniform(0.12, 0.3),
-                    platform=self.platform,
-                    metadata={"spotlight_rank": random.randint(1, 10)}
-                )
-            ]
+        # TODO: Implement Snapchat API integration
+        # For now, return empty list instead of mock data
+        logging.warning("[SnapchatScanner] Snapchat API integration not implemented. Returning empty results.")
         return []
 
 base_snapchat_scanner = SnapchatScanner()

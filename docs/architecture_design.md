@@ -1,4 +1,4 @@
-# ViralForge: Architecture Design
+# ettametta: Architecture Design
 
 > **Last Updated**: 2026-02-21  
 > **Version**: 2.3 — Multimodal AI Director (VLM Integrated)
@@ -9,7 +9,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    VIRALFORGE PLATFORM                          │
+│                      ettametta PLATFORM                         │
 │                                                                 │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────────┐  │
 │  │  Discovery   │    │  AI Brain    │    │  Video Engine    │  │
@@ -94,14 +94,15 @@ api/
 
 ```sql
 -- Core Tables
-UserDB          (id, username, email, role, subscription_tier, created_at)
+UserDB          (id, username, email, role, subscription_tier, telegram_chat_id, telegram_token, created_at)
 ContentCandidate (id, title, platform, views, engagement_score, thumbnail_url, ...)
 VideoJob        (id, user_id, status, input_url, output_path, created_at)
 PublishedContent (id, user_id, job_id, platform, views, likes, revenue, ...)
 SocialAccount   (id, user_id, platform, access_token, open_id, ...)
 NicheTrendDB    (id, niche, trend_data, score, created_at)
 MonitoredNiche  (id, niche, is_active, last_scanned_at)
-ABTest          (id, user_id, variant_a, variant_b, winner, ...)
+ABTestDB        (id, user_id, content_id, variant_a_title, variant_b_title, ...)
+NexusJobDB      (id, user_id, status, blueprint_id, node_data, created_at)
 ```
 
 ---
@@ -210,20 +211,22 @@ OCI Frankfurt Region
 
 ---
 
-## OpenClaw Agent Architecture
+## OpenClaw Agent Architecture (Multi-Bot)
 
 ```
-Telegram (@Psalmpraxbot)
+Telegram (User-Provided Tokens via @BotFather)
     │
     ▼
 OpenClaw Gateway (Port 3001)
     │
-    ├── Memory: Persistent session context
+    ├── BotManager: Concurrent bot application lifecycle orchestration
+    ├── Identity: API-driven chat_id verification (/auth/verify-telegram)
     ├── LLM: Groq llama-3.3-70b-versatile
     └── Skills:
-        ├── vf_discovery_skill → /discovery/search API
-        ├── vf_ops_skill       → SSH commands to OCI
-        └── vf_analytics_skill → /analytics/summary API
+        ├── discovery_skill  → /discovery/search API
+        ├── system_skill     → Health & Storage telemetry
+        ├── content_skill    → /video/transform synthesis
+        └── publishing_skill → /publish action orchestration
 ```
 
 ### OpenClaw Config (`~/.openclaw/config.yaml`)
@@ -281,7 +284,7 @@ GitHub (master branch)
 
 ## Competitive Advantage (The Moat)
 
-ViralForge is architected to outperform 2026's "Clipper" SaaS apps by focusing on **Autonomy** and **Intuition**:
+ettametta is architected to outperform 2026's "Clipper" SaaS apps by focusing on **Autonomy** and **Intuition**:
 
 1.  **Discovery Moat**: Multi-platform `discovery-go` engine scans the "Trend Mesh" before content goes viral locally.
 2.  **Creative Moat**: `VLMService` (Visual Cortex) performs scene/mood reasoning that transcript-only tools miss.

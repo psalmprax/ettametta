@@ -8,7 +8,7 @@ class MetasearchScanner:
     def __init__(self):
         self.platform = "Web Metasearch (DDG)"
         self.headers = {
-            "User-Agent": "ViralForge/1.0 (Metasearch Intelligence)"
+            "User-Agent": "ettametta/1.0 (Metasearch Intelligence)"
         }
 
     async def scan_trends(self, niche: str, published_after: Optional[any] = None) -> List[ContentCandidate]:

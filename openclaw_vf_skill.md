@@ -1,9 +1,9 @@
 ---
-name: viralforge
-description: Interface with the ViralForge social scanning and discovery engine.
+name: ettametta
+description: Interface with the ettametta social scanning and discovery engine.
 ---
 
-# ViralForge Skill
+# ettametta Skill
 
 Autonomous sentinel for discovering viral content and managing infrastructure.
 
@@ -18,7 +18,7 @@ Search for discovered content candidates based on a query.
 - `q`: search query string
 
 ### /vf-health
-Check the operational status of the ViralForge API and scanners.
+Check the operational status of the ettametta API and scanners.
 
 ### /storage
 Check the local video storage usage and cloud migration status.
@@ -55,7 +55,7 @@ Check the local video storage usage and cloud migration status.
 }
 ```
 
-## Writing Style (ViralForge Sentinel)
+## Writing Style (ettametta Sentinel)
 - Scientific but proactive.
 - Use emojis for viral alerts: 🚀, 📈, 🔥.
 - Bullet points for scan results.

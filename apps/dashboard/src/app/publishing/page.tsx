@@ -69,6 +69,8 @@ export default function PublishingPage() {
     const [isScheduled, setIsScheduled] = useState(false);
     const [scheduleTime, setScheduleTime] = useState("");
     const [connectionSuccess, setConnectionSuccess] = useState<string | null>(null);
+    const [niches, setNiches] = useState<string[]>([]);
+    const [selectedNiche, setSelectedNiche] = useState("Technology");
 
     const handleManage = (acc: SocialAccount) => {
         setSelectedAccountForDetail(acc);
@@ -101,6 +103,10 @@ export default function PublishingPage() {
                 if (accountsRes.ok) setAccounts(await accountsRes.json());
                 if (historyRes.ok) setHistory(await historyRes.json());
                 if (jobsRes.ok) setJobs(await jobsRes.json());
+
+                // Fetch niches
+                const nichesRes = await fetch(`${API_BASE}/discovery/niches`, { headers });
+                if (nichesRes.ok) setNiches(await nichesRes.json());
             } catch (error) {
                 console.error("Failed to fetch publishing data:", error);
             } finally {
@@ -125,7 +131,7 @@ export default function PublishingPage() {
                 },
                 body: JSON.stringify({
                     video_path: selectedJobForDeploy.output_path || "outputs/output.mp4",
-                    niche: "AI Technology", // Fallback, should be from job
+                    niche: selectedNiche,
                     platform: "YouTube Shorts",
                     account_id: accounts[0].id,
                     inject_monetization: injectMonetization,
@@ -246,6 +252,19 @@ export default function PublishingPage() {
                                             {jobs.filter(j => j.status === 'Completed').map(j => (
                                                 <option key={j.id} value={j.id}>{j.title} ({j.id.slice(0, 8)})</option>
                                             ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Niche Selection */}
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Topic Alpha (Niche)</label>
+                                        <select
+                                            className="w-full glass-card bg-zinc-950 border-white/10 rounded-2xl p-5 text-sm font-bold text-white uppercase outline-none focus:ring-1 focus:ring-primary/40 transition-all hover:border-primary/30"
+                                            value={selectedNiche}
+                                            onChange={(e) => setSelectedNiche(e.target.value)}
+                                        >
+                                            <option value="">Select Niche...</option>
+                                            {niches.map(n => <option key={n} value={n}>{n}</option>)}
                                         </select>
                                     </div>
 
@@ -675,6 +694,6 @@ export default function PublishingPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }

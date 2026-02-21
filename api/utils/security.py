@@ -7,10 +7,10 @@ from api.config import settings
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-if settings.ENV == "production" and (not settings.SECRET_KEY or settings.SECRET_KEY == "dev_secret_key_change_me_in_production"):
+if settings.ENV == "production" and (not settings.SECRET_KEY or settings.SECRET_KEY == "dev_secret_key_change_me_in_production" or settings.SECRET_KEY == "dev_secret_key_vforge_2026_change_in_prod"):
     raise RuntimeError("SECRET_KEY must be set to a secure value in production environment.")
 
-SECRET_KEY = settings.SECRET_KEY or "dev_secret_key_change_me_in_production"
+SECRET_KEY = settings.SECRET_KEY or "dev_secret_key_vforge_2026_change_in_prod"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 24 hours
 

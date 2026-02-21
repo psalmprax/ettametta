@@ -1,5 +1,5 @@
 /*
- * ViralForge Jenkins CI/CD Pipeline
+ * ettametta Jenkins CI/CD Pipeline
  * ===================================
  * SETUP: Before running this pipeline, configure the following
  * credentials in Jenkins → Manage Jenkins → Credentials → Global:
@@ -33,17 +33,17 @@ pipeline {
     agent any
     
     parameters {
-        string(name: 'PRODUCTION_DOMAIN', defaultValue: 'http://130.61.26.105', description: 'Public URL of your ViralForge instance')
+        string(name: 'PRODUCTION_DOMAIN', defaultValue: 'http://130.61.26.105', description: 'Public URL of your ettametta instance')
         choice(name: 'VOICE_ENGINE', choices: ['fish_speech', 'elevenlabs'], description: 'Primary voice synthesis engine')
         choice(name: 'MONETIZATION_MODE', choices: ['selective', 'all'], description: 'Monetization strategy')
     }
 
     environment {
-        PROJECT_NAME          = "viral_forge"
+        PROJECT_NAME          = "ettametta"
         DOCKER_COMPOSE_FILE   = "docker-compose.yml"
         
         // Deployment directory on the SAME server
-        DEPLOY_DIR            = "/home/ubuntu/viralforge"
+        DEPLOY_DIR            = "/home/ubuntu/ettametta"
         PUBLIC_IP             = "130.61.26.105"
         HEALTH_CHECK_URL      = "http://172.17.0.1:3000/api/health"
         
@@ -88,7 +88,7 @@ pipeline {
                 // Fetching source code
                 git(
                     branch: 'master',
-                    url: "https://github.com/psalmprax/viral_forge.git",
+                    url: "https://github.com/psalmprax/ettametta.git",
                     credentialsId: 'GITHUB_CREDENTIALS'
                 )
                 echo "Checked out branch: ${env.GIT_BRANCH} @ ${env.GIT_COMMIT?.take(7)}"
@@ -187,7 +187,7 @@ STORAGE_REGION=eu-frankfurt-1
 
     post {
         success {
-            echo "✅ ViralForge deployed successfully — build #${BUILD_NUMBER}"
+            echo "✅ ettametta deployed successfully — build #${BUILD_NUMBER}"
         }
         failure {
             echo "❌ Deployment failed at stage: ${env.STAGE_NAME}. Check logs above."

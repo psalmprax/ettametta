@@ -1,5 +1,7 @@
 import logging
 import json
+import requests
+import asyncio
 from groq import Groq
 from config import settings
 from typing import Dict, Any
@@ -18,7 +20,7 @@ class OpenClawAgent:
     def __init__(self):
         self.groq_client = Groq(api_key=settings.GROQ_API_KEY)
         self.model = settings.MODEL
-        self.system_prompt = """You are OpenClaw, the autonomous agent for ViralForge.
+        self.system_prompt = """You are OpenClaw, the autonomous agent for ettametta.
         Your goal is to assist the user in managing their content empire.
         
         You have access to the following tools/skills:
@@ -42,14 +44,26 @@ class OpenClawAgent:
         For general questions about what the agent can do, listing these tools is fine.
         """
 
+    def _get_user_from_api(self, telegram_id: int):
+        try:
+            response = requests.get(f"{settings.API_URL}/auth/verify-telegram/{telegram_id}", timeout=5)
+            if response.status_code == 200:
+                return response.json()
+            return None
+        except Exception as e:
+            logger.error(f"Error calling verification API: {e}")
+            return None
+
     async def process_message(self, user_id: int, message: str) -> str:
         """
         Process a user message and determine the action.
         """
-        # Allow access if admin ID is 0 (first run) or matches sender
-        if settings.TELEGRAM_ADMIN_ID != 0 and user_id != settings.TELEGRAM_ADMIN_ID:
+        # Dynamic verification via API
+        user = await asyncio.to_thread(self._get_user_from_api, user_id)
+        
+        if not user:
             logger.warning(f"Unauthorized access attempt from {user_id}")
-            return f"⛔ Unauthorized access. Your User ID is: `{user_id}`. Please update your .env file with this ID."
+            return f"⛔ Unauthorized access. Your Telegram ID is: `{user_id}`.\n\nPlease log in to the ettametta dashboard and add this ID to your profile settings to enable agent access."
 
         try:
             # 1. Ask LLM for intent

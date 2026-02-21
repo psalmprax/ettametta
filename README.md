@@ -1,11 +1,11 @@
-# ViralForge 🚀
+# ettametta 🚀
 
 Autonomous multi-platform viral content discovery, transformation, optimization, and publishing engine — powered by AI. Now with **Neural Security Sentinel** and **Consolidated AIWorker**.
 
 ## 📁 Project Structure
 
 ```
-viral_forge/
+ettametta/
 ├── api/                  # FastAPI backend
 ├── apps/dashboard/       # Next.js 14 frontend
 ├── services/
@@ -38,8 +38,8 @@ viral_forge/
 ### 1. Clone & configure environment
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/viral_forge.git
-cd viral_forge
+git clone https://github.com/YOUR_USERNAME/ettametta.git
+cd ettametta
 cp .env.example .env
 # Edit .env with your actual values (see Environment Variables below)
 ```
@@ -114,8 +114,8 @@ The `Jenkinsfile` defines a full pipeline: lint → build → push → deploy �
 **Edit the top variables in `Jenkinsfile` to match your setup:**
 ```groovy
 def OCI_HOST    = "YOUR_OCI_IP"
-def GITHUB_REPO = "YOUR_USERNAME/viral_forge"
-def DOCKER_IMAGE = "YOUR_DOCKERHUB_USER/viralforge"
+def GITHUB_REPO = "YOUR_USERNAME/ettametta"
+def DOCKER_IMAGE = "YOUR_DOCKERHUB_USER/ettametta"
 ```
 
 ## 🤖 OpenClaw Agent (Telegram)

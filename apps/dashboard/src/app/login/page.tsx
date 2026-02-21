@@ -113,7 +113,7 @@ export default function LoginPage() {
                 </form>
 
                 <p className="text-center text-zinc-600 text-sm font-medium">
-                    New to ViralForge?{" "}
+                    New to ettametta?{" "}
                     <Link href="/register" className="text-white hover:text-primary transition-colors">
                         Register Access
                     </Link>

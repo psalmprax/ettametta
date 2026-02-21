@@ -15,13 +15,89 @@ class VideoStrategy(BaseModel):
     vibe: str = "Neutral"
     explanation: str = ""
 
+class StoryScene(BaseModel):
+    scene_id: int
+    visual_prompt: str
+    narration_text: str
+    duration_hint: float = 5.0
+    vibe: str = "Cinematic"
+
+class StoryScript(BaseModel):
+    title: str
+    scenes: List[StoryScene]
+    vibe_summary: str
+    target_duration: float
+
 class StrategyService:
     def __init__(self):
         self.api_key = get_secret("groq_api_key")
         self.client = AsyncGroq(api_key=self.api_key)
         self.model = "llama-3.3-70b-versatile"
 
-    async def generate_visual_strategy(self, transcript: List[Dict], niche: str, style: str = "Default", visual_insights: Optional[Dict] = None) -> VideoStrategy:
+    async def generate_screenplay(self, prompt: str, style: str = "Cinematic") -> StoryScript:
+        """
+        Converts a narrative idea into a structured screenplay for multi-scene synthesis.
+        """
+        system_prompt = f"You are an elite AI Screenwriter for ettametta. Break down narrative prompts into structured scenes. Output JSON."
+        user_prompt = f"""
+        NARRATIVE IDEA: {prompt}
+        STYLE OVERLAY: {style}
+        
+        TASK:
+        1. Create a title for the story.
+        2. Break the story into 3-5 logical scenes.
+        3. For each scene, provide:
+           - A 'visual_prompt' optimized for high-end AI video models (Veo 3/Wan2.2).
+           - A 'narration_text' that tells the story (keep it concise).
+           - A 'duration_hint' in seconds (usually 4.0-7.0s).
+           - A 'vibe' (Cinematic, Hectic, Dramatic, etc.).
+        
+        OUTPUT FORMAT (JSON ONLY):
+        {{
+            "title": "Story Title",
+            "vibe_summary": "Overall aesthetic description",
+            "target_duration": total_seconds,
+            "scenes": [
+                {{
+                    "scene_id": 1,
+                    "visual_prompt": "...",
+                    "narration_text": "...",
+                    "duration_hint": 5.0,
+                    "vibe": "..."
+                }},
+                ...
+            ]
+        }}
+        """
+
+        try:
+            if not self.api_key:
+                # Fallback mock for testing
+                return StoryScript(
+                    title="Mock Story",
+                    vibe_summary="Cinematic Tech",
+                    target_duration=15.0,
+                    scenes=[
+                        StoryScene(scene_id=1, visual_prompt="A glowing AI core", narration_text="The heart of the system pulsed.", duration_hint=5.0),
+                        StoryScene(scene_id=2, visual_prompt="A digital city", narration_text="Expanding across the network.", duration_hint=5.0),
+                        StoryScene(scene_id=3, visual_prompt="Human hand touching light", narration_text="Connecting with the future.", duration_hint=5.0)
+                    ]
+                )
+
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                response_format={"type": "json_object"}
+            )
+            
+            data = json.loads(response.choices[0].message.content)
+            return StoryScript(**data)
+        except Exception as e:
+            logging.error(f"[StrategyService] Screenplay Error: {e}")
+            raise
         """
         Analyzes transcript content, user-selected style, and VLM visual insights to decide on video editing parameters.
         """

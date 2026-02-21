@@ -9,7 +9,7 @@ from api.utils.models import MonitoredNiche
 from services.discovery.tasks import sentinel_trend_watcher
 
 def verify_sentinel():
-    print("🚀 Verifying ViralForge Sentinel Automation...")
+    print("🚀 Verifying ettametta Sentinel Automation...")
     
     db = SessionLocal()
     try:

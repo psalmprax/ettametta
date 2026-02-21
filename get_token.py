@@ -4,7 +4,7 @@ def get_token():
     url = "http://localhost:3000/api/auth/login"
     data = {
         "username": "psalmprax",
-        "password": "viral_forge_admin"
+        "password": "ettametta_admin"
     }
     try:
         # OAuth2PasswordRequestForm expects form data

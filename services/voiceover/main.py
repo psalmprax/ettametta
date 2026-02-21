@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import torch
 import os
 
-app = FastAPI(title="ViralForge Voiceover Service (Fish Speech)")
+app = FastAPI(title="ettametta Voiceover Service (Fish Speech)")
 
 class TTSRequest(BaseModel):
     text: str

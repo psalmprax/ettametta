@@ -52,7 +52,7 @@ export function Sidebar() {
                     <Zap className="h-7 w-7 text-white fill-white neon-glow" />
                 </motion.div>
                 <div className="flex flex-col">
-                    <span className="text-2xl font-black text-white tracking-tighter uppercase italic leading-none group-hover:text-primary transition-colors">ViralForge</span>
+                    <span className="text-2xl font-black text-white tracking-tighter uppercase italic leading-none group-hover:text-primary transition-colors">ettametta</span>
                     <span className="text-[10px] font-black text-primary tracking-[0.3em] uppercase mt-1.5 opacity-80 flex items-center gap-1.5">
                         <div className="h-1 w-1 rounded-full bg-primary animate-pulse" />
                         Neural Cluster v2.4

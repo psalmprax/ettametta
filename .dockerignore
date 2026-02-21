@@ -1,5 +1,5 @@
 # ============================================================
-# ViralForge .dockerignore
+# ettametta .dockerignore
 # Keeps build context lean — only ship what the app needs
 # ============================================================
 

@@ -14,20 +14,9 @@ class TwitchScanner:
         """
         logging.info(f"[TwitchScanner] Searching clips for niche: {niche}")
         
-        # Mocking responsive data for high-engagement gaming/tech niches
-        if niche.lower() in ["gaming", "tech", "entertainment", "reaction"]:
-            return [
-                ContentCandidate(
-                    id=f"twitch_{random.randint(100,999)}",
-                    title=f"INSANE {niche} Moment - Top Clip",
-                    url="https://clips.twitch.tv/mock-clip-id",
-                    author=f"Pro_{niche}_Gamer",
-                    view_count=random.randint(50000, 500000),
-                    engagement_rate=random.uniform(0.1, 0.25),
-                    platform=self.platform,
-                    metadata={"views": random.randint(50000, 500000), "duration": "30s"}
-                )
-            ]
+        # TODO: Implement Twitch API integration with TIKTOK_API_KEY
+        # For now, return empty list instead of mock data
+        logging.warning("[TwitchScanner] Twitch API integration not implemented. Returning empty results.")
         return []
 
 base_twitch_scanner = TwitchScanner()

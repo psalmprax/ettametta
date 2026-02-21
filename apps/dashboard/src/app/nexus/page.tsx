@@ -58,6 +58,9 @@ export default function NexusPage() {
     const [activeBlueprint, setActiveBlueprint] = useState<Blueprint | null>(null);
     const [isLaunching, setIsLaunching] = useState(false);
     const [nexusJobs, setNexusJobs] = useState<any[]>([]);
+    const [niches, setNiches] = useState<string[]>([]);
+    const [selectedNiche, setSelectedNiche] = useState("Technology");
+    const [userTier, setUserTier] = useState<string>("free");
     const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/ws/jobs`);
 
     // Fetch existing Nexus jobs
@@ -77,6 +80,35 @@ export default function NexusPage() {
             }
         };
         fetchNexusJobs();
+
+        const fetchProfile = async () => {
+            try {
+                const token = localStorage.getItem("vf_token");
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setUserTier(data.subscription || "free");
+                }
+            } catch (err) {
+                console.error("Failed to fetch profile", err);
+            }
+        };
+        fetchProfile();
+
+        const fetchNiches = async () => {
+            try {
+                const token = localStorage.getItem("vf_token");
+                const res = await fetch(`${API_BASE}/discovery/niches`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) setNiches(await res.json());
+            } catch (err) {
+                console.error("Failed to fetch niches:", err);
+            }
+        };
+        fetchNiches();
     }, []);
 
     // Handle WebSocket updates
@@ -105,7 +137,7 @@ export default function NexusPage() {
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    niche: "AI Technology", // Default for demo
+                    niche: selectedNiche,
                     blueprint_id: activeBlueprint.id,
                     cinema_mode: true
                 })
@@ -139,6 +171,14 @@ export default function NexusPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
+                        <select
+                            value={selectedNiche}
+                            onChange={(e) => setSelectedNiche(e.target.value)}
+                            className="glass-card bg-zinc-950 border-white/10 rounded-xl px-4 py-4 text-[10px] font-black uppercase tracking-widest text-primary outline-none focus:ring-1 focus:ring-primary/40 transition-all hover:border-primary/30"
+                        >
+                            <option value="">Select Niche...</option>
+                            {niches.map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
                         <button className="glass-card px-6 py-4 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-all">
                             <Settings2 className="h-4 w-4" />
                             Cluster Settings
@@ -168,37 +208,46 @@ export default function NexusPage() {
                         </div>
 
                         <div className="space-y-4">
-                            {BLUEPRINTS.map((bp) => (
-                                <motion.div
-                                    key={bp.id}
-                                    whileHover={{ x: 5 }}
-                                    onClick={() => setActiveBlueprint(bp)}
-                                    className={cn(
-                                        "p-6 rounded-[2rem] border transition-all duration-500 cursor-pointer relative overflow-hidden group",
-                                        activeBlueprint?.id === bp.id
-                                            ? "bg-primary/5 border-primary/40 shadow-lg"
-                                            : "bg-zinc-950/40 border-white/5 hover:border-white/10"
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className={cn(
-                                            "h-10 w-10 rounded-xl flex items-center justify-center transition-all",
-                                            activeBlueprint?.id === bp.id ? "bg-primary text-white" : "bg-zinc-900 text-zinc-600"
-                                        )}>
-                                            <Layers className="h-5 w-5" />
-                                        </div>
-                                        {activeBlueprint?.id === bp.id && (
-                                            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                            {BLUEPRINTS.map((bp) => {
+                                const isGated = bp.id === "story-factory" && userTier === "free";
+                                return (
+                                    <motion.div
+                                        key={bp.id}
+                                        whileHover={!isGated ? { x: 5 } : {}}
+                                        onClick={() => !isGated && setActiveBlueprint(bp)}
+                                        className={cn(
+                                            "p-6 rounded-[2rem] border transition-all duration-500 relative overflow-hidden group",
+                                            activeBlueprint?.id === bp.id
+                                                ? "bg-primary/5 border-primary/40 shadow-lg"
+                                                : "bg-zinc-950/40 border-white/5",
+                                            isGated ? "opacity-50 cursor-not-allowed grayscale" : "cursor-pointer hover:border-white/10"
                                         )}
-                                    </div>
-                                    <h4 className="font-black text-sm uppercase tracking-tight text-white mb-2 italic">
-                                        {bp.name}
-                                    </h4>
-                                    <p className="text-[10px] font-medium text-zinc-500 leading-relaxed">
-                                        {bp.description}
-                                    </p>
-                                </motion.div>
-                            ))}
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className={cn(
+                                                "h-10 w-10 rounded-xl flex items-center justify-center transition-all",
+                                                activeBlueprint?.id === bp.id ? "bg-primary text-white" : "bg-zinc-900 text-zinc-600"
+                                            )}>
+                                                <Layers className="h-5 w-5" />
+                                            </div>
+                                            {activeBlueprint?.id === bp.id && (
+                                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                            )}
+                                            {isGated && (
+                                                <div className="px-2 py-1 rounded border border-amber-500/20 bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
+                                                    Locked
+                                                </div>
+                                            )}
+                                        </div>
+                                        <h4 className="font-black text-sm uppercase tracking-tight text-white mb-2 italic flex items-center gap-2">
+                                            {bp.name}
+                                        </h4>
+                                        <p className="text-[10px] font-medium text-zinc-500 leading-relaxed">
+                                            {bp.description}
+                                        </p>
+                                    </motion.div>
+                                )
+                            })}
 
                             <button className="w-full p-6 rounded-[2rem] border border-dashed border-white/5 flex flex-col items-center justify-center gap-3 text-zinc-700 hover:text-zinc-500 hover:border-white/10 transition-all group">
                                 <Plus className="h-8 w-8 group-hover:scale-110 transition-transform" />

@@ -81,7 +81,7 @@ export default function RegisterPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-white font-medium"
-                                placeholder="hq@viralforge.ai"
+                                placeholder="hq@ettametta.ai"
                             />
                         </div>
                     </div>

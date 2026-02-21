@@ -8,7 +8,7 @@ variable "subnet_id" {
 
 variable "instance_display_name" {
   type    = string
-  default = "ViralForgeServer"
+  default = "ettamettaServer"
 }
 
 variable "instance_shape" {
@@ -28,7 +28,7 @@ variable "memory_in_gbs" {
 
 variable "hostname_label" {
   type    = string
-  default = "viralforge"
+  default = "ettametta"
 }
 
 variable "ssh_public_key_path" {

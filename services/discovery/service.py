@@ -41,7 +41,7 @@ class DiscoveryService:
             base_bilibili_scanner
         ]
 
-    async def find_trending_content(self, niche: str, horizon: str = "30d") -> List[ContentCandidate]:
+    async def find_trending_content(self, niche: str, horizon: str = "30d", tier: str = "free") -> List[ContentCandidate]:
         import json
         import redis
         from api.config import settings
@@ -96,8 +96,13 @@ class DiscoveryService:
         for scanner in self.scanners:
             tasks.append(scanner.scan_trends(niche, published_after=published_after))
         
-        for g_scanner in self.global_scanners:
-            tasks.append(g_scanner.scan_trends(niche, published_after=published_after))
+        # Gate global scanners for FREE tier
+        if tier != "free":
+            print(f"[Discovery] Tier {tier}: Unleashing all {len(self.global_scanners)} global scanners.")
+            for g_scanner in self.global_scanners:
+                tasks.append(g_scanner.scan_trends(niche, published_after=published_after))
+        else:
+            print(f"[Discovery] Tier FREE: Restricted to core {len(self.scanners)} platforms.")
             
         # Execute all scans concurrently
         results = await asyncio.gather(*tasks, return_exceptions=True)

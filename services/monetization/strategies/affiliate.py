@@ -11,14 +11,9 @@ class AffiliateStrategy(BaseMonetizationStrategy):
         try:
             links = db.query(AffiliateLinkDB).filter(AffiliateLinkDB.niche == niche).all()
             if not links:
-                # Mock high-converting affiliate links if None found
-                return [{
-                    "id": f"aff_{random.randint(100, 999)}",
-                    "name": f"Top {niche} Tool (Affiliate)",
-                    "url": "https://amzn.to/mock-affiliate-link",
-                    "price": "$29.99",
-                    "source": "Amazon/ClickBank"
-                }]
+                # Return empty list instead of mock data when no affiliate links configured
+                logging.warning(f"[AffiliateStrategy] No affiliate links found for niche: {niche}. Configure links in the database.")
+                return []
             
             return [{
                 "id": str(l.id),

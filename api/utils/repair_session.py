@@ -13,7 +13,7 @@ def repair_admin():
     try:
         username = "psalmprax"
         email = "psalmprax@example.com"
-        password = "viral_forge_pass" # Default password for recovery
+        password = "ettametta_pass" # Default password for recovery
         
         # Check if user exists
         user = db.query(UserDB).filter(UserDB.username == username).first()

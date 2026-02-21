@@ -75,7 +75,7 @@ async def test_tiktok():
 async def main():
     print("""
     =========================================
-    🚀 ViralForge API Diagnostic Utility
+    🚀 ettametta API Diagnostic Utility
     =========================================
     """)
     
@@ -87,7 +87,7 @@ async def main():
     
     print("\n=========================================")
     if all(results):
-        print("🎉 ALL SYSTEMS GO! Your ViralForge engine is fully powered.")
+        print("🎉 ALL SYSTEMS GO! Your ettametta engine is fully powered.")
     else:
         print("⚠️  DIAGNOSTIC INCOMPLETE: Please review the failures above.")
     print("=========================================\n")

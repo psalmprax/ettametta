@@ -9,7 +9,7 @@ variable "vcn_cidr" {
 
 variable "vcn_display_name" {
   type    = string
-  default = "ViralForgeVCN"
+  default = "ettamettaVCN"
 }
 
 variable "vcn_dns_label" {
@@ -24,7 +24,7 @@ variable "subnet_cidr" {
 
 variable "subnet_display_name" {
   type    = string
-  default = "ViralForgeSubnet"
+  default = "ettamettaSubnet"
 }
 
 variable "subnet_dns_label" {

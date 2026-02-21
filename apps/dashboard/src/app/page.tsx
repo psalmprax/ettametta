@@ -57,6 +57,7 @@ export default function Home() {
     success_rate: "0%"
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [activityFeed, setActivityFeed] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -77,6 +78,15 @@ export default function Home() {
           }
 
           setStats(data);
+
+          // Fetch Egress history for activity feed
+          const historyRes = await fetch(`${API_BASE}/publish/history`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (historyRes.ok) {
+            const history = await historyRes.json();
+            setActivityFeed(history.slice(0, 5));
+          }
         }
       } catch (error) {
         console.error("Failed to fetch stats:", error);
@@ -201,24 +211,58 @@ export default function Home() {
         )}
 
         {/* Recent Activity Section */}
-        <motion.div variants={itemVariants} className="glass-card flex flex-col items-center justify-center text-center gap-6 relative overflow-hidden group">
-          <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
-          <div className="h-16 w-16 rounded-3xl bg-white/[0.03] border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-            <Clock className="h-8 w-8 text-zinc-600" />
-          </div>
-          <div className="space-y-2 relative">
-            <h3 className="text-2xl font-black tracking-tight text-white uppercase">Awaiting Telemetry</h3>
-            <p className="text-zinc-500 max-w-sm mx-auto font-medium">Your command buffer is empty. Start a discovery cycle to find viral opportunities.</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <Link href="/discovery" className="bg-primary hover:bg-primary/90 text-white font-black py-4 px-10 rounded-2xl transition-all flex items-center gap-3 shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)] group-hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.4)] relative">
-              <PlusCircle className="h-5 w-5" />
-              Initiate Discovery
-            </Link>
-            <Link href="/publishing" className="text-zinc-500 hover:text-white font-bold text-sm transition-colors">
-              Manage Node Links
+        <motion.div variants={itemVariants} className="space-y-6">
+          <div className="flex items-center justify-between px-4">
+            <div className="flex items-center gap-3">
+              <Clock className="h-5 w-5 text-zinc-500" />
+              <h3 className="text-xs font-black uppercase tracking-[0.25em] text-zinc-500">Global Egress Feed</h3>
+            </div>
+            <Link href="/publishing" className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline transition-all">
+              View Node Matrix →
             </Link>
           </div>
+
+          {!activityFeed || activityFeed.length === 0 ? (
+            <motion.div className="glass-card flex flex-col items-center justify-center text-center py-16 gap-6 relative overflow-hidden group">
+              <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
+              <div className="h-16 w-16 rounded-3xl bg-white/[0.03] border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                <Clock className="h-8 w-8 text-zinc-600" />
+              </div>
+              <div className="space-y-2 relative">
+                <h3 className="text-2xl font-black tracking-tight text-white uppercase">Awaiting Telemetry</h3>
+                <p className="text-zinc-500 max-w-sm mx-auto font-medium">Your command buffer is empty. Start a discovery cycle to find viral opportunities.</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <Link href="/discovery" className="bg-primary hover:bg-primary/90 text-white font-black py-4 px-10 rounded-2xl transition-all flex items-center gap-3 shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)] group-hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.4)] relative">
+                  <PlusCircle className="h-5 w-5" />
+                  Initiate Discovery
+                </Link>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activityFeed.map((activity, idx) => (
+                <motion.div
+                  key={activity.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="glass-card p-6 flex items-center gap-4 group hover:border-primary/30 transition-all border border-white/5"
+                >
+                  <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Zap className="h-6 w-6 text-primary neon-glow" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{activity.platform}</p>
+                      <p className="text-[9px] font-bold text-zinc-600 tabular-nums uppercase">{new Date(activity.published_at).toLocaleTimeString()}</p>
+                    </div>
+                    <h4 className="text-sm font-black text-white truncate uppercase tracking-tight">{activity.title}</h4>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </DashboardLayout>

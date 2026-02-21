@@ -7,7 +7,7 @@ CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", settings.REDIS_URL)
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", settings.REDIS_URL)
 
 celery_app = Celery(
-    "viral_forge",
+    "ettametta",
     broker=CELERY_BROKER_URL,
     backend=CELERY_RESULT_BACKEND,
     include=["services.video_engine.tasks", "services.discovery.tasks", "services.optimization.scheduler_tasks", "services.security.tasks", "services.storage.tasks"]

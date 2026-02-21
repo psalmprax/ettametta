@@ -204,9 +204,117 @@ class VideoProcessor:
             logging.error(f"[VideoProcessor] Error in B-roll injection: {e}")
             return None
 
+    async def apply_cinematic_motion(self, image_url: str, output_name: str, aspect_ratio: str = "9:16", duration: float = 5.0) -> str:
+        """
+        Takes a static 4K image and applies cinematic zooming/panning to create a video.
+        Uses pure CPU-based moviepy logic.
+        """
+        import httpx
+        from moviepy import ImageClip
+        
+        logging.info(f"[VideoProcessor] Applying cinematic motion to 4K asset: {image_url[:50]}...")
+        
+        # 1. Download base image
+        temp_image = os.path.join("temp", f"lite4k_base_{uuid.uuid4()}.jpg")
+        os.makedirs("temp", exist_ok=True)
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(image_url, follow_redirects=True)
+            with open(temp_image, "wb") as f:
+                f.write(resp.content)
+
+        # 2. Create ImageClip at 4K resolution
+        clip = ImageClip(temp_image).with_duration(duration)
+        
+        # 3. Apply Cinematic Zoom (Ken Burns)
+        # We start at 100% and zoom into 120% smoothly
+        def zoom(t):
+            return 1.0 + 0.1 * (t / duration)
+            
+        clip = clip.with_effects([vfx.Resize(zoom)])
+        
+        # 4. Set final size based on aspect ratio
+        w, h = (3840, 2160) if aspect_ratio == "16:9" else (2160, 3840)
+        # Resizing to the final 4K target
+        clip = clip.resized(height=h) if aspect_ratio == "9:16" else clip.resized(width=w)
+        
+        # Crop if needed to hit exact 4K spec
+        clip = clip.cropped(width=w, height=h, x_center=clip.w/2, y_center=clip.h/2)
+
+        output_path = os.path.join(self.output_dir, output_name)
+        
+        # 5. Write high-bitrate 4K MP4
+        clip.write_videofile(
+            output_path, 
+            fps=30, 
+            codec=self.codec, 
+            audio=False, 
+            preset="slower", # Higher quality compression
+            bitrate="50000k"  # High bitrate for 4K
+        )
+        
+        # Cleanup
+        if os.path.exists(temp_image): os.remove(temp_image)
+        
+        return output_path
+
+    async def assemble_story(self, scenes: List[Dict], output_name: str) -> str:
+        """
+        Assembles multi-scene stories with precise voice-visual alignment.
+        """
+        processing_scenes = []
+        
+        for i, scene in enumerate(scenes):
+            video_url = scene.get("video_url")
+            audio_url = scene.get("audio_url")
+            duration_hint = scene.get("duration_hint", 5.0)
+            
+            # 1. Load Video Clip
+            # For simplicity in this roadmap implementation, we assume local mocks or paths
+            # In production, this would use a download helper
+            clip = VideoFileClip(video_url)
+            
+            # 2. Add Narration Audio if exists
+            if audio_url:
+                from moviepy import AudioFileClip
+                narration = AudioFileClip(audio_url)
+                
+                # PRECISISION ALIGNMENT: Stretch/Compress video to match audio duration
+                audio_duration = narration.duration
+                if audio_duration > 0:
+                    speed_factor = clip.duration / audio_duration
+                    clip = clip.with_effects([vfx.MultiplySpeed(speed_factor)])
+                    clip = clip.with_audio(narration)
+            else:
+                # Fallback to duration hint
+                clip = clip.subclipped(0, min(clip.duration, duration_hint))
+
+            # 3. Add Dynamic Captions for this scene's narration
+            if scene.get("narration_text"):
+                txt = TextClip(
+                    text=scene["narration_text"].upper(),
+                    font_size=60,
+                    color='white',
+                    font=self.font_path,
+                    stroke_color='black',
+                    stroke_width=2.0,
+                    method='caption',
+                    size=(int(clip.w * 0.8), None)
+                ).with_duration(clip.duration).with_position(('center', 0.8))
+                clip = CompositeVideoClip([clip, txt])
+
+            processing_scenes.append(clip)
+
+        # 4. Concatenate all scenes with CrossFades
+        final_clip = concatenate_videoclips(processing_scenes, method="compose")
+        
+        output_path = os.path.join(self.output_dir, output_name)
+        final_clip.write_videofile(output_path, codec=self.codec, audio_codec="aac")
+        
+        return output_path
+
     async def process_full_pipeline(self, input_path: str, output_name: str, enabled_filters: Optional[List[str]] = None, strategy: Optional[Dict] = None) -> str:
         """
-        Full ViralForge Pipeline with Dynamic AI Strategies.
+        Full ettametta Pipeline with Dynamic AI Strategies.
         """
         # 1. Transcribe
         transcript = await transcription_service.transcribe_video(input_path)

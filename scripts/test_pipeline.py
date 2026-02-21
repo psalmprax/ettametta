@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 async def test_full_pipeline():
-    print("🚀 Starting ViralForge End-to-End Pipeline Test...")
+    print("🚀 Starting ettametta End-to-End Pipeline Test...")
     
     # Initialize Database Tables
     from api.utils.database import engine, Base

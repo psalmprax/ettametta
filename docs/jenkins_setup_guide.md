@@ -1,4 +1,4 @@
-# Jenkins Setup Guide — ViralForge
+# Jenkins Setup Guide — ettametta
 
 ## Step 1: Install Jenkins on OCI Server
 
@@ -77,7 +77,7 @@ Add each one below:
 - **Username**: your Docker Hub username
 - **Password**: Docker Hub password or access token
 - **ID**: `DOCKER_HUB_CREDENTIALS`
-> **Note**: This is only used to pull base images (like `python:3.10-slim`) to avoid rate limits. We **do not** push your ViralForge images to the registry anymore; they are built locally on the server.
+> **Note**: This is only used to pull base images (like `python:3.10-slim`) to avoid rate limits. We **do not** push your ettametta images to the registry anymore; they are built locally on the server.
 
 ### 4. Groq API Key
 - **Kind**: Secret text
@@ -110,15 +110,15 @@ Add each one below:
 
 ---
 
-## Step 5: Push ViralForge to GitHub
+## Step 5: Push ettametta to GitHub
 
-First, create a GitHub repo (github.com → New repository → name: `viral_forge`).
+First, create a GitHub repo (github.com → New repository → name: `ettametta`).
 
 Then on your local machine:
 
 ```bash
-cd /home/psalmprax/viral_forge
-git remote add origin https://github.com/YOUR_USERNAME/viral_forge.git
+cd /home/psalmprax/ettametta
+git remote add origin https://github.com/YOUR_USERNAME/ettametta.git
 git push -u origin master
 ```
 
@@ -127,12 +127,12 @@ git push -u origin master
 ## Step 6: Create the Pipeline in Jenkins
 
 1. Go to Jenkins dashboard → **New Item**
-2. Name it: `viralforge-deploy`
+2. Name it: `ettametta-deploy`
 3. Select **Pipeline** → Click OK
 4. Scroll to **Pipeline** section:
    - **Definition**: Pipeline script from SCM
    - **SCM**: Git
-   - **Repository URL**: `https://github.com/YOUR_USERNAME/viral_forge.git`
+   - **Repository URL**: `https://github.com/YOUR_USERNAME/ettametta.git`
    - **Credentials**: select `GITHUB_CREDENTIALS`
    - **Branch**: `*/master`
    - **Script Path**: `Jenkinsfile`
@@ -142,14 +142,14 @@ git push -u origin master
 
 ## Step 7: Update Jenkinsfile Variables
 
-Open `/home/psalmprax/viral_forge/Jenkinsfile` and update the top 4 lines:
+Open `/home/psalmprax/ettametta/Jenkinsfile` and update the top 4 lines:
 
 ```groovy
 def OCI_HOST        = "130.61.26.105"           // ✅ already correct
 def OCI_USER        = "ubuntu"                   // ✅ already correct
-def GITHUB_REPO     = "YOUR_USERNAME/viral_forge" // ← change this
-def DOCKER_IMAGE    = "YOUR_DOCKERHUB_USER/viralforge" // ← change this
-def DEPLOY_DIR      = "/home/ubuntu/viralforge"  // ✅ already correct
+def GITHUB_REPO     = "YOUR_USERNAME/ettametta" // ← change this
+def DOCKER_IMAGE    = "YOUR_DOCKERHUB_USER/ettametta" // ← change this
+def DEPLOY_DIR      = "/home/ubuntu/ettametta"  // ✅ already correct
 ```
 
 Then commit and push:
@@ -163,7 +163,7 @@ git push
 
 ## Step 8: Run the Pipeline
 
-1. Go to Jenkins → `viralforge-deploy`
+1. Go to Jenkins → `ettametta-deploy`
 2. Click **Build Now**
 3. Click the build number → **Console Output** to watch it run
 

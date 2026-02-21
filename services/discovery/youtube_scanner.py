@@ -16,8 +16,8 @@ class YouTubeShortsScanner(TrendScanner):
         """
         api_key = get_secret("youtube_api_key")
         if not api_key:
-            print("[YouTubeScanner] WARNING: No YOUTUBE_API_KEY found. Falling back to mock data.")
-            return self._get_mock_data(niche)
+            print("[YouTubeScanner] ERROR: No YOUTUBE_API_KEY found. Cannot scan trends.")
+            raise ValueError("YouTube API key not configured. Please set YOUTUBE_API_KEY in environment.")
 
         try:
             youtube = build("youtube", "v3", developerKey=api_key)
@@ -91,7 +91,7 @@ class YouTubeShortsScanner(TrendScanner):
 
         except Exception as e:
             print(f"[YouTubeScanner] ERROR: {str(e)}")
-            return self._get_mock_data(niche)
+            raise ValueError(f"YouTube API error: {str(e)}")
 
     def _calculate_engagement(self, stats: dict) -> float:
         views = int(stats.get("viewCount", 1))

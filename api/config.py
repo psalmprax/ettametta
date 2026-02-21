@@ -4,10 +4,10 @@ import os
 
 class Settings(BaseSettings):
     # App Settings
-    APP_NAME: str = "ViralForge API"
+    APP_NAME: str = "ettametta API"
     ENV: str = "development"
     DEBUG: bool = True
-    SECRET_KEY: str = "dev_secret_key_vforge_2026_change_in_prod"
+    SECRET_KEY: Optional[str] = None  # Must be set via environment variable
     ALGORITHM: str = "HS256"
 
     # AI Settings
@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     AWS_STORAGE_BUCKET_NAME: str = ""
 
     # Database & Redis
-    DATABASE_URL: str = "sqlite:///./viral_forge.db"
+    DATABASE_URL: str = "sqlite:///./ettametta.db"
     REDIS_URL: str = "redis://localhost:6379/0"
     
     # Validation Warning

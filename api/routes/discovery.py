@@ -19,7 +19,11 @@ from fastapi import APIRouter, HTTPException, Depends
 @router.get("/trends", response_model=List[ContentCandidate])
 async def get_trends(niche: str = "Motivation", horizon: str = "30d", user: UserDB = Depends(get_current_user)):
     try:
-        trends = await base_discovery_service.find_trending_content(niche, horizon=horizon)
+        trends = await base_discovery_service.find_trending_content(
+            niche, 
+            horizon=horizon, 
+            tier=user.subscription.value if hasattr(user.subscription, 'value') else "free"
+        )
         return trends
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -63,12 +67,13 @@ async def analyze_candidate(candidate: ContentCandidate):
     }
 
 @router.get("/niche-trends/{niche}")
-async def get_niche_trends(niche: str):
+async def get_niche_trends(niche: str, user: UserDB = Depends(get_current_user)):
     try:
         trend = await base_discovery_service.aggregate_niche_trends(niche)
         if not trend:
              # If no data yet, try to scan first
-             await base_discovery_service.find_trending_content(niche)
+             tier_value = user.subscription.value if hasattr(user.subscription, 'value') else "free"
+             await base_discovery_service.find_trending_content(niche, tier=tier_value)
              trend = await base_discovery_service.aggregate_niche_trends(niche)
              if not trend:
                  return {"niche": niche, "top_keywords": [], "avg_engagement": 0.0}

@@ -36,7 +36,12 @@ class SecuritySentinel:
         score = 100
 
         # 1. Check SECRET_KEY
-        if not settings.SECRET_KEY or settings.SECRET_KEY == "dev_secret_key_change_me_in_production":
+        insecure_keys = [
+            "dev_secret_key_change_me_in_production",
+            "dev_secret_key_vforge_2026_change_in_prod",
+            "dev_secret_key_change_me_in_production"  # Legacy
+        ]
+        if not settings.SECRET_KEY or any(settings.SECRET_KEY == key for key in insecure_keys):
             findings.append("CRITICAL: Default or missing SECRET_KEY detected.")
             score -= 50
 

@@ -8,7 +8,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         return [{
             "id": f"lead_{random.randint(100, 999)}",
             "name": f"FREE {niche} Growth Blueprint (PDF)",
-            "url": "https://viralforge.ai/magnets/growth-blueprint",
+            "url": "https://ettametta.ai/magnets/growth-blueprint",
             "price": "FREE",
             "source": "lead_gen_hub"
         }]

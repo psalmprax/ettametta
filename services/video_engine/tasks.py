@@ -232,3 +232,93 @@ def generate_video_task(self, prompt: str, engine: str, style: str, aspect_ratio
         return {"status": "error", "message": str(e)}
     finally:
         db.close()
+
+@celery_app.task(name="video.generate_story", bind=True)
+def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int):
+    """
+    Orchestrates the synthesis of a multi-scene narrative story.
+    """
+    from api.utils.database import SessionLocal
+    from api.utils.models import VideoJobDB
+    from services.decision_engine.service import base_strategy_service
+    from services.video_engine.synthesis_service import generative_service
+    from services.video_engine.voiceover import base_voiceover_service
+    import uuid
+    import asyncio
+    
+    task_id = self.request.id
+    db = SessionLocal()
+    
+    def update_job(status=None, progress=None, output_path=None):
+        job = db.query(VideoJobDB).filter(VideoJobDB.id == task_id).first()
+        if job:
+            if status: job.status = status
+            if progress is not None: job.progress = progress
+            if output_path: job.output_path = output_path
+            db.commit()
+            
+            from api.routes.ws import notify_job_update_sync
+            notify_job_update_sync({
+                "id": task_id,
+                "status": job.status,
+                "progress": job.progress,
+                "output_path": job.output_path
+            })
+
+    try:
+        # 1. Scripting Agent
+        update_job(status="Scripting narrative", progress=5)
+        story_script = run_async(base_strategy_service.generate_screenplay(prompt, style=style))
+        scenes = [scene.dict() for scene in story_script.scenes]
+        
+        # 2. Parallel Synthesis: Voiceover + Visuals
+        update_job(status="Synthesizing story components", progress=20)
+        
+        async def synthesize_full_scenes():
+            # Parallel Voiceover
+            voice_tasks = []
+            for scene in scenes:
+                voice_tasks.append(base_voiceover_service.generate_voiceover(scene["narration_text"]))
+            
+            # Parallel Visuals
+            visual_task = generative_service.synthesize_scene_batch(scenes, engine=engine)
+            
+            voice_results, visual_scenes = await asyncio.gather(
+                asyncio.gather(*voice_tasks),
+                visual_task
+            )
+            
+            # Merge results
+            for i, scene in enumerate(visual_scenes):
+                scene["audio_url"] = voice_results[i]
+            
+            return visual_scenes
+
+        fully_synthesized_scenes = run_async(synthesize_full_scenes())
+        
+        # 3. Precision Assembly
+        update_job(status="Assembling cinematic reel", progress=70)
+        processor = VideoProcessor()
+        output_name = f"story_{uuid.uuid4()}.mp4"
+        
+        final_video_path = run_async(processor.assemble_story(fully_synthesized_scenes, output_name))
+        
+        # 4. Storage & Finalization
+        from services.storage.service import base_storage_service
+        storage_key = base_storage_service.upload_file(final_video_path)
+        public_url = base_storage_service.get_public_url(storage_key)
+        
+        update_job(status="Completed", progress=100, output_path=public_url)
+        
+        return {
+            "status": "success",
+            "title": story_script.title,
+            "video_url": public_url,
+            "scene_count": len(scenes)
+        }
+    except Exception as e:
+        update_job(status="Failed")
+        logging.error(f"[Story Task] Error: {e}")
+        return {"status": "error", "message": str(e)}
+    finally:
+        db.close()

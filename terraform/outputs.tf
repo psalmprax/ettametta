@@ -1,4 +1,4 @@
-output "viral_forge_ip" {
+output "ettametta_ip" {
   value = module.compute.public_ip
 }
 

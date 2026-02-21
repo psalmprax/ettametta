@@ -1,4 +1,4 @@
-module github.com/psalmprax/viral_forge/discovery-go
+module github.com/psalmprax/ettametta/discovery-go
 
 go 1.23.0
 

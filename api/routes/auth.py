@@ -22,11 +22,18 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
 
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    telegram_chat_id: Optional[str] = None
+    telegram_token: Optional[str] = None
+
 class UserResponse(BaseModel):
     username: str
     email: str
     role: str
     subscription: str
+    telegram_chat_id: Optional[str] = None
+    telegram_token: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -96,3 +103,39 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: UserDB = Depends(get_current_user)):
     return current_user
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(user_update: UserUpdate, current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    if user_update.email:
+        current_user.email = user_update.email
+    if user_update.telegram_chat_id is not None:
+        current_user.telegram_chat_id = user_update.telegram_chat_id
+    if user_update.telegram_token is not None:
+        current_user.telegram_token = user_update.telegram_token
+        # Trigger OpenClaw Bot Refresh
+        try:
+            import requests
+            requests.post(f"http://openclaw:3001/refresh-bot/{current_user.id}", timeout=2)
+        except Exception as e:
+            print(f"Failed to notify OpenClaw: {e}")
+            
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+@router.get("/verify-telegram/{telegram_id}", response_model=UserResponse)
+async def verify_telegram(telegram_id: str, db: Session = Depends(get_db)):
+    user = db.query(UserDB).filter(UserDB.telegram_chat_id == telegram_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.get("/verify-telegram-internal/{user_id}", response_model=UserResponse)
+async def verify_telegram_internal(user_id: int, db: Session = Depends(get_db)):
+    """
+    Internal-only endpoint for OpenClaw to fetch user tokens.
+    """
+    user = db.query(UserDB).filter(UserDB.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user

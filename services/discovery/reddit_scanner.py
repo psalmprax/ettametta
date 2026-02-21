@@ -8,7 +8,7 @@ class RedditScanner:
         self.base_url = "https://www.reddit.com"
         self.subreddits = ["videos", "nextfuckinglevel", "shorts", "SpecialPeopleDoingThings"]
         self.headers = {
-            "User-Agent": "ViralForge/1.0 (Enterprise Content Engine)"
+            "User-Agent": "ettametta/1.0 (Enterprise Content Engine)"
         }
 
     async def scan_trends(self, niche: str, published_after: Optional[any] = None) -> List[ContentCandidate]:

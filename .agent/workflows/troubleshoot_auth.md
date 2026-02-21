@@ -34,16 +34,16 @@ This workflow guides you through identifying and resolving authentication issues
 5.  **Verify Admin User Existence:**
     Check if the `psalmprax` user exists in the database.
     ```bash
-    docker-compose exec db psql -U psalmprax -d viral_forge -c "SELECT username, role, is_active FROM users WHERE username = 'psalmprax';"
+    docker-compose exec db psql -U psalmprax -d ettametta -c "SELECT username, role, is_active FROM users WHERE username = 'psalmprax';"
     ```
     *If the user does not exist, you may need to re-run the `init_db` script or manually create the user.*
 
 6.  **Test Login Endpoint (Get Token):**
-    Attempt to get a token using `curl`. Replace `viral_forge_pass` with your actual password if different.
+    Attempt to get a token using `curl`. Replace `ettametta_pass` with your actual password if different.
     ```bash
     curl -X POST "http://localhost:8000/auth/token" \
          -H "Content-Type: application/x-www-form-urlencoded" \
-         -d "username=psalmprax&password=viral_forge_pass"
+         -d "username=psalmprax&password=ettametta_pass"
     ```
     *Successful response should include an `access_token`.*
 

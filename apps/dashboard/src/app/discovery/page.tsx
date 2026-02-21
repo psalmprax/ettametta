@@ -17,7 +17,9 @@ import {
     X,
     ChevronDown,
     Sparkles,
-    Flame
+    Flame,
+    BookOpen,
+    Calendar
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -62,6 +64,7 @@ export default function DiscoveryPage() {
     const [mode, setMode] = useState<"discovery" | "generative">("discovery");
     const [timeHorizon, setTimeHorizon] = useState("30d"); // 24h, 7d, 30d
     const [niches, setNiches] = useState<string[]>(["Motivation", "AI Technology", "Finance", "Health", "Gaming", "Crypto", "Relationships"]);
+    const [userTier, setUserTier] = useState<string>("free");
 
     // New State for "Neural Config"
     const [minViralScore, setMinViralScore] = useState(75);
@@ -81,6 +84,7 @@ export default function DiscoveryPage() {
     const [genPrompt, setGenPrompt] = useState("");
     const [genEngine, setGenEngine] = useState("veo3"); // veo3, wan2.2
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isStoryMode, setIsStoryMode] = useState(false);
 
     useEffect(() => {
         const fetchNiches = async () => {
@@ -99,7 +103,24 @@ export default function DiscoveryPage() {
                 console.error("Failed to fetch niches", err);
             }
         };
+
+        const fetchProfile = async () => {
+            try {
+                const token = localStorage.getItem("vf_token");
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setUserTier(data.subscription || "free");
+                }
+            } catch (err) {
+                console.error("Failed to fetch profile", err);
+            }
+        };
+
         fetchNiches();
+        fetchProfile();
     }, []);
 
     useEffect(() => {
@@ -195,7 +216,9 @@ export default function DiscoveryPage() {
         setIsGenerating(true);
         try {
             const token = localStorage.getItem("vf_token");
-            const res = await fetch(`${API_BASE}/video/generate`, {
+            const endpoint = isStoryMode ? "/video/generate-story" : "/video/generate";
+
+            const res = await fetch(`${API_BASE}${endpoint}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -211,15 +234,15 @@ export default function DiscoveryPage() {
             if (res.ok) {
                 const data = await res.json();
                 setTestJobId(data.task_id);
-                setPreviewTitle(`Generative: ${genPrompt.substring(0, 20)}...`);
-                alert(`Synthesis Started: ViralForge is creating an original video using ${genEngine.toUpperCase()}...`);
+                setPreviewTitle(isStoryMode ? `Story: ${genPrompt.substring(0, 20)}...` : `Generative: ${genPrompt.substring(0, 20)}...`);
+                alert(isStoryMode ? `Narrative Synthesis Started: ettametta is orchestrating your multi-scene story...` : `Synthesis Started: ettametta is creating an original video using ${genEngine.toUpperCase()}...`);
             }
         } catch (err) {
             console.error(err);
         } finally {
             setIsGenerating(false);
         }
-    }, [genPrompt, genEngine, selectedStyle]);
+    }, [genPrompt, genEngine, selectedStyle, isStoryMode]);
 
     const filteredCandidates = React.useMemo(() => {
         if (!Array.isArray(candidates)) return [];
@@ -394,16 +417,24 @@ export default function DiscoveryPage() {
                         Discovery Scanning
                     </button>
                     <button
-                        onClick={() => setMode("generative")}
+                        onClick={() => {
+                            if (userTier === "free") {
+                                alert("AI Synthesis requires Basic or Premium tier. Please upgrade.");
+                            } else {
+                                setMode("generative");
+                            }
+                        }}
                         className={cn(
                             "px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-3",
                             mode === "generative"
                                 ? "bg-emerald-500 text-black shadow-[0_0_30px_rgba(16,185,129,0.3)]"
-                                : "text-zinc-500 hover:text-white"
+                                : "text-zinc-500 hover:text-white",
+                            userTier === "free" && "opacity-50 cursor-not-allowed"
                         )}
                     >
                         <Sparkles className="h-4 w-4" />
                         AI Synthesis
+                        {userTier === "free" && <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1 py-0.5 rounded ml-1">PAID</span>}
                     </button>
                 </div>
 
@@ -792,6 +823,20 @@ export default function DiscoveryPage() {
                                                 <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">High-Fidelity MoE Architecture</p>
                                             </button>
                                             <button
+                                                onClick={() => setGenEngine("lite4k")}
+                                                className={cn(
+                                                    "p-6 rounded-3xl border text-left transition-all",
+                                                    genEngine === "lite4k" ? "bg-white/5 border-violet-500/50 shadow-[0_0_30px_rgba(139,92,246,0.1)]" : "border-white/5 bg-black/40 text-zinc-600"
+                                                )}
+                                            >
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-violet-400">Zero-Cost 4K</span>
+                                                    {genEngine === "lite4k" && <CheckCircle2 className="h-4 w-4 text-violet-400" />}
+                                                </div>
+                                                <h4 className="text-lg font-black text-white uppercase italic">4K Lite (CPU)</h4>
+                                                <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Parallax + Lossless Zoom</p>
+                                            </button>
+                                            <button
                                                 disabled
                                                 className="p-6 rounded-3xl border border-white/5 bg-black/20 text-left transition-all opacity-60 cursor-not-allowed grayscale"
                                             >
@@ -801,6 +846,36 @@ export default function DiscoveryPage() {
                                                 </div>
                                                 <h4 className="text-lg font-black text-zinc-400 uppercase italic">LTX-2 (Lightricks)</h4>
                                                 <p className="text-[10px] font-medium text-zinc-600 mt-2 uppercase">Native 4K Cinematic Generation</p>
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-center pt-8">
+                                            <button
+                                                onClick={() => setIsStoryMode(!isStoryMode)}
+                                                className={cn(
+                                                    "group relative flex items-center gap-4 px-10 py-6 rounded-full border transition-all overflow-hidden",
+                                                    isStoryMode ? "bg-violet-500/10 border-violet-500/50 shadow-[0_0_40px_rgba(139,92,246,0.2)]" : "bg-black/40 border-white/5 hover:border-white/10"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "h-10 w-10 rounded-xl flex items-center justify-center transition-all",
+                                                    isStoryMode ? "bg-violet-500 text-white" : "bg-zinc-900 text-zinc-600"
+                                                )}>
+                                                    <BookOpen className="h-5 w-5" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className={cn("text-[10px] font-black uppercase tracking-widest", isStoryMode ? "text-violet-400" : "text-zinc-600")}>Evolutionary Mode</p>
+                                                    <h4 className={cn("text-lg font-black uppercase italic", isStoryMode ? "text-white" : "text-zinc-500")}>Storytelling <span className="text-hollow opacity-40">Orchestration</span></h4>
+                                                </div>
+                                                <div className={cn(
+                                                    "w-12 h-6 rounded-full relative transition-all duration-500",
+                                                    isStoryMode ? "bg-violet-600" : "bg-zinc-800"
+                                                )}>
+                                                    <motion.div
+                                                        animate={{ x: isStoryMode ? 26 : 2 }}
+                                                        className="absolute top-1 left-0 h-4 w-4 rounded-full bg-white shadow-sm"
+                                                    />
+                                                </div>
                                             </button>
                                         </div>
 
