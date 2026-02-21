@@ -87,6 +87,7 @@ app.include_router(monetization.router)
 app.include_router(nexus.router)
 app.include_router(ab_testing.router)
 app.include_router(security.router)
+app.include_router(persona.router)
 
 @app.get("/")
 async def root():

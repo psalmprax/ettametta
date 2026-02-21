@@ -32,13 +32,21 @@ class OptimizationService:
                 # 2. Source Commerce Product (Priority)
                 product = await base_monetization_engine.match_viral_to_product(niche, content_id)
                 if product:
-                    commerce_info = f"\n- COMMERCE_PRODUCT: {product['name']}\n- CHECKOUT_LINK: {product['url']}"
+                    # Initialize the specific strategy to parse product to CTA
+                    from services.monetization.strategies.commerce import CommerceStrategy
+                    strategy = CommerceStrategy()
+                    commerce_cta = await strategy.generate_cta(niche, content_id)
+                    commerce_info = f"\n- MONETIZATION CTA: {commerce_cta}"
                 
                 # 3. Source Affiliate Link (Secondary/Fallback)
                 if not commerce_info:
                     aff_product = db.query(AffiliateLinkDB).filter(AffiliateLinkDB.niche == niche).order_by(AffiliateLinkDB.created_at.desc()).first()
                     if aff_product:
-                        affiliate_info = f"\n- AFFILIATE_LINK: {aff_product.link}\n- PRODUCT_CTA: {aff_product.cta_text or 'Check it out here'}"
+                        # Initialize the specific strategy to parse product to CTA
+                        from services.monetization.strategies.affiliate import AffiliateStrategy
+                        strategy = AffiliateStrategy()
+                        affiliate_cta = await strategy.generate_cta(niche, content_id)
+                        affiliate_info = f"\n- MONETIZATION CTA: {affiliate_cta}"
 
             # Fallback if no real key is configured
             if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
@@ -48,11 +56,11 @@ class OptimizationService:
             prompt = f"""
             You are a viral content strategist. Generate a high-velocity viral metadata package for a {platform} video in the {niche} niche.
             
-            {f"IMPORTANT: You MUST naturally weave the following product recommendation into the description: {commerce_info or affiliate_info}. Do NOT make it look like a generic ad; make it feel like a helpful resource." if (commerce_info or affiliate_info) else "Focus on high engagement and retention hooks."}
+            {f"IMPORTANT: You MUST append the following monetization CTA to the very end of the description exactly as written: {commerce_info or affiliate_info}" if (commerce_info or affiliate_info) else "Focus on high engagement and retention hooks."}
             
             Provide the result in JSON format with the following keys:
             - title: A hook-driven, high-CTR title (max 50 chars)
-            - description: A compelling description with highly relevant hashtags and the CTA/link merged naturally (max 250 chars)
+            - description: A compelling description with highly relevant hashtags. If a MONETIZATION CTA was provided, it MUST be the final sentence. (max 250 chars)
             - hashtags: A list of 4 highly relevant trending hashtags
             - cta: A strong, urgent call to action
             """

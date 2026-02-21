@@ -12,6 +12,8 @@ from skills.content import content_skill
 from skills.publishing import publishing_skill
 from skills.niche import niche_skill
 from skills.security import security_skill
+from skills.no_face import noface_skill
+from skills.outreach import outreach_skill
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,11 +27,18 @@ class OpenClawAgent:
         
         You have access to the following tools/skills:
         - DISCOVERY: Search for new trends (/api/discovery/search). Params: {"topic": "string"}
-        - ANALYTICS: Get empire performance summary (/api/analytics). No params needed.
+        - NOFACE: Generate viral scripts or assess hooks purely in text. Params: {"action": "script|hook", "topic": "string"}
+        - ANALYTICS: Get dashboard summary, revenue, or recent posts. Params: {"action": "summary|revenue|posts"}
         - SYSTEM: Check platform health/uptime. No params needed.
-        - CONTENT: Create new video content. Params: {"niche": "string", "platform": "YouTube Shorts|TikTok", "input_url": "string"}
+        - CONTENT: Create new video content. Params: {"action": "transform|generate|story", "niche": "string", "platform": "YouTube Shorts|TikTok", "input_url": "string", "prompt": "string", "engine": "string"}
+            - "transform": Needs "input_url"
+            - "generate": Needs "prompt" and "engine"
+            - "story": Needs "prompt" and "engine"
         - PUBLISH: Publish a completed job. Params: {"job_id": "string", "platform": "YouTube Shorts|TikTok", "niche": "string"}
-        - NICHE: Manage niches. Params: {"action": "add|trends", "niche": "string"}
+        - NICHE: Manage niches. Params: {"action": "add|trends|auto_merch", "niche": "string"}
+            - "auto_merch": Auto-generates a merch design for the given niche trend and pushes it to the store.
+        - OUTREACH: Blast a message to a specific user via their connected channels. Params: {"user_id": "string", "message": "string"}
+        - PERSONA: Generate a deepfake video using the user's uploaded persona/avatar. Params: {"action": "generate", "persona_id": "int", "topic": "string"}
         - SECURITY: Emergency lockdown. Params: {"action": "panic|status"}
         - STORAGE: Check video storage usage and cloud status. No params needed.
         
@@ -44,26 +53,28 @@ class OpenClawAgent:
         For general questions about what the agent can do, listing these tools is fine.
         """
 
-    def _get_user_from_api(self, telegram_id: int):
+    def _get_user_from_api(self, identifier: str):
         try:
-            response = requests.get(f"{settings.API_URL}/auth/verify-telegram/{telegram_id}", timeout=5)
+            # Identifier can be a numeric Telegram ID or a WhatsApp phone number (+123...)
+            response = requests.get(f"{settings.API_URL}/auth/verify-agent/{identifier}", timeout=5)
             if response.status_code == 200:
                 return response.json()
             return None
         except Exception as e:
             logger.error(f"Error calling verification API: {e}")
             return None
+            return None
 
-    async def process_message(self, user_id: int, message: str) -> str:
+    async def process_message(self, identifier: str, message: str) -> str:
         """
         Process a user message and determine the action.
         """
         # Dynamic verification via API
-        user = await asyncio.to_thread(self._get_user_from_api, user_id)
+        user = await asyncio.to_thread(self._get_user_from_api, identifier)
         
         if not user:
-            logger.warning(f"Unauthorized access attempt from {user_id}")
-            return f"⛔ Unauthorized access. Your Telegram ID is: `{user_id}`.\n\nPlease log in to the ettametta dashboard and add this ID to your profile settings to enable agent access."
+            logger.warning(f"Unauthorized access attempt from {identifier}")
+            return f"⛔ Unauthorized access. Your ID is: `{identifier}`.\n\nPlease log in to the ettametta dashboard and add this ID to your profile settings to enable agent access."
 
         try:
             # 1. Ask LLM for intent
@@ -117,11 +128,54 @@ class OpenClawAgent:
             return discovery_skill.search_trends(topic)
             
         elif tool == "ANALYTICS":
-            return analytics_skill.get_summary()
+            action = params.get("action", "summary")
+            if action == "revenue":
+                return analytics_skill.get_revenue_report()
+            elif action == "posts":
+                # Provide a default limit or accept one if added to schema later
+                limit = params.get("limit", 5)
+                return analytics_skill.get_recent_posts(limit=limit)
+            else:
+                return analytics_skill.get_summary()
+                
+        elif tool == "NOFACE":
+            action = params.get("action", "script")
+            topic = params.get("topic", "General advice")
+            if action == "hook":
+                return noface_skill.generate_hook(topic)
+            else:
+                return noface_skill.generate_script(topic)
+                
+        elif tool == "OUTREACH":
+            user_id = params.get("user_id")
+            message = params.get("message", "Hello!")
+            if not user_id:
+                return "⚠️ Outreach failed: Missing user_id"
+            return outreach_skill.send_outreach_message(user_id, message)
+            
+        elif tool == "PERSONA":
+            persona_id = params.get("persona_id")
+            topic = params.get("topic", "general chat")
+            if not persona_id:
+                return "⚠️ Persona generation failed: Missing persona_id"
+            try:
+                # Direct internal routing for MVP
+                # Real implementation would call the local API or use a specific Skill class
+                payload = {"persona_id": int(persona_id), "topic": topic}
+                response = requests.post(f"http://localhost:{settings.PORT}/api/v1/persona/generate", json=payload, headers={"Authorization": f"Bearer internal_mock_token"})
+                if response.status_code == 200:
+                    return f"👤 **Persona Animated!**\nVideo generated successfully.\nLink: {response.json().get('video_url')}"
+                else:
+                    return f"⚠️ Persona generation failed. Ensure your Persona is registered in the Dashboard."
+            except Exception as e:
+                return f"⚠️ Persona System Error: {str(e)}"
             
         elif tool == "CONTENT":
             return content_skill.create_content(
+                action=params.get("action", "transform"),
                 input_url=params.get("input_url", ""),
+                prompt=params.get("prompt", ""),
+                engine=params.get("engine", "veo3"),
                 niche=params.get("niche", "Motivation"),
                 platform=params.get("platform", "YouTube Shorts")
             )
@@ -138,6 +192,8 @@ class OpenClawAgent:
             niche = params.get("niche", "General")
             if action == "add":
                 return niche_skill.add_niche_scan(niche)
+            elif action == "auto_merch":
+                return niche_skill.trigger_auto_merch(niche)
             else:
                 return niche_skill.get_niche_trends(niche)
                 

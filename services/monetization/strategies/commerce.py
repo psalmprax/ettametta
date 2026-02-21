@@ -21,9 +21,19 @@ class CommerceStrategy(BaseMonetizationStrategy):
         return products
 
     async def generate_cta(self, niche: str, context: str) -> str:
+        products = await self.get_assets(niche)
+        
+        if products:
+            chosen = random.choice(products)
+            product_url = chosen.get("url", "https://linkin.bio/ettametta")
+            product_name = chosen.get("name", f"{niche} gear")
+        else:
+            product_url = "https://linkin.bio/ettametta"
+            product_name = f"{niche} gear"
+            
         options = [
-            f"Grab this {niche} essential before it's gone! Link in bio.",
-            f"Boost your {niche} game today. Shop the link below.",
-            f"Official {niche} merch just dropped. Get yours at the link in bio."
+            f"Grab this {product_name} essential before it's gone! \n🛒 Shop here: {product_url}",
+            f"Boost your {niche} game today. Get your {product_name} below. \n🛒 {product_url}",
+            f"Official {niche} merch just dropped: {product_name}. \n🛒 Get yours: {product_url}"
         ]
         return random.choice(options)

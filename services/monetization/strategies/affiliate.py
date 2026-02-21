@@ -26,9 +26,21 @@ class AffiliateStrategy(BaseMonetizationStrategy):
             db.close()
 
     async def generate_cta(self, niche: str, context: str) -> str:
+        # Fetch the links so we can grab one
+        links = await self.get_assets(niche)
+        
+        # Pick one at random if multiple exist
+        if links:
+            chosen_link = random.choice(links)
+            product_url = chosen_link.get("url", "")
+            product_name = chosen_link.get("name", "gear")
+        else:
+            product_url = "https://linkin.bio/ettametta"
+            product_name = "gear"
+
         options = [
-            f"Check the link in bio for the best {niche} deal!",
-            f"Ready to level up your {niche}? Link in bio.",
-            f"Limited time offer on {niche} gear. See the link below."
+            f"Check the link in bio for the best {product_name} deal! \n🔗 {product_url}",
+            f"Ready to level up your {niche}? Get your {product_name} here: \n🔗 {product_url}",
+            f"Limited time offer on {product_name}. See the link below.\n🔗 {product_url}"
         ]
         return random.choice(options)

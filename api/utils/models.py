@@ -144,6 +144,17 @@ class RevenueLogDB(Base):
     date = Column(DateTime, default=datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
 
+class PersonaDB(Base):
+    __tablename__ = "personas"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    reference_image_url = Column(String, nullable=True) # Used for face animation
+    reference_video_url = Column(String, nullable=True) 
+    voice_clone_id = Column(String, nullable=True) # Reference to XTTS or ElevenLabs ID
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class NexusJobDB(Base):
     __tablename__ = "nexus_jobs"
 

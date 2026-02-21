@@ -39,4 +39,24 @@ class NicheSkill:
         except Exception as e:
             return f"⚠️ Skill Error: {str(e)}"
 
+    def trigger_auto_merch(self, trend_topic: str) -> str:
+        """
+        Triggers the Reverse Monetization pipeline for a detected trend.
+        Calls /monetization/auto-merch on the backend.
+        """
+        try:
+            # Note: We need the full base URL since monetization is on a different route prefix
+            api_url = settings.API_URL
+            payload = {"trend_topic": trend_topic}
+            response = requests.post(f"{api_url}/monetization/auto-merch", json=payload, timeout=20)
+            
+            if response.status_code == 200:
+                data = response.json()
+                product = data.get("product", {})
+                return f"👕 **Auto-Merch Success!**\nTrend: {trend_topic}\nProduct: {product.get('name')}\nPrice: {product.get('price')}\nStore Link: {product.get('url')}"
+            else:
+                return f"⚠️ **Auto-Merch Failed**: server returned {response.status_code}"
+        except Exception as e:
+            return f"⚠️ Skill Error: {str(e)}"
+
 niche_skill = NicheSkill()

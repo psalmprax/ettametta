@@ -24,4 +24,5 @@ class UserDB(Base):
     is_active = Column(Boolean, default=True)
     telegram_chat_id = Column(String, unique=True, index=True, nullable=True)
     telegram_token = Column(String, unique=True, index=True, nullable=True)
+    whatsapp_number = Column(String, unique=True, index=True, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

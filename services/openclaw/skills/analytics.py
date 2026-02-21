@@ -40,4 +40,53 @@ class AnalyticsSkill:
             logger.error(f"Analytics Skill Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
 
+    def get_recent_posts(self, limit: int = 5) -> str:
+        """
+        Fetches the most recently published posts.
+        """
+        try:
+            response = requests.get(f"{self.api_url}/posts", timeout=10)
+            if response.status_code == 200:
+                posts = response.json()
+                if not posts:
+                    return "📝 **Recent Posts**: No posts published yet."
+                
+                msg = "📝 **Recent Posts**:\n"
+                for p in posts[:limit]:
+                    title = p.get('metadata', {}).get('title', 'Untitled')
+                    views = p.get('performance', {}).get('views', 0)
+                    msg += f"• *{title}* ({views} views)\n"
+                return msg
+            else:
+                return f"⚠️ **Fetch Error**: Status {response.status_code}"
+        except Exception as e:
+            return f"⚠️ Skill Error: {str(e)}"
+
+    def get_revenue_report(self) -> str:
+        """
+        Fetches the primary dashboard monetization report.
+        Note: The endpoint is on the /monetization router.
+        """
+        try:
+            # We access the monetization endpoint from the main API URL
+            base_url = self.api_url.replace("/analytics", "/monetization")
+            response = requests.get(f"{base_url}/report", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                total = data.get('total_revenue', 0.0)
+                epm = data.get('epm', 0.0)
+                logs = data.get('logs', [])
+                
+                return (
+                    f"💰 **Revenue Report**:\n"
+                    f"• Total Generated: `${total:.2f}`\n"
+                    f"• estimated EPM: `${epm:.2f}`\n"
+                    f"• Total Transactions: `{len(logs)}`"
+                )
+            else:
+                return f"⚠️ **Revenue Fetch Error**: Status {response.status_code}"
+        except Exception as e:
+            return f"⚠️ Skill Error: {str(e)}"
+
 analytics_skill = AnalyticsSkill()

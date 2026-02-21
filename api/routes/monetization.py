@@ -15,6 +15,9 @@ class LinkRecommendationRequest(BaseModel):
     niche: str
     script_text: str
 
+class AutoMerchRequest(BaseModel):
+    trend_topic: str
+
 @router.post("/recommend-links")
 async def recommend_links(request: LinkRecommendationRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     """
@@ -29,6 +32,23 @@ async def recommend_links(request: LinkRecommendationRequest, current_user = Dep
     return {
         "suggestions": recommendations,
         "available_links": db_links
+    }
+
+@router.post("/auto-merch")
+async def auto_merch(request: AutoMerchRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Triggers the Reverse Monetization flow: Trend -> Design -> Mockup -> Store.
+    """
+    from services.monetization.auto_merch import auto_merch_service
+    product_data = await auto_merch_service.generate_and_publish_merch(request.trend_topic)
+    
+    if not product_data:
+        raise HTTPException(status_code=500, detail="Failed to generate or publish merchandise.")
+        
+    return {
+        "status": "success",
+        "message": f"Successfully created merch for '{request.trend_topic}'",
+        "product": product_data
     }
 
 @router.get("/report")

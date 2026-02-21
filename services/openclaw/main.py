@@ -5,9 +5,11 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 from config import settings
 from agent import OpenClawAgent
+from dispatcher import dispatcher
 import uvicorn
-from fastapi import FastAPI, BackgroundTasks
-from typing import Dict
+from fastapi import FastAPI, BackgroundTasks, Request, Response
+from typing import Dict, List
+from pydantic import BaseModel
 
 # Logging setup
 logging.basicConfig(
@@ -114,6 +116,64 @@ async def refresh_bot(user_id: int, background_tasks: BackgroundTasks):
                 return {"status": "success", "message": f"Stopping bot for user {user_id} (no token)"}
         return {"status": "error", "message": "User not found or API error"}
     except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/webhook/whatsapp")
+async def whatsapp_webhook(request: Request):
+    """
+    Twilio Webhook for incoming WhatsApp messages.
+    """
+    try:
+        # Twilio sends data as form-urlencoded
+        form_data = await request.form()
+        incoming_msg = form_data.get('Body', '')
+        sender_id = form_data.get('From', '') # Format: "whatsapp:+1234567890"
+
+        logger.info(f"Incoming WhatsApp from {sender_id}: {incoming_msg}")
+
+        # The agent expects a somewhat generic ID and text.
+        # It handles DB verification via API.
+        response_text = await agent.process_message(sender_id, incoming_msg)
+
+        # Twilio expects an XML response (TwiML)
+        # We manually construct simple XML to avoid requiring the full twilio SDK payload
+        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+        <Response>
+            <Message>{response_text}</Message>
+        </Response>"""
+        
+        return Response(content=twiml, media_type="application/xml")
+
+    except Exception as e:
+        logger.error(f"WhatsApp Webhook Error: {e}")
+        # Return generic error in TwiML
+        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+        <Response>
+            <Message>⚠️ Agent encountered an internal error processing your WhatsApp message.</Message>
+        </Response>"""
+        return Response(content=twiml, media_type="application/xml")
+
+class BroadcastRequest(BaseModel):
+    user_ids: List[str]
+    message: str
+    platform_hint: str = None
+
+@app.post("/broadcast")
+async def broadcast_message(request: BroadcastRequest, background_tasks: BackgroundTasks):
+    """
+    Triggers an outbound message to specific users via the MessageDispatcher.
+    """
+    try:
+        success_count = 0
+        for uid in request.user_ids:
+            # We fire these off in the background to avoid blocking the API response
+            # In a heavy environment, we'd use Celery for this.
+            background_tasks.add_task(dispatcher.broadcast_to_user, uid, request.message, request.platform_hint)
+            success_count += 1
+            
+        return {"status": "success", "message": f"Broadcast queued for {success_count} users."}
+    except Exception as e:
+        logger.error(f"Broadcast Error: {e}")
         return {"status": "error", "message": str(e)}
 
 @app.on_event("startup")

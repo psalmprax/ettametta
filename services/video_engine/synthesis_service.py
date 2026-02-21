@@ -19,8 +19,8 @@ class GenerativeService:
             return await self._synthesize_veo3(prompt, aspect_ratio)
         elif engine == "wan2.2":
             return await self._synthesize_wan(prompt, aspect_ratio)
-        elif engine == "ltx2":
-            return await self._synthesize_ltx2(prompt, aspect_ratio)
+        elif engine == "ltx-video":
+            return await self._synthesize_local(prompt, aspect_ratio)
         elif engine == "lite4k":
             return await self._synthesize_lite_4k(prompt, aspect_ratio)
         else:
@@ -100,14 +100,43 @@ class GenerativeService:
         # Interface with SiliconFlow/Open-Source cloud provider
         return "https://storage.googleapis.com/viral-forge-assets/mocks/wan22_generated.mp4"
 
-    async def _synthesize_ltx2(self, prompt: str, aspect_ratio: str) -> Optional[str]:
+    async def _synthesize_local(self, prompt: str, aspect_ratio: str) -> Optional[str]:
         """
-        LTX-2 (by Lightricks) Integration — Roadmap Item.
-        High-fidelity native 4K output.
+        Remote/Local GPU Video Synthesis Integration.
+        Checks for a RENDER_NODE_URL. If present, proxies the request to the 
+        external GPU server running the diffusers FastAPI app.
         """
-        logging.info("[GenerativeService] LTX-2 Synthesis requested (Roadmap).")
-        # In the future, this would call Fal.ai or a local LTX-2 worker
-        return "https://storage.googleapis.com/viral-forge-assets/mocks/ltx2_roadmap_preview.mp4"
+        import os
+        render_node_url = os.getenv("RENDER_NODE_URL")
+        
+        if render_node_url:
+            logging.info(f"[GenerativeService] Routing synthesis to Remote GPU Node: {render_node_url}")
+            try:
+                # We would typically use httpx here for an async call, and either await the result
+                # or rely on a webhook callback for long-running jobs.
+                # Since synthesis takes minutes, we simulate the async request structure.
+                payload = {
+                    "prompt": prompt,
+                    "resolution": "720p",
+                    "duration_seconds": 5
+                }
+                async with httpx.AsyncClient(timeout=300) as client:
+                    response = await client.post(f"{render_node_url}/generate", json=payload)
+                    
+                if response.status_code == 200:
+                    data = response.json()
+                    job_id = data.get("job_id")
+                    
+                    # NOTE: A robust implementation would involve Celery polling `download_url`
+                    # For demonstration, we return a URL pattern that the system would eventually fetch.
+                    return f"{render_node_url}/download/{job_id}"
+            except Exception as e:
+                logging.error(f"[GenerativeService] Failed to contact Remote GPU Node: {e}")
+                # Fallback to mock
+        else:
+            logging.warning("[GenerativeService] RENDER_NODE_URL not configured. Returning mock for local integration testing.")
+            
+        return "https://storage.googleapis.com/viral-forge-assets/mocks/local_ltx_video_preview.mp4"
 
     def optimize_prompt(self, user_prompt: str, style: str = "Cinematic") -> str:
         """
