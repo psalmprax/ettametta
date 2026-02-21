@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     MONETIZATION_MODE: str = "selective" # Options: selective, all
     PEXELS_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
+    GOOGLE_API_KEY: str = ""
+    DEFAULT_VLM_MODEL: str = "gemini-1.5-flash"
     
     # Video Generation
     FONT_PATH: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"

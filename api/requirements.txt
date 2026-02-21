@@ -32,3 +32,4 @@ gtts
 slowapi
 easyocr
 opencv-python
+google-generativeai

@@ -21,18 +21,24 @@ class StrategyService:
         self.client = AsyncGroq(api_key=self.api_key)
         self.model = "llama-3.3-70b-versatile"
 
-    async def generate_visual_strategy(self, transcript: List[Dict], niche: str, style: str = "Default") -> VideoStrategy:
+    async def generate_visual_strategy(self, transcript: List[Dict], niche: str, style: str = "Default", visual_insights: Optional[Dict] = None) -> VideoStrategy:
         """
-        Analyzes transcript content and user-selected style to decide on video editing parameters.
+        Analyzes transcript content, user-selected style, and VLM visual insights to decide on video editing parameters.
         """
         full_text = " ".join([s.get("text", "") for s in transcript])
         
+        # Prepare Visual Context if available
+        visual_context = ""
+        if visual_insights:
+            visual_context = f"\nVISUAL INSIGHTS (VLM):\n{json.dumps(visual_insights, indent=2)}\n"
+
         prompt = f"""
-        You are an elite AI Video Editor. Analyze the following video transcript, niche, and user-selected STYLE to decide the visual strategy.
+        You are an elite AI Video Editor. Analyze the following video transcript, niche, user-selected STYLE, and VISUAL INSIGHTS to decide the visual strategy.
         
         NICHE: {niche}
         SELECTED STYLE: {style}
         TRANSCRIPT: "{full_text[:2000]}"
+        {visual_context}
         
         DECISION CRITERIA:
         1. STYLE OVERRIDE: If the user selected a specific style (e.g., 'Cinematic'), prioritize its parameters over the niche defaults.

@@ -70,18 +70,19 @@ def download_and_process_task(self, source_url: str, niche: str, platform: str, 
             update_job(status="Failed", progress=0)
             return {"status": "error", "message": "Download failed"}
         
-        # 2. Process (Apply Dynamic AI Strategy)
-        update_job(status="Strategizing", progress=30)
+        # B. Analyze Visuals via Gemini (VLM)
+        update_job(status="Analyzing Visuals", progress=35)
+        from .vlm_service import vlm_service
+        visual_insights = run_async(vlm_service.analyze_video_content(video_path))
         
-        # A. Transcribe first (needed for strategy)
-        from .transcription import transcription_service
-        transcript = run_async(transcription_service.transcribe_video(video_path))
-        
-        # B. Generate Strategy via Groq
+        # C. Generate Strategy via Groq (Integrated Scraper + VLM Intelligence)
+        update_job(status="Strategizing", progress=40)
         from services.decision_engine.service import base_strategy_service
-        strategy_obj = run_async(base_strategy_service.generate_visual_strategy(transcript, niche, style=style))
+        strategy_obj = run_async(base_strategy_service.generate_visual_strategy(transcript, niche, style=style, visual_insights=visual_insights))
         strategy = strategy_obj.dict()
-        logging.info(f"[Task] AI Strategy: {strategy['vibe']} (Style: {style}, Speed: {strategy['speed_range']}, Jitter: {strategy['jitter_intensity']})")
+        logging.info(f"[Task] AI Combined Strategy: {strategy['vibe']} (Style: {style}, Speed: {strategy['speed_range']}, Jitter: {strategy['jitter_intensity']})")
+        if visual_insights.get("visual_mood"):
+            logging.info(f"[Task] VLM Intuition: {visual_insights['visual_mood']}")
         
         update_job(status="Rendering", progress=50)
         

@@ -245,6 +245,13 @@ class VideoProcessor:
         elif caption_strategy == "center":
             y_pos = 0.5
 
+        # VLM-Driven Aesthetic: Contrasting Caption Color
+        caption_color = '#FFE100' # Default Viral Yellow
+        if strategy and strategy.get("vibe") == "Dramatic":
+            caption_color = '#FFFFFF' # Stark White for drama
+        elif strategy and strategy.get("vibe") == "Energetic":
+            caption_color = '#00FF00' # Neon Green for energy
+
         for item in transcript:
             # Check if word is within current trimmed timeline
             if item["start"] > transformed.duration:
@@ -253,7 +260,7 @@ class VideoProcessor:
             txt = TextClip(
                 text=item["text"].upper(),
                 font_size=72,
-                color='#FFE100', # High-vis YouTube Yellow
+                color=caption_color,
                 font=self.font_path,
                 stroke_color='black',
                 stroke_width=2.5,
