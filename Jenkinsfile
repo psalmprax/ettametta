@@ -111,6 +111,7 @@ pipeline {
                             --exclude 'venv' \\
                             --exclude '__pycache__' \\
                             --exclude '.env' \\
+                            --exclude 'cookies' \\
                             --exclude 'terraform' \\
                             . ${DEPLOY_DIR}
                     """
