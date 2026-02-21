@@ -1,22 +1,26 @@
-import random
+import logging
 from typing import List, Dict, Any
 from .base import BaseMonetizationStrategy
 
+logger = logging.getLogger(__name__)
+
+
 class DigitalProductStrategy(BaseMonetizationStrategy):
     async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
-        # Mocking high-margin digital products
-        return [{
-            "id": f"digi_{random.randint(100, 999)}",
-            "name": f"{niche} Neural Accelerator (Course)",
-            "url": "https://ettametta.ai/products/neural-accelerator",
-            "price": "$197",
-            "source": "viral_vault"
-        }]
+        """
+        Get digital product assets for the given niche.
+        In production, this should query a database of digital products or
+        integrate with a platform like Gumroad, Shopify, or a custom store.
+        """
+        logger.warning(f"[DigitalProductStrategy] No digital products configured for niche: {niche}. Configure products in the database.")
+        # Return empty list instead of mock data
+        return []
 
     async def generate_cta(self, niche: str, context: str) -> str:
-        options = [
-            f"Join the elite 1% of {niche} creators. Access the vault.",
-            f"Master {niche} with our Neural Accelerator. Link in bio.",
-            f"Why struggle with {niche}? Get the full system below."
-        ]
-        return random.choice(options)
+        """
+        Generate a call-to-action for digital products.
+        In production, this should use an LLM to generate contextually relevant CTAs.
+        """
+        logger.warning(f"[DigitalProductStrategy] No CTA template configured for niche: {niche}")
+        # Return a generic CTA instead of random mock options
+        return f"Check out our {niche} resources - link in bio!"

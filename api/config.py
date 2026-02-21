@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     PEXELS_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     GOOGLE_API_KEY: str = ""
+    GOOGLE_SEARCH_CX: str = ""  # Custom Search Engine ID for Google Search
     DEFAULT_VLM_MODEL: str = "gemini-1.5-flash"
     
     # Video Generation
@@ -39,6 +40,10 @@ class Settings(BaseSettings):
     # but we standardize here.
     TIKTOK_CLIENT_KEY: str = ""
     TIKTOK_CLIENT_SECRET: str = ""
+    
+    # Shopify Configuration
+    SHOPIFY_SHOP_URL: str = ""
+    SHOPIFY_ACCESS_TOKEN: str = ""
     
     # Scraper Cookies (Bypass Bot Detection)
     YOUTUBE_COOKIES_PATH: Optional[str] = "cookies/youtube_cookies.txt"

@@ -34,14 +34,14 @@ class TikTokScanner:
                 response = await client.get(url)
                 if response.status_code != 200:
                     print(f"[TikTokScanner] Scrape Failed: Status {response.status_code}")
-                    return self._get_fallback_data(niche)
+                    return []
 
                 # Extracts JSON data from the __UNIVERSAL_DATA_FOR_REHYDRATION__ script tag
                 # which contains the search results in a structured format.
                 match = re.search(r'id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>(.*?)<\/script>', response.text)
                 if not match:
                     print("[TikTokScanner] No rehydration data found in TikTok response")
-                    return self._get_fallback_data(niche)
+                    return []
 
                 raw_data = json.loads(match.group(1))
                 # The path to search results can change, we'll try to find the standard 2026 structure
@@ -106,12 +106,12 @@ class TikTokScanner:
                     if len(candidates) >= 5: break
                 
                 if not candidates:
-                    return self._get_fallback_data(niche)
+                    return []
                 return candidates
 
         except Exception as e:
             logging.error(f"TikTok Scanner Error: {e}")
-            return self._get_fallback_data(niche)
+            return []
 
     def _calc_engagement(self, stats: dict) -> float:
         plays = stats.get("playCount", 1)
@@ -120,22 +120,3 @@ class TikTokScanner:
         shares = stats.get("shareCount", 0)
         if plays == 0: return 0.0
         return (likes + comments + shares) / plays
-
-    def _get_fallback_data(self, niche: str) -> List[ContentCandidate]:
-        # Return a smaller set of high-quality "safe" results if real-time scraping fails
-        # This prevents the UI from breaking while ensuring the user sees activity
-        return [
-            ContentCandidate(
-                id=f"tt_ref_{i}",
-                platform="TikTok",
-                url=f"http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-                author="Trending",
-                title=f"Sample: {niche} Trend",
-                description="Live scraping temporarily throttled. Showing historical sample.",
-                view_count=random.randint(50000, 200000),
-                engagement_rate=0.1,
-                discovery_date=datetime.now(),
-                tags=[niche, "trending"],
-                metadata={}
-            ) for i in range(2)
-        ]

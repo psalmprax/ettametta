@@ -20,7 +20,7 @@ class PatternDeconstructor:
         client = Groq(api_key=settings.GROQ_API_KEY)
         
         prompt = f"""
-        [VIRALFORGE ANALYST]
+        [Ettametta ANALYST]
         Analyze this video for viral potential:
         Transcript: {transcript}
         Metadata: {json.dumps(metadata)}

@@ -1,58 +1,53 @@
 import aiohttp
 import logging
-import random
 from typing import List, Optional
 from .models import ContentCandidate
+from .google_trends_scanner import base_google_trends_scanner
+from .google_search_scanner import base_google_search_scanner
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
 
 class MetasearchScanner:
+    """
+    Metasearch scanner that combines Google Trends and Google Search for 
+    comprehensive trend and monetization discovery.
+    This replaces the previous mock implementation with real free APIs.
+    """
+    
     def __init__(self):
-        self.platform = "Web Metasearch (DDG)"
-        self.headers = {
-            "User-Agent": "ettametta/1.0 (Metasearch Intelligence)"
-        }
-
-    async def scan_trends(self, niche: str, published_after: Optional[any] = None) -> List[ContentCandidate]:
-        """
-        Scans the open web via DuckDuckGo-style search for viral video hooks.
-        In a production environment, this would use an API like SerpAPI or 
-        a specialized headless browser to avoid anti-bot measures.
-        """
-        logging.info(f"[Metasearch] Hunting for hidden trends in {niche}")
+        self.platform = "Metasearch (Google)"
         
-        # High-Fidelity Simulated Metasearch Results
-        # Targeting Vimeo, Dailymotion, and High-Traffic Niche Blogs
-        results = [
-            {
-                "id": f"web_{random.randint(10000, 99999)}",
-                "url": "https://vimeo.com/channels/staffpicks/viral_1",
-                "platform": "Vimeo",
-                "author": "NicheExpert_42",
-                "title": f"The hidden secret to {niche} growth...",
-                "view_count": random.randint(20000, 500000)
-            },
-            {
-                "id": f"web_{random.randint(10000, 99999)}",
-                "url": "https://dailymotion.com/video/x_viral_niche",
-                "platform": "Dailymotion",
-                "author": "GlobalTrends_Live",
-                "title": f"Massive breakthrough in {niche} discussed here.",
-                "view_count": random.randint(15000, 300000)
-            }
-        ]
+    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+        """
+        Combines Google Trends and Google Search results for comprehensive discovery.
+        """
+        logger.info(f"[Metasearch] Running comprehensive search for: {niche}")
+        
+        all_candidates = []
+        
+        # Get Google Trends
+        try:
+            trends = await base_google_trends_scanner.scan_trends(niche, published_after)
+            all_candidates.extend(trends)
+        except Exception as e:
+            logger.warning(f"[Metasearch] Google Trends failed: {e}")
+        
+        # Get Google Search for monetization opportunities
+        try:
+            search_results = await base_google_search_scanner.scan_trends(niche, published_after)
+            all_candidates.extend(search_results)
+        except Exception as e:
+            logger.warning(f"[Metasearch] Google Search failed: {e}")
+        
+        if all_candidates:
+            logger.info(f"[Metasearch] Found {len(all_candidates)} total results")
+            return all_candidates
+        
+        # Return empty list instead of mock data
+        logger.warning(f"[Metasearch] No results found for {niche}. Configure API keys for better results.")
+        return []
 
-        candidates = []
-        for r in results:
-            candidates.append(ContentCandidate(
-                id=r["id"],
-                platform=f"{self.platform} ({r['platform']})",
-                url=r["url"],
-                author=r["author"],
-                title=r["title"],
-                view_count=r["view_count"],
-                engagement_rate=random.uniform(0.02, 0.12),
-                metadata={"source_domain": r['platform'].lower()}
-            ))
-            
-        return candidates
 
 base_metasearch_scanner = MetasearchScanner()
