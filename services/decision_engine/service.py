@@ -10,6 +10,8 @@ class VideoStrategy(BaseModel):
     speed_range: List[float] = [0.98, 1.02]
     jitter_intensity: float = 1.0
     recommended_filters: List[str] = []
+    hook_points: List[List[float]] = [] # [ [start, end], [start, end] ]
+    b_roll_keywords: List[str] = []
     vibe: str = "Neutral"
     explanation: str = ""
 
@@ -36,23 +38,19 @@ class StrategyService:
         1. STYLE OVERRIDE: If the user selected a specific style (e.g., 'Cinematic'), prioritize its parameters over the niche defaults.
         2. SPEED: High energy needs 1.02-1.1x speed ramping. Relaxed needs 0.95-1.0x.
         3. JITTER: Intense/Action needs 2.0-3.0 intensity. Calm needs 0.0-0.5.
-        4. FILTERS: 
-           - 'f6' (Speed Ramping): Good for high energy / Hectic styles.
-           - 'f7' (Cinematic Overlays): Good for moody/emotional/Cinematic styles.
-           - 'f8' (Dynamic Jitter): Good for raw/vlog/Intense styles.
-        
-        STYLISTIC GUIDELINES:
-        - Cinematic: Lower speed (0.95), zero jitter, cinematic filters (f7).
-        - Hectic/Viral: High speed (1.08), high jitter (2.5), speed ramping (f6).
-        - Educational: Normal speed (1.0), low jitter, clear captions.
+        4. FILTERS: 'f6' (Speed Ramping), 'f7' (Cinematic Overlays), 'f8' (Dynamic Jitter).
+        5. HOOKS: Identify 1-3 specific segments (start/end in seconds) that are the most viral, emotional, or high-energy parts of the transcript.
+        6. B-ROLL: Provide 3-5 search keywords for stock footage (e.g., 'dark forest', 'police siren', 'cryptic symbols') that match the transcript's vibe.
         
         OUTPUT FORMAT (JSON ONLY):
         {{
             "speed_range": [min, max],
             "jitter_intensity": float,
             "recommended_filters": ["f6", "f7", "f8"],
+            "hook_points": [[start, end], ...],
+            "b_roll_keywords": ["keyword1", "keyword2"],
             "vibe": "Energetic" | "Calm" | "Educational" | "Dramatic",
-            "explanation": "Why this strategy? Mention how you integrated the '{style}' style."
+            "explanation": "Why this strategy?"
         }}
         """
 

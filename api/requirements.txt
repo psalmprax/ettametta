@@ -30,3 +30,5 @@ aiohttp
 beautifulsoup4
 gtts
 slowapi
+easyocr
+opencv-python

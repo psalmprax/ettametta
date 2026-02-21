@@ -4,6 +4,8 @@ import random
 import logging
 from typing import List, Optional, Dict
 from .transcription import transcription_service
+from .ocr_service import ocr_service
+from .stock_service import stock_service
 from api.config import settings
 
 class VideoProcessor:
@@ -119,6 +121,62 @@ class VideoProcessor:
         
         return CompositeVideoClip([clip, leak.with_position('center')])
 
+    def trim_to_hooks(self, clip: VideoFileClip, hooks: List[List[float]]) -> VideoFileClip:
+        """
+        Cuts the video to only the segments identified as high-energy hooks.
+        """
+        if not hooks:
+            return clip
+        
+        segments = []
+        for start, end in hooks:
+            # Buffer the end slightly
+            end = min(end + 0.5, clip.duration)
+            segments.append(clip.subclipped(start, end))
+        
+        if not segments:
+            return clip
+            
+        return concatenate_videoclips(segments, method="compose")
+
+            
+        return concatenate_videoclips(segments, method="compose")
+
+    async def inject_b_roll(self, clip: VideoFileClip, keywords: List[str]) -> VideoFileClip:
+        """
+        Fetches a stock B-roll clip and overlays it onto the main video.
+        """
+        if not keywords:
+            return clip
+            
+        keyword = random.choice(keywords)
+        logging.info(f"[VideoProcessor] Attempting B-roll injection for keyword: {keyword}")
+        
+        urls = await stock_service.fetch_b_roll(keyword, count=1)
+        if not urls:
+            return clip
+            
+        b_roll_path = await stock_service.download_stock_video(urls[0])
+        if not b_roll_path:
+            return clip
+            
+        try:
+            b_roll_clip = VideoFileClip(b_roll_path).resized(width=clip.w)
+            # Take 2-3 seconds of B-roll
+            b_roll_duration = min(b_roll_clip.duration, 3.0)
+            b_roll_clip = b_roll_clip.subclipped(0, b_roll_duration)
+            
+            # Insert at a random point in the first half of the main clip
+            insert_point = random.uniform(2.0, max(2.5, clip.duration / 2))
+            
+            # Simple overlay (for now, we just place it on top of the elements list later)
+            b_roll_clip = b_roll_clip.with_start(insert_point).with_position('center')
+            
+            return b_roll_clip
+        except Exception as e:
+            logging.error(f"[VideoProcessor] Error in B-roll injection: {e}")
+            return None
+
     async def process_full_pipeline(self, input_path: str, output_name: str, enabled_filters: Optional[List[str]] = None, strategy: Optional[Dict] = None) -> str:
         """
         Full ViralForge Pipeline with Dynamic AI Strategies.
@@ -129,6 +187,20 @@ class VideoProcessor:
         # 2. Base Clip setup
         clip = VideoFileClip(input_path)
         
+        # 2.1 OCR-Aware Strategy
+        caption_strategy = ocr_service.get_caption_strategy(input_path)
+        logging.info(f"[VideoProcessor] OCR Strategy identifies: {caption_strategy}")
+        
+        # 2.2 Semantic Trimming (Hooks)
+        if strategy and strategy.get("hook_points"):
+            logging.info(f"[VideoProcessor] Semantic trimming to hooks: {strategy['hook_points']}")
+            clip = self.trim_to_hooks(clip, strategy["hook_points"])
+
+        # 2.3 B-Roll Injection
+        b_roll_overlay = None
+        if strategy and strategy.get("b_roll_keywords"):
+            b_roll_overlay = await self.inject_b_roll(clip, strategy["b_roll_keywords"])
+
         # 3. Apply Multi-Layer Transformations
         # Default core transforms
         transformed = clip.with_effects([vfx.MirrorX()]).resized(height=int(clip.h * (1.05)))
@@ -160,9 +232,24 @@ class VideoProcessor:
                 .with_effects([vfx.CrossFadeIn(0.05), vfx.CrossFadeOut(0.05)])
             elements.append(flash)
 
-        # 5. Add Captions from transcript
+        # 4.1 Apply B-Roll Overlay if exists
+        if b_roll_overlay:
+            elements.append(b_roll_overlay)
+
+        # 5. Add Captions from transcript with dynamic positioning
         caption_clips = []
+        # Calculate Y position based on OCR strategy
+        y_pos = 0.8 # Default bottom
+        if caption_strategy == "top":
+            y_pos = 0.15
+        elif caption_strategy == "center":
+            y_pos = 0.5
+
         for item in transcript:
+            # Check if word is within current trimmed timeline
+            if item["start"] > transformed.duration:
+                continue
+
             txt = TextClip(
                 text=item["text"].upper(),
                 font_size=72,
@@ -172,7 +259,7 @@ class VideoProcessor:
                 stroke_width=2.5,
                 method='caption',
                 size=(int(transformed.w * 0.85), None)
-            ).with_start(item["start"]).with_duration(item["end"] - item["start"]).with_position(('center', 0.8))
+            ).with_start(item["start"]).with_duration(item["end"] - item["start"]).with_position(('center', y_pos))
             caption_clips.append(txt)
             
         final_clip = CompositeVideoClip(elements + caption_clips)
