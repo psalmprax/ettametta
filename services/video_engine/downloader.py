@@ -17,8 +17,8 @@ class VideoDownloader:
         output_path = os.path.join(self.download_dir, f"{file_id}.%(ext)s")
         
         ydl_opts = {
-            # Resilient format selector: Try high-quality mp4 merge first, fallback to best overall
-            'format': 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]/best',
+            # Resilient format selector: Try preferred quality, then fallback to anything combined
+            'format': 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
             'outtmpl': output_path,
             'merge_output_format': 'mp4',
             'quiet': True,
@@ -47,19 +47,16 @@ class VideoDownloader:
                 final_path = ydl.prepare_filename(info)
                 return final_path
         except Exception as e:
-            # Fallback for "Requested format is not available"
-            if "format is not available" in str(e):
-                print(f"[VideoDownloader] Retrying {url} with absolute best format fallback...")
-                ydl_opts['format'] = 'best'
-                try:
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        info = ydl.extract_info(url, download=True)
-                        return ydl.prepare_filename(info)
-                except Exception as e2:
-                    print(f"[VideoDownloader] Second attempt failed: {str(e2)}")
-            
-            print(f"[VideoDownloader] ERROR downloading {url}: {str(e)}")
-            return None
+            # Absolute last resort for any format error
+            print(f"[VideoDownloader] Broad fallback triggered for {url}. Error: {str(e)}")
+            ydl_opts.pop('format', None) # Let yt-dlp decide
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(url, download=True)
+                    return ydl.prepare_filename(info)
+            except Exception as e2:
+                print(f"[VideoDownloader] Critical Failure for {url}: {str(e2)}")
+                return None
 
     async def verify_video_asset(self, url: str) -> bool:
         """
@@ -71,7 +68,8 @@ class VideoDownloader:
             'no_warnings': True,
             'simulate': True,
             'skip_download': True,
-            'format': 'best', # Explicitly use best for validation
+            # DO NOT specify format here. specifying format leads to "Requested format is not available"
+            # on some platforms if the selector is even slightly off.
         }
         
         # Add cookies for validation bypass
@@ -91,7 +89,8 @@ class VideoDownloader:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
                 # Check for video stream (vcodec != 'none')
-                if info.get('vcodec') == 'none' or not info.get('vcodec'):
+                vcodec = info.get('vcodec') or 'none'
+                if vcodec == 'none':
                     print(f"[VideoDownloader] VALIDATION FAILED: {url} is audio-only.")
                     return False
                 return True
