@@ -93,3 +93,4 @@ Cloud IPs (like Oracle Cloud) are often flagged by scrapers. To bypass this, we 
     *   Create a folder: `mkdir -p cookies` in your project root.
     *   Save the file as `cookies/youtube_cookies.txt`.
 4.  **Security**: The `cookies/` folder is blocked in `.gitignore` and excluded from Jenkins `rsync` to ensure your session data never leaves your OCI instance.
+5.  **Signature Solving**: The system automatically includes a JavaScript runtime (`nodejs`) in the Docker build to solve YouTube "n-challenge" signature protection. No manual setup is required beyond exporting cookies.

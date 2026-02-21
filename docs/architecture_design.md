@@ -62,7 +62,7 @@
 
 | Service | Port | Technology | Purpose |
 |---|---|---|---|
-| `api` | 8000 | FastAPI (Python) | Main REST API + WebSocket |
+| `api` | 8000 | FastAPI (Python) + Node.js | Main REST API + Signature Solving |
 | `dashboard` | 3000 | Next.js 14 | Frontend SPA |
 | `db` | 5432 | PostgreSQL 15 | Primary database |
 | `redis` | 6379 | Redis 7 | Cache + Celery broker |

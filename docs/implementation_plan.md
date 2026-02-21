@@ -178,6 +178,7 @@ Integrate **Fish Speech** (Open Source weights) as a containerized service.
 ### Component 9: Scraper Resiliency & Bypass (Phase 18)
 - **Cookie-Based Proof**: Implementation of authenticated session cookies for `yt-dlp` to bypass "Confirm you're not a bot" screens.
 - **Persistence**: Hybrid CI/CD logic to exclude session data from being scrubbed during Jenkins deployments.
+- **Signature Decryption (Phase 18.5)**: Integration of `nodejs` runtime into the API container to solve YouTube "n-challenge" signature decryption, ensuring full access to video streams on cloud infrastructure.
 
 ---
 
