@@ -175,6 +175,10 @@ Integrate **Fish Speech** (Open Source weights) as a containerized service.
   - Added `download_models.py` to auto-fetch weights from HuggingFace.
   - Integration with `entrypoint.sh` to ensure weights exist before service start.
 
+### Component 9: Scraper Resiliency & Bypass (Phase 18)
+- **Cookie-Based Proof**: Implementation of authenticated session cookies for `yt-dlp` to bypass "Confirm you're not a bot" screens.
+- **Persistence**: Hybrid CI/CD logic to exclude session data from being scrubbed during Jenkins deployments.
+
 ---
 
 ## Verification Plan

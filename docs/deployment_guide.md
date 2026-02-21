@@ -1,72 +1,95 @@
-# ViralForge Deployment & Credential Guide
+# ViralForge: E2E Configuration Guide
 
-This guide provides step-by-step instructions for generating the required production credentials for ViralForge.
+This guide provides step-by-step instructions for obtaining the necessary credentials to enable full end-to-end (E2E) functionality, including OCI Object Storage archival and automated social media publishing.
 
-## 1. Google OAuth Credentials (YouTube Publishing)
+---
 
-1.  Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2.  Create a new Project (e.g., "ViralForge-Prod").
-3.  Navigate to **APIs & Services > Library**.
-4.  Enable the **YouTube Data API v3**.
-5.  Navigate to **APIs & Services > OAuth consent screen**.
-    *   Select **External** (unless you have a G-Suite org).
-    *   Fill in app details.
-    *   Add test users (your email) while in testing mode.
-6.  Navigate to **APIs & Services > Credentials**.
-7.  Click **Create Credentials > OAuth client ID**.
-    *   Application type: **Web application**.
-    *   Name: "ViralForge API".
-    *   **Authorized redirect URIs**:
-        *   `https://your-domain.com/publish/auth/youtube/callback`
-        *   (If testing locally: `http://localhost:8000/publish/auth/youtube/callback`)
-8.  Copy the **Client ID** and **Client Secret**.
-9.  Add them to your `.env.production` file:
-    ```bash
-    GOOGLE_CLIENT_ID="your_client_id"
-    GOOGLE_CLIENT_SECRET="your_client_secret"
-    ```
+## ☁️ 1. OCI Customer Secret Keys (S3 Compatibility)
 
-## 2. TikTok API Credentials
+These keys are required for the **Storage Lifecycle Manager** to move video files from local storage to the OCI Cloud.
 
-1.  Register as a developer on the [TikTok for Developers](https://developers.tiktok.com/) portal.
-2.  Create a new App.
-3.  In "Products", add **Share Kit** and **Login Kit**.
-4.  Copy the **Client Key** and **Client Secret**.
-5.  In the app settings, set the **Redirect URI**:
-    *   `https://your-domain.com/publish/auth/tiktok/callback`
-6.  Submit for review (TikTok requires app review for production API access).
-7.  Add keys to `.env.production`:
-    ```bash
-    TIKTOK_CLIENT_KEY="your_client_key"
-    TIKTOK_CLIENT_SECRET="your_client_secret"
-    ```
+1.  **Log in** to your [Oracle Cloud Console](https://cloud.oracle.com).
+2.  In the top-right corner, click on your **Profile Icon** and select your **User Name** (e.g., your email).
+3.  On the left sidebar, under **Resources**, scroll down and click on **Customer Secret Keys**.
+4.  Click the **Generate Secret Key** button.
+5.  **Name the key**: "ViralForge-Storage".
+6.  **Copy the Secret Key**: A pop-up will show the secret key. **Copy it immediately** as it will never be shown again.
+7.  **Copy the Access Key**: Once generated, you will see an `Access Key` (a long string of characters) in the list. Copy this as well.
 
-## 3. AWS S3 (Video Storage)
+### Implementation:
+Add these to your `.env` file:
+```bash
+STORAGE_ACCESS_KEY="your_access_key"
+STORAGE_SECRET_KEY="your_secret_key"
+```
 
-1.  Log in to [AWS Console](https://aws.amazon.com/console/).
-2.  Go to **S3** and create a new bucket (e.g., `viral-forge-videos-prod`).
-    *   Uncheck "Block all public access" if you need public URLs, OR better, use CloudFront.
-    *   Enable CORS configuration if uploading directly from frontend (optional).
-3.  Go to **IAM** and create a new User (e.g., `viral-forge-bot`).
-    *   Attach policy: `AmazonS3FullAccess` (or scope it down to your bucket).
-4.  Create **Access Keys** for this user.
-5.  Add to `.env.production`:
-    ```bash
-    AWS_ACCESS_KEY_ID="AKIA..."
-    AWS_SECRET_ACCESS_KEY="secret..."
-    AWS_REGION="us-east-1"
-    AWS_STORAGE_BUCKET_NAME="viral-forge-videos-prod"
-    ```
+---
 
-## 4. Final Deployment Steps
+## 🎥 2. YouTube Data API (Google Cloud)
 
-1.  Copy the template:
-    ```bash
-    cp .env.production.template .env.production
-    ```
-2.  Fill in all values.
-3.  Update `PRODUCTION_DOMAIN` in settings to match your actual domain.
-4.  Deploy using Docker:
-    ```bash
-    docker-compose -f docker-compose.yml --env-file .env.production up -d --build
-    ```
+Required for automated publishing and trend discovery.
+
+1.  Go to the [Google Cloud Console](https://console.cloud.google.com).
+2.  **Create a Project**: Click the project dropdown and select "New Project". Name it "ViralForge".
+3.  **Enable API**: Search for "YouTube Data API v3" and click **Enable**.
+4.  **OAuth Consent Screen**:
+    *   Navigate to **APIs & Services** -> **OAuth consent screen**.
+    *   Select **External** and then **Create**.
+    *   Fill in "ViralForge" as the app name and your email.
+    *   **Add Scopes**: Add `.../auth/youtube.upload` and `.../auth/youtube.readonly`.
+    *   **Add Test Users**: Add your own YouTube account email as a test user.
+5.  **Create Credentials**:
+    *   Go to **APIs & Services** -> **Credentials**.
+    *   Click **Create Credentials** -> **OAuth client ID**.
+    *   **Application type**: Web application.
+    *   **Authorized redirect URIs**: 
+        *   `http://localhost:8000/api/v1/auth/callback/google`
+        *   `http://130.61.26.105.sslip.io:8000/api/v1/auth/callback/google` 
+        > [!TIP]
+        > Google does not allow raw IPs. Using `.sslip.io` at the end of your IP works as a free domain.
+6.  **Copy Client ID & Secret**.
+
+### Implementation:
+Add these to your `.env` file:
+```bash
+GOOGLE_CLIENT_ID="your_client_id"
+GOOGLE_CLIENT_SECRET="your_client_secret"
+```
+
+---
+
+## 📱 3. TikTok for Developers
+
+Required for TikTok archival and publishing.
+
+1.  Go to [TikTok for Developers](https://developers.tiktok.com/).
+2.  **Create an App**: Click "Manage Apps" and "Create a New App".
+3.  **Scopes**: Request `video.upload` and `user.info.basic`.
+4.  **Copy Client Key & Secret**.
+
+---
+
+## 🔄 4. How to get the Refresh Tokens
+
+Once you have the Client IDs and Secrets in your `.env`, you can generate the "Refresh Tokens" (the permanent keys) using the ViralForge Dashboard:
+
+1.  **Restart the services** (`docker-compose up -d`) to load the new `.env` settings.
+2.  Open the **ViralForge Dashboard** -> **Settings**.
+3.  Click the **Connect YouTube** or **Connect TikTok** button.
+4.  Complete the login flow in the browser.
+5.  ViralForge will automatically exchange the code for a **Refresh Token** and save it to the database for autonomous use.
+
+---
+
+## 🛡️ 6. Bypassing YouTube "Sign in to confirm you're not a bot"
+
+Cloud IPs (like Oracle Cloud) are often flagged by scrapers. To bypass this, we use authenticated session cookies.
+
+1.  **Install Extension**: Install **"Get cookies.txt LOCALLY"** in your browser.
+2.  **Export Cookies**:
+    *   Log in to YouTube.
+    *   Click the extension and export as **Netscape** format.
+3.  **Upload to OCI**:
+    *   Create a folder: `mkdir -p cookies` in your project root.
+    *   Save the file as `cookies/youtube_cookies.txt`.
+4.  **Security**: The `cookies/` folder is blocked in `.gitignore` and excluded from Jenkins `rsync` to ensure your session data never leaves your OCI instance.
