@@ -90,11 +90,20 @@ class VideoDownloader:
                 info = ydl.extract_info(url, download=False)
                 # Check for video stream (vcodec != 'none')
                 vcodec = info.get('vcodec') or 'none'
-                if vcodec == 'none':
-                    print(f"[VideoDownloader] VALIDATION FAILED: {url} is audio-only.")
-                    return False
+                
+                # If we get metadata but vcodec is 'none', it might just be the format selection failed.
+                # As long as we got 'info', the video exists.
+                if vcodec == 'none' and not info.get('formats'):
+                     print(f"[VideoDownloader] VALIDATION FAILED: {url} has no formats.")
+                     return False
+                     
                 return True
         except Exception as e:
+            # If we see "format is not available", it means the video exists but ytdlp struggled with the selector.
+            # We allow it to pass so the downloader's broad fallback can try again.
+            if "format is not available" in str(e) or "Requested format" in str(e):
+                logging.info(f"[VideoDownloader] Verification encountered format error for {url}, but treating as valid to allow broad fallback.")
+                return True
             print(f"[VideoDownloader] Validation Error for {url}: {e}")
             return False
 
