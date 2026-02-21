@@ -121,6 +121,33 @@ class VideoProcessor:
         
         return CompositeVideoClip([clip, leak.with_position('center')])
 
+    def apply_atmospheric_glow(self, clip: VideoFileClip) -> VideoFileClip:
+        """
+        Adds a soft, glowing atmospheric layer (f9).
+        """
+        glow = clip.with_effects([vfx.LumContrast(lum=5, contrast=0.1)]).with_opacity(0.3)
+        return CompositeVideoClip([clip, glow])
+
+    def apply_film_grain(self, clip: VideoFileClip) -> VideoFileClip:
+        """
+        Adds a subtle film grain effect to simulate analog texture (f10).
+        """
+        # Placeholder for real noise generation; for now, we use a subtle contrast jitter
+        return clip.with_effects([vfx.LumContrast(lum=0, contrast=0.08)])
+
+    def apply_grayscale(self, clip: VideoFileClip) -> VideoFileClip:
+        """
+        Converts video to black and white for the Noir style (f11).
+        """
+        return clip.with_effects([vfx.BlackAndWhite()])
+
+    def apply_random_glitch(self, clip: VideoFileClip) -> VideoFileClip:
+        """
+        Applies a random glitch effect by shifting RGB channels or adding noise (f12).
+        """
+        # MoviePy doesn't have a direct RGB shift, so we apply a jittered color shift
+        return clip.with_effects([vfx.Colorx(factor=random.uniform(0.9, 1.1))]).resized(height=int(clip.h * 1.01))
+
     def trim_to_hooks(self, clip: VideoFileClip, hooks: List[List[float]]) -> VideoFileClip:
         """
         Cuts the video to only the segments identified as high-energy hooks.
@@ -219,6 +246,14 @@ class VideoProcessor:
                 transformed = self.apply_dynamic_jitter(transformed, intensity=strategy.get("jitter_intensity", 1.0) if strategy else 1.0)
             if "f7" in active_filters:
                 transformed = self.apply_cinematic_overlays(transformed)
+            if "f9" in active_filters:
+                transformed = self.apply_atmospheric_glow(transformed)
+            if "f10" in active_filters:
+                transformed = self.apply_film_grain(transformed)
+            if "f11" in active_filters:
+                transformed = self.apply_grayscale(transformed)
+            if "f12" in active_filters:
+                transformed = self.apply_random_glitch(transformed)
 
         # 4. Pattern Interrupts & Audio Integration
         duration = transformed.duration

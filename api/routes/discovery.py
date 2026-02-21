@@ -75,3 +75,13 @@ async def get_niche_trends(niche: str):
         return trend
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@router.get("/niches", response_model=List[str])
+async def list_monitored_niches(user: UserDB = Depends(get_current_user)):
+    from api.utils.database import SessionLocal
+    from api.utils.models import MonitoredNiche
+    db = SessionLocal()
+    try:
+        niches = db.query(MonitoredNiche.niche).filter(MonitoredNiche.is_active == True).distinct().all()
+        return [n[0] for n in niches]
+    finally:
+        db.close()

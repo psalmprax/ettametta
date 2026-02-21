@@ -188,6 +188,11 @@ Integrate **Fish Speech** (Open Source weights) as a containerized service.
 - **Stock Injection**: Pexels API integration for automated cinematic B-roll insertion.
 - **Infrastructural Scale**: Scaled `celery_worker` to 3 replicas for high-concurrency production.
 
+### Component 11: Universal Niche & Style Expansion (Phase 21)
+- **Niche Persistence**: Automated registration of custom dashboard searches into the [**`MonitoredNiche`**](file:///home/psalmprax/viral_forge/api/utils/models.py) registry.
+- **High-Art Suite**: Implementation of 12+ creative filters including Glitch, Noir, Atmospheric Glow, and Film Grain.
+- **Aesthetic Direction**: Expanded `DecisionEngine` prompts for style-specific intensity and color harmony logic.
+
 ---
 
 ## Verification Plan

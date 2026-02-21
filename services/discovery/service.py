@@ -353,6 +353,16 @@ class DiscoveryService:
             # If we have few results, proactively scan for the query term as a "Niche"
             if len(results) < 10:
                 print(f"[Discovery] Insufficient results for '{query}' ({len(results)}), triggering live Fast Scan...")
+                
+                # PERSISTENCE: Save this as a monitored niche for future autonomous scans
+                from api.utils.models import MonitoredNiche
+                existing_niche = db.query(MonitoredNiche).filter(MonitoredNiche.niche == query).first()
+                if not existing_niche:
+                    new_niche = MonitoredNiche(niche=query, is_active=True)
+                    db.add(new_niche)
+                    db.commit()
+                    print(f"[Discovery] Registered new custom niche: {query}")
+
                 # We reuse find_trending_content but use the query as the niche
                 # This will populate the DB and return the fresh candidates
                 live_results = await self.find_trending_content(query, horizon="30d")

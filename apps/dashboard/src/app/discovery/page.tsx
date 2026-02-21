@@ -60,6 +60,7 @@ export default function DiscoveryPage() {
     const [filter, setFilter] = useState("all"); // all, youtube, tiktok
     const [showConfig, setShowConfig] = useState(false);
     const [timeHorizon, setTimeHorizon] = useState("30d"); // 24h, 7d, 30d
+    const [niches, setNiches] = useState<string[]>(["Motivation", "AI Technology", "Finance", "Health", "Gaming", "Crypto", "Relationships"]);
 
     // New State for "Neural Config"
     const [minViralScore, setMinViralScore] = useState(75);
@@ -72,9 +73,28 @@ export default function DiscoveryPage() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [previewTitle, setPreviewTitle] = useState("");
 
-    const niches = ["Motivation", "AI Technology", "Finance", "Health", "Gaming", "Crypto", "Relationships", "Music", "Children", "Storytelling", "True Crime", "Science", "Luxury"];
-    const styles = ["Default", "Cinematic", "Hectic/Viral", "ASMR/Calm", "Educational", "Dramatic"];
+    const styles = ["Default", "Cinematic", "Hectic/Viral", "ASMR/Calm", "Educational", "Dramatic", "Glitch/High-Art", "Noir/Classic"];
     const [selectedStyle, setSelectedStyle] = useState("Default");
+
+    useEffect(() => {
+        const fetchNiches = async () => {
+            try {
+                const token = localStorage.getItem("vf_token");
+                const res = await fetch(`${API_BASE}/discovery/niches`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        setNiches(prev => Array.from(new Set([...prev, ...data])));
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch niches", err);
+            }
+        };
+        fetchNiches();
+    }, []);
 
     useEffect(() => {
         fetchTrends();
@@ -192,6 +212,10 @@ export default function DiscoveryPage() {
             if (res.ok) {
                 const data = await res.json();
                 setCandidates(data);
+                // If search query is new, add it to our niches list
+                if (!niches.includes(searchQuery)) {
+                    setNiches(prev => Array.from(new Set([...prev, searchQuery])));
+                }
             }
         } catch (err) {
             console.error(err);
@@ -199,7 +223,7 @@ export default function DiscoveryPage() {
             setIsLoading(false);
             setIsSearching(false);
         }
-    }, [searchQuery, fetchTrends]);
+    }, [searchQuery, fetchTrends, niches]);
 
     const [mapPoints, setMapPoints] = useState<any[]>([
         { lat: 40.7128, lng: -74.006, intensity: 0.8, label: "NY Cluster" },
