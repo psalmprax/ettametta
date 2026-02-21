@@ -1,29 +1,24 @@
-# Walkthrough: High-Artistry & Professional Transformation
+# Walkthrough: The Visual Cortex (VLM Intuition)
 
-ViralForge has transitioned from a basic video scraper to a **Professional-Grade AI Editing Engine**. This walkthrough details the implementation of high-precision artistic features designed for maximum monetization and originality.
+ViralForge has achieved **True Visual Intuition**. By integrating Vision-Language Models (VLM), the engine no longer just "reads" transcripts—it "watches" the video to make creative decisions.
 
-## New Capabilities
+## VLM Capabilities
 
-### 1. Vision-Aware Captions (OCR)
-- **Problem**: Generated captions often overlap with existing text in source videos, making the output look "cheap."
-- **Solution**: The engine now "sees" the video using [**`OCRService`**](file:///home/psalmprax/viral_forge/services/video_engine/ocr_service.py). It detects existing text and automatically moves our captions to the **Top** or **Center** of the screen to avoid clutter.
+### 1. Scene Analysis (Gemini 1.5 Flash)
+- **Problem**: Previous versions only understood the *text* of a video, leading to aesthetic mismatches (e.g., using "High Energy" edits on a "Cinematic/Sad" visual).
+- **Solution**: The new [**`VLMService`**](file:///home/psalmprax/viral_forge/services/video_engine/vlm_service.py) samples keyframes and uses Gemini 1.5 Flash to intuit the **Visual Mood**, **Lighting**, and **Aesthetic Quality**.
 
-### 2. Semantic Hook-Driven Trimming
-- **Problem**: Long source videos often have "dead air" that kills viewer retention.
-- **Solution**: The [**`DecisionEngine`**](file:///home/psalmprax/viral_forge/services/decision_engine/service.py) now analyzes transcripts to identify the most viral "hooks." The [**`VideoProcessor`**](file:///home/psalmprax/viral_forge/services/video_engine/processor.py) then trims the video to *only* these high-energy segments.
+### 2. Multimodal Decision Making
+- **Problem**: AI strategies were limited by what was said in the transcript.
+- **Solution**: The [**`DecisionEngine`**](file:///home/psalmprax/viral_forge/services/decision_engine/service.py) now combines **Semantic Insights** (from Groq/Llama) with **Visual Intuition** (from Gemini) to create a "Director's Strategy."
 
-### 3. Automated B-Roll Injection
-- **Problem**: Using only source video can lead to copyright issues or low visual variety.
-- **Solution**: Integrated the **Pexels API** via [**`StockService`**](file:///home/psalmprax/viral_forge/services/video_engine/stock_service.py). The engine now automatically fetches and overlays cinematic stock footage that matches the transcript's keywords.
+### 3. Aesthetic Color Grading
+- **Problem**: Captions often lacked visual contrast with the background.
+- **Solution**: The [**`VideoProcessor`**](file:///home/psalmprax/viral_forge/services/video_engine/processor.py) now intuits the best caption color based on the detected visual mood. For example, it uses **Stark White** for "Dramatic" scenes and **Neon Green** for "High Energy" energetic segments to maximize readability and impact.
 
 ## Technical Milestones
 
-- **Phase 18.5**: Added `nodejs` to the API container to resolve YouTube "n-challenge" signature decryption.
-- **Phase 19**: Implemented the "Nexus Assembly" pipeline, enabling multi-source montage creation with high-artistry filters and semantic editing.
+- **Phase 20**: Successfully integrated multimodal keyframe analysis into the Celery background task pipeline.
+- **Orchestration**: Seamless handoff between `Transcription` -> `VLM Analysis` -> `LLM Strategy` -> `Artistic Rendering`.
 
-## Verification
-- OCR text detection confirmed on sample frames.
-- Pexels B-roll fetching successfully integrated and tested for vertical/portrait orientation.
-- Semantic trimming logic validated for multi-segment "Mystery" style montages.
-
-ViralForge is now **100% capable of professional-grade autonomous production**. 🦾🚀
+ViralForge is now a **Top-Tier AI Director**. 👁️🦾🚀
