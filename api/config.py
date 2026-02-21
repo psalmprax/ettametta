@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     TIKTOK_CLIENT_KEY: str = ""
     TIKTOK_CLIENT_SECRET: str = ""
     
+    # Scraper Cookies (Bypass Bot Detection)
+    YOUTUBE_COOKIES_PATH: Optional[str] = "cookies/youtube_cookies.txt"
+    TIKTOK_COOKIES_PATH: Optional[str] = "cookies/tiktok_cookies.txt"
+    
     # Infrastructure
     PRODUCTION_DOMAIN: str = "http://localhost:8000"
     
