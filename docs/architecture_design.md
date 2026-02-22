@@ -1,6 +1,6 @@
 # ettametta: Architecture Design
 
-> **Version**: 2.4 — Production Hardened (Jenkins & JCasC Integrated)
+> **Version**: 2.5 — Unified Branding & Resilient Acquisition
 
 ---
 
@@ -282,6 +282,8 @@ GitHub (master branch)
 | Edge Stability | Standardized Nginx `Upgrade` mapping |
 | Internal Services | Configurable `INTERNAL_API_TOKEN` for service-to-service auth |
 | Infrastructure | JCasC (Jenkins Configuration as Code) for idempotent secrets |
+| Bot Bypass | Synchronized `youtube_cookies.txt` with Docker-aware path resolution |
+| Branding | `et_token` standardized across all dashboard feature sets |
 
 ## Data Integrity & Production Readiness
 

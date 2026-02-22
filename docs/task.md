@@ -34,12 +34,20 @@
 - [x] Integrate Skool Discovery Scanner (Phase 40)
 - [x] Connect Dashboard UI to Monetization Settings API (Phase 41)
 
-## Phase 42: Infrastructure Hardening (Current)
-- [x] Dockerize Jenkins for idempotent CI/CD
-- [x] Implement Jenkins Configuration as Code (JCasC) for credentials
-- [x] Automate credential import via Groovy script
-- [x] Resolve Jenkins deployment directory and rsync permissions
-- [x] Resolve Docker networking collisions and stale bridges
-- [x] Push all stable changes to remote GitHub origin
+- [x] Phase 42: Infrastructure Hardening
+    - [x] Dockerize Jenkins for idempotent CI/CD
+    - [x] Implement Jenkins Configuration as Code (JCasC) for credentials
+    - [x] Automate credential import via Groovy script
+    - [x] Resolve Jenkins deployment directory and rsync permissions
+    - [x] Resolve Docker networking collisions and stale bridges
+    - [x] Push all stable changes to remote GitHub origin
+- [x] Phase 43: Rebranding Consistency
+    - [x] Update Login page branding header (VIRALFORGE -> ETTAMETTA)
+    - [x] Standardize and migrate authentication token keys (`vf_token` -> `et_token`)
+- [x] Phase 44: Downloader Resiliency & Format Auto-Correction
+    - [x] Fix missing `logging` and `yt_dlp` imports in `downloader.py`
+    - [x] Relax `yt-dlp` format selection strings to support YouTube Shorts and broad fallbacks
+    - [x] Gracefully handle "format not available" errors in Asset Validation
+    - [x] Implement Docker-aware relative cookie path resolution
 
 ettametta is now **production-hardened** with idempotent infrastructure and full feature parity across all discovery and monetization modules.

@@ -1,7 +1,7 @@
 # ettametta: Implementation Plan (Current & Future)
 
 > **Last Updated**: 2026-02-22  
-> **Version**: 2.5 — Production Hardened (Jenkins Automation Complete)
+> **Version**: 2.6 — Rebranding & Resiliency Complete
 
 ---
 
@@ -91,6 +91,14 @@ ettametta is a fully autonomous viral content engine for solo creators. It uses 
 - **WhatsApp Webhooks**: Bidirectional agent communication via Twilio API.
 - **Persona Engine**: `PersonaService` for creating animated AI avatars from user selfies.
 - **Monetization Settings**: Direct dashboard integration for affiliate and commerce account configuration.
+
+## Component 17: Rebranding & Token Migration (Phase 43)
+- **UI Branding**: Completed migration of all ViralForge headers to **ettametta**.
+- **Auth Token Migration**: Standardized local storage keys from `vf_token` to `et_token` across all dashboard feature routes.
+
+## Component 18: Downloader Resiliency (Phase 44)
+- **Format Fallback**: Relaxed `yt-dlp` format selection to support YouTube Shorts and broad stream acquisition.
+- **Cookie Architecture**: Implementation of Docker-aware relative path resolution for `youtube_cookies.txt` (checking `/app/cookies/` if local paths fail).
 
 ---
 
