@@ -4,7 +4,11 @@ USER root
 
 # Install rsync and docker CLI
 RUN apt-get update && \
-    apt-get install -y rsync docker.io && \
+    apt-get install -y rsync docker.io curl && \
+    DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker} && \
+    mkdir -p $DOCKER_CONFIG/cli-plugins && \
+    curl -SL https://github.com/docker/compose/releases/download/v2.26.1/docker-compose-linux-aarch64 -o /usr/local/bin/docker-compose && \
+    chmod +x /usr/local/bin/docker-compose && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

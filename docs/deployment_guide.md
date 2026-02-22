@@ -25,7 +25,51 @@ STORAGE_SECRET_KEY="your_secret_key"
 
 ---
 
-## 🎥 2. YouTube Data API (Google Cloud)
+## 🍪 3. YouTube/TikTok Cookies (Bypass Bot Detection)
+
+YouTube and TikTok block automated downloads without authentication. You need to export browser cookies to bypass bot detection.
+
+### Export Cookies from Browser
+
+1. **Install a cookie export extension**:
+   - Chrome/Edge: "Get cookies.txt LOCALLY" extension
+   - Firefox: "cookies.txt" extension
+
+2. **Export cookies**:
+   - Visit youtube.com (while logged in)
+   - Click the extension and export as `youtube_cookies.txt`
+   - Visit tiktok.com (while logged in)
+   - Export as `tiktok_cookies.txt`
+
+3. **Create the cookies directory** on your server:
+   ```bash
+   mkdir -p cookies
+   ```
+
+4. **Copy cookie files** to the cookies directory:
+   ```bash
+   cp youtube_cookies.txt /path/to/viralforge/cookies/
+   cp tiktok_cookies.txt /path/to/viralforge/cookies/
+   chmod 600 cookies/*.txt
+   ```
+
+### Alternative: Using yt-dlp CLI
+
+If you have a logged-in browser session:
+```bash
+# YouTube
+yt-dlp --cookies-from-browser chrome -o cookies/youtube_cookies.txt https://youtube.com
+
+# TikTok  
+yt-dlp --cookies-from-browser chrome -o cookies/tiktok_cookies.txt https://tiktok.com
+```
+
+> [!IMPORTANT]
+> Cookies directory is in `.gitignore` - never commit cookie files to version control!
+
+---
+
+## 🎥 4. YouTube Data API (Google Cloud)
 
 Required for automated publishing and trend discovery.
 
