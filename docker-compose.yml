@@ -33,6 +33,8 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
       - AWS_STORAGE_BUCKET_NAME
+      - SECRET_KEY
+      - INTERNAL_API_TOKEN
     depends_on:
       - db
       - redis
@@ -105,6 +107,8 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
       - AWS_STORAGE_BUCKET_NAME
+      - SECRET_KEY
+      - INTERNAL_API_TOKEN
     healthcheck:
       test: [ "CMD-SHELL", "pgrep -f 'celery' || exit 1" ]
       interval: 30s
@@ -131,6 +135,8 @@ services:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
       - REDIS_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
+      - SECRET_KEY
+      - INTERNAL_API_TOKEN
     healthcheck:
       test: [ "CMD-SHELL", "pgrep -f 'celery' || exit 1" ]
       interval: 30s

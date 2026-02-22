@@ -64,7 +64,7 @@ pipeline {
         TELEGRAM_BOT_TOKEN    = credentials('TELEGRAM_BOT_TOKEN')
         POSTGRES_PASSWORD     = credentials('POSTGRES_PASSWORD')
         REDIS_PASSWORD        = credentials('REDIS_PASSWORD')
-        JWT_SECRET_KEY        = credentials('JWT_SECRET_KEY')
+        SECRET_KEY            = credentials('JWT_SECRET_KEY')
         TELEGRAM_ADMIN_ID     = credentials('TELEGRAM_ADMIN_ID')
         
         // OAuth & Social
@@ -141,7 +141,7 @@ TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
 TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 REDIS_PASSWORD=${REDIS_PASSWORD}
-JWT_SECRET_KEY=${JWT_SECRET_KEY}
+SECRET_KEY=${SECRET_KEY}
 # Networking
 PRODUCTION_DOMAIN=${params.PRODUCTION_DOMAIN}
 # AI Control
