@@ -43,9 +43,15 @@ ettametta is now a unified, production-hardened environment:
 - **JCasC (Configuration as Code)**: Credentials and system settings are managed via YAML for secret-safe, repeatable deployments.
 - **Optimized Networking**: Stale Docker bridges and duplicate networks have been pruned for seamless service-to-service communication.
 
-For security details, see the [**Security Architecture**](#).
+## 🏆 Portfolio Harmonization & CI/CD
+Viral Forge is now part of a harmonized software portfolio, co-existing with the National Security Platform on shared OCI infrastructure.
 
-## 🏆 Market Advantage
-ettametta isn't just a "clipper"; it's a **Director**. It proactive discovers trends across 15+ platforms, intuits aesthetics that transcript-only tools miss, and gives you 100% private ownership on OCI ARM infrastructure.
+### Resource Isolation
+- **Port Harmony**: Viral Forge occupies the primary `3000` (Web) and `6379` (Redis) ports, with NSP resources shifted to higher ranges to prevent collisions.
+- **Automated Delivery**: A new `Jenkinsfile.remote` enables one-click deployment and automated data seeding, ensuring that the Visual Intelligence engine is always backed by a fresh, verified database state.
+
+---
+**Viral Forge // Harmonization & CI/CD Complete**
+**Efficient. Automated. Sovereign.**
 
 For a deep dive into the engineering, see the [**Architecture Design**](file:///home/psalmprax/ettametta/docs/architecture_design.md) or the [**Competitive Landscape**](file:///home/psalmprax/ettametta/docs/competitive_landscape.md).
