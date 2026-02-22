@@ -63,7 +63,8 @@ export default function DiscoveryPage() {
     const [showConfig, setShowConfig] = useState(false);
     const [mode, setMode] = useState<"discovery" | "generative">("discovery");
     const [timeHorizon, setTimeHorizon] = useState("30d"); // 24h, 7d, 30d
-    const [niches, setNiches] = useState<string[]>(["Motivation", "AI Technology", "Finance", "Health", "Gaming", "Crypto", "Relationships"]);
+    const [niches, setNiches] = useState<string[]>([]);
+    const [topKeywords, setTopKeywords] = useState<string[]>([]);
     const [userTier, setUserTier] = useState<string>("free");
 
     // New State for "Neural Config"
@@ -131,6 +132,7 @@ export default function DiscoveryPage() {
         setIsLoading(true);
         try {
             const token = localStorage.getItem("et_token");
+            // Fetch trends
             const res = await fetch(`${API_BASE}/discovery/trends?niche=${activeNiche}&horizon=${timeHorizon}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -140,6 +142,16 @@ export default function DiscoveryPage() {
             } else {
                 console.error("Failed to fetch trends", res.status);
                 setCandidates([]);
+            }
+            // Fetch niche trends for top keywords
+            const trendsRes = await fetch(`${API_BASE}/discovery/niche-trends/${activeNiche}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (trendsRes.ok) {
+                const trendsData = await trendsRes.json();
+                if (trendsData.top_keywords && trendsData.top_keywords.length > 0) {
+                    setTopKeywords(trendsData.top_keywords);
+                }
             }
         } catch (err) {
             console.error(err);
@@ -325,8 +337,6 @@ export default function DiscoveryPage() {
             }
         }
     }, [telemetryData]);
-
-    const topKeywords = ["Success", "Grind", "AI Automation", "Discipline", "Growth", "Wealth", "Stoicism"];
 
     return (
         <DashboardLayout>

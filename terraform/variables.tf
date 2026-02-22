@@ -22,7 +22,7 @@ variable "boot_volume_size_in_gbs" {
 
 variable "allowed_ports" {
   type    = list(number)
-  default = [80, 443, 8000, 8080]
+  default = [22, 80, 443, 3000, 3001, 5000, 8000, 8080, 8085, 8443]
 }
 
 variable "bucket_name" {
