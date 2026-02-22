@@ -193,6 +193,13 @@ export default function DiscoveryPage() {
         }
     }, [activeNiche, router]);
 
+    // Open candidate URL in new tab
+    const handleOpenUrl = useCallback((url: string) => {
+        if (url) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+    }, []);
+
     const handleTestDrive = useCallback(async () => {
         setIsTestDriving(true);
         try {
@@ -688,7 +695,8 @@ export default function DiscoveryPage() {
                                                         animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                                                         transition={{ delay: idx * 0.08, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                                                         layout
-                                                        className="p-10 px-12 flex flex-col lg:flex-row lg:items-center justify-between hover:bg-white/[0.03] transition-all group relative overflow-hidden"
+                                                        onClick={() => candidate.url && handleOpenUrl(candidate.url)}
+                                                        className="p-10 px-12 flex flex-col lg:flex-row lg:items-center justify-between hover:bg-white/[0.03] transition-all group relative overflow-hidden cursor-pointer"
                                                     >
                                                         {/* ... (existing candidate UI) */}
                                                         <div className="absolute inset-x-0 top-0 h-full bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />

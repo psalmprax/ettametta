@@ -103,7 +103,7 @@ def download_and_process_task(self, source_url: str, niche: str, platform: str, 
         
         # 3. Generate SEO metadata/package (USING REAL SERVICE)
         update_job(status="Optimizing", progress=70)
-        metadata = run_async(base_optimization_service.generate_viral_package("dummy_id", niche, platform))
+        metadata = run_async(base_optimization_service.generate_viral_package(task_id, niche, platform))
         
         # 3.5 Storage (Upload to S3 or prepare local URL)
         from services.storage.service import base_storage_service

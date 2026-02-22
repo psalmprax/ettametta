@@ -43,7 +43,7 @@ class GenerativeService:
         encoded_prompt = urllib.parse.quote(prompt)
         # We request a large resolution (which translates to high quality for upscale later)
         width, height = (3840, 2160) if aspect_ratio == "16:9" else (2160, 3840)
-        image_url = f"https://pollinations.ai/p/{encoded_prompt}?width={width}&height={height}&model=flux&seed={uuid.uuid4().int}"
+        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&model=flux&seed={uuid.uuid4().int}"
         
         # 2. Process into 4K Cinematic Video
         processor = VideoProcessor()
