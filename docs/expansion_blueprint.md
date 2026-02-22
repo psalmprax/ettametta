@@ -159,3 +159,37 @@ k6 run scripts/load_test.js
 2. **Week 2:** Set up GPU render node
 3. **Week 3:** Document API key configuration
 4. **Week 4:** Run load tests and optimize
+
+---
+
+## Transformation Pipeline Reference
+
+### Transformation Filters (VideoProcessor)
+
+| Filter | Effect |
+|--------|--------|
+| Originality | Mirror, zoom (1.02x-1.08x), color shift |
+| Speed Ramping | Variable speed (0.95x-1.05x) |
+| Dynamic Jitter | Frame-level scale jitter |
+| Cinematic Overlays | Letterbox, vignette |
+| Film Grain | Retro film texture |
+| Grayscale | Black & white |
+| Glitch Effect | Digital distortion |
+| B-Roll Injection | Pexels stock footage |
+
+### Generative Synthesis Engines
+
+| Engine | Use Case |
+|--------|----------|
+| Veo 3 | High-quality Google AI generation |
+| Wan2.2 | Open-source via SiliconFlow |
+| LTX-2 | Local GPU rendering |
+| Cinematic Motion | Static image → video |
+
+### Output Formats
+
+| Aspect Ratio | Platform |
+|--------------|----------|
+| 9:16 | TikTok, Reels, Shorts |
+| 16:9 | YouTube, Twitter |
+| 1:1 | Instagram Feed |

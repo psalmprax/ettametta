@@ -249,3 +249,50 @@ cd terraform && terraform validate && terraform plan
 | 96 | DNS & HTTPS final binding | HIGH |
 | 97 | Mobile App (React Native) | MEDIUM |
 | 98 | Marketplace for Skills/Templates | LOW |
+
+---
+
+## End-to-End Pipeline Use Cases
+
+### USE CASE 1: Viral Content Repurposing
+1. DISCOVERY → Scan TikTok for trending videos
+2. DOWNLOAD → VideoDownloader.download_video()
+3. TRANSFORMATION → Mirror, zoom, color shift, trim to hook
+4. ENHANCEMENT → B-roll injection, cinematic overlays
+5. MONETIZATION → Inject affiliate CTA
+6. PUBLISH → Upload to YouTube Shorts/TikTok
+
+### USE CASE 2: AI-Generated Short Film
+1. CREATION → User enters prompt "Cyberpunk city"
+2. GENERATION → Veo3/Wan2.2 generates 5 scenes
+3. VOICEOVER → ElevenLabs TTS narration
+4. ASSEMBLY → Concatenate scenes, add music
+5. THUMBNAIL → AI-generated with Pollinations.ai
+
+### USE CASE 3: Persona-Based Content
+1. UPLOAD → User uploads selfie photo
+2. ANIMATION → PersonaService.animate_persona()
+3. BRANDING → Add intro/outro, watermark
+4. MONETIZE → Add course promotion
+5. DISTRIBUTE → Post to all platforms
+
+### USE CASE 4: Automated Trend Riding
+1. MONITOR → Continuous hourly discovery scan
+2. FAST TRACK → Download & transform within minutes
+3. VIRAL OPTIMIZATION → VLM analysis + A/B titles
+4. LAUNCH → Post immediately for trend window
+
+---
+
+## API Endpoints Summary
+
+| Endpoint | Purpose |
+|----------|---------|
+| POST /api/discovery/search | Find trending content |
+| POST /api/video/generate | AI generate from prompt |
+| POST /api/video/transform | Transform existing video |
+| POST /api/video/persona | Create avatar video |
+| POST /api/publish/youtube | Upload to YouTube |
+| POST /api/publish/tiktok | Upload to TikTok |
+| POST /api/publish/schedule | Schedule future post |
+| GET /api/analytics/overview | View performance metrics |
