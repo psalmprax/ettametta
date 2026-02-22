@@ -56,7 +56,7 @@ export default function CreationPage() {
         setIsGenerating(true);
         setHookAnalysis(null);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/no-face/generate-script`, {
                 method: "POST",
                 headers: {
@@ -83,7 +83,7 @@ export default function CreationPage() {
 
         setIsValidating(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/no-face/validate-hook`, {
                 method: "POST",
                 headers: {
@@ -106,7 +106,7 @@ export default function CreationPage() {
     const handleSynthesizeAudio = async (index: number, text: string) => {
         setLoadingSegment(`audio-${index}`);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/no-face/generate-voiceover`, {
                 method: "POST",
                 headers: {
@@ -132,7 +132,7 @@ export default function CreationPage() {
     const handleGenerateSegmentImage = async (index: number, prompt: string) => {
         setLoadingSegment(`image-${index}`);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/no-face/generate-image`, {
                 method: "POST",
                 headers: {
@@ -158,7 +158,7 @@ export default function CreationPage() {
     const handleSearchStock = async (index: number, query: string) => {
         setLoadingSegment(`stock-${index}`);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/no-face/search-stock?query=${encodeURIComponent(query)}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -180,7 +180,7 @@ export default function CreationPage() {
         if (!script) return;
         setIsGenerating(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/no-face/localize`, {
                 method: "POST",
                 headers: {
@@ -204,7 +204,7 @@ export default function CreationPage() {
         if (!topic) return;
         setIsCinemaLaunching(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/nexus/compose`, {
                 method: "POST",
                 headers: {

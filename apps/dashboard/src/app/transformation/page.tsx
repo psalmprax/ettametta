@@ -66,7 +66,7 @@ function TransformationPageContent() {
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const response = await fetch(`${API_BASE}/video/transform`, {
                 method: "POST",
                 headers: {
@@ -98,7 +98,7 @@ function TransformationPageContent() {
 
     const handleToggleFilter = async (id: string) => {
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/settings/filters/${id}/toggle`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
@@ -126,7 +126,7 @@ function TransformationPageContent() {
 
     const handleAbort = async (id: string) => {
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/video/jobs/${id}/abort`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
@@ -172,7 +172,7 @@ function TransformationPageContent() {
     React.useEffect(() => {
         const fetchData = async () => {
             try {
-                const token = localStorage.getItem("vf_token");
+                const token = localStorage.getItem("et_token");
                 if (!token) return;
                 const headers = { Authorization: `Bearer ${token}` };
 

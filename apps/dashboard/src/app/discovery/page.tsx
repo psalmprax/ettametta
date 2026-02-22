@@ -89,7 +89,7 @@ export default function DiscoveryPage() {
     useEffect(() => {
         const fetchNiches = async () => {
             try {
-                const token = localStorage.getItem("vf_token");
+                const token = localStorage.getItem("et_token");
                 const res = await fetch(`${API_BASE}/discovery/niches`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -106,7 +106,7 @@ export default function DiscoveryPage() {
 
         const fetchProfile = async () => {
             try {
-                const token = localStorage.getItem("vf_token");
+                const token = localStorage.getItem("et_token");
                 const response = await fetch(`${API_BASE}/auth/me`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -130,7 +130,7 @@ export default function DiscoveryPage() {
     const fetchTrends = useCallback(async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/discovery/trends?niche=${activeNiche}&horizon=${timeHorizon}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -159,7 +159,7 @@ export default function DiscoveryPage() {
 
     const handleAddToQueue = useCallback(async (candidate: ContentCandidate) => {
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/video/transform`, {
                 method: "POST",
                 headers: {
@@ -184,7 +184,7 @@ export default function DiscoveryPage() {
     const handleTestDrive = useCallback(async () => {
         setIsTestDriving(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/video/test-drive`, {
                 method: "POST",
                 headers: {
@@ -215,7 +215,7 @@ export default function DiscoveryPage() {
         if (!genPrompt.trim()) return;
         setIsGenerating(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const endpoint = isStoryMode ? "/video/generate-story" : "/video/generate";
 
             const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -265,7 +265,7 @@ export default function DiscoveryPage() {
         setIsSearching(true);
         setIsLoading(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(searchQuery)}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -367,7 +367,7 @@ export default function DiscoveryPage() {
                                     animate={{ opacity: 1, x: 0 }}
                                     type="button"
                                     onClick={async () => {
-                                        const token = localStorage.getItem("vf_token");
+                                        const token = localStorage.getItem("et_token");
                                         setIsLoading(true);
                                         await fetch(`${API_BASE}/discovery/scan`, {
                                             method: "POST",

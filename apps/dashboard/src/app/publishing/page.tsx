@@ -93,7 +93,7 @@ export default function PublishingPage() {
     React.useEffect(() => {
         const fetchData = async () => {
             try {
-                const token = localStorage.getItem("vf_token");
+                const token = localStorage.getItem("et_token");
                 const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
                 const [accountsRes, historyRes, jobsRes] = await Promise.all([
                     fetch(`${API_BASE}/publish/accounts`, { headers }),
@@ -122,7 +122,7 @@ export default function PublishingPage() {
         if (!selectedJobForDeploy || accounts.length === 0) return;
         setIsDeploying(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/publish/post`, {
                 method: "POST",
                 headers: {
