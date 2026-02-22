@@ -4,78 +4,77 @@ pipeline {
     environment {
         REMOTE_USER = 'ubuntu'
         REMOTE_HOST = '130.61.26.105'
-        SSH_KEY_PATH = '/home/psalmprax/.oci/samuelolle@yahoo.com-2026-02-17T13_44_42.909Z.pem'
+        // Using credentialsId 'OCI_SSH_KEY' instead of a local host path
         DEPLOY_DIR = '/home/ubuntu/viral_forge'
-        // Host ports are unique: 
-        // 3000 (nginx) -> exposes Public Dashboard/API
-        // 3001 (openclaw) -> separate bot service
-        // 5432 (db), 6379 (redis) -> database services
-        // 8081 (discovery-go), 8082 (voiceover) -> internal microservices
+        // Host ports are unique
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the repository from source control
                 checkout scm
             }
         }
 
         stage('Deploy to Remote Server') {
             steps {
-                script {
-                    echo "Preparing remote deployment on ${REMOTE_HOST}..."
-                    // Create deploy directory on remote if it doesn't exist
-                    sh "ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} 'mkdir -p ${DEPLOY_DIR}'"
-                    
-                    // Sync files to remote via rsync
-                    sh "rsync -avz -e 'ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no' --exclude '.git' --exclude 'venv' --exclude '__pycache__' . ${REMOTE_USER}@${REMOTE_HOST}:${DEPLOY_DIR}"
+                withCredentials([sshUserPrivateKey(credentialsId: 'OCI_SSH_KEY', keyFileVariable: 'SSH_KEY_PATH')]) {
+                    script {
+                        echo "Preparing remote deployment on ${REMOTE_HOST}..."
+                        // Create deploy directory on remote
+                        sh "ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} 'mkdir -p ${DEPLOY_DIR}'"
+                        
+                        // Sync files to remote via rsync
+                        sh "rsync -avz -e 'ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no' --exclude '.git' --exclude 'venv' --exclude '__pycache__' . ${REMOTE_USER}@${REMOTE_HOST}:${DEPLOY_DIR}"
+                    }
                 }
             }
         }
 
         stage('Rebuild and Start Services') {
             steps {
-                script {
-                    echo "Restarting Docker Compose services..."
-                    sh """
-                        ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
-                            cd ${DEPLOY_DIR}
-                            # Ensure .env exists
-                            if [ ! -f .env ]; then 
-                                cp .env.example .env
-                                echo "Created .env from example"
-                            fi
-                            docker-compose down --remove-orphans
-                            docker-compose build
-                            docker-compose up -d
-                        '
-                    """
+                withCredentials([sshUserPrivateKey(credentialsId: 'OCI_SSH_KEY', keyFileVariable: 'SSH_KEY_PATH')]) {
+                    script {
+                        echo "Restarting Docker Compose services..."
+                        sh """
+                            ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
+                                cd ${DEPLOY_DIR}
+                                if [ ! -f .env ]; then cp .env.example .env; fi
+                                docker-compose down --remove-orphans
+                                docker-compose build
+                                docker-compose up -d
+                            '
+                        """
+                    }
                 }
             }
         }
 
         stage('Seed Test Data') {
             steps {
-                script {
-                    echo "Seeding database with test data..."
-                    sh """
-                        ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
-                            cd ${DEPLOY_DIR}
-                            # Execute the test pipeline script inside the API container
-                            docker-compose exec -T api python scripts/test_pipeline.py
-                        '
-                    """
+                withCredentials([sshUserPrivateKey(credentialsId: 'OCI_SSH_KEY', keyFileVariable: 'SSH_KEY_PATH')]) {
+                    script {
+                        echo "Seeding database with test data..."
+                        sh """
+                            ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
+                                cd ${DEPLOY_DIR}
+                                # Execute the test pipeline script inside the API container
+                                docker-compose exec -T api python scripts/test_pipeline.py
+                            '
+                        """
+                    }
                 }
             }
         }
 
         stage('Final Health Check') {
             steps {
-                script {
-                    echo "Verifying service health..."
-                    // Check if Nginx is responding on port 3000
-                    sh "ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} 'curl -sf http://localhost:3000/api/health || (echo \"Health check failed\" && exit 1)'"
+                withCredentials([sshUserPrivateKey(credentialsId: 'OCI_SSH_KEY', keyFileVariable: 'SSH_KEY_PATH')]) {
+                    script {
+                        echo "Verifying service health..."
+                        // Check if Nginx is responding on port 3000
+                        sh "ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} 'curl -sf http://localhost:3000/api/health || (echo \"Health check failed\" && exit 1)'"
+                    }
                 }
             }
         }
