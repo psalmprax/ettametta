@@ -1,7 +1,6 @@
 # ettametta: Architecture Design
 
-> **Last Updated**: 2026-02-21  
-> **Version**: 2.3 — Multimodal AI Director (VLM Integrated)
+> **Version**: 2.4 — Production Hardened (Jenkins & JCasC Integrated)
 
 ---
 
@@ -71,6 +70,7 @@
 | `celery-beat` | — | Celery Beat | Scheduled task scheduler |
 | `discovery-go` | 8080 | Go 1.21 | High-speed trend scanner |
 | `voiceover` | 8080 | FastAPI (Python) | Local neural voice synthesis (Fish Speech) |
+| `jenkins` | 8080 | Java (Dockerized) | Idempotent CI/CD Lifecycle Automation |
 
 ### API Layer (FastAPI)
 
@@ -258,10 +258,11 @@ GitHub (master branch)
     │   └── SSH Deploy to OCI
     │
     └── Jenkins (OCI Server, Port 8080)
-        ├── Checkout
-        ├── Docker Compose Build
-        ├── pytest Suite
-        └── docker-compose up -d
+        ├── Dockerized Runtime (jenkins/jenkins:lts)
+        ├── Configuration as Code (JCasC)
+        ├── Groovy-based Credential Automation
+        ├── Docker-out-of-Docker (DooD) build logic
+        └── docker-compose up -d (Stable Node Deployment)
 ```
 
 ---
@@ -280,6 +281,7 @@ GitHub (master branch)
 | WS Verification | `isMounted` hook guards + 101 Handshake validation |
 | Edge Stability | Standardized Nginx `Upgrade` mapping |
 | Internal Services | Configurable `INTERNAL_API_TOKEN` for service-to-service auth |
+| Infrastructure | JCasC (Jenkins Configuration as Code) for idempotent secrets |
 
 ## Data Integrity & Production Readiness
 

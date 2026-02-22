@@ -25,12 +25,20 @@
 - [x] Implement Multi-Bot white-labeling architecture
 - [x] Add Bot Token and Chat ID management to Dashboard
 
-## Phase 28: Data Integrity & Production Readiness
-- [x] Audit all discovery scanners for dummy/static data
-- [x] Replace mock content candidates with empty results
-- [x] Replace mock video URLs with proper error handling
-- [x] Remove fallback mock URLs from monetization strategies
-- [x] Replace hardcoded IDs with proper UUID generation
-- [x] Add configurable internal API token for service-to-service auth
+## Phase 36–41: Expansion & Monetization
+- [x] Create `NoFaceSkill` for text and hook generation (OpenClaw)
+- [x] Update `AnalyticsSkill` and agent prompts (Phase 36)
+- [x] Implement WhatsApp Integration via Twilio TwiML (Phase 37)
+- [x] Create `MessageDispatcher` and `OutreachSkill` for broadcasts (Phase 38)
+- [x] Implement Personalized Persona Engine (`PersonaDB` + API) (Phase 39)
+- [x] Integrate Skool Discovery Scanner (Phase 40)
+- [x] Connect Dashboard UI to Monetization Settings API (Phase 41)
 
-ettametta is now **production-ready** with proper error handling and no dummy data in user-facing flows.
+## Phase 42: Infrastructure Hardening (Current)
+- [x] Dockerize Jenkins for idempotent CI/CD
+- [x] Implement Jenkins Configuration as Code (JCasC) for credentials
+- [x] Automate credential import via Groovy script
+- [x] Resolve Docker networking collisions and stale bridges
+- [x] Push all stable changes to remote GitHub origin
+
+ettametta is now **production-hardened** with idempotent infrastructure and full feature parity across all discovery and monetization modules.

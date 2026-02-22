@@ -1,7 +1,7 @@
 # ettametta: Implementation Plan (Current & Future)
 
 > **Last Updated**: 2026-02-22  
-> **Version**: 2.4 — Production Ready (Data Integrity Audit Complete)
+> **Version**: 2.5 — Production Hardened (Jenkins Automation Complete)
 
 ---
 
@@ -79,6 +79,18 @@ ettametta is a fully autonomous viral content engine for solo creators. It uses 
 - **Private Agents**: Support for individual user Telegram bot tokens via [BotManager](file:///home/psalmprax/ettametta/services/openclaw/main.py).
 - **Lifecycle Orchestration**: Dynamic starting/stopping of bot instances without service restarts.
 - **Self-Service Onboarding**: Direct dashboard integration with @BotFather for token management.
+
+## Component 15: Jenkins Infrastructure as Code (Phase 42)
+- **Dockerized Jenkins**: Portable CI/CD environment using `jenkins/jenkins:lts` image.
+- **JCasC (Jenkins Configuration as Code)**: Idempotent setup via `jenkins_casc_credentials.yaml`.
+- **Credential Automation**: Automated import of 26+ environment variables via Groovy console scripts.
+- **DooD (Docker-out-of-Docker)**: Host `docker.sock` binding for building containers within pipelines.
+
+## Component 16: Expanded Platform Intelligence (Phase 36-41)
+- **Skool Discovery**: `SkoolScanner` for extracting high-value educational trends.
+- **WhatsApp Webhooks**: Bidirectional agent communication via Twilio API.
+- **Persona Engine**: `PersonaService` for creating animated AI avatars from user selfies.
+- **Monetization Settings**: Direct dashboard integration for affiliate and commerce account configuration.
 
 ---
 
