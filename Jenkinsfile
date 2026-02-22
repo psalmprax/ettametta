@@ -48,7 +48,7 @@ pipeline {
         DOCKER_COMPOSE_FILE   = "docker-compose.yml"
         
         // Deployment directory on the SAME server
-        DEPLOY_DIR            = "/home/ubuntu/ettametta"
+        DEPLOY_DIR            = "/home/ubuntu/viralforge"
         PUBLIC_IP             = "130.61.26.105"
         HEALTH_CHECK_URL      = "http://172.17.0.1:3000/api/health"
         
