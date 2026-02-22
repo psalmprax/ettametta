@@ -15,7 +15,10 @@ class TikTokPublisher(SocialPublisher):
             return None
             
         access_token = token_data["access_token"]
-        open_id = token_data.get("open_id", "user_id_placeholder") # Should store open_id in auth flow
+        # Use open_id from token if available, or derive from user_id for tracking
+        open_id = token_data.get("open_id", str(user_id) if user_id else None)
+        if not open_id:
+            raise ValueError("TikTok open_id not available. Please reconnect your TikTok account.")
 
         import httpx
         import os

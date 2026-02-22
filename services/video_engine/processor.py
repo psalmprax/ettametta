@@ -1,5 +1,6 @@
 from moviepy import VideoFileClip, TextClip, CompositeVideoClip, concatenate_videoclips, ColorClip, vfx
 import os
+import uuid
 import random
 import logging
 from typing import List, Optional, Dict
