@@ -28,20 +28,31 @@ class VideoDownloader:
             'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
         }
         
-        # Determine cookies path
+        # Determine cookies path - check multiple locations for Docker compatibility
         is_tiktok = 'tiktok' in url.lower()
         is_youtube = 'youtube' in url.lower() or 'youtu.be' in url.lower()
         
         cookie_path = None
         if is_tiktok:
-            cookie_path = settings.TIKTOK_COOKIES_PATH or os.getenv('TIKTOK_COOKIES_FILE')
+            cookie_path = os.getenv('TIKTOK_COOKIES_FILE') or settings.TIKTOK_COOKIES_PATH
         elif is_youtube:
-            cookie_path = settings.YOUTUBE_COOKIES_PATH or os.getenv('YOUTUBE_COOKIES_FILE')
-
+            cookie_path = os.getenv('YOUTUBE_COOKIES_FILE') or settings.YOUTUBE_COOKIES_PATH
+        
+        # If relative path, try multiple locations (Docker mounts)
+        if cookie_path and not os.path.isabs(cookie_path):
+            # Try relative to current directory
+            if not os.path.exists(cookie_path):
+                # Try relative to /app (Docker mount point)
+                cookie_path_alt = f"/app/{cookie_path}"
+                if os.path.exists(cookie_path_alt):
+                    cookie_path = cookie_path_alt
+                    print(f"[VideoDownloader] Using cookie at: {cookie_path}")
+        
         if cookie_path and os.path.exists(cookie_path):
             ydl_opts['cookiefile'] = cookie_path
+            print(f"[VideoDownloader] Using cookies: {cookie_path}")
         elif cookie_path:
-            print(f"[VideoDownloader] WARNING: Cookie file {cookie_path} not found.")
+            print(f"[VideoDownloader] WARNING: Cookie file not found: {cookie_path}")
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -80,9 +91,16 @@ class VideoDownloader:
         
         cookie_path = None
         if is_tiktok:
-            cookie_path = settings.TIKTOK_COOKIES_PATH or os.getenv('TIKTOK_COOKIES_FILE')
+            cookie_path = os.getenv('TIKTOK_COOKIES_FILE') or settings.TIKTOK_COOKIES_PATH
         elif is_youtube:
-            cookie_path = settings.YOUTUBE_COOKIES_PATH or os.getenv('YOUTUBE_COOKIES_FILE')
+            cookie_path = os.getenv('YOUTUBE_COOKIES_FILE') or settings.YOUTUBE_COOKIES_PATH
+
+        # If relative path, try /app location for Docker
+        if cookie_path and not os.path.isabs(cookie_path):
+            if not os.path.exists(cookie_path):
+                cookie_path_alt = f"/app/{cookie_path}"
+                if os.path.exists(cookie_path_alt):
+                    cookie_path = cookie_path_alt
 
         if cookie_path and os.path.exists(cookie_path):
             ydl_opts['cookiefile'] = cookie_path
