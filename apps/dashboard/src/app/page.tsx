@@ -62,7 +62,7 @@ export default function Home() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem("vf_token");
+        const token = localStorage.getItem("et_token");
         const response = await fetch(`${API_BASE}/analytics/stats/summary`, {
           headers: { Authorization: `Bearer ${token}` }
         });

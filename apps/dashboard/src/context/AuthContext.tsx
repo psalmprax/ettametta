@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const publicPaths = ["/login", "/register"];
 
     const logout = () => {
-        localStorage.removeItem("vf_token");
+        localStorage.removeItem("et_token");
         setToken(null);
         setUser(null);
         router.push("/login");
@@ -62,13 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const login = (newToken: string) => {
-        localStorage.setItem("vf_token", newToken);
+        localStorage.setItem("et_token", newToken);
         setToken(newToken);
         fetchUser(newToken);
     };
 
     useEffect(() => {
-        const storedToken = localStorage.getItem("vf_token");
+        const storedToken = localStorage.getItem("et_token");
         if (storedToken) {
             setToken(storedToken);
             fetchUser(storedToken);

@@ -79,7 +79,7 @@ export default function SettingsPage() {
     const fetchSettings = async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const headers = { Authorization: `Bearer ${token}` };
             const response = await fetch(`${API_BASE}/settings/`, { headers });
             const data = await response.json();
@@ -95,7 +95,7 @@ export default function SettingsPage() {
 
     const fetchProfile = async () => {
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const response = await fetch(`${API_BASE}/auth/me`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -126,7 +126,7 @@ export default function SettingsPage() {
         setIsSaving(true);
         setSaveStatus("idle");
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
 
             // Only admins save global settings
             if (userProfile.role === "admin") {

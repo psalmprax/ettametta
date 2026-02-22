@@ -35,7 +35,7 @@ export default function EmpirePage() {
     const fetchSentinel = async () => {
         setIsRefreshing(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/no-face/sentinel/status`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -60,7 +60,7 @@ export default function EmpirePage() {
     const handleClone = async () => {
         setIsRefreshing(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/monetization/empire/clone`, {
                 method: "POST",
                 headers: {
@@ -84,7 +84,7 @@ export default function EmpirePage() {
 
     const fetchEmpireMetrics = async () => {
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/monetization/empire/metrics`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -99,7 +99,7 @@ export default function EmpirePage() {
 
     const fetchBlueprints = async () => {
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/monetization/empire/blueprints`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -122,7 +122,7 @@ export default function EmpirePage() {
         if (!promoProduct) return;
         setIsGeneratingPromo(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/monetization/promo/generate`, {
                 method: "POST",
                 headers: {
@@ -146,7 +146,7 @@ export default function EmpirePage() {
 
     const fetchNetwork = async () => {
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/monetization/empire/network`, {
                 headers: { Authorization: `Bearer ${token}` }
             });

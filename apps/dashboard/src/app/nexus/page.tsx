@@ -67,7 +67,7 @@ export default function NexusPage() {
     useEffect(() => {
         const fetchNexusJobs = async () => {
             try {
-                const token = localStorage.getItem("vf_token");
+                const token = localStorage.getItem("et_token");
                 const res = await fetch(`${API_BASE}/nexus/jobs`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -83,7 +83,7 @@ export default function NexusPage() {
 
         const fetchProfile = async () => {
             try {
-                const token = localStorage.getItem("vf_token");
+                const token = localStorage.getItem("et_token");
                 const response = await fetch(`${API_BASE}/auth/me`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -99,7 +99,7 @@ export default function NexusPage() {
 
         const fetchNiches = async () => {
             try {
-                const token = localStorage.getItem("vf_token");
+                const token = localStorage.getItem("et_token");
                 const res = await fetch(`${API_BASE}/discovery/niches`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -129,7 +129,7 @@ export default function NexusPage() {
         if (!activeBlueprint) return;
         setIsLaunching(true);
         try {
-            const token = localStorage.getItem("vf_token");
+            const token = localStorage.getItem("et_token");
             const res = await fetch(`${API_BASE}/nexus/compose`, {
                 method: "POST",
                 headers: {

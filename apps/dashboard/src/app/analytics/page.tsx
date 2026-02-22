@@ -105,7 +105,7 @@ export default function AnalyticsPage() {
     useEffect(() => {
         const fetchPosts = async () => {
             try {
-                const token = localStorage.getItem("vf_token");
+                const token = localStorage.getItem("et_token");
                 const response = await fetch(`${API_BASE}/analytics/posts`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -130,7 +130,7 @@ export default function AnalyticsPage() {
 
         const fetchData = async () => {
             try {
-                const token = localStorage.getItem("vf_token");
+                const token = localStorage.getItem("et_token");
                 const headers = { Authorization: `Bearer ${token}` };
 
                 // Fetch Performance Report
