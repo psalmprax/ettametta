@@ -90,3 +90,50 @@ Cloud IPs (like Oracle Cloud) are often flagged by scrapers. To bypass this, we 
     *   Save the file as `cookies/youtube_cookies.txt`.
 4.  **Security**: The `cookies/` folder is blocked in `.gitignore` and excluded from Jenkins `rsync` to ensure your session data never leaves your OCI instance.
 5.  **Signature Solving**: The system automatically includes a JavaScript runtime (`nodejs`) in the Docker build to solve YouTube "n-challenge" signature protection. No manual setup is required beyond exporting cookies.
+
+---
+
+## 🔧 Code Fixes Summary (Feb 2026)
+
+The following issues were identified and fixed during the dummy data audit:
+
+### 1. Go Discovery Scanner - Real YouTube API Integration
+**File**: `services/discovery-go/scanner.go`
+
+**Problem**: The scanner was generating fake/mock video URLs like `https://discovery.os/v/123456789` instead of real content.
+
+**Fix**: 
+- Integrated YouTube Data API v3 for real video search
+- Added proper API key authentication via `YOUTUBE_API_KEY` environment variable
+- Returns real metadata: view count, thumbnail URL, title, platform info
+- Falls back gracefully when API key is not available
+
+### 2. Persona Image Storage - Real S3 Upload
+**File**: `api/routes/persona.py`
+
+**Problem**: Persona creation was storing images to fake Google Storage URLs like `https://storage.googleapis.com/viral-forge-assets/...`
+
+**Fix**:
+- Integrated real S3-compatible storage service (`api.utils.storage`)
+- Files are now uploaded to configured OCI Object Storage
+- Returns actual S3 URLs or local path indicators on failure
+
+### 3. Jenkins Credentials Configuration
+**Files**: `jenkins_casc_credentials.yaml`, `scripts/import_jenkins_credentials.sh`
+
+- Created JCasC-compatible credentials YAML
+- Script to import credentials via Jenkins Groovy console
+- 26 credentials pre-configured in Jenkins
+
+### Required Environment Variables for Real Data
+
+Make sure these are set in your `.env` or Jenkins credentials:
+
+| Variable | Purpose |
+|----------|----------|
+| `YOUTUBE_API_KEY` | YouTube Data API v3 key for discovery scanner |
+| `AWS_ACCESS_KEY_ID` | OCI S3 access key for persona image storage |
+| `AWS_SECRET_ACCESS_KEY` | OCI S3 secret key |
+| `AWS_STORAGE_BUCKET_NAME` | S3 bucket name |
+
+Run `docker-compose up -d` from `/home/ubuntu/viralforge/` (not `/home/ubuntu/ettametta/`).

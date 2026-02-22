@@ -18,6 +18,11 @@
  *  POSTGRES_PASSWORD         Secret text           PostgreSQL password
  *  REDIS_PASSWORD            Secret text           Redis password
  *  JWT_SECRET_KEY            Secret text           Random secret for JWT signing
+ *  STRIPE_SECRET_KEY         Secret text           Stripe payment processing
+ *  STRIPE_WEBHOOK_SECRET    Secret text           Stripe webhook signing secret
+ *  AWS_ACCESS_KEY_ID        Secret text           AWS S3 storage access key
+ *  AWS_SECRET_ACCESS_KEY    Secret text           AWS S3 storage secret key
+ *  AWS_STORAGE_BUCKET_NAME  Secret text           AWS S3 bucket name
  *
  * HOW TO ADD A CREDENTIAL IN JENKINS:
  *  1. Go to: Jenkins → Manage Jenkins → Credentials → System → Global credentials
@@ -73,6 +78,15 @@ pipeline {
         // OCI Storage
         OCI_STORAGE_ACCESS_KEY = credentials('STORAGE_ACCESS_KEY')
         OCI_STORAGE_SECRET_KEY = credentials('STORAGE_SECRET_KEY')
+        
+        // Payment Processing
+        STRIPE_SECRET_KEY      = credentials('STRIPE_SECRET_KEY')
+        STRIPE_WEBHOOK_SECRET = credentials('STRIPE_WEBHOOK_SECRET')
+        
+        // AWS Storage (for S3 uploads)
+        AWS_ACCESS_KEY_ID       = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY   = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_STORAGE_BUCKET_NAME = credentials('AWS_STORAGE_BUCKET_NAME')
     }
 
     options {

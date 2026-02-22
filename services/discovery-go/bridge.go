@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type AIBridge struct {
@@ -22,14 +24,27 @@ func NewAIBridge() *AIBridge {
 }
 
 func (b *AIBridge) SendToDeconstructor(candidate ScanResult) error {
+	// Skip if no URL (empty result from API)
+	if candidate.URL == "" {
+		fmt.Printf("[Bridge] Skipping %s - no results from YouTube API\n", candidate.Niche)
+		return nil
+	}
+
+	// Generate a unique ID for the candidate
+	candidateID := uuid.New().String()
+
 	payload, _ := json.Marshal(map[string]interface{}{
-		"url":      candidate.URL,
-		"niche":    candidate.Niche,
-		"velocity": candidate.Velocity,
+		"id":            candidateID,
+		"url":           candidate.URL,
+		"niche":         candidate.Niche,
+		"velocity":      candidate.Velocity,
+		"thumbnail_url": candidate.ThumbnailURL,
+		"title":         candidate.Title,
+		"view_count":    candidate.ViewCount,
+		"platform":      candidate.Platform,
 		"metadata": map[string]interface{}{
-			"source":    "go-discovery-os",
+			"source":    "go-discovery",
 			"timestamp": time.Now().Format(time.RFC3339),
-			"os_tier":   "free",
 		},
 	})
 

@@ -114,3 +114,4 @@ Thumbs.db
 # --- Coverage & Testing ---
 coverage/
 .nyc_output/
+jenkins_casc_credentials.yaml

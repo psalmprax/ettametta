@@ -32,16 +32,34 @@ async def create_persona(
 ):
     """
     Registers a new Persona for deepfake generation.
-    In a real system, files are uploaded to S3. Here we mock storage.
+    Files are uploaded to the configured S3-compatible storage.
     """
+    from api.utils.storage import storage_service
+    import tempfile
+    
     persona = PersonaDB(
         name=name,
         user_id=current_user.id
     )
     
-    # Mock file upload
+    # Handle image upload to S3 storage
     if image:
-        persona.reference_image_url = f"https://storage.googleapis.com/viral-forge-assets/personas/{current_user.id}/{uuid.uuid4()}.jpg"
+        # Save to temp file first
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
+            content = await image.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        
+        remote_name = f"personas/{current_user.id}/{uuid.uuid4()}.jpg"
+        url = await storage_service.upload_asset(tmp_path, remote_name)
+        if url:
+            persona.reference_image_url = url
+        else:
+            # Fallback: return local path indicator
+            persona.reference_image_url = f"local://{remote_name}"
+        
+        # Cleanup temp file
+        os.unlink(tmp_path)
     
     if audio:
         persona.voice_clone_id = f"xtts_clone_{uuid.uuid4().hex[:8]}"
