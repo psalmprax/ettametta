@@ -136,4 +136,29 @@ Make sure these are set in your `.env` or Jenkins credentials:
 | `AWS_SECRET_ACCESS_KEY` | OCI S3 secret key |
 | `AWS_STORAGE_BUCKET_NAME` | S3 bucket name |
 
-Run `docker-compose up -d` from `/home/ubuntu/viralforge/` (not `/home/ubuntu/ettametta/`).
+---
+
+## 🏗️ 7. Dockerized Jenkins CI/CD
+
+Jenkins is now fully dockerized for portability and ease of maintenance.
+
+### 1. Startup
+Run the dedicated Jenkins stack from the project root:
+```bash
+docker-compose -f jenkins-docker-compose.yml up -d
+```
+Access Jenkins at `http://<OCI_IP>:8080`.
+
+### 2. Configuration as Code (JCasC)
+Credentials and system settings are managed via `jenkins_casc_credentials.yaml`. To import your latest environment variables into Jenkins:
+```bash
+bash scripts/import_jenkins_credentials.sh
+```
+This script uses the Jenkins Groovy console to securely and idempotently load your `.env` secrets into the Jenkins credential store.
+
+### 3. Build Node Mapping
+The Jenkins container is configured with **Docker-out-of-Docker (DooD)**, meaning it shares the host's `/var/run/docker.sock`. This allows Jenkins to build, stop, and start containers on the OCI host directly.
+
+---
+
+Run `docker-compose up -d` for the main application from `/home/ubuntu/viralforge/`.
