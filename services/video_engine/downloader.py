@@ -18,9 +18,9 @@ class VideoDownloader:
         output_path = os.path.join(self.download_dir, f"{file_id}.%(ext)s")
         
         ydl_opts = {
-            # Resilient format selector: Try preferred quality, then fallback to anything combined
-            # Use 'best' directly for YouTube Shorts compatibility
-            'format': 'best/bestvideo+bestaudio',
+            # For YouTube Shorts, use simplest format selector
+            # Shorts don't have separate video+audio, use best video-only or combined
+            'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
             'outtmpl': output_path,
             'merge_output_format': 'mp4',
             'quiet': True,
