@@ -13,7 +13,6 @@
 token.json
 credentials.json
 service_account.json
-cookies/
 
 # --- Python ---
 __pycache__/
