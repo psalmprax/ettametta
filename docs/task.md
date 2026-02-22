@@ -38,6 +38,7 @@
 - [x] Dockerize Jenkins for idempotent CI/CD
 - [x] Implement Jenkins Configuration as Code (JCasC) for credentials
 - [x] Automate credential import via Groovy script
+- [x] Resolve Jenkins deployment directory and rsync permissions
 - [x] Resolve Docker networking collisions and stale bridges
 - [x] Push all stable changes to remote GitHub origin
 
