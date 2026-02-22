@@ -1,6 +1,7 @@
-import yt_dlp
 import os
 import uuid
+import logging
+import yt_dlp
 from typing import Optional
 
 class VideoDownloader:
@@ -18,7 +19,7 @@ class VideoDownloader:
         
         ydl_opts = {
             # Resilient format selector: Try preferred quality, then fallback to anything combined
-            'format': 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
+            'format': 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/bestvideo[height<=1080]+bestaudio/best[height<=1080]/best/bestvideo+bestaudio/best',
             'outtmpl': output_path,
             'merge_output_format': 'mp4',
             'quiet': True,
