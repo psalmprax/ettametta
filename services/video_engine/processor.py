@@ -3,11 +3,21 @@ import os
 import uuid
 import random
 import logging
+import asyncio
+import subprocess
 from typing import List, Optional, Dict
 from .transcription import transcription_service
 from .ocr_service import ocr_service
 from .stock_service import stock_service
 from api.config import settings
+
+try:
+    import cv2
+    import numpy as np
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    logging.warning("OpenCV not available, using MoviePy only")
 
 class VideoProcessor:
     def __init__(self, output_dir: str = "outputs"):
@@ -37,6 +47,270 @@ class VideoProcessor:
                 logging.warning(f"⚠️ No valid font found. Captions may fail. Configured: {self.font_path}")
         
         logging.info(f"Video Engine initialized with font: {self.font_path}")
+        
+        # Check ffmpeg version and warn about ARM64
+        self._check_ffmpeg_version()
+        
+        # Force use of system ffmpeg instead of imageio-ffmpeg binary
+        os.environ['FFMPEG_BINARY'] = 'ffmpeg'
+        os.environ['IMAGEIO_FFMPEG_BINARY'] = 'ffmpeg'
+        os.environ['IMAGEIO_FFMPEG_BINARY_NAME'] = 'ffmpeg'
+        
+        # Try to patch imageio to use system ffmpeg
+        try:
+            import imageio_ffmpeg
+            imageio_ffmpeg.get_ffmpeg_exe = lambda: 'ffmpeg'
+            # Clear any cached binary path
+            if hasattr(imageio_ffmpeg, '_ffmpeg_exe'):
+                imageio_ffmpeg._ffmpeg_exe = None
+        except Exception as e:
+            logging.warning(f"[VideoProcessor] Could not patch imageio_ffmpeg: {e}")
+        
+        # Video loading timeout (seconds)
+        self.video_load_timeout = 30
+
+    def _check_ffmpeg_version(self):
+        """Check ffmpeg version and log warnings for known issues."""
+        try:
+            result = subprocess.run(
+                ["ffmpeg", "-version"], 
+                capture_output=True, 
+                text=True, 
+                timeout=5
+            )
+            version_line = result.stdout.split('\n')[0]
+            logging.info(f"[VideoProcessor] FFmpeg: {version_line}")
+            
+            # Check for ARM64
+            if 'aarch64' in version_line or 'arm64' in version_line:
+                logging.warning("[VideoProcessor] ARM64 FFmpeg detected - may have performance issues")
+            
+            # Check for known bad versions
+            if '7.0' in version_line:
+                logging.warning("[VideoProcessor] FFmpeg 7.0.x may have compatibility issues with MoviePy")
+        except Exception as e:
+            logging.warning(f"[VideoProcessor] Could not check ffmpeg version: {e}")
+
+    async def _verify_video_readable(self, clip: VideoFileClip):
+        """Verify video can be read by iterating frames."""
+        import threading
+        
+        result = {"success": False, "error": None}
+        
+        def iterate_frames():
+            try:
+                # Try to get first few frames
+                for i, frame in enumerate(clip.iter_frames()):
+                    if i >= 5:  # Just check first 5 frames
+                        break
+                result["success"] = True
+            except Exception as e:
+                result["error"] = str(e)
+        
+        thread = threading.Thread(target=iterate_frames)
+        thread.start()
+        thread.join(timeout=30)
+        
+        if not result["success"]:
+            raise RuntimeError(f"Video not readable: {result.get('error', 'timeout')}")
+
+    async def _create_opencv_based_processing(self, input_path: str, clip: VideoFileClip = None):
+        """
+        Create OpenCV-based video processing when MoviePy hangs.
+        This is a simpler path that processes video frame-by-frame with OpenCV.
+        """
+        if not CV2_AVAILABLE:
+            logging.error("[VideoProcessor] OpenCV not available for fallback")
+            raise RuntimeError("OpenCV not available")
+        
+        logging.info(f"[VideoProcessor] Creating OpenCV-based processing for: {input_path}")
+        
+        # Get video info from clip or probe with OpenCV
+        if clip:
+            width, height = clip.size
+            fps = clip.fps
+            duration = clip.duration
+        else:
+            cap = cv2.VideoCapture(input_path)
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            duration = total_frames / fps if fps > 0 else 0
+            cap.release()
+        
+        # Store OpenCV state for processing
+        self._opencv_mode = True
+        self._opencv_input = input_path
+        self._opencv_info = {
+            "width": width,
+            "height": height,
+            "fps": fps,
+            "duration": duration
+        }
+        
+        logging.info(f"[VideoProcessor] OpenCV mode: {width}x{height} @ {fps}fps, {duration:.2f}s")
+        
+        # Try to return MoviePy clip one more time with different settings
+        try:
+            # Try with different reader
+            clip = VideoFileClip(input_path, audio=False, 
+                               target_resolution=(height, width))
+            clip.fps = fps
+            return clip
+        except Exception as e:
+            logging.warning(f"[VideoProcessor] Final MoviePy attempt failed: {e}")
+            # Return a dummy clip that will trigger OpenCV processing
+            raise RuntimeError(f"MoviePy completely failed, need OpenCV rewrite: {e}")
+
+    async def _load_video_with_timeout(self, input_path: str) -> VideoFileClip:
+        """
+        Load video with timeout and fallback to OpenCV if it hangs.
+        """
+        logging.info(f"[VideoProcessor] Loading video: {input_path}")
+        
+        # First try with asyncio timeout
+        try:
+            clip = await asyncio.wait_for(
+                asyncio.to_thread(VideoFileClip, input_path),
+                timeout=self.video_load_timeout
+            )
+            logging.info(f"[VideoProcessor] Video loaded successfully via MoviePy")
+            
+            # Pre-iterate frames to ensure video is readable (handles ARM64 issues)
+            try:
+                await asyncio.wait_for(
+                    self._verify_video_readable(clip),
+                    timeout=30
+                )
+            except asyncio.TimeoutError:
+                logging.warning("[VideoProcessor] MoviePy frame iteration timed out, switching to OpenCV mode")
+                return await self._create_opencv_based_processing(input_path, clip)
+            except Exception as e:
+                logging.warning(f"[VideoProcessor] Video readable check failed: {e}, trying OpenCV")
+                return await self._create_opencv_based_processing(input_path, clip)
+            
+            return clip
+            
+        except asyncio.TimeoutError:
+            logging.warning(f"[VideoProcessor] VideoFileClip timed out after {self.video_load_timeout}s, trying OpenCV fallback...")
+        except Exception as e:
+            logging.warning(f"[VideoProcessor] VideoFileClip failed: {e}, trying OpenCV fallback...")
+        
+        # Fallback: Use OpenCV to probe video info, then retry MoviePy
+        return await self._load_video_opencv_fallback(input_path)
+
+    async def _load_video_opencv_fallback(self, input_path: str) -> VideoFileClip:
+        """
+        OpenCV-based fallback for video loading.
+        Probes video properties and tries again with MoviePy.
+        """
+        if not CV2_AVAILABLE:
+            logging.error("[VideoProcessor] OpenCV not available, cannot fallback")
+            raise RuntimeError("Video loading failed and OpenCV fallback unavailable")
+        
+        logging.info(f"[VideoProcessor] Probing video with OpenCV: {input_path}")
+        cap = cv2.VideoCapture(input_path)
+        
+        if not cap.isOpened():
+            cap.release()
+            raise RuntimeError(f"OpenCV cannot open video: {input_path}")
+        
+        # Get video properties
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        duration = frame_count / fps if fps > 0 else 0
+        
+        cap.release()
+        
+        logging.info(f"[VideoProcessor] OpenCV probe: {width}x{height}, {fps}fps, {duration:.2f}s, {frame_count} frames")
+        
+        # Set environment variable to help MoviePy work around issues
+        os.environ['FFMPEG_BINARY'] = 'ffmpeg'
+        
+        # Try loading with MoviePy again with extended timeout
+        try:
+            clip = await asyncio.wait_for(
+                asyncio.to_thread(VideoFileClip, input_path),
+                timeout=60
+            )
+            logging.info(f"[VideoProcessor] Video loaded successfully on retry")
+            return clip
+        except Exception as e:
+            logging.error(f"[VideoProcessor] Final video load attempt failed: {e}")
+            raise
+
+    def _process_video_opencv(self, input_path: str, output_name: str, 
+                             enabled_filters: List[str] = None, 
+                             strategy: Dict = None) -> str:
+        """
+        Full video processing pipeline using OpenCV when MoviePy fails.
+        This is a fallback that applies basic transformations.
+        """
+        if not CV2_AVAILABLE:
+            raise RuntimeError("OpenCV not available")
+        
+        logging.info(f"[VideoProcessor] Processing video with OpenCV: {input_path}")
+        
+        cap = cv2.VideoCapture(input_path)
+        if not cap.isOpened():
+            raise RuntimeError(f"Cannot open video: {input_path}")
+        
+        # Get video properties
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        # Define output
+        output_path = os.path.join(self.output_dir, output_name)
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        
+        frame_count = 0
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            # Apply transformations
+            # 1. Mirror (horizontal flip)
+            frame = cv2.flip(frame, 1)
+            
+            # 2. Slight resize (to change hash)
+            scale = 1.05
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+            frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
+            
+            # Crop back to original size
+            start_x = (new_width - width) // 2
+            start_y = (new_height - height) // 2
+            frame = frame[start_y:start_y+height, start_x:start_x+width]
+            
+            # Apply enabled filters
+            if enabled_filters:
+                if "f10" in enabled_filters:  # Film grain
+                    noise = np.random.randint(0, 30, frame.shape, dtype=np.uint8)
+                    frame = cv2.add(frame, noise)
+                if "f11" in enabled_filters:  # Grayscale
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+            
+            out.write(frame)
+            frame_count += 1
+            
+            # Progress logging
+            if frame_count % 30 == 0:
+                logging.info(f"[OpenCV] Processed {frame_count}/{total_frames} frames")
+        
+        cap.release()
+        out.release()
+        
+        logging.info(f"[VideoProcessor] OpenCV processing complete: {output_path}")
+        return output_path
 
     def apply_originality_transformation(self, input_path: str, output_name: str) -> str:
         """
@@ -149,6 +423,31 @@ class VideoProcessor:
         # MoviePy doesn't have a direct RGB shift, so we apply a jittered color shift
         return clip.with_effects([vfx.Colorx(factor=random.uniform(0.9, 1.1))]).resized(height=int(clip.h * 1.01))
 
+    def apply_vibe_adjustments(self, clip: VideoFileClip, insights: Dict) -> VideoFileClip:
+        """
+        Maps VLM visual insights (mood, predominant colors) to MoviePy visual effects.
+        """
+        mood = insights.get("visual_mood", "Neutral").lower()
+        aesthetic = insights.get("aesthetic_rating", 5)
+        
+        logging.info(f"[VideoProcessor] Applying vibe adjustments: {mood} (Aesthetic: {aesthetic})")
+        
+        if "dark" in mood or "mysterious" in mood:
+            # Increase contrast and slightly lower brightness for mystery
+            clip = clip.with_effects([vfx.LumContrast(lum=-2, contrast=0.1)])
+        elif "energetic" in mood or "bright" in mood:
+            # Increase saturation (via color factor) and brightness
+            clip = clip.with_effects([vfx.Colorx(factor=1.1), vfx.LumContrast(lum=5, contrast=0.05)])
+        elif "vintage" in mood or "nostalgic" in mood:
+            # Shift colors towards sepia/warmth
+            clip = clip.with_effects([vfx.Colorx(factor=0.95), vfx.LumContrast(lum=0, contrast=-0.05)])
+            
+        # If aesthetic rating is low, apply subtle smoothing/glow to hide compression artifacts
+        if aesthetic < 4:
+            clip = self.apply_atmospheric_glow(clip)
+            
+        return clip
+
     def trim_to_hooks(self, clip: VideoFileClip, hooks: List[List[float]]) -> VideoFileClip:
         """
         Cuts the video to only the segments identified as high-energy hooks.
@@ -189,7 +488,8 @@ class VideoProcessor:
             return clip
             
         try:
-            b_roll_clip = VideoFileClip(b_roll_path).resized(width=clip.w)
+            b_roll_clip = await self._load_video_with_timeout(b_roll_path)
+            b_roll_clip = b_roll_clip.resized(width=clip.w)
             # Take 2-3 seconds of B-roll
             b_roll_duration = min(b_roll_clip.duration, 3.0)
             b_roll_clip = b_roll_clip.subclipped(0, b_roll_duration)
@@ -316,12 +616,24 @@ class VideoProcessor:
     async def process_full_pipeline(self, input_path: str, output_name: str, enabled_filters: Optional[List[str]] = None, strategy: Optional[Dict] = None) -> str:
         """
         Full ettametta Pipeline with Dynamic AI Strategies.
+        Uses OpenCV on ARM64 to avoid MoviePy hanging issues.
         """
-        # 1. Transcribe
+        # Check if we should use OpenCV (ARM64 detection)
+        import platform
+        is_arm64 = platform.machine() == 'aarch64'
+        
+        if is_arm64:
+            # Use OpenCV processing on ARM64
+            logging.info(f"[VideoProcessor] ARM64 detected, using OpenCV pipeline")
+            return self._process_video_opencv(input_path, output_name, enabled_filters or [], strategy or {})
+        
+        # 1. Transcribe (works for both)
         transcript = await transcription_service.transcribe_video(input_path)
         
         # 2. Base Clip setup
-        clip = VideoFileClip(input_path)
+        logging.info(f"[VideoProcessor] Starting video load for: {input_path}")
+        clip = await self._load_video_with_timeout(input_path)
+        logging.info(f"[VideoProcessor] Video duration: {clip.duration}s, size: {clip.size}")
         
         # 2.1 OCR-Aware Strategy
         caption_strategy = ocr_service.get_caption_strategy(input_path)
@@ -338,13 +650,14 @@ class VideoProcessor:
             b_roll_overlay = await self.inject_b_roll(clip, strategy["b_roll_keywords"])
 
         # 3. Apply Multi-Layer Transformations
+        logging.info(f"[VideoProcessor] Applying transformations...")
+        
         # Default core transforms
         transformed = clip.with_effects([vfx.MirrorX()]).resized(height=int(clip.h * (1.05)))
         
         # Merge Dashboard filters with AI recommendations if strategy exists
         active_filters = enabled_filters or []
         if strategy and strategy.get("recommended_filters"):
-            # Add AI recommendations (avoid duplicates)
             active_filters = list(set(active_filters + strategy["recommended_filters"]))
 
         # 4. Optional Add-ons (Pro Filters) with Dynamic Intensity
@@ -365,6 +678,140 @@ class VideoProcessor:
                 transformed = self.apply_random_glitch(transformed)
 
         # 4. Pattern Interrupts & Audio Integration
+        # 4.0 VLM Vibe Adjustments
+        if strategy and strategy.get("visual_insights"):
+            transformed = self.apply_vibe_adjustments(transformed, strategy["visual_insights"])
+
+        duration = transformed.duration
+        elements = [transformed]
+        
+        for i in range(2, int(duration), 3):
+            # Smooth flash interrupt
+            flash = ColorClip(size=transformed.size, color=(255, 255, 255)) \
+                .with_start(i).with_duration(0.15) \
+                .with_opacity(0.12) \
+                .with_effects([vfx.CrossFadeIn(0.05), vfx.CrossFadeOut(0.05)])
+            elements.append(flash)
+
+        # 4.1 Apply B-Roll Overlay if exists
+        if b_roll_overlay:
+            elements.append(b_roll_overlay)
+
+        # 5. Add Captions from transcript with dynamic positioning
+        caption_clips = []
+        # Calculate Y position based on OCR strategy
+        y_pos = 0.8 # Default bottom
+        if caption_strategy == "top":
+            y_pos = 0.15
+        elif caption_strategy == "center":
+            y_pos = 0.5
+
+        # VLM-Driven Aesthetic: Contrasting Caption Color
+        caption_color = '#FFE100' # Default Viral Yellow
+        if strategy and strategy.get("vibe") == "Dramatic":
+            caption_color = '#FFFFFF' # Stark White for drama
+        elif strategy and strategy.get("vibe") == "Energetic":
+            caption_color = '#00FF00' # Neon Green for energy
+
+        for item in transcript:
+            # Check if word is within current trimmed timeline
+            start = item.get("start", 0)
+            end = item.get("end", 0)
+            text = item.get("text", "")
+            
+            if start <= duration:
+                txt_clip = TextClip(
+                    text=text,
+                    font_size=50,
+                    color=caption_color,
+                    font=self.font_path,
+                    stroke_color='black',
+                    stroke_width=2
+                ).with_start(start).with_duration(max(0.5, end - start)).with_position(('center', y_pos))
+                caption_clips.append(txt_clip)
+
+        if caption_clips:
+            elements.extend(caption_clips)
+
+        # 6. Composite
+        if len(elements) > 1:
+            final_clip = CompositeVideoClip(elements)
+        else:
+            final_clip = elements[0]
+        
+        # 7. Write Output
+        output_path = os.path.join(self.output_dir, output_name)
+        
+        try:
+            final_clip.write_videofile(output_path, codec=self.codec, audio_codec="aac", logger=None)
+        except Exception as e:
+            logging.error(f"[VideoProcessor] write_videofile failed: {e}")
+            # Fallback to simpler write
+            final_clip.write_videofile(output_path, codec=self.codec, audio=False, logger=None)
+        
+        logging.info(f"[VideoProcessor] Pipeline complete: {output_path}")
+        return output_path
+        
+        if is_arm64:
+            # Use OpenCV processing on ARM64
+            logging.info(f"[VideoProcessor] ARM64 detected, using OpenCV pipeline")
+            return self._process_video_opencv(input_path, output_name, enabled_filters or [], strategy or {})
+        
+        # 1. Transcribe (works for both)
+        transcript = await transcription_service.transcribe_video(input_path)
+        
+        # 2. Base Clip setup
+        logging.info(f"[VideoProcessor] Starting video load for: {input_path}")
+        clip = await self._load_video_with_timeout(input_path)
+        logging.info(f"[VideoProcessor] Video duration: {clip.duration}s, size: {clip.size}")
+        
+        # 2.1 OCR-Aware Strategy
+        caption_strategy = ocr_service.get_caption_strategy(input_path)
+        logging.info(f"[VideoProcessor] OCR Strategy identifies: {caption_strategy}")
+        
+        # 2.2 Semantic Trimming (Hooks)
+        if strategy and strategy.get("hook_points"):
+            logging.info(f"[VideoProcessor] Semantic trimming to hooks: {strategy['hook_points']}")
+            clip = self.trim_to_hooks(clip, strategy["hook_points"])
+
+        # 2.3 B-Roll Injection
+        b_roll_overlay = None
+        if strategy and strategy.get("b_roll_keywords"):
+            b_roll_overlay = await self.inject_b_roll(clip, strategy["b_roll_keywords"])
+
+        # 3. Apply Multi-Layer Transformations
+        logging.info(f"[VideoProcessor] Applying transformations...")
+        
+        # Default core transforms
+        transformed = clip.with_effects([vfx.MirrorX()]).resized(height=int(clip.h * (1.05)))
+        
+        # Merge Dashboard filters with AI recommendations if strategy exists
+        active_filters = enabled_filters or []
+        if strategy and strategy.get("recommended_filters"):
+            active_filters = list(set(active_filters + strategy["recommended_filters"]))
+
+        # 4. Optional Add-ons (Pro Filters) with Dynamic Intensity
+        if active_filters:
+            if "f6" in active_filters:
+                transformed = self.apply_speed_ramping(transformed, speed_range=strategy.get("speed_range", [0.95, 1.05]) if strategy else [0.95, 1.05])
+            if "f8" in active_filters:
+                transformed = self.apply_dynamic_jitter(transformed, intensity=strategy.get("jitter_intensity", 1.0) if strategy else 1.0)
+            if "f7" in active_filters:
+                transformed = self.apply_cinematic_overlays(transformed)
+            if "f9" in active_filters:
+                transformed = self.apply_atmospheric_glow(transformed)
+            if "f10" in active_filters:
+                transformed = self.apply_film_grain(transformed)
+            if "f11" in active_filters:
+                transformed = self.apply_grayscale(transformed)
+            if "f12" in active_filters:
+                transformed = self.apply_random_glitch(transformed)
+
+        # 4. Pattern Interrupts & Audio Integration
+        # 4.0 VLM Vibe Adjustments
+        if strategy and strategy.get("visual_insights"):
+            transformed = self.apply_vibe_adjustments(transformed, strategy["visual_insights"])
+
         duration = transformed.duration
         elements = [transformed]
         

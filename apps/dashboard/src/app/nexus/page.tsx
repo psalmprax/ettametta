@@ -63,54 +63,6 @@ export default function NexusPage() {
     const [userTier, setUserTier] = useState<string>("free");
     const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/ws/jobs`);
 
-    // Fetch existing Nexus jobs
-    useEffect(() => {
-        const fetchNexusJobs = async () => {
-            try {
-                const token = localStorage.getItem("et_token");
-                const res = await fetch(`${API_BASE}/nexus/jobs`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setNexusJobs(data);
-                }
-            } catch (err) {
-                console.error("Failed to fetch nexus jobs:", err);
-            }
-        };
-        fetchNexusJobs();
-
-        const fetchProfile = async () => {
-            try {
-                const token = localStorage.getItem("et_token");
-                const response = await fetch(`${API_BASE}/auth/me`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setUserTier(data.subscription || "free");
-                }
-            } catch (err) {
-                console.error("Failed to fetch profile", err);
-            }
-        };
-        fetchProfile();
-
-        const fetchNiches = async () => {
-            try {
-                const token = localStorage.getItem("et_token");
-                const res = await fetch(`${API_BASE}/discovery/niches`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.ok) setNiches(await res.json());
-            } catch (err) {
-                console.error("Failed to fetch niches:", err);
-            }
-        };
-        fetchNiches();
-    }, []);
-
     // Handle WebSocket updates
     useEffect(() => {
         if (jobUpdate && jobUpdate.type === "nexus_job_update") {
@@ -124,6 +76,25 @@ export default function NexusPage() {
             });
         }
     }, [jobUpdate]);
+
+    // Button handlers
+    const handleClusterSettings = () => {
+        // Navigate to settings page
+        window.location.href = '/settings';
+    };
+
+    const handleCustomRecipe = () => {
+        // Navigate to creation page for custom workflows
+        window.location.href = '/creation';
+    };
+
+    const handleInspectResult = (job: any) => {
+        if (job.output_path) {
+            window.open(`/api/${job.output_path}`, '_blank');
+        } else {
+            alert("Output not available yet.");
+        }
+    };
 
     const handleLaunch = async () => {
         if (!activeBlueprint) return;
@@ -179,7 +150,10 @@ export default function NexusPage() {
                             <option value="">Select Niche...</option>
                             {niches.map(n => <option key={n} value={n}>{n}</option>)}
                         </select>
-                        <button className="glass-card px-6 py-4 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-all">
+                        <button 
+                            onClick={handleClusterSettings}
+                            className="glass-card px-6 py-4 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-all"
+                        >
                             <Settings2 className="h-4 w-4" />
                             Cluster Settings
                         </button>
@@ -249,7 +223,10 @@ export default function NexusPage() {
                                 )
                             })}
 
-                            <button className="w-full p-6 rounded-[2rem] border border-dashed border-white/5 flex flex-col items-center justify-center gap-3 text-zinc-700 hover:text-zinc-500 hover:border-white/10 transition-all group">
+                            <button 
+                                onClick={handleCustomRecipe}
+                                className="w-full p-6 rounded-[2rem] border border-dashed border-white/5 flex flex-col items-center justify-center gap-3 text-zinc-700 hover:text-zinc-500 hover:border-white/10 transition-all group"
+                            >
                                 <Plus className="h-8 w-8 group-hover:scale-110 transition-transform" />
                                 <span className="text-[10px] font-black uppercase tracking-[0.2em]">Custom Recipe</span>
                             </button>
@@ -336,7 +313,7 @@ export default function NexusPage() {
                                                     <Zap className="h-4 w-4 text-primary" />
                                                 </div>
                                                 <div className="space-y-0.5">
-                                                    <span className="text-[10px] font-black uppercase tracking-tight text-white">Job_{job.id.slice(0, 4)}</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-tight text-white">Job_{String(job.id).slice(0, 4)}</span>
                                                     <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">{job.niche}</p>
                                                 </div>
                                             </div>
@@ -362,7 +339,10 @@ export default function NexusPage() {
                                         </div>
 
                                         {job.status === "COMPLETED" && (
-                                            <button className="w-full py-2 rounded-xl bg-zinc-950 border border-white/10 text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:border-primary/50 transition-all">
+                                            <button 
+                                                onClick={() => handleInspectResult(job)}
+                                                className="w-full py-2 rounded-xl bg-zinc-950 border border-white/10 text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:border-primary/50 transition-all"
+                                            >
                                                 Inspect Result
                                             </button>
                                         )}

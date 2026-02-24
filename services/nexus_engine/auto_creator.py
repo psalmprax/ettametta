@@ -1,3 +1,4 @@
+from typing import List, Dict
 from api.utils.vault import get_secret
 
 class AutoCreator:
