@@ -26,6 +26,7 @@ ettametta is a fully autonomous viral content engine for solo creators. It uses 
 - **AI Subtitles**: Fast-Whisper word-level captioning
 - **GPU Support**: NVENC encoding with CPU fallback (`BASE_IMAGE` build arg)
 - **Font Resolution**: Dynamic absolute `.ttf` path resolution for Linux
+- **ARM64 Support**: OpenCV fallback for Oracle Cloud ARM instances
 
 ### Component 3: Publishing & Scheduling
 - **YouTube**: OAuth 2.0 with token refresh, smart scheduler

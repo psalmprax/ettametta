@@ -31,6 +31,10 @@ The remaining gaps are primarily credential/configuration issues rather than cod
 | **Video Engine** | process_video() missing | ✅ Fixed - Calls `process_full_pipeline()` in `services/video_engine/tasks.py:60` |
 | **Dashboard UI** | Broken/Missing | ✅ Fully implemented (Next.js 14 + Tailwind) |
 | **Security** | Real keys in .env | ✅ Replaced with safe placeholders |
+| **DuckDuckGo Scanner** | Missing | ✅ Added as free fallback for YouTube API quota |
+| **ARM64 Video Processing** | MoviePy hangs on ARM64 | ✅ Added OpenCV fallback in `processor.py` |
+| **Nexus AutoCreator** | NameError: List not defined | ✅ Fixed import in `auto_creator.py` |
+| **Nexus Page** | Cluster Settings/Custom Recipe/Inspect buttons not clickable | ✅ Added onClick handlers |
 
 ---
 

@@ -16,9 +16,10 @@ from .pinterest_scanner import base_pinterest_scanner
 from .linkedin_scanner import base_linkedin_scanner
 from .bilibili_scanner import base_bilibili_scanner
 from .skool_scanner import base_skool_scanner
+from .duckduckgo_scanner import base_duckduckgo_scanner
 from .deconstructor import pattern_deconstructor
 from api.utils.database import SessionLocal
-from api.utils.models import ContentCandidateDB
+from api.utils.models import ContentCandidateDB, SystemSettings
 
 class DiscoveryService:
     def __init__(self):
@@ -26,6 +27,7 @@ class DiscoveryService:
             YouTubeShortsScanner(),
             YouTubeLongScanner(),
             TikTokScanner(),
+            base_duckduckgo_scanner,  # Free fallback - always runs
         ]
         self.global_scanners = [
             base_reddit_scanner,
@@ -40,7 +42,7 @@ class DiscoveryService:
             base_pinterest_scanner,
             base_linkedin_scanner,
             base_bilibili_scanner,
-            base_skool_scanner
+            base_skool_scanner,
         ]
 
     async def find_trending_content(self, niche: str, horizon: str = "30d", tier: str = "free") -> List[ContentCandidate]:
@@ -109,12 +111,28 @@ class DiscoveryService:
         # Execute all scans concurrently
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
+        # 4. Neural Ranking & Scoring Enrichment
         all_candidates = []
         for res in results:
             if isinstance(res, list):
                 all_candidates.extend(res)
             elif isinstance(res, Exception):
                 print(f"[Discovery] Scanner Exception: {res}")
+
+        # Enforcement: Selective Monetization Mode (Viral Score > 85)
+        # Fetch monetization_mode from DB
+        db = SessionLocal()
+        try:
+            mode_setting = db.query(SystemSettings).filter(SystemSettings.key == "monetization_mode").first()
+            monetization_mode = mode_setting.value if mode_setting else "all"
+            
+            if monetization_mode == "selective":
+                threshold = 85
+                original_count = len(all_candidates)
+                all_candidates = [c for c in all_candidates if (getattr(c, 'viral_score', 0) or 0) >= threshold]
+                print(f"[Discovery] Selective Mode: Filtered {original_count} -> {len(all_candidates)} candidates (Threshold: {threshold})")
+        finally:
+            db.close()
         
         # 3. Persistence Logic (Efficient Batch Integration)
         db = SessionLocal()

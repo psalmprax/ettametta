@@ -1,10 +1,15 @@
 from api.utils.celery import celery_app
+
+# Force use of system ffmpeg BEFORE importing moviepy
+import os
+os.environ['FFMPEG_BINARY'] = 'ffmpeg'
+os.environ['IMAGEIO_FFMPEG_BINARY'] = 'ffmpeg'
+
 from .processor import VideoProcessor
 from .downloader import base_video_downloader
 from services.optimization.youtube_publisher import base_youtube_publisher
 from services.optimization.service import base_optimization_service
 import asyncio
-import os
 import logging
 from api.config import settings
 
@@ -37,21 +42,23 @@ def download_and_process_task(self, source_url: str, niche: str, platform: str, 
     db = SessionLocal()
     
     def update_job(status=None, progress=None, output_path=None):
-        job = db.query(VideoJobDB).filter(VideoJobDB.id == task_id).first()
-        if job:
-            if status: job.status = status
-            if progress is not None: job.progress = progress
-            if output_path: job.output_path = output_path
-            db.commit()
-            
-            # Real-time WebSocket Notification
-            from api.routes.ws import notify_job_update_sync
-            notify_job_update_sync({
-                "id": task_id,
-                "status": job.status,
-                "progress": job.progress,
-                "output_path": job.output_path
-            })
+        # Fresh session for each status update to avoid context leaks in prefork
+        with SessionLocal() as local_db:
+            job = local_db.query(VideoJobDB).filter(VideoJobDB.id == task_id).first()
+            if job:
+                if status: job.status = status
+                if progress is not None: job.progress = progress
+                if output_path: job.output_path = output_path
+                local_db.commit()
+                
+                # Real-time WebSocket Notification
+                from api.routes.ws import notify_job_update_sync
+                notify_job_update_sync({
+                    "id": task_id,
+                    "status": job.status,
+                    "progress": job.progress,
+                    "output_path": job.output_path
+                })
 
     try:
         # 1. Download
@@ -78,6 +85,8 @@ def download_and_process_task(self, source_url: str, niche: str, platform: str, 
         # C. Generate Strategy via Groq (Integrated Scraper + VLM Intelligence)
         update_job(status="Strategizing", progress=40)
         from services.decision_engine.service import base_strategy_service
+        # We need a transcript placeholder or actual extraction
+        transcript = "Visual-only analysis conducted." 
         strategy_obj = run_async(base_strategy_service.generate_visual_strategy(transcript, niche, style=style, visual_insights=visual_insights))
         strategy = strategy_obj.dict()
         logging.info(f"[Task] AI Combined Strategy: {strategy['vibe']} (Style: {style}, Speed: {strategy['speed_range']}, Jitter: {strategy['jitter_intensity']})")
@@ -92,7 +101,9 @@ def download_and_process_task(self, source_url: str, niche: str, platform: str, 
         
         # Dashboard filters (manual) + AI filters (autonomous)
         from api.utils.models import VideoFilterDB
-        enabled_filters = [f.id for f in db.query(VideoFilterDB).filter(VideoFilterDB.enabled == True).all()]
+        with SessionLocal() as filter_db:
+             filters = filter_db.query(VideoFilterDB).filter(VideoFilterDB.enabled == True).all()
+             enabled_filters = [f.id for f in filters]
         
         processed_path = run_async(processor.process_full_pipeline(
             video_path, 
@@ -159,7 +170,7 @@ def download_and_process_task(self, source_url: str, niche: str, platform: str, 
         }
     except Exception as e:
         update_job(status="Failed")
-        print(f"[Celery Task] ERROR: {e}")
+        logging.error(f"[Celery Task] ERROR: {e}")
         # Ensure cleanup on failure
         if 'video_path' in locals(): cleanup_local_files(video_path)
         if 'processed_path' in locals() and settings.STORAGE_PROVIDER != "LOCAL":
