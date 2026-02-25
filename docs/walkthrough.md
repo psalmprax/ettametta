@@ -42,6 +42,8 @@ Beyond transformation, ettametta is a **Synthesis Engine**.
 - **Phase 53**: Native Docker Agent Migration. Adopted Jenkins-native Docker agents for CI stages, ensuring reliable volume mounting and workspace visibility in complex containerized environments.
 - **Phase 54**: LTX-2 Connectivity & CI Hardening. Restored host-side API accessibility for ngrok/LTX-2 integration and hardened post-deployment tests with virtual environment isolation.
 - **Phase 55**: LTX-2 Configuration. Configured the `RENDER_NODE_URL` to route video synthesis requests to the ngrok-exposed LTX-2 render node.
+- **Phase 56**: LTX-2 Memory Optimization. Implemented model CPU offloading and `bfloat16` precision to support LTX-Video on 16GB GPUs.
+- **Phase 57**: LTX-2 Library Resilience. Resolved environment-specific library version conflicts in Colab to support the latest `LTXVideoPipeline` architecture.
 
 ## 🎨 Branding & Performance Resilience
 
