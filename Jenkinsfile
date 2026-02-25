@@ -269,8 +269,18 @@ STORAGE_REGION=eu-frankfurt-1
             echo "❌ Deployment failed at stage: ${env.STAGE_NAME}. Check logs above."
         }
         always {
-            sh 'docker logout || true'
-            cleanWs()
+            script {
+                try {
+                    sh 'docker logout || true'
+                } catch (e) {
+                    echo "Cleanup: Docker logout failed (expected if no login occurred)"
+                }
+                try {
+                    cleanWs()
+                } catch (e) {
+                    echo "Cleanup: Workspace cleaning failed (expected if no workspace was allocated)"
+                }
+            }
         }
     }
 }
