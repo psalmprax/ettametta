@@ -102,3 +102,7 @@
 - [x] Expose API host port 8000 for ngrok/LTX-2 compatibility
 - [x] Migrate post-deployment host tests to virtual environments (PEP 668 compliance)
 - [x] Synchronize integration test reporting with Jenkins `junit` publisher
+
+## Phase 55: LTX-2 Configuration
+- [x] Configure `RENDER_NODE_URL` in environment for video synthesis routing
+- [x] Verify API gateway accessibility for external render node callbacks
