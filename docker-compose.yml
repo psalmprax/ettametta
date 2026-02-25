@@ -110,6 +110,7 @@ services:
       - AWS_STORAGE_BUCKET_NAME
       - SECRET_KEY
       - INTERNAL_API_TOKEN
+      - RENDER_NODE_URL
     healthcheck:
       test: [ "CMD-SHELL", "pgrep -f 'celery' || exit 1" ]
       interval: 30s
