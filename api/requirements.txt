@@ -35,6 +35,11 @@ easyocr
 opencv-python
 google-generativeai
 
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0
+
 # Optional: Agent Frameworks (disabled by default)
 # Enable with environment variables
 # LangChain: ENABLE_LANGCHAIN=true

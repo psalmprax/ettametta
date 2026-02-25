@@ -1,0 +1,74 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [master, main, develop]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          cd api
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-mock
+          
+      - name: Run unit tests
+        run: |
+          cd api
+          pytest tests/test_config.py tests/test_services.py -v --tb=short
+        env:
+          GROQ_API_KEY: test_key
+          ENV: development
+          
+      - name: Run linting
+        run: |
+          pip install ruff
+          ruff check api/
+          
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run security scan
+        run: |
+          pip install safety bandit
+          cd api
+          safety check --json > security_report.json || true
+          bandit -r . -f json -o bandit_report.json || true
+          
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Docker images
+        run: |
+          docker compose build api
+          docker build -f apps/dashboard/Dockerfile ./apps/dashboard
+          
+      - name: Verify containers start
+        run: |
+          docker compose up -d
+          sleep 10
+          docker compose ps
+          docker compose down
