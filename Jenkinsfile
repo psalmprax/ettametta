@@ -95,17 +95,8 @@ pipeline {
         STRIPE_WEBHOOK_SECRET = credentials('STRIPE_WEBHOOK_SECRET')
         
         // Video Quality Tiers
-        ENABLE_SOUND_DESIGN = credentials('ENABLE_SOUND_DESIGN')
-        ENABLE_MOTION_GRAPHICS = credentials('ENABLE_MOTION_GRAPHICS')
-        AI_VIDEO_PROVIDER = credentials('AI_VIDEO_PROVIDER')
-        DEFAULT_QUALITY_TIER = credentials('DEFAULT_QUALITY_TIER')
-        
-        // Agent Frameworks
-        ENABLE_LANGCHAIN = credentials('ENABLE_LANGCHAIN')
-        ENABLE_CREWAI = credentials('ENABLE_CREWAI')
-        ENABLE_INTERPRETER = credentials('ENABLE_INTERPRETER')
-        ENABLE_AFFILIATE_API = credentials('ENABLE_AFFILIATE_API')
-        ENABLE_TRADING = credentials('ENABLE_TRADING')
+        // Video Quality Tiers (Handled via params)
+        // Agent Frameworks (Handled via params)
         
         // Affiliate & Trading APIs
         AMAZON_ASSOCIATES_TAG = credentials('AMAZON_ASSOCIATES_TAG')
