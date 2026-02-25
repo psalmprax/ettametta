@@ -135,10 +135,12 @@ pipeline {
                     echo "Running unit tests..."
                     sh """
                         cd api
-                        # Bootstrap pip if missing
-                        python3 -m pip --version || python3 -m ensurepip --user || (curl -sS https://bootstrap.pypa.io/get-pip.py | python3 - --user)
-                        python3 -m pip install --user -q pytest pytest-asyncio pytest-mock
+                        # Create and use venv to bypass PEP 668 externally-managed-environment
+                        python3 -m venv venv || python3 -m pip install --user --break-system-packages virtualenv && python3 -m virtualenv venv
+                        . venv/bin/activate
+                        python3 -m pip install -q pytest pytest-asyncio pytest-mock
                         python3 -m pytest tests/test_config.py tests/test_services.py -v --tb=short || true
+                        deactivate
                     """
                 }
             }
@@ -149,10 +151,12 @@ pipeline {
                 script {
                     echo "Running code linting..."
                     sh """
-                        # Bootstrap pip if missing
-                        python3 -m pip --version || python3 -m ensurepip --user || (curl -sS https://bootstrap.pypa.io/get-pip.py | python3 - --user)
-                        python3 -m pip install --user -q ruff
+                        # Create and use venv to bypass PEP 668
+                        python3 -m venv linter-venv || python3 -m pip install --user --break-system-packages virtualenv && python3 -m virtualenv linter-venv
+                        . linter-venv/bin/activate
+                        python3 -m pip install -q ruff
                         python3 -m ruff check api/ || true
+                        deactivate
                     """
                 }
             }
