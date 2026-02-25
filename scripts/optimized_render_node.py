@@ -151,7 +151,7 @@ if __name__ == "__main__":
         
     except RuntimeError as e:
         if "asyncio.run() cannot be called from a running event loop" in str(e):
-            print("🚀 Running in an existing loop. Starting server in background task...")
+            print("🚀 Running in an existing loop. Starting server with live logs...")
             # Fallback for strict environments
             import nest_asyncio
             nest_asyncio.apply()
@@ -159,8 +159,14 @@ if __name__ == "__main__":
             config = uvicorn.Config(app=app, host="0.0.0.0", port=8000, loop="asyncio")
             server = uvicorn.Server(config)
             
-            # This is the "correct" way to run in a notebook if the loop is already running
-            asyncio.create_task(server.serve())
-            print("✅ Server started! Check the ngrok URL.")
+            # Using await directly in a notebook cell is safer and shows logs
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # In Colab/Jupyter, we can't 'run' a new loop, we just use the existing one
+                asyncio.ensure_future(server.serve())
+            else:
+                asyncio.run(server.serve())
+            
+            print("✅ Server is active! You can now monitor it in this cell.")
         else:
             raise e
