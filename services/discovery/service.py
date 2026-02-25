@@ -119,6 +119,38 @@ class DiscoveryService:
             elif isinstance(res, Exception):
                 print(f"[Discovery] Scanner Exception: {res}")
 
+        # If no results from scan, fall back to database
+        if not all_candidates:
+            print(f"[Discovery] No scan results for {niche}, falling back to database...")
+            from api.utils.models import ContentCandidateDB
+            db = SessionLocal()
+            try:
+                db_results = db.query(ContentCandidateDB).filter(
+                    ContentCandidateDB.niche == niche
+                ).order_by(ContentCandidateDB.views.desc()).limit(50).all()
+                
+                for r in db_results:
+                    all_candidates.append(ContentCandidate(
+                        id=r.id,
+                        platform=r.platform,
+                        url=r.url,
+                        author=r.author,
+                        title=r.title,
+                        description=r.description,
+                        thumbnail_url=r.thumbnail_url,
+                        view_count=r.views,
+                        engagement_rate=r.engagement_score,
+                        views=r.views,
+                        engagement_score=r.engagement_score,
+                        viral_score=r.viral_score,
+                        duration_seconds=r.duration_seconds,
+                        published_at=r.discovery_date.isoformat() if r.discovery_date else None,
+                        niche=r.niche,
+                        metadata=r.metadata_json or {}
+                    ))
+            finally:
+                db.close()
+
         # Enforcement: Selective Monetization Mode (Viral Score > 85)
         # Fetch monetization_mode from DB
         db = SessionLocal()

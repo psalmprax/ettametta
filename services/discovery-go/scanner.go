@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"google.golang.org/api/option"
 	"google.golang.org/api/youtube/v3"
@@ -37,7 +38,7 @@ func NewScanner() *Scanner {
 		MaxWorkers: 50,
 		hasAPIKey:  apiKey != "",
 		httpClient: &http.Client{
-			Timeout: 10,
+			Timeout: 30 * time.Second,
 		},
 	}
 
@@ -113,8 +114,8 @@ func (s *Scanner) scanYouTube(niche string) []ScanResult {
 func (s *Scanner) scanDuckDuckGo(niche string) []ScanResult {
 	fmt.Printf("[Scanner] Using DuckDuckGo fallback for: %s\n", niche)
 
-	// Use lite.duckduckgo.com instead of html.duckduckgo.com (more reliable)
-	searchURL := fmt.Sprintf("https://lite.duckduckgo.com/lite/?q=trending+%s+videos", strings.ReplaceAll(niche, " ", "+"))
+	// Use html.duckduckgo.com (more reliable than lite.duckduckgo.com)
+	searchURL := fmt.Sprintf("https://html.duckduckgo.com/html/?q=trending+%s+videos", strings.ReplaceAll(niche, " ", "+"))
 
 	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
