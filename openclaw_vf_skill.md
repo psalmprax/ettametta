@@ -23,6 +23,9 @@ Check the operational status of the ettametta API and scanners.
 ### /storage
 Check the local video storage usage and cloud migration status.
 
+### /ltx
+Check status of the remote LTX-2 video synthesis node.
+
 ## Actions
 
 ### Scan
@@ -52,6 +55,13 @@ Check the local video storage usage and cloud migration status.
 ```json
 {
   "action": "storage"
+}
+```
+
+### LTX Status
+```json
+{
+  "action": "ltx_status"
 }
 ```
 
