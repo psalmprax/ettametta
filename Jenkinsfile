@@ -130,22 +130,37 @@ pipeline {
         }
 
         stage('Test') {
+            agent {
+                docker {
+                    image 'python:3.11-slim'
+                    reuseNode true
+                }
+            }
             steps {
                 script {
-                    echo "Running unit tests in Docker container..."
+                    echo "Running unit tests in native Docker agent..."
                     sh """
-                        docker run --rm -v \$(pwd):/app -w /app/api python:3.11-slim sh -c 'ls -R /app && pip install -q pytest pytest-asyncio pytest-mock && pytest tests/test_config.py tests/test_services.py -v --tb=short'
+                        cd api
+                        pip install -q pytest pytest-asyncio pytest-mock
+                        pytest tests/test_config.py tests/test_services.py -v --tb=short
                     """
                 }
             }
         }
 
         stage('Lint') {
+            agent {
+                docker {
+                    image 'python:3.11-slim'
+                    reuseNode true
+                }
+            }
             steps {
                 script {
-                    echo "Running code linting in Docker container..."
+                    echo "Running code linting in native Docker agent..."
                     sh """
-                        docker run --rm -v \$(pwd):/app -w /app python:3.11-slim sh -c 'ls -R /app/api && pip install -q ruff && ruff check api/'
+                        pip install -q ruff
+                        ruff check api/
                     """
                 }
             }
