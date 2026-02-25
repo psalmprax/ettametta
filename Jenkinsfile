@@ -232,9 +232,12 @@ STORAGE_REGION=eu-frankfurt-1
                     echo "Running integration tests against deployed API..."
                     sh """
                         cd api
+                        python3 -m venv integration-venv
+                        . integration-venv/bin/activate
+                        pip install -q pytest pytest-asyncio pytest-mock requests
                         mkdir -p test-results
-                        pip install -q pytest pytest-asyncio pytest-mock requests || true
                         python -m pytest tests/test_config.py tests/test_services.py -v --tb=short --junitxml=test-results/results.xml || true
+                        deactivate
                     """
                 }
             }
@@ -245,8 +248,11 @@ STORAGE_REGION=eu-frankfurt-1
                 script {
                     echo "Running code linting..."
                     sh """
-                        pip install -q ruff || true
+                        python3 -m venv lint-venv
+                        . lint-venv/bin/activate
+                        pip install -q ruff
                         ruff check api/ || true
+                        deactivate
                     """
                 }
             }

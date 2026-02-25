@@ -97,3 +97,8 @@
 - [x] Integrate `agent { docker { ... } }` into CI pipeline stages
 - [x] Leverage Jenkins-native workspace volume management for DooD environments
 - [x] Standardize multi-stage containerized execution with `reuseNode true`
+
+## Phase 54: LTX-2 Connectivity & CI Hardening
+- [x] Expose API host port 8000 for ngrok/LTX-2 compatibility
+- [x] Migrate post-deployment host tests to virtual environments (PEP 668 compliance)
+- [x] Synchronize integration test reporting with Jenkins `junit` publisher
