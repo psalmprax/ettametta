@@ -320,4 +320,16 @@ The current monolithic Docker Compose architecture can evolve to:
 3. **Event Streaming**: Replace Celery with Apache Kafka for real-time event processing
 4. **Multi-Region**: OCI Frankfurt + US East for global low-latency
 5. **Mobile**: React Native app consuming the existing FastAPI backend
+### 3.4. Remote Synthesis Node Pattern (LTX-2)
+To handle the heavy VRAM requirements (28GB+), the system utilizes a **Remote Synthesis Node** pattern:
+- **Local API**: Orchestrates requests and manages job state.
+- **Secure Tunneling**: Utilizes `ngrok` or `RunPod` exposed ports to bridge environments.
+- **GPU Node**: A specialized environment (OCI, Colab Pro, or RunPod) that handles the heavy diffusion inference.
+- **Asynchronous Retrieval**: Results are pulled back to the local OCI instance via the same secure tunnel.
+
+### 3.5. Multi-Node (Hybrid) Strategy
+The system is designed to support multiple GPU providers simultaneously or as failovers:
+- **Tier 1 (Prototyping)**: Google Colab Pro (High-RAM) for cost-effective interactive development.
+- **Tier 2 (Production)**: RunPod/Vast.ai for "Always-On" stability and automated scaling via Agent Zero.
+- **Monitoring**: The `Sentinel` agent monitors `RENDER_NODE_URL` and triggers recovery (Telegram alerts or RunPod API restarts) upon detection of downtime.
 6. **SaaS**: Multi-tenant with per-user resource quotas and billing
