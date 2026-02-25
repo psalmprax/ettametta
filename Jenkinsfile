@@ -135,7 +135,9 @@ pipeline {
                     echo "Running unit tests..."
                     sh """
                         cd api
-                        python3 -m pip install -q pytest pytest-asyncio pytest-mock
+                        # Bootstrap pip if missing
+                        python3 -m pip --version || python3 -m ensurepip --user || (curl -sS https://bootstrap.pypa.io/get-pip.py | python3 - --user)
+                        python3 -m pip install --user -q pytest pytest-asyncio pytest-mock
                         python3 -m pytest tests/test_config.py tests/test_services.py -v --tb=short || true
                     """
                 }
@@ -147,7 +149,9 @@ pipeline {
                 script {
                     echo "Running code linting..."
                     sh """
-                        python3 -m pip install -q ruff
+                        # Bootstrap pip if missing
+                        python3 -m pip --version || python3 -m ensurepip --user || (curl -sS https://bootstrap.pypa.io/get-pip.py | python3 - --user)
+                        python3 -m pip install --user -q ruff
                         python3 -m ruff check api/ || true
                     """
                 }
