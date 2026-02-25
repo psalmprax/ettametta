@@ -135,8 +135,8 @@ pipeline {
                     echo "Running unit tests..."
                     sh """
                         cd api
-                        pip install -q pytest pytest-asyncio pytest-mock
-                        pytest tests/test_config.py tests/test_services.py -v --tb=short || true
+                        python3 -m pip install -q pytest pytest-asyncio pytest-mock
+                        python3 -m pytest tests/test_config.py tests/test_services.py -v --tb=short || true
                     """
                 }
             }
@@ -147,8 +147,8 @@ pipeline {
                 script {
                     echo "Running code linting..."
                     sh """
-                        pip install -q ruff
-                        ruff check api/ || true
+                        python3 -m pip install -q ruff
+                        python3 -m ruff check api/ || true
                     """
                 }
             }
