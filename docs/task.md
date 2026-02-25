@@ -73,7 +73,7 @@
 - [x] Switch to `python3 -m pip` for consistent dependency management
 - [x] Resolve `pip: not found` errors in Jenkins container environment
 
-## Phase 46: Nexus UI Optimization
-- [x] Enable manual node selection in Nexus Flow graph
-- [x] Fix inconsistent cursor pointer behavior for interactive nodes
-- [x] Synchronize manual selection with live production job sequence
+## Phase 49: CI/CD Dependency Bootstrapping
+- [x] Implement automated `pip` bootstrapping using `ensurepip` and `get-pip.py`
+- [x] Enable user-level package installation to bypass permission restrictions
+- [x] Standardize Python environment readiness across all CI stages
