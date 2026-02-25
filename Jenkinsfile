@@ -107,6 +107,9 @@ pipeline {
         AWS_ACCESS_KEY_ID       = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY   = credentials('AWS_SECRET_ACCESS_KEY')
         AWS_STORAGE_BUCKET_NAME = credentials('AWS_STORAGE_BUCKET_NAME')
+
+        // LTX-2 Remote Render Node
+        RENDER_NODE_URL         = credentials('RENDER_NODE_URL')
     }
 
     options {
@@ -189,6 +192,8 @@ STORAGE_BUCKET=viral-forge-assets
 STORAGE_ACCESS_KEY=${OCI_STORAGE_ACCESS_KEY}
 STORAGE_SECRET_KEY=${OCI_STORAGE_SECRET_KEY}
 STORAGE_REGION=eu-frankfurt-1
+# LTX-2
+RENDER_NODE_URL=${RENDER_NODE_URL}
 """
                         sh "umask 077 && echo '${envContent}' > ${DEPLOY_DIR}/.env"
                     }
