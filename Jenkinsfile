@@ -135,8 +135,9 @@ pipeline {
                     echo "Running unit tests..."
                     sh """
                         cd api
+                        mkdir -p test-results
                         pip install -q pytest pytest-asyncio pytest-mock || true
-                        python -m pytest tests/test_config.py tests/test_services.py -v --tb=short || true
+                        python -m pytest tests/test_config.py tests/test_services.py -v --tb=short --junitxml=test-results/results.xml || true
                     """
                 }
             }
@@ -148,7 +149,7 @@ pipeline {
                     echo "Running code linting..."
                     sh """
                         pip install -q ruff || true
-                        ruff check api/ || true
+                        ruff check api/ || EXIT_CODE=$?; exit $EXIT_CODE
                     """
                 }
             }
@@ -253,13 +254,16 @@ STORAGE_REGION=eu-frankfurt-1
     }
 
     post {
-        success {
-            echo "✅ ettametta deployed successfully — build #${BUILD_NUMBER}"
-        }
-        failure {
-            echo "❌ Deployment failed at stage: ${env.STAGE_NAME}. Check logs above."
-        }
         always {
+            // Publish test results
+            script {
+                try {
+                    junit 'api/test-results/*.xml'
+                    echo "Test results published"
+                } catch (e) {
+                    echo "No test results to publish (or junit plugin not installed)"
+                }
+            }
             script {
                 try {
                     sh 'docker logout || true'
