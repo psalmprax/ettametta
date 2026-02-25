@@ -250,11 +250,8 @@ RENDER_NODE_URL=${RENDER_NODE_URL}
                 script {
                     echo "Running code linting..."
                     sh """
-                        python3 -m venv lint-venv
-                        . lint-venv/bin/activate
-                        pip install -q ruff
+                        pip3 install -q ruff || pip install -q ruff || true
                         ruff check api/ || true
-                        deactivate
                     """
                 }
             }
