@@ -50,7 +50,8 @@ export function NexusNode({ type, label, description, status, active, progress, 
                 "w-72 p-6 rounded-[2rem] border transition-all duration-300 relative overflow-hidden group mb-4",
                 active
                     ? "bg-zinc-900 border-primary/40 shadow-[0_0_50px_rgba(var(--primary-rgb),0.15)]"
-                    : "bg-zinc-950/40 border-white/5 hover:border-primary/20 cursor-pointer",
+                    : "bg-zinc-950/40 border-white/5 hover:border-primary/20",
+                onClick && "cursor-pointer",
                 status === 'complete' && "border-emerald-500/30 bg-emerald-500/[0.02]"
             )}
         >

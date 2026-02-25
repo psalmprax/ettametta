@@ -62,6 +62,7 @@ export default function NexusPage() {
     const [selectedNiche, setSelectedNiche] = useState("");
     const [userTier, setUserTier] = useState<string>("free");
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
+    const [selectedNodeIndex, setSelectedNodeIndex] = useState<number>(0);
     const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/ws/jobs`);
 
     // Fetch initial data
@@ -325,8 +326,13 @@ export default function NexusPage() {
                                                             label={node.label}
                                                             description={node.desc}
                                                             status={status}
-                                                            active={status === 'processing' || (status === 'pending' && idx === 0 && !activeJob)}
+                                                            active={
+                                                                (activeJob && status === 'processing') ||
+                                                                (!activeJob && selectedNodeIndex === idx) ||
+                                                                (activeJob && activeJob.status === 'COMPLETED' && selectedNodeIndex === idx)
+                                                            }
                                                             progress={progress}
+                                                            onClick={() => setSelectedNodeIndex(idx)}
                                                             metrics={[
                                                                 { label: "Stability", value: "99.9%" },
                                                                 { label: "Sync", value: "Alpha" }
