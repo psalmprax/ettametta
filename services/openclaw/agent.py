@@ -15,6 +15,7 @@ from skills.security import security_skill
 from skills.no_face import noface_skill
 from skills.outreach import outreach_skill
 from skills.render import render_skill
+from skills.agent_zero import agent_zero_skill
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ class OpenClawAgent:
         - SECURITY: Emergency lockdown. Params: {"action": "panic|status"}
         - STORAGE: Check video storage usage and cloud status. No params needed.
         - RENDER: Trigger a cinematic programmatic video render. Params: {"title": "string", "subtitle": "string", "video_url": "string"}
+        - ZERO: Control the Agent Zero autonomous director. Params: {"action": "start|stop|status"}
         
         PLANNING MODE:
         When a user gives a complex command, you must first output a brief "Plan" explicitly naming which sub-agents (SCOUT, MUSE, etc.) you are delegating to, followed by the actual tool JSON.
@@ -237,10 +239,8 @@ class OpenClawAgent:
             return system_skill.get_storage_status()
 
         elif tool == "RENDER":
-            return render_skill.render_clip(
-                title=params.get("title", "Viral Clip"),
-                subtitle=params.get("subtitle", "Created by OpenClaw"),
-                video_url=params.get("video_url")
-            )
+            return render_skill.render_clip(**params)
+        elif tool == "ZERO":
+            return agent_zero_skill.control_agent(**params)
 
         return f"❓ Unknown tool: {tool}"
