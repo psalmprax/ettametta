@@ -63,3 +63,17 @@
 - [x] Enable manual node selection in Nexus Flow graph
 - [x] Fix inconsistent cursor pointer behavior for interactive nodes
 - [x] Synchronize manual selection with live production job sequence
+
+## Phase 47: Jenkins Pipeline Resilience
+- [x] Fix Groovy syntax error in `.env` interpolation
+- [x] Add missing dynamic parameters for Agent Frameworks and Video Tiers
+- [x] Synchronize CI/CD configuration with latest dashboard features
+
+## Phase 48: CI/CD Environment Hardening
+- [x] Switch to `python3 -m pip` for consistent dependency management
+- [x] Resolve `pip: not found` errors in Jenkins container environment
+
+## Phase 46: Nexus UI Optimization
+- [x] Enable manual node selection in Nexus Flow graph
+- [x] Fix inconsistent cursor pointer behavior for interactive nodes
+- [x] Synchronize manual selection with live production job sequence
