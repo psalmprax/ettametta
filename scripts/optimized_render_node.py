@@ -132,4 +132,35 @@ async def download(job_id: str):
     return {"error": "Not found"}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import asyncio
+    
+    # In environments like Colab/Jupyter, we need to handle the existing event loop
+    try:
+        # Check if we're in a Jupyter/Colab environment
+        try:
+            shell = get_ipython().__class__.__name__
+            if shell == 'ZMQInteractiveShell':
+                import nest_asyncio
+                nest_asyncio.apply()
+                print("📓 Notebook/Colab environment detected. Patched asyncio.")
+        except NameError:
+            pass
+
+        # Use uvicorn.run directly; with nest_asyncio, it should no longer crash
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+        
+    except RuntimeError as e:
+        if "asyncio.run() cannot be called from a running event loop" in str(e):
+            print("🚀 Running in an existing loop. Starting server in background task...")
+            # Fallback for strict environments
+            import nest_asyncio
+            nest_asyncio.apply()
+            
+            config = uvicorn.Config(app=app, host="0.0.0.0", port=8000, loop="asyncio")
+            server = uvicorn.Server(config)
+            
+            # This is the "correct" way to run in a notebook if the loop is already running
+            asyncio.create_task(server.serve())
+            print("✅ Server started! Check the ngrok URL.")
+        else:
+            raise e
