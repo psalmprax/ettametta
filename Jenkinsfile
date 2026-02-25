@@ -132,15 +132,12 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    echo "Running unit tests..."
+                    echo "Running unit tests in Docker container..."
                     sh """
-                        cd api
-                        # Create and use venv to bypass PEP 668 externally-managed-environment
-                        python3 -m venv venv || python3 -m pip install --user --break-system-packages virtualenv && python3 -m virtualenv venv
-                        . venv/bin/activate
-                        python3 -m pip install -q pytest pytest-asyncio pytest-mock
-                        python3 -m pytest tests/test_config.py tests/test_services.py -v --tb=short || true
-                        deactivate
+                        docker run --rm -v \$(pwd):/app -w /app/api python:3.11-slim sh -c "
+                            pip install -q pytest pytest-asyncio pytest-mock &&
+                            pytest tests/test_config.py tests/test_services.py -v --tb=short
+                        "
                     """
                 }
             }
@@ -149,14 +146,12 @@ pipeline {
         stage('Lint') {
             steps {
                 script {
-                    echo "Running code linting..."
+                    echo "Running code linting in Docker container..."
                     sh """
-                        # Create and use venv to bypass PEP 668
-                        python3 -m venv linter-venv || python3 -m pip install --user --break-system-packages virtualenv && python3 -m virtualenv linter-venv
-                        . linter-venv/bin/activate
-                        python3 -m pip install -q ruff
-                        python3 -m ruff check api/ || true
-                        deactivate
+                        docker run --rm -v \$(pwd):/app -w /app python:3.11-slim sh -c "
+                            pip install -q ruff &&
+                            ruff check api/
+                        "
                     """
                 }
             }
