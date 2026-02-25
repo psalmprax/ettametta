@@ -82,7 +82,7 @@
 |-----|--------|--------|
 | OAuth Credentials | ✅ | Hardened placeholders in .env.production.example |
 | Production Domain | ✅ | Configured in environment templates |
-| LTX Video Node | ⚠️ | Server provisioning required |
+| LTX Video Node | ✅ | Live at https://obdulia-mouill-ryann.ngrok-free.dev |
 
 ### Important (P1)
 | Gap | Status | Action |
