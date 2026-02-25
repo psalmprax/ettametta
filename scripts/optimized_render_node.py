@@ -7,6 +7,13 @@ import uvicorn
 import subprocess
 from pathlib import Path
 
+# --- COLAB ASYNCIO FIX ---
+try:
+    import nest_asyncio
+    nest_asyncio.apply()
+except ImportError:
+    pass
+
 # --- FISH SPEECH IMPORTS (Dynamic) ---
 try:
     from fish_speech.utils.schema import TTSRequest
