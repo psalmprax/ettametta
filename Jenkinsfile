@@ -134,10 +134,7 @@ pipeline {
                 script {
                     echo "Running unit tests in Docker container..."
                     sh """
-                        docker run --rm -v \$(pwd):/app -w /app/api python:3.11-slim sh -c "
-                            pip install -q pytest pytest-asyncio pytest-mock &&
-                            pytest tests/test_config.py tests/test_services.py -v --tb=short
-                        "
+                        docker run --rm -v \$(pwd):/app -w /app/api python:3.11-slim sh -c 'ls -R /app && pip install -q pytest pytest-asyncio pytest-mock && pytest tests/test_config.py tests/test_services.py -v --tb=short'
                     """
                 }
             }
@@ -148,10 +145,7 @@ pipeline {
                 script {
                     echo "Running code linting in Docker container..."
                     sh """
-                        docker run --rm -v \$(pwd):/app -w /app python:3.11-slim sh -c "
-                            pip install -q ruff &&
-                            ruff check api/
-                        "
+                        docker run --rm -v \$(pwd):/app -w /app python:3.11-slim sh -c 'ls -R /app/api && pip install -q ruff && ruff check api/'
                     """
                 }
             }
