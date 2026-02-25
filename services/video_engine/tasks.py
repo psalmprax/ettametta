@@ -1,10 +1,5 @@
 from api.utils.celery import celery_app
 
-# Force use of system ffmpeg BEFORE importing moviepy
-import os
-os.environ['FFMPEG_BINARY'] = 'ffmpeg'
-os.environ['IMAGEIO_FFMPEG_BINARY'] = 'ffmpeg'
-
 from .processor import VideoProcessor
 from .downloader import base_video_downloader
 from services.optimization.youtube_publisher import base_youtube_publisher

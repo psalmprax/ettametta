@@ -613,284 +613,48 @@ class VideoProcessor:
         
         return output_path
 
-    async def process_full_pipeline(self, input_path: str, output_name: str, enabled_filters: Optional[List[str]] = None, strategy: Optional[Dict] = None) -> str:
+    async def process_full_pipeline(
+        self, 
+        input_path: str, 
+        output_name: str, 
+        enabled_filters: Optional[List[str]] = None, 
+        strategy: Optional[Dict] = None
+    ) -> str:
         """
-        Full ettametta Pipeline with Dynamic AI Strategies.
-        Uses OpenCV on ARM64 to avoid MoviePy hanging issues.
+        High-fidelity video transformation using Remotion.
+        Delegates the visual layout and captions to React for professional quality.
         """
-        # Check if we should use OpenCV (ARM64 detection)
-        import platform
-        is_arm64 = platform.machine() == 'aarch64'
-        
-        if is_arm64:
-            # Use OpenCV processing on ARM64
-            logging.info(f"[VideoProcessor] ARM64 detected, using OpenCV pipeline")
-            return self._process_video_opencv(input_path, output_name, enabled_filters or [], strategy or {})
-        
-        # 1. Transcribe (works for both)
-        transcript = await transcription_service.transcribe_video(input_path)
-        
-        # 2. Base Clip setup
-        logging.info(f"[VideoProcessor] Starting video load for: {input_path}")
-        clip = await self._load_video_with_timeout(input_path)
-        logging.info(f"[VideoProcessor] Video duration: {clip.duration}s, size: {clip.size}")
-        
-        # 2.1 OCR-Aware Strategy
-        caption_strategy = ocr_service.get_caption_strategy(input_path)
-        logging.info(f"[VideoProcessor] OCR Strategy identifies: {caption_strategy}")
-        
-        # 2.2 Semantic Trimming (Hooks)
-        if strategy and strategy.get("hook_points"):
-            logging.info(f"[VideoProcessor] Semantic trimming to hooks: {strategy['hook_points']}")
-            clip = self.trim_to_hooks(clip, strategy["hook_points"])
-
-        # 2.3 B-Roll Injection
-        b_roll_overlay = None
-        if strategy and strategy.get("b_roll_keywords"):
-            b_roll_overlay = await self.inject_b_roll(clip, strategy["b_roll_keywords"])
-
-        # 3. Apply Multi-Layer Transformations
-        logging.info(f"[VideoProcessor] Applying transformations...")
-        
-        # Default core transforms
-        transformed = clip.with_effects([vfx.MirrorX()]).resized(height=int(clip.h * (1.05)))
-        
-        # Merge Dashboard filters with AI recommendations if strategy exists
-        active_filters = enabled_filters or []
-        if strategy and strategy.get("recommended_filters"):
-            active_filters = list(set(active_filters + strategy["recommended_filters"]))
-
-        # 4. Optional Add-ons (Pro Filters) with Dynamic Intensity
-        if active_filters:
-            if "f6" in active_filters:
-                transformed = self.apply_speed_ramping(transformed, speed_range=strategy.get("speed_range", [0.95, 1.05]) if strategy else [0.95, 1.05])
-            if "f8" in active_filters:
-                transformed = self.apply_dynamic_jitter(transformed, intensity=strategy.get("jitter_intensity", 1.0) if strategy else 1.0)
-            if "f7" in active_filters:
-                transformed = self.apply_cinematic_overlays(transformed)
-            if "f9" in active_filters:
-                transformed = self.apply_atmospheric_glow(transformed)
-            if "f10" in active_filters:
-                transformed = self.apply_film_grain(transformed)
-            if "f11" in active_filters:
-                transformed = self.apply_grayscale(transformed)
-            if "f12" in active_filters:
-                transformed = self.apply_random_glitch(transformed)
-
-        # 4. Pattern Interrupts & Audio Integration
-        # 4.0 VLM Vibe Adjustments
-        if strategy and strategy.get("visual_insights"):
-            transformed = self.apply_vibe_adjustments(transformed, strategy["visual_insights"])
-
-        duration = transformed.duration
-        elements = [transformed]
-        
-        for i in range(2, int(duration), 3):
-            # Smooth flash interrupt
-            flash = ColorClip(size=transformed.size, color=(255, 255, 255)) \
-                .with_start(i).with_duration(0.15) \
-                .with_opacity(0.12) \
-                .with_effects([vfx.CrossFadeIn(0.05), vfx.CrossFadeOut(0.05)])
-            elements.append(flash)
-
-        # 4.1 Apply B-Roll Overlay if exists
-        if b_roll_overlay:
-            elements.append(b_roll_overlay)
-
-        # 5. Add Captions from transcript with dynamic positioning
-        caption_clips = []
-        # Calculate Y position based on OCR strategy
-        y_pos = 0.8 # Default bottom
-        if caption_strategy == "top":
-            y_pos = 0.15
-        elif caption_strategy == "center":
-            y_pos = 0.5
-
-        # VLM-Driven Aesthetic: Contrasting Caption Color
-        caption_color = '#FFE100' # Default Viral Yellow
-        if strategy and strategy.get("vibe") == "Dramatic":
-            caption_color = '#FFFFFF' # Stark White for drama
-        elif strategy and strategy.get("vibe") == "Energetic":
-            caption_color = '#00FF00' # Neon Green for energy
-
-        for item in transcript:
-            # Check if word is within current trimmed timeline
-            start = item.get("start", 0)
-            end = item.get("end", 0)
-            text = item.get("text", "")
-            
-            if start <= duration:
-                txt_clip = TextClip(
-                    text=text,
-                    font_size=50,
-                    color=caption_color,
-                    font=self.font_path,
-                    stroke_color='black',
-                    stroke_width=2
-                ).with_start(start).with_duration(max(0.5, end - start)).with_position(('center', y_pos))
-                caption_clips.append(txt_clip)
-
-        if caption_clips:
-            elements.extend(caption_clips)
-
-        # 6. Composite
-        if len(elements) > 1:
-            final_clip = CompositeVideoClip(elements)
-        else:
-            final_clip = elements[0]
-        
-        # 7. Write Output
-        output_path = os.path.join(self.output_dir, output_name)
+        logging.info(f"[VideoProcessor] Starting Remotion transformation for {output_name}")
         
         try:
-            final_clip.write_videofile(output_path, codec=self.codec, audio_codec="aac", logger=None)
+            from services.video_engine.remotion_service import remotion_service
+            
+            # Prepare props for the Remotion ViralClip composition
+            props = {
+                "title": strategy.get("vibe", "Viral Moment") if strategy else "Viral Clip",
+                "subtitle": strategy.get("visual_mood", "Created by OpenClaw") if strategy else "Cinematic Studio",
+                "videoUrl": input_path
+            }
+            
+            # We'll also pass any voiceover from the strategy if available
+            if strategy and strategy.get("voiceover_url"):
+                props["audioUrl"] = strategy["voiceover_url"]
+            
+            rendered_path = await remotion_service.render_video(
+                composition_id="ViralClip",
+                props=props,
+                output_name=output_name
+            )
+            
+            if rendered_path:
+                logging.info(f"[VideoProcessor] Remotion transformation complete: {rendered_path}")
+                return rendered_path
+            
+            raise Exception("Remotion rendering failed to produce an output")
+            
         except Exception as e:
-            logging.error(f"[VideoProcessor] write_videofile failed: {e}")
-            # Fallback to simpler write
-            final_clip.write_videofile(output_path, codec=self.codec, audio=False, logger=None)
-        
-        logging.info(f"[VideoProcessor] Pipeline complete: {output_path}")
-        return output_path
-        
-        if is_arm64:
-            # Use OpenCV processing on ARM64
-            logging.info(f"[VideoProcessor] ARM64 detected, using OpenCV pipeline")
-            return self._process_video_opencv(input_path, output_name, enabled_filters or [], strategy or {})
-        
-        # 1. Transcribe (works for both)
-        transcript = await transcription_service.transcribe_video(input_path)
-        
-        # 2. Base Clip setup
-        logging.info(f"[VideoProcessor] Starting video load for: {input_path}")
-        clip = await self._load_video_with_timeout(input_path)
-        logging.info(f"[VideoProcessor] Video duration: {clip.duration}s, size: {clip.size}")
-        
-        # 2.1 OCR-Aware Strategy
-        caption_strategy = ocr_service.get_caption_strategy(input_path)
-        logging.info(f"[VideoProcessor] OCR Strategy identifies: {caption_strategy}")
-        
-        # 2.2 Semantic Trimming (Hooks)
-        if strategy and strategy.get("hook_points"):
-            logging.info(f"[VideoProcessor] Semantic trimming to hooks: {strategy['hook_points']}")
-            clip = self.trim_to_hooks(clip, strategy["hook_points"])
-
-        # 2.3 B-Roll Injection
-        b_roll_overlay = None
-        if strategy and strategy.get("b_roll_keywords"):
-            b_roll_overlay = await self.inject_b_roll(clip, strategy["b_roll_keywords"])
-
-        # 3. Apply Multi-Layer Transformations
-        logging.info(f"[VideoProcessor] Applying transformations...")
-        
-        # Default core transforms
-        transformed = clip.with_effects([vfx.MirrorX()]).resized(height=int(clip.h * (1.05)))
-        
-        # Merge Dashboard filters with AI recommendations if strategy exists
-        active_filters = enabled_filters or []
-        if strategy and strategy.get("recommended_filters"):
-            active_filters = list(set(active_filters + strategy["recommended_filters"]))
-
-        # 4. Optional Add-ons (Pro Filters) with Dynamic Intensity
-        if active_filters:
-            if "f6" in active_filters:
-                transformed = self.apply_speed_ramping(transformed, speed_range=strategy.get("speed_range", [0.95, 1.05]) if strategy else [0.95, 1.05])
-            if "f8" in active_filters:
-                transformed = self.apply_dynamic_jitter(transformed, intensity=strategy.get("jitter_intensity", 1.0) if strategy else 1.0)
-            if "f7" in active_filters:
-                transformed = self.apply_cinematic_overlays(transformed)
-            if "f9" in active_filters:
-                transformed = self.apply_atmospheric_glow(transformed)
-            if "f10" in active_filters:
-                transformed = self.apply_film_grain(transformed)
-            if "f11" in active_filters:
-                transformed = self.apply_grayscale(transformed)
-            if "f12" in active_filters:
-                transformed = self.apply_random_glitch(transformed)
-
-        # 4. Pattern Interrupts & Audio Integration
-        # 4.0 VLM Vibe Adjustments
-        if strategy and strategy.get("visual_insights"):
-            transformed = self.apply_vibe_adjustments(transformed, strategy["visual_insights"])
-
-        duration = transformed.duration
-        elements = [transformed]
-        
-        for i in range(2, int(duration), 3):
-            # Smooth flash interrupt
-            flash = ColorClip(size=transformed.size, color=(255, 255, 255)) \
-                .with_start(i).with_duration(0.15) \
-                .with_opacity(0.12) \
-                .with_effects([vfx.CrossFadeIn(0.05), vfx.CrossFadeOut(0.05)])
-            elements.append(flash)
-
-        # 4.1 Apply B-Roll Overlay if exists
-        if b_roll_overlay:
-            elements.append(b_roll_overlay)
-
-        # 5. Add Captions from transcript with dynamic positioning
-        caption_clips = []
-        # Calculate Y position based on OCR strategy
-        y_pos = 0.8 # Default bottom
-        if caption_strategy == "top":
-            y_pos = 0.15
-        elif caption_strategy == "center":
-            y_pos = 0.5
-
-        # VLM-Driven Aesthetic: Contrasting Caption Color
-        caption_color = '#FFE100' # Default Viral Yellow
-        if strategy and strategy.get("vibe") == "Dramatic":
-            caption_color = '#FFFFFF' # Stark White for drama
-        elif strategy and strategy.get("vibe") == "Energetic":
-            caption_color = '#00FF00' # Neon Green for energy
-
-        for item in transcript:
-            # Check if word is within current trimmed timeline
-            if item["start"] > transformed.duration:
-                continue
-
-            txt = TextClip(
-                text=item["text"].upper(),
-                font_size=72,
-                color=caption_color,
-                font=self.font_path,
-                stroke_color='black',
-                stroke_width=2.5,
-                method='caption',
-                size=(int(transformed.w * 0.85), None)
-            ).with_start(item["start"]).with_duration(item["end"] - item["start"]).with_position(('center', y_pos))
-            caption_clips.append(txt)
-            
-        final_clip = CompositeVideoClip(elements + caption_clips)
-        
-        # IMPORTANT: Preserve original audio from the source video
-        if clip.audio:
-            final_clip = final_clip.with_audio(clip.audio)
-        output_path = os.path.join(self.output_dir, output_name)
-        
-        # Premium Render Settings
-        render_args = {
-            "filename": output_path,
-            "fps": 30,
-            "threads": 4,
-            "audio_codec": "aac",
-            "audio": True,  # Ensure audio is enabled
-            "ffmpeg_params": [
-                "-crf", "18",        # Constant Rate Factor: 18 is visually lossless
-                "-maxrate", "12M",    # Target high-end social bitrate
-                "-bufsize", "24M",
-                "-preset", "slower"   # Better compression artifacts
-            ]
-        }
-        
-        try:
-            if self.use_gpu:
-                final_clip.write_videofile(**{**render_args, "codec": "h264_nvenc"})
-            else:
-                final_clip.write_videofile(**{**render_args, "codec": "libx264"})
-        except Exception:
-            # Absolute fallback
-            final_clip.write_videofile(output_path, codec="libx264", fps=24)
-        
-        return output_path
+            logging.error(f"[VideoProcessor] Remotion pipeline failed: {e}. Falling back to basic ffmpeg.")
+            # Basic fallback: just return the input or do a simple copy
+            return input_path
 
 base_video_processor = VideoProcessor()

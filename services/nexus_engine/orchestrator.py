@@ -13,65 +13,65 @@ class NexusOrchestrator:
 
     async def assemble_video(self, job_id: int, niche: str, script_segments: List[Any], voiceover_paths: List[str], visual_paths: List[str], music_path: Optional[str] = None) -> str:
         """
-        Advanced synthesis of multiple assets into a high-quality video.
+        High-fidelity video assembly using Remotion React engine.
+        Replaces legacy MoviePy for better stability and professional graphics.
         """
-        logging.info(f"[Nexus] Starting assembly for Job {job_id}")
+        logging.info(f"[Nexus] Starting Remotion assembly for Job {job_id}")
         
         try:
-            # 1. Load Visual Clips and match to durations
-            clips = []
-            if not visual_paths:
-                 # Fallback to a placeholder black clip if no visuals provided
-                 from moviepy import ColorClip
-                 clips = [ColorClip(size=(1080, 1920), color=(0,0,0)).with_duration(5)]
-            else:
-                for v_path in visual_paths:
-                    clip = VideoFileClip(v_path)
-                    clips.append(clip)
+            from services.video_engine.remotion_service import remotion_service
+            import cv2 # To get clip durations if not provided
 
-            # 2. Concatenate visuals
-            final_visuals = concatenate_videoclips(clips, method="compose")
-            
-            # 3. Handle Audio Synthesis
-            if not voiceover_paths:
-                 from moviepy import AudioClip
-                 # 440Hz beep placeholder
-                 final_voice = AudioFileClip("/usr/share/sounds/alsa/Front_Center.wav").with_duration(final_visuals.duration) if os.path.exists("/usr/share/sounds/alsa/Front_Center.wav") else None
-            else:
-                from moviepy import concatenate_audioclips
-                voice_clips = [AudioFileClip(v) for v in voiceover_paths]
-                final_voice = concatenate_audioclips(voice_clips)
-            
-            # 4. Mix with Music if available
-            if music_path and os.path.exists(music_path):
-                final_audio = base_audio_mixer.mix_tracks(
-                    voiceover_path=voiceover_paths[0] if voiceover_paths else None, 
-                    music_path=music_path,
-                    duration=final_visuals.duration
-                )
-            else:
-                final_audio = final_voice
+            # 1. Prepare clips for Remotion
+            # We need to calculate durationInFrames for each clip
+            remotion_clips = []
+            for v_path in visual_paths:
+                if not os.path.exists(v_path):
+                    continue
+                
+                # Get duration using cv2 (cheaper than moviepy for just metadata)
+                cap = cv2.VideoCapture(v_path)
+                fps = cap.get(cv2.CAP_PROP_FPS) or 30
+                frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                cap.release()
+                
+                remotion_clips.append({
+                    "url": v_path,
+                    "durationInFrames": frame_count
+                })
 
-            # 5. Combine and Render
-            final_video = final_visuals.with_audio(final_audio)
-            
+            # 2. Handle Audio
+            # For MVP, we'll use the first voiceover or a merged track if we have one
+            # Remotion handles background music mixing as well
+            audio_url = voiceover_paths[0] if voiceover_paths else music_path
+
+            # 3. Prepare Props
+            props = {
+                "title": f"{niche} Secrets",
+                "subtitle": "Discover the Truth",
+                "clips": remotion_clips,
+                "audioUrl": audio_url
+            }
+
             from api.routes.ws import notify_nexus_job_update_sync
             notify_nexus_job_update_sync({"id": str(job_id), "status": "RENDERING", "progress": 60, "niche": niche})
 
             output_filename = f"nexus_{job_id}_{niche.replace(' ', '_')}.mp4"
-            output_path = os.path.join(self.output_dir, output_filename)
-            
-            # Use premium render settings from processor logic
-            final_video.write_videofile(
-                output_path, 
-                fps=30, 
-                codec="libx264", # Fallback for compatibility
-                audio_codec="aac"
+            rendered_path = await remotion_service.render_video(
+                composition_id="ViralClip",
+                props=props,
+                output_name=output_filename
             )
-            
-            notify_nexus_job_update_sync({"id": str(job_id), "status": "COMPLETED", "progress": 95, "niche": niche})
 
-            return output_path
+            if rendered_path:
+                notify_nexus_job_update_sync({"id": str(job_id), "status": "COMPLETED", "progress": 100, "niche": niche})
+                return rendered_path
+            else:
+                raise Exception("Remotion render returned no path")
+
+        except Exception as e:
+            logging.error(f"[Nexus] Assembly Failed for Job {job_id}: {e}")
+            raise e
         except Exception as e:
             logging.error(f"[Nexus] Assembly Failed for Job {job_id}: {e}")
             raise e

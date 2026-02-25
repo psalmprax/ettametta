@@ -67,43 +67,35 @@ class MotionGraphicsService:
         position: str = "center"  # center, top, bottom
     ) -> Optional[str]:
         """
-        Add animated title sequence to video.
-        
-        Args:
-            video_path: Path to input video
-            title: Main title text
-            subtitle: Optional subtitle
-            style: Animation style (auto-selected if not provided)
-            duration: Title display duration in seconds
-            position: Title position on screen
-            
-        Returns:
-            Path to enhanced video with title, or None if disabled
+        Add animated title sequence to video using Remotion.
         """
         if not self.enabled:
             logger.debug("[MotionGraphics] Disabled, skipping title sequence")
             return None
         
-        if not style:
-            # Extract niche from video path or use default
-            style = self._get_title_style_for_niche("default")
-        
-        logger.info(f"[MotionGraphics] Adding title - title: {title}, style: {style}")
+        logger.info(f"[MotionGraphics] Rendering Remotion title - title: {title}")
         
         try:
-            output_path = video_path.replace(".mp4", "_with_title.mp4")
+            from services.video_engine.remotion_service import remotion_service
             
-            # Implementation would use:
-            # 1. MoviePy TextClip with animation
-            # 2. FFmpeg with libass for subtitles
-            # 3. Template-based rendering (After Effects MOGRT)
+            # Prepare props for Remotion
+            props = {
+                "title": title,
+                "subtitle": subtitle or "",
+                "videoUrl": video_path  # We use the existing video as background
+            }
             
-            # For now, return None (graceful degradation)
-            logger.warning(f"[MotionGraphics] Title sequence not implemented - requires template library")
-            return None
+            output_name = f"mg_{os.path.basename(video_path)}"
+            rendered_path = await remotion_service.render_video(
+                composition_id="ViralClip",
+                props=props,
+                output_name=output_name
+            )
+            
+            return rendered_path
             
         except Exception as e:
-            logger.error(f"[MotionGraphics] Error adding title sequence: {e}")
+            logger.error(f"[MotionGraphics] Remotion render failed: {e}")
             return None
     
     async def add_animated_overlay(
