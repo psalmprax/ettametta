@@ -47,6 +47,11 @@ pipeline {
         // Agent Frameworks (disabled by default)
         choice(name: 'ENABLE_LANGCHAIN', choices: ['false', 'true'], description: 'Enable LangChain')
         choice(name: 'ENABLE_CREWAI', choices: ['false', 'true'], description: 'Enable CrewAI')
+        choice(name: 'ENABLE_SOUND_DESIGN', choices: ['false', 'true'], description: 'Enable high-fidelity sound design')
+        choice(name: 'ENABLE_MOTION_GRAPHICS', choices: ['false', 'true'], description: 'Enable neural motion graphics')
+        choice(name: 'ENABLE_INTERPRETER', choices: ['false', 'true'], description: 'Enable Open Interpreter')
+        choice(name: 'ENABLE_AFFILIATE_API', choices: ['false', 'true'], description: 'Enable Affiliate marketing APIs')
+        choice(name: 'ENABLE_TRADING', choices: ['false', 'true'], description: 'Enable Trading APIs')
     }
 
     environment {
@@ -196,14 +201,14 @@ MONETIZATION_MODE=${params.MONETIZATION_MODE}
 # Video Quality Tiers
 DEFAULT_QUALITY_TIER=${params.DEFAULT_QUALITY_TIER}
 AI_VIDEO_PROVIDER=${params.AI_VIDEO_PROVIDER}
-ENABLE_SOUND_DESIGN=${params.ENABLE_SOUND_DESIGN:='false'}
-ENABLE_MOTION_GRAPHICS=${params.ENABLE_MOTION_GRAPHICS:='false'}
+ENABLE_SOUND_DESIGN=${params.ENABLE_SOUND_DESIGN ?: 'false'}
+ENABLE_MOTION_GRAPHICS=${params.ENABLE_MOTION_GRAPHICS ?: 'false'}
 # Agent Frameworks
-ENABLE_LANGCHAIN=${params.ENABLE_LANGCHAIN:='false'}
-ENABLE_CREWAI=${params.ENABLE_CREWAI:='false'}
-ENABLE_INTERPRETER=${params.ENABLE_INTERPRETER:='false'}
-ENABLE_AFFILIATE_API=${params.ENABLE_AFFILIATE_API:='false'}
-ENABLE_TRADING=${params.ENABLE_TRADING:='false'}
+ENABLE_LANGCHAIN=${params.ENABLE_LANGCHAIN ?: 'false'}
+ENABLE_CREWAI=${params.ENABLE_CREWAI ?: 'false'}
+ENABLE_INTERPRETER=${params.ENABLE_INTERPRETER ?: 'false'}
+ENABLE_AFFILIATE_API=${params.ENABLE_AFFILIATE_API ?: 'false'}
+ENABLE_TRADING=${params.ENABLE_TRADING ?: 'false'}
 # OAuth
 GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
