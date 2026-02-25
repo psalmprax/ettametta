@@ -274,9 +274,11 @@ export default function DiscoveryPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearching, setIsSearching] = useState(false);
 
-    const handleSearch = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!searchQuery.trim()) {
+    const handleSearch = useCallback(async (e?: React.FormEvent, customQuery?: string) => {
+        if (e) e.preventDefault();
+        const query = customQuery !== undefined ? customQuery : searchQuery;
+
+        if (!query.trim()) {
             fetchTrends();
             return;
         }
@@ -285,16 +287,17 @@ export default function DiscoveryPage() {
         setIsLoading(true);
         try {
             const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(searchQuery)}`, {
+            const res = await fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(query)}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
                 const data = await res.json();
                 setCandidates(data);
                 // If search query is new, add it to our niches list
-                if (!niches.includes(searchQuery)) {
-                    setNiches(prev => Array.from(new Set([...prev, searchQuery])));
+                if (!niches.includes(query)) {
+                    setNiches(prev => Array.from(new Set([...prev, query])));
                 }
+                setActiveNiche(query);
             }
         } catch (err) {
             console.error(err);
@@ -472,9 +475,15 @@ export default function DiscoveryPage() {
                                     key={i}
                                     initial={{ opacity: 0, scale: 0.5 }}
                                     animate={{ opacity: 1, scale: 1 }}
+                                    whileHover={{ scale: 1.1, y: -2 }}
+                                    whileTap={{ scale: 0.95 }}
                                     transition={{ delay: i * 0.1 }}
+                                    onClick={() => {
+                                        setSearchQuery(word);
+                                        handleSearch(undefined, word);
+                                    }}
                                     className={cn(
-                                        "px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest border transition-all",
+                                        "px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest border transition-all cursor-pointer",
                                         i === 0 ? "bg-primary text-black border-white/20 shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]" :
                                             "bg-zinc-950/50 text-zinc-500 border-white/5 hover:border-primary/30 hover:text-white"
                                     )}
@@ -773,7 +782,10 @@ export default function DiscoveryPage() {
                                                                 <motion.button
                                                                     whileHover={{ scale: 1.1, rotate: 5 }}
                                                                     whileTap={{ scale: 0.95 }}
-                                                                    onClick={() => handleAddToQueue(candidate)}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleAddToQueue(candidate);
+                                                                    }}
                                                                     className="h-16 w-16 rounded-[1.5rem] bg-primary text-black flex items-center justify-center shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] transition-all group/btn"
                                                                 >
                                                                     <Zap className="h-8 w-8 fill-black group-hover/btn:scale-125 transition-transform duration-500" />

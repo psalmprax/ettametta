@@ -72,6 +72,24 @@ class Settings(BaseSettings):
     STORAGE_SECRET_KEY: Optional[str] = None
     STORAGE_REGION: str = "us-east-1"
     
+    # Sound Design (Tier 3 Enhancement)
+    ENABLE_SOUND_DESIGN: bool = False
+    SOUND_LIBRARY_PATH: str = "/var/lib/ettametta/sounds"
+    MUSIC_VOLUME: float = 0.15
+    SFX_VOLUME: float = 0.3
+    
+    # Motion Graphics (Tier 3 Enhancement)
+    ENABLE_MOTION_GRAPHICS: bool = False
+    MOTION_GRAPHICS_ENGINE: str = "local"  # local, cloud
+    
+    # AI Video Generation (Tier 3 Enhancement)
+    AI_VIDEO_PROVIDER: str = "none"  # none, runway, pika
+    RUNWAY_API_KEY: str = ""
+    PIKA_API_KEY: str = ""
+    
+    # Video Quality Tier (default processing level)
+    DEFAULT_QUALITY_TIER: str = "standard"  # standard, enhanced, premium
+    
     # Deprecated (Keeping for backward sync during migration)
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""

@@ -14,6 +14,7 @@ class VideoStrategy(BaseModel):
     b_roll_keywords: List[str] = []
     vibe: str = "Neutral"
     explanation: str = ""
+    visual_insights: Optional[Dict] = None
 
 class StoryScene(BaseModel):
     scene_id: int
@@ -98,10 +99,14 @@ class StrategyService:
         except Exception as e:
             logging.error(f"[StrategyService] Screenplay Error: {e}")
             raise
+    async def generate_visual_strategy(self, transcript: List[Dict], niche: str, style: str = "Default", visual_insights: Optional[Dict] = None) -> VideoStrategy:
         """
         Analyzes transcript content, user-selected style, and VLM visual insights to decide on video editing parameters.
         """
-        full_text = " ".join([s.get("text", "") for s in transcript])
+        if isinstance(transcript, str):
+            full_text = transcript
+        else:
+            full_text = " ".join([s.get("text", "") for s in transcript])
         
         # Prepare Visual Context if available
         visual_context = ""

@@ -61,10 +61,17 @@ class PaymentService:
         self, 
         stripe_customer_id: str, 
         tier: str,
-        success_url: str = "https://ettametta.ai/settings?tab=billing&success=true",
-        cancel_url: str = "https://ettametta.ai/settings?tab=billing&cancelled=true"
+        success_url: str = None,
+        cancel_url: str = None
     ) -> Dict[str, Any]:
         """Create a checkout session for subscription"""
+        from api.config import settings
+        
+        # Use provided URLs or default to production domain settings
+        if success_url is None:
+            success_url = f"{settings.PRODUCTION_DOMAIN}/settings?tab=billing&success=true"
+        if cancel_url is None:
+            cancel_url = f"{settings.PRODUCTION_DOMAIN}/settings?tab=billing&cancelled=true"
         tier_info = SUBSCRIPTION_TIERS.get(tier)
         if not tier_info or not tier_info.get("price_id"):
             raise ValueError(f"Invalid tier: {tier}")

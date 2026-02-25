@@ -22,43 +22,49 @@ class OpenClawAgent:
     def __init__(self):
         self.groq_client = Groq(api_key=settings.GROQ_API_KEY)
         self.model = settings.MODEL
-        self.system_prompt = """You are OpenClaw, the autonomous agent for ettametta.
-        Your goal is to assist the user in managing their content empire.
+        self.system_prompt = """You are OpenClaw, the autonomous Master Controller for the ettametta multi-agent empire.
+        Your goal is to assist the user by orchestrating a team of specialized agents:
+        - SCOUT (Discovery): Finds winning trends and products.
+        - MUSE (Creative): Writes viral scripts and hook strategies.
+        - EYE (Visual): Analyzes video vibes and optimizes aesthetic positioning.
+        - HERALD (Distribution): Handles publishing and monetization arbitrage.
         
-        You have access to the following tools/skills:
+        You have access to the following tools:
         - DISCOVERY: Search for new trends (/api/discovery/search). Params: {"topic": "string"}
         - NOFACE: Generate viral scripts or assess hooks purely in text. Params: {"action": "script|hook", "topic": "string"}
         - ANALYTICS: Get dashboard summary, revenue, or recent posts. Params: {"action": "summary|revenue|posts"}
         - SYSTEM: Check platform health/uptime. No params needed.
         - CONTENT: Create new video content. Params: {"action": "transform|generate|story", "niche": "string", "platform": "YouTube Shorts|TikTok", "input_url": "string", "prompt": "string", "engine": "string"}
-            - "transform": Needs "input_url"
-            - "generate": Needs "prompt" and "engine"
-            - "story": Needs "prompt" and "engine"
         - PUBLISH: Publish a completed job. Params: {"job_id": "string", "platform": "YouTube Shorts|TikTok", "niche": "string"}
         - NICHE: Manage niches. Params: {"action": "add|trends|auto_merch", "niche": "string"}
-            - "auto_merch": Auto-generates a merch design for the given niche trend and pushes it to the store.
         - OUTREACH: Blast a message to a specific user via their connected channels. Params: {"user_id": "string", "message": "string"}
         - PERSONA: Generate a deepfake video using the user's uploaded persona/avatar. Params: {"action": "generate", "persona_id": "int", "topic": "string"}
         - SECURITY: Emergency lockdown. Params: {"action": "panic|status"}
         - STORAGE: Check video storage usage and cloud status. No params needed.
         
-        When a user asks a question, determine if you need to use a tool.
-        If yes, output a JSON object with:
+        PLANNING MODE:
+        When a user gives a complex command, you must first output a brief "Plan" explicitly naming which sub-agents (SCOUT, MUSE, etc.) you are delegating to, followed by the actual tool JSON.
+        
+        If a tool is needed, output:
+        "Plan: [Sub-agent names] - [Action description]"
         {
             "tool": "TOOL_NAME",
             "params": { ... }
         }
-        
-        If no tool is needed just answer normally as a helpful assistant.
-        For general questions about what the agent can do, listing these tools is fine.
         """
 
     def _get_user_from_api(self, identifier: str):
         try:
             # Identifier can be a numeric Telegram ID or a WhatsApp phone number (+123...)
-            response = requests.get(f"{settings.API_URL}/auth/verify-agent/{identifier}", timeout=5)
+            # Use the verify-telegram endpoint which checks telegram_chat_id
+            response = requests.get(f"{settings.API_URL}/auth/verify-telegram/{identifier}", timeout=5)
             if response.status_code == 200:
                 return response.json()
+            
+            # If not found, try to auto-register by updating the user's telegram_chat_id
+            # This handles the case where the user added a bot token but didn't set their chat_id
+            # We'll need to fetch the user by telegram_token and update their chat_id
+            # For now, return None to indicate user not found
             return None
         except Exception as e:
             logger.error(f"Error calling verification API: {e}")
@@ -100,7 +106,14 @@ class OpenClawAgent:
                     json_str = response_text[start:end]
                     
                     tool_call = json.loads(json_str)
-                    return await self.execute_tool(tool_call)
+                    
+                    # Prepend the plan/thought if it exists
+                    thought = response_text[:start].strip()
+                    result = await self.execute_tool(tool_call)
+                    
+                    if thought:
+                        return f"🧠 **{thought}**\n\n{result}"
+                    return result
                 else:
                     return response_text
                     

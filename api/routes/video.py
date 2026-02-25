@@ -17,6 +17,7 @@ class TransformationRequest(BaseModel):
     niche: str = "Motivation"
     platform: str = "YouTube Shorts"
     style: Optional[str] = "Default"
+    quality_tier: Optional[str] = "standard"  # standard, enhanced, premium
 
 class GenerationRequest(BaseModel):
     prompt: str
@@ -44,7 +45,8 @@ async def start_transformation(request: TransformationRequest, current_user: Use
             source_url=request.input_url,
             niche=request.niche,
             platform=request.platform,
-            style=request.style
+            style=request.style,
+            quality_tier=request.quality_tier
         )
         
         # Create Job Entry in Database

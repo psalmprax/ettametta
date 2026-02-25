@@ -29,9 +29,14 @@ def cleanup_local_files(*paths):
                 logging.error(f"[Cleanup] Failed to delete {path}: {e}")
 
 @celery_app.task(name="video.download_and_process", bind=True)
-def download_and_process_task(self, source_url: str, niche: str, platform: str, preview_only: bool = False, style: str = "Default"):
+def download_and_process_task(self, source_url: str, niche: str, platform: str, preview_only: bool = False, style: str = "Default", quality_tier: str = "standard"):
     """
     Main background task to transform and publish content.
+    
+    Quality Tiers:
+    - standard: Tier 2 basic processing (default, no changes)
+    - enhanced: Tier 2 + sound design
+    - premium: Tier 3 full processing (sound + motion graphics)
     """
     from api.utils.database import SessionLocal
     from api.utils.models import VideoJobDB
@@ -111,6 +116,21 @@ def download_and_process_task(self, source_url: str, niche: str, platform: str, 
             enabled_filters=enabled_filters,
             strategy=strategy
         ))
+        
+        # ===== TIER 3 ENHANCEMENTS (Optional) =====
+        if quality_tier in ("enhanced", "premium"):
+            # Sound Design Enhancement
+            update_job(status="Adding Sound Design", progress=55)
+            from services.audio.sound_design import sound_design_service
+            enhanced_path = run_async(
+                sound_design_service.add_background_music(
+                    processed_path, 
+                    niche=niche
+                )
+            )
+            if enhanced_path:
+                processed_path = enhanced_path
+                logging.info(f"[Task] Sound design applied - tier: {quality_tier}")
         
         # 3. Generate SEO metadata/package (USING REAL SERVICE)
         update_job(status="Optimizing", progress=70)

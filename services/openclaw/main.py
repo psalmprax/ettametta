@@ -81,14 +81,11 @@ class BotManager:
     async def init_bots(self):
         # Fetch all users with tokens from API
         try:
-            # We'll need a special internal endpoint or just loop/filter (admin only essentially)
-            # For now, let's assume we have an endpoint for this or we just handle the shared bot too
-            # Actually, let's just use the shared bot token from settings if present as "admin" bot (id 0)
-            if settings.TELEGRAM_BOT_TOKEN:
-                await self.start_bot(0, settings.TELEGRAM_BOT_TOKEN)
-            
+            # Don't auto-start the default bot here - let users be started explicitly via refresh-bot
+            # endpoint to avoid conflicts when the same token is used for both config and user tokens
             # In a real scenario, we'd fetch all users from the DB here
             # But the refresh-bot endpoint will handle dynamic additions
+            pass
         except Exception as e:
             logger.error(f"Error initializing bots: {e}")
 

@@ -65,26 +65,45 @@ class OCRService:
     def get_caption_strategy(self, video_path: str) -> str:
         """
         Analyzes the video and returns a placement strategy: 'bottom' (default), 'top', or 'center'.
+        Uses a density-based 'Least Obstructive Path' approach.
         """
         detections = self.detect_text_regions(video_path)
         if not detections:
             return "bottom"
 
-        # Count how many detections are in the bottom half
-        bottom_half_count = sum(1 for d in detections if d["normalized_y"] > 0.6)
-        top_half_count = sum(1 for d in detections if d["normalized_y"] < 0.4)
+        # Divide into 5 vertical zones for higher precision
+        # Zone 0: Top (0.0-0.2)
+        # Zone 1: Upper Middle (0.2-0.4)
+        # Zone 2: Middle (0.4-0.6)
+        # Zone 3: Lower Middle (0.6-0.8)
+        # Zone 4: Bottom (0.8-1.0)
         
-        logging.info(f"[OCRService] Detected {len(detections)} text regions. Bottom: {bottom_half_count}, Top: {top_half_count}")
+        zones = [0, 0, 0, 0, 0]
+        for d in detections:
+            y = d["normalized_y"]
+            idx = int(y * 5)
+            if idx > 4: idx = 4
+            zones[idx] += 1
+            
+        logging.info(f"[OCRService] Vertical Density Map: {zones}")
 
-        if bottom_half_count > top_half_count:
-            # Source already has captions/text at the bottom
-            return "top"
-        elif top_half_count > 0 and bottom_half_count == 0:
+        # Priority 1: Use Bottom (Preferred for mobile)
+        if zones[4] == 0 and zones[3] == 0:
             return "bottom"
-        elif bottom_half_count > 0 and top_half_count > 0:
-            # Text everywhere, maybe center or top with high visibility
+        
+        # Priority 2: Use Top (Secondary for mobile)
+        if zones[0] == 0 and zones[1] == 0:
             return "top"
             
-        return "bottom"
+        # Priority 3: Use Center (Least desirable but fallback)
+        if zones[2] == 0:
+            return "center"
+            
+        # Priority 4: If everything is crowded, pick the zone with minimum density
+        # We exclude center (index 2) from this pick if possible
+        candidates = [0, 4] # Top vs Bottom
+        best_zone = min(candidates, key=lambda i: zones[i])
+        
+        return "top" if best_zone == 0 else "bottom"
 
 ocr_service = OCRService()

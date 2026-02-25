@@ -25,6 +25,7 @@ interface NexusNodeProps {
     active?: boolean;
     progress?: number;
     metrics?: { label: string; value: string }[];
+    onClick?: () => void;
 }
 
 const NODE_CONFIG: Record<NodeType, { icon: any; color: string; bg: string }> = {
@@ -34,7 +35,7 @@ const NODE_CONFIG: Record<NodeType, { icon: any; color: string; bg: string }> = 
     egress: { icon: Share2, color: "text-emerald-400", bg: "bg-emerald-400/10" }
 };
 
-export function NexusNode({ type, label, description, status, active, progress, metrics }: NexusNodeProps) {
+export function NexusNode({ type, label, description, status, active, progress, metrics, onClick }: NexusNodeProps) {
     const config = NODE_CONFIG[type];
     const Icon = config.icon;
 
@@ -42,12 +43,15 @@ export function NexusNode({ type, label, description, status, active, progress, 
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onClick}
             className={cn(
                 "w-72 p-6 rounded-[2rem] border transition-all duration-300 relative overflow-hidden group mb-4",
                 active
                     ? "bg-zinc-900 border-primary/40 shadow-[0_0_50px_rgba(var(--primary-rgb),0.15)]"
-                    : "bg-zinc-950/40 border-white/5 hover:border-white/10"
+                    : "bg-zinc-950/40 border-white/5 hover:border-primary/20 cursor-pointer",
+                status === 'complete' && "border-emerald-500/30 bg-emerald-500/[0.02]"
             )}
         >
             <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />

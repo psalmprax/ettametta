@@ -29,11 +29,11 @@ export const options = {
 };
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8000';
-const API_KEY = __ENV.API_KEY || '';
+const API_TOKEN = __ENV.API_TOKEN || ''; // Use et_token or INTERNAL_API_TOKEN
 
 const headers = {
     'Content-Type': 'application/json',
-    ...(API_KEY ? { 'Authorization': `Bearer ${API_KEY}` } : {}),
+    ...(API_TOKEN ? { 'Authorization': `Bearer ${API_TOKEN}` } : {}),
 };
 
 export default function () {

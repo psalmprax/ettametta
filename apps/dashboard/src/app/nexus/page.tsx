@@ -59,9 +59,51 @@ export default function NexusPage() {
     const [isLaunching, setIsLaunching] = useState(false);
     const [nexusJobs, setNexusJobs] = useState<any[]>([]);
     const [niches, setNiches] = useState<string[]>([]);
-    const [selectedNiche, setSelectedNiche] = useState("Technology");
+    const [selectedNiche, setSelectedNiche] = useState("");
     const [userTier, setUserTier] = useState<string>("free");
+    const [activeJobId, setActiveJobId] = useState<string | null>(null);
     const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/ws/jobs`);
+
+    // Fetch initial data
+    useEffect(() => {
+        const fetchData = async () => {
+            const token = localStorage.getItem("et_token");
+            if (!token) return;
+
+            try {
+                // Fetch User Tier
+                const userRes = await fetch(`${API_BASE}/auth/me`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (userRes.ok) {
+                    const userData = await userRes.json();
+                    setUserTier(userData.subscription.toLowerCase());
+                }
+
+                // Fetch Niches
+                const nicheRes = await fetch(`${API_BASE}/discovery/niches`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (nicheRes.ok) {
+                    const nicheData = await nicheRes.json();
+                    setNiches(nicheData);
+                    if (nicheData.length > 0) setSelectedNiche(nicheData[0]);
+                }
+
+                // Fetch Initial Jobs
+                const jobsRes = await fetch(`${API_BASE}/nexus/jobs`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (jobsRes.ok) {
+                    setNexusJobs(await jobsRes.json());
+                }
+            } catch (err) {
+                console.error("Failed to fetch Nexus data:", err);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     // Handle WebSocket updates
     useEffect(() => {
@@ -114,6 +156,8 @@ export default function NexusPage() {
                 })
             });
             if (res.ok) {
+                const data = await res.json();
+                setActiveJobId(String(data.job_id));
                 alert("Nexus Pipeline Launched. Check the active nodes below.");
             }
         } catch (err) {
@@ -150,7 +194,7 @@ export default function NexusPage() {
                             <option value="">Select Niche...</option>
                             {niches.map(n => <option key={n} value={n}>{n}</option>)}
                         </select>
-                        <button 
+                        <button
                             onClick={handleClusterSettings}
                             className="glass-card px-6 py-4 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-all"
                         >
@@ -223,7 +267,7 @@ export default function NexusPage() {
                                 )
                             })}
 
-                            <button 
+                            <button
                                 onClick={handleCustomRecipe}
                                 className="w-full p-6 rounded-[2rem] border border-dashed border-white/5 flex flex-col items-center justify-center gap-3 text-zinc-700 hover:text-zinc-500 hover:border-white/10 transition-all group"
                             >
@@ -248,25 +292,55 @@ export default function NexusPage() {
                                         className="w-full flex flex-col items-center"
                                     >
                                         <div className="w-full flex flex-wrap items-center justify-center gap-8 relative">
-                                            {activeBlueprint.nodes.map((node, idx) => (
-                                                <React.Fragment key={idx}>
-                                                    <NexusNode
-                                                        type={node.type}
-                                                        label={node.label}
-                                                        description={node.desc}
-                                                        status="pending"
-                                                        active={idx === 0}
-                                                        progress={idx === 0 ? 0 : undefined}
-                                                        metrics={[
-                                                            { label: "Stability", value: "99.9%" },
-                                                            { label: "Sync", value: "Alpha" }
-                                                        ]}
-                                                    />
-                                                    {idx < activeBlueprint.nodes.map.length - 1 && (
-                                                        <div className="hidden xl:block h-[2px] w-12 bg-gradient-to-r from-white/10 to-transparent" />
-                                                    )}
-                                                </React.Fragment>
-                                            ))}
+                                            {activeBlueprint.nodes.map((node, idx) => {
+                                                const activeJob = nexusJobs.find(j => String(j.id) === activeJobId);
+                                                let status: 'pending' | 'processing' | 'complete' | 'error' = 'pending';
+                                                let progress: number | undefined = undefined;
+
+                                                if (activeJob) {
+                                                    // Simple heuristic: map job status and progress to nodes
+                                                    // In a real app, each node would have its own status in the job object
+                                                    if (activeJob.status === 'COMPLETED') {
+                                                        status = 'complete';
+                                                    } else if (activeJob.status === 'FAILED') {
+                                                        status = 'error';
+                                                    } else {
+                                                        // Distribute job progress across nodes
+                                                        const nodeThreshold = (idx + 1) * (100 / activeBlueprint.nodes.length);
+                                                        const prevThreshold = idx * (100 / activeBlueprint.nodes.length);
+
+                                                        if (activeJob.progress >= nodeThreshold) {
+                                                            status = 'complete';
+                                                        } else if (activeJob.progress > prevThreshold) {
+                                                            status = 'processing';
+                                                            progress = Math.round(((activeJob.progress - prevThreshold) / (100 / activeBlueprint.nodes.length)) * 100);
+                                                        }
+                                                    }
+                                                }
+
+                                                return (
+                                                    <React.Fragment key={idx}>
+                                                        <NexusNode
+                                                            type={node.type}
+                                                            label={node.label}
+                                                            description={node.desc}
+                                                            status={status}
+                                                            active={status === 'processing' || (status === 'pending' && idx === 0 && !activeJob)}
+                                                            progress={progress}
+                                                            metrics={[
+                                                                { label: "Stability", value: "99.9%" },
+                                                                { label: "Sync", value: "Alpha" }
+                                                            ]}
+                                                        />
+                                                        {idx < activeBlueprint.nodes.length - 1 && (
+                                                            <div className={cn(
+                                                                "hidden xl:block h-[2px] w-12 transition-all duration-1000",
+                                                                status === 'complete' ? "bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" : "bg-white/10"
+                                                            )} />
+                                                        )}
+                                                    </React.Fragment>
+                                                );
+                                            })}
                                         </div>
 
                                         <div className="mt-16 text-center space-y-2">
@@ -339,7 +413,7 @@ export default function NexusPage() {
                                         </div>
 
                                         {job.status === "COMPLETED" && (
-                                            <button 
+                                            <button
                                                 onClick={() => handleInspectResult(job)}
                                                 className="w-full py-2 rounded-xl bg-zinc-950 border border-white/10 text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:border-primary/50 transition-all"
                                             >

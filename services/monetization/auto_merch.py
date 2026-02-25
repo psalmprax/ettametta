@@ -93,4 +93,4 @@ class AutoMerchService:
         logger.error("[AutoMerch] POD publishing not implemented. Please configure Printify/Shopify API credentials.")
         raise NotImplementedError("Auto-merch POD publishing requires Printify/Shopify API integration.")
 
-auto_merch_service = AutoMerchService()
+base_auto_merch_service = AutoMerchService()

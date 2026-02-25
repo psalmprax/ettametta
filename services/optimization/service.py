@@ -7,6 +7,7 @@ from services.monetization.service import base_monetization_engine
 import json
 import logging
 import random
+from services.monetization.auto_merch import base_auto_merch_service
 
 class OptimizationService:
     async def generate_viral_package(self, content_id: str, niche: str, platform: str) -> PostMetadata:
@@ -20,33 +21,43 @@ class OptimizationService:
         aggression = 100 # Default
         
         try:
-            # 1. Check Monetization Aggression
+            # 1. Check Monetization Settings
             agg_setting = db.query(SystemSettings).filter(SystemSettings.key == "monetization_aggression").first()
             if agg_setting:
                 aggression = int(agg_setting.value)
+            
+            strategy_setting = db.query(SystemSettings).filter(SystemSettings.key == "active_monetization_strategy").first()
+            active_strategy = strategy_setting.value if strategy_setting else "affiliate"
             
             # Determine if we should harvest this time (Probability check)
             should_harvest = random.randint(1, 100) <= aggression
 
             if should_harvest:
-                # 2. Source Commerce Product (Priority)
-                product = await base_monetization_engine.match_viral_to_product(niche, content_id)
-                if product:
-                    # Initialize the specific strategy to parse product to CTA
-                    from services.monetization.strategies.commerce import CommerceStrategy
-                    strategy = CommerceStrategy()
-                    commerce_cta = await strategy.generate_cta(niche, content_id)
-                    commerce_info = f"\n- MONETIZATION CTA: {commerce_cta}"
+                # 2. Source Monetization based on Strategy
+                if active_strategy == "commerce":
+                    product = await base_monetization_engine.match_viral_to_product(niche, content_id)
+                    if product:
+                        from services.monetization.strategies.commerce import CommerceStrategy
+                        strategy = CommerceStrategy()
+                        commerce_cta = await strategy.generate_cta(niche, content_id)
+                        commerce_info = f"\n- MONETIZATION CTA: {commerce_cta}"
                 
-                # 3. Source Affiliate Link (Secondary/Fallback)
-                if not commerce_info:
+                elif active_strategy == "affiliate":
                     aff_product = db.query(AffiliateLinkDB).filter(AffiliateLinkDB.niche == niche).order_by(AffiliateLinkDB.created_at.desc()).first()
                     if aff_product:
-                        # Initialize the specific strategy to parse product to CTA
                         from services.monetization.strategies.affiliate import AffiliateStrategy
                         strategy = AffiliateStrategy()
                         affiliate_cta = await strategy.generate_cta(niche, content_id)
                         affiliate_info = f"\n- MONETIZATION CTA: {affiliate_cta}"
+
+                # 3. Monetization Arbitrage (Reverse Strategy)
+                # If content is deemed high-potential, recommend creating a custom merch design
+                if aggression > 50: # Only for aggressive growth accounts
+                    # In a real scenario, we'd check a 'ViralScore' from DiscoveryService here
+                    # For now, we simulate arbitrage potential
+                    if random.random() > 0.7:
+                        arbitrage_suggestion = await base_auto_merch_service.trigger_auto_merch(niche)
+                        commerce_info += f"\n- ARBITRAGE SUGGESTION: {arbitrage_suggestion}"
 
             # Fallback if no real key is configured
             if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":

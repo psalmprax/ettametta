@@ -18,13 +18,19 @@ class VideoDownloader:
         output_path = os.path.join(self.download_dir, f"{file_id}.%(ext)s")
         
         ydl_opts = {
-            # Resilient format selector: Try 1080p landscape, then 1080p vertical, then best quality available
-            'format': 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[width<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]/best[width<=1080]/best',
+            # More flexible format selector for better compatibility
+            'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
             'outtmpl': output_path,
             'merge_output_format': 'mp4',
             'quiet': True,
             'no_warnings': True,
             'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+            # Use Android client for YouTube (simpler signature encryption)
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web', 'tv']
+                }
+            },
         }
         
         # Determine cookies path - check multiple locations for Docker compatibility
@@ -82,6 +88,12 @@ class VideoDownloader:
             'skip_download': True,
             # DO NOT specify format here. specifying format leads to "Requested format is not available"
             # on some platforms if the selector is even slightly off.
+            # Use Android client for YouTube (simpler signature encryption)
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web', 'tv']
+                }
+            },
         }
         
         # Add cookies for validation bypass
