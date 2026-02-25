@@ -172,6 +172,8 @@ services:
       - api
 
   voiceover:
+    profiles:
+      - optional
     build:
       context: ./services/voiceover
     ports:
@@ -181,6 +183,8 @@ services:
     volumes:
       - ./services/voiceover:/app
       - voiceover_cache:/app/cache
+    deploy:
+      replicas: 0
 
 volumes:
   postgres_data:
