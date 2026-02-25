@@ -40,15 +40,5 @@ pytest>=7.4.0
 pytest-asyncio>=0.21.0
 pytest-mock>=3.11.0
 
-# Optional: Agent Frameworks (disabled by default)
-# Enable with environment variables
-# LangChain: ENABLE_LANGCHAIN=true
-langchain>=0.1.0
-langchain-community>=0.0.20
-
-# CrewAI: ENABLE_CREWAI=true
-crewai>=0.1.0
-crewai-tools>=0.1.0
-
-# Open Interpreter: ENABLE_INTERPRETER=true
-open-interpreter>=0.1.0
+# Optional: Agent Frameworks (Moved to requirements-agents.txt for build optimization)
+# To install, run: pip install -load-requirements-agents.txt
