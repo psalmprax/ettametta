@@ -112,5 +112,5 @@
 - [x] Switch to `torch.bfloat16` for improved precision and stability
 
 ## Phase 57: LTX-2 Library Resilience
-- [x] Upgrade `diffusers`, `transformers`, and `accelerate` in Colab
-- [x] Resolve `ImportError` for recent LTXVideoPipeline architecture
+- [x] Implement source installation from GitHub (`git+https://github.com/huggingface/diffusers.git`)
+- [x] Resolve library staleness and support native `LTXVideoPipeline` components
