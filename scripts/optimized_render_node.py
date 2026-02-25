@@ -4,6 +4,15 @@ from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 from diffusers import DiffusionPipeline
 import uvicorn
+import subprocess
+from pathlib import Path
+
+# --- FISH SPEECH IMPORTS (Dynamic) ---
+try:
+    from fish_speech.utils.schema import TTSRequest
+    from fish_speech.inference import TTSInference
+except ImportError:
+    TTSInference = None
 
 app = FastAPI()
 
@@ -27,8 +36,22 @@ def load_pipeline():
         
     return pipe
 
-# Global pipeline
+# Global inference engines
 pipe = None
+tts_engine = None
+
+def load_tts():
+    print("⏳ Loading Fish Speech 1.5...")
+    # This assumes fish-speech is installed in the environment
+    # On Colab we will need a !pip install fish-speech
+    try:
+        engine = TTSInference(model_checkpoint="models/fish-speech-1.5")
+        if torch.cuda.is_available():
+            engine.to("cuda")
+        return engine
+    except Exception as e:
+        print(f"⚠️ Failed to load TTS: {e}")
+        return None
 
 class GenerationRequest(BaseModel):
     prompt: str
@@ -43,6 +66,34 @@ async def generate(req: GenerationRequest, bg: BackgroundTasks):
     job_id = f"render_{uuid.uuid4().hex[:8]}"
     bg.add_task(render_task, job_id, req.prompt)
     return {"job_id": job_id, "download_url": f"/download/{job_id}"}
+
+class VoiceRequest(BaseModel):
+    text: str
+
+@app.post("/voice/generate")
+async def generate_voice(req: VoiceRequest):
+    global tts_engine
+    if tts_engine is None:
+        tts_engine = load_tts()
+    
+    if tts_engine is None:
+        return {"error": "TTS Engine failed to load"}
+
+    job_id = f"voice_{uuid.uuid4().hex[:8]}"
+    audio_path = f"/content/{job_id}.mp3"
+    
+    # Run inference (simplified for the node)
+    tts_engine.generate(req.text, output_path=audio_path)
+    
+    return {"job_id": job_id, "download_url": f"/download_audio/{job_id}"}
+
+@app.get("/download_audio/{job_id}")
+async def download_audio(job_id: str):
+    from fastapi.responses import FileResponse
+    path = f"/content/{job_id}.mp3"
+    if os.path.exists(path):
+        return FileResponse(path)
+    return {"error": "Not found"}
 
 def render_task(job_id, prompt):
     print(f"🎬 Starting generation for: {prompt}")

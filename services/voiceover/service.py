@@ -9,6 +9,10 @@ class VoiceoverService:
 
     @property
     def fish_endpoint(self):
+        # Failover: Check for RENDER_NODE_URL first to support Remote GPU Inference
+        remote_url = os.getenv("RENDER_NODE_URL")
+        if remote_url:
+             return remote_url
         return get_secret("fish_speech_endpoint", "http://voiceover:8080")
 
     @property
