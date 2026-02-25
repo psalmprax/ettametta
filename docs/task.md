@@ -77,3 +77,8 @@
 - [x] Implement automated `pip` bootstrapping using `ensurepip` and `get-pip.py`
 - [x] Enable user-level package installation to bypass permission restrictions
 - [x] Standardize Python environment readiness across all CI stages
+
+## Phase 50: Jenkins venv Migration
+- [x] Integrate `venv` creation/activation into Jenkins CI stages
+- [x] Resolve PEP 668 "externally managed environment" restrictions
+- [x] Implement last-resort `--break-system-packages` fallback for minimal containers
