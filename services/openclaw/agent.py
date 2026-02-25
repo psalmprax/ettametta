@@ -14,6 +14,7 @@ from skills.niche import niche_skill
 from skills.security import security_skill
 from skills.no_face import noface_skill
 from skills.outreach import outreach_skill
+from skills.render import render_skill
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ class OpenClawAgent:
         - PERSONA: Generate a deepfake video using the user's uploaded persona/avatar. Params: {"action": "generate", "persona_id": "int", "topic": "string"}
         - SECURITY: Emergency lockdown. Params: {"action": "panic|status"}
         - STORAGE: Check video storage usage and cloud status. No params needed.
+        - RENDER: Trigger a cinematic programmatic video render. Params: {"title": "string", "subtitle": "string", "video_url": "string"}
         
         PLANNING MODE:
         When a user gives a complex command, you must first output a brief "Plan" explicitly naming which sub-agents (SCOUT, MUSE, etc.) you are delegating to, followed by the actual tool JSON.
@@ -233,5 +235,12 @@ class OpenClawAgent:
 
         elif tool == "STORAGE":
             return system_skill.get_storage_status()
+
+        elif tool == "RENDER":
+            return render_skill.render_clip(
+                title=params.get("title", "Viral Clip"),
+                subtitle=params.get("subtitle", "Created by OpenClaw"),
+                video_url=params.get("video_url")
+            )
 
         return f"❓ Unknown tool: {tool}"
