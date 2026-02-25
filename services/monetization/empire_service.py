@@ -60,26 +60,61 @@ class EmpireService:
     def get_network_graph(self, db: Session, user_id: int) -> Dict[str, List[Any]]:
         """
         Generates a D3-compatible network graph of the user's empire.
+        Queries real data from PublishedContentDB and monitored niches.
         """
-        # In a real detailed impl, we would fetch UserStrategyDB models.
-        # For now, we simulate a structure based on user tier/level or just a robust mock.
+        # Fetch user's published content to build real network
+        published = db.query(PublishedContentDB).filter(
+            PublishedContentDB.user_id == user_id
+        ).all()
+        
+        # Fetch monitored niches for the user
+        from api.utils.models import MonitoredNiche
+        niches = db.query(MonitoredNiche).filter(
+            MonitoredNiche.user_id == user_id,
+            MonitoredNiche.is_active == True
+        ).all()
+        
+        # Build nodes from real data
+        nodes = []
+        links = []
+        
+        # Root node
+        nodes.append({"id": "root", "group": 1, "label": "Empire Core"})
+        
+        # Add niche nodes
+        niche_index = 1
+        for niche in niches[:5]:  # Limit to 5 niches
+            niche_id = f"strat_{niche_index}"
+            nodes.append({
+                "id": niche_id, 
+                "group": 2, 
+                "label": niche.niche if hasattr(niche, 'niche') else f"Niche {niche_index}"
+            })
+            links.append({"source": "root", "target": niche_id, "value": 10})
+            niche_index += 1
+        
+        # Add content nodes (published videos)
+        content_index = 1
+        for content in published[:10]:  # Limit to 10 most recent
+            content_id = f"content_{content_index}"
+            platform = content.platform if hasattr(content, 'platform') else 'Unknown'
+            nodes.append({
+                "id": content_id,
+                "group": 3,
+                "label": f"{platform}_{content.id[:8]}"
+            })
+            # Link to first niche or root
+            target = f"strat_{content_index}" if content_index < niche_index else "root"
+            links.append({"source": target, "target": content_id, "value": 5})
+            content_index += 1
+        
+        # If no real data, return empty structure (not mock)
+        if len(nodes) <= 1:
+            return {"nodes": [], "links": []}
         
         return {
-            "nodes": [
-                {"id": "root", "group": 1, "label": "Empire Core"},
-                {"id": "strat_1", "group": 2, "label": "Stoic Wisdom"},
-                {"id": "strat_2", "group": 2, "label": "AI Nexus"},
-                {"id": "clone_1a", "group": 3, "label": "TikTok_Stoic_01"},
-                {"id": "clone_1b", "group": 3, "label": "Insta_Stoic_02"},
-                {"id": "clone_2a", "group": 3, "label": "YT_AI_01"}
-            ],
-            "links": [
-                {"source": "root", "target": "strat_1", "value": 10},
-                {"source": "root", "target": "strat_2", "value": 10},
-                {"source": "strat_1", "target": "clone_1a", "value": 5},
-                {"source": "strat_1", "target": "clone_1b", "value": 5},
-                {"source": "strat_2", "target": "clone_2a", "value": 5}
-            ]
+            "nodes": nodes,
+            "links": links
         }
 
     def get_winning_blueprints(self, db: Session, user_id: int) -> List[Dict[str, Any]]:

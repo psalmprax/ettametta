@@ -142,22 +142,99 @@ k6 run scripts/load_test.js
 
 ---
 
+## Phase 4: Credential & OAuth Configuration (Points 5-7)
+
+### 5. Production OAuth Credentials
+
+**Current State:** OAuth credentials missing for production deployment
+**Goal:** Configure real OAuth credentials for YouTube and TikTok publishing
+
+| Credential | Location | Status |
+|------------|---------|--------|
+| `GOOGLE_CLIENT_ID` | api/config.py:40 | ❌ Missing |
+| `GOOGLE_CLIENT_SECRET` | api/config.py:41 | ❌ Missing |
+| `TIKTOK_CLIENT_KEY` | api/config.py:45 | ❌ Missing |
+| `TIKTOK_CLIENT_SECRET` | api/config.py:46 | ❌ Missing |
+
+**Required Actions:**
+- [ ] Register application in Google Cloud Console
+- [ ] Register application in TikTok Developer Portal
+- [ ] Configure production redirect URIs
+- [ ] Set `PRODUCTION_DOMAIN` environment variable
+- [ ] Implement OAuth token refresh webhooks
+
+### 6. Cloud Storage Configuration
+
+**Current State:** AWS S3 credentials not configured
+**Goal:** Enable cloud storage for processed videos
+
+| Service | Keys Required | Status |
+|---------|---------------|--------|
+| AWS S3 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_STORAGE_BUCKET_NAME` | ❌ Missing |
+
+**Required Actions:**
+- [ ] Configure AWS credentials in .env
+- [ ] Set up S3 bucket for video storage
+- [ ] Configure storage lifecycle policies
+
+### 7. External AI Services
+
+**Current State:** Missing API keys for premium services
+**Goal:** Enable premium voice and stock media
+
+| Service | Key | Status |
+|---------|-----|--------|
+| ElevenLabs | `ELEVENLABS_API_KEY` | ❌ Missing |
+| Pexels | `PEXELS_API_KEY` | ❌ Missing |
+| OpenAI | `OPENAI_API_KEY` | ❌ Missing |
+
+**Required Actions:**
+- [ ] Add ElevenLabs API key for premium voice generation
+- [ ] Add Pexels API key for stock media access
+- [ ] Add OpenAI API key as Groq fallback
+
+---
+
+## Phase 5: Commerce Integration (Point 8)
+
+### 8. Shopify Commerce Setup
+
+**Current State:** Commerce service coded but not configured
+**Goal:** Enable product monetization and affiliate links
+
+| Config | Key | Status |
+|--------|-----|--------|
+| Shopify Store | `SHOPIFY_SHOP_URL` | ❌ Missing |
+| Shopify Token | `SHOPIFY_ACCESS_TOKEN` | ❌ Missing |
+
+**Required Actions:**
+- [ ] Configure Shopify Admin API credentials
+- [ ] Add affiliate link management UI
+- [ ] Implement product-to-niche matching
+
+---
+
 ## Implementation Priority
 
 | Priority | Task | Effort | Impact |
 |----------|------|--------|--------|
+| P0 | OAuth Credentials Configuration | 1 day | Blocking |
+| P0 | Production Domain Setup | 1 day | Blocking |
 | P0 | Stripe Integration | 2 days | Revenue |
 | P0 | GPU Node Setup | 3 days | Core Feature |
+| P1 | AWS S3 Cloud Storage | 1 day | Storage |
+| P1 | Shopify Commerce | 2 days | Monetization |
 | P1 | API Key Documentation | 1 day | DX |
 | P2 | Load Testing | 2 days | Reliability |
+| P2 | ElevenLabs/Pexels Integration | 2 days | Quality |
 
 ---
 
 ## Next Steps
 
-1. **Week 1:** Implement Stripe billing endpoints
-2. **Week 2:** Set up GPU render node
-3. **Week 3:** Document API key configuration
+1. **Week 1:** Configure OAuth credentials and production domain
+2. **Week 2:** Implement Stripe billing endpoints
+3. **Week 3:** Set up GPU render node + AWS S3
 4. **Week 4:** Run load tests and optimize
 
 ---
