@@ -33,6 +33,8 @@ Beyond transformation, ettametta is a **Synthesis Engine**.
 - **Phase 21-25**: Launched Nexus V2 (Graph Pipelines) and Storytelling Synthesis.
 - **Phase 36-41**: Expansion into WhatsApp, Persona-based content, Skool discovery, and Dashoard monetization settings.
 - **Phase 42-44**: Infrastructure Hardening & Final Rebrand. Dockerized Jenkins, automated YouTube bot bypass, and standardized **ettametta** branding across UI and authentication tokens.
+- **Phase 45**: Portfolio Harmonization & Remote CI/CD deployment to OCI.
+- **Phase 46**: Nexus Flow UI Optimization. Enabled manual node selection and fixed cursor pointer inconsistencies for improved pipeline inspection.
 
 ## 🎨 Branding & Performance Resilience
 

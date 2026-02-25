@@ -58,3 +58,8 @@
     - [x] Implement `Jenkinsfile.remote` for SSH-based deployment to OCI.
     - [x] Integrated automated database seeding (`scripts/test_pipeline.py`) into Jenkins.
     - [x] Standardize cross-project portfolio documentation.
+
+## Phase 46: Nexus UI Optimization
+- [x] Enable manual node selection in Nexus Flow graph
+- [x] Fix inconsistent cursor pointer behavior for interactive nodes
+- [x] Synchronize manual selection with live production job sequence
