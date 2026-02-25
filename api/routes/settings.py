@@ -65,7 +65,18 @@ async def get_settings(db: Session = Depends(get_db), _admin = Depends(admin_req
         "sponsorship_contact": "",
         "brand_partners": "",
         "crypto_wallets": "",
-        "donation_link": ""
+        "donation_link": "",
+        # Video Quality Tiers
+        "enable_sound_design": "false",
+        "enable_motion_graphics": "false",
+        "ai_video_provider": "none",
+        "default_quality_tier": "standard",
+        # Agent Frameworks
+        "enable_langchain": "false",
+        "enable_crewai": "false",
+        "enable_interpreter": "false",
+        "enable_affiliate_api": "false",
+        "enable_trading": "false"
     }
     
     # Merge: DB takes precedence

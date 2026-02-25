@@ -17,7 +17,15 @@ import {
     Loader2,
     Layout,
     User,
-    CreditCard
+    CreditCard,
+    Sparkles,
+    Wand2,
+    Film,
+    Bot,
+    Workflow,
+    Code,
+    ShoppingCart,
+    TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
@@ -59,7 +67,18 @@ export default function SettingsPage() {
         google_client_id: "",
         google_client_secret: "",
         tiktok_client_key: "",
-        tiktok_client_secret: ""
+        tiktok_client_secret: "",
+        // Video Quality Tiers
+        enable_sound_design: "false",
+        enable_motion_graphics: "false",
+        ai_video_provider: "none",
+        default_quality_tier: "standard",
+        // Agent Frameworks
+        enable_langchain: "false",
+        enable_crewai: "false",
+        enable_interpreter: "false",
+        enable_affiliate_api: "false",
+        enable_trading: "false"
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -453,6 +472,253 @@ export default function SettingsPage() {
                                                 isVisible={showKey["shopify_access_token"]}
                                                 onToggle={() => toggleKey("shopify_access_token")}
                                             />
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {/* Video Quality Tiers Section */}
+                                <section className="space-y-6">
+                                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 space-y-8">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                                                <Sparkles className="h-5 w-5 text-purple-500" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold">Video Quality Tiers</h3>
+                                                <p className="text-zinc-500 text-sm">Enhanced video processing capabilities.</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            {/* Sound Design Toggle */}
+                                            <div className="p-4 bg-zinc-950/30 border border-zinc-800 rounded-2xl flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <span className="text-sm font-bold text-white flex items-center gap-2">
+                                                        <Wand2 className="h-4 w-4 text-purple-400" />
+                                                        Sound Design
+                                                    </span>
+                                                    <p className="text-xs text-zinc-500">AI-powered music & SFX generation</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateSetting("enable_sound_design", settings.enable_sound_design === "true" ? "false" : "true")}
+                                                    className={cn(
+                                                        "w-12 h-6 rounded-full relative transition-colors",
+                                                        settings.enable_sound_design === "true" ? "bg-purple-500" : "bg-zinc-700"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                        settings.enable_sound_design === "true" ? "right-1" : "left-1"
+                                                    )} />
+                                                </button>
+                                            </div>
+
+                                            {/* Motion Graphics Toggle */}
+                                            <div className="p-4 bg-zinc-950/30 border border-zinc-800 rounded-2xl flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <span className="text-sm font-bold text-white flex items-center gap-2">
+                                                        <Film className="h-4 w-4 text-orange-400" />
+                                                        Motion Graphics
+                                                    </span>
+                                                    <p className="text-xs text-zinc-500">AI-generated animations & overlays</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateSetting("enable_motion_graphics", settings.enable_motion_graphics === "true" ? "false" : "true")}
+                                                    className={cn(
+                                                        "w-12 h-6 rounded-full relative transition-colors",
+                                                        settings.enable_motion_graphics === "true" ? "bg-orange-500" : "bg-zinc-700"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                        settings.enable_motion_graphics === "true" ? "right-1" : "left-1"
+                                                    )} />
+                                                </button>
+                                            </div>
+
+                                            {/* AI Video Provider */}
+                                            <div className="space-y-3">
+                                                <label className="text-sm font-bold text-zinc-400">AI Video Generation</label>
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    {['none', 'runway', 'pika'].map((provider) => (
+                                                        <button
+                                                            key={provider}
+                                                            onClick={() => updateSetting("ai_video_provider", provider)}
+                                                            className={cn(
+                                                                "p-3 rounded-xl border transition-all text-center",
+                                                                settings.ai_video_provider === provider
+                                                                    ? "bg-pink-500/10 border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.2)]"
+                                                                    : "bg-zinc-950/30 border-zinc-800 hover:border-zinc-700"
+                                                            )}
+                                                        >
+                                                            <span className={cn(
+                                                                "block font-bold text-xs uppercase",
+                                                                settings.ai_video_provider === provider ? "text-pink-400" : "text-zinc-500"
+                                                            )}>
+                                                                {provider}
+                                                            </span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Default Quality Tier */}
+                                            <div className="space-y-3">
+                                                <label className="text-sm font-bold text-zinc-400">Default Processing Tier</label>
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    {['standard', 'enhanced', 'premium'].map((tier) => (
+                                                        <button
+                                                            key={tier}
+                                                            onClick={() => updateSetting("default_quality_tier", tier)}
+                                                            className={cn(
+                                                                "p-3 rounded-xl border transition-all text-center",
+                                                                settings.default_quality_tier === tier
+                                                                    ? "bg-emerald-500/10 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                                                                    : "bg-zinc-950/30 border-zinc-800 hover:border-zinc-700"
+                                                            )}
+                                                        >
+                                                            <span className={cn(
+                                                                "block font-bold text-xs uppercase",
+                                                                settings.default_quality_tier === tier ? "text-emerald-400" : "text-zinc-500"
+                                                            )}>
+                                                                {tier}
+                                                            </span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {/* Agent Frameworks Section */}
+                                <section className="space-y-6">
+                                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 space-y-8">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                                <Bot className="h-5 w-5 text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold">Agent Frameworks</h3>
+                                                <p className="text-zinc-500 text-sm">Advanced AI agent orchestration.</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {/* LangChain */}
+                                            <div className="p-4 bg-zinc-950/30 border border-zinc-800 rounded-2xl flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <span className="text-sm font-bold text-white flex items-center gap-2">
+                                                        <Workflow className="h-4 w-4 text-cyan-400" />
+                                                        LangChain
+                                                    </span>
+                                                    <p className="text-xs text-zinc-500">LLM chaining & prompt management</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateSetting("enable_langchain", settings.enable_langchain === "true" ? "false" : "true")}
+                                                    className={cn(
+                                                        "w-12 h-6 rounded-full relative transition-colors",
+                                                        settings.enable_langchain === "true" ? "bg-cyan-500" : "bg-zinc-700"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                        settings.enable_langchain === "true" ? "right-1" : "left-1"
+                                                    )} />
+                                                </button>
+                                            </div>
+
+                                            {/* CrewAI */}
+                                            <div className="p-4 bg-zinc-950/30 border border-zinc-800 rounded-2xl flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <span className="text-sm font-bold text-white flex items-center gap-2">
+                                                        <Bot className="h-4 w-4 text-green-400" />
+                                                        CrewAI
+                                                    </span>
+                                                    <p className="text-xs text-zinc-500">Multi-agent orchestration</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateSetting("enable_crewai", settings.enable_crewai === "true" ? "false" : "true")}
+                                                    className={cn(
+                                                        "w-12 h-6 rounded-full relative transition-colors",
+                                                        settings.enable_crewai === "true" ? "bg-green-500" : "bg-zinc-700"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                        settings.enable_crewai === "true" ? "right-1" : "left-1"
+                                                    )} />
+                                                </button>
+                                            </div>
+
+                                            {/* Open Interpreter */}
+                                            <div className="p-4 bg-zinc-950/30 border border-zinc-800 rounded-2xl flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <span className="text-sm font-bold text-white flex items-center gap-2">
+                                                        <Code className="h-4 w-4 text-yellow-400" />
+                                                        Open Interpreter
+                                                    </span>
+                                                    <p className="text-xs text-zinc-500">Code execution for dynamic effects</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateSetting("enable_interpreter", settings.enable_interpreter === "true" ? "false" : "true")}
+                                                    className={cn(
+                                                        "w-12 h-6 rounded-full relative transition-colors",
+                                                        settings.enable_interpreter === "true" ? "bg-yellow-500" : "bg-zinc-700"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                        settings.enable_interpreter === "true" ? "right-1" : "left-1"
+                                                    )} />
+                                                </button>
+                                            </div>
+
+                                            {/* Affiliate API */}
+                                            <div className="p-4 bg-zinc-950/30 border border-zinc-800 rounded-2xl flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <span className="text-sm font-bold text-white flex items-center gap-2">
+                                                        <ShoppingCart className="h-4 w-4 text-amber-400" />
+                                                        Affiliate API
+                                                    </span>
+                                                    <p className="text-xs text-zinc-500">Product recommendations integration</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateSetting("enable_affiliate_api", settings.enable_affiliate_api === "true" ? "false" : "true")}
+                                                    className={cn(
+                                                        "w-12 h-6 rounded-full relative transition-colors",
+                                                        settings.enable_affiliate_api === "true" ? "bg-amber-500" : "bg-zinc-700"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                        settings.enable_affiliate_api === "true" ? "right-1" : "left-1"
+                                                    )} />
+                                                </button>
+                                            </div>
+
+                                            {/* Trading API */}
+                                            <div className="p-4 bg-zinc-950/30 border border-zinc-800 rounded-2xl flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <span className="text-sm font-bold text-white flex items-center gap-2">
+                                                        <TrendingUp className="h-4 w-4 text-red-400" />
+                                                        Trading API
+                                                    </span>
+                                                    <p className="text-xs text-zinc-500">Market data & sentiment analysis</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateSetting("enable_trading", settings.enable_trading === "true" ? "false" : "true")}
+                                                    className={cn(
+                                                        "w-12 h-6 rounded-full relative transition-colors",
+                                                        settings.enable_trading === "true" ? "bg-red-500" : "bg-zinc-700"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                                        settings.enable_trading === "true" ? "right-1" : "left-1"
+                                                    )} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </section>
