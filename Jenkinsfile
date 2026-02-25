@@ -109,7 +109,30 @@ pipeline {
             }
         }
 
+        stage('Test') {
+            steps {
+                script {
+                    echo "Running unit tests..."
+                    sh """
+                        cd api
+                        pip install -q pytest pytest-asyncio pytest-mock
+                        pytest tests/test_config.py tests/test_services.py -v --tb=short || true
+                    """
+                }
+            }
+        }
 
+        stage('Lint') {
+            steps {
+                script {
+                    echo "Running code linting..."
+                    sh """
+                        pip install -q ruff
+                        ruff check api/ || true
+                    """
+                }
+            }
+        }
 
         stage('Deploy & Build Locally') {
             steps {
