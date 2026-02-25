@@ -90,6 +90,29 @@ class Settings(BaseSettings):
     # Video Quality Tier (default processing level)
     DEFAULT_QUALITY_TIER: str = "standard"  # standard, enhanced, premium
     
+    # Agent Frameworks (Optional - disabled by default)
+    ENABLE_LANGCHAIN: bool = False
+    ENABLE_CREWAI: bool = False
+    ENABLE_INTERPRETER: bool = False
+    ENABLE_AFFILIATE_API: bool = False
+    ENABLE_TRADING: bool = False
+    
+    # Affiliate API Keys
+    AMAZON_ASSOCIATES_TAG: str = ""
+    IMPACT_RADIUS_API_KEY: str = ""
+    SHAREASALE_API_KEY: str = ""
+    
+    # Trading API Keys
+    ALPHA_VANTAGE_API_KEY: str = ""
+    COINGECKO_API_KEY: str = ""
+    
+    # LangChain Settings
+    LANGCHAIN_MODEL: str = "llama-3.3-70b-versatile"
+    LANGCHAIN_TEMPERATURE: float = 0.7
+    
+    # CrewAI Settings
+    CREWAI_AGENTS: str = "researcher,writer,editor"
+    
     # Deprecated (Keeping for backward sync during migration)
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""

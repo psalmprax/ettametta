@@ -34,3 +34,16 @@ slowapi
 easyocr
 opencv-python
 google-generativeai
+
+# Optional: Agent Frameworks (disabled by default)
+# Enable with environment variables
+# LangChain: ENABLE_LANGCHAIN=true
+langchain>=0.1.0
+langchain-community>=0.0.20
+
+# CrewAI: ENABLE_CREWAI=true
+crewai>=0.1.0
+crewai-tools>=0.1.0
+
+# Open Interpreter: ENABLE_INTERPRETER=true
+open-interpreter>=0.1.0
