@@ -41,6 +41,12 @@ pipeline {
         string(name: 'PRODUCTION_DOMAIN', defaultValue: 'http://130.61.26.105', description: 'Public URL of your ettametta instance')
         choice(name: 'VOICE_ENGINE', choices: ['fish_speech', 'elevenlabs'], description: 'Primary voice synthesis engine')
         choice(name: 'MONETIZATION_MODE', choices: ['selective', 'all'], description: 'Monetization strategy')
+        // Video Quality Tiers
+        choice(name: 'DEFAULT_QUALITY_TIER', choices: ['standard', 'enhanced', 'premium'], description: 'Video processing tier')
+        choice(name: 'AI_VIDEO_PROVIDER', choices: ['none', 'runway', 'pika'], description: 'AI video generation')
+        // Agent Frameworks (disabled by default)
+        choice(name: 'ENABLE_LANGCHAIN', choices: ['false', 'true'], description: 'Enable LangChain')
+        choice(name: 'ENABLE_CREWAI', choices: ['false', 'true'], description: 'Enable CrewAI')
     }
 
     environment {
@@ -82,6 +88,24 @@ pipeline {
         // Payment Processing
         STRIPE_SECRET_KEY      = credentials('STRIPE_SECRET_KEY')
         STRIPE_WEBHOOK_SECRET = credentials('STRIPE_WEBHOOK_SECRET')
+        
+        // Video Quality Tiers
+        ENABLE_SOUND_DESIGN = credentials('ENABLE_SOUND_DESIGN')
+        ENABLE_MOTION_GRAPHICS = credentials('ENABLE_MOTION_GRAPHICS')
+        AI_VIDEO_PROVIDER = credentials('AI_VIDEO_PROVIDER')
+        DEFAULT_QUALITY_TIER = credentials('DEFAULT_QUALITY_TIER')
+        
+        // Agent Frameworks
+        ENABLE_LANGCHAIN = credentials('ENABLE_LANGCHAIN')
+        ENABLE_CREWAI = credentials('ENABLE_CREWAI')
+        ENABLE_INTERPRETER = credentials('ENABLE_INTERPRETER')
+        ENABLE_AFFILIATE_API = credentials('ENABLE_AFFILIATE_API')
+        ENABLE_TRADING = credentials('ENABLE_TRADING')
+        
+        // Affiliate & Trading APIs
+        AMAZON_ASSOCIATES_TAG = credentials('AMAZON_ASSOCIATES_TAG')
+        ALPHA_VANTAGE_API_KEY = credentials('ALPHA_VANTAGE_API_KEY')
+        COINGECKO_API_KEY = credentials('COINGECKO_API_KEY')
         
         // AWS Storage (for S3 uploads)
         AWS_ACCESS_KEY_ID       = credentials('AWS_ACCESS_KEY_ID')
@@ -169,6 +193,17 @@ PRODUCTION_DOMAIN=${params.PRODUCTION_DOMAIN}
 # AI Control
 VOICE_ENGINE=${params.VOICE_ENGINE}
 MONETIZATION_MODE=${params.MONETIZATION_MODE}
+# Video Quality Tiers
+DEFAULT_QUALITY_TIER=${params.DEFAULT_QUALITY_TIER}
+AI_VIDEO_PROVIDER=${params.AI_VIDEO_PROVIDER}
+ENABLE_SOUND_DESIGN=${params.ENABLE_SOUND_DESIGN:='false'}
+ENABLE_MOTION_GRAPHICS=${params.ENABLE_MOTION_GRAPHICS:='false'}
+# Agent Frameworks
+ENABLE_LANGCHAIN=${params.ENABLE_LANGCHAIN:='false'}
+ENABLE_CREWAI=${params.ENABLE_CREWAI:='false'}
+ENABLE_INTERPRETER=${params.ENABLE_INTERPRETER:='false'}
+ENABLE_AFFILIATE_API=${params.ENABLE_AFFILIATE_API:='false'}
+ENABLE_TRADING=${params.ENABLE_TRADING:='false'}
 # OAuth
 GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
