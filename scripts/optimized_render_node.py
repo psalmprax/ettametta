@@ -1,5 +1,6 @@
 import torch
 import os, uuid, logging, imageio, numpy as np
+from typing import Optional, List
 from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 from diffusers import DiffusionPipeline
