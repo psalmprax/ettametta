@@ -130,7 +130,25 @@ def download_and_process_task(self, source_url: str, niche: str, platform: str, 
             )
             if enhanced_path:
                 processed_path = enhanced_path
-                logging.info(f"[Task] Sound design applied - tier: {quality_tier}")
+                logger.info(f"[Task] Sound design applied - tier: {quality_tier}")
+        
+        # Premium Tier: Motion Graphics
+        if quality_tier == "premium":
+            update_job(status="Adding Motion Graphics", progress=60)
+            from services.video_engine.motion_graphics import motion_graphics_service
+            
+            # Add title based on metadata
+            title = f"{niche} Secrets" if niche else "Viral Content"
+            mg_path = run_async(
+                motion_graphics_service.add_title_sequence(
+                    processed_path,
+                    title=title,
+                    style="cinematic"
+                )
+            )
+            if mg_path:
+                processed_path = mg_path
+                logger.info(f"[Task] Motion graphics applied - tier: {quality_tier}")
         
         # 3. Generate SEO metadata/package (USING REAL SERVICE)
         update_job(status="Optimizing", progress=70)
