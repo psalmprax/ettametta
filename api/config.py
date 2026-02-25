@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     
     # Infrastructure
     PRODUCTION_DOMAIN: str = "http://localhost:8000"
+    RENDER_NODE_URL: Optional[str] = None # Colab/Remote GPU Node URL
     
     @property
     def GOOGLE_REDIRECT_URI(self) -> str:
