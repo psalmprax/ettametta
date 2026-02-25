@@ -14,7 +14,8 @@ import {
     Play,
     Settings2,
     RefreshCw,
-    Loader2
+    Loader2,
+    CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
@@ -190,30 +191,31 @@ export default function NexusPage() {
                         <select
                             value={selectedNiche}
                             onChange={(e) => setSelectedNiche(e.target.value)}
-                            className="glass-card bg-zinc-950 border-white/10 rounded-xl px-4 py-4 text-[10px] font-black uppercase tracking-widest text-primary outline-none focus:ring-1 focus:ring-primary/40 transition-all hover:border-primary/30"
+                            className="glass-card bg-zinc-950 border-white/10 rounded-2xl px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary outline-none focus:ring-2 focus:ring-primary/20 transition-all hover:border-primary/40 cursor-pointer"
                         >
                             <option value="">Select Niche...</option>
                             {niches.map(n => <option key={n} value={n}>{n}</option>)}
                         </select>
                         <button
                             onClick={handleClusterSettings}
-                            className="glass-card px-6 py-4 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-all"
+                            className="glass-card px-6 py-4 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white hover:border-white/20 transition-all bg-zinc-950/20"
                         >
                             <Settings2 className="h-4 w-4" />
                             Cluster Settings
                         </button>
                         <motion.button
-                            whileHover={{ scale: 1.05 }}
+                            whileHover={{ scale: 1.05, boxShadow: "0 0 60px rgba(var(--primary-rgb),0.5)" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={handleLaunch}
                             disabled={!activeBlueprint || isLaunching}
                             className={cn(
-                                "bg-primary text-white font-black py-4 px-10 rounded-2xl flex items-center gap-3 shadow-[0_0_50px_rgba(var(--primary-rgb),0.3)] transition-all uppercase text-xs tracking-widest",
-                                (!activeBlueprint || isLaunching) && "opacity-50 cursor-not-allowed grayscale"
+                                "bg-gradient-to-br from-primary via-primary to-blue-600 text-white font-black py-4 px-10 rounded-2xl flex items-center gap-3 shadow-[0_0_40px_rgba(var(--primary-rgb),0.25)] transition-all uppercase text-xs tracking-[0.2em] relative overflow-hidden group/btn",
+                                (!activeBlueprint || isLaunching) && "opacity-50 cursor-not-allowed grayscale shadow-none"
                             )}
                         >
-                            {isLaunching ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5 fill-white" />}
-                            {isLaunching ? "Spinning Up..." : "Initiate Cinema Mode"}
+                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                            {isLaunching ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5 fill-white group-hover/btn:scale-110 transition-transform" />}
+                            <span className="relative z-10">{isLaunching ? "Spinning Up..." : "Initiate Cinema Mode"}</span>
                         </motion.button>
                     </div>
                 </div>
@@ -232,36 +234,41 @@ export default function NexusPage() {
                                 return (
                                     <motion.div
                                         key={bp.id}
-                                        whileHover={!isGated ? { x: 5 } : {}}
+                                        whileHover={!isGated ? { x: 5, backgroundColor: "rgba(255,255,255,0.03)" } : {}}
                                         onClick={() => !isGated && setActiveBlueprint(bp)}
                                         className={cn(
-                                            "p-6 rounded-[2rem] border transition-all duration-500 relative overflow-hidden group",
+                                            "p-6 rounded-[2rem] border transition-all duration-500 relative overflow-hidden group/bp",
                                             activeBlueprint?.id === bp.id
-                                                ? "bg-primary/5 border-primary/40 shadow-lg"
+                                                ? "bg-primary/10 border-primary/50 shadow-[0_0_30px_rgba(var(--primary-rgb),0.1)]"
                                                 : "bg-zinc-950/40 border-white/5",
                                             isGated ? "opacity-50 cursor-not-allowed grayscale" : "cursor-pointer hover:border-white/10"
                                         )}
                                     >
-                                        <div className="flex items-center justify-between mb-3">
+                                        {activeBlueprint?.id === bp.id && (
+                                            <div className="absolute inset-0 shimmer-elite opacity-20 pointer-events-none" />
+                                        )}
+                                        <div className="flex items-center justify-between mb-4">
                                             <div className={cn(
-                                                "h-10 w-10 rounded-xl flex items-center justify-center transition-all",
-                                                activeBlueprint?.id === bp.id ? "bg-primary text-white" : "bg-zinc-900 text-zinc-600"
+                                                "h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg",
+                                                activeBlueprint?.id === bp.id
+                                                    ? "bg-primary text-white scale-110 shadow-primary/30"
+                                                    : "bg-zinc-900 text-zinc-600 group-hover/bp:text-zinc-300"
                                             )}>
-                                                <Layers className="h-5 w-5" />
+                                                <Layers className="h-6 w-6" />
                                             </div>
-                                            {activeBlueprint?.id === bp.id && (
-                                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                            )}
-                                            {isGated && (
-                                                <div className="px-2 py-1 rounded border border-amber-500/20 bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
+                                            {isGated ? (
+                                                <div className="px-3 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-[0.2em] flex items-center gap-1.5 shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+                                                    <div className="h-1 w-1 rounded-full bg-amber-500 animate-pulse" />
                                                     Locked
                                                 </div>
+                                            ) : activeBlueprint?.id === bp.id && (
+                                                <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
                                             )}
                                         </div>
-                                        <h4 className="font-black text-sm uppercase tracking-tight text-white mb-2 italic flex items-center gap-2">
+                                        <h4 className="font-black text-sm uppercase tracking-tight text-white mb-2 italic flex items-center gap-2 group-hover/bp:text-primary transition-colors">
                                             {bp.name}
                                         </h4>
-                                        <p className="text-[10px] font-medium text-zinc-500 leading-relaxed">
+                                        <p className="text-[10px] font-medium text-zinc-500 leading-relaxed group-hover/bp:text-zinc-400 transition-colors">
                                             {bp.description}
                                         </p>
                                     </motion.div>
@@ -381,39 +388,48 @@ export default function NexusPage() {
                                 <span className="text-[10px] font-mono text-zinc-700">{nexusJobs.length} ACTIVE_NODES</span>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                                 {nexusJobs.map((job) => (
                                     <motion.div
                                         key={job.id}
-                                        className="glass-card hover:border-primary/30 transition-all p-6 space-y-6 group"
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        whileHover={{ y: -8, boxShadow: "0 25px 50px -12px rgba(var(--primary-rgb),0.25)" }}
+                                        className="glass-card hover:border-primary/50 transition-all p-8 space-y-8 group/job relative overflow-hidden"
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-                                                    <Zap className="h-4 w-4 text-primary" />
+                                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover/job:opacity-100 transition-opacity duration-700" />
+
+                                        <div className="flex items-center justify-between relative z-10">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+                                                    <Zap className="h-6 w-6 text-primary group-hover/job:scale-110 group-hover/job:rotate-12 transition-transform duration-500" />
                                                 </div>
-                                                <div className="space-y-0.5">
-                                                    <span className="text-[10px] font-black uppercase tracking-tight text-white">Job_{String(job.id).slice(0, 4)}</span>
-                                                    <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">{job.niche}</p>
+                                                <div className="space-y-1">
+                                                    <span className="text-xs font-black uppercase tracking-tight text-white group-hover/job:text-primary transition-colors">Node_{String(job.id).slice(0, 4)}</span>
+                                                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-[0.3em]">{job.niche}</p>
                                                 </div>
                                             </div>
-                                            <span className={cn(
-                                                "text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md border",
-                                                job.status === "COMPLETED" ? "text-emerald-500 border-emerald-500/20" : "text-primary border-primary/20"
+                                            <div className={cn(
+                                                "text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border flex items-center gap-2 transition-all duration-500",
+                                                job.status === "COMPLETED"
+                                                    ? "text-emerald-500 border-emerald-500/20 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.1)]"
+                                                    : "text-primary border-primary/20 bg-primary/5 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]"
                                             )}>
+                                                {job.status === "COMPLETED" && <CheckCircle2 className="h-2.5 w-2.5" />}
                                                 {job.status}
-                                            </span>
+                                            </div>
                                         </div>
 
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-zinc-500">
-                                                <span>Synthesizing...</span>
-                                                <span className="text-primary">{job.progress}%</span>
+                                        <div className="space-y-4 relative z-10">
+                                            <div className="flex justify-between text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 italic">
+                                                <span className="group-hover/job:text-zinc-300 transition-colors">Neural Synthesizing...</span>
+                                                <span className="text-primary group-hover/job:scale-110 transition-transform">{job.progress}%</span>
                                             </div>
-                                            <div className="h-1 w-full bg-zinc-900 border border-white/5 rounded-full overflow-hidden">
+                                            <div className="h-1.5 w-full bg-zinc-950/80 border border-white/5 rounded-full overflow-hidden shadow-inner">
                                                 <motion.div
+                                                    initial={{ width: 0 }}
                                                     animate={{ width: `${job.progress}%` }}
-                                                    className="h-full bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
+                                                    className="h-full bg-primary shadow-[0_0_25px_rgba(var(--primary-rgb),0.6)]"
                                                 />
                                             </div>
                                         </div>
@@ -421,18 +437,19 @@ export default function NexusPage() {
                                         {job.status === "COMPLETED" && (
                                             <button
                                                 onClick={() => handleInspectResult(job)}
-                                                className="w-full py-2 rounded-xl bg-zinc-950 border border-white/10 text-[8px] font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:border-primary/50 transition-all"
+                                                className="w-full py-4 rounded-2xl bg-zinc-950 border border-white/5 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 hover:text-white hover:border-primary/50 hover:bg-primary/5 transition-all relative overflow-hidden group/inspect"
                                             >
-                                                Inspect Result
+                                                <div className="absolute inset-x-0 bottom-0 h-px bg-primary scale-x-0 group-hover/inspect:scale-x-100 transition-transform duration-700" />
+                                                Inspect Neural Stream
                                             </button>
                                         )}
                                     </motion.div>
                                 ))}
 
                                 {nexusJobs.length === 0 && (
-                                    <div className="col-span-full py-20 text-center glass-card border-dashed opacity-20">
-                                        <Loader2 className="h-8 w-8 text-zinc-800 mx-auto mb-4 animate-spin" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700 italic">No Active Neural Streams</p>
+                                    <div className="col-span-full py-20 text-center glass-card border-dashed opacity-20 group/empty hover:opacity-40 transition-opacity">
+                                        <Loader2 className="h-10 w-10 text-zinc-800 mx-auto mb-4 animate-spin group-hover/empty:text-primary transition-colors" />
+                                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-700 italic">No Active Neural Streams</p>
                                     </div>
                                 )}
                             </div>
