@@ -129,32 +129,6 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            steps {
-                script {
-                    echo "Running unit tests..."
-                    sh """
-                        cd api
-                        mkdir -p test-results
-                        pip install -q pytest pytest-asyncio pytest-mock || true
-                        python -m pytest tests/test_config.py tests/test_services.py -v --tb=short --junitxml=test-results/results.xml || true
-                    """
-                }
-            }
-        }
-
-        stage('Lint') {
-            steps {
-                script {
-                    echo "Running code linting..."
-                    sh """
-                        pip install -q ruff || true
-                        ruff check api/ || EXIT_CODE=$?; exit $EXIT_CODE
-                    """
-                }
-            }
-        }
-
         stage('Deploy & Build Locally') {
             steps {
                 script {
@@ -249,6 +223,32 @@ STORAGE_REGION=eu-frankfurt-1
         stage('Health Check') {
             steps {
                 sh "sleep 15 && curl -sf ${HEALTH_CHECK_URL} && echo 'API healthy' || exit 1"
+            }
+        }
+
+        stage('Integration Tests') {
+            steps {
+                script {
+                    echo "Running integration tests against deployed API..."
+                    sh """
+                        cd api
+                        mkdir -p test-results
+                        pip install -q pytest pytest-asyncio pytest-mock requests || true
+                        python -m pytest tests/test_config.py tests/test_services.py -v --tb=short --junitxml=test-results/results.xml || true
+                    """
+                }
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                script {
+                    echo "Running code linting..."
+                    sh """
+                        pip install -q ruff || true
+                        ruff check api/ || true
+                    """
+                }
             }
         }
     }
