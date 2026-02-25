@@ -21,6 +21,15 @@ try:
 except ImportError:
     TTSInference = None
 
+# --- MOONDREAM VLM IMPORTS (Dynamic) ---
+try:
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from PIL import Image
+    import base64
+    from io import BytesIO
+except ImportError:
+    AutoModelForCausalLM = None
+
 app = FastAPI()
 
 def load_pipeline():
@@ -46,6 +55,26 @@ def load_pipeline():
 # Global inference engines
 pipe = None
 tts_engine = None
+vlm_model = None
+vlm_tokenizer = None
+
+def load_vlm():
+    global vlm_model, vlm_tokenizer
+    if vlm_model is not None:
+        return vlm_model, vlm_tokenizer
+        
+    print("⏳ Loading Moondream2 VLM...")
+    model_id = "vikhyatk/moondream2"
+    revision = "2024-05-20"
+    try:
+        vlm_model = AutoModelForCausalLM.from_pretrained(
+            model_id, trust_remote_code=True, revision=revision
+        ).to("cuda" if torch.cuda.is_available() else "cpu")
+        vlm_tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
+        return vlm_model, vlm_tokenizer
+    except Exception as e:
+        print(f"⚠️ Failed to load VLM: {e}")
+        return None, None
 
 def load_tts():
     print("⏳ Loading Fish Speech 1.5...")
@@ -93,6 +122,33 @@ async def generate_voice(req: VoiceRequest):
     tts_engine.generate(req.text, output_path=audio_path)
     
     return {"job_id": job_id, "download_url": f"/download_audio/{job_id}"}
+
+class VLMRequest(BaseModel):
+    image_base64: str
+    prompt: Optional[str] = "Describe this image for a video editing strategy, focusing on mood and subjects."
+
+@app.post("/vlm/analyze")
+async def analyze_image(req: VLMRequest):
+    global vlm_model, vlm_tokenizer
+    if vlm_model is None:
+        load_vlm()
+    
+    if vlm_model is None:
+        return {"error": "VLM Engine failed to load"}
+
+    try:
+        # Decode image
+        img_data = base64.b64decode(req.image_base64)
+        image = Image.open(BytesIO(img_data))
+        
+        # Run inference
+        enc_image = vlm_model.encode_image(image)
+        answer = vlm_model.answer_question(enc_image, req.prompt, vlm_tokenizer)
+        
+        return {"analysis": answer}
+    except Exception as e:
+        print(f"❌ VLM Error: {e}")
+        return {"error": str(e)}
 
 @app.get("/download_audio/{job_id}")
 async def download_audio(job_id: str):
