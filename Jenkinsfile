@@ -237,12 +237,9 @@ RENDER_NODE_URL=${RENDER_NODE_URL}
                     echo "Running integration tests against deployed API..."
                     sh """
                         cd api
-                        python3 -m venv integration-venv
-                        . integration-venv/bin/activate
-                        pip install -q pytest pytest-asyncio pytest-mock requests
                         mkdir -p test-results
-                        python -m pytest tests/test_config.py tests/test_services.py -v --tb=short --junitxml=test-results/results.xml || true
-                        deactivate
+                        pip3 install -q pytest pytest-asyncio pytest-mock requests || pip install -q pytest pytest-asyncio pytest-mock requests || true
+                        python3 -m pytest tests/test_config.py tests/test_services.py -v --tb=short --junitxml=test-results/results.xml || true
                     """
                 }
             }
