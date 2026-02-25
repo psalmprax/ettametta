@@ -49,6 +49,7 @@ function TransformationPageContent() {
     const [newJobUrl, setNewJobUrl] = useState("");
     const [targetPlatform, setTargetPlatform] = useState("YouTube Shorts");
     const [generateThumbnail, setGenerateThumbnail] = useState(false);
+    const [premiumQuality, setPremiumQuality] = useState(true); // Default to true for Remotion
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -77,7 +78,8 @@ function TransformationPageContent() {
                     input_url: newJobUrl,
                     platform: targetPlatform,
                     niche: "AI Technology",
-                    generate_thumbnail: generateThumbnail
+                    generate_thumbnail: generateThumbnail,
+                    tier: premiumQuality ? "premium" : "standard"
                 })
             });
             // ...
@@ -310,6 +312,31 @@ function TransformationPageContent() {
                                         )}>
                                             <motion.div
                                                 animate={{ x: generateThumbnail ? 24 : 4 }}
+                                                className="absolute top-1 w-3 h-3 bg-white rounded-full transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Remotion Premium Toggle */}
+                                    <div className="bg-zinc-950/30 border border-white/10 p-6 rounded-xl flex items-center justify-between group/toggle hover:border-primary/30 transition-all cursor-pointer" onClick={() => setPremiumQuality(!premiumQuality)}>
+                                        <div className="flex items-center gap-4">
+                                            <div className={cn(
+                                                "p-3 rounded-lg transition-all",
+                                                premiumQuality ? "bg-primary/20 text-primary" : "bg-zinc-900 text-zinc-600"
+                                            )}>
+                                                <Cpu className="h-5 w-5" />
+                                            </div>
+                                            <div className="space-y-0.5">
+                                                <span className="text-[11px] font-black uppercase tracking-tight text-white">Remotion Engine (Premium)</span>
+                                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">High-Fidelity Cinematic Rendering</p>
+                                            </div>
+                                        </div>
+                                        <div className={cn(
+                                            "w-12 h-6 rounded-full transition-all relative border",
+                                            premiumQuality ? "bg-primary border-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]" : "bg-zinc-800 border-white/5"
+                                        )}>
+                                            <motion.div
+                                                animate={{ x: premiumQuality ? 24 : 4 }}
                                                 className="absolute top-1 w-3 h-3 bg-white rounded-full transition-all"
                                             />
                                         </div>

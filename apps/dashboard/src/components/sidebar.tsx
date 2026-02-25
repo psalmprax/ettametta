@@ -13,7 +13,8 @@ import {
     Settings,
     Zap,
     LogOut,
-    Sparkles
+    Sparkles,
+    Cpu
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -24,6 +25,7 @@ const navItems = [
     { name: "Discovery", href: "/discovery", icon: Search },
     { name: "Creation", href: "/creation", icon: Sparkles },
     { name: "Nexus Flow", href: "/nexus", icon: Zap },
+    { name: "Autonomous", href: "/autonomous", icon: Cpu },
     { name: "Transformation", href: "/transformation", icon: Video },
     { name: "Publishing", href: "/publishing", icon: Share2 },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },

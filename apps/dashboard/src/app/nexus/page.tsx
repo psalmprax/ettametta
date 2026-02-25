@@ -213,7 +213,7 @@ export default function NexusPage() {
                             )}
                         >
                             {isLaunching ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5 fill-white" />}
-                            {isLaunching ? "Spinning Up..." : "Initiate Nexus"}
+                            {isLaunching ? "Spinning Up..." : "Initiate Cinema Mode"}
                         </motion.button>
                     </div>
                 </div>
