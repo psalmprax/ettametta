@@ -1,0 +1,14 @@
+# ettametta: Heavy Agentic Frameworks (Optional)
+# Move these here to keep the core API build slim and fast.
+# Install manually inside the container if needed: pip install -r requirements-agents.txt
+
+# LangChain
+langchain>=0.1.0
+langchain-community>=0.0.20
+
+# CrewAI
+crewai>=0.1.0
+crewai-tools>=0.1.0
+
+# Open Interpreter
+open-interpreter>=0.1.0
