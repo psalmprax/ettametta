@@ -11,7 +11,8 @@ from api.utils.security import (
     decode_access_token
 )
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
+from api.config import settings
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -26,6 +27,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     telegram_chat_id: Optional[str] = None
     telegram_token: Optional[str] = None
+    whatsapp_number: Optional[str] = None
 
 class PasswordChange(BaseModel):
     current_password: str
@@ -88,6 +90,13 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     return {"access_token": access_token, "token_type": "bearer"}
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    # 1. Check for Internal Master Token
+    if settings.INTERNAL_API_TOKEN and token == settings.INTERNAL_API_TOKEN:
+        # Return the admin user for operations triggered by internal services
+        admin = db.query(UserDB).filter(UserDB.role == UserRole.ADMIN).first()
+        if admin:
+            return admin
+        
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -123,6 +132,9 @@ async def update_me(user_update: UserUpdate, current_user: UserDB = Depends(get_
         except Exception as e:
             print(f"Failed to notify OpenClaw: {e}")
             
+    if user_update.whatsapp_number is not None:
+        current_user.whatsapp_number = user_update.whatsapp_number
+            
     db.commit()
     db.refresh(current_user)
     return current_user
@@ -156,6 +168,16 @@ async def verify_telegram(telegram_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+@router.get("/verify-whatsapp/{whatsapp_id}", response_model=UserResponse)
+async def verify_whatsapp(whatsapp_id: str, db: Session = Depends(get_db)):
+    """
+    Resolves a user by their WhatsApp phone number (identifier).
+    """
+    user = db.query(UserDB).filter(UserDB.whatsapp_number == whatsapp_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 @router.get("/verify-telegram-internal/{user_id}", response_model=UserResponse)
 async def verify_telegram_internal(user_id: int, db: Session = Depends(get_db)):
     """
@@ -165,3 +187,12 @@ async def verify_telegram_internal(user_id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+@router.get("/internal/users-with-bots", response_model=List[UserResponse])
+async def get_internal_users_with_bots(db: Session = Depends(get_db)):
+    """
+    Returns all users who have configured a private Telegram bot token.
+    Used by OpenClaw on startup.
+    """
+    users = db.query(UserDB).filter(UserDB.telegram_token.isnot(None), UserDB.telegram_token != "").all()
+    return users

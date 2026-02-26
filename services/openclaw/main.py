@@ -79,15 +79,35 @@ class BotManager:
             del self.apps[user_id]
 
     async def init_bots(self):
-        # Fetch all users with tokens from API
-        try:
-            # Don't auto-start the default bot here - let users be started explicitly via refresh-bot
-            # endpoint to avoid conflicts when the same token is used for both config and user tokens
-            # In a real scenario, we'd fetch all users from the DB here
-            # But the refresh-bot endpoint will handle dynamic additions
-            pass
-        except Exception as e:
-            logger.error(f"Error initializing bots: {e}")
+        # 1. Start the Master Bot from settings
+        if settings.TELEGRAM_BOT_TOKEN and settings.TELEGRAM_ADMIN_ID:
+            logger.info("Initializing Master Bot from system settings...")
+            asyncio.create_task(self.start_bot(0, settings.TELEGRAM_BOT_TOKEN))
+        
+        # 2. Fetch all users with tokens from API
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                headers = {}
+                if settings.INTERNAL_API_TOKEN:
+                    headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
+                
+                response = requests.get(f"{settings.API_URL}/auth/internal/users-with-bots", headers=headers, timeout=5)
+                if response.status_code == 200:
+                    users = response.json()
+                    logger.info(f"Auto-starting bots for {len(users)} users...")
+                    for user in users:
+                        user_id = user.get("id")
+                        token = user.get("telegram_token")
+                        if user_id and token:
+                            asyncio.create_task(self.start_bot(user_id, token))
+                    break
+                else:
+                    logger.error(f"Failed to fetch users (Attempt {attempt+1}/{max_retries}): {response.status_code}")
+            except Exception as e:
+                logger.error(f"Error initializing bots (Attempt {attempt+1}/{max_retries}): {e}")
+            
+            await asyncio.sleep(5) # Wait for API to come online
 
 bot_manager = BotManager()
 

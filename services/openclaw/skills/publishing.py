@@ -10,6 +10,12 @@ class PublishingSkill:
         self.video_url = f"{settings.API_URL}/video"
         self.publish_url = f"{settings.API_URL}/publish"
 
+    def _get_headers(self):
+        headers = {}
+        if settings.INTERNAL_API_TOKEN:
+            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
+        return headers
+
     def publish_job(self, job_id: str, platform: str = "YouTube Shorts", niche: str = "Motivation") -> str:
         """
         Finds a completed job and publishes it.
@@ -17,7 +23,7 @@ class PublishingSkill:
         try:
             # 1. Find the job details to get output path/url
             # Listing all jobs and filtering (since we don't have a direct GET /jobs/{id} yet)
-            jobs_response = requests.get(f"{self.video_url}/jobs", timeout=10)
+            jobs_response = requests.get(f"{self.video_url}/jobs", headers=self._get_headers(), timeout=10)
             
             if jobs_response.status_code != 200:
                  return f"⚠️ **Error fetching jobs**: {jobs_response.status_code}"
@@ -45,7 +51,7 @@ class PublishingSkill:
                 "inject_monetization": True
             }
             
-            pub_response = requests.post(f"{self.publish_url}/post", json=payload, timeout=60)
+            pub_response = requests.post(f"{self.publish_url}/post", json=payload, headers=self._get_headers(), timeout=60)
             
             if pub_response.status_code == 200:
                 data = pub_response.json()

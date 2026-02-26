@@ -9,13 +9,19 @@ class NoFaceSkill:
     def __init__(self):
         self.api_url = f"{settings.API_URL}/no-face"
 
+    def _get_headers(self):
+        headers = {}
+        if settings.INTERNAL_API_TOKEN:
+            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
+        return headers
+
     def generate_script(self, topic: str) -> str:
         """
         Triggers text-based script generation for a given topic.
         """
         try:
             payload = {"topic": topic}
-            response = requests.post(f"{self.api_url}/generate-script", json=payload, timeout=20)
+            response = requests.post(f"{self.api_url}/generate-script", json=payload, headers=self._get_headers(), timeout=20)
             
             if response.status_code == 200:
                 data = response.json()
@@ -36,8 +42,8 @@ class NoFaceSkill:
         Generates and validates a viral hook for a topic.
         """
         try:
-            payload = {"hook_text": f"Crazy fact about {topic}"} # Simplified payload for validation
-            response = requests.post(f"{self.api_url}/validate-hook", json=payload, timeout=10)
+            payload = {"hook": f"Crazy fact about {topic}"} # Simplified payload for validation
+            response = requests.post(f"{self.api_url}/validate-hook", json=payload, headers=self._get_headers(), timeout=10)
             
             if response.status_code == 200:
                 data = response.json()
