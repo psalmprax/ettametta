@@ -1,8 +1,8 @@
 # ettametta: Implementation Plan (Current & Future)
 
 > **Last Updated**: February 26, 2026  
-> **Version**: 2.7 — Discovery Engine Restored
-> **Phase 58 Status**: ✅ Production Ready
+> **Version**: 2.8 — Tiered Subscriptions Initialized
+> **Phase 59 Status**: 🏗️ In Planning
 
 ---
 
@@ -110,6 +110,20 @@ ettametta is a fully autonomous viral content engine for solo creators. It uses 
 - **Bridge Fix**: Increased `httpx` timeout to 300s to support high-latency multi-niche scans.
 - **Schema Fix**: Aligned Pydantic models with the Go engine payload.
 - **Diversity**: Verified active discovery across 8+ platforms (YouTube, TikTok, Reddit, etc.).
+
+---
+
+## Phase 59: Tiered Synthesis Subscriptions
+- **Goal**: Monetize high-end video synthesis engines via granular subscription tiers.
+- **Tiers**:
+  - **BASIC**: Access to `veo3`, `wan2.2`, `lite4k`.
+  - **SOVEREIGN**: Access to `ltx-video` (Local Sovereign GPU).
+  - **STUDIO**: Access to premium cloud APIs (`runway`, `pika`).
+- **Implementation**:
+  - [ ] Add `SOVEREIGN` and `STUDIO` to `SubscriptionTier` Enum in `user_models.py`.
+  - [ ] Update `SUBSCRIPTION_TIERS` in `stripe_service.py` with pricing and feature set.
+  - [ ] Enforce tier gating in `api/routes/video.py` synthesis endpoints.
+  - [ ] Update daily limits per tier in `api/utils/subscription.py`.
 
 ---
 
