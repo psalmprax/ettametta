@@ -12,8 +12,11 @@ def subscription_required(required_tier: SubscriptionTier):
         tier_values = {
             SubscriptionTier.FREE: 0,
             SubscriptionTier.BASIC: 1,
-            SubscriptionTier.PREMIUM: 2
+            SubscriptionTier.PREMIUM: 2,
+            SubscriptionTier.SOVEREIGN: 3,
+            SubscriptionTier.STUDIO: 4
         }
+
         
         user_tier_val = tier_values.get(current_user.subscription, 0)
         required_tier_val = tier_values.get(required_tier, 0)
@@ -37,8 +40,11 @@ async def check_daily_limit(current_user: UserDB, db_session):
     LIMITS = {
         SubscriptionTier.FREE: 3,
         SubscriptionTier.BASIC: 20,
-        SubscriptionTier.PREMIUM: 1000 # Effectively unlimited
+        SubscriptionTier.PREMIUM: 100,
+        SubscriptionTier.SOVEREIGN: 500,
+        SubscriptionTier.STUDIO: 1000 # Effectively unlimited
     }
+
     
     tier_limit = LIMITS.get(current_user.subscription, 3)
     
