@@ -14,7 +14,8 @@ import {
     Zap,
     LogOut,
     Sparkles,
-    Cpu
+    Cpu,
+    Lock
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -33,7 +34,7 @@ const navItems = [
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
 
     return (
         <motion.div
@@ -129,6 +130,20 @@ export function Sidebar() {
                 </div>
 
                 <div className="space-y-2">
+                    {/* Admin System Configuration Link - Only visible to admins */}
+                    {user?.role === "admin" && (
+                        <Link
+                            href="/admin"
+                            className={cn(
+                                "flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-500 hover:bg-red-500/10 hover:text-red-400 group border border-transparent hover:border-red-500/20",
+                                pathname === "/admin" ? "bg-red-500/10 text-red-400 border-red-500/20" : ""
+                            )}
+                        >
+                            <Lock className="h-5 w-5 text-red-500" />
+                            <span className="font-black text-[10px] uppercase tracking-[0.2em] italic">System Config</span>
+                        </Link>
+                    )}
+
                     <Link
                         href="/settings"
                         className={cn(
@@ -137,7 +152,7 @@ export function Sidebar() {
                         )}
                     >
                         <Settings className="h-5 w-5 text-zinc-600 group-hover:text-primary transition-colors" />
-                        <span className="font-black text-[10px] uppercase tracking-[0.2em] italic">Infrastructure Settings</span>
+                        <span className="font-black text-[10px] uppercase tracking-[0.2em] italic">My Settings</span>
                     </Link>
 
                     <button

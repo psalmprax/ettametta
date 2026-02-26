@@ -56,8 +56,9 @@ The **ettametta/viral_forge** project is a sophisticated multi-platform viral co
 | visual_generator | ✅ | Visual effects |
 | scheduler | ✅ | Job scheduling |
 | sentinel | ✅ | Security monitoring |
+| **whatsapp** | ✅ (new) | Twilio WhatsApp integration (Phase 66) |
 
-### Dashboard Pages (11 Total)
+### Dashboard Pages (12 Total)
 
 | Page | Route | Status |
 |------|-------|--------|
@@ -70,7 +71,8 @@ The **ettametta/viral_forge** project is a sophisticated multi-platform viral co
 | Publishing | /publishing | ✅ |
 | Analytics | /analytics | ✅ |
 | Empire | /empire | ✅ (partial data) |
-| Settings | /settings | ✅ |
+| Settings | /settings | ✅ (user settings only) |
+| **Admin** | **/admin** | ✅ **NEW** |
 | Login | /login | ✅ |
 | Register | /register | ✅ |
 
@@ -93,12 +95,35 @@ The **ettametta/viral_forge** project is a sophisticated multi-platform viral co
 | billing | api/routes/billing.py | ✅ |
 | remotion | api/routes/remotion.py | ✅ |
 | persona | api/routes/persona.py | ✅ |
+| **admin** | **api/routes/admin.py** | ✅ **NEW** |
 
 ---
 
 ## 2. Critical Gaps (P0 - Deployment Blockers)
 
-### 2.1 OAuth Credentials - Not Configured for Production
+> **Security Note: Admin vs User Settings Separation**
+>
+> It's important to distinguish between:
+>
+> - **🔒 Admin-Only Settings** (System-wide, should only be configurable by admins):
+>   - OAuth credentials (Google, TikTok)
+>   - API keys for platform access (ElevenLabs, Pexels, OpenAI)
+>   - Cloud storage credentials (AWS S3, OCI)
+>   - Payment processing (Stripe)
+>   - Twilio/WhatsApp credentials
+>   - Production Domain
+>   - Render Node URL
+>
+> - **👤 User Settings** (Per-user, configurable by end users):
+>   - User's own API keys (personal ElevenLabs, Pexels accounts)
+>   - Personal OAuth tokens (YouTube channel, TikTok account connection)
+>   - Shopify store configuration (for monetization)
+>   - Voice engine preference
+>   - Monetization preferences
+>
+> **Current Issue:** The Settings page mixes both admin and user settings without proper access control. Admins should have a separate "System Configuration" page.
+
+### 2.1 OAuth Credentials - Admin-Only Settings
 
 | Credential | Config Location | Current Value | Status |
 |------------|----------------|---------------|--------|
@@ -131,6 +156,7 @@ PRODUCTION_DOMAIN: str = "http://localhost:8000"
 | **Pexels** | `PEXELS_API_KEY` | ❌ Empty | No stock media access |
 | **OpenAI** | `OPENAI_API_KEY` | ❌ Empty | Limited to Groq fallback only |
 | **Shopify** | `SHOPIFY_SHOP_URL`, `SHOPIFY_ACCESS_TOKEN` | ❌ Empty | No commerce integration |
+| **WhatsApp (Twilio)** | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_NUMBER` (in `services/openclaw/config.py:23-26`) | ❌ Empty | WhatsApp integration needs credentials |
 
 ---
 
@@ -177,7 +203,17 @@ PRODUCTION_DOMAIN: str = "http://localhost:8000"
 - **OAuth Flow Errors:** `api/routes/publish.py:114-115` returns error dict instead of proper HTTPException
 - **TikTok OAuth Mismatch:** `.env` has TikTok client key but `config.py` expects different env var name
 
-### 4.3 Jenkins CI/CD Gaps
+### 4.3 Admin vs User Settings Separation (Security) ✅ IMPLEMENTED
+
+- **Issue:** The Settings page (`/settings`) mixes admin-only settings with user-specific settings
+- **Risk:** Regular users could potentially access/modify system-wide configuration
+- **Solution Implemented:**
+  - Created new `/admin` page for admin-only system configuration
+  - Added admin router with RBAC (`api/routes/admin.py`)
+  - Updated sidebar to show "System Config" link only for admins
+  - Existing Settings page now renamed to "My Settings" for user-specific preferences
+
+### 4.4 Jenkins CI/CD Gaps
 
 - **Hardcoded Values:** `Jenkinsfile:63` - `PUBLIC_IP = "130.61.26.105"` hardcoded
 - **Health Check URL:** `Jenkinsfile:64` - Uses internal Docker IP `172.17.0.1` which may vary
@@ -217,6 +253,7 @@ These services are coded but disabled by default (require env vars to enable):
 | **OpenClaw Agent** | ✅ Production-Ready | Telegram bot configured |
 | **Voiceover** | ✅ Production-Ready | ElevenLabs key optional |
 | **Agent Zero** | ✅ Production-Ready | 6 tools implemented |
+| **WhatsApp** | ⚠️ Phase 66 | Twilio stubbed, needs credentials |
 
 ---
 
@@ -261,11 +298,33 @@ These services are coded but disabled by default (require env vars to enable):
 
 ### Immediate (Before Next Deployment)
 
-1. **Configure OAuth Credentials** - Register real Google/TikTok developer portal keys
-2. **Set Production Domain** - Update `PRODUCTION_DOMAIN` env var
-3. **Verify GROQ_API_KEY** - Confirm loaded in containers
-4. **Test OAuth Flow** - End-to-end authentication testing
-5. **Fix CORS Origins** - Make environment-based in `api/main.py`
+#### Admin Actions (System Configuration)
+1. **Create Admin-Only Settings Page** - Separate "System Configuration" page for:
+   - Google Client ID/Secret (YouTube OAuth)
+   - TikTok Client Key/Secret (TikTok OAuth)
+   - ElevenLabs API Key (system-wide)
+   - Pexels API Key (system-wide)
+   - AWS S3 credentials (cloud storage)
+   - Stripe credentials (payment processing)
+   - Twilio/WhatsApp credentials
+   - Production Domain
+   - Render Node URL (LTX)
+
+2. **Configure via Admin Page or Environment Variables**:
+   - These should be set via Jenkins/environment, not user-facing UI
+
+#### User Actions (Per-Account Settings)
+1. **User Settings Page** should allow users to configure:
+   - Their personal API keys (personal ElevenLabs, Pexels accounts)
+   - Connect their own YouTube/TikTok accounts (OAuth flow)
+   - Shopify store connection (personal commerce)
+   - Voice engine preference (fish_speech vs elevenlabs)
+   - Monetization strategy preferences
+
+2. **Verify GROQ_API_KEY** - Confirm loaded in containers
+3. **Test OAuth Flow** - End-to-end authentication testing
+4. **Fix CORS Origins** - Make environment-based in `api/main.py`
+5. **Complete WhatsApp Verification** - End-to-end testing with real messages
 
 ### Short-term (This Sprint)
 
@@ -292,6 +351,7 @@ These services are coded but disabled by default (require env vars to enable):
 | `api/config.py:57` | PRODUCTION_DOMAIN hardcoded | P0 |
 | `api/config.py:40-46` | OAuth credentials empty | P0 |
 | `.env` | Missing production credentials | P0 |
+| `services/openclaw/config.py:23-26` | TWILIO credentials empty (Account SID, Auth Token, WhatsApp Number) | P0 |
 | `api/main.py:103-114` | Hardcoded CORS origins | P1 |
 | `docker-compose.yml:67` | Hardcoded NEXT_PUBLIC_API_URL | P1 |
 | `services/monetization/empire_service.py:29` | Placeholder growth data | P1 |
@@ -315,6 +375,24 @@ These services are coded but disabled by default (require env vars to enable):
 | Agent | OpenClaw + Agent Zero | ✅ |
 | Infrastructure | Docker + OCI | ✅ |
 | CI/CD | Jenkins + GitHub Actions | ✅ |
+
+---
+
+## 11. Recent Updates: WhatsApp Integration (Phase 66)
+
+### Completed Items ✅
+1. **python-multipart dependency** - Added to [`services/openclaw/requirements.txt`](services/openclaw/requirements.txt:9)
+2. **WhatsApp webhook endpoint** - Implemented at `/webhook/whatsapp` in [`services/openclaw/main.py:138`](services/openclaw/main.py:138)
+3. **Verify WhatsApp endpoint** - Added `/verify-whatsapp/{whatsapp_id}` in [`api/routes/auth.py:171`](api/routes/auth.py:171)
+4. **WhatsApp user update** - Updated `UpdateMe` to support `whatsapp_number` field in [`api/routes/auth.py:135`](api/routes/auth.py:135)
+5. **WhatsApp dispatcher** - Implemented `send_whatsapp()` in [`services/openclaw/dispatcher.py:64`](services/openclaw/dispatcher.py:64)
+6. **WhatsApp message routing** - Agent identifies WhatsApp users via `whatsapp:` prefix in [`services/openclaw/agent.py:75`](services/openclaw/agent.py:75)
+
+### Remaining Items
+1. **Twilio credentials** - Need production Twilio Account SID, Auth Token, and WhatsApp number
+2. **Webhook verification** - Need to complete end-to-end testing with real WhatsApp messages
+3. **Test phone registration** - Register test WhatsApp number for verification
+4. **Production stub configuration** - Configure real Twilio API calls (currently stubbed)
 
 ---
 

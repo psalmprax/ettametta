@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from api.routes import discovery, video, publish, analytics, auth, settings as settings_router, ws, no_face, monetization, nexus, ab_testing, security, billing, remotion
+from api.routes import discovery, video, publish, analytics, auth, settings as settings_router, ws, no_face, monetization, nexus, ab_testing, security, billing, remotion, admin
 from services.security.service import base_security_sentinel
 from api.config import settings
 import os
@@ -137,6 +137,7 @@ app.include_router(ab_testing.router)
 app.include_router(security.router)
 app.include_router(billing.router)
 app.include_router(remotion.router)
+app.include_router(admin.router)
 
 @app.get("/")
 async def root():
