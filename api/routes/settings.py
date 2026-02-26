@@ -60,6 +60,11 @@ async def get_settings(db: Session = Depends(get_db), current_user: UserDB = Dep
         "enable_motion_graphics": "false",
         "ai_video_provider": "none",
         "default_quality_tier": "standard",
+        "ai_matching_enabled": "true",
+        "auto_promo_enabled": "true",
+        "auto_merch_enabled": "false",
+        "lead_gen_url": "",
+        "digital_product_url": "",
     }
     
     # Cascade: Config -> System -> User (User wins)

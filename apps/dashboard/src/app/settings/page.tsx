@@ -52,12 +52,17 @@ export default function SettingsPage() {
         aws_storage_bucket_name: "",
         active_monetization_strategy: "commerce",
         monetization_mode: "selective",
+        monetization_aggression: "80",
         membership_platform_url: "",
         course_platform_url: "",
+        lead_gen_url: "",
+        digital_product_url: "",
         sponsorship_contact: "",
         brand_partners: "",
         crypto_wallets: "",
         donation_link: "",
+        ai_matching_enabled: "true",
+        auto_promo_enabled: "true",
         storage_provider: "OCI",
         storage_access_key: "",
         storage_secret_key: "",
@@ -235,6 +240,7 @@ export default function SettingsPage() {
                         <TabItem icon={<Key className="h-4 w-4" />} label="Private Keys" active={activeTab === "Keys"} onClick={() => setActiveTab("Keys")} />
                         <TabItem icon={<Bell className="h-4 w-4" />} label="Comms" active={activeTab === "Notifications"} onClick={() => setActiveTab("Notifications")} />
                         <TabItem icon={<CreditCard className="h-4 w-4" />} label="Billing" active={activeTab === "Billing"} onClick={() => setActiveTab("Billing")} />
+                        <TabItem icon={<TrendingUp className="h-4 w-4" />} label="Monetization" active={activeTab === "Monetization"} onClick={() => setActiveTab("Monetization")} />
                         <TabItem icon={<Wand2 className="h-4 w-4" />} label="Engine" active={activeTab === "Engine"} onClick={() => setActiveTab("Engine")} />
                     </div>
 
@@ -386,6 +392,218 @@ export default function SettingsPage() {
                                         <button className="bg-emerald-500 hover:bg-emerald-600 text-white font-black py-5 px-12 rounded-2xl transition-all shadow-[0_0_40px_rgba(16,185,129,0.3)] uppercase tracking-[0.2em] text-[10px]">
                                             Expand Empire
                                         </button>
+                                    </div>
+                                </div>
+                            </section>
+                        ) : activeTab === "Monetization" ? (
+                            <section className="card-gradient border border-white/5 rounded-[2.5rem] p-12 space-y-12 shadow-2xl relative overflow-hidden">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-20 w-20 rounded-3xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.15)]">
+                                        <TrendingUp className="h-10 w-10 text-amber-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Growth <span className="text-hollow">Monetization</span></h3>
+                                        <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">Revenue streams and audience support vectors</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-12 pt-10 border-t border-white/5">
+                                    {/* Precision Distribution Control */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                        <div className="space-y-6">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6 italic">Precision Control</h4>
+                                            <div className="space-y-8">
+                                                <div className="p-6 bg-zinc-950/50 border border-white/5 rounded-2xl space-y-4">
+                                                    <div className="flex justify-between items-center">
+                                                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Aggression Level</label>
+                                                        <span className="text-primary font-black text-sm italic">{settings.monetization_aggression}%</span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="100"
+                                                        value={settings.monetization_aggression}
+                                                        onChange={(e) => updateSetting("monetization_aggression", e.target.value)}
+                                                        className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary"
+                                                    />
+                                                    <p className="text-[9px] text-zinc-600 uppercase font-bold text-center tracking-tighter italic">Controls frequency of monetization pitch injection</p>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Distribution Mode</label>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        {['selective', 'aggressive'].map((m) => (
+                                                            <button
+                                                                key={m}
+                                                                onClick={() => updateSetting("monetization_mode", m)}
+                                                                className={cn(
+                                                                    "py-3 px-4 rounded-xl border font-black uppercase text-[10px] tracking-widest transition-all",
+                                                                    settings.monetization_mode === m ? "bg-amber-500/20 border-amber-500 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)]" : "bg-zinc-950/50 border-white/5 text-zinc-600 hover:text-white"
+                                                                )}
+                                                            >
+                                                                {m}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6 italic">Active Strategy</h4>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {[
+                                                    { id: 'commerce', label: 'E-Commerce' },
+                                                    { id: 'affiliate', label: 'Affiliate' },
+                                                    { id: 'lead_gen', label: 'Lead Gen' },
+                                                    { id: 'membership', label: 'Patreon' },
+                                                    { id: 'course', label: 'Academy' },
+                                                    { id: 'digital_product', label: 'Digital' },
+                                                    { id: 'sponsorship', label: 'Sponsor' },
+                                                    { id: 'crypto', label: 'Crypto' }
+                                                ].map((s) => (
+                                                    <button
+                                                        key={s.id}
+                                                        onClick={() => updateSetting("active_monetization_strategy", s.id)}
+                                                        className={cn(
+                                                            "py-3 px-3 rounded-xl border font-black uppercase text-[9px] tracking-widest transition-all text-center",
+                                                            settings.active_monetization_strategy === s.id ? "bg-primary border-primary text-white shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]" : "bg-zinc-950/50 border-white/5 text-zinc-500 hover:text-white hover:border-white/10"
+                                                        )}
+                                                    >
+                                                        {s.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Primary Vectors */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-10 border-t border-white/5">
+                                        <div className="space-y-6">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">Passive Vectors</h4>
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Membership Platform (Patreon/Substack)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={settings.membership_platform_url}
+                                                        onChange={(e) => updateSetting("membership_platform_url", e.target.value)}
+                                                        className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 ring-primary/50 outline-none transition-all"
+                                                        placeholder="https://patreon.com/your-name"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Lead Magnet / Lead Gen URL</label>
+                                                    <input
+                                                        type="text"
+                                                        value={settings.lead_gen_url || ""}
+                                                        onChange={(e) => updateSetting("lead_gen_url", e.target.value)}
+                                                        className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 ring-emerald-500/50 outline-none transition-all"
+                                                        placeholder="https://your-site.com/free-guide"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">Product Vectors</h4>
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Online Academy / Course URL</label>
+                                                    <input
+                                                        type="text"
+                                                        value={settings.course_platform_url}
+                                                        onChange={(e) => updateSetting("course_platform_url", e.target.value)}
+                                                        className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 ring-primary/50 outline-none transition-all"
+                                                        placeholder="https://your-academy.com/course"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Digital Downloads Store</label>
+                                                    <input
+                                                        type="text"
+                                                        value={settings.digital_product_url || ""}
+                                                        onChange={(e) => updateSetting("digital_product_url", e.target.value)}
+                                                        className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 ring-amber-500/50 outline-none transition-all"
+                                                        placeholder="https://gumroad.com/your-store"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Support & AI Autonomy */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-10 border-t border-white/5">
+                                        <div className="space-y-6">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">Support & Capital</h4>
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Donation/Tip Link</label>
+                                                    <input
+                                                        type="text"
+                                                        value={settings.donation_link}
+                                                        onChange={(e) => updateSetting("donation_link", e.target.value)}
+                                                        className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 ring-primary/50 outline-none transition-all"
+                                                        placeholder="https://buymeacoffee.com/name"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Crypto Node Addresses</label>
+                                                    <input
+                                                        type="text"
+                                                        value={settings.crypto_wallets}
+                                                        onChange={(e) => updateSetting("crypto_wallets", e.target.value)}
+                                                        className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 ring-primary/50 outline-none transition-all"
+                                                        placeholder="BTC: 0x..., ETH: 0x..."
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">AI Autonomy</h4>
+                                            <div className="space-y-4">
+                                                <ToggleSwitch
+                                                    label="AI Product Matching"
+                                                    description="Auto-match viral trends to assets"
+                                                    checked={settings.ai_matching_enabled === "true"}
+                                                    onChange={(val) => updateSetting("ai_matching_enabled", val ? "true" : "false")}
+                                                />
+                                                <ToggleSwitch
+                                                    label="Auto-Promo Generation"
+                                                    description="LLM-driven sales script injection"
+                                                    checked={settings.auto_promo_enabled === "true"}
+                                                    onChange={(val) => updateSetting("auto_promo_enabled", val ? "true" : "false")}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Brands */}
+                                    <div className="space-y-6 pt-10 border-t border-white/5">
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6 italic">Brand Partnerships</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Sponsorship Protocol (Email/URL)</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.sponsorship_contact}
+                                                    onChange={(e) => updateSetting("sponsorship_contact", e.target.value)}
+                                                    className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 ring-primary/50 outline-none transition-all"
+                                                    placeholder="sponsorships@yourdomain.com"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Active Node Partners</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.brand_partners}
+                                                    onChange={(e) => updateSetting("brand_partners", e.target.value)}
+                                                    className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 ring-primary/50 outline-none transition-all"
+                                                    placeholder="Stripe, AWS, DigitalOcean"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </section>
