@@ -8,17 +8,18 @@ class AnalyticsSkill:
     def __init__(self):
         self.api_url = f"{settings.API_URL}/analytics"
 
+    def _get_headers(self):
+        headers = {}
+        if settings.INTERNAL_API_TOKEN:
+            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
+        return headers
+
     def get_summary(self) -> str:
         """
         Fetches the high-level dashboard summary.
         """
         try:
-            # Note: This endpoint usually requires auth. 
-            # For the MVP agent, we might need to bypass or use a service token.
-            # Assuming widely accessible or internal network trust for now based on docker-compose.
-            # If auth fails, we will need to add a token header in the future.
-            
-            response = requests.get(f"{self.api_url}/stats/summary", timeout=10)
+            response = requests.get(f"{self.api_url}/stats/summary", headers=self._get_headers(), timeout=10)
             
             if response.status_code == 200:
                 data = response.json()
@@ -45,7 +46,7 @@ class AnalyticsSkill:
         Fetches the most recently published posts.
         """
         try:
-            response = requests.get(f"{self.api_url}/posts", timeout=10)
+            response = requests.get(f"{self.api_url}/posts", headers=self._get_headers(), timeout=10)
             if response.status_code == 200:
                 posts = response.json()
                 if not posts:
@@ -65,12 +66,10 @@ class AnalyticsSkill:
     def get_revenue_report(self) -> str:
         """
         Fetches the primary dashboard monetization report.
-        Note: The endpoint is on the /monetization router.
         """
         try:
-            # We access the monetization endpoint from the main API URL
             base_url = self.api_url.replace("/analytics", "/monetization")
-            response = requests.get(f"{base_url}/report", timeout=10)
+            response = requests.get(f"{base_url}/report", headers=self._get_headers(), timeout=10)
             
             if response.status_code == 200:
                 data = response.json()

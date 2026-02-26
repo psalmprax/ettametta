@@ -8,13 +8,19 @@ class SystemSkill:
     def __init__(self):
         self.api_url = settings.API_URL
 
+    def _get_headers(self):
+        headers = {}
+        if settings.INTERNAL_API_TOKEN:
+            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
+        return headers
+
     def check_health(self) -> str:
         """
         Checks the health of the platform services.
         """
         try:
             # Check API Health
-            response = requests.get(f"{self.api_url}/health", timeout=5)
+            response = requests.get(f"{self.api_url}/health", headers=self._get_headers(), timeout=5)
             if response.status_code == 200:
                 return "✅ **System Status**: All systems operational. API is healthy."
             else:
@@ -27,7 +33,7 @@ class SystemSkill:
         Retrieves video storage usage metrics.
         """
         try:
-            response = requests.get(f"{self.api_url}/analytics/stats/storage", timeout=5)
+            response = requests.get(f"{self.api_url}/analytics/stats/storage", headers=self._get_headers(), timeout=5)
             if response.status_code == 200:
                 data = response.json()
                 size = data.get("current_size_gb", 0)

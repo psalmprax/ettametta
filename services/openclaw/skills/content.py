@@ -9,6 +9,12 @@ class ContentSkill:
     def __init__(self):
         self.api_url = f"{settings.API_URL}/video"
 
+    def _get_headers(self):
+        headers = {}
+        if settings.INTERNAL_API_TOKEN:
+            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
+        return headers
+
     def create_content(self, action: str = "transform", input_url: str = "", prompt: str = "", engine: str = "veo3", niche: str = "Motivation", platform: str = "YouTube Shorts") -> str:
         """
         Triggers a new video transformation or generation job based on the action.
@@ -43,7 +49,7 @@ class ContentSkill:
                 msg_prefix = "🎬 **Production Started!**\nNiche"
                 msg_body = niche
             
-            response = requests.post(endpoint, json=payload, timeout=10)
+            response = requests.post(endpoint, json=payload, headers=self._get_headers(), timeout=10)
             
             if response.status_code == 200:
                 data = response.json()

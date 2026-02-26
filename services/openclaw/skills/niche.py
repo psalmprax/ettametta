@@ -8,13 +8,19 @@ class NicheSkill:
     def __init__(self):
         self.api_url = f"{settings.API_URL}/discovery"
 
+    def _get_headers(self):
+        headers = {}
+        if settings.INTERNAL_API_TOKEN:
+            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
+        return headers
+
     def add_niche_scan(self, niche: str) -> str:
         """
         Triggers a deep scan for a new niche.
         """
         try:
             payload = {"niches": [niche]}
-            response = requests.post(f"{self.api_url}/scan", json=payload, timeout=10)
+            response = requests.post(f"{self.api_url}/scan", json=payload, headers=self._get_headers(), timeout=10)
             
             if response.status_code == 200:
                 return f"🎯 **Niche Added**: '{niche}' is now being scanned by the swarm."
@@ -29,7 +35,7 @@ class NicheSkill:
         Gets specific trends for a niche.
         """
         try:
-            response = requests.get(f"{self.api_url}/niche-trends/{niche}", timeout=10)
+            response = requests.get(f"{self.api_url}/niche-trends/{niche}", headers=self._get_headers(), timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 keywords = ", ".join(data.get("top_keywords", [])[:5])
