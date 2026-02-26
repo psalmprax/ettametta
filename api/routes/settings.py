@@ -23,16 +23,23 @@ def admin_required(current_user: UserDB = Depends(get_current_user)):
     return current_user
 
 @router.get("/")
-async def get_settings(db: Session = Depends(get_db), _admin = Depends(admin_required)):
+async def get_settings(db: Session = Depends(get_db), current_user: UserDB = Depends(get_current_user)):
     from api.config import settings as app_settings
-    db_items = db.query(SystemSettings).all()
-    db_dict = {s.key: s.value for s in db_items}
+    from api.utils.models import UserSetting
     
-    # Defaults from config
+    # 1. Fetch system-wide defaults from DB
+    db_items = db.query(SystemSettings).all()
+    system_dict = {s.key: s.value for s in db_items}
+    
+    # 2. Fetch user-specific overrides
+    user_items = db.query(UserSetting).filter(UserSetting.user_id == current_user.id).all()
+    user_dict = {s.key: s.value for s in user_items}
+    
+    # 3. Defaults from app config (hardcoded fallback)
     config_dict = {
         "groq_api_key": app_settings.GROQ_API_KEY,
         "youtube_api_key": app_settings.YOUTUBE_API_KEY,
-        "tiktok_client_id": app_settings.TIKTOK_CLIENT_KEY, 
+        "tiktok_client_key": app_settings.TIKTOK_CLIENT_KEY, 
         "tiktok_client_secret": app_settings.TIKTOK_CLIENT_SECRET,
         "scan_frequency": "Every 1 hour",
         "force_originality": "true",
@@ -44,54 +51,40 @@ async def get_settings(db: Session = Depends(get_db), _admin = Depends(admin_req
         "fish_speech_endpoint": "http://voiceover:8080",
         "voice_engine": "fish_speech",
         "pexels_api_key": app_settings.PEXELS_API_KEY,
-        "aws_access_key_id": app_settings.AWS_ACCESS_KEY_ID,
-        "aws_secret_access_key": app_settings.AWS_SECRET_ACCESS_KEY,
-        "aws_region": app_settings.AWS_REGION,
-        "aws_storage_bucket_name": app_settings.AWS_STORAGE_BUCKET_NAME,
-        "storage_provider": app_settings.STORAGE_PROVIDER,
-        "storage_access_key": app_settings.STORAGE_ACCESS_KEY,
-        "storage_secret_key": app_settings.STORAGE_SECRET_KEY,
-        "storage_bucket": app_settings.STORAGE_BUCKET,
-        "storage_endpoint": app_settings.STORAGE_ENDPOINT,
-        "storage_region": app_settings.STORAGE_REGION,
         "google_client_id": app_settings.GOOGLE_CLIENT_ID,
         "google_client_secret": app_settings.GOOGLE_CLIENT_SECRET,
-        "tiktok_client_key": app_settings.TIKTOK_CLIENT_KEY,
-        "tiktok_client_secret": app_settings.TIKTOK_CLIENT_SECRET,
-        "active_monetization_strategy": "commerce",
         "monetization_mode": "selective",
-        "membership_platform_url": "",
-        "course_platform_url": "",
-        "sponsorship_contact": "",
-        "brand_partners": "",
-        "crypto_wallets": "",
-        "donation_link": "",
-        # Video Quality Tiers
+        "active_monetization_strategy": "commerce",
+        # Video Quality Tiers (Defaults)
         "enable_sound_design": "false",
         "enable_motion_graphics": "false",
         "ai_video_provider": "none",
         "default_quality_tier": "standard",
-        # Agent Frameworks
-        "enable_langchain": "false",
-        "enable_crewai": "false",
-        "enable_interpreter": "false",
-        "enable_affiliate_api": "false",
-        "enable_trading": "false"
     }
     
-    # Merge: DB takes precedence
-    merged = {**config_dict, **db_dict}
+    # Cascade: Config -> System -> User (User wins)
+    merged = {**config_dict, **system_dict, **user_dict}
     return merged
 
 @router.post("/")
-async def update_setting(request: SettingUpdateRequest, db: Session = Depends(get_db), _admin = Depends(admin_required)):
-    setting = db.query(SystemSettings).filter(SystemSettings.key == request.key).first()
+async def update_setting(request: SettingUpdateRequest, db: Session = Depends(get_db), current_user: UserDB = Depends(get_current_user)):
+    from api.utils.models import UserSetting
+    
+    # Non-admins can only update their own UserSetting overrides
+    # Adms can update SystemSettings via /admin routes, but we'll allow them to have personal overrides too if they use this route.
+    
+    setting = db.query(UserSetting).filter(
+        UserSetting.user_id == current_user.id,
+        UserSetting.key == request.key.lower()
+    ).first()
+    
     if setting:
         setting.value = request.value
         setting.category = request.category or setting.category
     else:
-        setting = SystemSettings(
-            key=request.key,
+        setting = UserSetting(
+            user_id=current_user.id,
+            key=request.key.lower(),
             value=request.value,
             category=request.category
         )
@@ -99,7 +92,7 @@ async def update_setting(request: SettingUpdateRequest, db: Session = Depends(ge
     
     db.commit()
     db.refresh(setting)
-    return {"status": "success", "key": setting.key}
+    return {"status": "success", "key": setting.key, "scope": "user"}
 
 @router.get("/monetization/strategies")
 async def get_monetization_strategies():
