@@ -58,17 +58,29 @@ class OpenClawAgent:
         """
 
     def _get_user_from_api(self, identifier: str):
+        # 1. Immediate Admin Fallback (Highest Priority)
+        # Trust the configured admin ID even if API is unreachable
+        if str(identifier) == str(settings.TELEGRAM_ADMIN_ID):
+            logger.info(f"Admin access verified for {identifier}")
+            return {
+                "id": 1, # Match the DB id found earlier for psalmprax
+                "username": "admin", 
+                "role": "admin", 
+                "subscription": "premium",
+                "telegram_chat_id": str(identifier)
+            }
+
+        # 2. Dynamic User Verification via API
         try:
-            # Identifier can be a numeric Telegram ID or a WhatsApp phone number (+123...)
-            # Use the verify-telegram endpoint which checks telegram_chat_id
-            response = requests.get(f"{settings.API_URL}/auth/verify-telegram/{identifier}", timeout=5)
+            if str(identifier).startswith("whatsapp:"):
+                # Format: whatsapp:+1234567890
+                clean_id = str(identifier)
+                response = requests.get(f"{settings.API_URL}/auth/verify-whatsapp/{clean_id}", timeout=5)
+            else:
+                response = requests.get(f"{settings.API_URL}/auth/verify-telegram/{identifier}", timeout=5)
+                
             if response.status_code == 200:
                 return response.json()
-            
-            # If not found, try to auto-register by updating the user's telegram_chat_id
-            # This handles the case where the user added a bot token but didn't set their chat_id
-            # We'll need to fetch the user by telegram_token and update their chat_id
-            # For now, return None to indicate user not found
             return None
         except Exception as e:
             logger.error(f"Error calling verification API: {e}")
