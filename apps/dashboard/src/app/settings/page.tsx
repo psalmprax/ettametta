@@ -39,7 +39,6 @@ export default function SettingsPage() {
         scan_frequency: "Every 1 hour",
         force_originality: "true",
         auto_pilot: "false",
-        monetization_aggression: "80",
         shopify_access_token: "",
         shopify_shop_url: "",
         elevenlabs_api_key: "",
