@@ -36,28 +36,32 @@ async def check_daily_limit(current_user: UserDB, db_session):
     from api.utils.models import VideoJobDB
     from datetime import datetime, timedelta
     
-    # Define limits per tier
+    # Define limits (Daily for Free/Creator, Monthly for others)
     LIMITS = {
-        SubscriptionTier.FREE: 1,
-        SubscriptionTier.BASIC: 5,
-        SubscriptionTier.PREMIUM: 100,
-        SubscriptionTier.SOVEREIGN: 500,
-        SubscriptionTier.STUDIO: 1000 # Effectively unlimited
+        SubscriptionTier.FREE: {"quota": 1, "window": "day"},
+        SubscriptionTier.BASIC: {"quota": 3, "window": "day"},
+        SubscriptionTier.PREMIUM: {"quota": 90, "window": "month"},
+        SubscriptionTier.SOVEREIGN: {"quota": 120, "window": "month"},
+        SubscriptionTier.STUDIO: {"quota": 200, "window": "month"}
     }
-
-
     
-    tier_limit = LIMITS.get(current_user.subscription, 3)
+    config = LIMITS.get(current_user.subscription, {"quota": 1, "window": "day"})
+    quota = config["quota"]
     
-    # Count jobs in the last 24 hours
-    since_24h = datetime.utcnow() - timedelta(days=1)
+    # Calculate window start
+    if config["window"] == "month":
+        lookback = datetime.utcnow() - timedelta(days=30)
+    else:
+        lookback = datetime.utcnow() - timedelta(days=1)
+        
     job_count = db_session.query(VideoJobDB).filter(
         VideoJobDB.user_id == current_user.id,
-        VideoJobDB.created_at >= since_24h
+        VideoJobDB.created_at >= lookback
     ).count()
     
-    if job_count >= tier_limit:
+    if job_count >= quota:
+        window_name = "monthly" if config["window"] == "month" else "daily"
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Daily limit reached for {current_user.subscription.value} tier ({tier_limit} videos/day)."
+            detail=f"{window_name.capitalize()} limit reached for {current_user.subscription.value} tier ({quota} videos/{config['window']})."
         )

@@ -142,10 +142,10 @@ ettametta is a fully autonomous viral content engine for solo creators. It uses 
 - Add `CORS_ORIGINS` placeholder.
 - **Tiers & Limits**:
   - **FREE**: 1 video/day. Basic discovery only.
-  - **CREATOR (BASIC)**: 5 videos/day. Transformation pipeline.
-  - **EMPIRE (PREMIUM)**: 100 videos/month. **Lite4K ONLY**.
-  - **SOVEREIGN**: 500 videos/month. **LTX-Video** (Sovereign GPU).
-  - **STUDIO**: 1000 videos/month. **Runway, Pika, Veo3, Wan2.2**.
+  - **CREATOR (BASIC)**: 3 videos/day. Transformation pipeline.
+  - **EMPIRE (PREMIUM)**: 90/mo. Lite4k synthesis only.
+  - **SOVEREIGN**: 120/mo. LTX-Video access.
+  - **STUDIO**: 200/mo. All engines.os/month. **Runway, Pika, Veo3, Wan2.2**.
 - **Refinement Implementation**:
   - [x] Restrict FREE to 1 video/day.
   - [x] Restrict CREATOR to 5 videos/day.
