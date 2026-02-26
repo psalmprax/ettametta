@@ -1,8 +1,9 @@
 # ettametta: Implementation Plan (Current & Future)
 
 > **Last Updated**: February 26, 2026  
-> **Version**: 2.8 — Tiered Subscriptions Initialized
-> **Phase 59 Status**: 🏗️ In Planning
+> **Version**: 2.9 — Subscription Gating Refined
+> **Phase 59 Status**: ✅ Implementation Refined
+
 
 ---
 
@@ -113,17 +114,20 @@ ettametta is a fully autonomous viral content engine for solo creators. It uses 
 
 ---
 
-## Phase 59: Tiered Synthesis Subscriptions
+## Phase 59: Tiered Synthesis Subscriptions (Refined)
 - **Goal**: Monetize high-end video synthesis engines via granular subscription tiers.
-- **Tiers**:
-  - **BASIC**: Access to `veo3`, `wan2.2`, `lite4k`.
-  - **SOVEREIGN**: Access to `ltx-video` (Local Sovereign GPU).
-  - **STUDIO**: Access to premium cloud APIs (`runway`, `pika`).
-- **Implementation**:
-  - [ ] Add `SOVEREIGN` and `STUDIO` to `SubscriptionTier` Enum in `user_models.py`.
-  - [ ] Update `SUBSCRIPTION_TIERS` in `stripe_service.py` with pricing and feature set.
-  - [ ] Enforce tier gating in `api/routes/video.py` synthesis endpoints.
-  - [ ] Update daily limits per tier in `api/utils/subscription.py`.
+- **Tiers & Limits**:
+  - **FREE**: 1 video/day. Basic discovery only.
+  - **CREATOR (BASIC)**: 5 videos/day. Transformation pipeline.
+  - **EMPIRE (PREMIUM)**: 100 videos/month. **Lite4K ONLY**.
+  - **SOVEREIGN**: 500 videos/month. **LTX-Video** (Sovereign GPU).
+  - **STUDIO**: 1000 videos/month. **Runway, Pika, Veo3, Wan2.2**.
+- **Refinement Implementation**:
+  - [x] Restrict FREE to 1 video/day.
+  - [x] Restrict CREATOR to 5 videos/day.
+  - [x] Move `veo3` and `wan2.2` to STUDIO tier.
+  - [x] Restrict EMPIRE to `lite4k` only in `api/routes/video.py`.
+
 
 ---
 
