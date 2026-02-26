@@ -214,11 +214,13 @@ export default function SettingsPage() {
                             <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter text-white">System <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-400 to-white text-hollow">Settings</span></h1>
                             <div className={cn(
                                 "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
-                                userProfile.subscription === "premium" ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
-                                    userProfile.subscription === "basic" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
-                                        "bg-zinc-500/10 text-zinc-500 border-zinc-500/20"
+                                userProfile.subscription === "studio" ? "bg-purple-500/10 text-purple-500 border-purple-500/20 shadow-[0_0_10px_rgba(168,85,247,0.2)]" :
+                                    userProfile.subscription === "sovereign" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]" :
+                                        userProfile.subscription === "premium" ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                                            userProfile.subscription === "basic" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
+                                                "bg-zinc-500/10 text-zinc-500 border-zinc-500/20"
                             )}>
-                                {userProfile.subscription}
+                                {userProfile.subscription === "basic" ? "Creator" : userProfile.subscription === "premium" ? "Empire" : userProfile.subscription}
                             </div>
                             {userProfile.role === "admin" && (
                                 <div className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
@@ -1228,8 +1230,13 @@ export default function SettingsPage() {
                                                 <p className="text-sm text-zinc-400">Current Plan</p>
                                                 <p className="text-2xl font-black text-white uppercase">{userProfile.subscription}</p>
                                             </div>
-                                            <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${userProfile.subscription === 'premium' ? 'bg-amber-500/10 text-amber-500' : userProfile.subscription === 'basic' ? 'bg-blue-500/10 text-blue-500' : 'bg-zinc-500/10 text-zinc-500'}`}>
-                                                {userProfile.subscription === 'premium' ? 'Active' : userProfile.subscription === 'basic' ? 'Active' : 'Free Tier'}
+                                            <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${userProfile.subscription === 'studio' ? 'bg-purple-500/10 text-purple-500' :
+                                                    userProfile.subscription === 'sovereign' ? 'bg-emerald-500/10 text-emerald-500' :
+                                                        userProfile.subscription === 'premium' ? 'bg-amber-500/10 text-amber-500' :
+                                                            userProfile.subscription === 'basic' ? 'bg-blue-500/10 text-blue-500' :
+                                                                'bg-zinc-500/10 text-zinc-500'
+                                                }`}>
+                                                {userProfile.subscription === 'free' ? 'Free Tier' : 'Active'}
                                             </div>
                                         </div>
 
@@ -1240,41 +1247,24 @@ export default function SettingsPage() {
                                                 <div className={`p-4 rounded-xl border ${userProfile.subscription === 'free' ? 'border-primary bg-primary/5' : 'border-zinc-800'} transition-all`}>
                                                     <div className="flex items-center justify-between">
                                                         <div>
-                                                            <p className="font-bold text-white">Free Tier</p>
-                                                            <p className="text-xs text-zinc-500">Basic features</p>
+                                                            <p className="font-bold text-white uppercase">Free</p>
+                                                            <p className="text-xs text-zinc-500">1 video/day • Basic discovery</p>
                                                         </div>
                                                         <span className="text-sm font-bold text-zinc-500">$0/mo</span>
                                                     </div>
-                                                    {userProfile.subscription === 'free' && (
-                                                        <div className="mt-2 text-xs text-primary font-bold">Current Plan</div>
-                                                    )}
                                                 </div>
 
                                                 <div className={`p-4 rounded-xl border ${userProfile.subscription === 'basic' ? 'border-primary bg-primary/5' : 'border-zinc-800'} transition-all`}>
                                                     <div className="flex items-center justify-between">
                                                         <div>
-                                                            <p className="font-bold text-white">Basic</p>
-                                                            <p className="text-xs text-zinc-500">Enhanced features</p>
+                                                            <p className="font-bold text-white uppercase">Creator</p>
+                                                            <p className="text-xs text-zinc-500">5 videos/day • Transformation pipeline</p>
                                                         </div>
-                                                        <span className="text-sm font-bold text-zinc-500">$19/mo</span>
+                                                        <span className="text-sm font-bold text-zinc-500">$29/mo</span>
                                                     </div>
-                                                    {userProfile.subscription === 'basic' ? (
-                                                        <div className="mt-2 text-xs text-primary font-bold">Current Plan</div>
-                                                    ) : (
+                                                    {userProfile.subscription !== 'basic' && (
                                                         <button
-                                                            onClick={async () => {
-                                                                const token = localStorage.getItem('token');
-                                                                const res = await fetch(`${API_BASE}/auth/me/upgrade-subscription?tier=basic`, {
-                                                                    method: 'POST',
-                                                                    headers: { 'Authorization': `Bearer ${token}` }
-                                                                });
-                                                                if (res.ok) {
-                                                                    setUserProfile({ ...userProfile, subscription: 'basic' });
-                                                                    alert('Upgraded to Basic!');
-                                                                } else {
-                                                                    alert('Upgrade failed');
-                                                                }
-                                                            }}
+                                                            onClick={() => alert("Redirecting to Stripe...")}
                                                             className="mt-2 text-xs bg-blue-500/10 text-blue-500 px-3 py-1 rounded-full font-bold"
                                                         >
                                                             Upgrade
@@ -1285,29 +1275,51 @@ export default function SettingsPage() {
                                                 <div className={`p-4 rounded-xl border ${userProfile.subscription === 'premium' ? 'border-primary bg-primary/5' : 'border-amber-500/30'} transition-all`}>
                                                     <div className="flex items-center justify-between">
                                                         <div>
-                                                            <p className="font-bold text-white">Premium</p>
-                                                            <p className="text-xs text-zinc-500">Full access + priority</p>
+                                                            <p className="font-bold text-white uppercase">Empire</p>
+                                                            <p className="text-xs text-zinc-500">100 videos/month • Lite4K Synthesis ONLY</p>
                                                         </div>
-                                                        <span className="text-sm font-bold text-amber-500">$49/mo</span>
+                                                        <span className="text-sm font-bold text-amber-500">$99/mo</span>
                                                     </div>
-                                                    {userProfile.subscription === 'premium' ? (
-                                                        <div className="mt-2 text-xs text-primary font-bold">Current Plan</div>
-                                                    ) : (
+                                                    {userProfile.subscription !== 'premium' && (
                                                         <button
-                                                            onClick={async () => {
-                                                                const token = localStorage.getItem('token');
-                                                                const res = await fetch(`${API_BASE}/auth/me/upgrade-subscription?tier=premium`, {
-                                                                    method: 'POST',
-                                                                    headers: { 'Authorization': `Bearer ${token}` }
-                                                                });
-                                                                if (res.ok) {
-                                                                    setUserProfile({ ...userProfile, subscription: 'premium' });
-                                                                    alert('Upgraded to Premium!');
-                                                                } else {
-                                                                    alert('Upgrade failed');
-                                                                }
-                                                            }}
+                                                            onClick={() => alert("Redirecting to Stripe...")}
                                                             className="mt-2 text-xs bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full font-bold"
+                                                        >
+                                                            Upgrade
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <div className={`p-4 rounded-xl border ${userProfile.subscription === 'sovereign' ? 'border-primary bg-primary/5' : 'border-emerald-500/30'} transition-all`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <p className="font-bold text-white uppercase">Sovereign</p>
+                                                            <p className="text-xs text-zinc-500">500 videos/month • LTX-Video Access</p>
+                                                        </div>
+                                                        <span className="text-sm font-bold text-emerald-500">$149/mo</span>
+                                                    </div>
+                                                    {userProfile.subscription !== 'sovereign' && (
+                                                        <button
+                                                            onClick={() => alert("Redirecting to Stripe...")}
+                                                            className="mt-2 text-xs bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full font-bold"
+                                                        >
+                                                            Upgrade
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <div className={`p-4 rounded-xl border ${userProfile.subscription === 'studio' ? 'border-primary bg-primary/5' : 'border-purple-500/30'} transition-all`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <p className="font-bold text-white uppercase">Studio</p>
+                                                            <p className="text-xs text-zinc-500">1000 videos/month • Runway/Pika/Veo3/Wan2.2</p>
+                                                        </div>
+                                                        <span className="text-sm font-bold text-purple-500">$299/mo</span>
+                                                    </div>
+                                                    {userProfile.subscription !== 'studio' && (
+                                                        <button
+                                                            onClick={() => alert("Redirecting to Stripe...")}
+                                                            className="mt-2 text-xs bg-purple-500/10 text-purple-500 px-3 py-1 rounded-full font-bold"
                                                         >
                                                             Upgrade
                                                         </button>

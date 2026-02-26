@@ -1,6 +1,6 @@
 # ettametta: Architecture Design
 
-> **Version**: 2.5 — Unified Branding & Resilient Acquisition
+> **Version**: 2.6 — Tiered Monetization & Production Hardening
 
 ---
 
@@ -94,7 +94,8 @@ api/
 
 ```sql
 -- Core Tables
-UserDB          (id, username, email, role, subscription_tier, telegram_chat_id, telegram_token, created_at)
+UserDB          (id, username, email, role, subscription, telegram_chat_id, created_at)
+  -- subscription: free, creator, empire, sovereign, studio
 ContentCandidate (id, title, platform, views, engagement_score, thumbnail_url, ...)
 VideoJob        (id, user_id, status, input_url, output_path, created_at)
 PublishedContent (id, user_id, job_id, platform, views, likes, revenue, ...)
@@ -276,7 +277,7 @@ GitHub (master branch)
 | Data Isolation | `user_id` FK on all user data |
 | OAuth Tokens | Encrypted in PostgreSQL |
 | SSH Access | PEM key authentication |
-| CORS | Configured per environment |
+| CORS | Configured per environment (Dynamic Origins) |
 | Secrets | `.env` file (never committed) |
 | WS Verification | `isMounted` hook guards + 101 Handshake validation |
 | Edge Stability | Standardized Nginx `Upgrade` mapping |
@@ -284,6 +285,24 @@ GitHub (master branch)
 | Infrastructure | JCasC (Jenkins Configuration as Code) for idempotent secrets |
 | Bot Bypass | Synchronized `youtube_cookies.txt` with Docker-aware path resolution |
 | Branding | `et_token` standardized across all dashboard feature sets |
+| Monetization | Tiered Gating (Free, Creator, Empire, Sovereign, Studio) |
+
+## Unified Subscription Gating (Phase 59/60)
+
+The platform enforces a multi-tier subscription model to monetize high-end generative compute:
+
+| Tier | Daily Limit | Engine Access | Features |
+|---|---|---|---|
+| **FREE** | 1 Video | - | Basic Discovery |
+| **CREATOR** | 5 Videos | - | Transformation Pipeline |
+| **EMPIRE** | 100/mo | `lite4k` | Viral Growth Nodes |
+| **SOVEREIGN**| 500/mo | `ltx-2`, `lite4k` | LTX-Video Access |
+| **STUDIO** | 1000/mo | `veo3`, `wan2.2`, `runway`, `pika` | Full Generative Suite |
+
+### Gating Logic (`api/utils/subscription.py`)
+- **Engine Gating**: Backend decorators verify if the requested synthesis engine (e.g., `veo3`) is allowed for the user's current tier.
+- **Quota Management**: Real-time tracking of daily/monthly video generations against tier limits.
+- **Frontend Sync**: The Dashboard UI (`settings`, `discovery`) dynamically enables features and displays "Tier Req" badges based on `userProfile.subscription`.
 
 ## Data Integrity & Production Readiness
 

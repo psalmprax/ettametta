@@ -114,10 +114,27 @@
 ## Phase 57: LTX-2 Library Resilience
 - [x] Implement source installation from GitHub (`git+https://github.com/huggingface/diffusers.git`)
 - [x] Resolve library staleness and support native `LTXVideoPipeline` components
-118: 
-119: ## Phase 58: Discovery Engine Restoration
-120: - [x] Repair Go Scraper (DuckDuckGo fallback & regex)
-121: - [x] Optimize Python/Go Bridge (300s timeout & schema alignment)
-122: - [x] Calibrate Neural Filters (Threshold @ 65)
-123: - [x] Verify Multi-Node Output (YouTube, TikTok, Reddit, Public Domain)
 
+## Phase 58: Discovery Engine Restoration
+- [x] Repair Go Scraper (DuckDuckGo fallback & regex)
+- [x] Optimize Python/Go Bridge (300s timeout & schema alignment)
+- [x] Calibrate Neural Filters (Threshold @ 65)
+- [x] Verify Multi-Node Output (YouTube, TikTok, Reddit, Public Domain)
+
+## Phase 59: Tiered Synthesis Subscriptions
+- [x] Refine `subscription_tier` model: Free, Creator, Empire, Sovereign, Studio
+- [x] Implement backend gating in `api/utils/subscription.py`
+- [x] Enforce engine-specific limits (e.g., `STUDIO` for Veo3/Wan2.2)
+- [x] Update daily limits: 1/day Free, 5/day Creator
+
+## Phase 60: Frontend Subscription Propagation
+- [x] Update Subscription UI in `settings/page.tsx`
+- [x] Update Engine Gating in `discovery/page.tsx`
+- [x] Add Sovereign & Studio tiers to Billing UI
+- [x] Verify Frontend Tier Logic
+
+## Phase 61: Production Infrastructure Hardening
+- [/] Refactor `PRODUCTION_DOMAIN` to use environment variable
+- [ ] Dynamic CORS origin configuration
+- [ ] Sanitize Jenkinsfile (Replace hardcoded IPs with parameters)
+- [ ] Update `.env.production` setup guide

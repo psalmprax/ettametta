@@ -112,10 +112,34 @@ ettametta is a fully autonomous viral content engine for solo creators. It uses 
 - **Schema Fix**: Aligned Pydantic models with the Go engine payload.
 - **Diversity**: Verified active discovery across 8+ platforms (YouTube, TikTok, Reddit, etc.).
 
----
+--- [x] Phase 59: Tiered Synthesis Subscriptions (Refined)
+  - Status: Implementation Refined & Verified
+  - Details: 1/day Free, 5/day Creator, Empire (lite4k only), Studio (veo3/wan2.2/runway/pika).
 
-## Phase 59: Tiered Synthesis Subscriptions (Refined)
-- **Goal**: Monetize high-end video synthesis engines via granular subscription tiers.
+- [x] Phase 60: Frontend Subscription Propagation
+  - Status: Completed
+  - Details: Dashboard UI (Settings, Discovery) synchronized with refined tiered model.
+
+- [/] Phase 61: Production Infrastructure Hardening
+  - Status: In Progress
+  - Details: Remove hardcoded `PRODUCTION_DOMAIN` and CORS IPs. Synchronize Jenkinsfile with production environment parameters.
+
+### Proposed Changes (Phase 61)
+
+#### [MODIFY] [config.py](file:///home/psalmprax/viral_forge/api/config.py)
+- Refactor `PRODUCTION_DOMAIN` to prioritize environment variables.
+- Add `CORS_ORIGINS: List[str]` setting, parsed from a comma-separated string.
+
+#### [MODIFY] [main.py](file:///home/psalmprax/viral_forge/api/main.py)
+- Replace hardcoded `allow_origins` list with `settings.CORS_ORIGINS`.
+- Make `allow_origin_regex` dynamic derived from `PRODUCTION_DOMAIN`.
+
+#### [MODIFY] [Jenkinsfile](file:///home/psalmprax/viral_forge/Jenkinsfile)
+- Replace `PUBLIC_IP` constant with `params.PRODUCTION_DOMAIN`.
+- Parameterize health check URLs and deployment targets.
+
+#### [MODIFY] [.env.example](file:///home/psalmprax/viral_forge/.env.example)
+- Add `CORS_ORIGINS` placeholder.
 - **Tiers & Limits**:
   - **FREE**: 1 video/day. Basic discovery only.
   - **CREATOR (BASIC)**: 5 videos/day. Transformation pipeline.
