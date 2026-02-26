@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from api.utils.database import SessionLocal
 from api.utils.user_models import UserDB
-from api.utils.security import get_current_user
+from api.routes.auth import get_current_user
 from api.config import settings
 
 router = APIRouter(prefix="/settings/system", tags=["admin"])
