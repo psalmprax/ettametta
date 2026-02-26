@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     SECRET_KEY: Optional[str] = None  # Must be set via environment variable
     ALGORITHM: str = "HS256"
+    INTERNAL_API_TOKEN: Optional[str] = None # Master token for internal services
 
     # AI Settings
     GROQ_API_KEY: str = ""
@@ -106,6 +107,11 @@ class Settings(BaseSettings):
     # Trading API Keys
     ALPHA_VANTAGE_API_KEY: str = ""
     COINGECKO_API_KEY: str = ""
+    
+    # Twilio/WhatsApp Configuration
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_WHATSAPP_NUMBER: str = ""
     
     # LangChain Settings
     LANGCHAIN_MODEL: str = "llama-3.3-70b-versatile"
