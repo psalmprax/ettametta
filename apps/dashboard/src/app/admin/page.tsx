@@ -173,427 +173,452 @@ export default function AdminSettingsPage() {
         { id: "OAuth", label: "OAuth & Auth", icon: Key },
         { id: "API", label: "API Keys", icon: Bot },
         { id: "Storage", label: "Storage", icon: Database },
+        { id: "Engine", label: "Engine Parameters", icon: Wand2 },
         { id: "Payment", label: "Payment", icon: CreditCard },
         { id: "Commerce", label: "Commerce", icon: ShoppingCart },
         { id: "Infrastructure", label: "Infrastructure", icon: Server },
         { id: "WhatsApp", label: "WhatsApp", icon: Bot },
-        { id: "Features", label: "Features", icon: Wand2 },
     ];
 
     return (
         <DashboardLayout>
-            <div className="min-h-screen bg-black">
-                {/* Header */}
-                <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/5">
-                    <div className="max-w-7xl mx-auto px-8 py-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
-                                    <Lock className="h-6 w-6 text-red-500" />
-                                </div>
-                                <div>
-                                    <h1 className="text-2xl font-black text-white uppercase italic">System Configuration</h1>
-                                    <p className="text-zinc-500 text-sm">Admin-only settings • These affect all users</p>
-                                </div>
+            <div className="section-container relative pb-20">
+                <div className="flex items-center justify-between mb-10">
+                    <div>
+                        <div className="flex items-center gap-4 mb-2">
+                            <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter text-white">
+                                System <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-white text-hollow">Master</span>
+                            </h1>
+                            <div className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                                Admin Protocol
                             </div>
-                            <button
-                                onClick={saveSettings}
-                                disabled={isSaving}
-                                className={cn(
-                                    "flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-sm transition-all",
-                                    saveStatus === "success"
-                                        ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                                        : "bg-primary text-white hover:bg-primary/90 shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)]"
-                                )}
-                            >
-                                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : saveStatus === "success" ? <CheckCircle2 className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                                {isSaving ? "Saving..." : saveStatus === "success" ? "Saved!" : "Save Changes"}
-                            </button>
                         </div>
+                        <p className="text-zinc-500 max-w-xl">Configure system-wide API integrations, infrastructure, and autonomous engine parameters for all viral nodes.</p>
                     </div>
+                    <button
+                        onClick={saveSettings}
+                        disabled={isSaving}
+                        className={cn(
+                            "bg-primary hover:bg-primary/90 text-white font-black py-4 px-8 rounded-2xl transition-all flex items-center gap-3 uppercase tracking-widest text-[10px] shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)]",
+                            isSaving && "opacity-50 cursor-not-allowed",
+                            saveStatus === "success" && "bg-emerald-500 hover:bg-emerald-600 shadow-[0_0_30px_rgba(16,185,129,0.3)]"
+                        )}
+                    >
+                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : saveStatus === "success" ? <CheckCircle2 className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+                        {isSaving ? "Synchronizing..." : saveStatus === "success" ? "Protocol Saved" : "Commit Changes"}
+                    </button>
                 </div>
 
-                <div className="max-w-7xl mx-auto px-8 py-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                        {/* Navigation Tabs */}
-                        <div className="space-y-1">
-                            {tabs.map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={cn(
-                                        "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all",
-                                        activeTab === tab.id
-                                            ? "bg-red-500/10 text-red-500 border border-red-500/20"
-                                            : "text-zinc-400 hover:bg-white/5 hover:text-white"
-                                    )}
-                                >
-                                    <tab.icon className="h-4 w-4" />
-                                    <span className="font-bold text-xs uppercase tracking-wider">{tab.label}</span>
-                                </button>
-                            ))}
-                        </div>
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+                    {/* Navigation Tabs */}
+                    <div className="space-y-1">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-5 py-4 rounded-xl transition-all duration-300 font-black text-[10px] uppercase tracking-widest group",
+                                    activeTab === tab.id
+                                        ? "bg-red-500/15 text-red-500 border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.1)]"
+                                        : "text-zinc-500 hover:bg-white/5 hover:text-zinc-200"
+                                )}
+                            >
+                                <tab.icon className={cn("h-4 w-4 transition-transform", activeTab === tab.id ? "scale-110" : "group-hover:scale-110")} />
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
 
-                        {/* Main Content */}
-                        <div className="lg:col-span-4 space-y-6">
-                            {isLoading ? (
-                                <div className="h-64 flex items-center justify-center">
-                                    <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                    {/* Main Content Area */}
+                    <div className="lg:col-span-4 space-y-8">
+                        {isLoading ? (
+                            <div className="h-64 flex items-center justify-center">
+                                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                            </div>
+                        ) : activeTab === "OAuth" && (
+                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
+                                        <Key className="h-8 w-8 text-red-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">OAuth <span className="text-hollow">Credentials</span></h3>
+                                        <p className="text-zinc-500 text-sm">System-wide OAuth configuration for global integrations.</p>
+                                    </div>
                                 </div>
-                            ) : activeTab === "OAuth" && (
-                                <section className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 space-y-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                                            <Key className="h-5 w-5 text-red-500" />
+
+                                <div className="space-y-4 pt-4 border-t border-zinc-800">
+                                    <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Google / YouTube</h4>
+                                    <KeyInput
+                                        label="Google Client ID"
+                                        id="google_client_id"
+                                        value={settings.google_client_id}
+                                        onChange={(val) => updateSetting("google_client_id", val)}
+                                        isVisible={showKey["google_client_id"]}
+                                        onToggle={() => toggleKey("google_client_id")}
+                                    />
+                                    <KeyInput
+                                        label="Google Client Secret"
+                                        id="google_client_secret"
+                                        value={settings.google_client_secret}
+                                        onChange={(val) => updateSetting("google_client_secret", val)}
+                                        isVisible={showKey["google_client_secret"]}
+                                        onToggle={() => toggleKey("google_client_secret")}
+                                    />
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t border-zinc-800">
+                                    <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">TikTok</h4>
+                                    <KeyInput
+                                        label="TikTok Client Key"
+                                        id="tiktok_client_key"
+                                        value={settings.tiktok_client_key}
+                                        onChange={(val) => updateSetting("tiktok_client_key", val)}
+                                        isVisible={showKey["tiktok_client_key"]}
+                                        onToggle={() => toggleKey("tiktok_client_key")}
+                                    />
+                                    <KeyInput
+                                        label="TikTok Client Secret"
+                                        id="tiktok_client_secret"
+                                        value={settings.tiktok_client_secret}
+                                        onChange={(val) => updateSetting("tiktok_client_secret", val)}
+                                        isVisible={showKey["tiktok_client_secret"]}
+                                        onToggle={() => toggleKey("tiktok_client_secret")}
+                                    />
+                                </div>
+                            </section>
+                        )}
+
+                        {activeTab === "API" && (
+                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
+                                        <Bot className="h-8 w-8 text-red-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">API <span className="text-hollow">Master Keys</span></h3>
+                                        <p className="text-zinc-500 text-sm">System-wide API keys for background scanning and core intelligence.</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6 pt-6 border-t border-white/5">
+                                    <KeyInput
+                                        label="Groq API Key"
+                                        id="groq_api_key"
+                                        value={settings.groq_api_key}
+                                        onChange={(val) => updateSetting("groq_api_key", val)}
+                                        isVisible={showKey["groq_api_key"]}
+                                        onToggle={() => toggleKey("groq_api_key")}
+                                    />
+                                    <KeyInput
+                                        label="OpenAI API Key"
+                                        id="openai_api_key"
+                                        value={settings.openai_api_key}
+                                        onChange={(val) => updateSetting("openai_api_key", val)}
+                                        isVisible={showKey["openai_api_key"]}
+                                        onToggle={() => toggleKey("openai_api_key")}
+                                    />
+                                    <KeyInput
+                                        label="ElevenLabs API Key"
+                                        id="elevenlabs_api_key"
+                                        value={settings.elevenlabs_api_key}
+                                        onChange={(val) => updateSetting("elevenlabs_api_key", val)}
+                                        isVisible={showKey["elevenlabs_api_key"]}
+                                        onToggle={() => toggleKey("elevenlabs_api_key")}
+                                    />
+                                    <KeyInput
+                                        label="Pexels API Key"
+                                        id="pexels_api_key"
+                                        value={settings.pexels_api_key}
+                                        onChange={(val) => updateSetting("pexels_api_key", val)}
+                                        isVisible={showKey["pexels_api_key"]}
+                                        onToggle={() => toggleKey("pexels_api_key")}
+                                    />
+                                </div>
+                            </section>
+                        )}
+
+                        {activeTab === "Storage" && (
+                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
+                                        <Database className="h-8 w-8 text-red-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Cloud <span className="text-hollow">Vault</span></h3>
+                                        <p className="text-zinc-500 text-sm">AWS S3 and OCI storage configuration for global asset delivery.</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6 pt-6 border-t border-white/5">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Storage Provider</label>
+                                        <select
+                                            value={settings.storage_provider}
+                                            onChange={(e) => updateSetting("storage_provider", e.target.value)}
+                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
+                                        >
+                                            <option value="LOCAL">Local Storage</option>
+                                            <option value="AWS">AWS S3</option>
+                                            <option value="OCI">Oracle Cloud Infrastructure</option>
+                                            <option value="GCP">Google Cloud Platform</option>
+                                            <option value="AZURE">Azure Blob Storage</option>
+                                        </select>
+                                    </div>
+                                    <KeyInput
+                                        label="AWS Access Key ID"
+                                        id="aws_access_key_id"
+                                        value={settings.aws_access_key_id}
+                                        onChange={(val) => updateSetting("aws_access_key_id", val)}
+                                        isVisible={showKey["aws_access_key_id"]}
+                                        onToggle={() => toggleKey("aws_access_key_id")}
+                                    />
+                                    <KeyInput
+                                        label="AWS Secret Access Key"
+                                        id="aws_secret_access_key"
+                                        value={settings.aws_secret_access_key}
+                                        onChange={(val) => updateSetting("aws_secret_access_key", val)}
+                                        isVisible={showKey["aws_secret_access_key"]}
+                                        onToggle={() => toggleKey("aws_secret_access_key")}
+                                    />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Region</label>
+                                            <input
+                                                type="text"
+                                                value={settings.aws_region}
+                                                onChange={(e) => updateSetting("aws_region", e.target.value)}
+                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
+                                            />
                                         </div>
                                         <div>
-                                            <h3 className="text-xl font-bold text-white">OAuth Credentials</h3>
-                                            <p className="text-zinc-500 text-sm">System-wide OAuth configuration for platform integrations</p>
+                                            <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Bucket Name</label>
+                                            <input
+                                                type="text"
+                                                value={settings.aws_storage_bucket_name}
+                                                onChange={(e) => updateSetting("aws_storage_bucket_name", e.target.value)}
+                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
+                                                placeholder="my-bucket"
+                                            />
                                         </div>
                                     </div>
+                                </div>
+                            </section>
+                        )}
 
-                                    <div className="space-y-4 pt-4 border-t border-zinc-800">
-                                        <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Google / YouTube</h4>
-                                        <KeyInput
-                                            label="Google Client ID"
-                                            id="google_client_id"
-                                            value={settings.google_client_id}
-                                            onChange={(val) => updateSetting("google_client_id", val)}
-                                            isVisible={showKey["google_client_id"]}
-                                            onToggle={() => toggleKey("google_client_id")}
-                                        />
-                                        <KeyInput
-                                            label="Google Client Secret"
-                                            id="google_client_secret"
-                                            value={settings.google_client_secret}
-                                            onChange={(val) => updateSetting("google_client_secret", val)}
-                                            isVisible={showKey["google_client_secret"]}
-                                            onToggle={() => toggleKey("google_client_secret")}
+                        {activeTab === "Payment" && (
+                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
+                                        <CreditCard className="h-8 w-8 text-red-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Payment <span className="text-hollow">Gateway</span></h3>
+                                        <p className="text-zinc-500 text-sm">Stripe configuration for system-wide subscription processing.</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6 pt-6 border-t border-white/5">
+                                    <KeyInput
+                                        label="Stripe Secret Key"
+                                        id="stripe_secret_key"
+                                        value={settings.stripe_secret_key}
+                                        onChange={(val) => updateSetting("stripe_secret_key", val)}
+                                        isVisible={showKey["stripe_secret_key"]}
+                                        onToggle={() => toggleKey("stripe_secret_key")}
+                                    />
+                                    <KeyInput
+                                        label="Stripe Webhook Secret"
+                                        id="stripe_webhook_secret"
+                                        value={settings.stripe_webhook_secret}
+                                        onChange={(val) => updateSetting("stripe_webhook_secret", val)}
+                                        isVisible={showKey["stripe_webhook_secret"]}
+                                        onToggle={() => toggleKey("stripe_webhook_secret")}
+                                    />
+                                </div>
+                            </section>
+                        )}
+
+                        {activeTab === "Commerce" && (
+                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
+                                        <ShoppingCart className="h-8 w-8 text-red-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Commerce <span className="text-hollow">Core</span></h3>
+                                        <p className="text-zinc-500 text-sm">Global Shopify and affiliate infrastructure settings.</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6 pt-6 border-t border-white/5">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Shopify Store URL</label>
+                                        <input
+                                            type="text"
+                                            value={settings.shopify_shop_url}
+                                            onChange={(e) => updateSetting("shopify_shop_url", e.target.value)}
+                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
+                                            placeholder="your-store.myshopify.com"
                                         />
                                     </div>
+                                    <KeyInput
+                                        label="Shopify Admin API Access Token"
+                                        id="shopify_access_token"
+                                        value={settings.shopify_access_token}
+                                        onChange={(val) => updateSetting("shopify_access_token", val)}
+                                        isVisible={showKey["shopify_access_token"]}
+                                        onToggle={() => toggleKey("shopify_access_token")}
+                                    />
+                                </div>
+                            </section>
+                        )}
 
-                                    <div className="space-y-4 pt-4 border-t border-zinc-800">
-                                        <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">TikTok</h4>
-                                        <KeyInput
-                                            label="TikTok Client Key"
-                                            id="tiktok_client_key"
-                                            value={settings.tiktok_client_key}
-                                            onChange={(val) => updateSetting("tiktok_client_key", val)}
-                                            isVisible={showKey["tiktok_client_key"]}
-                                            onToggle={() => toggleKey("tiktok_client_key")}
-                                        />
-                                        <KeyInput
-                                            label="TikTok Client Secret"
-                                            id="tiktok_client_secret"
-                                            value={settings.tiktok_client_secret}
-                                            onChange={(val) => updateSetting("tiktok_client_secret", val)}
-                                            isVisible={showKey["tiktok_client_secret"]}
-                                            onToggle={() => toggleKey("tiktok_client_secret")}
+                        {activeTab === "Infrastructure" && (
+                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
+                                        <Server className="h-8 w-8 text-red-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">System <span className="text-hollow">Node</span></h3>
+                                        <p className="text-zinc-500 text-sm">Production domain and render cluster configuration.</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6 pt-6 border-t border-white/5">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Production Domain</label>
+                                        <input
+                                            type="text"
+                                            value={settings.production_domain}
+                                            onChange={(e) => updateSetting("production_domain", e.target.value)}
+                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
+                                            placeholder="https://api.yourdomain.com"
                                         />
                                     </div>
-                                </section>
-                            )}
-
-                            {activeTab === "API" && (
-                                <section className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 space-y-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                                            <Bot className="h-5 w-5 text-red-500" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white">API Keys</h3>
-                                            <p className="text-zinc-500 text-sm">System-wide API keys for AI and content services</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <KeyInput
-                                            label="Groq API Key"
-                                            id="groq_api_key"
-                                            value={settings.groq_api_key}
-                                            onChange={(val) => updateSetting("groq_api_key", val)}
-                                            isVisible={showKey["groq_api_key"]}
-                                            onToggle={() => toggleKey("groq_api_key")}
-                                        />
-                                        <KeyInput
-                                            label="OpenAI API Key"
-                                            id="openai_api_key"
-                                            value={settings.openai_api_key}
-                                            onChange={(val) => updateSetting("openai_api_key", val)}
-                                            isVisible={showKey["openai_api_key"]}
-                                            onToggle={() => toggleKey("openai_api_key")}
-                                        />
-                                        <KeyInput
-                                            label="ElevenLabs API Key"
-                                            id="elevenlabs_api_key"
-                                            value={settings.elevenlabs_api_key}
-                                            onChange={(val) => updateSetting("elevenlabs_api_key", val)}
-                                            isVisible={showKey["elevenlabs_api_key"]}
-                                            onToggle={() => toggleKey("elevenlabs_api_key")}
-                                        />
-                                        <KeyInput
-                                            label="Pexels API Key"
-                                            id="pexels_api_key"
-                                            value={settings.pexels_api_key}
-                                            onChange={(val) => updateSetting("pexels_api_key", val)}
-                                            isVisible={showKey["pexels_api_key"]}
-                                            onToggle={() => toggleKey("pexels_api_key")}
+                                    <div>
+                                        <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Render Node URL (LTX)</label>
+                                        <input
+                                            type="text"
+                                            value={settings.render_node_url}
+                                            onChange={(e) => updateSetting("render_node_url", e.target.value)}
+                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
+                                            placeholder="https://your-render-node.ngrok.io"
                                         />
                                     </div>
-                                </section>
-                            )}
+                                </div>
+                            </section>
+                        )}
 
-                            {activeTab === "Storage" && (
-                                <section className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 space-y-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                                            <Database className="h-5 w-5 text-red-500" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white">Cloud Storage</h3>
-                                            <p className="text-zinc-500 text-sm">AWS S3 and OCI storage configuration</p>
-                                        </div>
+                        {activeTab === "WhatsApp" && (
+                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
+                                        <Bot className="h-8 w-8 text-red-500" />
                                     </div>
+                                    <div>
+                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Nexus <span className="text-hollow">Comms</span></h3>
+                                        <p className="text-zinc-500 text-sm">Twilio WhatsApp gateway for system-wide notifications.</p>
+                                    </div>
+                                </div>
 
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="text-sm font-bold text-zinc-400 mb-2 block">Storage Provider</label>
-                                            <select
-                                                value={settings.storage_provider}
-                                                onChange={(e) => updateSetting("storage_provider", e.target.value)}
-                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-3 px-4 text-white"
-                                            >
-                                                <option value="LOCAL">Local Storage</option>
-                                                <option value="AWS">AWS S3</option>
-                                                <option value="OCI">Oracle Cloud Infrastructure</option>
-                                                <option value="GCP">Google Cloud Platform</option>
-                                                <option value="AZURE">Azure Blob Storage</option>
-                                            </select>
-                                        </div>
-                                        <KeyInput
-                                            label="AWS Access Key ID"
-                                            id="aws_access_key_id"
-                                            value={settings.aws_access_key_id}
-                                            onChange={(val) => updateSetting("aws_access_key_id", val)}
-                                            isVisible={showKey["aws_access_key_id"]}
-                                            onToggle={() => toggleKey("aws_access_key_id")}
+                                <div className="space-y-6 pt-6 border-t border-white/5">
+                                    <KeyInput
+                                        label="Twilio Account SID"
+                                        id="twilio_account_sid"
+                                        value={settings.twilio_account_sid}
+                                        onChange={(val) => updateSetting("twilio_account_sid", val)}
+                                        isVisible={showKey["twilio_account_sid"]}
+                                        onToggle={() => toggleKey("twilio_account_sid")}
+                                    />
+                                    <KeyInput
+                                        label="Twilio Auth Token"
+                                        id="twilio_auth_token"
+                                        value={settings.twilio_auth_token}
+                                        onChange={(val) => updateSetting("twilio_auth_token", val)}
+                                        isVisible={showKey["twilio_auth_token"]}
+                                        onToggle={() => toggleKey("twilio_auth_token")}
+                                    />
+                                    <div>
+                                        <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">WhatsApp Sender Number</label>
+                                        <input
+                                            type="text"
+                                            value={settings.twilio_whatsapp_number}
+                                            onChange={(e) => updateSetting("twilio_whatsapp_number", e.target.value)}
+                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
+                                            placeholder="+1234567890"
                                         />
-                                        <KeyInput
-                                            label="AWS Secret Access Key"
-                                            id="aws_secret_access_key"
-                                            value={settings.aws_secret_access_key}
-                                            onChange={(val) => updateSetting("aws_secret_access_key", val)}
-                                            isVisible={showKey["aws_secret_access_key"]}
-                                            onToggle={() => toggleKey("aws_secret_access_key")}
-                                        />
-                                        <div className="grid grid-cols-2 gap-4">
+                                    </div>
+                                </div>
+                            </section>
+                        )}
+
+                        {activeTab === "Engine" && (
+                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
+                                        <Wand2 className="h-8 w-8 text-red-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Viral <span className="text-hollow">Engine</span></h3>
+                                        <p className="text-zinc-500 text-sm">Autonomous parameters and feature clusters for the production pipeline.</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-white/5">
+                                    <div className="space-y-6">
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Autonomous Parameters</h4>
+                                        <div className="space-y-4">
                                             <div>
-                                                <label className="text-sm font-bold text-zinc-400 mb-2 block">Region</label>
-                                                <input
-                                                    type="text"
-                                                    value={settings.aws_region}
-                                                    onChange={(e) => updateSetting("aws_region", e.target.value)}
-                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-3 px-4 text-white"
-                                                />
+                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Scan Frequency</label>
+                                                <select
+                                                    value={settings.scan_frequency}
+                                                    onChange={(e) => updateSetting("scan_frequency", e.target.value)}
+                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
+                                                >
+                                                    <option value="Every 15 minutes">Every 15 minutes</option>
+                                                    <option value="Every 1 hour">Every 1 hour</option>
+                                                    <option value="Every 6 hours">Every 6 hours</option>
+                                                    <option value="Daily">Daily</option>
+                                                </select>
                                             </div>
-                                            <div>
-                                                <label className="text-sm font-bold text-zinc-400 mb-2 block">Bucket Name</label>
-                                                <input
-                                                    type="text"
-                                                    value={settings.aws_storage_bucket_name}
-                                                    onChange={(e) => updateSetting("aws_storage_bucket_name", e.target.value)}
-                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-3 px-4 text-white"
-                                                    placeholder="my-bucket"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-                            )}
-
-                            {activeTab === "Payment" && (
-                                <section className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 space-y-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                                            <CreditCard className="h-5 w-5 text-red-500" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white">Payment Processing</h3>
-                                            <p className="text-zinc-500 text-sm">Stripe configuration for subscription payments</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <KeyInput
-                                            label="Stripe Secret Key"
-                                            id="stripe_secret_key"
-                                            value={settings.stripe_secret_key}
-                                            onChange={(val) => updateSetting("stripe_secret_key", val)}
-                                            isVisible={showKey["stripe_secret_key"]}
-                                            onToggle={() => toggleKey("stripe_secret_key")}
-                                        />
-                                        <KeyInput
-                                            label="Stripe Webhook Secret"
-                                            id="stripe_webhook_secret"
-                                            value={settings.stripe_webhook_secret}
-                                            onChange={(val) => updateSetting("stripe_webhook_secret", val)}
-                                            isVisible={showKey["stripe_webhook_secret"]}
-                                            onToggle={() => toggleKey("stripe_webhook_secret")}
-                                        />
-                                    </div>
-                                </section>
-                            )}
-
-                            {activeTab === "Commerce" && (
-                                <section className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 space-y-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                                            <ShoppingCart className="h-5 w-5 text-red-500" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white">Commerce Integration</h3>
-                                            <p className="text-zinc-500 text-sm">Shopify and affiliate configuration</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="text-sm font-bold text-zinc-400 mb-2 block">Shopify Store URL</label>
-                                            <input
-                                                type="text"
-                                                value={settings.shopify_shop_url}
-                                                onChange={(e) => updateSetting("shopify_shop_url", e.target.value)}
-                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-3 px-4 text-white"
-                                                placeholder="your-store.myshopify.com"
+                                            <ToggleSwitch
+                                                label="Viral Autonomy"
+                                                description="Engine follows the zero-loop without approval"
+                                                checked={settings.auto_pilot === "true"}
+                                                onChange={(val) => updateSetting("auto_pilot", val ? "true" : "false")}
                                             />
-                                        </div>
-                                        <KeyInput
-                                            label="Shopify Admin API Access Token"
-                                            id="shopify_access_token"
-                                            value={settings.shopify_access_token}
-                                            onChange={(val) => updateSetting("shopify_access_token", val)}
-                                            isVisible={showKey["shopify_access_token"]}
-                                            onToggle={() => toggleKey("shopify_access_token")}
-                                        />
-                                    </div>
-                                </section>
-                            )}
-
-                            {activeTab === "Infrastructure" && (
-                                <section className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 space-y-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                                            <Server className="h-5 w-5 text-red-500" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white">Infrastructure</h3>
-                                            <p className="text-zinc-500 text-sm">Production domain and render node configuration</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="text-sm font-bold text-zinc-400 mb-2 block">Production Domain</label>
-                                            <input
-                                                type="text"
-                                                value={settings.production_domain}
-                                                onChange={(e) => updateSetting("production_domain", e.target.value)}
-                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-3 px-4 text-white"
-                                                placeholder="https://api.yourdomain.com"
+                                            <ToggleSwitch
+                                                label="Force Originality"
+                                                description="Always prioritize un-indexed content"
+                                                checked={settings.force_originality === "true"}
+                                                onChange={(val) => updateSetting("force_originality", val ? "true" : "false")}
                                             />
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-bold text-zinc-400 mb-2 block">Render Node URL (LTX)</label>
-                                            <input
-                                                type="text"
-                                                value={settings.render_node_url}
-                                                onChange={(e) => updateSetting("render_node_url", e.target.value)}
-                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-3 px-4 text-white"
-                                                placeholder="https://your-render-node.ngrok.io"
-                                            />
-                                        </div>
-                                    </div>
-                                </section>
-                            )}
-
-                            {activeTab === "WhatsApp" && (
-                                <section className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 space-y-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                                            <Bot className="h-5 w-5 text-red-500" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white">WhatsApp (Twilio)</h3>
-                                            <p className="text-zinc-500 text-sm">Twilio configuration for WhatsApp messaging</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <KeyInput
-                                            label="Twilio Account SID"
-                                            id="twilio_account_sid"
-                                            value={settings.twilio_account_sid}
-                                            onChange={(val) => updateSetting("twilio_account_sid", val)}
-                                            isVisible={showKey["twilio_account_sid"]}
-                                            onToggle={() => toggleKey("twilio_account_sid")}
-                                        />
-                                        <KeyInput
-                                            label="Twilio Auth Token"
-                                            id="twilio_auth_token"
-                                            value={settings.twilio_auth_token}
-                                            onChange={(val) => updateSetting("twilio_auth_token", val)}
-                                            isVisible={showKey["twilio_auth_token"]}
-                                            onToggle={() => toggleKey("twilio_auth_token")}
-                                        />
-                                        <div>
-                                            <label className="text-sm font-bold text-zinc-400 mb-2 block">WhatsApp Sender Number</label>
-                                            <input
-                                                type="text"
-                                                value={settings.twilio_whatsapp_number}
-                                                onChange={(e) => updateSetting("twilio_whatsapp_number", e.target.value)}
-                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-3 px-4 text-white"
-                                                placeholder="+1234567890"
-                                            />
-                                        </div>
-                                    </div>
-                                </section>
-                            )}
-
-                            {activeTab === "Features" && (
-                                <section className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 space-y-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                                            <Wand2 className="h-5 w-5 text-red-500" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white">Feature Toggles</h3>
-                                            <p className="text-zinc-500 text-sm">Enable optional features and agent frameworks</p>
                                         </div>
                                     </div>
 
                                     <div className="space-y-6">
-                                        <div className="space-y-4">
-                                            <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Video Quality Tiers</h4>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <ToggleSwitch
-                                                    label="Sound Design"
-                                                    description="High-fidelity audio enhancement"
-                                                    checked={settings.enable_sound_design === "true"}
-                                                    onChange={(val) => updateSetting("enable_sound_design", val ? "true" : "false")}
-                                                />
-                                                <ToggleSwitch
-                                                    label="Motion Graphics"
-                                                    description="Neural motion graphics generation"
-                                                    checked={settings.enable_motion_graphics === "true"}
-                                                    onChange={(val) => updateSetting("enable_motion_graphics", val ? "true" : "false")}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-sm font-bold text-zinc-400 mb-2 block">AI Video Provider</label>
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Video Quality Protocol</h4>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <ToggleSwitch
+                                                label="Sound Design"
+                                                description="Neural audio layering"
+                                                checked={settings.enable_sound_design === "true"}
+                                                onChange={(val) => updateSetting("enable_sound_design", val ? "true" : "false")}
+                                            />
+                                            <ToggleSwitch
+                                                label="Motion Graphics"
+                                                description="High-fidelity visual overrides"
+                                                checked={settings.enable_motion_graphics === "true"}
+                                                onChange={(val) => updateSetting("enable_motion_graphics", val ? "true" : "false")}
+                                            />
+                                            <div className="pt-2">
+                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">AI Video Provider</label>
                                                 <select
                                                     value={settings.ai_video_provider}
                                                     onChange={(e) => updateSetting("ai_video_provider", e.target.value)}
-                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-3 px-4 text-white"
+                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
                                                 >
                                                     <option value="none">Disabled</option>
                                                     <option value="runway">Runway ML</option>
@@ -601,50 +626,15 @@ export default function AdminSettingsPage() {
                                                 </select>
                                             </div>
                                         </div>
-
-                                        <div className="space-y-4 pt-4 border-t border-zinc-800">
-                                            <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Agent Frameworks</h4>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <ToggleSwitch
-                                                    label="LangChain"
-                                                    description="LLM chaining and memory"
-                                                    checked={settings.enable_langchain === "true"}
-                                                    onChange={(val) => updateSetting("enable_langchain", val ? "true" : "false")}
-                                                />
-                                                <ToggleSwitch
-                                                    label="CrewAI"
-                                                    description="Multi-agent orchestration"
-                                                    checked={settings.enable_crewai === "true"}
-                                                    onChange={(val) => updateSetting("enable_crewai", val ? "true" : "false")}
-                                                />
-                                                <ToggleSwitch
-                                                    label="Open Interpreter"
-                                                    description="Code execution environment"
-                                                    checked={settings.enable_interpreter === "true"}
-                                                    onChange={(val) => updateSetting("enable_interpreter", val ? "true" : "false")}
-                                                />
-                                                <ToggleSwitch
-                                                    label="Affiliate API"
-                                                    description="Amazon, Impact, ShareASale"
-                                                    checked={settings.enable_affiliate_api === "true"}
-                                                    onChange={(val) => updateSetting("enable_affiliate_api", val ? "true" : "false")}
-                                                />
-                                                <ToggleSwitch
-                                                    label="Trading API"
-                                                    description="Alpha Vantage, CoinGecko"
-                                                    checked={settings.enable_trading === "true"}
-                                                    onChange={(val) => updateSetting("enable_trading", val ? "true" : "false")}
-                                                />
-                                            </div>
-                                        </div>
                                     </div>
-                                </section>
-                            )}
-                        </div>
+                                </div>
+                            </section>
+                        )}
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </div>
+        </DashboardLayout >
     );
 }
 

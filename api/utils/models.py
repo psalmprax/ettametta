@@ -14,6 +14,16 @@ class SystemSettings(Base):
     description = Column(String, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class UserSetting(Base):
+    __tablename__ = "user_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    key = Column(String, index=True)
+    value = Column(String)
+    category = Column(String, default="general")
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 class VideoFilterDB(Base):
     __tablename__ = "video_filters"
 
