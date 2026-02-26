@@ -127,4 +127,14 @@
 
 ---
 
-*This analysis reflects the current state of the project as of February 2026*
+## 6. Recent Updates (February 25, 2026)
+
+### Discovery Engine Restoration
+- **Go Scraper Repair**: Fixed DuckDuckGo fallback logic with improved regex for URL extraction and User-Agent rotation.
+- **Bridge Optimization**: Synchronized Pydantic models between Go and Python; increased bridge timeout to 300s to handle high-latency scans.
+- **Neural Calibration**: Adjusted selectivity thresholds to increase yield of viral signals for PREMIUM users.
+- **Verification**: Confirmed multi-node discovery across YouTube, TikTok, Reddit, and public domain sources.
+
+---
+
+*This analysis reflects the current state of the project as of February 26, 2026*

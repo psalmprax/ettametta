@@ -114,3 +114,10 @@
 ## Phase 57: LTX-2 Library Resilience
 - [x] Implement source installation from GitHub (`git+https://github.com/huggingface/diffusers.git`)
 - [x] Resolve library staleness and support native `LTXVideoPipeline` components
+118: 
+119: ## Phase 58: Discovery Engine Restoration
+120: - [x] Repair Go Scraper (DuckDuckGo fallback & regex)
+121: - [x] Optimize Python/Go Bridge (300s timeout & schema alignment)
+122: - [x] Calibrate Neural Filters (Threshold @ 65)
+123: - [x] Verify Multi-Node Output (YouTube, TikTok, Reddit, Public Domain)
+

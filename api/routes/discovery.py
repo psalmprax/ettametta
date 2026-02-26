@@ -46,9 +46,11 @@ async def trigger_scan(request: ScanRequest):
     """
     try:
         async with httpx.AsyncClient() as client:
-            resp = await client.post(f"{DISCOVERY_GO_URL}/scan", json={"niches": request.niches})
+            resp = await client.post(f"{DISCOVERY_GO_URL}/scan", json={"niches": request.niches}, timeout=300.0)
             return resp.json()
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Go Bridge Error: {str(e)}")
 
 @router.post("/analyze")

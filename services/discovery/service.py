@@ -159,7 +159,7 @@ class DiscoveryService:
             monetization_mode = mode_setting.value if mode_setting else "all"
             
             if monetization_mode == "selective":
-                threshold = 85
+                threshold = 65
                 original_count = len(all_candidates)
                 all_candidates = [c for c in all_candidates if (getattr(c, 'viral_score', 0) or 0) >= threshold]
                 print(f"[Discovery] Selective Mode: Filtered {original_count} -> {len(all_candidates)} candidates (Threshold: {threshold})")
