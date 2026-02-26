@@ -247,7 +247,8 @@ export default function DiscoveryPage() {
                     prompt: genPrompt,
                     engine: genEngine,
                     style: selectedStyle,
-                    aspect_ratio: "9:16"
+                    aspect_ratio: "9:16",
+                    tier: genEngine === 'veo3' || genEngine === 'wan2.2' ? 'studio' : 'premium'
                 })
             });
             if (res.ok) {
@@ -455,6 +456,7 @@ export default function DiscoveryPage() {
                         <Sparkles className="h-4 w-4" />
                         AI Synthesis
                         {userTier === "free" && <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1 py-0.5 rounded ml-1">PAID</span>}
+                        {userTier === "premium" && <span className="text-[8px] bg-purple-500/20 text-purple-500 px-1 py-0.5 rounded ml-1">STUDIO REQ FOR VEO3</span>}
                     </button>
                 </div>
 
@@ -825,28 +827,42 @@ export default function DiscoveryPage() {
                                     <div className="w-full space-y-8">
                                         <div className="grid grid-cols-2 gap-4">
                                             <button
-                                                onClick={() => setGenEngine("veo3")}
+                                                onClick={() => {
+                                                    if (userTier !== 'studio') {
+                                                        alert("Studio Tier required for Google Veo 3 high-fidelity synthesis.");
+                                                        return;
+                                                    }
+                                                    setGenEngine("veo3");
+                                                }}
                                                 className={cn(
                                                     "p-6 rounded-3xl border text-left transition-all",
-                                                    genEngine === "veo3" ? "bg-white/5 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]" : "border-white/5 bg-black/40 text-zinc-600"
+                                                    genEngine === "veo3" ? "bg-white/5 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]" : "border-white/5 bg-black/40 text-zinc-600",
+                                                    userTier !== 'studio' && "opacity-40"
                                                 )}
                                             >
                                                 <div className="flex items-center justify-between mb-4">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">Premium Tier</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">{userTier === 'studio' ? 'UNLOCKED' : 'Studio Tier Req'}</span>
                                                     {genEngine === "veo3" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
                                                 </div>
                                                 <h4 className="text-lg font-black text-white uppercase italic">Google Veo 3</h4>
                                                 <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Native 4K + Synchronized Audio</p>
                                             </button>
                                             <button
-                                                onClick={() => setGenEngine("wan2.2")}
+                                                onClick={() => {
+                                                    if (userTier !== 'studio') {
+                                                        alert("Studio Tier required for Wan-AI 2.2 high-fidelity synthesis.");
+                                                        return;
+                                                    }
+                                                    setGenEngine("wan2.2");
+                                                }}
                                                 className={cn(
                                                     "p-6 rounded-3xl border text-left transition-all",
-                                                    genEngine === "wan2.2" ? "bg-white/5 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]" : "border-white/5 bg-black/40 text-zinc-600"
+                                                    genEngine === "wan2.2" ? "bg-white/5 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]" : "border-white/5 bg-black/40 text-zinc-600",
+                                                    userTier !== 'studio' && "opacity-40"
                                                 )}
                                             >
                                                 <div className="flex items-center justify-between mb-4">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">Open Standard</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">{userTier === 'studio' ? 'UNLOCKED' : 'Studio Tier Req'}</span>
                                                     {genEngine === "wan2.2" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
                                                 </div>
                                                 <h4 className="text-lg font-black text-white uppercase italic">Wan-AI 2.2</h4>
@@ -856,15 +872,15 @@ export default function DiscoveryPage() {
                                                 onClick={() => setGenEngine("lite4k")}
                                                 className={cn(
                                                     "p-6 rounded-3xl border text-left transition-all",
-                                                    genEngine === "lite4k" ? "bg-white/5 border-violet-500/50 shadow-[0_0_30px_rgba(139,92,246,0.1)]" : "border-white/5 bg-black/40 text-zinc-600"
+                                                    genEngine === "lite4k" ? "bg-white/5 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]" : "border-white/5 bg-black/40 text-zinc-600"
                                                 )}
                                             >
                                                 <div className="flex items-center justify-between mb-4">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-violet-400">Zero-Cost 4K</span>
-                                                    {genEngine === "lite4k" && <CheckCircle2 className="h-4 w-4 text-violet-400" />}
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Empire Tier+</span>
+                                                    {genEngine === "lite4k" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
                                                 </div>
-                                                <h4 className="text-lg font-black text-white uppercase italic">4K Lite (CPU)</h4>
-                                                <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Parallax + Lossless Zoom</p>
+                                                <h4 className="text-lg font-black text-white uppercase italic">Lite4K Synthesizer</h4>
+                                                <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Optimized for Viral Growth Nodes</p>
                                             </button>
                                             <button
                                                 disabled

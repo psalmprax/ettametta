@@ -44,7 +44,9 @@ Beyond transformation, ettametta is a **Synthesis Engine**.
 - **Phase 55**: LTX-2 Configuration. Configured the `RENDER_NODE_URL` to route video synthesis requests to the ngrok-exposed LTX-2 render node.
 - **Phase 56**: LTX-2 Memory Optimization. Implemented model CPU offloading and `bfloat16` precision to support LTX-Video on 16GB GPUs.
 - **Phase 57**: LTX-2 Library Resilience. Resolved environment-specific library version conflicts by implementing source-based installation from GitHub, ensuring guaranteed support for latest generation architectures.
-48: - **Phase 58**: Discovery Engine Restoration. Repaired Go scraper regex, implemented User-Agent rotation, and synchronized Python bridge with 300s timeout to resolve "NO VIRAL SIGNALS DETECTED" error. Verified real-time discovery across 8+ platforms (YouTube, TikTok, Reddit, etc.).
+48: - **Phase 58**: Discovery Engine Restoration. Repaired Go scraper regex, implemented User-Agent rotation, and synchronized Python bridge with 300s timeout to resolve "NO VIRAL SIGNALS DETECTED" error. Verified real-time discovery across 8+ platforms.
+- **Phase 59**: Tiered Synthesis Subscriptions. Implemented refined monetization tiers (Free, Creator, Empire, Sovereign, Studio). Enforced engine gating (e.g., `veo3` / `wan2.2` restricted to STUDIO) and daily limits (1/day Free, 5/day Creator).
+- **Phase 60**: Frontend Subscription Propagation. Synchronized Next.js dashboard with refined tiers. Updated `settings/page.tsx` billing UI and `discovery/page.tsx` engine gating with "Studio Tier Req" guards.
 
 
 ## 🎨 Branding & Performance Resilience
