@@ -13,21 +13,21 @@ SUBSCRIPTION_TIERS = {
     "free": {
         "name": "Free",
         "price_id": None,
-        "features": ["Basic discovery", "5 videos/month"],
-        "limit_videos": 5,
+        "features": ["Basic discovery", "1 video/day"],
+        "limit_videos": 1,
     },
     "creator": {
         "name": "Creator",
-        "price_id": "price_creator_monthly",  # Replace with actual Stripe price ID
+        "price_id": "price_creator_monthly",
         "price_cents": 2900,
-        "features": ["Full pipeline", "50 videos/month", "Priority support"],
-        "limit_videos": 50,
+        "features": ["Transformation pipeline", "5 videos/day", "Priority support"],
+        "limit_videos": 5,
     },
     "empire": {
         "name": "Empire",
         "price_id": "price_empire_monthly",
         "price_cents": 9900,
-        "features": ["Unlimited videos", "Priority GPU", "API access"],
+        "features": ["100 videos/month", "Lite4K Synthesis ONLY", "Priority GPU"],
         "limit_videos": 100,
     },
     "sovereign": {
@@ -41,10 +41,11 @@ SUBSCRIPTION_TIERS = {
         "name": "Studio",
         "price_id": "price_studio_monthly",
         "price_cents": 29900,
-        "features": ["Runway Gen-3 / Pika access", "1000 videos/month", "Studio Quality"],
+        "features": ["Runway/Pika/Veo3/Wan2.2", "1000 videos/month", "Studio Quality"],
         "limit_videos": 1000,
     }
 }
+
 
 
 

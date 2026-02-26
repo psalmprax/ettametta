@@ -38,12 +38,13 @@ async def check_daily_limit(current_user: UserDB, db_session):
     
     # Define limits per tier
     LIMITS = {
-        SubscriptionTier.FREE: 3,
-        SubscriptionTier.BASIC: 20,
+        SubscriptionTier.FREE: 1,
+        SubscriptionTier.BASIC: 5,
         SubscriptionTier.PREMIUM: 100,
         SubscriptionTier.SOVEREIGN: 500,
         SubscriptionTier.STUDIO: 1000 # Effectively unlimited
     }
+
 
     
     tier_limit = LIMITS.get(current_user.subscription, 3)
