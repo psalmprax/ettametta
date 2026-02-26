@@ -25,12 +25,27 @@ SUBSCRIPTION_TIERS = {
     },
     "empire": {
         "name": "Empire",
-        "price_id": "price_empire_monthly",  # Replace with actual Stripe price ID
+        "price_id": "price_empire_monthly",
         "price_cents": 9900,
         "features": ["Unlimited videos", "Priority GPU", "API access"],
-        "limit_videos": -1,  # Unlimited
+        "limit_videos": 100,
+    },
+    "sovereign": {
+        "name": "Sovereign",
+        "price_id": "price_sovereign_monthly",
+        "price_cents": 14900,
+        "features": ["Sovereign LTX-Video", "500 videos/month", "Private GPU Node"],
+        "limit_videos": 500,
+    },
+    "studio": {
+        "name": "Studio",
+        "price_id": "price_studio_monthly",
+        "price_cents": 29900,
+        "features": ["Runway Gen-3 / Pika access", "1000 videos/month", "Studio Quality"],
+        "limit_videos": 1000,
     }
 }
+
 
 
 class PaymentService:

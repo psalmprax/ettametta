@@ -11,6 +11,9 @@ class SubscriptionTier(str, enum.Enum):
     FREE = "free"
     BASIC = "basic"
     PREMIUM = "premium"
+    SOVEREIGN = "sovereign" # Access to LTX-Video
+    STUDIO = "studio"       # Access to Runway/Pika
+
 
 class UserDB(Base):
     __tablename__ = "users"

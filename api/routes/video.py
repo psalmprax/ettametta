@@ -207,13 +207,38 @@ async def test_drive(request: TestDriveRequest, current_user: UserDB = Depends(g
 @router.post("/generate")
 async def start_generation(
     request: GenerationRequest, 
-    current_user: UserDB = Depends(subscription_required(SubscriptionTier.BASIC))
+    current_user: UserDB = Depends(get_current_user)
 ):
     """
-    Triggers an AI video synthesis task. Restricted to BASIC tier and above.
+    Triggers an AI video synthesis task. Restricted by engine tiers.
     """
     db = SessionLocal()
     try:
+        # 0. Tier Gating Logic
+        tier_values = {
+            SubscriptionTier.FREE: 0,
+            SubscriptionTier.BASIC: 1,
+            SubscriptionTier.PREMIUM: 2,
+            SubscriptionTier.SOVEREIGN: 3,
+            SubscriptionTier.STUDIO: 4
+        }
+        user_tier_val = tier_values.get(current_user.subscription, 0)
+        
+        # Engine-to-Tier Mapping
+        required_tier = SubscriptionTier.BASIC
+        if request.engine == "ltx-video":
+            required_tier = SubscriptionTier.SOVEREIGN
+        elif request.engine in ["runway", "pika"]:
+            required_tier = SubscriptionTier.STUDIO
+            
+        required_tier_val = tier_values.get(required_tier, 1)
+        
+        if user_tier_val < required_tier_val:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=f"Subscription upgrade required. The '{request.engine}' engine requires {required_tier.value} tier."
+            )
+
         # Enforce daily limits
         await check_daily_limit(current_user, db)
         
