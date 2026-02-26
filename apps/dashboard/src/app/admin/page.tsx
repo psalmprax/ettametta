@@ -79,7 +79,13 @@ export default function AdminSettingsPage() {
         enable_crewai: "false",
         enable_interpreter: "false",
         enable_affiliate_api: "false",
-        enable_trading: "false"
+        enable_trading: "false",
+        // Advanced Monetization
+        auto_merch_enabled: "false",
+        lead_gen_url: "",
+        digital_product_url: "",
+        monetization_aggression: "80",
+        monetization_mode: "selective"
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -175,7 +181,7 @@ export default function AdminSettingsPage() {
         { id: "Storage", label: "Storage", icon: Database },
         { id: "Engine", label: "Engine Parameters", icon: Wand2 },
         { id: "Payment", label: "Payment", icon: CreditCard },
-        { id: "Commerce", label: "Commerce", icon: ShoppingCart },
+        { id: "Monetization", label: "Monetization", icon: ShoppingCart },
         { id: "Infrastructure", label: "Infrastructure", icon: Server },
         { id: "WhatsApp", label: "WhatsApp", icon: Bot },
     ];
@@ -439,37 +445,115 @@ export default function AdminSettingsPage() {
                             </section>
                         )}
 
-                        {activeTab === "Commerce" && (
+                        {activeTab === "Monetization" && (
                             <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
                                 <div className="flex items-center gap-6">
                                     <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
                                         <ShoppingCart className="h-8 w-8 text-red-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Commerce <span className="text-hollow">Core</span></h3>
-                                        <p className="text-zinc-500 text-sm">Global Shopify and affiliate infrastructure settings.</p>
+                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Monetization <span className="text-hollow">Master</span></h3>
+                                        <p className="text-zinc-500 text-sm">Global commerce, sponsorship, and affiliate infrastructure.</p>
                                     </div>
                                 </div>
 
-                                <div className="space-y-6 pt-6 border-t border-white/5">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Shopify Store URL</label>
-                                        <input
-                                            type="text"
-                                            value={settings.shopify_shop_url}
-                                            onChange={(e) => updateSetting("shopify_shop_url", e.target.value)}
-                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
-                                            placeholder="your-store.myshopify.com"
-                                        />
+                                <div className="space-y-8 pt-6 border-t border-white/5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Shopify Integration</h4>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Store URL</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.shopify_shop_url}
+                                                    onChange={(e) => updateSetting("shopify_shop_url", e.target.value)}
+                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
+                                                    placeholder="your-store.myshopify.com"
+                                                />
+                                            </div>
+                                            <KeyInput
+                                                label="Admin API Token"
+                                                id="shopify_access_token"
+                                                value={settings.shopify_access_token}
+                                                onChange={(val) => updateSetting("shopify_access_token", val)}
+                                                isVisible={showKey["shopify_access_token"]}
+                                                onToggle={() => toggleKey("shopify_access_token")}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">System Defaults</h4>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Default Membership URL</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.membership_platform_url}
+                                                    onChange={(e) => updateSetting("membership_platform_url", e.target.value)}
+                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
+                                                    placeholder="https://patreon.com/default"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Default Course URL</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.course_platform_url}
+                                                    onChange={(e) => updateSetting("course_platform_url", e.target.value)}
+                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
+                                                    placeholder="https://gumroad.com/default"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <KeyInput
-                                        label="Shopify Admin API Access Token"
-                                        id="shopify_access_token"
-                                        value={settings.shopify_access_token}
-                                        onChange={(val) => updateSetting("shopify_access_token", val)}
-                                        isVisible={showKey["shopify_access_token"]}
-                                        onToggle={() => toggleKey("shopify_access_token")}
-                                    />
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-white/5">
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">Autonomous Money</h4>
+                                            <ToggleSwitch
+                                                label="Auto-Merch Engine"
+                                                description="Automatic design & Shopify publishing"
+                                                checked={settings.auto_merch_enabled === "true"}
+                                                onChange={(val) => updateSetting("auto_merch_enabled", val ? "true" : "false")}
+                                            />
+                                            <div className="p-4 bg-zinc-950/30 border border-zinc-800 rounded-xl space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pr-4">Default Aggression</label>
+                                                    <span className="text-red-500 font-bold text-xs">{settings.monetization_aggression}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="100"
+                                                    value={settings.monetization_aggression}
+                                                    onChange={(e) => updateSetting("monetization_aggression", e.target.value)}
+                                                    className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">Global Fallbacks</h4>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Global Lead Gen URL</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.lead_gen_url}
+                                                    onChange={(e) => updateSetting("lead_gen_url", e.target.value)}
+                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
+                                                    placeholder="https://viralforge.com/free-resources"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Global Digital Storefront</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.digital_product_url}
+                                                    onChange={(e) => updateSetting("digital_product_url", e.target.value)}
+                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
+                                                    placeholder="https://shop.viralforge.com"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </section>
                         )}
