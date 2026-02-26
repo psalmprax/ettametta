@@ -225,19 +225,30 @@ async def start_generation(
         user_tier_val = tier_values.get(current_user.subscription, 0)
         
         # Engine-to-Tier Mapping
-        required_tier = SubscriptionTier.BASIC
-        if request.engine == "ltx-video":
+        required_tier = SubscriptionTier.STUDIO # Default for most synthesis engines
+        
+        if request.engine == "lite4k":
+            required_tier = SubscriptionTier.PREMIUM
+        elif request.engine == "ltx-video":
             required_tier = SubscriptionTier.SOVEREIGN
-        elif request.engine in ["runway", "pika"]:
+        elif request.engine in ["veo3", "wan2.2", "runway", "pika"]:
             required_tier = SubscriptionTier.STUDIO
             
-        required_tier_val = tier_values.get(required_tier, 1)
+        required_tier_val = tier_values.get(required_tier, 4)
+        
+        # Special check: Empire (PREMIUM) uses lite4k ONLY
+        if current_user.subscription == SubscriptionTier.PREMIUM and request.engine != "lite4k":
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="Empire tier is restricted to the 'lite4k' engine. Upgrade to Sovereign or Studio for advanced synthesis."
+            )
         
         if user_tier_val < required_tier_val:
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
                 detail=f"Subscription upgrade required. The '{request.engine}' engine requires {required_tier.value} tier."
             )
+
 
         # Enforce daily limits
         await check_daily_limit(current_user, db)
