@@ -291,13 +291,13 @@ GitHub (master branch)
 
 The platform enforces a multi-tier subscription model to monetize high-end generative compute:
 
-| Tier | Daily Limit | Engine Access | Features |
+| Tier | Daily/Monthly Limit | Engine Access | Features |
 |---|---|---|---|
-| **FREE** | 1 Video | - | Basic Discovery |
-| **CREATOR** | 5 Videos | - | Transformation Pipeline |
-| **EMPIRE** | 100/mo | `lite4k` | Viral Growth Nodes |
-| **SOVEREIGN**| 500/mo | `ltx-2`, `lite4k` | LTX-Video Access |
-| **STUDIO** | 1000/mo | `veo3`, `wan2.2`, `runway`, `pika` | Full Generative Suite |
+| **FREE** | 1 Video/Day | - | Basic Discovery |
+| **CREATOR** | 3 Videos/Day | - | Transformation Pipeline |
+| **EMPIRE** | 90 Videos/Month | `lite4k` | Viral Growth Nodes |
+| **SOVEREIGN**| 120 Videos/Month | `ltx-2`, `lite4k` | LTX-Video Access |
+| **STUDIO** | 200 Videos/Month | `veo3`, `wan2.2`, `runway`, `pika` | Full Generative Suite |
 
 ### Gating Logic (`api/utils/subscription.py`)
 - **Engine Gating**: Backend decorators verify if the requested synthesis engine (e.g., `veo3`) is allowed for the user's current tier.

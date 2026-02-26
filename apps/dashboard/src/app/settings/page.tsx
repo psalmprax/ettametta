@@ -1231,10 +1231,10 @@ export default function SettingsPage() {
                                                 <p className="text-2xl font-black text-white uppercase">{userProfile.subscription}</p>
                                             </div>
                                             <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${userProfile.subscription === 'studio' ? 'bg-purple-500/10 text-purple-500' :
-                                                    userProfile.subscription === 'sovereign' ? 'bg-emerald-500/10 text-emerald-500' :
-                                                        userProfile.subscription === 'premium' ? 'bg-amber-500/10 text-amber-500' :
-                                                            userProfile.subscription === 'basic' ? 'bg-blue-500/10 text-blue-500' :
-                                                                'bg-zinc-500/10 text-zinc-500'
+                                                userProfile.subscription === 'sovereign' ? 'bg-emerald-500/10 text-emerald-500' :
+                                                    userProfile.subscription === 'premium' ? 'bg-amber-500/10 text-amber-500' :
+                                                        userProfile.subscription === 'basic' ? 'bg-blue-500/10 text-blue-500' :
+                                                            'bg-zinc-500/10 text-zinc-500'
                                                 }`}>
                                                 {userProfile.subscription === 'free' ? 'Free Tier' : 'Active'}
                                             </div>
@@ -1258,7 +1258,7 @@ export default function SettingsPage() {
                                                     <div className="flex items-center justify-between">
                                                         <div>
                                                             <p className="font-bold text-white uppercase">Creator</p>
-                                                            <p className="text-xs text-zinc-500">5 videos/day • Transformation pipeline</p>
+                                                            <p className="text-xs text-zinc-500">3 videos/day • Transformation pipeline</p>
                                                         </div>
                                                         <span className="text-sm font-bold text-zinc-500">$29/mo</span>
                                                     </div>
@@ -1276,7 +1276,7 @@ export default function SettingsPage() {
                                                     <div className="flex items-center justify-between">
                                                         <div>
                                                             <p className="font-bold text-white uppercase">Empire</p>
-                                                            <p className="text-xs text-zinc-500">100 videos/month • Lite4K Synthesis ONLY</p>
+                                                            <p className="text-xs text-zinc-500">90 videos/month • Lite4K Synthesis ONLY</p>
                                                         </div>
                                                         <span className="text-sm font-bold text-amber-500">$99/mo</span>
                                                     </div>
@@ -1294,7 +1294,7 @@ export default function SettingsPage() {
                                                     <div className="flex items-center justify-between">
                                                         <div>
                                                             <p className="font-bold text-white uppercase">Sovereign</p>
-                                                            <p className="text-xs text-zinc-500">500 videos/month • LTX-Video Access</p>
+                                                            <p className="text-xs text-zinc-500">120 videos/month • LTX-Video Access</p>
                                                         </div>
                                                         <span className="text-sm font-bold text-emerald-500">$149/mo</span>
                                                     </div>
@@ -1312,7 +1312,7 @@ export default function SettingsPage() {
                                                     <div className="flex items-center justify-between">
                                                         <div>
                                                             <p className="font-bold text-white uppercase">Studio</p>
-                                                            <p className="text-xs text-zinc-500">1000 videos/month • Runway/Pika/Veo3/Wan2.2</p>
+                                                            <p className="text-xs text-zinc-500">200 videos/month • Runway/Pika/Veo3/Wan2.2</p>
                                                         </div>
                                                         <span className="text-sm font-bold text-purple-500">$299/mo</span>
                                                     </div>
