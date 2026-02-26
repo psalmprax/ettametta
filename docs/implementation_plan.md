@@ -1,7 +1,8 @@
 # ettametta: Implementation Plan (Current & Future)
 
-> **Last Updated**: 2026-02-22  
-> **Version**: 2.6 — Rebranding & Resiliency Complete
+> **Last Updated**: February 26, 2026  
+> **Version**: 2.7 — Discovery Engine Restored
+> **Phase 58 Status**: ✅ Production Ready
 
 ---
 
@@ -65,7 +66,7 @@ ettametta is a fully autonomous viral content engine for solo creators. It uses 
 - **Healthchecks**: Custom Celery-aware health probes implemented for autonomous self-healing.
 
 ### Component 13: Nexus Pipeline Architecture (Nexus V2)
-- **Graph Orchestrator**: Integrated React Flow in [Nexus](file:///home/psalmprax/ettametta/apps/dashboard/src/app/nexus/page.tsx) for visual pipeline composition.
+- **Graph Orchestrator**: Integrated React Flow in Nexus for visual pipeline composition.
 - **Blueprint System**: Reusable graph templates (`NexusBlueprint`) for consistent content production.
 - **Dynamic Execution**: Real-time node state telemetry and results streaming via main API.
 
@@ -103,6 +104,15 @@ ettametta is a fully autonomous viral content engine for solo creators. It uses 
 
 ---
 
+## Phase 58: Discovery Engine Restoration (Latest)
+- **Status**: ✅ Production Ready
+- **Scraper Fix**: Implemented robust regex and redirection handling for DuckDuckGo.
+- **Bridge Fix**: Increased `httpx` timeout to 300s to support high-latency multi-niche scans.
+- **Schema Fix**: Aligned Pydantic models with the Go engine payload.
+- **Diversity**: Verified active discovery across 8+ platforms (YouTube, TikTok, Reddit, etc.).
+
+---
+
 ## Phase 84–87: OCI Cloud Infrastructure
 
 ### Terraform Modules
@@ -131,13 +141,6 @@ Groq models were being registered as `openai` API type due to missing `"groq"` l
 ### Fix Applied
 #### [MODIFY] `src/config/zod-schema.core.ts` (on OCI ARM server)
 ```typescript
-// Before
-export const ModelApiSchema = z.union([
-  z.literal("openai-completions"),
-  z.literal("openai-responses"),
-  // ... other types
-]);
-
 // After — added "groq"
 export const ModelApiSchema = z.union([
   z.literal("openai-completions"),
@@ -197,8 +200,6 @@ pipeline {
 
 ---
 
----
-
 ## Phase 93: High-Fidelity Voice Synthesis (Fish Speech)
 
 ### Problem
@@ -212,31 +213,6 @@ Integrate **Fish Speech** (Open Source weights) as a containerized service.
 - **Automation**: 
   - Added `download_models.py` to auto-fetch weights from HuggingFace.
   - Integration with `entrypoint.sh` to ensure weights exist before service start.
-
-### Component 9: Scraper Resiliency & Bypass (Phase 18)
-- **Cookie-Based Proof**: Implementation of authenticated session cookies for `yt-dlp` to bypass "Confirm you're not a bot" screens.
-- **Persistence**: Hybrid CI/CD logic to exclude session data from being scrubbed during Jenkins deployments.
-- **Signature Decryption (Phase 18.5)**: Integration of `nodejs` runtime into the API container to solve YouTube "n-challenge" signature decryption, ensuring full access to video streams on cloud infrastructure.
-
-### Component 10: High-Artistry & VLM Intuition (Phase 19 & 20)
-- **OCR Awareness**: Implementation of [**`OCRService`**](file:///home/psalmprax/ettametta/services/video_engine/ocr_service.py) for text-region detection, preventing caption overlap.
-- **Semantic Trimming**: AI-driven "hook" detection to keep only high-energy segments.
-- **Visual Cortex**: Integration of **Gemini 1.5 Flash** via [**`VLMService`**](file:///home/psalmprax/ettametta/services/video_engine/vlm_service.py) for true visual intuition (mood, lighting, subject analysis).
-- **Dynamic Aesthetics**: Automated caption color and grading selection based on visual mood.
-- **Stock Injection**: Pexels API integration for automated cinematic B-roll insertion.
-- **Infrastructural Scale**: Scaled `celery_worker` to 3 replicas for high-concurrency production.
-
-### Component 11: Universal Niche & Style Expansion (Phase 21)
-- **Niche Persistence**: Automated registration of custom dashboard searches into the [**`MonitoredNiche`**](file:///home/psalmprax/ettametta/api/utils/models.py) registry.
-- **High-Art Suite**: Implementation of 12+ creative filters including Glitch, Noir, Atmospheric Glow, and Film Grain.
-- **Aesthetic Direction**: Expanded `DecisionEngine` prompts for style-specific intensity and color harmony logic.
-
-### Component 12: Generative Dreamscapes (Phase 22)
-- **Synthesis Orchestration**: Implementation of [**`GenerativeService`**](file:///home/psalmprax/ettametta/services/video_engine/synthesis_service.py) for text-to-video synthesis.
-- **Dual-Engine Support**: Integration with **Google Veo 3** (High-Tier) and **Wan2.2** (Open-Source) via SiliconFlow/Fal.ai.
-- **LTX-2 Integration**: Planned support for **LTX-2 (by Lightricks)** as a production-ready, native 4K open-source alternative.
-- **Prompt Director**: Intelligent LLM-driven prompt expansion for high-artistry video outcomes.
-- **Synthesis UI**: Interactive dashboard mode for prompt-to-viral content generation.
 
 ---
 
@@ -317,3 +293,6 @@ cd terraform && terraform validate && terraform plan
 | POST /api/publish/tiktok | Upload to TikTok |
 | POST /api/publish/schedule | Schedule future post |
 | GET /api/analytics/overview | View performance metrics |
+
+---
+*This analysis reflects the current state of the project as of February 26, 2026*

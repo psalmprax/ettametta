@@ -15,6 +15,13 @@ import (
 	"google.golang.org/api/youtube/v3"
 )
 
+var userAgents = []string{
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+}
+
 type ScanResult struct {
 	Niche        string  `json:"niche"`
 	Velocity     float64 `json:"velocity"`
@@ -123,7 +130,7 @@ func (s *Scanner) scanDuckDuckGo(niche string) []ScanResult {
 		return nil
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("User-Agent", userAgents[time.Now().UnixNano()%int64(len(userAgents))])
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 
 	resp, err := s.httpClient.Do(req)
@@ -146,8 +153,8 @@ func (s *Scanner) scanDuckDuckGo(niche string) []ScanResult {
 func (s *Scanner) parseDuckDuckGoResults(html string, niche string) []ScanResult {
 	var results []ScanResult
 
-	// Match result links and titles
-	resultRegex := regexp.MustCompile(`<a class="result__a" href="([^"]+)"[^>]*>([^<]+)</a>`)
+	// Enhanced regex to handle various DDG HTML structures and capture titles correctly
+	resultRegex := regexp.MustCompile(`<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)</a>`)
 	matches := resultRegex.FindAllStringSubmatch(html, -1)
 
 	for i, match := range matches {
@@ -156,24 +163,44 @@ func (s *Scanner) parseDuckDuckGoResults(html string, niche string) []ScanResult
 		}
 		if len(match) >= 3 {
 			url := match[1]
-			title := strings.TrimSpace(match[2])
+			titleRaw := match[2]
 
-			// Skip internal DuckDuckGo links
-			if strings.HasPrefix(url, "/") {
+			// Strip HTML tags from title (e.g. <b> highlighting)
+			tagRegex := regexp.MustCompile(`<[^>]*>`)
+			title := strings.TrimSpace(tagRegex.ReplaceAllString(titleRaw, ""))
+
+			// Resolve DuckDuckGo redirection links
+			if strings.Contains(url, "uddg=") {
+				params := strings.Split(url, "uddg=")
+				if len(params) > 1 {
+					actualURL := strings.Split(params[1], "&")[0]
+					// Unescape the URL (simple replacement for common chars)
+					actualURL = strings.ReplaceAll(actualURL, "%3A", ":")
+					actualURL = strings.ReplaceAll(actualURL, "%2F", "/")
+					actualURL = strings.ReplaceAll(actualURL, "%3F", "?")
+					actualURL = strings.ReplaceAll(actualURL, "%3D", "=")
+					actualURL = strings.ReplaceAll(actualURL, "%26", "&")
+					url = actualURL
+				}
+			}
+
+			// Skip remaining internal DuckDuckGo links
+			if strings.HasPrefix(url, "/") || strings.Contains(url, "duckduckgo.com") && !strings.Contains(url, "uddg=") {
 				continue
 			}
 
 			// Detect platform from URL
 			platform := "Web"
-			if strings.Contains(url, "youtube.com") || strings.Contains(url, "youtu.be") {
+			urlLower := strings.ToLower(url)
+			if strings.Contains(urlLower, "youtube.com") || strings.Contains(urlLower, "youtu.be") {
 				platform = "YouTube"
-			} else if strings.Contains(url, "tiktok.com") {
+			} else if strings.Contains(urlLower, "tiktok.com") {
 				platform = "TikTok"
-			} else if strings.Contains(url, "instagram.com") {
+			} else if strings.Contains(urlLower, "instagram.com") {
 				platform = "Instagram"
-			} else if strings.Contains(url, "twitter.com") || strings.Contains(url, "x.com") {
+			} else if strings.Contains(urlLower, "twitter.com") || strings.Contains(urlLower, "x.com") {
 				platform = "X"
-			} else if strings.Contains(url, "reddit.com") {
+			} else if strings.Contains(urlLower, "reddit.com") {
 				platform = "Reddit"
 			}
 

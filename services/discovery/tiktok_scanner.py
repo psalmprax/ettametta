@@ -77,7 +77,7 @@ class TikTokScanner:
                     duration_seconds = float(item.get("video", {}).get("duration", 0))
                     
                     # Calculate viral score (Scrape-based fallback logic)
-                    viral_score = int((views / 10000) * (1 + engagement_score * 5))
+                    viral_score = int((views / 5000) * (1 + engagement_score * 10))
                     viral_score = min(max(viral_score, 1), 95)
 
                     candidates.append(ContentCandidate(

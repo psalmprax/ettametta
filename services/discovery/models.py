@@ -6,7 +6,7 @@ class ContentCandidate(BaseModel):
     id: str
     platform: str
     url: str
-    author: str
+    author: Optional[str] = "Unknown"
     title: Optional[str] = None
     description: Optional[str] = None
     thumbnail_url: Optional[str] = None
