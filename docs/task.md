@@ -138,3 +138,35 @@
 - [ ] Dynamic CORS origin configuration
 - [ ] Sanitize Jenkinsfile (Replace hardcoded IPs with parameters)
 - [ ] Update `.env.production` setup guide
+
+- [x] Phase 69: Advanced Monetization UI Implementation
+    - [x] Expose Lead Gen & Digital Product vectors in User Settings
+    - [x] Implement Precision Distribution (Aggression/Mode) sliders
+    - [x] Add AI Autonomy toggles (Matching/Promo)
+    - [x] Implement Admin-side Auto-Merch & Global Strategy defaults
+    - [x] Register backend configuration defaults for new keys
+    - [x] Resolve dashboard build failure (duplicate key error)
+- [x] Verify secret retrieval cascade (User -> System -> Config)
+
+- [x] Phase 70: Bot Authentication & Module Error Resolution
+    - [x] Generate and configure `INTERNAL_API_TOKEN` in `.env`
+    - [x] Refactor OpenClaw build context in `docker-compose.yml`
+    - [x] Update OpenClaw Dockerfile to include `services` directory
+    - [x] Verify `Scout`, `Muse`, and `Zero` commands in Telegram
+
+- [x] Phase 71: Environment Resolution & Port Clarification
+    - [x] Identified Port 8086 as National Security Platform (NSP) Gateway
+    - [x] Mapped "Limit exceeded" error to NSP Rate Limiter
+    - [x] Verified Viral Forge (Ettametta) Dashboard is active on Port 3000
+
+- [/] Phase 72: E2E Remote Flow Verification
+    - [x] Sanity check: Reachability of `http://130.61.26.105:3000`
+    - [x] Authentiation Flow: Register/Login as Test Commander
+    - [x] Discovery Engine: Verify live trend indexing and filtering
+    - [ ] Monetization Suite: Verify persistence of aggregation/mode settings
+    - [ ] OpenClaw Bot: Trigger API-side tool execution check
+
+- [/] Phase 73: LTX-2 Cinematic Activation
+    - [/] Update `discovery/page.tsx` to enable LTX-2 UI
+    - [ ] Upgrade `test_commander` to SOVEREIGN tier in DB
+    - [ ] Verify LTX-2 selection and submittal flow

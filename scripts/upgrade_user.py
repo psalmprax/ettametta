@@ -19,10 +19,14 @@ def upgrade_user(username: str, tier: str = "premium"):
         
         if tier.lower() == "premium":
             user.subscription = SubscriptionTier.PREMIUM
+        elif tier.lower() == "sovereign":
+            user.subscription = SubscriptionTier.SOVEREIGN
+        elif tier.lower() == "studio":
+            user.subscription = SubscriptionTier.STUDIO
         elif tier.lower() == "free":
             user.subscription = SubscriptionTier.FREE
         else:
-            print(f"Error: Invalid tier '{tier}'. Use 'premium' or 'free'.")
+            print(f"Error: Invalid tier '{tier}'. Use 'premium', 'sovereign', 'studio', or 'free'.")
             return
 
         db.commit()
