@@ -45,12 +45,12 @@ pipeline {
         choice(name: 'DEFAULT_QUALITY_TIER', choices: ['standard', 'enhanced', 'premium'], description: 'Video processing tier')
         choice(name: 'AI_VIDEO_PROVIDER', choices: ['none', 'runway', 'pika'], description: 'AI video generation')
         // Agent Frameworks (disabled by default)
-        choice(name: 'ENABLE_LANGCHAIN', choices: ['false', 'true'], description: 'Enable LangChain')
-        choice(name: 'ENABLE_CREWAI', choices: ['false', 'true'], description: 'Enable CrewAI')
-        choice(name: 'ENABLE_SOUND_DESIGN', choices: ['false', 'true'], description: 'Enable high-fidelity sound design')
-        choice(name: 'ENABLE_MOTION_GRAPHICS', choices: ['false', 'true'], description: 'Enable neural motion graphics')
-        choice(name: 'ENABLE_INTERPRETER', choices: ['false', 'true'], description: 'Enable Open Interpreter')
-        choice(name: 'ENABLE_AFFILIATE_API', choices: ['false', 'true'], description: 'Enable Affiliate marketing APIs')
+        choice(name: 'ENABLE_LANGCHAIN', choices: ['true', 'false'], description: 'Enable LangChain')
+        choice(name: 'ENABLE_CREWAI', choices: ['true', 'false'], description: 'Enable CrewAI')
+        choice(name: 'ENABLE_SOUND_DESIGN', choices: ['true', 'false'], description: 'Enable high-fidelity sound design')
+        choice(name: 'ENABLE_MOTION_GRAPHICS', choices: ['true', 'false'], description: 'Enable neural motion graphics')
+        choice(name: 'ENABLE_INTERPRETER', choices: ['true', 'false'], description: 'Enable Open Interpreter')
+        choice(name: 'ENABLE_AFFILIATE_API', choices: ['true', 'false'], description: 'Enable Affiliate marketing APIs')
         choice(name: 'ENABLE_TRADING', choices: ['false', 'true'], description: 'Enable Trading APIs')
     }
 
@@ -239,7 +239,12 @@ RENDER_NODE_URL=${RENDER_NODE_URL}
                         cd api
                         mkdir -p test-results
                         pip3 install -q pytest pytest-asyncio pytest-mock requests || pip install -q pytest pytest-asyncio pytest-mock requests || true
-                        python3 -m pytest tests/test_config.py tests/test_services.py -v --tb=short --junitxml=test-results/results.xml || true
+                        
+                        # Run unit tests
+                        python3 -m pytest tests/test_config.py tests/test_services.py -v --tb=short --junitxml=test-results/unit-results.xml || true
+                        
+                        # Run API route integration tests
+                        python3 -m pytest tests/test_routes/ -v --tb=short --junitxml=test-results/integration-results.xml || true
                     """
                 }
             }
@@ -252,6 +257,23 @@ RENDER_NODE_URL=${RENDER_NODE_URL}
                     sh """
                         pip3 install -q ruff || pip install -q ruff || true
                         ruff check api/ || true
+                    """
+                }
+            }
+        }
+
+        stage('E2E Tests') {
+            steps {
+                script {
+                    echo "Running E2E tests with Playwright..."
+                    sh """
+                        # Install Playwright dependencies
+                        cd e2e
+                        npm install
+                        npx playwright install --with-deps chromium
+                        
+                        # Run E2E tests
+                        npm test || true
                     """
                 }
             }
