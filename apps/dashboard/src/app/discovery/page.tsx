@@ -883,15 +883,27 @@ export default function DiscoveryPage() {
                                                 <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Optimized for Viral Growth Nodes</p>
                                             </button>
                                             <button
-                                                disabled
-                                                className="p-6 rounded-3xl border border-white/5 bg-black/20 text-left transition-all opacity-60 cursor-not-allowed grayscale"
+                                                onClick={() => {
+                                                    if (userTier !== 'studio' && userTier !== 'sovereign') {
+                                                        alert("Sovereign Tier required for LTX-2 cinematic synthesis.");
+                                                        return;
+                                                    }
+                                                    setGenEngine("ltx-video");
+                                                }}
+                                                className={cn(
+                                                    "p-6 rounded-3xl border text-left transition-all",
+                                                    genEngine === "ltx-video" ? "bg-white/5 border-primary shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)]" : "border-white/5 bg-black/40 text-zinc-600",
+                                                    (userTier !== 'studio' && userTier !== 'sovereign') && "opacity-40 grayscale"
+                                                )}
                                             >
                                                 <div className="flex items-center justify-between mb-4">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary/50">Roadmap Node</span>
-                                                    <Calendar className="h-4 w-4 text-zinc-700" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">
+                                                        {(userTier === 'studio' || userTier === 'sovereign') ? 'UNLOCKED' : 'Sovereign Tier Req'}
+                                                    </span>
+                                                    {genEngine === "ltx-video" ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Zap className="h-4 w-4 text-zinc-700" />}
                                                 </div>
-                                                <h4 className="text-lg font-black text-zinc-400 uppercase italic">LTX-2 (Lightricks)</h4>
-                                                <p className="text-[10px] font-medium text-zinc-600 mt-2 uppercase">Native 4K Cinematic Generation</p>
+                                                <h4 className="text-lg font-black text-white uppercase italic">LTX-2 (Lightricks)</h4>
+                                                <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Native 4K Cinematic Generation</p>
                                             </button>
                                         </div>
 
