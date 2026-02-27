@@ -134,15 +134,117 @@ class Settings(BaseSettings):
     def validate_critical_config(self):
         """
         Runs a mission-critical check of environment variables.
+        Returns a dict with 'errors' (blocking) and 'warnings' (non-blocking).
         """
-        missing_critical = []
+        from typing import Dict, List
+        
+        result = {
+            "errors": [],
+            "warnings": [],
+            "info": []
+        }
+        
+        # Production-specific checks (blocking errors)
         if self.ENV == "production":
-            if not self.GOOGLE_CLIENT_ID: missing_critical.append("GOOGLE_CLIENT_ID")
-            if not self.TIKTOK_CLIENT_KEY: missing_critical.append("TIKTOK_CLIENT_KEY")
-            if self.SECRET_KEY.startswith("dev_"): missing_critical.append("SECRET_KEY (insecure)")
-            if "localhost" in self.PRODUCTION_DOMAIN: missing_critical.append("PRODUCTION_DOMAIN (pointing to localhost)")
+            # OAuth Credentials
+            if not self.GOOGLE_CLIENT_ID:
+                result["errors"].append("GOOGLE_CLIENT_ID - Required for YouTube OAuth")
+            if not self.GOOGLE_CLIENT_SECRET:
+                result["errors"].append("GOOGLE_CLIENT_SECRET - Required for YouTube OAuth")
+            if not self.TIKTOK_CLIENT_KEY:
+                result["errors"].append("TIKTOK_CLIENT_KEY - Required for TikTok OAuth")
+            if not self.TIKTOK_CLIENT_SECRET:
+                result["errors"].append("TIKTOK_CLIENT_SECRET - Required for TikTok OAuth")
             
-        return missing_critical
+            # Security
+            if not self.SECRET_KEY or self.SECRET_KEY.startswith("dev_") or len(self.SECRET_KEY) < 32:
+                result["errors"].append("SECRET_KEY - Must be set with 32+ characters in production")
+            
+            # Domain
+            if not self.PRODUCTION_DOMAIN or "localhost" in self.PRODUCTION_DOMAIN:
+                result["errors"].append("PRODUCTION_DOMAIN - Must be set to production URL")
+            
+            # Required for core functionality
+            if not self.GROQ_API_KEY and not self.OPENAI_API_KEY:
+                result["errors"].append("GROQ_API_KEY or OPENAI_API_KEY - At least one AI provider required")
+        
+        # Development warnings (non-blocking)
+        else:
+            # Warn if GROQ API key is missing
+            if not self.GROQ_API_KEY:
+                result["warnings"].append("GROQ_API_KEY not set - AI features will use fallback mode")
+            
+            # Warn if OAuth credentials missing
+            if not self.GOOGLE_CLIENT_ID:
+                result["warnings"].append("GOOGLE_CLIENT_ID not set - YouTube OAuth will not work")
+            if not self.TIKTOK_CLIENT_KEY:
+                result["warnings"].append("TIKTOK_CLIENT_KEY not set - TikTok OAuth will not work")
+        
+        # Optional service warnings
+        if not self.ELEVENLABS_API_KEY and self.VOICE_ENGINE == "elevenlabs":
+            result["warnings"].append("ELEVENLABS_API_KEY not set - ElevenLabs voice engine unavailable")
+        
+        if not self.PEXELS_API_KEY:
+            result["info"].append("PEXELS_API_KEY not set - Stock media will use fallback images")
+        
+        if not self.STRIPE_SECRET_KEY:
+            result["info"].append("STRIPE_SECRET_KEY not set - Payment processing unavailable")
+        
+        if not self.SHOPIFY_SHOP_URL:
+            result["info"].append("SHOPIFY_SHOP_URL not set - Commerce features unavailable")
+        
+        # AWS S3 checks
+        if self.STORAGE_PROVIDER == "AWS":
+            if not self.AWS_ACCESS_KEY_ID:
+                result["errors"].append("AWS_ACCESS_KEY_ID required when STORAGE_PROVIDER=AWS")
+            if not self.AWS_SECRET_ACCESS_KEY:
+                result["errors"].append("AWS_SECRET_ACCESS_KEY required when STORAGE_PROVIDER=AWS")
+            if not self.AWS_STORAGE_BUCKET_NAME:
+                result["errors"].append("AWS_STORAGE_BUCKET_NAME required when STORAGE_PROVIDER=AWS")
+        
+        # Redis check
+        if not self.REDIS_URL:
+            result["errors"].append("REDIS_URL is required for Celery workers")
+        
+        # Database check
+        if not self.DATABASE_URL:
+            result["errors"].append("DATABASE_URL is required")
+        
+        return result
+
+    def print_validation_report(self):
+        """Print a formatted validation report."""
+        validation = self.validate_critical_config()
+        
+        if validation["errors"]:
+            print("\n" + "❌" * 40)
+            print(f"🚨 CRITICAL ERRORS ({len(validation['errors'])}):")
+            for err in validation["errors"]:
+                print(f"   • {err}")
+            print("❌" * 40 + "\n")
+        
+        if validation["warnings"]:
+            print("\n" + "⚠️" * 40)
+            print(f"⚠️  WARNINGS ({len(validation['warnings'])}):")
+            for warn in validation["warnings"]:
+                print(f"   • {warn}")
+            print("⚠️" * 40 + "\n")
+        
+        if validation["info"]:
+            print("\n" + "ℹ️" * 40)
+            print(f"ℹ️  INFO ({len(validation['info'])}):")
+            for info in validation["info"]:
+                print(f"   • {info}")
+            print("ℹ️" * 40 + "\n")
+        
+        # Summary
+        total_issues = len(validation["errors"]) + len(validation["warnings"])
+        if total_issues == 0:
+            print("✅ All configuration checks passed!\n")
+        else:
+            print(f"📊 Configuration check complete: {len(validation['errors'])} errors, {len(validation['warnings'])} warnings\n")
+        
+        return validation["errors"]
 
     class Config:
         env_file = ".env"
@@ -152,10 +254,6 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # Immediate startup validation
-warnings = settings.validate_critical_config()
-if warnings:
-    print("\n" + "!" * 80)
-    print(f"⚠️ CONFIGURATION ALERT: Detected {len(warnings)} critical gaps for {settings.ENV} mode")
-    for w in warnings:
-        print(f"  - {w}")
-    print("!" * 80 + "\n")
+validation = settings.validate_critical_config()
+if validation["errors"] or validation["warnings"]:
+    settings.print_validation_report()
