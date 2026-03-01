@@ -14,6 +14,17 @@ token.json
 credentials.json
 service_account.json
 
+# --- SSH/Server Scripts (contains credentials) ---
+.ssh_scripts/
+scripts/ssh_connect.py
+scripts/setup_server.py
+scripts/upload_credentials.py
+scripts/check_server.py
+scripts/check_credentials.py
+*.pem
+id_rsa
+id_rsa.pub
+
 # --- Python ---
 __pycache__/
 *.py[cod]

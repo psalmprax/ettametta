@@ -160,7 +160,8 @@ services:
 
   openclaw:
     build:
-      context: ./services/openclaw
+      context: .
+      dockerfile: ./services/openclaw/Dockerfile
     ports:
       - "3001:3001"
     environment:

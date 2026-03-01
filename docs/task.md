@@ -167,6 +167,6 @@
     - [ ] OpenClaw Bot: Trigger API-side tool execution check
 
 - [/] Phase 73: LTX-2 Cinematic Activation
-    - [/] Update `discovery/page.tsx` to enable LTX-2 UI
-    - [ ] Upgrade `test_commander` to SOVEREIGN tier in DB
-    - [ ] Verify LTX-2 selection and submittal flow
+    - [x] Update `discovery/page.tsx` to enable LTX-2 UI
+    - [x] Upgrade `test_commander` to SOVEREIGN tier in DB (Remote)
+    - [/] Verify LTX-2 selection and submittal flow
