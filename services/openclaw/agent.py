@@ -254,5 +254,11 @@ class OpenClawAgent:
             return render_skill.render_clip(**params)
         elif tool == "ZERO":
             return agent_zero_skill.control_agent(**params)
+        elif tool == "HERALD":
+            return publishing_skill.publish_job(
+                job_id=params.get("job_id", ""),
+                platform=params.get("platform", "YouTube Shorts"),
+                niche=params.get("niche", "Motivation")
+            )
 
         return f"❓ Unknown tool: {tool}"
