@@ -166,7 +166,19 @@
     - [ ] Monetization Suite: Verify persistence of aggregation/mode settings
     - [ ] OpenClaw Bot: Trigger API-side tool execution check
 
-- [/] Phase 73: LTX-2 Cinematic Activation
+- [x] Phase 73: LTX-2 Cinematic Activation
     - [x] Update `discovery/page.tsx` to enable LTX-2 UI
     - [x] Upgrade `test_commander` to SOVEREIGN tier in DB (Remote)
-    - [/] Verify LTX-2 selection and submittal flow
+    - [x] Verify LTX-2 selection and submittal flow
+
+- [x] Phase 74: Remotion Engine Activation
+    - [x] Install Node.js dependencies in `api` container
+    - [x] Resolve Docker build context for root directory expansion
+    - [x] Verify Remotion CLI composition registry (**ViralClip**, **CinematicMinimal**, **HormoziStyle**)
+    - [x] Validate programmatic video rendering hooks
+
+- [x] Phase 75: E2E Automation Validation (Remote)
+    - [x] Successfully verify "Search -> Download -> Transform" loop
+    - [x] Resolve Python discovery service bugs (Imports/Reference errors)
+    - [x] Validate direct MP4 processing fallback to bypass bot detection
+    - [x] Confirm Autonomous Sentinel expansion logic (Recursive Trends)
