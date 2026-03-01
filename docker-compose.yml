@@ -8,6 +8,10 @@ services:
     ports:
       - "8000:8000"
     command: python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --log-level debug
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     volumes:
       - .:/app
     environment:
@@ -83,7 +87,7 @@ services:
       args:
         - BASE_IMAGE=python:3.10-slim
 
-    command: celery -A api.utils.celery worker --loglevel=info --concurrency=10
+    command: celery -A api.utils.celery worker --loglevel=info --concurrency=2
     volumes:
       - .:/app
     environment:
@@ -120,7 +124,10 @@ services:
       - redis
       - db
     deploy:
-      replicas: 3
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
 
   celery_beat:
     build:
