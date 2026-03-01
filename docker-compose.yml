@@ -15,6 +15,7 @@ services:
           memory: 1G
     volumes:
       - .:/app
+      - /app/apps/remotion-studio/node_modules
     environment:
       - ENV=development
       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
@@ -92,6 +93,7 @@ services:
     command: celery -A api.utils.celery worker --loglevel=info --concurrency=2
     volumes:
       - .:/app
+      - /app/apps/remotion-studio/node_modules
     environment:
       - ENV=development
       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
