@@ -22,7 +22,15 @@ class AgentZeroSkill:
         try:
             # For this integrated version, we'll use a direct singleton import
             # In a distributed system, this would be a requests.post call.
-            from services.agent_zero.agent import base_agent_zero
+            # Try absolute import from the project root (services.agent_zero)
+            try:
+                from services.agent_zero.agent import base_agent_zero
+            except ImportError:
+                # Fallback for different environments or legacy paths
+                import sys
+                import os
+                sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
+                from services.agent_zero.agent import base_agent_zero
             
             if action == "start":
                 import asyncio
