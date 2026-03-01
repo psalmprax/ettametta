@@ -1,3 +1,7 @@
+import json
+import redis
+import asyncio
+import datetime
 from typing import List
 from .models import ContentCandidate, ViralPattern
 from .youtube_scanner import YouTubeShortsScanner
@@ -19,7 +23,11 @@ from .skool_scanner import base_skool_scanner
 from .duckduckgo_scanner import base_duckduckgo_scanner
 from .deconstructor import pattern_deconstructor
 from api.utils.database import SessionLocal
-from api.utils.models import ContentCandidateDB, SystemSettings
+from api.utils.models import ContentCandidateDB, SystemSettings, NicheTrendDB, MonitoredNiche
+from api.config import settings
+from api.utils.vault import get_secret
+from api.utils.celery import celery_app
+from groq import Groq
 
 class DiscoveryService:
     def __init__(self):
@@ -122,7 +130,6 @@ class DiscoveryService:
         # If no results from scan, fall back to database
         if not all_candidates:
             print(f"[Discovery] No scan results for {niche}, falling back to database...")
-            from api.utils.models import ContentCandidateDB
             db = SessionLocal()
             try:
                 db_results = db.query(ContentCandidateDB).filter(
@@ -152,7 +159,6 @@ class DiscoveryService:
                 db.close()
 
         # Enforcement: Selective Monetization Mode (Viral Score > 85)
-        # Fetch monetization_mode from DB
         db = SessionLocal()
         try:
             mode_setting = db.query(SystemSettings).filter(SystemSettings.key == "monetization_mode").first()
@@ -169,7 +175,6 @@ class DiscoveryService:
         # 3. Persistence Logic (Efficient Batch Integration)
         db = SessionLocal()
         try:
-            # Prepare all candidates for the database
             db_candidates = []
             for c in all_candidates:
                 db_candidates.append(ContentCandidateDB(
@@ -190,7 +195,6 @@ class DiscoveryService:
                     niche=niche
                 ))
             
-            # Efficient Merge (UPSERT pattern)
             for db_c in db_candidates:
                 db.merge(db_c)
             
@@ -210,15 +214,13 @@ class DiscoveryService:
 
     async def _trigger_recursive_expansion(self, niche: str, candidates: List[ContentCandidate]):
         """
-        AI identifies related sub-niches and triggers background scans to hit transparency targets.
+        AI identifies related sub-niches and triggers background scans.
         """
-        from api.utils.vault import get_secret
         groq_key = get_secret("groq_api_key")
         if not groq_key:
             return
 
         try:
-            from groq import Groq
             client = Groq(api_key=groq_key)
             titles = [c.title for c in candidates[:10]]
             
@@ -226,7 +228,7 @@ class DiscoveryService:
             Based on these trending videos in the '{niche}' niche:
             {json.dumps(titles)}
             
-            Identify 3 hyper-targeted sub-niches or related keywords that should be scanned to find more high-velocity content.
+            Identify 3 hyper-targeted sub-niches or related keywords that should be scanned.
             Return ONLY a JSON array of strings. Example: ["Sub-Niche 1", "Keyword 2", "Topic 3"]
             """
             
@@ -241,9 +243,7 @@ class DiscoveryService:
             
             if sub_niches and isinstance(sub_niches, list):
                 print(f"[Discovery] Recursive expansion triggered for: {sub_niches}")
-                from api.utils.celery import celery_app
                 for sn in sub_niches[:3]:
-                    # Offload to Celery to avoid blocking
                     celery_app.send_task("discovery.scan_trends", args=[sn])
                     
         except Exception as e:
