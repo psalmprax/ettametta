@@ -2,7 +2,9 @@ fastapi==0.110.0
 huggingface_hub
 uvicorn==0.27.1
 pydantic==2.6.1
-torch
+# torch (GPU version)
+# torch
+torch --extra-index-url https://download.pytorch.org/whl/cpu
 numpy
 scipy
 soundfile

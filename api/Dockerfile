@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y \
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --default-timeout=100 --upgrade pip && \
-    pip install --no-cache-dir --default-timeout=100 -r requirements.txt && \
+    pip install --no-cache-dir --default-timeout=100 --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt && \
     pip install --no-cache-dir -U yt-dlp
 
 
