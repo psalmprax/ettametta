@@ -215,6 +215,21 @@ This phase formally integrates the Playwright browser-based tests into both Jenk
 
 ---
 
+## Phase 86: Long-Duration Video Stress Test
+
+The goal is to evaluate the quality and stability of the AI Engine when generating videos longer than the default 1-2 second clips.
+
+### Proposed Experiments
+- **Test A (5-second test)**: 121 frames, 30 steps. 
+- **Test B (10-second test)**: 241 frames, 50 steps (High Quality).
+- **Temporal Consistency Analysis**: Observe if the video "drifts" or loses structural integrity as frame count increases.
+
+### Hard Limits
+- **VRAM**: Spatial-temporal attention maps may OOM if frames > 257.
+- **Compute**: Rendering time scales linearly with frames. 1 minute (1440 frames) could take 20-30 minutes and requires a "stitching" strategy not yet implemented in the basic API.
+
+---
+
 ## Phase 83: Remote AI API Deployment (VPS)
 
 This phase handles the offloading of heavy AI inference (LTX-Video, SpeechT5, Moondream2) to a dedicated high-GPU VPS.

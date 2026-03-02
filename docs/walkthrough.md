@@ -380,3 +380,19 @@ I have successfully migrated the Remote AI Engine to a significantly more powerf
 > [!IMPORTANT]
 > This upgrade provides the necessary "breathing room" for heavy LTX-Video generation jobs that were previously failing on the 32GB disk limit.
 
+---
+**Ettametta // High-Resolution Scaling**
+**Phase 86 (5-Second Test) Complete**
+
+### Video Duration Stress Testing
+I have initiated a series of tests to push the limits of the LTX-Video engine.
+
+**1. 5-Second High-Quality Test**
+- **Job ID**: `vid_f1f646`
+- **Parameters**: 121 frames, 35 steps, H264 (libx264).
+- **Result**: Successfully generated a **5.5MB** video with consistent 4K-like detail.
+- **Rendering Time**: ~1 minute 25 seconds for 121 frames.
+- **VRAM Stability**: Stable 16GB VRAM usage (no OOM).
+
+**Next Step**: Attempting a 241-frame (10-second) generation to evaluate temporal consistency at the edge of physical VRAM capacity.
+
