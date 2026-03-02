@@ -90,3 +90,9 @@
     - [x] Reinstall `remote_ai_setup` on new instance
     - [x] Verify Ngrok tunnel handoff
     - [x] Confirm healthy status of all multi-modal endpoints
+
+- [/] Phase 86: Long-Duration Video Stress Test
+    - [x] Determine LTX-Video native frame limits (max 161-257 frames)
+    - [x] Trigger 5-second high-quality generation (vid_f1f646)
+    - [ ] Evaluate temporal consistency and quality
+    - [ ] Research frame-stitching/interpolation for 1-minute targets
