@@ -1,340 +1,267 @@
-# ettametta: Implementation Plan (Current & Future)
+## Switch to CPU-only ML Dependencies
 
-> **Last Updated**: February 26, 2026  
-> **Version**: 2.9 — Subscription Gating Refined
-> **Phase 59 Status**: ✅ Implementation Refined
+This plan addresses the large (~2GB+) downloads of NVIDIA/CUDA libraries during Docker builds by switching to CPU-only versions of machine learning packages (Torch, etc.).
 
+## User Review Required
 
----
+> [!IMPORTANT]
+> The `api` and `voiceover` services will no longer support GPU acceleration. All ML tasks (transcription, voice synthesis, OCR) will run on the CPU. This is recommended for your current server (no GPU available).
 
-## System Overview
+## Proposed Changes
 
-ettametta is a fully autonomous viral content engine for solo creators. It uses a hybrid Go+Python architecture for discovery, Groq AI for intelligence, FFmpeg for video transformation, and a Next.js dashboard for control. The system is deployed on Oracle Cloud Infrastructure (OCI) Always-Free ARM instances.
+### [API & Voiceover Services]
 
----
+#### [MODIFY] [requirements.txt](file:///home/psalmprax/viral_forge/api/requirements.txt)
+#### [MODIFY] [requirements.txt](file:///home/psalmprax/viral_forge/services/voiceover/requirements.txt)
+Add `--extra-index-url https://download.pytorch.org/whl/cpu` to ensure `torch` dependencies use the CPU-only variant.
 
-## Completed Architecture
+#### [MODIFY] [Dockerfile](file:///home/psalmprax/viral_forge/api/Dockerfile)
+#### [MODIFY] [Dockerfile](file:///home/psalmprax/viral_forge/services/voiceover/Dockerfile)
+- Modify the `pip install` command to prioritize the CPU wheel index.
+- **[NEW]** Install Remotion dependencies in `api/Dockerfile`.
 
-### Component 1: Discovery Engine (Multi-Platform)
-- **Go Engine** (`services/discovery-go`): Goroutine-based high-concurrency scanner
-- **Python Scanners** (`services/discovery/`): 15+ platform-specific scrapers
-  - YouTube, TikTok, Reddit, X, Instagram, Facebook, Twitch, Snapchat, Pinterest, LinkedIn, Bilibili, Rumble, DuckDuckGo, Archive.org, Pexels
-- **Neural Ranking**: Groq `llama-3.3-70b-versatile` for viral score analysis
-- **Temporal Intelligence**: `published_after` filtering for time horizons
+### [Remotion Engine]
 
-### Component 2: Video Transformation Engine
-- **Core**: FFmpeg + MoviePy containerized pipeline
-- **Copyright Safety**: Mirroring, zoom (1.02x–1.08x), color shifts, pattern interrupts
-- **AI Subtitles**: Fast-Whisper word-level captioning
-- **GPU Support**: NVENC encoding with CPU fallback (`BASE_IMAGE` build arg)
-- **Font Resolution**: Dynamic absolute `.ttf` path resolution for Linux
-- **ARM64 Support**: OpenCV fallback for Oracle Cloud ARM instances
-
-### Component 3: Publishing & Scheduling
-- **YouTube**: OAuth 2.0 with token refresh, smart scheduler
-- **TikTok**: Chunked upload API with CSRF-protected OAuth deep-link
-- **Multi-Account**: `SocialAccount` model with per-account token management
-- **Scheduler**: Celery Beat with Redis for autonomous posting
-
-### Component 4: Monetization Engine
-- **Affiliate**: Auto-injection with "humanized" metadata
-- **Commerce**: Shopify Admin API + POD product matching
-- **Strategy Pattern**: `AffiliateStrategy`, `LeadGenStrategy`, `DigitalProductStrategy`
-- **A/B Testing**: Hook and thumbnail performance tracking
-- **Exposure Integrity**: "Selective" mode for monk-like account reputation (Viral Score > 85).
-- **Control Mode**: High-fidelity toggle between "Selective" and "All Content" injection.
-
-### Component 5: Analytics & Intelligence
-- **Real-time**: WebSocket telemetry streaming
-- **Retention**: Average view duration from YouTube Analytics API
-- **Visualization**: D3.js (Geomap, NetworkMesh), Three.js Globe, Recharts
-- **Export**: PDF/CSV report generation
-
-### Component 8: Autonomous Storage Lifecycle Manager
-- **Enforcement**: 140GB local threshold monitoring via `os.walk`.
-- **Archival**: Background migration to OCI Object Storage for older assets.
-- **Retention**: Automated 90-day cloud purging policy.
-- **Independence**: Background archival active even during local-only generation bursts.
-
-### Component 6: Authentication & Security
-- **JWT**: `python-jose` with role-based access control
-- **Roles**: ADMIN, CREATOR, VIEWER
-- **Data Isolation**: All jobs/history linked to `user_id`
-- **Admin**: Hardcoded root access for `psalmprax`
-- **Resilience**: Optimized middleware to prevent blocking imports; Nginx rate limits relaxed to 50r/s for seamless dashboard polling.
-- **WebSocket Proxy**: Refactored Nginx to use trailing-slash stripping for robust protocol switching (101 Switching Protocols).
-- **CSP Policy**: Dynamic whitelist for `cdn.jsdelivr.net` to support global intelligence mapping.
-- **Healthchecks**: Custom Celery-aware health probes implemented for autonomous self-healing.
-
-### Component 13: Nexus Pipeline Architecture (Nexus V2)
-- **Graph Orchestrator**: Integrated React Flow in Nexus for visual pipeline composition.
-- **Blueprint System**: Reusable graph templates (`NexusBlueprint`) for consistent content production.
-- **Dynamic Execution**: Real-time node state telemetry and results streaming via main API.
-
-### Component 14: Data Integrity & Production Readiness
-- **No Mock Data**: All discovery scanners return empty results when APIs are unavailable
-- **Error Handling**: Video synthesis raises errors instead of returning mock URLs
-- **Monetization**: Strategy pattern returns empty strings when credentials not configured
-- **Internal Auth**: Service-to-service communication uses configurable `INTERNAL_API_TOKEN`
-- **UUID Generation**: Content IDs generated with proper UUIDs instead of hardcoded strings
-
-### Component 14: Multi-Bot White-Labeling (Phase 27)
-- **Private Agents**: Support for individual user Telegram bot tokens via [BotManager](file:///home/psalmprax/ettametta/services/openclaw/main.py).
-- **Lifecycle Orchestration**: Dynamic starting/stopping of bot instances without service restarts.
-- **Self-Service Onboarding**: Direct dashboard integration with @BotFather for token management.
-
-## Component 15: Jenkins Infrastructure as Code (Phase 42)
-- **Dockerized Jenkins**: Portable CI/CD environment using `jenkins/jenkins:lts` image.
-- **JCasC (Jenkins Configuration as Code)**: Idempotent setup via `jenkins_casc_credentials.yaml`.
-- **Credential Automation**: Automated import of 26+ environment variables via Groovy console scripts.
-- **DooD (Docker-out-of-Docker)**: Host `docker.sock` binding for building containers within pipelines.
-
-## Component 16: Expanded Platform Intelligence (Phase 36-41)
-- **Skool Discovery**: `SkoolScanner` for extracting high-value educational trends.
-- **WhatsApp Webhooks**: Bidirectional agent communication via Twilio API.
-- **Persona Engine**: `PersonaService` for creating animated AI avatars from user selfies.
-- **Monetization Settings**: Direct dashboard integration for affiliate and commerce account configuration.
-
-## Component 17: Rebranding & Token Migration (Phase 43)
-- **UI Branding**: Completed migration of all ViralForge headers to **ettametta**.
-- **Auth Token Migration**: Standardized local storage keys from `vf_token` to `et_token` across all dashboard feature routes.
-
-## Component 18: Downloader Resiliency (Phase 44)
-- **Format Fallback**: Relaxed `yt-dlp` format selection to support YouTube Shorts and broad stream acquisition.
-- **Cookie Architecture**: Implementation of Docker-aware relative path resolution for `youtube_cookies.txt` (checking `/app/cookies/` if local paths fail).
-
----
-
-## Phase 58: Discovery Engine Restoration (Latest)
-- **Status**: ✅ Production Ready
-- **Scraper Fix**: Implemented robust regex and redirection handling for DuckDuckGo.
-- **Bridge Fix**: Increased `httpx` timeout to 300s to support high-latency multi-niche scans.
-- **Schema Fix**: Aligned Pydantic models with the Go engine payload.
-- **Diversity**: Verified active discovery across 8+ platforms (YouTube, TikTok, Reddit, etc.).
-
---- [x] Phase 59: Tiered Synthesis Subscriptions (Refined)
-  - Status: Implementation Refined & Verified
-  - Details: 1/day Free, 5/day Creator, Empire (lite4k only), Studio (veo3/wan2.2/runway/pika).
-
-- [x] Phase 60: Frontend Subscription Propagation
-  - Status: Completed
-  - Details: Dashboard UI (Settings, Discovery) synchronized with refined tiered model.
-
-- [/] Phase 61: Production Infrastructure Hardening
-  - Status: In Progress
-  - Details: Remove hardcoded `PRODUCTION_DOMAIN` and CORS IPs. Synchronize Jenkinsfile with production environment parameters.
-
-### Proposed Changes (Phase 61)
-
-#### [MODIFY] [config.py](file:///home/psalmprax/viral_forge/api/config.py)
-- Refactor `PRODUCTION_DOMAIN` to prioritize environment variables.
-- Add `CORS_ORIGINS: List[str]` setting, parsed from a comma-separated string.
-
-#### [MODIFY] [main.py](file:///home/psalmprax/viral_forge/api/main.py)
-- Replace hardcoded `allow_origins` list with `settings.CORS_ORIGINS`.
-- Make `allow_origin_regex` dynamic derived from `PRODUCTION_DOMAIN`.
-
-#### [MODIFY] [Jenkinsfile](file:///home/psalmprax/viral_forge/Jenkinsfile)
-- Replace `PUBLIC_IP` constant with `params.PRODUCTION_DOMAIN`.
-- Parameterize health check URLs and deployment targets.
-
-#### [MODIFY] [.env.example](file:///home/psalmprax/viral_forge/.env.example)
-- Add `CORS_ORIGINS` placeholder.
-- **Tiers & Limits**:
-  - **FREE**: 1 video/day. Basic discovery only.
-  - **CREATOR (BASIC)**: 3 videos/day. Transformation pipeline.
-  - **EMPIRE (PREMIUM)**: 90/mo. Lite4k synthesis only.
-  - **SOVEREIGN**: 120/mo. LTX-Video access.
-  - **STUDIO**: 200/mo. All engines.os/month. **Runway, Pika, Veo3, Wan2.2**.
-- **Refinement Implementation**:
-  - [x] Restrict FREE to 1 video/day.
-  - [x] Restrict CREATOR to 5 videos/day.
-  - [x] Move `veo3` and `wan2.2` to STUDIO tier.
-  - [x] Restrict EMPIRE to `lite4k` only in `api/routes/video.py`.
-
-
----
-
-## Phase 84–87: OCI Cloud Infrastructure
-
-### Terraform Modules
-
-#### [MODIFY] `terraform/modules/network/`
-- VCN with public subnet
-- Security list: ports 22 (SSH), 80, 443, 3000, 8000
-
-#### [MODIFY] `terraform/modules/compute/`
-- `oci_core_instance` with `VM.Standard.A1.Flex` (ARM)
-- 4 OCPUs, 24GB RAM
-- Cloud-init: auto-install Docker, Git, Docker Compose
-- Automated Ubuntu image discovery
-
-#### [MODIFY] `terraform/modules/storage/`
-- Boot volume: 100GB
-- Object Storage: private bucket for video assets
-
----
-
-## Phase 89: OpenClaw Autonomous Agent
-
-### Problem
-Groq models were being registered as `openai` API type due to missing `"groq"` literal in `ModelApiSchema`.
-
-### Fix Applied
-#### [MODIFY] `src/config/zod-schema.core.ts` (on OCI ARM server)
-```typescript
-// After — added "groq"
-export const ModelApiSchema = z.union([
-  z.literal("openai-completions"),
-  z.literal("openai-responses"),
-  z.literal("groq"),
-  // ... other types
-]);
+#### [MODIFY] [Dockerfile](file:///home/psalmprax/viral_forge/api/Dockerfile)
+Install Remotion and its dependencies to enable Tier 3 motion graphics:
+```dockerfile
+# Install Remotion dependencies
+COPY apps/remotion-studio /app/apps/remotion-studio
+WORKDIR /app/apps/remotion-studio
+RUN npm install
+WORKDIR /app
 ```
 
-### Skills Architecture
-| Skill | Trigger | Action |
-|---|---|---|
-| Discovery | "scan for [niche]" | Calls `/discovery/search` API |
-| Operations | "restart api" | SSH command to OCI server |
-| Analytics | "show metrics" | Queries `/analytics/summary` |
-
-### Gateway
-- **Telegram**: `@Psalmpraxbot` — live bidirectional communication
-- **LLM**: Groq `llama-3.3-70b-versatile` (primary) + Ollama (local fallback)
+3.  **Image Size**: Verify the reduction in Docker image size (`docker images`).
 
 ---
 
-## Phase 90: CI/CD Pipeline
+## End-to-End System Review
 
-### Jenkinsfile (Local OCI Jenkins)
-```groovy
-pipeline {
-  agent any
-  stages {
-    stage('Checkout') { ... }
-    stage('Build') { steps { sh 'docker-compose build' } }
-    stage('Test') { steps { sh 'docker-compose run api pytest' } }
-    stage('Deploy') { steps { sshagent { sh 'docker-compose up -d' } } }
-  }
-}
+This phase validates the functional integrity of the entire stack (Frontend, Backend, Middleware, Networking) on the remote production server.
+
+## Proposed Changes
+
+### [System-Wide Validation]
+- **Networking**: Verify Nginx routing to FastAPI and WebSockets.
+- **Automation**: Validate Celery `sentinel_watcher` and `viral_loop` heartbeats.
+- **Video Pipeline**: Test `yt-dlp` and `FFmpeg` within the `api` container.
+- **Auth**: Restore `INTERNAL_API_TOKEN` for cross-service connectivity.
+
+## Verification Plan
+
+### Manual Verification
+1.  **Remote Logs**: Inspect `docker logs` for Celery and API to confirm task success.
+2.  **Health Check**: Call `/api/health` from the host and inside the container.
+3.  **E2E Loop**: Trigger a manual autonomous cycle to verify the full "Discovery -> Process -> Post" chain.
+
+---
+
+## Resource Optimization & OOM Fix
+
+This plan addresses the OOM (Out of Memory) crashes that are causing the Jenkins pipeline to fail with `exit code -1`.
+
+## User Review Required
+
+> [!IMPORTANT]
+> I will be reducing the Celery worker concurrency from 10 to 2 and the replica count from 3 to 1. This will significantly lower RAM usage but may slightly increase task processing time.
+> I will also add a 4GB swap file to the server as a safety net.
+
+## Proposed Changes
+
+### [Infrastructure & Deployment]
+
+#### [MODIFY] [docker-compose.yml](file:///home/psalmprax/viral_forge/docker-compose.yml)
+- Reduce `celery_worker` concurrency and replicas.
+- Add memory limits to core services.
+
+```yaml
+   celery_worker:
+-    command: celery -A api.utils.celery worker --loglevel=info --concurrency=10
++    command: celery -A api.utils.celery worker --loglevel=info --concurrency=2
+-    deploy:
+-      replicas: 3
++    deploy:
++      replicas: 1
++      resources:
++        limits:
++          memory: 1G
 ```
 
-### GitHub Actions (`.github/workflows/deploy.yml`)
-- Trigger: push to `master`
-- Steps: lint → type-check → build → SSH deploy to OCI
+#### [Remote Server: 38.54.12.83]
+1.  **Create Swap File**:
+    - Create and enable a 4GB swap file to prevent hard OOM kills during builds.
+2.  **Apply Optimized Configuration**:
+    - Deploy the updated `docker-compose.yml` and restart services.
 
+## Verification Plan
+
+### Manual Verification
+1.  **Monitor RAM**: Run `free -m` while the Jenkins pipeline is building to ensure memory usage stays within safe limits.
+2.  **Jenkins Pipeline**: Rerun the pipeline and verify it completes without crashing.
 ---
 
-## Phase 91: Production Hardening & Final Audit
-- **AI Brain**: Consolidation of viral reasoning into `AIWorker`.
-- **Latency**: Introduction of memoized caching for D3 visualizations.
-- **Security**: Automated healthcheck remediation and circular import sanitization.
+## Phase 62: Continuous E2E Validation
 
----
+This phase formalizes the manual validation steps into a repeatable `pytest` suite to ensure the automation loop remains functional.
 
-## Phase 92: WebSocket & Navigation Elasticity
-- **Client Guard**: Implementation of `isMounted` ref in `useWebSocket` hook to prevent background reconnection loops on unmounted components.
-- **Dynamic Routing**: Refactor of `config.ts` to use window-relative URLs for API and WebSocket bases, ensuring environment-agnostic handshakes.
-- **Nginx Handshake**: Standardization of proxy headers via `map $http_upgrade` and `proxy_set_header Connection $connection_upgrade`.
-- **Pathing**: Migration to `^~ /api/ws/` prefix in Nginx to ensure top-priority WebSocket routing without trailing-slash collisions.
-- **Stability**: Extension of `proxy_read_timeout` to 300s for general API and 1 day for WebSockets.
+### [Test Suite]
 
----
-
-## Phase 93: High-Fidelity Voice Synthesis (Fish Speech)
-
-### Problem
-ElevenLabs cost scaling is unsustainable for autonomous content generation. We need a high-quality, cost-effective alternative.
-
-### Solution
-Integrate **Fish Speech** (Open Source weights) as a containerized service.
-- **Deployment**: Dockerized with ARM64 optimizations.
-- **Storage**: Utilizes the expanded 200GB boot volume for model weights and audio cache.
-- **Interface**: FastAPI wrapper for integration with `NexusEngine`.
-- **Automation**: 
-  - Added `download_models.py` to auto-fetch weights from HuggingFace.
-  - Integration with `entrypoint.sh` to ensure weights exist before service start.
-
----
+#### [NEW] [test_automation.py](file:///home/psalmprax/viral_forge/api/tests/test_automation.py)
+A new test suite that performs:
+- **Discovery Scan Verification**: Real hit against the discovery bridge.
+- **Video Pipeline Verification**: Submission of transformation jobs with fallback MP4s.
+- **Synthesis Engine Check**: Verification of Lite4K and Remotion task routing.
+- **Environment Parity**: Logic to skip real hits unless `REAL_WORLD_E2E=1` is set.
 
 ## Verification Plan
 
 ### Automated Tests
-```bash
-# Backend
-docker-compose run api pytest services/ -v
-
-# Frontend build
-cd apps/dashboard && npm run build
-
-# Terraform
-cd terraform && terraform validate && terraform plan
-```
-
-### Manual Verification
-1. Login to dashboard at `http://<OCI_IP>:3000`
-2. Trigger discovery scan for "AI tools" niche
-3. Queue a video for transformation
-4. Verify Telegram bot responds to `/status` command
-5. Check Celery Beat is running scheduled scans
+- Run `pytest api/tests/test_automation.py`.
+- Run `REAL_WORLD_E2E=1 pytest api/tests/test_automation.py` on the remote server to verify live integrations.
 
 ---
 
-## ⏳ Maintenance & Future Roadmap
+## Phase 76: Critical Gap Resolution (P0/P1)
 
-| Phase | Feature | Priority |
-|---|---|---|
-| 96 | DNS & HTTPS final binding | HIGH |
-| 97 | Mobile App (React Native) | MEDIUM |
-| 98 | Marketplace for Skills/Templates | LOW |
+This phase addresses the critical security and configuration gaps identified in the March 1st analysis.
 
----
+### [API Configuration]
 
-## End-to-End Pipeline Use Cases
+#### [MODIFY] [config.py](file:///home/psalmprax/viral_forge/api/config.py)
+- Add `CORS_ORIGINS` settings.
+- Harden `validate_critical_config` to raise errors in production mode.
+- Ensure all OAuth keys have proper env mapping.
 
-### USE CASE 1: Viral Content Repurposing
-1. DISCOVERY → Scan TikTok for trending videos
-2. DOWNLOAD → VideoDownloader.download_video()
-3. TRANSFORMATION → Mirror, zoom, color shift, trim to hook
-4. ENHANCEMENT → B-roll injection, cinematic overlays
-5. MONETIZATION → Inject affiliate CTA
-6. PUBLISH → Upload to YouTube Shorts/TikTok
+#### [MODIFY] [main.py](file:///home/psalmprax/viral_forge/api/main.py)
+- Replace hardcoded CORS origins with `settings.CORS_ORIGINS`.
+- Implement dynamic regex for subdomains if provided.
 
-### USE CASE 2: AI-Generated Short Film
-1. CREATION → User enters prompt "Cyberpunk city"
-2. GENERATION → Veo3/Wan2.2 generates 5 scenes
-3. VOICEOVER → ElevenLabs TTS narration
-4. ASSEMBLY → Concatenate scenes, add music
-5. THUMBNAIL → AI-generated with Pollinations.ai
+### [Infrastructure]
 
-### USE CASE 3: Persona-Based Content
-1. UPLOAD → User uploads selfie photo
-2. ANIMATION → PersonaService.animate_persona()
-3. BRANDING → Add intro/outro, watermark
-4. MONETIZE → Add course promotion
-5. DISTRIBUTE → Post to all platforms
+#### [NEW] [.env.production.template](file:///home/psalmprax/viral_forge/.env.production.template)
+- Create a comprehensive template with all P0/P1 keys marked as required.
 
-### USE CASE 4: Automated Trend Riding
-1. MONITOR → Continuous hourly discovery scan
-2. FAST TRACK → Download & transform within minutes
-3. VIRAL OPTIMIZATION → VLM analysis + A/B titles
-4. LAUNCH → Post immediately for trend window
+## Verification Plan
+
+### Automated Tests
+- Run `pytest api/tests/test_config.py` to verify environment validation logic.
+- Verify CORS headers via `curl -I -X OPTIONS` on the remote server.
 
 ---
 
-## API Endpoints Summary
+## Phase 77: Expanded E2E & Integration Testing
 
-| Endpoint | Purpose |
-|----------|---------|
-| POST /api/discovery/search | Find trending content |
-| POST /api/video/generate | AI generate from prompt |
-| POST /api/video/transform | Transform existing video |
-| POST /api/video/persona | Create avatar video |
-| POST /api/publish/youtube | Upload to YouTube |
-| POST /api/publish/tiktok | Upload to TikTok |
-| POST /api/publish/schedule | Schedule future post |
-| GET /api/analytics/overview | View performance metrics |
+This phase increases test coverage from 30% to 60%+ by implementing deep service-to-service integration tests.
+
+### [Test Suites]
+
+#### [NEW] [test_integration_discovery.py](file:///home/psalmprax/viral_forge/api/tests/test_integration_discovery.py)
+- **Goal**: Verify the bridge between Python `DiscoveryService` and the Go-based `discovery-go` scanner.
+- **Coverage**: HTTP request/response validation, schema mapping, and error handling for scanner timeouts.
+
+#### [NEW] [test_integration_video.py](file:///home/psalmprax/viral_forge/api/tests/test_integration_video.py)
+- **Goal**: Verify the `VideoProcessor` pipeline without requiring a GPU.
+- **Coverage**: Mocked FFmpeg output generation, metadata extraction, and successful task state transitions in Celery.
+
+## Verification Plan
+
+### Automated Tests
+- Run `pytest api/tests/test_integration_discovery.py`.
+- Run `pytest api/tests/test_integration_video.py`.
+- Final E2E Run: `REAL_WORLD_E2E=1 pytest api/tests/test_automation.py`.
 
 ---
-*This analysis reflects the current state of the project as of February 26, 2026*
+
+## Phase 80: E2E Remediation & Validation
+
+This phase resolves naming inconsistencies and dependency gaps in the Playwright E2E suite to ensure it is executable.
+
+### [Fixes]
+
+#### [RENAME] `e2e/conftest.ts` -> `e2e/playwright.config.ts`
+- **Reason**: Playwright requires `playwright.config.ts` by default. `conftest.ts` is a Python/pytest naming convention that was mistakenly applied to the TypeScript suite.
+
+#### [COMMAND] `npm install` in `e2e/`
+- **Reason**: The `node_modules` directory is missing, preventing test execution.
+
+## Verification Plan
+
+### Automated Tests
+- Run `npx playwright test --list` to verify configuration validity.
+- Run a single test file: `npx playwright test tests/auth/login.spec.ts`.
+
+---
+
+## Phase 81: CI/CD E2E Integration & Sync
+
+This phase formally integrates the Playwright browser-based tests into both Jenkins and GitHub Actions CI pipelines, ensuring a consistent testing bar across environments.
+
+### [CI Configuration]
+
+#### [MODIFY] [.github/workflows/ci.yml](file:///home/psalmprax/viral_forge/.github/workflows/ci.yml)
+- **Action**: Update backend tests to run `pytest tests/` (full suite).
+- **Action**: Add a new `e2e` job that installs Node.js, Playwright, and runs the browser tests.
+
+#### [MODIFY] [Jenkinsfile](file:///home/psalmprax/viral_forge/Jenkinsfile)
+- **Action**: Remove `|| true` from the `E2E Tests` stage to make test results meaningful.
+- **Action**: Add structured JUnit/Allure reporting for Playwright results.
+
+## Verification Plan
+
+### Automated Tests
+- Push to a feature branch and verify that GitHub Actions triggers both backend and Playwright jobs.
+- Trigger a manual build in Jenkins and verify that the "E2E Tests" stage correctly reports success/failure.
+
+---
+
+## Phase 83: Remote AI API Deployment (VPS)
+
+This phase handles the offloading of heavy AI inference (LTX-Video, SpeechT5, Moondream2) to a dedicated high-GPU VPS.
+
+### [Setup Components]
+
+#### [NEW] `remote_ai_setup/`
+A standalone directory containing:
+- `install.sh`: Dependency installer (Python, CUDA dev, PyTorch).
+- `main.py`: The FastAPI inference engine.
+- `requirements.txt`: Unified dependency list.
+
+### [Inference Features]
+- **Video**: LTX-Video (T4 safe with CPU offload).
+- **TTS**: Microsoft SpeechT5 (Stable default speaker).
+- **VLM**: Moondream2 (Image analysis).
+
+## Verification Plan
+
+### Automated Tests
+- `curl -sf http://66.23.193.245:8000/health` (Direct VPS check).
+- `post /voice` test with specific payload.
+
+---
+
+## Phase 84: Expanding Remote AI (Whisper + Llama)
+
+Maximize the utility of the RTX A4000 by adding high-speed transcription and local analysis.
+
+### [Setup Components]
+
+#### [MODIFY] `remote_ai_setup/main.py`
+- **Integration**: Add `faster-whisper` using GPU/float16.
+- **Integration**: Add `Llama-3.1-8B-Instruct` (Quantized via `bitsandbytes` or `AutoGPTQ`).
+- **Endpoint**: `/transcribe` for ASR with word-level timestamps.
+- **Endpoint**: `/llm` for local text generation and analysis.
+
+#### [MODIFY] `remote_ai_setup/requirements.txt`
+- Add `faster-whisper`, `bitsandbytes`, `scipy`.
+
+### [VRAM Optimization]
+- Use `torch.cuda.empty_cache()` between model transitions.
+- Implement strictly lazy loading with optional "Unloading" for the largest models.
+
+## Verification Plan
+
+### Automated Tests
+- `curl -X POST http://.../transcribe` with a small test WAV.
+- `curl -X POST http://.../llm` with a simple "Hello" prompt.
+
