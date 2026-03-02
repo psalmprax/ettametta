@@ -270,7 +270,7 @@ RENDER_NODE_URL=${RENDER_NODE_URL}
                         npx playwright install --with-deps chromium
                         
                         # Run E2E tests
-                        npm test || true
+                        npm test
                     """
                 }
             }

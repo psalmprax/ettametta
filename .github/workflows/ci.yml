@@ -30,10 +30,10 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-asyncio pytest-mock
           
-      - name: Run unit tests
+      - name: Run all tests
         run: |
           cd api
-          pytest tests/test_config.py tests/test_services.py -v --tb=short
+          pytest tests/ -v --tb=short
         env:
           GROQ_API_KEY: test_key
           ENV: development
@@ -69,6 +69,30 @@ jobs:
       - name: Verify containers start
         run: |
           docker compose up -d
-          sleep 10
+          # Give services more time to settle
+          sleep 20
           docker compose ps
+          
+      - name: Set up Node.js for E2E
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install E2E dependencies
+        run: |
+          cd e2e
+          npm install
+          npx playwright install --with-deps chromium
+          
+      - name: Run E2E tests (GitHub Actions)
+        run: |
+          cd e2e
+          # Run against the Docker-compose stack
+          npx playwright test
+        env:
+          BASE_URL: http://localhost:3000
+          
+      - name: Cleanup
+        if: always()
+        run: |
           docker compose down
