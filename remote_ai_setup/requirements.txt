@@ -1,0 +1,17 @@
+fastapi
+transformers
+torch
+torchaudio
+soundfile
+diffusers
+imageio
+pillow
+nest-asyncio
+pyngrok
+uvicorn
+pydantic
+datasets
+requests
+accelerate
+sentencepiece
+imageio-ffmpeg
