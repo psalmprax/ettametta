@@ -42,6 +42,9 @@ tts_pipeline = None
 speaker_embedding = None
 vlm_model = None
 vlm_tokenizer = None
+whisper_model = None
+llm_model = None
+llm_tokenizer = None
 
 # =========================
 # GPU CLEANUP
@@ -98,6 +101,28 @@ def load_vlm():
         vlm_tokenizer = AutoTokenizer.from_pretrained(model_id, revision=rev)
     return vlm_model, vlm_tokenizer
 
+def load_whisper():
+    global whisper_model
+    if whisper_model is None:
+        from faster_whisper import WhisperModel
+        print("📥 Loading Faster-Whisper (Large-v3)...")
+        whisper_model = WhisperModel("large-v3", device=DEVICE, compute_type="float16")
+    return whisper_model
+
+def load_llm():
+    global llm_model, llm_tokenizer
+    if llm_model is None:
+        print("📥 Loading Llama-3.1-8B-Instruct (4-bit)...")
+        model_id = "unsloth/Meta-Llama-3.1-8B-Instruct" # Using a pre-quantized or light version
+        llm_tokenizer = AutoTokenizer.from_pretrained(model_id)
+        llm_model = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            device_map="auto",
+            load_in_4bit=True
+        )
+    return llm_model, llm_tokenizer
+
 # =========================
 # REQUEST MODELS
 # =========================
@@ -112,6 +137,11 @@ class VoiceRequest(BaseModel):
 class VLMRequest(BaseModel):
     image_base64: str
     prompt: str = "Describe this image."
+
+class LLMRequest(BaseModel):
+    prompt: str
+    system_prompt: str = "You are a specialized AI assistant for ettametta."
+    max_tokens: int = 512
 
 # =========================
 # ENDPOINTS
@@ -180,6 +210,61 @@ async def analyze(req: VLMRequest):
         print(f"❌ Error (VLM): {e}")
         return {"error": str(e)}
 
+@app.post("/transcribe")
+async def transcribe(bg: BackgroundTasks, file_path: str = None):
+    """
+    In a full production setup, this would handle file uploads.
+    For this remote node, we can point it to a file generated/downloaded locally.
+    """
+    if not file_path or not os.path.exists(file_path):
+        return {"error": "File not found"}
+        
+    clear_gpu()
+    model = load_whisper()
+    try:
+        segments, info = model.transcribe(file_path, beam_size=5)
+        results = []
+        for segment in segments:
+            results.append({
+                "start": segment.start,
+                "end": segment.end,
+                "text": segment.text
+            })
+        return {"language": info.language, "segments": results}
+    except Exception as e:
+        print(f"❌ Error (Whisper): {e}")
+        return {"error": str(e)}
+
+@app.post("/llm")
+async def text_gen(req: LLMRequest):
+    # Unload large models if needed to prevent OOM
+    # In a 16GB environment, we might need to unload LTX before loading Llama
+    global pipe
+    if pipe is not None:
+        print("💾 Unloading LTX-Video to free VRAM for LLM...")
+        pipe = None
+        clear_gpu()
+
+    model, tokenizer = load_llm()
+    try:
+        messages = [
+            {"role": "system", "content": req.system_prompt},
+            {"role": "user", "content": req.prompt},
+        ]
+        input_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to(DEVICE)
+        
+        outputs = model.generate(
+            input_ids, 
+            max_new_tokens=req.max_tokens, 
+            do_sample=True, 
+            temperature=0.7
+        )
+        response = tokenizer.decode(outputs[0][input_ids.shape[-1]:], skip_special_tokens=True)
+        return {"response": response}
+    except Exception as e:
+        print(f"❌ Error (LLM): {e}")
+        return {"error": str(e)}
+
 @app.get("/download/{job_id}")
 async def download(job_id: str):
     for ext in ["mp4", "wav"]:
@@ -192,5 +277,24 @@ async def download(job_id: str):
 # STARTUP
 # =========================
 if __name__ == "__main__":
-    print("🚀 ettametta Remote AI Engine starting on port 8000...")
+    import sys
+    print("🚀 ettametta Remote AI Engine starting...")
+    
+    try:
+        from pyngrok import ngrok
+        ngrok.set_auth_token("3A2lY17VmZc4OjOK3YjT843iJgW_4KCSDY1bRAHvyFtLkgJbh")
+        
+        # Disconnect any existing tunnels to avoid ERR_NGROK_334
+        tunnels = ngrok.get_tunnels()
+        for t in tunnels:
+            print(f"🛑 Closing existing tunnel: {t.public_url}")
+            ngrok.disconnect(t.public_url)
+            
+        public_url = ngrok.connect(8000).public_url
+        print(f"🌍 Public Access: {public_url}")
+        print(f"🏥 Health Check: {public_url}/health")
+    except Exception as e:
+        print(f"⚠️ Ngrok Connection Failed: {e}")
+        print("💡 Server will still be accessible via local network/Vast.ai port.")
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
