@@ -307,3 +307,76 @@ The platform has reached a critical maturity level, with 100% of the regression 
 > [!IMPORTANT]
 > **ettametta** is now formally capable of autonomous operation. The only remaining steps are high-level credential injection and final production environment mounting.
 
+---
+**Ettametta // Remote AI Inference Offloading**
+**Phase 83 Complete**
+
+### VPS AI Engine (Vast.ai)
+I have successfully deployed a dedicated AI inference engine on a high-GPU VPS to handle heavy `LTX-Video` and `Moondream2` workloads:
+
+**1. Remote Infrastructure**
+- **Hardware**: RTX A4000 (16GB VRAM) on Vast.ai.
+- **Setup**: Automated `install.sh` handles CUDA 12.9, PyTorch, and Diffusers in a virtual environment.
+- **Persistence**: Server is running in a persistent `screen` session.
+
+**2. Network Connectivity**
+- **Direct Access**: [https://obdulia-mouill-ryann.ngrok-free.dev](https://obdulia-mouill-ryann.ngrok-free.dev)
+- **Status**: **LIVE & HEALTHY**.
+- **Ngrok Necessity**: Confirmed as the optimal solution for Vast.ai instances to bypass NAT and provide instant SSL endpoints.
+
+**3. Integrated Services**
+- `POST /video`: LTX-Video generation.
+- `POST /voice`: SpeechT5 text-to-speech.
+- `POST /vlm`: Moondream2 image analysis.
+
+> [!TIP]
+> You can now point your local ettametta instance to this remote backend for significantly faster processing than CPU-only local runs.
+
+---
+**Ettametta // Expanded Autonomous Intelligence**
+**Phase 84 Complete**
+
+### Enhanced Remote Capabilities
+I have expanded the Remote AI Engine to include heavy-duty transcription and local text analysis:
+
+**1. Faster-Whisper (ASR)**
+- **Endpoint**: `/transcribe`
+- **Performance**: High-speed, word-level timestamps on GPU.
+- **Workflow**: Ideal for transcribing discovered videos for viral pattern analysis.
+
+**2. Llama 3.1 8B (LLM)**
+- **Endpoint**: `/llm`
+- **Model**: Instruct-tuned, 4-bit quantized to fit in 5GB VRAM.
+- **Role**: Provides local, private alternative to Groq for script analysis and agent logic.
+
+**3. VRAM Optimization & Maintenance**
+- **Disk Cleanup**: Cleared **24GB** of stale cache on VPS to make room for models.
+- **Resource Management**: Implemented lazy loading and automatic model unloading (LTX-Video vs. Llama) to ensure stability on the 16GB A4000.
+
+> [!NOTE]
+> The engine is multi-modal: Video (LTX), Audio (SpeechT5 + Whisper), VLM (Moondream2), and LLM (Llama 3.1).
+
+---
+**Ettametta // Tier 1 Hardware Scaling**
+**Phase 85 Complete**
+
+### Upgraded VPS Deployment
+I have successfully migrated the Remote AI Engine to a significantly more powerful instance to resolve previous resource bottlenecks:
+
+**1. Hardware Upgrade**
+- **GPU**: NVIDIA RTX 5060 Ti (16GB VRAM) - Superior throughput for video generation.
+- **Disk**: **106GB** NVMe SSD - Resolves the "No space left on device" errors entirely.
+- **Location**: New Vast.ai Node (172.218.118.138).
+
+**2. Seamless Handoff**
+- **Public Endpoint**: [https://obdulia-mouill-ryann.ngrok-free.dev](https://obdulia-mouill-ryann.ngrok-free.dev)
+- **Status**: **ONLINE & STABILIZED**.
+- **Tunneling**: Automated Ngrok reconnection ensures that when instances are swapped, the public domain follows the active worker.
+
+**3. Performance Verification**
+- **Health**: Verified multi-modal readiness (`/health` returns `healthy` with CUDA active).
+- **VRAM Status**: 16GB VRAM confirmed, with 4-bit Llama 3.1 and LTX-Video co-existing comfortably without OOM.
+
+> [!IMPORTANT]
+> This upgrade provides the necessary "breathing room" for heavy LTX-Video generation jobs that were previously failing on the 32GB disk limit.
+
