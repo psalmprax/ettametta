@@ -53,16 +53,16 @@ class TestConfigSettings:
         assert "sqlite" in settings.DATABASE_URL
         assert "redis" in settings.REDIS_URL
     
-    def test_validate_critical_config_no_warnings_in_dev(self):
+    def test_validate_critical_config_no_errors_in_dev(self):
         """Test that validation passes in development"""
         from api.config import Settings
         
         with patch.dict(os.environ, {"ENV": "development", "SECRET_KEY": "dev_key"}):
             settings = Settings()
-            warnings = settings.validate_critical_config()
-            assert len(warnings) == 0
+            report = settings.validate_critical_config()
+            assert len(report["errors"]) == 0
     
-    def test_validate_critical_config_warnings_in_production(self):
+    def test_validate_critical_config_errors_in_production(self):
         """Test that validation fails in production without proper config"""
         from api.config import Settings
         
@@ -72,9 +72,19 @@ class TestConfigSettings:
             "PRODUCTION_DOMAIN": "localhost"
         }):
             settings = Settings()
-            warnings = settings.validate_critical_config()
-            # Should have warnings for insecure secret and localhost domain
-            assert len(warnings) >= 1
+            report = settings.validate_critical_config()
+            # Should have errors for insecure secret and localhost domain
+            assert len(report["errors"]) >= 2
+            assert any("SECRET_KEY" in err for err in report["errors"])
+            assert any("PRODUCTION_DOMAIN" in err for err in report["errors"])
+
+    def test_cors_origins_parsing(self):
+        """Test that CORS_ORIGINS is parsed correctly in main.py logic"""
+        from api.config import Settings
+        settings = Settings()
+        settings.CORS_ORIGINS = "http://a.com, http://b.com "
+        origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
+        assert origins == ["http://a.com", "http://b.com"]
 
 
 class TestEnvironmentVariables:

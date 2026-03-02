@@ -98,20 +98,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # Add CORS middleware
+cors_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://130.61.26.105:3000",
-        "http://130.61.26.105:8080",
-        "http://130.61.26.105",
-        "http://localhost:3000",
-        "http://localhost:8080",
-        "http://localhost",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:8080",
-    ],
-
-    allow_origin_regex="http://130\\.61\\.26\\.105(:\\d+)?",
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
