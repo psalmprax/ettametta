@@ -240,11 +240,8 @@ RENDER_NODE_URL=${RENDER_NODE_URL}
                         mkdir -p test-results
                         pip3 install -q pytest pytest-asyncio pytest-mock requests || pip install -q pytest pytest-asyncio pytest-mock requests || true
                         
-                        # Run unit tests
-                        python3 -m pytest tests/test_config.py tests/test_services.py -v --tb=short --junitxml=test-results/unit-results.xml || true
-                        
-                        # Run API route integration tests
-                        python3 -m pytest tests/test_routes/ -v --tb=short --junitxml=test-results/integration-results.xml || true
+                        # Run units & integration tests (Discovery, Video, Config, Routes)
+                        python3 -m pytest tests/ -v --tb=short --junitxml=test-results/combined-results.xml || true
                     """
                 }
             }
