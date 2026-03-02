@@ -241,7 +241,7 @@ RENDER_NODE_URL=${RENDER_NODE_URL}
                         pip3 install -q pytest pytest-asyncio pytest-mock requests || pip install -q pytest pytest-asyncio pytest-mock requests || true
                         
                         # Run units & integration tests (Discovery, Video, Config, Routes)
-                        python3 -m pytest tests/ -v --tb=short --junitxml=test-results/combined-results.xml || true
+                        python3 -m pytest tests/ -v -ra --tb=short --junitxml=test-results/combined-results.xml
                     """
                 }
             }
@@ -253,7 +253,7 @@ RENDER_NODE_URL=${RENDER_NODE_URL}
                     echo "Running code linting..."
                     sh """
                         pip3 install -q ruff || pip install -q ruff || true
-                        ruff check api/ || true
+                        ruff check api/
                     """
                 }
             }
@@ -282,8 +282,9 @@ RENDER_NODE_URL=${RENDER_NODE_URL}
             // Publish test results
             script {
                 try {
-                    junit 'api/test-results/*.xml'
-                    echo "Test results published"
+                    junit 'api/test-results/*.xml, e2e/results.xml'
+                    archiveArtifacts artifacts: 'api/test-results/*.xml, e2e/results.xml, e2e/playwright-report/**', allowEmptyArchive: true
+                    echo "Test results published and archived"
                 } catch (e) {
                     echo "No test results to publish (or junit plugin not installed)"
                 }
