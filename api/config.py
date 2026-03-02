@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     
     # Infrastructure
     PRODUCTION_DOMAIN: str = "http://localhost:8000"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8080" # Comma-separated list
     RENDER_NODE_URL: Optional[str] = None # Colab/Remote GPU Node URL
     
     @property
@@ -163,6 +164,9 @@ class Settings(BaseSettings):
             # Domain
             if not self.PRODUCTION_DOMAIN or "localhost" in self.PRODUCTION_DOMAIN:
                 result["errors"].append("PRODUCTION_DOMAIN - Must be set to production URL")
+            
+            if not self.CORS_ORIGINS or "localhost" in self.CORS_ORIGINS:
+                result["warnings"].append("CORS_ORIGINS - Contains localhost or is empty in production")
             
             # Required for core functionality
             if not self.GROQ_API_KEY and not self.OPENAI_API_KEY:
