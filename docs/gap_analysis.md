@@ -1,7 +1,7 @@
 # ettametta/viral_forge - Master Gap Analysis Report
 
 **Last Updated:** March 2, 2026  
-**Status:** ~93% Production Ready (🚀 Major Progress in Testing & Validation)  
+**Status:** ~95% Production Ready (🚀 E2E Playwright Integrated into CI)  
 **Objective:** A single source of truth for architectural, functional, and operational readiness.
 
 ---
@@ -18,7 +18,6 @@ The **ettametta (viral_forge)** platform is a sophisticated multi-platform viral
 
 **Remaining Blockers:**
 - 🔴 **Credentials**: OAuth keys (Google/TikTok) and API keys (Shopify/S3) need manual entry.
-- 🔴 **CI/CD Sync**: Newly created integration tests need final plumbing into GitHub Actions (Jenkins is synced).
 
 ---
 
@@ -69,10 +68,13 @@ The **ettametta (viral_forge)** platform is a sophisticated multi-platform viral
 ### 3.3 Testing Coverage (50% -> 90% Target)
 | Test Suite | Status | Description | CI/CD |
 |------------|--------|-------------|-------|
-| **Unit Tests** | ✅ | Config & Service logic | Yes |
-| **Discovery Integration** | ✅ | Bridge to Go-Scanner | **NEW** (Jenkins only) |
-| **Video Integration** | ✅ | Virtualized FFmpeg pipeline | **NEW** (Jenkins only) |
-| **E2E (Playwright)** | ⚠️ | Browser-based user flows | Exists; not in CI |
+| **Unit Tests** | ✅ | Config & Service logic | Yes (Jenkins + GitHub) |
+| **Discovery Integration** | ✅ | Bridge to Go-Scanner | ✅ **Jenkins** (line 244) |
+| **Video Integration** | ✅ | Virtualized FFmpeg pipeline | ✅ **Jenkins** (line 244) |
+| **API Route Tests** | ✅ | Auth, Video, Discovery, Health routes | ✅ **Jenkins** (line 244) |
+| **E2E (Playwright)** | ✅ | Browser-based user flows | Yes (Jenkins + GitHub) |
+
+**Note:** Both Jenkins and GitHub Actions now run the full test suite (Unit, Integration, and E2E) as a hard gate.
 
 ---
 
@@ -88,9 +90,8 @@ The **ettametta (viral_forge)** platform is a sophisticated multi-platform viral
 ## 5. Master Recommendation List
 
 ### 🚀 High Priority (Immediate)
-1. **Integration Test Sync**: Add `pytest tests/` to GitHub Actions CI path.
-2. **OAuth Registry**: Populate `GOOGLE_CLIENT_ID` and `TIKTOK_CLIENT_KEY` via Admin Panel.
-3. **Storage Tiering**: Transition from local storage to AWS S3 using `.env.production.template`.
+1. **OAuth Registry**: Populate `GOOGLE_CLIENT_ID` and `TIKTOK_CLIENT_KEY` via Admin Panel.
+2. **Storage Tiering**: Transition from local storage to AWS S3 using `.env.production.template`.
 
 ### 🛠️ Medium Priority (Short-term)
 1. **Rate Limiting**: Add Redis-backed request throttling to public API endpoints.
