@@ -13,5 +13,8 @@ pydantic
 datasets
 requests
 accelerate
+faster-whisper
+bitsandbytes
+scipy
 sentencepiece
 imageio-ffmpeg
