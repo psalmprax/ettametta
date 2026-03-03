@@ -394,5 +394,13 @@ I have initiated a series of tests to push the limits of the LTX-Video engine.
 - **Rendering Time**: ~1 minute 25 seconds for 121 frames.
 - **VRAM Stability**: Stable 16GB VRAM usage (no OOM).
 
-**Next Step**: Attempting a 241-frame (10-second) generation to evaluate temporal consistency at the edge of physical VRAM capacity.
+**2. Historical African Visualization Test**
+- **Job ID**: `vid_20247b`
+- **Prompt**: "Cinematic 4K flight over the ancient Mali Empire... Great Mosque of Djenne..."
+- **Parameters**: 121 frames, 35 steps. 
+- **Result**: Successfully rendered complex architectural textures and cultural elements (4.5MB).
+- **Quality**: Strong temporal consistency for a 5-second complex scene.
+
+### 1-Minute Target Strategy
+Based on these successes, I've confirmed that the VPS can handle single clips up to ~10 seconds. For 1-minute targets, I will implement a "clip stitching" workflow to maintain quality without exceeding the 16GB VRAM limit.
 

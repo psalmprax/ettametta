@@ -94,5 +94,6 @@
 - [/] Phase 86: Long-Duration Video Stress Test
     - [x] Determine LTX-Video native frame limits (max 161-257 frames)
     - [x] Trigger 5-second high-quality generation (vid_f1f646)
+    - [x] Test historical/cultural rendering (Mali Empire - vid_20247b)
     - [ ] Evaluate temporal consistency and quality
     - [ ] Research frame-stitching/interpolation for 1-minute targets
