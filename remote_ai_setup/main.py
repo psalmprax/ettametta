@@ -206,8 +206,8 @@ class VideoRequest(BaseModel):
     image_base64: str = None
     frames: int = 121
     steps: int = 35
-    upscale: bool = True
-    enhance_face: bool = True
+    upscale_factor: int = 4   # 2 or 4 for Real-ESRGAN
+    enhance_face: bool = True  # Enable GFPGAN
 
 class VoiceRequest(BaseModel):
     text: str
@@ -259,9 +259,9 @@ def render_video(job_id, req):
 
         realism_keywords = ["human", "person", "man", "woman", "elder", "portrait", "face", "real", "photorealistic", "photo"]
         if any(k in req.prompt.lower() for k in realism_keywords):
-            print("📸 Injecting Raw Photo conditioning...")
-            req.prompt += ", raw photo, fine textures, 8k, Fujifilm, highly detailed skin pores, cinematic grain, sharp focus, dslr"
-            guidance_scale = 5.5
+            print("📸 Injecting 4K Ultra-Real Photo details...")
+            req.prompt += ", raw photo, 8k resolution, cinematic 35mm lens, f/1.8, bokeh, extreme skin textures, Fujifilm, highly detailed skin pores, cinematic grain, sharp focus, dslr"
+            guidance_scale = 6.0  # Boosted for 4K micro-details
 
         with torch.inference_mode():
             if image_obj:
@@ -276,25 +276,25 @@ def render_video(job_id, req):
                 )
         frames = result.frames[0]
 
-        # 2. Refinement Pass (Phase 89)
-        if req.upscale or req.enhance_face:
-            print("✨ Post-Processing Refinement (GFPGAN/Real-ESRGAN)...")
+        # 2. Refinement Pass (Phase 91: 4K Upgrade)
+        if req.upscale_factor > 1 or req.enhance_face:
+            print(f"✨ Post-Processing Refinement (GFPGAN / {req.upscale_factor}x Real-ESRGAN)...")
             global pipe
-            pipe = None # Unload from global to free VRAM
+            pipe = None # Unload from global to free VRAM for 4K upscale
             clear_gpu()
             
-            face_restorer, upscaler = load_enhancers()
+            face_restorer, upscaler = load_enhancers(upscale_factor=req.upscale_factor)
             enhanced_frames = []
             for i, frame in enumerate(frames):
                 img_bgr = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
                 if req.enhance_face:
                     try: _, _, img_bgr = face_restorer.enhance(img_bgr, has_aligned=False, only_center_face=False, paste_back=True)
                     except: pass
-                if req.upscale:
-                    try: img_bgr, _ = upscaler.enhance(img_bgr, outscale=2)
+                if req.upscale_factor > 1:
+                    try: img_bgr, _ = upscaler.enhance(img_bgr, outscale=req.upscale_factor)
                     except: pass
                 enhanced_frames.append(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
-                if i % 20 == 0: print(f"   Processed {i}/{len(frames)} frames...")
+                if i % 10 == 0: print(f"   Processed {i}/{len(frames)} frames...")
             
             frames = enhanced_frames
             global face_enhancer, upscaler_model
@@ -306,14 +306,12 @@ def render_video(job_id, req):
         out_path = os.path.join(CONTENT_DIR, f"{job_id}.mp4")
         print(f"🎬 High-Fidelity Encoding: {len(frames)} frames to {out_path}...")
         
-        # Optimized for maximum clarity and compatibility (H.264 CRF 18, YUV420P)
-        # Note: 'quality' in imageio-ffmpeg translates to CRF-like behavior, 10 is high, 5 is insane.
-        # We use ffmpeg_params for direct control.
+        # Optimized for 4K Ultra-Realism (CRF 16 Lossless, Slower Preset, YUV420P)
         writer = imageio.get_writer(
             out_path, 
             fps=24, 
             codec='libx264', 
-            ffmpeg_params=['-crf', '18', '-preset', 'slow', '-pix_fmt', 'yuv420p']
+            ffmpeg_params=['-crf', '16', '-preset', 'slower', '-pix_fmt', 'yuv420p']
         )
         for i, f in enumerate(frames):
             img_array = np.array(f)
