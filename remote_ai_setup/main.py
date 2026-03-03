@@ -128,8 +128,9 @@ def load_llm():
 # =========================
 class VideoRequest(BaseModel):
     prompt: str
-    frames: int = 49
-    steps: int = 20
+    image_base64: str = None  # For Image-to-Video (I2V)
+    frames: int = 121         # Default to 5 seconds
+    steps: int = 35           # High quality default
 
 class VoiceRequest(BaseModel):
     text: str
@@ -164,16 +165,61 @@ async def generate_video(req: VideoRequest, bg: BackgroundTasks):
 def render_video(job_id, req):
     try:
         pipe = load_ltx()
+        print(f"🎨 Rendering Video: {req.prompt}")
+        
+        # Cinematic & Realism Defaults
+        negative_prompt = "low quality, animation, cartoon, cgi, 3d, render, blur, distorted, text, watermark, grainy, flicker, low resolution, bad anatomy, stylized"
+        guidance_scale = 4.0
+        
+        # Prepare Image for I2V
+        image = None
+        if req.image_base64:
+            print("📸 Processing Reference Image for I2V...")
+            img_data = base64.b64decode(req.image_base64)
+            image = Image.open(io.BytesIO(img_data)).convert("RGB")
+            # Resize image to match model if necessary (usually handled by pipeline)
+
         with torch.inference_mode():
-            result = pipe(prompt=req.prompt, num_frames=req.frames, num_inference_steps=req.steps)
-        frames = result.frames[0]
+            if image:
+                result = pipe(
+                    prompt=req.prompt,
+                    image=image,
+                    negative_prompt=negative_prompt,
+                    num_frames=req.frames,
+                    num_inference_steps=req.steps,
+                    guidance_scale=guidance_scale
+                )
+            else:
+                result = pipe(
+                    prompt=req.prompt,
+                    negative_prompt=negative_prompt,
+                    num_frames=req.frames,
+                    num_inference_steps=req.steps,
+                    guidance_scale=guidance_scale
+                )
+        frames = result.frames[0] # List of PIL images or numpy array
 
         out_path = os.path.join(CONTENT_DIR, f"{job_id}.mp4")
-        writer = imageio.get_writer(out_path, fps=24)
-        for f in frames:
-            writer.append_data(np.array(f))
+        print(f"🎬 High-Fidelity Encoding: {len(frames)} frames to {out_path}...")
+        
+        # Optimized for maximum clarity and compatibility (H.264 CRF 18, YUV420P)
+        # Note: 'quality' in imageio-ffmpeg translates to CRF-like behavior, 10 is high, 5 is insane.
+        # We use ffmpeg_params for direct control.
+        writer = imageio.get_writer(
+            out_path, 
+            fps=24, 
+            codec='libx264', 
+            ffmpeg_params=['-crf', '18', '-preset', 'slow', '-pix_fmt', 'yuv420p']
+        )
+        for i, f in enumerate(frames):
+            img_array = np.array(f)
+            if img_array.dtype != np.uint8:
+                img_array = (img_array * 255).astype(np.uint8)
+            writer.append_data(img_array)
         writer.close()
-        print(f"✅ Success: Video saved to {out_path}")
+        
+        file_size = os.path.getsize(out_path) / 1024
+        print(f"✅ Success: Cinematic Video saved to {out_path} ({file_size:.1f} KB)")
     except Exception as e:
         print(f"❌ Error (Video): {e}")
 
