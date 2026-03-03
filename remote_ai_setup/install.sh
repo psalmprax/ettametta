@@ -6,7 +6,7 @@ echo "🚀 Starting ettametta Remote AI Setup..."
 
 # 1. System Updates
 sudo apt-get update
-sudo apt-get install -y python3-pip python3-venv ffmpeg libsm6 libxext6 libgl1 git
+sudo apt-get install -y python3-pip python3-venv ffmpeg libsm6 libxext6 libgl1 libglib2.0-0 git
 
 # 2. Python Environment
 python3 -m venv venv
