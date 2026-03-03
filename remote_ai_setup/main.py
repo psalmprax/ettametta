@@ -19,6 +19,11 @@ from pydantic import BaseModel
 from diffusers import DiffusionPipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from PIL import Image
+import cv2
+import torch.hub
+from gfpgan import GFPGANer
+from realesrgan import RealESRGANer
+from basicsr.archs.rrdbnet_arch import RRDBNet
 
 # =========================
 # CONFIGURATION
@@ -45,6 +50,8 @@ vlm_tokenizer = None
 whisper_model = None
 llm_model = None
 llm_tokenizer = None
+face_enhancer = None
+upscaler_model = None
 
 # =========================
 # GPU CLEANUP
@@ -124,13 +131,82 @@ def load_llm():
     return llm_model, llm_tokenizer
 
 # =========================
+# LOADERS
+# =========================
+def load_ltx():
+    global pipe
+    if pipe is None:
+        print("📥 Loading LTX-Video...")
+        pipe = DiffusionPipeline.from_pretrained(
+            "Lightricks/LTX-Video", torch_dtype=torch.float16, low_cpu_mem_usage=True
+        )
+        if DEVICE == "cuda": pipe.enable_sequential_cpu_offload()
+        else: pipe.to("cpu")
+    return pipe
+
+def load_enhancers(upscale_factor=2):
+    global face_enhancer, upscaler_model
+    if face_enhancer is None:
+        print("📥 Loading GFPGAN (Face Restoration)...")
+        face_enhancer = GFPGANer(
+            model_path='https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth',
+            upscale=1, arch='clean', channel_multiplier=2, bg_upsampler=None
+        )
+    if upscaler_model is None:
+        print(f"📥 Loading Real-ESRGAN (x{upscale_factor})...")
+        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
+        upscaler_model = RealESRGANer(
+            scale=4, model_path='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth',
+            model=model, tile=400, tile_pad=10, pre_pad=0, half=True if DEVICE == "cuda" else False
+        )
+    return face_enhancer, upscaler_model
+
+def load_tts():
+    global tts_pipeline, speaker_embedding
+    if tts_pipeline is None:
+        print("📥 Loading Microsoft SpeechT5 TTS...")
+        tts_pipeline = pipeline("text-to-speech", model="microsoft/speecht5_tts", device=0 if torch.cuda.is_available() else -1)
+        torch.manual_seed(42)
+        speaker_embedding = torch.randn(1, 512).to(DEVICE)
+    return tts_pipeline
+
+def load_vlm():
+    global vlm_model, vlm_tokenizer
+    if vlm_model is None:
+        print("📥 Loading Moondream2...")
+        clear_gpu()
+        model_id = "vikhyatk/moondream2"
+        vlm_model = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, revision="2024-05-20").to(DEVICE)
+        vlm_tokenizer = AutoTokenizer.from_pretrained(model_id, revision="2024-05-20")
+    return vlm_model, vlm_tokenizer
+
+def load_whisper():
+    global whisper_model
+    if whisper_model is None:
+        from faster_whisper import WhisperModel
+        print("📥 Loading Faster-Whisper (Large-v3)...")
+        whisper_model = WhisperModel("large-v3", device=DEVICE, compute_type="float16")
+    return whisper_model
+
+def load_llm():
+    global llm_model, llm_tokenizer
+    if llm_model is None:
+        print("📥 Loading Llama-3.1-8B-Instruct (4-bit)...")
+        model_id = "unsloth/Meta-Llama-3.1-8B-Instruct"
+        llm_tokenizer = AutoTokenizer.from_pretrained(model_id)
+        llm_model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.float16, device_map="auto", load_in_4bit=True)
+    return llm_model, llm_tokenizer
+
+# =========================
 # REQUEST MODELS
 # =========================
 class VideoRequest(BaseModel):
     prompt: str
-    image_base64: str = None  # For Image-to-Video (I2V)
-    frames: int = 121         # Default to 5 seconds
-    steps: int = 35           # High quality default
+    image_base64: str = None
+    frames: int = 121
+    steps: int = 35
+    upscale: bool = True
+    enhance_face: bool = True
 
 class VoiceRequest(BaseModel):
     text: str
@@ -150,9 +226,7 @@ class LLMRequest(BaseModel):
 @app.get("/health")
 async def health():
     return {
-        "status": "healthy", 
-        "gpu": DEVICE, 
-        "gpu_available": torch.cuda.is_available(),
+        "status": "healthy", "gpu": DEVICE, "gpu_available": torch.cuda.is_available(),
         "vram_allocated": f"{torch.cuda.memory_allocated()/1024**3:.2f}GB" if torch.cuda.is_available() else "0GB"
     }
 
@@ -164,41 +238,65 @@ async def generate_video(req: VideoRequest, bg: BackgroundTasks):
 
 def render_video(job_id, req):
     try:
-        pipe = load_ltx()
-        print(f"🎨 Rendering Video: {req.prompt}")
+        # 1. Diffusion Pass
+        pipe_local = load_ltx()
+        print(f"🎨 Rendering Video ({req.frames} frames): {req.prompt}")
         
-        # Cinematic & Realism Defaults
         negative_prompt = "low quality, animation, cartoon, cgi, 3d, render, blur, distorted, text, watermark, grainy, flicker, low resolution, bad anatomy, stylized"
         guidance_scale = 4.0
         
-        # Prepare Image for I2V
-        image = None
+        image_obj = None
         if req.image_base64:
             print("📸 Processing Reference Image for I2V...")
             img_data = base64.b64decode(req.image_base64)
-            image = Image.open(io.BytesIO(img_data)).convert("RGB")
-            # Resize image to match model if necessary (usually handled by pipeline)
+            image_obj = Image.open(io.BytesIO(img_data)).convert("RGB")
+
+        realism_keywords = ["human", "person", "man", "woman", "elder", "portrait", "face", "real", "photorealistic", "photo"]
+        if any(k in req.prompt.lower() for k in realism_keywords):
+            print("📸 Injecting Raw Photo conditioning...")
+            req.prompt += ", raw photo, fine textures, 8k, Fujifilm, highly detailed skin pores, cinematic grain, sharp focus, dslr"
+            guidance_scale = 5.5
 
         with torch.inference_mode():
-            if image:
-                result = pipe(
-                    prompt=req.prompt,
-                    image=image,
-                    negative_prompt=negative_prompt,
-                    num_frames=req.frames,
-                    num_inference_steps=req.steps,
-                    guidance_scale=guidance_scale
+            if image_obj:
+                result = pipe_local(
+                    prompt=req.prompt, image=image_obj, negative_prompt=negative_prompt,
+                    num_frames=req.frames, num_inference_steps=req.steps, guidance_scale=guidance_scale
                 )
             else:
-                result = pipe(
-                    prompt=req.prompt,
-                    negative_prompt=negative_prompt,
-                    num_frames=req.frames,
-                    num_inference_steps=req.steps,
-                    guidance_scale=guidance_scale
+                result = pipe_local(
+                    prompt=req.prompt, negative_prompt=negative_prompt,
+                    num_frames=req.frames, num_inference_steps=req.steps, guidance_scale=guidance_scale
                 )
-        frames = result.frames[0] # List of PIL images or numpy array
+        frames = result.frames[0]
 
+        # 2. Refinement Pass (Phase 89)
+        if req.upscale or req.enhance_face:
+            print("✨ Post-Processing Refinement (GFPGAN/Real-ESRGAN)...")
+            global pipe
+            pipe = None # Unload from global to free VRAM
+            clear_gpu()
+            
+            face_restorer, upscaler = load_enhancers()
+            enhanced_frames = []
+            for i, frame in enumerate(frames):
+                img_bgr = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
+                if req.enhance_face:
+                    try: _, _, img_bgr = face_restorer.enhance(img_bgr, has_aligned=False, only_center_face=False, paste_back=True)
+                    except: pass
+                if req.upscale:
+                    try: img_bgr, _ = upscaler.enhance(img_bgr, outscale=2)
+                    except: pass
+                enhanced_frames.append(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
+                if i % 20 == 0: print(f"   Processed {i}/{len(frames)} frames...")
+            
+            frames = enhanced_frames
+            global face_enhancer, upscaler_model
+            face_enhancer = None
+            upscaler_model = None
+            clear_gpu()
+
+        # 3. Encoding Pass
         out_path = os.path.join(CONTENT_DIR, f"{job_id}.mp4")
         print(f"🎬 High-Fidelity Encoding: {len(frames)} frames to {out_path}...")
         
