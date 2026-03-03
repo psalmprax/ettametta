@@ -5,6 +5,7 @@ import base64
 import io
 import os
 import gc
+import shutil
 import asyncio
 import warnings
 import torch
@@ -225,9 +226,14 @@ class LLMRequest(BaseModel):
 # =========================
 @app.get("/health")
 async def health():
+    total, used, free = shutil.disk_usage("/")
     return {
-        "status": "healthy", "gpu": DEVICE, "gpu_available": torch.cuda.is_available(),
-        "vram_allocated": f"{torch.cuda.memory_allocated()/1024**3:.2f}GB" if torch.cuda.is_available() else "0GB"
+        "status": "healthy", 
+        "gpu": DEVICE, 
+        "gpu_available": torch.cuda.is_available(),
+        "vram_allocated": f"{torch.cuda.memory_allocated()/1024**3:.2f}GB" if torch.cuda.is_available() else "0GB",
+        "disk_free": f"{free/1024**3:.2f}GB",
+        "disk_used_percent": f"{(used/total)*100:.1f}%"
     }
 
 @app.post("/video")
@@ -409,11 +415,37 @@ async def text_gen(req: LLMRequest):
         print(f"❌ Error (LLM): {e}")
         return {"error": str(e)}
 
+def delete_file(path: str):
+    """Background task to delete a file after download."""
+    if os.path.exists(path):
+        try:
+            os.remove(path)
+            print(f"🗑️ Deleted downloaded file: {path}")
+        except Exception as e:
+            print(f"⚠️ Failed to delete {path}: {e}")
+
+def cleanup_old_files(max_age_hours=24):
+    """Periodic cleanup of old files in CONTENT_DIR."""
+    while True:
+        try:
+            print(f"🧹 Running TTL Cleanup (Age > {max_age_hours}h)...")
+            now = time.time()
+            for f in os.listdir(CONTENT_DIR):
+                path = os.path.join(CONTENT_DIR, f)
+                if os.path.isfile(path):
+                    if now - os.path.getmtime(path) > (max_age_hours * 3600):
+                        os.remove(path)
+                        print(f"🧹 Purged stale file: {f}")
+        except Exception as e:
+            print(f"⚠️ Cleanup Error: {e}")
+        time.sleep(3600) # Run every hour
+
 @app.get("/download/{job_id}")
-async def download(job_id: str):
+async def download(job_id: str, bg: BackgroundTasks):
     for ext in ["mp4", "wav"]:
         path = os.path.join(CONTENT_DIR, f"{job_id}.{ext}")
         if os.path.exists(path):
+            bg.add_task(delete_file, path)
             return FileResponse(path)
     return {"error": "File not found"}
 
@@ -440,5 +472,8 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"⚠️ Ngrok Connection Failed: {e}")
         print("💡 Server will still be accessible via local network/Vast.ai port.")
+
+    # Start TTL Cleanup Thread
+    threading.Thread(target=cleanup_old_files, daemon=True).start()
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
