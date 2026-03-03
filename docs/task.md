@@ -97,3 +97,8 @@
     - [x] Test historical/cultural rendering (Mali Empire - vid_20247b)
     - [ ] Evaluate temporal consistency and quality
     - [ ] Research frame-stitching/interpolation for 1-minute targets
+
+- [x] Phase 87: Cinematic Video Optimization
+    - [x] Update `main.py` with `guidance_scale` and `negative_prompt`
+    - [x] Optimize H.264 encoding with CRF 18 and `yuv420p`
+    - [x] Test "Director's Cut" (Mali Empire - vid_bdd620)
