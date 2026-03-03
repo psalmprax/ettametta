@@ -18,3 +18,8 @@ bitsandbytes
 scipy
 sentencepiece
 imageio-ffmpeg
+gfpgan
+realesrgan
+basicsr
+facexlib
+opencv-python
