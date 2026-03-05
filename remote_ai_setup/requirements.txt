@@ -23,3 +23,9 @@ realesrgan
 basicsr
 facexlib
 opencv-python
+fairseq
+librosa
+praat-parselmouth
+ffmpeg-python
+pyworld
+numba==0.64.0
