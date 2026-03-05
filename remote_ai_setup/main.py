@@ -17,7 +17,7 @@ import nest_asyncio
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from diffusers import DiffusionPipeline
+from diffusers import DiffusionPipeline, LTXVideoPipeline, LTXImageToVideoPipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from PIL import Image
 import cv2
@@ -134,15 +134,27 @@ def load_llm():
 # =========================
 # LOADERS
 # =========================
-def load_ltx():
+def load_ltx(is_i2v=False):
     global pipe
+    # Check if we need to switch pipeline types
+    target_class = LTXImageToVideoPipeline if is_i2v else LTXVideoPipeline
+    
+    if pipe is not None and not isinstance(pipe, target_class):
+        print(f"🔄 Switching LTX Pipeline to {'I2V' if is_i2v else 'T2V'}...")
+        pipe = None
+        clear_gpu()
+
     if pipe is None:
-        print("📥 Loading LTX-Video...")
-        pipe = DiffusionPipeline.from_pretrained(
-            "Lightricks/LTX-Video", torch_dtype=torch.float16, low_cpu_mem_usage=True
+        print(f"📥 Loading LTX-Video ({'I2V' if is_i2v else 'T2V'})...")
+        pipe = target_class.from_pretrained(
+            "Lightricks/LTX-Video", torch_dtype=torch.float16, 
+            low_cpu_mem_usage=True, local_files_only=True
         )
-        if DEVICE == "cuda": pipe.enable_sequential_cpu_offload()
-        else: pipe.to("cpu")
+        if DEVICE == "cuda":
+            # pipe.to(DEVICE) # REMOVED: Conflict with enable_model_cpu_offload
+            pipe.enable_model_cpu_offload() 
+        else:
+            pipe.to("cpu")
     return pipe
 
 def load_enhancers(upscale_factor=2):
@@ -263,16 +275,23 @@ def render_video(job_id, req):
             req.prompt += ", raw photo, 8k resolution, cinematic 35mm lens, f/1.8, bokeh, extreme skin textures, Fujifilm, highly detailed skin pores, cinematic grain, sharp focus, dslr"
             guidance_scale = 6.0  # Boosted for 4K micro-details
 
+        pipe_local = load_ltx(is_i2v=bool(image_obj))
+        
         with torch.inference_mode():
             if image_obj:
+                # Use LTXImageToVideoPipeline arguments
                 result = pipe_local(
-                    prompt=req.prompt, image=image_obj, negative_prompt=negative_prompt,
-                    num_frames=req.frames, num_inference_steps=req.steps, guidance_scale=guidance_scale
+                    prompt=req.prompt, image=image_obj, 
+                    negative_prompt=negative_prompt,
+                    num_frames=req.frames, num_inference_steps=req.steps, 
+                    guidance_scale=guidance_scale
                 )
             else:
+                # Use LTXVideoPipeline arguments
                 result = pipe_local(
                     prompt=req.prompt, negative_prompt=negative_prompt,
-                    num_frames=req.frames, num_inference_steps=req.steps, guidance_scale=guidance_scale
+                    num_frames=req.frames, num_inference_steps=req.steps, 
+                    guidance_scale=guidance_scale
                 )
         frames = result.frames[0]
 
