@@ -19,38 +19,49 @@ class ModelManager:
         self.models_dir.mkdir(parents=True, exist_ok=True)
         # Persistent models stay on disk
         self.persistent_models = ["cogvideox-5b"]
+        # Track active tasks using each model
+        self.active_usage = {} # {model_name: count}
         
-    async def ensure_model(self, model_name: str) -> str:
-        """Checks if model is present, downloads if missing."""
+    async def acquire_model(self, model_name: str) -> str:
+        """
+        Increments usage counter and ensures model is present.
+        """
+        self.active_usage[model_name] = self.active_usage.get(model_name, 0) + 1
         model_path = self.models_dir / f"{model_name}.safetensors"
         
         if model_path.exists():
-            logging.info(f"[ModelManager] Model {model_name} already exists.")
+            logging.info(f"[ModelManager] Acquired {model_name} (Active users: {self.active_usage[model_name]})")
             return str(model_path)
             
         logging.info(f"[ModelManager] Downloading model: {model_name}...")
-        # Simulation of model download (e.g., from HuggingFace)
-        # In a real scenario, this would use a library like `huggingface_hub`
         await asyncio.sleep(2) # Simulate download time
-        
-        # Create a mock file for simulation
         model_path.touch()
         logging.info(f"[ModelManager] Download complete: {model_name}")
         return str(model_path)
 
-    async def cleanup_model(self, model_name: str):
-        """Deletes transient models to save space."""
-        if model_name in self.persistent_models:
-            logging.info(f"[ModelManager] Skipping cleanup for persistent model: {model_name}")
-            return
-            
-        if not settings.CLEANUP_TRANSIENT_MODELS:
+    async def release_model(self, model_name: str):
+        """
+        Decrements usage counter and only cleans up if no other tasks need it.
+        """
+        if model_name not in self.active_usage:
             return
 
-        model_path = self.models_dir / f"{model_name}.safetensors"
-        if model_path.exists():
-            logging.info(f"[ModelManager] Cleaning up transient model: {model_name}")
-            model_path.unlink()
+        self.active_usage[model_name] -= 1
+        count = self.active_usage[model_name]
+        
+        logging.info(f"[ModelManager] Released {model_name} (Active users remaining: {count})")
+        
+        if count <= 0:
+            if model_name in self.persistent_models or not settings.CLEANUP_TRANSIENT_MODELS:
+                logging.info(f"[ModelManager] Skipping cleanup for {model_name}")
+            else:
+                model_path = self.models_dir / f"{model_name}.safetensors"
+                if model_path.exists():
+                    logging.info(f"[ModelManager] No more users. Cleaning up transient model: {model_name}")
+                    model_path.unlink()
+            
+            if model_name in self.active_usage:
+                del self.active_usage[model_name]
 
 class GenerativeService:
     def __init__(self):
@@ -91,32 +102,27 @@ class GenerativeService:
         model_name = model_name_map.get(model_type, "Wan-2.2-V2V")
         
         try:
-            # 1. Ensure Model is Present
-            await self.model_manager.ensure_model(model_name)
+            # 1. Acquire Model (Reference Counted)
+            await self.model_manager.acquire_model(model_name)
             
             # 2. Trigger ComfyUI Workflow
             logging.info(f"[GenerativeService] Dispatching ComfyUI workflow for {model_name}...")
             
             # Simulation of ComfyUI API call
-            # payload = {"prompt": prompt, "model": model_name, "aspect_ratio": aspect_ratio}
-            # async with httpx.AsyncClient() as client:
-            #    resp = await client.post(f"{settings.COMFYUI_URL}/prompt", json=payload)
-            
-            await asyncio.sleep(5) # Simulate render time
+            await asyncio.sleep(5) 
             
             output_path = f"outputs/comfy_{uuid.uuid4()}.mp4"
-            # Mock output creation
             os.makedirs("outputs", exist_ok=True)
             with open(output_path, "w") as f: f.write("mock video data")
-            
-            # 3. Cleanup model if transient
-            await self.model_manager.cleanup_model(model_name)
             
             return output_path
             
         except Exception as e:
             logging.error(f"[GenerativeService] ComfyUI synthesis failed: {e}")
             return None
+        finally:
+            # 3. Release Model (Cleans up only if count is 0)
+            await self.model_manager.release_model(model_name)
 
     async def _synthesize_lite_4k(self, prompt: str, aspect_ratio: str) -> Optional[str]:
         # ... (rest of the code stays same)
@@ -148,17 +154,35 @@ class GenerativeService:
 
     async def synthesize_scene_batch(self, scenes: List[Dict], engine: str = "veo3") -> List[Dict]:
         """
-        Synthesizes multiple scenes in parallel for storytelling.
+        Synthesizes multiple scenes for storytelling.
+        Optimized to group by model and prevent redundant model thrashing.
         """
-        import asyncio
-        logging.info(f"[GenerativeService] Synthesizing batch of {len(scenes)} scenes...")
+        logging.info(f"[GenerativeService] Synthesizing optimized batch of {len(scenes)} scenes...")
         
-        tasks = []
-        for i, scene in enumerate(scenes):
-            prompt = scene.get("visual_prompt", "")
-            tasks.append(self.synthesize_video(prompt, engine=engine))
+        # 1. Group by model if using ComfyUI stack
+        is_comfy = engine in ["hunyuan", "mochi", "cogvideo", "wan"]
         
-        results = await asyncio.gather(*tasks)
+        if is_comfy:
+            model_name_map = {
+                "hunyuan": "HunyuanVideo-1.5",
+                "mochi": "Mochi-1",
+                "cogvideo": "CogVideoX-5b",
+                "wan": "Wan-2.2-V2V"
+            }
+            model_name = model_name_map.get(engine, "Wan-2.2-V2V")
+            
+            # Acquire model ONCE for the whole batch
+            await self.model_manager.acquire_model(model_name)
+            try:
+                tasks = [self.synthesize_video(s.get("visual_prompt", ""), engine=engine) for s in scenes]
+                results = await asyncio.gather(*tasks)
+            finally:
+                # Release model ONCE after batch finishes
+                await self.model_manager.release_model(model_name)
+        else:
+            # Standard parallel processing for cloud models
+            tasks = [self.synthesize_video(s.get("visual_prompt", ""), engine=engine) for s in scenes]
+            results = await asyncio.gather(*tasks)
         
         synthesized_scenes = []
         for i, url in enumerate(results):
