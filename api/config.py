@@ -59,6 +59,12 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8080" # Comma-separated list
     RENDER_NODE_URL: Optional[str] = None # Colab/Remote GPU Node URL
     
+    # ComfyUI Self-Hosting
+    COMFYUI_URL: str = "http://localhost:8188"
+    COMFYUI_WORKFLOWS_DIR: str = "services/video_engine/workflows"
+    COMFYUI_MODELS_DIR: str = "services/video_engine/models"
+    CLEANUP_TRANSIENT_MODELS: bool = True
+    
     @property
     def GOOGLE_REDIRECT_URI(self) -> str:
         return f"{self.PRODUCTION_DOMAIN.rstrip('/')}/publish/auth/youtube/callback"
