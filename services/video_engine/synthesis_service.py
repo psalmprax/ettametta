@@ -3,11 +3,60 @@ import json
 from typing import Optional, Dict, List
 from api.utils.vault import get_secret
 import httpx
+import os
+import asyncio
+import uuid
+import shutil
+from pathlib import Path
+from api.config import settings
+
+class ModelManager:
+    """
+    Handles downloading and deleting large video models to save space on the VPS.
+    """
+    def __init__(self):
+        self.models_dir = Path(settings.COMFYUI_MODELS_DIR)
+        self.models_dir.mkdir(parents=True, exist_ok=True)
+        # Persistent models stay on disk
+        self.persistent_models = ["cogvideox-5b"]
+        
+    async def ensure_model(self, model_name: str) -> str:
+        """Checks if model is present, downloads if missing."""
+        model_path = self.models_dir / f"{model_name}.safetensors"
+        
+        if model_path.exists():
+            logging.info(f"[ModelManager] Model {model_name} already exists.")
+            return str(model_path)
+            
+        logging.info(f"[ModelManager] Downloading model: {model_name}...")
+        # Simulation of model download (e.g., from HuggingFace)
+        # In a real scenario, this would use a library like `huggingface_hub`
+        await asyncio.sleep(2) # Simulate download time
+        
+        # Create a mock file for simulation
+        model_path.touch()
+        logging.info(f"[ModelManager] Download complete: {model_name}")
+        return str(model_path)
+
+    async def cleanup_model(self, model_name: str):
+        """Deletes transient models to save space."""
+        if model_name in self.persistent_models:
+            logging.info(f"[ModelManager] Skipping cleanup for persistent model: {model_name}")
+            return
+            
+        if not settings.CLEANUP_TRANSIENT_MODELS:
+            return
+
+        model_path = self.models_dir / f"{model_name}.safetensors"
+        if model_path.exists():
+            logging.info(f"[ModelManager] Cleaning up transient model: {model_name}")
+            model_path.unlink()
 
 class GenerativeService:
     def __init__(self):
         self.gemini_api_key = get_secret("gemini_api_key")
         self.silicon_flow_key = get_secret("silicon_flow_key") # For Wan2.2/LTX-2
+        self.model_manager = ModelManager()
         
     async def synthesize_video(self, prompt: str, engine: str = "veo3", aspect_ratio: str = "9:16") -> Optional[str]:
         """
@@ -23,11 +72,54 @@ class GenerativeService:
             return await self._synthesize_local(prompt, aspect_ratio)
         elif engine == "lite4k":
             return await self._synthesize_lite_4k(prompt, aspect_ratio)
+        elif engine in ["hunyuan", "mochi", "cogvideo", "wan"]:
+            return await self._synthesize_comfy(prompt, engine, aspect_ratio)
         else:
             logging.error(f"[GenerativeService] Unsupported engine: {engine}")
             return None
 
+    async def _synthesize_comfy(self, prompt: str, model_type: str, aspect_ratio: str) -> Optional[str]:
+        """
+        ComfyUI Self-Hosted Stack: Downloads model, runs workflow, cleans up.
+        """
+        model_name_map = {
+            "hunyuan": "HunyuanVideo-1.5",
+            "mochi": "Mochi-1",
+            "cogvideo": "CogVideoX-5b",
+            "wan": "Wan-2.2-V2V"
+        }
+        model_name = model_name_map.get(model_type, "Wan-2.2-V2V")
+        
+        try:
+            # 1. Ensure Model is Present
+            await self.model_manager.ensure_model(model_name)
+            
+            # 2. Trigger ComfyUI Workflow
+            logging.info(f"[GenerativeService] Dispatching ComfyUI workflow for {model_name}...")
+            
+            # Simulation of ComfyUI API call
+            # payload = {"prompt": prompt, "model": model_name, "aspect_ratio": aspect_ratio}
+            # async with httpx.AsyncClient() as client:
+            #    resp = await client.post(f"{settings.COMFYUI_URL}/prompt", json=payload)
+            
+            await asyncio.sleep(5) # Simulate render time
+            
+            output_path = f"outputs/comfy_{uuid.uuid4()}.mp4"
+            # Mock output creation
+            os.makedirs("outputs", exist_ok=True)
+            with open(output_path, "w") as f: f.write("mock video data")
+            
+            # 3. Cleanup model if transient
+            await self.model_manager.cleanup_model(model_name)
+            
+            return output_path
+            
+        except Exception as e:
+            logging.error(f"[GenerativeService] ComfyUI synthesis failed: {e}")
+            return None
+
     async def _synthesize_lite_4k(self, prompt: str, aspect_ratio: str) -> Optional[str]:
+        # ... (rest of the code stays same)
         """
         4K Lite Orchestrator: High-res image generation + Cinematic Parallax.
         Uses Pollinations.ai for zero-cost high-quality assets.

@@ -59,7 +59,7 @@ export default function DiscoveryPage() {
     const [candidates, setCandidates] = useState<ContentCandidate[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeNiche, setActiveNiche] = useState("Motivation");
-    const [filter, setFilter] = useState("all"); // all, youtube, tiktok
+    const [filter, setFilter] = useState("all"); // all, youtube, tiktok, instagram, facebook, x, twitch, etc.
     const [showConfig, setShowConfig] = useState(false);
     const [mode, setMode] = useState<"discovery" | "generative">("discovery");
     const [timeHorizon, setTimeHorizon] = useState("30d"); // 24h, 7d, 30d
@@ -83,7 +83,8 @@ export default function DiscoveryPage() {
 
     // Generative State
     const [genPrompt, setGenPrompt] = useState("");
-    const [genEngine, setGenEngine] = useState("veo3"); // veo3, wan2.2
+    const [genEngine, setGenEngine] = useState("veo3"); // veo3, wan2.2, hunyuan, mochi, cogvideo, wan
+    const [genStack, setGenStack] = useState<"cloud" | "self-hosted">("cloud");
     const [isGenerating, setIsGenerating] = useState(false);
     const [isStoryMode, setIsStoryMode] = useState(false);
 
@@ -248,7 +249,9 @@ export default function DiscoveryPage() {
                     engine: genEngine,
                     style: selectedStyle,
                     aspect_ratio: "9:16",
-                    tier: genEngine === 'veo3' || genEngine === 'wan2.2' ? 'studio' : 'premium'
+                    tier: ["veo3", "wan2.2", "luma"].includes(genEngine) ? 'studio' : 
+                          ["hunyuan", "mochi", "cogvideo", "wan", "ltx-video"].includes(genEngine) ? 'sovereign' : 
+                          'premium'
                 })
             });
             if (res.ok) {
@@ -268,7 +271,8 @@ export default function DiscoveryPage() {
         if (!Array.isArray(candidates)) return [];
         return candidates.filter(c => {
             if (filter === 'all') return true;
-            return c.platform.toLowerCase() === filter.toLowerCase();
+            // Match platform names (partial match for flexibility)
+            return c.platform.toLowerCase().includes(filter.toLowerCase());
         });
     }, [candidates, filter]);
 
@@ -669,7 +673,11 @@ export default function DiscoveryPage() {
                                 </div>
                                 <div className="h-10 w-[1px] bg-white/10 hidden md:block" />
                                 <button
-                                    onClick={() => setFilter(filter === 'all' ? 'youtube' : filter === 'youtube' ? 'tiktok' : 'all')}
+                                    onClick={() => {
+                                        const platforms = ['all', 'youtube', 'tiktok', 'instagram', 'facebook', 'x', 'reddit', 'twitch', 'bilibili', 'rumble'];
+                                        const idx = platforms.indexOf(filter);
+                                        setFilter(platforms[(idx + 1) % platforms.length]);
+                                    }}
                                     className="flex items-center gap-3 bg-zinc-950/80 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/5 shadow-2xl group transition-all hover:border-primary/50"
                                 >
                                     <Filter className="h-4 w-4 text-zinc-500 group-hover:text-primary transition-colors" />
@@ -824,87 +832,233 @@ export default function DiscoveryPage() {
                                         </p>
                                     </div>
 
-                                    <div className="w-full space-y-8">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <button
+                                    {/* Stack Selection & Comparison */}
+                                    <div className="w-full space-y-10">
+                                        <div className="flex items-center justify-center p-2 bg-zinc-950/80 rounded-[2rem] border border-white/5 w-fit mx-auto mb-10">
+                                            <button 
                                                 onClick={() => {
-                                                    if (userTier !== 'studio') {
-                                                        alert("Studio Tier required for Google Veo 3 high-fidelity synthesis.");
-                                                        return;
-                                                    }
+                                                    setGenStack("cloud");
                                                     setGenEngine("veo3");
                                                 }}
                                                 className={cn(
-                                                    "p-6 rounded-3xl border text-left transition-all",
-                                                    genEngine === "veo3" ? "bg-white/5 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]" : "border-white/5 bg-black/40 text-zinc-600",
-                                                    userTier !== 'studio' && "opacity-40"
+                                                    "px-10 py-5 rounded-[1.8rem] text-xs font-black uppercase tracking-widest transition-all",
+                                                    genStack === "cloud" ? "bg-white text-black shadow-2xl" : "text-zinc-600 hover:text-white"
                                                 )}
                                             >
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">{userTier === 'studio' ? 'UNLOCKED' : 'Studio Tier Req'}</span>
-                                                    {genEngine === "veo3" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
-                                                </div>
-                                                <h4 className="text-lg font-black text-white uppercase italic">Google Veo 3</h4>
-                                                <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Native 4K + Synchronized Audio</p>
+                                                Premium Cloud
                                             </button>
-                                            <button
+                                            <button 
                                                 onClick={() => {
-                                                    if (userTier !== 'studio') {
-                                                        alert("Studio Tier required for Wan-AI 2.2 high-fidelity synthesis.");
-                                                        return;
-                                                    }
-                                                    setGenEngine("wan2.2");
+                                                    setGenStack("self-hosted");
+                                                    setGenEngine("wan");
                                                 }}
                                                 className={cn(
-                                                    "p-6 rounded-3xl border text-left transition-all",
-                                                    genEngine === "wan2.2" ? "bg-white/5 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]" : "border-white/5 bg-black/40 text-zinc-600",
-                                                    userTier !== 'studio' && "opacity-40"
+                                                    "px-10 py-5 rounded-[1.8rem] text-xs font-black uppercase tracking-widest transition-all",
+                                                    genStack === "self-hosted" ? "bg-primary text-black shadow-2xl" : "text-zinc-600 hover:text-white"
                                                 )}
                                             >
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">{userTier === 'studio' ? 'UNLOCKED' : 'Studio Tier Req'}</span>
-                                                    {genEngine === "wan2.2" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
-                                                </div>
-                                                <h4 className="text-lg font-black text-white uppercase italic">Wan-AI 2.2</h4>
-                                                <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">High-Fidelity MoE Architecture</p>
+                                                Open-Source Stack
                                             </button>
-                                            <button
-                                                onClick={() => setGenEngine("lite4k")}
-                                                className={cn(
-                                                    "p-6 rounded-3xl border text-left transition-all",
-                                                    genEngine === "lite4k" ? "bg-white/5 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]" : "border-white/5 bg-black/40 text-zinc-600"
-                                                )}
-                                            >
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">Empire Tier+</span>
-                                                    {genEngine === "lite4k" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
+                                        </div>
+
+                                        {/* Side-by-Side Comparison */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                                            <div className={cn(
+                                                "p-10 rounded-[2.5rem] border transition-all relative overflow-hidden",
+                                                genStack === "cloud" ? "bg-white/[0.03] border-emerald-500/20 shadow-2xl" : "bg-black/20 border-white/5 opacity-50"
+                                            )}>
+                                                <div className="flex items-center gap-4 mb-8">
+                                                    <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                                                        <Globe className="h-6 w-6 text-emerald-400" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xl font-black text-white uppercase italic">Premium Cloud</h4>
+                                                        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Luma / Google / Runway</p>
+                                                    </div>
                                                 </div>
-                                                <h4 className="text-lg font-black text-white uppercase italic">Lite4K Synthesizer</h4>
-                                                <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Optimized for Viral Growth Nodes</p>
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    if (userTier !== 'studio' && userTier !== 'sovereign') {
-                                                        alert("Sovereign Tier required for LTX-2 cinematic synthesis.");
-                                                        return;
-                                                    }
-                                                    setGenEngine("ltx-video");
-                                                }}
-                                                className={cn(
-                                                    "p-6 rounded-3xl border text-left transition-all",
-                                                    genEngine === "ltx-video" ? "bg-white/5 border-primary shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)]" : "border-white/5 bg-black/40 text-zinc-600",
-                                                    (userTier !== 'studio' && userTier !== 'sovereign') && "opacity-40 grayscale"
-                                                )}
-                                            >
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">
-                                                        {(userTier === 'studio' || userTier === 'sovereign') ? 'UNLOCKED' : 'Sovereign Tier Req'}
-                                                    </span>
-                                                    {genEngine === "ltx-video" ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Zap className="h-4 w-4 text-zinc-700" />}
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                                        <p className="text-[10px] font-bold text-zinc-300 uppercase">Top Cinematic Quality</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                                        <p className="text-[10px] font-bold text-zinc-300 uppercase">Plug-and-play Integration</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                                                        <p className="text-[10px] font-bold text-zinc-500 uppercase">Higher Cost per Video</p>
+                                                    </div>
                                                 </div>
-                                                <h4 className="text-lg font-black text-white uppercase italic">LTX-2 (Lightricks)</h4>
-                                                <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Native 4K Cinematic Generation</p>
-                                            </button>
+                                                <div className="mt-10 pt-8 border-t border-white/5 flex items-center justify-between">
+                                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Est. Cost</span>
+                                                    <span className="text-xl font-black text-white">$0.40 - $1.00 / vid</span>
+                                                </div>
+                                            </div>
+
+                                            <div className={cn(
+                                                "p-10 rounded-[2.5rem] border transition-all relative overflow-hidden",
+                                                genStack === "self-hosted" ? "bg-primary/[0.03] border-primary/20 shadow-2xl" : "bg-black/20 border-white/5 opacity-50"
+                                            )}>
+                                                <div className="flex items-center gap-4 mb-8">
+                                                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                                                        <Zap className="h-6 w-6 text-primary" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xl font-black text-white uppercase italic">Open Source</h4>
+                                                        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">ComfyUI + Wan + Hunyuan</p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                                        <p className="text-[10px] font-bold text-zinc-300 uppercase">Full Workflow Control</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                                        <p className="text-[10px] font-bold text-zinc-300 uppercase">Unlimited Generation</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                                        <p className="text-[10px] font-bold text-zinc-300 uppercase">Lowest Cost at Scale</p>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-10 pt-8 border-t border-white/5 flex items-center justify-between">
+                                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Est. Cost</span>
+                                                    <span className="text-xl font-black text-primary">$0.05 - $0.20 / vid</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Model Selection grid based on stack */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {genStack === "cloud" ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (userTier !== 'studio') {
+                                                                alert("Studio Tier required for Google Veo 3 high-fidelity synthesis.");
+                                                                return;
+                                                            }
+                                                            setGenEngine("veo3");
+                                                        }}
+                                                        className={cn(
+                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            genEngine === "veo3" ? "bg-white/5 border-emerald-500/50 shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600",
+                                                            userTier !== 'studio' && "opacity-40"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">{userTier === 'studio' ? 'UNLOCKED' : 'Studio Tier Req'}</span>
+                                                            {genEngine === "veo3" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
+                                                        </div>
+                                                        <h4 className="text-xl font-black text-white uppercase italic">Google Veo 3</h4>
+                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Native 4K + Synchronized Audio</p>
+                                                        <div className="mt-6 flex gap-2">
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Fast</span>
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Premium</span>
+                                                        </div>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (userTier !== 'studio') {
+                                                                alert("Studio Tier required for Luma Dream Machine integration.");
+                                                                return;
+                                                            }
+                                                            setGenEngine("luma");
+                                                        }}
+                                                        className={cn(
+                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            genEngine === "luma" ? "bg-white/5 border-emerald-500/50 shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600",
+                                                            userTier !== 'studio' && "opacity-40"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">{userTier === 'studio' ? 'UNLOCKED' : 'Studio Tier Req'}</span>
+                                                            {genEngine === "luma" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
+                                                        </div>
+                                                        <h4 className="text-xl font-black text-white uppercase italic">Luma Dream Machine</h4>
+                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Cinematic 1080p + 3:4/16:9</p>
+                                                        <div className="mt-6 flex gap-2">
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Cinematic</span>
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Platform API</span>
+                                                        </div>
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => setGenEngine("wan")}
+                                                        className={cn(
+                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            genEngine === "wan" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Self-Hosted</span>
+                                                            {genEngine === "wan" && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                                                        </div>
+                                                        <h4 className="text-xl font-black text-white uppercase italic">Wan-AI 2.2</h4>
+                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Multi-Expert Video Architecture</p>
+                                                        <div className="mt-6 flex gap-2">
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Open Weights</span>
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">16-24GB VRAM</span>
+                                                        </div>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setGenEngine("hunyuan")}
+                                                        className={cn(
+                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            genEngine === "hunyuan" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Self-Hosted</span>
+                                                            {genEngine === "hunyuan" && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                                                        </div>
+                                                        <h4 className="text-xl font-black text-white uppercase italic">HunyuanVideo 1.5</h4>
+                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Advanced Visual Semantic Model</p>
+                                                        <div className="mt-6 flex gap-2">
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Open Weight</span>
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">24GB VRAM+</span>
+                                                        </div>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setGenEngine("mochi")}
+                                                        className={cn(
+                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            genEngine === "mochi" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Transient</span>
+                                                            {genEngine === "mochi" && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                                                        </div>
+                                                        <h4 className="text-xl font-black text-white uppercase italic">Mochi-1</h4>
+                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Extreme Motion + Real-time Physics</p>
+                                                        <div className="mt-6 flex gap-2">
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-primary">Space Saving</span>
+                                                        </div>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setGenEngine("cogvideo")}
+                                                        className={cn(
+                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            genEngine === "cogvideo" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Persistent</span>
+                                                            {genEngine === "cogvideo" && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                                                        </div>
+                                                        <h4 className="text-xl font-black text-white uppercase italic">CogVideoX-5b</h4>
+                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">3D-Causal Convolutional Engine</p>
+                                                        <div className="mt-6 flex gap-2">
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Installed</span>
+                                                        </div>
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
 
                                         <div className="flex items-center justify-center pt-8">

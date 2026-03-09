@@ -229,7 +229,7 @@ async def start_generation(
         
         if request.engine == "lite4k":
             required_tier = SubscriptionTier.PREMIUM
-        elif request.engine == "ltx-video":
+        elif request.engine in ["ltx-video", "hunyuan", "mochi", "cogvideo", "wan"]:
             required_tier = SubscriptionTier.SOVEREIGN
         elif request.engine in ["veo3", "wan2.2", "runway", "pika"]:
             required_tier = SubscriptionTier.STUDIO

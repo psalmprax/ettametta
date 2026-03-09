@@ -262,11 +262,20 @@ def generate_video_task(self, prompt: str, engine: str, style: str, aspect_ratio
         # We can reuse the processor logic here if needed
         
         # 4. Storage & Finalization
-        update_job(status="Completed", progress=100, output_path=video_url)
+        from services.storage.service import base_storage_service
+        # Upload to Storage
+        storage_key = base_storage_service.upload_file(video_url)
+        public_url = base_storage_service.get_public_url(storage_key)
+        
+        update_job(status="Completed", progress=100, output_path=public_url)
+        
+        # 5. Cleanup local video file if not using local storage
+        if settings.STORAGE_PROVIDER != "LOCAL":
+            cleanup_local_files(video_url)
         
         return {
             "status": "success",
-            "video_url": video_url,
+            "video_url": public_url,
             "engine": engine,
             "prompt_used": prompt
         }
@@ -354,6 +363,10 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
         
         update_job(status="Completed", progress=100, output_path=public_url)
         
+        # 5. Cleanup local video file if not using local storage
+        if settings.STORAGE_PROVIDER != "LOCAL":
+            cleanup_local_files(final_video_path)
+            
         return {
             "status": "success",
             "title": story_script.title,
