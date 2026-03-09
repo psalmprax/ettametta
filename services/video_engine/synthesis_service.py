@@ -97,7 +97,9 @@ class GenerativeService:
             "hunyuan": "HunyuanVideo-1.5",
             "mochi": "Mochi-1",
             "cogvideo": "CogVideoX-5b",
-            "wan": "Wan-2.2-V2V"
+            "wan": "Wan-2.2-V2V",
+            "ltx-video": "LTX-Video",
+            "zeroscope": "Zeroscope_v2_XL"
         }
         model_name = model_name_map.get(model_type, "Wan-2.2-V2V")
         

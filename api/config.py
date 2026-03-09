@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     RENDER_NODE_URL: Optional[str] = None # Colab/Remote GPU Node URL
     
     # ComfyUI Self-Hosting
-    COMFYUI_URL: str = "http://localhost:8188"
+    COMFYUI_URL: str = "http://220.135.0.171:8188"
     COMFYUI_WORKFLOWS_DIR: str = "services/video_engine/workflows"
     COMFYUI_MODELS_DIR: str = "services/video_engine/models"
     CLEANUP_TRANSIENT_MODELS: bool = True

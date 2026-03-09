@@ -1013,14 +1013,49 @@ export default function DiscoveryPage() {
                                                         )}
                                                     >
                                                         <div className="flex items-center justify-between mb-4">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">Self-Hosted</span>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">VERIFIED STABLE</span>
                                                             {genEngine === "hunyuan" && <CheckCircle2 className="h-4 w-4 text-primary" />}
                                                         </div>
                                                         <h4 className="text-xl font-black text-white uppercase italic">HunyuanVideo 1.5</h4>
                                                         <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Advanced Visual Semantic Model</p>
                                                         <div className="mt-6 flex gap-2">
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Open Weight</span>
                                                             <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">24GB VRAM+</span>
+                                                            <span className="px-2 py-1 rounded bg-primary/20 border border-primary/30 text-[8px] font-black uppercase text-primary">BEST ON SERVER</span>
+                                                        </div>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setGenEngine("ltx-video")}
+                                                        className={cn(
+                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            genEngine === "ltx-video" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">VERIFIED STABLE</span>
+                                                            {genEngine === "ltx-video" && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                                                        </div>
+                                                        <h4 className="text-xl font-black text-white uppercase italic">LTX-Video</h4>
+                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Lightricks Real-time T2V</p>
+                                                        <div className="mt-6 flex gap-2">
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">16GB VRAM</span>
+                                                            <span className="px-2 py-1 rounded bg-primary/20 border border-primary/30 text-[8px] font-black uppercase text-primary">RECOMMENDED</span>
+                                                        </div>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setGenEngine("zeroscope")}
+                                                        className={cn(
+                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            genEngine === "zeroscope" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Self-Hosted</span>
+                                                            {genEngine === "zeroscope" && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                                                        </div>
+                                                        <h4 className="text-xl font-black text-white uppercase italic">Zeroscope v2 XL</h4>
+                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Fast Multi-stage refinement</p>
+                                                        <div className="mt-6 flex gap-2">
+                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Fast</span>
                                                         </div>
                                                     </button>
                                                     <button
