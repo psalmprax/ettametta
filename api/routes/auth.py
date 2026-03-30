@@ -46,7 +46,7 @@ class UserResponse(BaseModel):
     email: str
     role: str
     subscription: str
-    credits: int
+    credits: Optional[int] = 0
     referral_code: Optional[str] = None
     telegram_chat_id: Optional[str] = None
     telegram_token: Optional[str] = None
@@ -237,9 +237,9 @@ async def upgrade_subscription(
     if current_user.role != "admin":
         raise HTTPException(
             status_code=403,
-            detail="Direct tier upgrades are admin-only. Please use the billing checkout flow for upgrades."
+            detail="Direct tier upgrades are admin-only. Please use the billing checkout flow for upgrades.",
         )
-    
+
     valid_tiers = ["free", "basic", "premium"]
     if tier.lower() not in valid_tiers:
         raise HTTPException(
