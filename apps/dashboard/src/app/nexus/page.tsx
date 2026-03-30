@@ -71,6 +71,7 @@ export default function NexusPage() {
     const [videoTopic, setVideoTopic] = useState("");
     const [videoScript, setVideoScript] = useState("");
     const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+    const [telemetry, setTelemetry] = useState<any>(null);
 
     // Fetch initial data
     useEffect(() => {
@@ -131,6 +132,22 @@ export default function NexusPage() {
         };
 
         fetchData();
+
+        // Polling for telemetry
+        const fetchTelemetry = async () => {
+            const token = localStorage.getItem("et_token");
+            if (!token) return;
+            try {
+                const res = await fetch(`${API_BASE}/nexus/telemetry`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) setTelemetry(await res.json());
+            } catch (e) { console.error("Telemetry fetch error:", e); }
+        };
+
+        fetchTelemetry();
+        const interval = setInterval(fetchTelemetry, 10000); // 10s intervals for real-first dashboarding
+        return () => clearInterval(interval);
     }, []);
 
     // Handle WebSocket updates
@@ -347,7 +364,7 @@ export default function NexusPage() {
                             <span className="text-[10px] font-black tracking-[0.4em] text-primary uppercase italic">Neural Orchestration</span>
                         </div>
                         <h1 className="text-6xl md:text-7xl font-black italic tracking-tighter uppercase text-white leading-none">
-                            Nexus <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400 text-hollow">Engine</span>
+                            Nexus <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">Engine</span>
                         </h1>
                         <p className="text-zinc-500 max-w-xl text-sm font-medium leading-relaxed">
                             Deploy end-to-end autonomous media pipelines. Ettametta's Nexus translates niche signals into cinematic realities through a four-stage neural synthesis.
@@ -358,7 +375,7 @@ export default function NexusPage() {
                         <div className="flex -space-x-3">
                             {[1, 2, 3].map((i) => (
                                 <div key={i} className="h-10 w-10 rounded-full border-2 border-black bg-zinc-900 flex items-center justify-center overflow-hidden">
-                                    <div className="h-full w-full bg-gradient-to-br from-primary/20 to-zinc-900" />
+                                    <div className="h-full w-full bg-linear-to-br from-primary/20 to-zinc-900" />
                                 </div>
                             ))}
                             <div className="h-10 w-10 rounded-full border-2 border-black bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-white">
@@ -374,8 +391,8 @@ export default function NexusPage() {
                 </div>
 
                 {/* Configuration Bar */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-[2.5rem] bg-zinc-950/40 border border-white/5 backdrop-blur-3xl shadow-2xl">
-                    <div className="flex flex-col gap-2 p-4 rounded-3xl bg-white/[0.03] border border-white/5 group hover:border-primary/20 transition-all">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-5xl bg-zinc-950/40 border border-white/5 backdrop-blur-3xl shadow-2xl">
+                    <div className="flex flex-col gap-2 p-4 rounded-3xl bg-white/3 border border-white/5 group hover:border-primary/20 transition-all">
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
                             <Layers className="h-3 w-3" /> Targeted Niche
                         </label>
@@ -388,7 +405,7 @@ export default function NexusPage() {
                         </select>
                     </div>
 
-                    <div className="flex flex-col gap-2 p-4 rounded-3xl bg-white/[0.03] border border-white/5 group hover:border-primary/20 transition-all">
+                    <div className="flex flex-col gap-2 p-4 rounded-3xl bg-white/3 border border-white/5 group hover:border-primary/20 transition-all">
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
                            <Cpu className="h-3 w-3" /> Pipeline Recipe
                         </label>
@@ -403,7 +420,7 @@ export default function NexusPage() {
                         </select>
                     </div>
 
-                    <div className="flex flex-col gap-2 p-4 rounded-3xl bg-white/[0.03] border border-white/5 group hover:border-primary/20 transition-all">
+                    <div className="flex flex-col gap-2 p-4 rounded-3xl bg-white/3 border border-white/5 group hover:border-primary/20 transition-all">
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
                            <Database className="h-3 w-3" /> Storage Node
                         </label>
@@ -426,7 +443,7 @@ export default function NexusPage() {
                 {/* Pipeline Mesh Visualization */}
                 <div className="grid grid-cols-1 xl:grid-cols-4 gap-12">
                     <div className="xl:col-span-3 space-y-12">
-                        <div className="relative aspect-[21/9] rounded-[3rem] bg-zinc-950 border border-white/5 overflow-hidden shadow-inner group">
+                        <div className="relative aspect-21/9 rounded-6xl bg-zinc-950 border border-white/5 overflow-hidden shadow-inner group">
                             {/* Animated Background Mesh */}
                             <div className="absolute inset-0 opacity-20 pointer-events-none">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--primary)_0%,transparent_100%)] opacity-10 animate-pulse" />
@@ -440,7 +457,7 @@ export default function NexusPage() {
 
                             {/* Node Connectors */}
                             <div className="absolute inset-0 flex items-center justify-around px-20">
-                                <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                                <div className="absolute top-1/2 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/10 to-transparent" />
                                 
                                 {activeBlueprint?.nodes.map((node, idx) => {
                                     const isActive = activeJobId && selectedNodeIndex === idx;
@@ -481,7 +498,7 @@ export default function NexusPage() {
                                  <div className="flex items-center gap-4">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Status:</p>
                                     <p className="text-primary font-black uppercase tracking-tight italic">
-                                        {activeJobId ? 'OPERATIONAL' : 'IDLE'}
+                                        {telemetry?.status || (activeJobId ? 'OPERATIONAL' : 'IDLE')}
                                     </p>
                                  </div>
                             </div>
@@ -500,18 +517,18 @@ export default function NexusPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-4 pt-4">
-                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/2 border border-white/5">
                                         <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Execution Priority</span>
                                         <span className="text-xs font-black text-white uppercase italic">Ultra_High</span>
                                     </div>
-                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/2 border border-white/5">
                                         <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Cluster Routing</span>
-                                        <span className="text-xs font-black text-white uppercase italic">EU-Central-1</span>
+                                        <span className="text-xs font-black text-white uppercase italic">{telemetry?.cluster_node || "EU-Central-1"}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="glass-card p-10 bg-white/[0.02] border-white/10 flex flex-col justify-center items-center text-center space-y-6 group cursor-pointer" onClick={handleCustomRecipe}>
+                            <div className="glass-card p-10 bg-white/2 border-white/10 flex flex-col justify-center items-center text-center space-y-6 group cursor-pointer" onClick={handleCustomRecipe}>
                                 <div className="h-16 w-16 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <Plus className="h-8 w-8 text-zinc-700" />
                                 </div>
@@ -532,7 +549,7 @@ export default function NexusPage() {
                                     <Activity className="h-3 w-3" /> Live Event Stream
                                 </h3>
                                 <div className="px-2 py-1 rounded-md bg-zinc-900 border border-white/5 text-[8px] font-bold text-zinc-500 font-mono">
-                                    21ms OFFSET
+                                    {telemetry?.latency_ms ? `${telemetry.latency_ms}ms OFFSET` : "--ms OFFSET"}
                                 </div>
                              </div>
 
@@ -569,7 +586,7 @@ export default function NexusPage() {
                         </div>
 
                          {/* Global Pulse Indicator */}
-                        <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-zinc-900 to-black border border-white/5 space-y-4">
+                        <div className="p-8 rounded-5xl bg-linear-to-br from-zinc-900 to-black border border-white/5 space-y-4">
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">Network Health</h4>
                             <div className="flex gap-1 h-8 items-end">
                                 {[...Array(24)].map((_, i) => (
@@ -582,8 +599,8 @@ export default function NexusPage() {
                                 ))}
                             </div>
                             <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-tighter text-zinc-700">
-                                <span>Signal_01: {Math.random() > 0.5 ? 'Active' : 'Standby'}</span>
-                                <span>Latency: 22ms</span>
+                                <span>Signal_01: {telemetry?.signals?.[0]?.status || (Math.random() > 0.5 ? 'Active' : 'Standby')}</span>
+                                <span>Latency: {telemetry?.latency_ms ? `${telemetry.latency_ms}ms` : "---ms"}</span>
                             </div>
                         </div>
                     </div>
@@ -608,9 +625,9 @@ export default function NexusPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {/* Create Persona Card */}
-                        <div className="p-8 rounded-[2rem] bg-zinc-900 border border-white/5 space-y-6">
+                        <div className="p-8 rounded-4xl bg-zinc-900 border border-white/5 space-y-6">
                             <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-center">
+                                <div className="h-10 w-10 rounded-xl bg-white/4 border border-white/5 flex items-center justify-center">
                                     <Plus className="h-5 w-5 text-zinc-400" />
                                 </div>
                                 <div>
@@ -629,7 +646,7 @@ export default function NexusPage() {
                                         value={personaName}
                                         onChange={(e) => setPersonaName(e.target.value)}
                                         placeholder="Enter persona name..."
-                                        className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors"
+                                        className="w-full px-4 py-3 rounded-xl bg-white/3 border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors"
                                     />
                                 </div>
 
@@ -642,7 +659,7 @@ export default function NexusPage() {
                                         value={personaImageUrl}
                                         onChange={(e) => setPersonaImageUrl(e.target.value)}
                                         placeholder="https://example.com/image.png"
-                                        className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors"
+                                        className="w-full px-4 py-3 rounded-xl bg-white/3 border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors"
                                     />
                                 </div>
 
@@ -665,7 +682,7 @@ export default function NexusPage() {
                                     animate={{ opacity: 1, height: "auto" }}
                                     className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-center gap-3"
                                 >
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                                     <div>
                                         <p className="text-xs font-black text-emerald-400 uppercase tracking-tight">{createdPersona.name}</p>
                                         <p className="text-[9px] text-zinc-500 truncate max-w-[280px]">{createdPersona.reference_image_url}</p>
@@ -676,11 +693,11 @@ export default function NexusPage() {
 
                         {/* Generate Video Card */}
                         <div className={cn(
-                            "p-8 rounded-[2rem] bg-zinc-900 border border-white/5 space-y-6 transition-opacity",
+                            "p-8 rounded-4xl bg-zinc-900 border border-white/5 space-y-6 transition-opacity",
                             !createdPersona && "opacity-40 pointer-events-none"
                         )}>
                             <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-center">
+                                <div className="h-10 w-10 rounded-xl bg-white/4 border border-white/5 flex items-center justify-center">
                                     <Video className="h-5 w-5 text-zinc-400" />
                                 </div>
                                 <div>
@@ -699,7 +716,7 @@ export default function NexusPage() {
                                         value={videoTopic}
                                         onChange={(e) => setVideoTopic(e.target.value)}
                                         placeholder="Video topic or subject..."
-                                        className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors"
+                                        className="w-full px-4 py-3 rounded-xl bg-white/3 border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors"
                                     />
                                 </div>
 
@@ -712,7 +729,7 @@ export default function NexusPage() {
                                         onChange={(e) => setVideoScript(e.target.value)}
                                         placeholder="Enter custom script or leave blank for auto-generation..."
                                         rows={3}
-                                        className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors resize-none"
+                                        className="w-full px-4 py-3 rounded-xl bg-white/3 border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors resize-none"
                                     />
                                 </div>
 
@@ -745,8 +762,8 @@ export default function NexusPage() {
                     <div className="space-y-4 max-h-[400px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
                         {nexusJobs.length > 0 ? (
                         nexusJobs.map((job) => (
-                            <div key={job.id} className="flex gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
-                                <div className="flex-shrink-0 pt-1">
+                            <div key={job.id} className="flex gap-4 p-4 rounded-2xl bg-white/2 border border-white/5 hover:border-white/10 transition-colors group">
+                                <div className="shrink-0 pt-1">
                                     {job.status === 'COMPLETED' ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : 
                                     job.status === 'FAILED' ? <AlertCircle className="h-5 w-5 text-red-500" /> : 
                                     <RefreshCw className="h-5 w-5 text-primary animate-spin" />}
@@ -793,7 +810,7 @@ export default function NexusPage() {
 
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                         {/* Chat Interface */}
-                        <div className="xl:col-span-2 glass-card p-0 flex flex-col bg-black border border-white/5 rounded-[2rem] overflow-hidden">
+                        <div className="xl:col-span-2 glass-card p-0 flex flex-col bg-black border border-white/5 rounded-4xl overflow-hidden">
                             {/* Messages Area */}
                             <div className="flex-1 min-h-[400px] max-h-[500px] overflow-y-auto p-8 space-y-6 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
                                 {chatMessages.length === 0 ? (
@@ -818,7 +835,7 @@ export default function NexusPage() {
                                                 )}
                                             >
                                                 {msg.role === "agent" && (
-                                                    <div className="flex-shrink-0 h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                                                    <div className="shrink-0 h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
                                                         <Bot className="h-4 w-4 text-primary" />
                                                     </div>
                                                 )}
@@ -826,7 +843,7 @@ export default function NexusPage() {
                                                     "max-w-[75%] p-4 rounded-2xl text-sm leading-relaxed",
                                                     msg.role === "user"
                                                         ? "bg-primary/10 border border-primary/20 text-white"
-                                                        : "bg-white/[0.03] border border-white/5 text-zinc-300"
+                                                        : "bg-white/3 border border-white/5 text-zinc-300"
                                                 )}>
                                                     <p className="text-[10px] font-black uppercase tracking-widest mb-1 opacity-50">
                                                         {msg.role === "user" ? "You" : "Agent"}
@@ -834,7 +851,7 @@ export default function NexusPage() {
                                                     <p className="font-medium">{msg.content}</p>
                                                 </div>
                                                 {msg.role === "user" && (
-                                                    <div className="flex-shrink-0 h-9 w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                                    <div className="shrink-0 h-9 w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
                                                         <User className="h-4 w-4 text-zinc-400" />
                                                     </div>
                                                 )}
@@ -848,10 +865,10 @@ export default function NexusPage() {
                                         animate={{ opacity: 1 }}
                                         className="flex gap-4"
                                     >
-                                        <div className="flex-shrink-0 h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                                        <div className="shrink-0 h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
                                             <Bot className="h-4 w-4 text-primary" />
                                         </div>
-                                        <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 flex items-center gap-2">
+                                        <div className="bg-white/3 border border-white/5 rounded-2xl p-4 flex items-center gap-2">
                                             <Loader2 className="h-4 w-4 text-primary animate-spin" />
                                             <span className="text-xs text-zinc-500 font-medium">Agent is thinking...</span>
                                         </div>
@@ -868,7 +885,7 @@ export default function NexusPage() {
                                         onChange={(e) => setChatInput(e.target.value)}
                                         onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
                                         placeholder="Ask the AI agent anything..."
-                                        className="flex-1 bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/30 transition-colors"
+                                        className="flex-1 bg-white/3 border border-white/5 rounded-2xl px-5 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/30 transition-colors"
                                     />
                                     <button
                                         onClick={handleSendChat}
@@ -886,7 +903,7 @@ export default function NexusPage() {
 
                         {/* Capabilities Display */}
                         <div className="space-y-6">
-                            <div className="glass-card p-8 space-y-6 bg-black border border-white/5 rounded-[2rem]">
+                            <div className="glass-card p-8 space-y-6 bg-black border border-white/5 rounded-4xl">
                                 <div className="flex items-center gap-4">
                                     <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                                         <ShieldCheck className="h-6 w-6" />
@@ -905,9 +922,9 @@ export default function NexusPage() {
                                                 initial={{ opacity: 0, x: -10 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: idx * 0.05 }}
-                                                className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-all group"
+                                                className="flex items-center gap-3 p-3 rounded-xl bg-white/2 border border-white/5 hover:border-primary/20 transition-all group"
                                             >
-                                                <Sparkles className="h-4 w-4 text-primary/60 group-hover:text-primary transition-colors flex-shrink-0" />
+                                                <Sparkles className="h-4 w-4 text-primary/60 group-hover:text-primary transition-colors shrink-0" />
                                                 <span className="text-xs font-medium text-zinc-400 group-hover:text-white transition-colors">{cap}</span>
                                             </motion.div>
                                         ))

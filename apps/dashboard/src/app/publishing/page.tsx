@@ -432,7 +432,7 @@ export default function PublishingPage() {
                 {/* Redirecting Overlay */}
                 <AnimatePresence>
                     {isRedirecting && (
-                        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl">
+                        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/95 backdrop-blur-xl">
                             <div className="flex flex-col items-center gap-10 text-center">
                                 <RefreshCw className="h-20 w-20 text-primary animate-spin" />
                                 <h4 className="text-2xl font-black italic tracking-tighter text-white uppercase">Securing Handshake...</h4>
@@ -591,7 +591,7 @@ export default function PublishingPage() {
                                 <button
                                     onClick={handleManualDeploy}
                                     disabled={isDeploying || !selectedJobForDeploy || accounts.length === 0}
-                                    className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black py-6 rounded-[2rem] transition-all shadow-[0_0_50px_rgba(var(--primary-rgb),0.3)] flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em]"
+                                    className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black py-6 rounded-4xl transition-all shadow-[0_0_50px_rgba(var(--primary-rgb),0.3)] flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em]"
                                 >
                                     {isDeploying ? <RefreshCw className="h-5 w-5 animate-spin" /> : <ArrowUpRight className="h-5 w-5" />}
                                     {isDeploying ? "Deploying..." : "Initialize Transmission"}
@@ -600,7 +600,7 @@ export default function PublishingPage() {
                                 <button
                                     onClick={handleMultiDeploy}
                                     disabled={isMultiDeploying || !selectedJobForDeploy || accounts.length === 0 || selectedPlatforms.length === 0}
-                                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black py-6 rounded-[2rem] transition-all shadow-[0_0_50px_rgba(37,99,235,0.3)] flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em]"
+                                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black py-6 rounded-4xl transition-all shadow-[0_0_50px_rgba(37,99,235,0.3)] flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em]"
                                 >
                                     {isMultiDeploying ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Globe className="h-5 w-5" />}
                                     {isMultiDeploying ? "Broadcasting..." : `Publish Everywhere (${selectedPlatforms.length})`}
@@ -632,7 +632,7 @@ export default function PublishingPage() {
                         >
                             <motion.div
                                 initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                                className="glass-card w-full max-w-lg rounded-[3rem] overflow-hidden shadow-2xl"
+                                className="glass-card w-full max-w-lg rounded-6xl overflow-hidden shadow-2xl"
                             >
                                 <div className="p-10 space-y-8">
                                     <div className="flex items-center justify-between">
@@ -674,10 +674,10 @@ export default function PublishingPage() {
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="h-1 w-8 bg-primary rounded-full shadow-sm" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary lowercase tracking-[0.4em]">Distribution HQ</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Distribution HQ</span>
                         </div>
                         <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter uppercase text-white leading-none">
-                            Social <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 text-hollow">Hub</span>
+                            Social <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 to-indigo-500 text-hollow">Hub</span>
                         </h1>
                     </div>
                     <motion.button
@@ -742,7 +742,7 @@ export default function PublishingPage() {
                         animate={{ x: 0, opacity: 1 }}
                         onClick={() => setInjectMonetization(!injectMonetization)}
                         className={cn(
-                            "cursor-pointer border rounded-[2.5rem] p-10 flex items-center gap-10 relative overflow-hidden group shadow-[0_32px_64px_rgba(var(--primary-rgb),0.05)] transition-all",
+                            "cursor-pointer border rounded-5xl p-10 flex items-center gap-10 relative overflow-hidden group shadow-[0_32px_64px_rgba(var(--primary-rgb),0.05)] transition-all",
                             injectMonetization ? "bg-primary/10 border-primary/40 shadow-[0_0_60px_rgba(var(--primary-rgb),0.1)]" : "bg-white/5 border-white/5 opacity-60"
                         )}
                     >
@@ -828,7 +828,7 @@ export default function PublishingPage() {
                 {/* Scheduled Posts */}
                 {scheduledPosts.length > 0 && (
                     <div className="glass-card overflow-hidden shadow-2xl border-white/5 mt-16">
-                        <div className="px-10 py-8 border-b border-white/5 bg-amber-500/[0.02] flex items-center gap-4">
+                        <div className="px-10 py-8 border-b border-white/5 bg-amber-500/2 flex items-center gap-4">
                             <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
                                 <Play className="h-5 w-5 text-amber-500" />
                             </div>
@@ -839,7 +839,7 @@ export default function PublishingPage() {
                         </div>
                         <div className="divide-y divide-white/5">
                             {scheduledPosts.map((post) => (
-                                <div key={post.id} className="p-6 flex items-center justify-between hover:bg-white/[0.02] transition-all">
+                                <div key={post.id} className="p-6 flex items-center justify-between hover:bg-white/2 transition-all">
                                     <div className="flex items-center gap-4">
                                         <div className="h-3 w-3 rounded-full bg-amber-500 animate-pulse" />
                                         <div>
@@ -858,7 +858,7 @@ export default function PublishingPage() {
 
                 {/* Distribution History */}
                 <div className="glass-card overflow-hidden shadow-[0_32px_128px_rgba(0,0,0,0.5)] border-white/5 mt-32">
-                    <div className="px-10 py-12 border-b border-white/5 bg-white/[0.01] flex items-center justify-between relative overflow-hidden">
+                    <div className="px-10 py-12 border-b border-white/5 bg-white/1 flex items-center justify-between relative overflow-hidden">
                         <div className="absolute inset-0 scanline opacity-10 pointer-events-none" />
                         <div className="flex items-center gap-8 relative z-10">
                             <div className="relative">
@@ -923,19 +923,19 @@ export default function PublishingPage() {
                                                 duration: 0.8,
                                                 ease: [0.16, 1, 0.3, 1]
                                             }}
-                                            className="p-10 px-12 flex flex-col lg:flex-row lg:items-center justify-between hover:bg-white/[0.03] transition-all group relative overflow-hidden"
+                                            className="p-10 px-12 flex flex-col lg:flex-row lg:items-center justify-between hover:bg-white/3 transition-all group relative overflow-hidden"
                                         >
-                                            <div className="absolute inset-x-0 top-0 h-[100%] bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                                            <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-[var(--shimmer-opacity)] pointer-events-none" />
+                                            <div className="absolute inset-x-0 top-0 h-full bg-linear-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                                            <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-(--shimmer-opacity) pointer-events-none" />
 
                                             {/* Left: Core Info */}
                                             <div className="flex items-center gap-10 relative z-10">
                                                  <div
                                                      onClick={() => post.url && window.open(post.url, '_blank', 'noopener,noreferrer')}
-                                                     className="h-24 w-24 rounded-[2rem] bg-zinc-950 border border-white/5 flex items-center justify-center group-hover:border-primary/50 group-hover:rotate-6 transition-all duration-700 shadow-2xl relative cursor-pointer"
+                                                     className="h-24 w-24 rounded-4xl bg-zinc-950 border border-white/5 flex items-center justify-center group-hover:border-primary/50 group-hover:rotate-6 transition-all duration-700 shadow-2xl relative cursor-pointer"
                                                  >
                                                     <Icon className="h-10 w-10 text-primary group-hover:scale-110 transition-transform duration-500" />
-                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-[2rem] backdrop-blur-sm">
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-4xl backdrop-blur-sm">
                                                         <Play className="h-8 w-8 text-white fill-white animate-pulse" />
                                                     </div>
                                                 </div>
@@ -963,7 +963,7 @@ export default function PublishingPage() {
                                                     <div className="flex items-center gap-6">
                                                         <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">{post.platform}</span>
                                                         <div className="h-1 w-1 rounded-full bg-zinc-800" />
-                                                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.1em]">{new Date(post.published_at).toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}</span>
+                                                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">{new Date(post.published_at).toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}</span>
                                                     </div>
                                                 </div>
                                             </div>

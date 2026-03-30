@@ -29,6 +29,7 @@ import * as d3 from "d3";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useRouter } from "next/navigation";
 import { VideoPreviewModal } from "@/components/ui/VideoPreviewModal";
+import { toast } from "sonner";
 
 const Geomap = dynamic(() => import("@/components/ui/Geomap"), { ssr: false });
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
@@ -173,29 +174,40 @@ export default function DiscoveryPage() {
         fetchTrends();
     }, [fetchTrends]);
 
-     const handleAnalyze = useCallback(async (candidate: ContentCandidate) => {
-         try {
-             const token = localStorage.getItem("et_token");
-             const res = await fetch(`${API_BASE}/discovery/analyze`, {
-                 method: "POST",
-                 headers: {
-                     "Content-Type": "application/json",
-                     Authorization: `Bearer ${token}`
-                 },
-                 body: JSON.stringify(candidate)
-             });
-             if (res.ok) {
-                 const data = await res.json();
-                 alert(`Analysis queued. Task ID: ${data.task_id}. Check Nexus for results.`);
-             } else {
-                 const err = await res.json().catch(() => ({}));
-                 alert(`Analysis failed: ${err.detail || res.statusText}`);
-             }
-         } catch (err) {
-             console.error(err);
-             alert("Analysis request error.");
-         }
-     }, []);
+    const handleAnalyze = useCallback(async (candidate: ContentCandidate) => {
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/discovery/analyze`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(candidate)
+            });
+            if (res.ok) {
+                const data = await res.json();
+                toast.success("Analysis Queued", {
+                    description: `Task ID: ${data.task_id}. Results will appear in Nexus.`,
+                    action: {
+                        label: "View Nexus",
+                        onClick: () => router.push("/nexus")
+                    },
+                    duration: 5000
+                });
+            } else {
+                const err = await res.json().catch(() => ({}));
+                toast.error("Analysis Failed", {
+                    description: err.detail || res.statusText
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Connection Error", {
+                description: "Failed to dispatch analysis task."
+            });
+        }
+    }, [router]);
 
     const handleAddToQueue = useCallback(async (candidate: ContentCandidate) => {
         try {
@@ -247,9 +259,14 @@ export default function DiscoveryPage() {
                 const data = await res.json();
                 setTestJobId(data.task_id);
                 setPreviewTitle(`Test Drive Outcome: ${activeNiche}`);
-                alert(`Test Drive Initiated for ${activeNiche}. System is finding and transforming the top viral candidate...`);
+                toast.info("Test Drive Initiated", {
+                    description: `System is finding and transforming the top viral candidate for ${activeNiche}...`,
+                    duration: 4000
+                });
             } else {
-                alert("Failed to start test drive. Ensure discovery has data for this niche.");
+                toast.error("Test Drive Failed", {
+                    description: "Ensure discovery has data for this niche."
+                });
                 setIsTestDriving(false);
             }
         } catch (err) {
@@ -285,7 +302,12 @@ export default function DiscoveryPage() {
                 const data = await res.json();
                 setTestJobId(data.task_id);
                 setPreviewTitle(isStoryMode ? `Story: ${genPrompt.substring(0, 20)}...` : `Generative: ${genPrompt.substring(0, 20)}...`);
-                alert(isStoryMode ? `Narrative Synthesis Started: ettametta is orchestrating your multi-scene story...` : `Synthesis Started: ettametta is creating an original video using ${genEngine.toUpperCase()}...`);
+                toast.success(isStoryMode ? "Narrative Synthesis Started" : "Synthesis Started", {
+                    description: isStoryMode 
+                        ? "ettametta is orchestrating your multi-scene story..." 
+                        : `Creating an original video using ${genEngine.toUpperCase()}...`,
+                    duration: 5000
+                });
             }
         } catch (err) {
             console.error(err);
@@ -391,7 +413,7 @@ export default function DiscoveryPage() {
                             <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Global Intelligence</span>
                         </div>
                         <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter uppercase text-white leading-none">
-                            Viral <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400 text-hollow">{mode === "discovery" ? "Discovery" : "Synthesis"}</span>
+                            Viral <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">{mode === "discovery" ? "Discovery" : "Synthesis"}</span>
                         </h1>
                         <p className="text-zinc-500 mt-2 max-w-lg text-sm font-medium leading-relaxed">
                             Scanning <span className="text-zinc-300 font-bold">14,000+</span> data points per second to identify high-velocity content opportunities before they peak.
@@ -471,7 +493,13 @@ export default function DiscoveryPage() {
                     <button
                         onClick={() => {
                             if (userTier === "free") {
-                                alert("AI Synthesis requires Basic or Premium tier. Please upgrade.");
+                                toast.error("Subscription Required", {
+                                    description: "AI Synthesis requires Basic or Premium tier. Please upgrade.",
+                                    action: {
+                                        label: "Pricing",
+                                        onClick: () => router.push("/settings?tab=billing")
+                                    }
+                                });
                             } else {
                                 setMode("generative");
                             }
@@ -658,8 +686,8 @@ export default function DiscoveryPage() {
 
                 {/* Content Grid */}
                 <div className="space-y-6">
-                    <div className="glass-card !p-0 overflow-hidden shadow-[0_32px_128px_rgba(0,0,0,0.5)] border-white/5">
-                        <div className="px-10 py-12 border-b border-white/5 bg-white/[0.01] flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden">
+                    <div className="glass-card p-0! overflow-hidden shadow-[0_32px_128px_rgba(0,0,0,0.5)] border-white/5">
+                        <div className="px-10 py-12 border-b border-white/5 bg-white/1 flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden">
                             <div className="absolute inset-0 scanline opacity-10 pointer-events-none" />
                             <div className="flex items-center gap-8 relative z-10">
                                 <div className="relative">
@@ -698,7 +726,7 @@ export default function DiscoveryPage() {
                                         </button>
                                     ))}
                                 </div>
-                                <div className="h-10 w-[1px] bg-white/10 hidden md:block" />
+                                <div className="h-10 w-px bg-white/10 hidden md:block" />
                                 <button
                                     onClick={() => {
                                         const platforms = ['all', 'youtube', 'tiktok', 'instagram', 'facebook', 'x', 'reddit', 'twitch', 'bilibili', 'rumble'];
@@ -742,14 +770,14 @@ export default function DiscoveryPage() {
                                                         transition={{ delay: idx * 0.08, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                                                         layout
                                                         onClick={() => candidate.url && handleOpenUrl(candidate.url)}
-                                                        className="p-10 px-12 flex flex-col lg:flex-row lg:items-center justify-between hover:bg-white/[0.03] transition-all group relative overflow-hidden cursor-pointer"
+                                                        className="p-10 px-12 flex flex-col lg:flex-row lg:items-center justify-between hover:bg-white/3 transition-all group relative overflow-hidden cursor-pointer"
                                                     >
                                                         {/* ... (existing candidate UI) */}
-                                                        <div className="absolute inset-x-0 top-0 h-full bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                                                        <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-[var(--shimmer-opacity)] pointer-events-none" />
+                                                        <div className="absolute inset-x-0 top-0 h-full bg-linear-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                                                        <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-(--shimmer-opacity) pointer-events-none" />
 
                                                         <div className="flex items-center gap-10 relative z-10">
-                                                            <div className="h-28 w-44 rounded-[2rem] bg-zinc-950 border border-white/5 flex-shrink-0 relative overflow-hidden group-hover:border-primary/50 transition-all duration-700 shadow-2xl">
+                                                            <div className="h-28 w-44 rounded-4xl bg-zinc-950 border border-white/5 shrink-0 relative overflow-hidden group-hover:border-primary/50 transition-all duration-700 shadow-2xl">
                                                                 {candidate.thumbnail_url ? (
                                                                     <img src={candidate.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
                                                                 ) : (
@@ -757,7 +785,7 @@ export default function DiscoveryPage() {
                                                                         <TrendingUp className="h-10 w-10 text-zinc-800" />
                                                                     </div>
                                                                 )}
-                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
+                                                                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-60" />
                                                                 <div className="absolute bottom-4 left-4 flex items-center gap-2">
                                                                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                                                                     <span className="text-[8px] font-black text-white uppercase tracking-widest italic opacity-0 group-hover:opacity-100 transition-opacity">Live Alpha</span>
@@ -824,7 +852,7 @@ export default function DiscoveryPage() {
                                                                      e.stopPropagation();
                                                                      handleAnalyze(candidate);
                                                                  }}
-                                                                 className="h-12 w-12 rounded-[1.5rem] bg-zinc-800 text-white flex items-center justify-center hover:bg-primary hover:text-black transition-all"
+                                                                 className="h-12 w-12 rounded-3xl bg-zinc-800 text-white flex items-center justify-center hover:bg-primary hover:text-black transition-all"
                                                              >
                                                                  <BarChart3 className="h-5 w-5" />
                                                              </motion.button>
@@ -838,7 +866,7 @@ export default function DiscoveryPage() {
                                                                      e.stopPropagation();
                                                                      handleAddToQueue(candidate);
                                                                  }}
-                                                                 className="h-16 w-16 rounded-[1.5rem] bg-primary text-black flex items-center justify-center shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] transition-all group/btn"
+                                                                 className="h-16 w-16 rounded-3xl bg-primary text-black flex items-center justify-center shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] transition-all group/btn"
                                                              >
                                                                  <Zap className="h-8 w-8 fill-black group-hover/btn:scale-125 transition-transform duration-500" />
                                                              </motion.button>
@@ -850,7 +878,7 @@ export default function DiscoveryPage() {
                                             })
                                         ) : (
                                             <div className="py-40 flex flex-col items-center justify-center gap-10 text-center relative overflow-hidden">
-                                                <div className="absolute inset-0 bg-gradient-radial from-primary/5 to-transparent opacity-30" />
+                                                <div className="absolute inset-0 bg-radial from-primary/5 to-transparent opacity-30" />
                                                 <div className="h-24 w-24 rounded-full bg-zinc-950 border border-white/5 flex items-center justify-center shadow-2xl relative">
                                                     <Search className="h-10 w-10 text-zinc-800" />
                                                     <div className="absolute inset-0 border-2 border-dashed border-zinc-800 rounded-full animate-spin-slow" />
@@ -876,14 +904,14 @@ export default function DiscoveryPage() {
 
                                     {/* Stack Selection & Comparison */}
                                     <div className="w-full space-y-10">
-                                        <div className="flex items-center justify-center p-2 bg-zinc-950/80 rounded-[2rem] border border-white/5 w-fit mx-auto mb-10">
+                                        <div className="flex items-center justify-center p-2 bg-zinc-950/80 rounded-4xl border border-white/5 w-fit mx-auto mb-10">
                                             <button 
                                                 onClick={() => {
                                                     setGenStack("cloud");
                                                     setGenEngine("veo3");
                                                 }}
                                                 className={cn(
-                                                    "px-10 py-5 rounded-[1.8rem] text-xs font-black uppercase tracking-widest transition-all",
+                                                    "px-10 py-5 rounded-3xl text-xs font-black uppercase tracking-widest transition-all",
                                                     genStack === "cloud" ? "bg-white text-black shadow-2xl" : "text-zinc-600 hover:text-white"
                                                 )}
                                             >
@@ -895,7 +923,7 @@ export default function DiscoveryPage() {
                                                     setGenEngine("wan");
                                                 }}
                                                 className={cn(
-                                                    "px-10 py-5 rounded-[1.8rem] text-xs font-black uppercase tracking-widest transition-all",
+                                                    "px-10 py-5 rounded-3xl text-xs font-black uppercase tracking-widest transition-all",
                                                     genStack === "self-hosted" ? "bg-primary text-black shadow-2xl" : "text-zinc-600 hover:text-white"
                                                 )}
                                             >
@@ -906,8 +934,8 @@ export default function DiscoveryPage() {
                                         {/* Side-by-Side Comparison */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
                                             <div className={cn(
-                                                "p-10 rounded-[2.5rem] border transition-all relative overflow-hidden",
-                                                genStack === "cloud" ? "bg-white/[0.03] border-emerald-500/20 shadow-2xl" : "bg-black/20 border-white/5 opacity-50"
+                                                "p-10 rounded-5xl border transition-all relative overflow-hidden",
+                                                genStack === "cloud" ? "bg-white/3 border-emerald-500/20 shadow-2xl" : "bg-black/20 border-white/5 opacity-50"
                                             )}>
                                                 <div className="flex items-center gap-4 mb-8">
                                                     <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
@@ -939,8 +967,8 @@ export default function DiscoveryPage() {
                                             </div>
 
                                             <div className={cn(
-                                                "p-10 rounded-[2.5rem] border transition-all relative overflow-hidden",
-                                                genStack === "self-hosted" ? "bg-primary/[0.03] border-primary/20 shadow-2xl" : "bg-black/20 border-white/5 opacity-50"
+                                                "p-10 rounded-5xl border transition-all relative overflow-hidden",
+                                                genStack === "self-hosted" ? "bg-primary/3 border-primary/20 shadow-2xl" : "bg-black/20 border-white/5 opacity-50"
                                             )}>
                                                 <div className="flex items-center gap-4 mb-8">
                                                     <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
@@ -985,7 +1013,7 @@ export default function DiscoveryPage() {
                                                             setGenEngine("veo3");
                                                         }}
                                                         className={cn(
-                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
                                                             genEngine === "veo3" ? "bg-white/5 border-emerald-500/50 shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600",
                                                             userTier !== 'studio' && "opacity-40"
                                                         )}
@@ -1010,7 +1038,7 @@ export default function DiscoveryPage() {
                                                             setGenEngine("luma");
                                                         }}
                                                         className={cn(
-                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
                                                             genEngine === "luma" ? "bg-white/5 border-emerald-500/50 shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600",
                                                             userTier !== 'studio' && "opacity-40"
                                                         )}
@@ -1032,7 +1060,7 @@ export default function DiscoveryPage() {
                                                     <button
                                                         onClick={() => setGenEngine("wan")}
                                                         className={cn(
-                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
                                                             genEngine === "wan" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
                                                         )}
                                                     >
@@ -1050,7 +1078,7 @@ export default function DiscoveryPage() {
                                                     <button
                                                         onClick={() => setGenEngine("hunyuan")}
                                                         className={cn(
-                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
                                                             genEngine === "hunyuan" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
                                                         )}
                                                     >
@@ -1068,7 +1096,7 @@ export default function DiscoveryPage() {
                                                     <button
                                                         onClick={() => setGenEngine("ltx-video")}
                                                         className={cn(
-                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
                                                             genEngine === "ltx-video" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
                                                         )}
                                                     >
@@ -1086,7 +1114,7 @@ export default function DiscoveryPage() {
                                                     <button
                                                         onClick={() => setGenEngine("zeroscope")}
                                                         className={cn(
-                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
                                                             genEngine === "zeroscope" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
                                                         )}
                                                     >
@@ -1103,7 +1131,7 @@ export default function DiscoveryPage() {
                                                     <button
                                                         onClick={() => setGenEngine("mochi")}
                                                         className={cn(
-                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
                                                             genEngine === "mochi" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
                                                         )}
                                                     >
@@ -1120,7 +1148,7 @@ export default function DiscoveryPage() {
                                                     <button
                                                         onClick={() => setGenEngine("cogvideo")}
                                                         className={cn(
-                                                            "p-8 rounded-[2rem] border text-left transition-all relative overflow-hidden",
+                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
                                                             genEngine === "cogvideo" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
                                                         )}
                                                     >
@@ -1174,14 +1202,14 @@ export default function DiscoveryPage() {
                                                 value={genPrompt}
                                                 onChange={(e) => setGenPrompt(e.target.value)}
                                                 placeholder="A cinematic shot of a cyberpunk city at night with glowing neon rain..."
-                                                className="w-full h-40 bg-zinc-950/50 border border-white/5 rounded-[2rem] p-8 text-sm font-bold text-white focus:outline-none focus:border-emerald-500/50 transition-all placeholder:text-zinc-800 resize-none"
+                                                className="w-full h-40 bg-zinc-950/50 border border-white/5 rounded-4xl p-8 text-sm font-bold text-white focus:outline-none focus:border-emerald-500/50 transition-all placeholder:text-zinc-800 resize-none"
                                             />
                                         </div>
 
                                         <button
                                             onClick={handleGenerate}
                                             disabled={isGenerating || !genPrompt.trim()}
-                                            className="w-full py-6 rounded-[2rem] bg-emerald-500 text-black font-black uppercase tracking-[0.3em] flex items-center justify-center gap-4 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:scale-100"
+                                            className="w-full py-6 rounded-4xl bg-emerald-500 text-black font-black uppercase tracking-[0.3em] flex items-center justify-center gap-4 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:scale-100"
                                         >
                                             {isGenerating ? <Loader2 className="h-6 w-6 animate-spin" /> : <Sparkles className="h-6 w-6" />}
                                             Synthesize Video

@@ -9,6 +9,7 @@ import os
 import time
 import numpy as np
 from PIL import Image
+from .hardware_manager import hardware_manager
 from diffusers import (
     StableDiffusionXLPipeline, 
     StableDiffusionPipeline,
@@ -54,8 +55,8 @@ def load_motion_adapter(motion_model: str = "sdxl"):
     
     _motion_adapter = MotionAdapter.from_pretrained(
         motion_path,
-        torch_dtype=torch.float16
-    ).to("cuda")
+        torch_dtype=hardware_manager.dtype
+    ).to(hardware_manager.get_device_obj())
     
     print("✅ AnimateDiff Motion Adapter loaded", flush=True)
     return _motion_adapter
@@ -78,15 +79,15 @@ def load_sdxl_animatediff():
     # Create pipeline with motion
     pipe = AutoPipelineForText2Image.from_pretrained(
         "stabilityai/stable-diffusion-xl-base-1.0",
-        torch_dtype=torch.float16,
+        torch_dtype=hardware_manager.dtype,
         variant="fp16"
     )
     
     # Load motion adapter into pipeline
     pipe.motion_adapter = motion_adapter
     
-    # Enable GPU
-    pipe = pipe.to("cuda")
+    # Enable Hardware device
+    pipe = pipe.to(hardware_manager.get_device_obj())
     
     # Set scheduler for better results
     pipe.scheduler = EulerDiscreteScheduler.from_config(pipe.scheduler.config)
@@ -117,7 +118,7 @@ def load_sd15_animatediff():
     # Create pipeline
     pipe = AutoPipelineForText2Image.from_pretrained(
         "runwayml/stable-diffusion-v1-5",
-        torch_dtype=torch.float16,
+        torch_dtype=hardware_manager.dtype,
         variant="fp16"
     )
     
