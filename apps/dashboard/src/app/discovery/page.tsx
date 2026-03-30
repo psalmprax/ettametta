@@ -129,46 +129,73 @@ export default function DiscoveryPage() {
         fetchTrends();
     }, [activeNiche, timeHorizon]);
 
-    const fetchTrends = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            // Fetch trends
-            const res = await fetch(`${API_BASE}/discovery/trends?niche=${activeNiche}&horizon=${timeHorizon}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setCandidates(data);
-            } else {
-                console.error("Failed to fetch trends", res.status);
-                setCandidates([]);
-            }
-            // Fetch niche trends for top keywords
-            const trendsRes = await fetch(`${API_BASE}/discovery/niche-trends/${activeNiche}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (trendsRes.ok) {
-                const trendsData = await trendsRes.json();
-                if (trendsData.top_keywords && trendsData.top_keywords.length > 0) {
-                    setTopKeywords(trendsData.top_keywords);
-                }
-            }
-        } catch (err) {
-            console.error(err);
-            setCandidates([]);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [activeNiche, timeHorizon]);
+     const fetchTrends = useCallback(async () => {
+         setIsLoading(true);
+         try {
+             const token = localStorage.getItem("et_token");
+             // Build query string with filters
+             const params = new URLSearchParams({
+                 niche: activeNiche,
+                 horizon: timeHorizon,
+                 min_viral_score: minViralScore.toString(),
+                 exclude_shorts: excludeShorts.toString()
+             });
+             // Fetch trends
+             const res = await fetch(`${API_BASE}/discovery/trends?${params.toString()}`, {
+                 headers: { Authorization: `Bearer ${token}` }
+             });
+             if (res.ok) {
+                 const data = await res.json();
+                 setCandidates(data);
+             } else {
+                 console.error("Failed to fetch trends", res.status);
+                 setCandidates([]);
+             }
+             // Fetch niche trends for top keywords
+             const trendsRes = await fetch(`${API_BASE}/discovery/niche-trends/${activeNiche}`, {
+                 headers: { Authorization: `Bearer ${token}` }
+             });
+             if (trendsRes.ok) {
+                 const trendsData = await trendsRes.json();
+                 if (trendsData.top_keywords && trendsData.top_keywords.length > 0) {
+                     setTopKeywords(trendsData.top_keywords);
+                 }
+             }
+         } catch (err) {
+             console.error(err);
+             setCandidates([]);
+         } finally {
+             setIsLoading(false);
+         }
+     }, [activeNiche, timeHorizon, minViralScore, excludeShorts]);
 
     useEffect(() => {
         fetchTrends();
     }, [fetchTrends]);
 
-    const handleAnalyze = useCallback(async (candidate: ContentCandidate) => {
-        alert(`Analysing viral DNA for: ${candidate.description.substring(0, 30)}...`);
-    }, []);
+     const handleAnalyze = useCallback(async (candidate: ContentCandidate) => {
+         try {
+             const token = localStorage.getItem("et_token");
+             const res = await fetch(`${API_BASE}/discovery/analyze`, {
+                 method: "POST",
+                 headers: {
+                     "Content-Type": "application/json",
+                     Authorization: `Bearer ${token}`
+                 },
+                 body: JSON.stringify(candidate)
+             });
+             if (res.ok) {
+                 const data = await res.json();
+                 alert(`Analysis queued. Task ID: ${data.task_id}. Check Nexus for results.`);
+             } else {
+                 const err = await res.json().catch(() => ({}));
+                 alert(`Analysis failed: ${err.detail || res.statusText}`);
+             }
+         } catch (err) {
+             console.error(err);
+             alert("Analysis request error.");
+         }
+     }, []);
 
     const handleAddToQueue = useCallback(async (candidate: ContentCandidate) => {
         try {
@@ -788,20 +815,35 @@ export default function DiscoveryPage() {
                                                                 </div>
                                                             </div>
 
-                                                            <div className="flex flex-col items-center gap-2">
-                                                                <motion.button
-                                                                    whileHover={{ scale: 1.1, rotate: 5 }}
-                                                                    whileTap={{ scale: 0.95 }}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleAddToQueue(candidate);
-                                                                    }}
-                                                                    className="h-16 w-16 rounded-[1.5rem] bg-primary text-black flex items-center justify-center shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] transition-all group/btn"
-                                                                >
-                                                                    <Zap className="h-8 w-8 fill-black group-hover/btn:scale-125 transition-transform duration-500" />
-                                                                </motion.button>
-                                                                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">Transform</span>
-                                                            </div>
+                                                         <div className="flex flex-col items-center gap-4">
+                                                             {/* Analyze Button */}
+                                                             <motion.button
+                                                                 whileHover={{ scale: 1.1, rotate: 5 }}
+                                                                 whileTap={{ scale: 0.95 }}
+                                                                 onClick={(e) => {
+                                                                     e.stopPropagation();
+                                                                     handleAnalyze(candidate);
+                                                                 }}
+                                                                 className="h-12 w-12 rounded-[1.5rem] bg-zinc-800 text-white flex items-center justify-center hover:bg-primary hover:text-black transition-all"
+                                                             >
+                                                                 <BarChart3 className="h-5 w-5" />
+                                                             </motion.button>
+                                                             <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">Analyze</span>
+                                                             
+                                                             {/* Transform Button */}
+                                                             <motion.button
+                                                                 whileHover={{ scale: 1.1, rotate: 5 }}
+                                                                 whileTap={{ scale: 0.95 }}
+                                                                 onClick={(e) => {
+                                                                     e.stopPropagation();
+                                                                     handleAddToQueue(candidate);
+                                                                 }}
+                                                                 className="h-16 w-16 rounded-[1.5rem] bg-primary text-black flex items-center justify-center shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] transition-all group/btn"
+                                                             >
+                                                                 <Zap className="h-8 w-8 fill-black group-hover/btn:scale-125 transition-transform duration-500" />
+                                                             </motion.button>
+                                                             <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">Transform</span>
+                                                         </div>
                                                         </div>
                                                     </motion.div>
                                                 );

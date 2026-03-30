@@ -930,10 +930,10 @@ export default function PublishingPage() {
 
                                             {/* Left: Core Info */}
                                             <div className="flex items-center gap-10 relative z-10">
-                                                <div
-                                                    onClick={() => post.url && post.url.includes('outputs/') && setSelectedAccountForDetail({ id: -1, platform: "PREVIEW", username: post.url.split('/').pop() || "output.mp4", updated_at: "" })}
-                                                    className="h-24 w-24 rounded-[2rem] bg-zinc-950 border border-white/5 flex items-center justify-center group-hover:border-primary/50 group-hover:rotate-6 transition-all duration-700 shadow-2xl relative cursor-pointer"
-                                                >
+                                                 <div
+                                                     onClick={() => post.url && window.open(post.url, '_blank', 'noopener,noreferrer')}
+                                                     className="h-24 w-24 rounded-[2rem] bg-zinc-950 border border-white/5 flex items-center justify-center group-hover:border-primary/50 group-hover:rotate-6 transition-all duration-700 shadow-2xl relative cursor-pointer"
+                                                 >
                                                     <Icon className="h-10 w-10 text-primary group-hover:scale-110 transition-transform duration-500" />
                                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-[2rem] backdrop-blur-sm">
                                                         <Play className="h-8 w-8 text-white fill-white animate-pulse" />

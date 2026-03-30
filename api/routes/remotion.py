@@ -1,18 +1,21 @@
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from services.video_engine.remotion_service import remotion_service
 import logging
 import uuid
+from api.routes.auth import get_current_user
 
 router = APIRouter(prefix="/remotion", tags=["remotion"])
 logger = logging.getLogger(__name__)
+
 
 class RenderRequest(BaseModel):
     title: str
     subtitle: str
     video_url: Optional[str] = None
     composition_id: str = "ViralClip"
+
 
 async def run_render_task(composition_id: str, props: Dict[str, Any], job_id: str):
     """Background task to execute Remotion render."""
@@ -26,23 +29,30 @@ async def run_render_task(composition_id: str, props: Dict[str, Any], job_id: st
     except Exception as e:
         logger.error(f"Error in background render task: {e}")
 
+
 @router.post("/render")
-async def trigger_render(req: RenderRequest, background_tasks: BackgroundTasks):
+async def trigger_render(
+    req: RenderRequest,
+    background_tasks: BackgroundTasks,
+    current_user=Depends(get_current_user),
+):
     """
     Triggers a programmatic Remotion render in the background.
+    Requires authentication.
     """
     job_id = str(uuid.uuid4())[:8]
-    
+
     props = {
         "title": req.title,
         "subtitle": req.subtitle,
-        "video_url": req.video_url or "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        "video_url": req.video_url
+        or "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     }
-    
+
     background_tasks.add_task(run_render_task, req.composition_id, props, job_id)
-    
+
     return {
         "status": "pending",
         "job_id": job_id,
-        "message": "Render task queued in background."
+        "message": "Render task queued in background.",
     }

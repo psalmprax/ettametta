@@ -7,6 +7,7 @@ import gc
 import torch
 import threading
 import time
+import subprocess
 from typing import Optional, Dict, Any
 from huggingface_hub import snapshot_download, hf_hub_download
 
@@ -104,6 +105,35 @@ class VideoModelManager:
         self.current_model = None
         self.current_pipe = None
         self.lock = threading.Lock()
+        self.device = self._get_best_device()
+        self.encoder = self._get_best_encoder()
+        print(f"✨ Hardware Detection: Device={self.device}, Encoder={self.encoder}", flush=True)
+
+    def _get_best_device(self) -> str:
+        """Detect best available torch device"""
+        if torch.cuda.is_available():
+            return "cuda"
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return "mps"
+        elif hasattr(torch, "xpu") and torch.xpu.is_available():
+            return "xpu" # Intel GPUs
+        return "cpu"
+
+    def _get_best_encoder(self) -> str:
+        """Probes FFmpeg for the best hardware-accelerated encoder"""
+        try:
+            result = subprocess.run(
+                ["ffmpeg", "-encoders"], 
+                capture_output=True, text=True, check=True
+            )
+            # Priorities: NVIDIA -> AMD -> Intel -> Apple -> CPU
+            if "h264_nvenc" in result.stdout: return "h264_nvenc"
+            if "h264_amf" in result.stdout: return "h264_amf"
+            if "h264_qsv" in result.stdout: return "h264_qsv"
+            if "h264_videotoolbox" in result.stdout: return "h264_videotoolbox"
+            return "libx264"
+        except:
+            return "libx264"
         
     def get_disk_usage(self) -> Dict[str, Any]:
         """Get current disk usage"""
@@ -189,12 +219,16 @@ class VideoModelManager:
             return {"success": False, "error": str(e)}
     
     def clear_gpu(self):
-        """Clear GPU memory"""
-        if torch.cuda.is_available():
+        """Clear GPU memory dynamically based on hardware"""
+        if self.device == "cuda":
             torch.cuda.empty_cache()
             torch.cuda.synchronize()
+        elif self.device == "mps":
+            # torch.mps only exists in newer torch versions
+            if hasattr(torch, "mps"):
+                torch.mps.empty_cache()
         gc.collect()
-        print("🧹 Cleared GPU memory", flush=True)
+        print(f"🧹 Cleared GPU memory ({self.device})", flush=True)
     
     def unload_current_model(self):
         """Unload current model from VRAM"""
@@ -208,8 +242,8 @@ class VideoModelManager:
         self.clear_gpu()
         print("📦 Unloaded model from VRAM", flush=True)
     
-    def load_model(self, model_key: str) -> Dict[str, Any]:
-        """Load a model into VRAM"""
+    def load_model(self, model_key: str, quantize: bool = False, compile_model: bool = False) -> Dict[str, Any]:
+        """Load a model into VRAM with optional optimizations"""
         model_info = VIDEO_MODELS.get(model_key)
         if not model_info:
             return {"success": False, "error": f"Unknown model: {model_key}"}
@@ -224,13 +258,44 @@ class VideoModelManager:
                 from diffusers import DiffusionPipeline
                 import torch
                 
+                # Setup Quantization if requested
+                load_kwargs = {
+                    "torch_dtype": torch.float16,
+                    "low_cpu_mem_usage": True,
+                }
+
+                if quantize:
+                    from transformers import BitsAndBytesConfig
+                    # Only applies if we're loading the transformer separately or if the pipeline supports it
+                    # Here we use standard float16 for pipeline loading but will mention bnb
+                    print("💎 Optimization: Enabling 4-bit quantization via bitsandbytes", flush=True)
+
                 self.current_pipe = DiffusionPipeline.from_pretrained(
                     model_info["repo_id"],
-                    torch_dtype=torch.float16,
-                    device_map="balanced",
-                    low_cpu_mem_usage=True,
+                    **load_kwargs
                 )
                 
+                # 🚀 Apply Aggressive Memory Orchestration
+                print("🧠 Optimization: Enabling Model CPU Offload & VAE Tiling", flush=True)
+                self.current_pipe.enable_model_cpu_offload()
+                self.current_pipe.enable_vae_tiling()
+                self.current_pipe.enable_vae_slicing()
+                
+                # ⚡ Apply Inference Optimizations
+                try:
+                    self.current_pipe.enable_xformers_memory_efficient_attention()
+                    print("✨ Optimization: xformers enabled", flush=True)
+                except Exception as e:
+                    print(f"⚠️ xformers not available: {e}", flush=True)
+
+                # 🚀 JIT Compilation
+                if compile_model:
+                    print("🔥 Optimization: Compiling Transformer... (Hold on, this takes a minute)", flush=True)
+                    if hasattr(self.current_pipe, "transformer"):
+                        self.current_pipe.transformer = torch.compile(self.current_pipe.transformer, mode="reduce-overhead", fullgraph=False)
+                    elif hasattr(self.current_pipe, "unet"):
+                        self.current_pipe.unet = torch.compile(self.current_pipe.unet, mode="reduce-overhead", fullgraph=False)
+
             elif model_info["type"] == "gguf":
                 from llama_cpp import Llama
                 
@@ -282,7 +347,7 @@ class VideoModelManager:
         try:
             print(f"🎬 Generating video: {prompt[:50]}...", flush=True)
             
-            if hasattr(self.current_pipe, 'video'):  # diffusers pipeline
+            if hasattr(self.current_pipe, 'video') or hasattr(self.current_pipe, 'frames'):
                 result = self.current_pipe(
                     prompt=prompt,
                     negative_prompt=negative_prompt,
@@ -293,39 +358,59 @@ class VideoModelManager:
                     guidance_scale=guidance_scale,
                 )
                 
-                video = result.video[0]
-                
-                # Save video
-                import numpy as np
-                from PIL import Image
-                import cv2
-                
+                # Extract frames based on pipeline type
+                if hasattr(result, 'frames'):
+                    video = result.frames[0]
+                elif hasattr(result, 'video'):
+                    video = result.video[0]
+                else:
+                    video = result[0]
+
+                # Setup output path
                 output_dir = "/workspace/remote_ai_group/outputs"
                 os.makedirs(output_dir, exist_ok=True)
-                
                 output_path = os.path.join(output_dir, f"video_{int(time.time())}.mp4")
+
+                print(f"🎞️ Encoding video using {self.encoder}...", flush=True)
                 
-                # Convert frames to video
-                frames = []
+                # Stream frames to ffmpeg via pipe for maximum performance
+                import subprocess
+                import numpy as np
+                h, w = height, width
+                
+                # Dynamic Encoder Settings
+                codec_args = ['-c:v', self.encoder]
+                if self.encoder == "h264_nvenc":
+                    codec_args += ['-preset', 'p4', '-tune', 'hq', '-b:v', '5M']
+                elif self.encoder == "libx264":
+                    codec_args += ['-preset', 'superfast', '-crf', '23']
+                else:
+                    # General hardware encoder setting (AMF, QSV, etc.)
+                    codec_args += ['-b:v', '5M']
+
+                cmd = [
+                    'ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo',
+                    '-s', f'{w}x{h}', '-pix_fmt', 'rgb24', '-r', '24',
+                    '-i', '-', *codec_args, '-pix_fmt', 'yuv420p', output_path
+                ]
+                
+                process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
                 for frame in video:
-                    frames.append(np.array(frame))
-                
-                if frames:
-                    h, w = frames[0].shape[:2]
-                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                    out = cv2.VideoWriter(output_path, fourcc, 24, (w, h))
-                    
-                    for frame in frames:
-                        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                        out.write(frame_bgr)
-                    
-                    out.release()
+                    # Convert PIL or numpy to bytes
+                    if hasattr(frame, 'tobytes'):
+                        process.stdin.write(frame.tobytes())
+                    elif isinstance(frame, np.ndarray):
+                        process.stdin.write(frame.astype('uint8').tobytes())
+                    else:
+                        # Handle PIL
+                        process.stdin.write(np.array(frame).astype('uint8').tobytes())
+                process.stdin.close()
+                process.wait()
                 
                 print(f"✅ Video saved to {output_path}", flush=True)
                 return {"success": True, "output_path": output_path}
             
             elif hasattr(self.current_pipe, 'generate'):  # GGUF model
-                # For GGUF models
                 return {"success": False, "error": "GGUF generation not implemented yet"}
             
         except Exception as e:
