@@ -347,7 +347,7 @@ function ActionCard({
       whileHover={{ scale: 1.02, y: -8 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 350, damping: 20 }}
-      className={`glass-card p-8 rounded-[2rem] h-full flex flex-col justify-between space-y-6 hover:border-primary/50 transition-all duration-300 group text-left relative overflow-hidden ${isLoading ? 'opacity-70 pointer-events-none' : ''}`}
+      className={`glass-card p-8 rounded-4xl h-full flex flex-col justify-between space-y-6 hover:border-primary/50 transition-all duration-300 group text-left relative overflow-hidden ${isLoading ? 'opacity-70 pointer-events-none' : ''}`}
     >
       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
         <Zap className="h-24 w-24 text-primary" />
