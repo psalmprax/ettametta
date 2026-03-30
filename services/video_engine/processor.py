@@ -9,6 +9,7 @@ from typing import List, Optional, Dict
 from .transcription import transcription_service
 from .ocr_service import ocr_service
 from .stock_service import stock_service
+from .ffmpeg_utils import ffmpeg_transformer
 from api.config import settings
 
 try:
@@ -81,13 +82,7 @@ class VideoProcessor:
             version_line = result.stdout.split('\n')[0]
             logging.info(f"[VideoProcessor] FFmpeg: {version_line}")
             
-            # Check for ARM64
-            if 'aarch64' in version_line or 'arm64' in version_line:
-                logging.warning("[VideoProcessor] ARM64 FFmpeg detected - may have performance issues")
-            
-            # Check for known bad versions
-            if '7.0' in version_line:
-                logging.warning("[VideoProcessor] FFmpeg 7.0.x may have compatibility issues with MoviePy")
+            logging.info(f"[VideoProcessor] FFmpeg: {version_line}")
         except Exception as e:
             logging.warning(f"[VideoProcessor] Could not check ffmpeg version: {e}")
 
@@ -314,51 +309,56 @@ class VideoProcessor:
 
     def apply_originality_transformation(self, input_path: str, output_name: str) -> str:
         """
-        Applies 'Copyright-Safe' transformations:
-        - Restructure flow
-        - Remove dead space (simple silent part removal placeholder)
-        - Add new hook overlay
-        - Insert pattern interrupts
+        Applies 'Copyright-Safe' transformations using high-performance FFmpeg.
+        - Mirroring
+        - Zoom (Ken Burns)
+        - Color Grading (Contrast/Brightness)
         """
-        clip = VideoFileClip(input_path)
-        
-        # 1. Basic Transformation: Mirror and slightly zoom to change hash
-        transformed = clip.with_effects([vfx.MirrorX()]).resized(height=int(clip.h * 1.05))
-        
-        # 1.1 Color Grading (Subtle shift to avoid deduplication)
-        transformed = transformed.with_effects([vfx.LumContrast(lum=0, contrast=0.05)])
-
-        # 2. Add 'Pattern Interrupt' (e.g., a simple flash or text overlay every 3 seconds)
-        duration = transformed.duration
-        overlays = []
-        for i in range(2, int(duration), 3):
-            txt_clip = TextClip(text="!", font_size=70, color='white', font=self.font_path).with_start(i).with_duration(0.2).with_position('center')
-            overlays.append(txt_clip)
-        
-        final_clip = CompositeVideoClip([transformed] + overlays)
-        
-        # IMPORTANT: Preserve original audio from the source video
-        if clip.audio:
-            final_clip = final_clip.with_audio(clip.audio)
-        
         output_path = os.path.join(self.output_dir, output_name)
-        try:
-            final_clip.write_videofile(output_path, codec=self.codec, audio_codec="aac")
-        except Exception:
-            # Fallback to CPU if NVENC fails
-            final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
         
+        logging.info(f"[VideoProcessor] Applying FFmpeg Originality Transformation: {input_path} -> {output_path}")
+        
+        success = ffmpeg_transformer.apply_originality(
+            input_path=input_path,
+            output_path=output_path,
+            mirror=True,
+            zoom=1.04,
+            contrast=1.05,
+            brightness=0.02
+        )
+        
+        if success:
+            return output_path
+        
+        logging.warning("[VideoProcessor] FFmpeg originality failed, falling back to MoviePy (Slow)")
+        
+        # Original MoviePy Fallback (kept for safety)
+        clip = VideoFileClip(input_path)
+        transformed = clip.with_effects([vfx.MirrorX()]).resized(height=int(clip.h * 1.05))
+        transformed = transformed.with_effects([vfx.LumContrast(lum=0, contrast=0.05)])
+        
+        if clip.audio:
+            transformed = transformed.with_audio(clip.audio)
+            
+        transformed.write_videofile(output_path, codec=self.codec, audio_codec="aac")
         return output_path
 
     def concatenate_highlights(self, clip_paths: List[str], output_name: str) -> str:
+        """
+        Merge multiple clips into one.
+        Uses fast FFmpeg concat demuxer (instant) first, falls back to MoviePy.
+        """
+        output_path = os.path.join(self.output_dir, output_name)
+        logging.info(f"[VideoProcessor] Concatenating {len(clip_paths)} clips to {output_path}")
+        
+        success = ffmpeg_transformer.fast_concat(clip_paths, output_path)
+        if success:
+            return output_path
+            
+        logging.warning("[VideoProcessor] Fast concat failed, falling back to MoviePy compose")
         clips = [VideoFileClip(p) for p in clip_paths]
         final_clip = concatenate_videoclips(clips, method="compose")
-        
-        output_path = os.path.join(self.output_dir, output_name)
-        try:
-            final_clip.write_videofile(output_path, codec=self.codec)
-        except Exception:
-            final_clip.write_videofile(output_path, codec="libx264")
+        final_clip.write_videofile(output_path, codec="libx264")
         return output_path
 
     def apply_speed_ramping(self, clip: VideoFileClip, speed_range: List[float] = [0.95, 1.05]) -> VideoFileClip:
