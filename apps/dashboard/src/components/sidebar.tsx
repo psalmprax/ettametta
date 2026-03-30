@@ -15,11 +15,14 @@ import {
     LogOut,
     Sparkles,
     Cpu,
-    Lock
+    Lock,
+    TrendingUp
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 import { motion, AnimatePresence } from "framer-motion";
+
+import { Crown, Coins } from "lucide-react";
 
 const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -30,6 +33,9 @@ const navItems = [
     { name: "Transformation", href: "/transformation", icon: Video },
     { name: "Publishing", href: "/publishing", icon: Share2 },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    { name: "Empire", href: "/empire", icon: Crown },
+    { name: "Credits", href: "/credits", icon: Coins },
+    { name: "Trading", href: "/trading", icon: TrendingUp },
 ];
 
 export function Sidebar() {

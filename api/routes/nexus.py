@@ -34,11 +34,13 @@ async def run_nexus_composition(job_id: int, request: NexusComposeRequest, db: S
         
         output_path = None
         
-        if request.cinema_mode and request.topic:
+        if request.cinema_mode:
             # 1. Autonomous Cinema Mode
+            # Use topic if provided, otherwise fallback to niche as topic
+            target_topic = request.topic or f"Viral trends in {request.niche}"
             output_path = await base_auto_creator.create_cinema_video(
                 job_id=job_id,
-                topic=request.topic,
+                topic=target_topic,
                 niche=request.niche
             )
         elif request.blueprint_id == "story-factory":
@@ -98,6 +100,14 @@ async def compose_video(request: NexusComposeRequest, background_tasks: Backgrou
     background_tasks.add_task(run_nexus_composition, new_job.id, request, db)
     
     return {"status": "accepted", "job_id": new_job.id}
+
+@router.get("/blueprints")
+async def list_nexus_blueprints(current_user = Depends(get_current_user)):
+    """
+    Returns the available Nexus production recipes/blueprints.
+    """
+    from services.nexus_engine.blueprints import get_blueprints
+    return get_blueprints()
 
 @router.get("/jobs")
 async def list_nexus_jobs(current_user = Depends(get_current_user), db: Session = Depends(get_db)):

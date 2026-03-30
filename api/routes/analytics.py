@@ -5,11 +5,16 @@ from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
 from typing import List
 import datetime
+from fastapi_cache.decorator import cache
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 @router.get("/posts")
-async def list_analytics_posts(current_user: UserDB = Depends(get_current_user)):
+async def list_analytics_posts(
+    page: int = 1, 
+    size: int = 20,
+    current_user: UserDB = Depends(get_current_user)
+):
     from api.utils.database import SessionLocal
     from api.utils.models import PublishedContentDB
     db = SessionLocal()
@@ -18,12 +23,16 @@ async def list_analytics_posts(current_user: UserDB = Depends(get_current_user))
         if current_user.role != "admin":
             query = query.filter(PublishedContentDB.user_id == current_user.id)
             
-        posts = query.order_by(PublishedContentDB.published_at.desc()).all()
+        posts = query.order_by(PublishedContentDB.published_at.desc()) \
+            .offset((page - 1) * size) \
+            .limit(size) \
+            .all()
         return posts
     finally:
         db.close()
 
 @router.get("/report/{post_id}", response_model=ContentPerformance)
+@cache(expire=600)
 async def get_report(post_id: str, current_user: UserDB = Depends(get_current_user)):
     from api.utils.database import SessionLocal
     from api.utils.models import PublishedContentDB
@@ -91,6 +100,7 @@ async def get_monetization_suggestions(post_id: str, niche: str = "Motivation", 
         db.close()
 
 @router.get("/stats/summary")
+@cache(expire=600)
 async def get_stats_summary(current_user: UserDB = Depends(get_current_user)):
     """Get dashboard summary stats for the home page."""
     from api.utils.database import SessionLocal
@@ -117,8 +127,15 @@ async def get_stats_summary(current_user: UserDB = Depends(get_current_user)):
         # Calculate success rate
         success_rate = (total_posts / total_jobs * 100) if total_jobs > 0 else 0
         
-        # Get total views
-        total_views = post_query.with_entities(func.sum(PublishedContentDB.view_count)).scalar() or 0
+        # Get total views from DB
+        total_views = db.query(func.sum(PublishedContentDB.view_count)).filter(
+            PublishedContentDB.user_id == current_user.id if current_user.role != "admin" else True
+        ).scalar() or 0
+        
+        # Get total engagement
+        total_likes = db.query(func.sum(PublishedContentDB.like_count)).filter(
+            PublishedContentDB.user_id == current_user.id if current_user.role != "admin" else True
+        ).scalar() or 0
         
         # Format reach
         if total_views >= 1000000:
@@ -154,6 +171,7 @@ async def get_stats_summary(current_user: UserDB = Depends(get_current_user)):
         db.close()
 
 @router.get("/stats/storage")
+@cache(expire=3600)
 async def get_storage_stats(current_user: UserDB = Depends(get_current_user)):
     """Get storage usage statistics for the outputs directory."""
     from services.storage.manager import storage_manager

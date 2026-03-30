@@ -95,6 +95,7 @@ class AnalyticsService:
                 for i in range(12):
                     retention_data.append(max(int(current_rate - (i * drop_per_step)), 0))
 
+                insight = await self._generate_ai_insight(views, likes, shares, comments)
                 result = ContentPerformance(
                     post_id=post_id,
                     views=views or (int(report_response["rows"][0][1]) if report_response.get("rows") else 0),
@@ -116,28 +117,37 @@ class AnalyticsService:
             except Exception as e:
                 logging.error(f"Failed to fetch YouTube analytics: {e}")
         
-        # Fallback to zero/empty data (no mock data)
-        mock_result = ContentPerformance(
+        # Fallback: Query local database first before resorting to zeros
+        db_views, db_likes, db_shares = 0, 0, 0
+        try:
+            from api.utils.database import SessionLocal
+            from api.utils.models import PublishedContentDB
+            db = SessionLocal()
+            content_record = db.query(PublishedContentDB).filter(PublishedContentDB.id == post_id).first()
+            if content_record:
+                db_views = getattr(content_record, 'view_count', 0)
+                db_likes = getattr(content_record, 'like_count', 0)
+                db_shares = getattr(content_record, 'share_count', 0)
+            db.close()
+        except:
+            pass
+
+        # Generate a fallback insight
+        fallback_insight = await self._generate_ai_insight(db_views, db_likes, db_shares, 0)
+        
+        fallback_result = ContentPerformance(
             post_id=post_id,
-            views=0,
+            views=db_views,
             watch_time=0.0,
             retention_rate=0.0,
-            likes=0,
-            shares=0,
+            likes=db_likes,
+            shares=db_shares,
             follows_gained=0,
             retention_data=[0] * 12,
-            optimization_insight="No analytics data available. Publish content to start tracking performance."
+            optimization_insight=fallback_insight if db_views > 0 else "No remote analytics data available. Initializing tracking."
         )
         
-        # Don't cache zero data - allow real data to take over when API keys are added
-        try:
-             # Only cache mock if we really want to simulate persistence, 
-             # but usually we want to retry fetching real data. 
-             # Let's skip caching mock data to allow real data to take over when keys are added.
-             pass
-        except: pass
-            
-        return mock_result
+        return fallback_result
 
     async def _generate_ai_insight(self, views: int, likes: int, shares: int, comments: int) -> str:
         """Generates real performance insights using Groq."""

@@ -75,22 +75,75 @@ class AutoMerchService:
         
         logger.info(f"[AutoMerch] Requesting design generation: {image_url}")
         
-        # We don't download it here, we just return the URL so the POD service can download it directly.
-        # In a production environment, we might download, remove the background, and upload to S3.
         return image_url
 
     async def _publish_to_pod(self, title: str, image_url: str) -> Optional[Dict[str, Any]]:
         """
-        Mocks publishing to a Print-on-Demand (POD) service like Printful,
-        which pushes the listing to Shopify.
+        Publishes the design to Print-on-Demand (POD) via Printful API.
+        Enforces "Real-First" policy: No mock products allowed.
         """
-        # In a real implementation:
-        # 1. Download image
-        # TODO: Implement actual POD API integration
-        # 1. POST to Printful/Printify API to create a product mockup
-        # 2. POST to Shopify Admin API to create the listing
+        api_key = settings.PRINTFUL_API_KEY
         
-        logger.error("[AutoMerch] POD publishing not implemented. Please configure Printify/Shopify API credentials.")
-        raise NotImplementedError("Auto-merch POD publishing requires Printify/Shopify API integration.")
+        if not api_key or api_key == "your_printful_api_key":
+            logger.error("[AutoMerch] PRINTFUL_API_KEY is missing or invalid. Action required.")
+            raise ValueError("Printful API Key not configured. Auto-merch requires a valid Printful integration.")
+
+        logger.info(f"[AutoMerch] Publishing to Printful: {title}")
+        
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        # Create localized product sync data
+        sync_product_data = {
+            "sync_product": {
+                "name": title,
+                "thumbnail": image_url
+            },
+            "sync_variants": [
+                {
+                    "retail_price": "24.99",
+                    "variant_id": 4011, # Men's Premium Tee (Black/L)
+                    "files": [
+                        {
+                            "url": image_url,
+                            "position": "front"
+                        }
+                    ]
+                }
+            ]
+        }
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "https://api.printful.com/store/products",
+                    headers=headers,
+                    json=sync_product_data,
+                    timeout=30.0
+                )
+                
+                if response.status_code in [200, 201]:
+                    data = response.json().get("result", {})
+                    return {
+                        "id": str(data.get("id")),
+                        "title": data.get("name"),
+                        "url": f"https://dashboard.printful.com/products/{data.get('id')}",
+                        "status": "published",
+                        "preview_url": image_url
+                    }
+                else:
+                    error_detail = response.json().get("error", {}).get("message", response.text)
+                    logger.error(f"[AutoMerch] Printful API Rejection: {response.status_code} - {error_detail}")
+                    # Throw specific runtime error for user visibility
+                    raise RuntimeError(f"Printful Rejection: {error_detail}")
+
+        except httpx.RequestError as exc:
+            logger.error(f"[AutoMerch] Network connectivity issue with Printful: {exc}")
+            raise RuntimeError(f"Failed to reach Printful: {exc}")
+        except Exception as e:
+            logger.error(f"[AutoMerch] POD Pipeline Failure: {e}")
+            raise
 
 base_auto_merch_service = AutoMerchService()

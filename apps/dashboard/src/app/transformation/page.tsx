@@ -28,6 +28,8 @@ const ProcessingFlow = dynamic(() => import("@/components/ui/ProcessingFlow"), {
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_BASE } from "@/lib/config";
 
+import { toast } from "sonner";
+
 interface VideoJob {
     id: string;
     title: string;
@@ -50,6 +52,8 @@ function TransformationPageContent() {
     const [targetPlatform, setTargetPlatform] = useState("YouTube Shorts");
     const [generateThumbnail, setGenerateThumbnail] = useState(false);
     const [premiumQuality, setPremiumQuality] = useState(true); // Default to true for Remotion
+    const [enableSoundDesign, setEnableSoundDesign] = useState(false);
+    const [enableMotionGraphics, setEnableMotionGraphics] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -79,20 +83,33 @@ function TransformationPageContent() {
                     platform: targetPlatform,
                     niche: "AI Technology",
                     generate_thumbnail: generateThumbnail,
-                    tier: premiumQuality ? "premium" : "standard"
+                    tier: premiumQuality ? "premium" : "standard",
+                    sound_design: enableSoundDesign,
+                    motion_graphics: enableMotionGraphics
                 })
             });
-            // ...
+            
             if (response.ok) {
+                toast.success("Job Dispatched", {
+                    description: "Video transformation has been queued in the engine."
+                });
                 setNewJobUrl("");
                 setIsJobModalOpen(false);
                 const jobsRes = await fetch(`${API_BASE}/video/jobs`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }).then(r => r.json());
                 setProcessingJobs(jobsRes);
+            } else {
+                const error = await response.json();
+                toast.error("Dispatch Failed", {
+                    description: error.detail || "Check your credits and engine access."
+                });
             }
         } catch (error) {
             console.error("New job error:", error);
+            toast.error("Network Error", {
+                description: "Failed to connect to the transformation cluster."
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -108,21 +125,24 @@ function TransformationPageContent() {
             if (res.ok) {
                 const updated = await res.json();
                 setActiveFilters(prev => prev.map(f => f.id === id ? updated : f));
+                toast.success(`${updated.name} ${updated.enabled ? 'Activated' : 'Standby'}`);
             }
         } catch (error) {
             console.error("Failed to toggle filter:", error);
+            toast.error("Node Config Error", {
+                description: "Failed to update filter preference."
+            });
         }
     };
 
     const getStaticUrl = (path: string | undefined) => {
-        if (!path) return `${API_BASE}/static/output.mp4`;
+        if (!path) return null;
         if (path.startsWith('http')) return path;
 
         // Handle local paths
-        if (!path.includes('.mp4') && !path.includes('.')) return `${API_BASE}/static/output.mp4`;
+        if (!path.includes('.mp4') && !path.includes('.')) return null;
 
-        const parts = path.split('/');
-        const filename = parts[parts.length - 1];
+        const filename = path.split('/').pop();
         return `${API_BASE}/static/${filename}`;
     };
 
@@ -134,14 +154,21 @@ function TransformationPageContent() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
-                const updated = await res.json();
                 setProcessingJobs(prev => prev.map(j => j.id === id ? { ...j, status: "Aborted" } : j));
                 if (selectedJob?.id === id) {
                     setSelectedJob(prev => prev ? { ...prev, status: "Aborted" } : null);
                 }
+                toast.info("Process Aborted", {
+                    description: "Neural transform terminated successfully."
+                });
+            } else {
+                toast.error("Abort Failed");
             }
         } catch (error) {
             console.error("Failed to abort job:", error);
+            toast.error("Signal Error", {
+                description: "Failed to send abort command."
+            });
         }
     };
 
@@ -202,7 +229,7 @@ function TransformationPageContent() {
 
 
 
-    const [flowSteps, setFlowSteps] = useState<{ id: string; label: string; status: "pending" | "active" | "complete" }[]>([
+    const [flowSteps, setFlowSteps] = useState<{ id: string; label: string; status: "pending" | "active" | "complete" | "error" }[]>([
         { id: "ingest", label: "Packet Ingestion", status: "pending" },
         { id: "analyze", label: "Semantic Analysis", status: "pending" },
         { id: "remix", label: "Neural Patterning", status: "pending" },
@@ -212,18 +239,31 @@ function TransformationPageContent() {
     useEffect(() => {
         if (!selectedJob) return;
 
-        // Map backend status to flow steps
-        // Example statuses: 'queued', 'downloading', 'processing', 'completed', 'failed'
         const status = selectedJob.status.toLowerCase();
+        
+        // Define mapping of backend status to step indices
+        const statusMap: Record<string, number> = {
+            'queued': 0,
+            'downloading': 0,
+            'transcribing': 1,
+            'analyzing': 1,
+            'processing': 2,
+            'remixing': 2,
+            'composing': 2,
+            'rendering': 3,
+            'completed': 4,
+            'failed': -1
+        };
 
-        let activeIdx = -1;
-        if (status === 'queued') activeIdx = 0;
-        else if (status === 'downloading') activeIdx = 0;
-        else if (status === 'processing') activeIdx = 1; // Simplify for demo
-        else if (status === 'rendering') activeIdx = 3;
-        else if (status === 'completed') activeIdx = 4; // All done
+        const activeIdx = statusMap[status] ?? -1;
 
         setFlowSteps(prev => prev.map((step, idx) => {
+            if (activeIdx === -1 && status === 'failed') {
+                // Determine which step failed based on previous state or just mark current active as error
+                // For simplicity, if failed and no specific mapping, we keep current or mark all as pending
+                return { ...step, status: step.status === 'active' ? 'error' as const : step.status };
+            }
+            if (activeIdx === 4) return { ...step, status: "complete" as const };
             if (activeIdx > idx) return { ...step, status: "complete" as const };
             if (activeIdx === idx) return { ...step, status: "active" as const };
             return { ...step, status: "pending" as const };
@@ -341,6 +381,56 @@ function TransformationPageContent() {
                                             />
                                         </div>
                                     </div>
+
+                                    {/* Sound Design Toggle */}
+                                    <div className="bg-zinc-950/30 border border-white/10 p-6 rounded-xl flex items-center justify-between group/toggle hover:border-emerald-500/30 transition-all cursor-pointer" onClick={() => setEnableSoundDesign(!enableSoundDesign)}>
+                                        <div className="flex items-center gap-4">
+                                            <div className={cn(
+                                                "p-3 rounded-lg transition-all",
+                                                enableSoundDesign ? "bg-emerald-500/20 text-emerald-500" : "bg-zinc-900 text-zinc-600"
+                                            )}>
+                                                <Sparkles className="h-5 w-5" />
+                                            </div>
+                                            <div className="space-y-0.5">
+                                                <span className="text-[11px] font-black uppercase tracking-tight text-white">Sound Design</span>
+                                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Auto Music & SFX by Niche Mood</p>
+                                            </div>
+                                        </div>
+                                        <div className={cn(
+                                            "w-12 h-6 rounded-full transition-all relative border",
+                                            enableSoundDesign ? "bg-emerald-500 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "bg-zinc-800 border-white/5"
+                                        )}>
+                                            <motion.div
+                                                animate={{ x: enableSoundDesign ? 24 : 4 }}
+                                                className="absolute top-1 w-3 h-3 bg-white rounded-full transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Motion Graphics Toggle */}
+                                    <div className="bg-zinc-950/30 border border-white/10 p-6 rounded-xl flex items-center justify-between group/toggle hover:border-violet-500/30 transition-all cursor-pointer" onClick={() => setEnableMotionGraphics(!enableMotionGraphics)}>
+                                        <div className="flex items-center gap-4">
+                                            <div className={cn(
+                                                "p-3 rounded-lg transition-all",
+                                                enableMotionGraphics ? "bg-violet-500/20 text-violet-500" : "bg-zinc-900 text-zinc-600"
+                                            )}>
+                                                <Film className="h-5 w-5" />
+                                            </div>
+                                            <div className="space-y-0.5">
+                                                <span className="text-[11px] font-black uppercase tracking-tight text-white">Motion Graphics</span>
+                                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Animated Titles & Text Overlays</p>
+                                            </div>
+                                        </div>
+                                        <div className={cn(
+                                            "w-12 h-6 rounded-full transition-all relative border",
+                                            enableMotionGraphics ? "bg-violet-500 border-violet-500 shadow-[0_0_15px_rgba(139,92,246,0.3)]" : "bg-zinc-800 border-white/5"
+                                        )}>
+                                            <motion.div
+                                                animate={{ x: enableMotionGraphics ? 24 : 4 }}
+                                                className="absolute top-1 w-3 h-3 bg-white rounded-full transition-all"
+                                            />
+                                        </div>
+                                    </div>
                                     <div className="flex gap-4">
                                         <button
                                             type="button"
@@ -424,8 +514,9 @@ function TransformationPageContent() {
                                         <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 font-mono">
                                             JOB_ID: {selectedJob.id.slice(0, 8)}
                                         </span>
+                                        {getStaticUrl(selectedJob.output_path) && (
                                         <a
-                                            href={getStaticUrl(selectedJob.output_path)}
+                                            href={getStaticUrl(selectedJob.output_path) ?? undefined}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="glass-card hover:border-primary/50 text-zinc-400 hover:text-white text-[10px] font-black py-2 px-4 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest"
@@ -433,17 +524,23 @@ function TransformationPageContent() {
                                             <ArrowUpRight className="h-3 w-3" />
                                             Raw Intel
                                         </a>
+                                        )}
                                     </div>
                                 )}
                             </div>
 
                             <div className="aspect-video bg-zinc-950 relative flex items-center justify-center group overflow-hidden">
-                                {selectedJob?.status === "Completed" ? (
+                                {selectedJob?.status === "Completed" && getStaticUrl(selectedJob.output_path) ? (
                                     <video
-                                        src={getStaticUrl(selectedJob.output_path)}
+                                        src={getStaticUrl(selectedJob.output_path) || ""}
                                         controls
                                         className="w-full h-full object-contain"
                                     />
+                                ) : (selectedJob?.status === "Completed") ? (
+                                    <div className="flex flex-col items-center gap-6 opacity-30">
+                                        <Layers className="h-24 w-24 text-zinc-800" />
+                                        <p className="text-xs font-black uppercase tracking-[0.3em] text-zinc-700">Intel Lost // Asset Not Found</p>
+                                    </div>
                                 ) : selectedJob ? (
                                     <div className="flex flex-col items-center gap-8 p-12 text-center relative z-10">
                                         <div className="relative">

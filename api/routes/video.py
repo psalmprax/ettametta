@@ -5,12 +5,26 @@ from api.utils.database import SessionLocal
 from api.utils.models import VideoJobDB
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB, SubscriptionTier
-from api.utils.subscription import subscription_required, check_daily_limit
-from services.video_engine.tasks import download_and_process_task, generate_video_task, generate_story_task
+from api.utils.subscription import (
+    subscription_required,
+    check_daily_limit,
+    engine_access_required,
+    credits_required,
+)
+from services.video_engine.tasks import (
+    download_and_process_task,
+    generate_video_task,
+    generate_story_task,
+)
 from services.video_engine.synthesis_service import generative_service
+from services.payment.credit_service import credit_service
+from api.utils.limiter import limiter
+from api.utils.audit_service import audit_service
+from fastapi import Request
 import logging
 
 router = APIRouter(prefix="/video", tags=["Video Engine"])
+
 
 class TransformationRequest(BaseModel):
     input_url: str
@@ -18,12 +32,17 @@ class TransformationRequest(BaseModel):
     platform: str = "YouTube Shorts"
     style: Optional[str] = "Default"
     quality_tier: Optional[str] = "standard"  # standard, enhanced, premium
+    generate_thumbnail: Optional[bool] = False
+    sound_design: Optional[bool] = False
+    motion_graphics: Optional[bool] = False
+
 
 class GenerationRequest(BaseModel):
     prompt: str
-    engine: str = "veo3" # beo3, wan2.2
+    engine: str = "veo3"  # beo3, wan2.2
     style: str = "Cinematic"
     aspect_ratio: str = "9:16"
+
 
 class StoryRequest(BaseModel):
     prompt: str
@@ -32,7 +51,13 @@ class StoryRequest(BaseModel):
 
 
 @router.post("/transform")
-async def start_transformation(request: TransformationRequest, current_user: UserDB = Depends(get_current_user)):
+@limiter.limit("10/minute")  # Technical burst protection
+async def start_transformation(
+    request: Request,
+    body: TransformationRequest,
+    current_user: UserDB = Depends(get_current_user),
+    credits_cost: int = Depends(credits_required("video_transformation")),
+):
     """
     Triggers a background Celery task to download, process, and upload a video.
     """
@@ -40,15 +65,25 @@ async def start_transformation(request: TransformationRequest, current_user: Use
     try:
         # Enforce daily generation limits
         await check_daily_limit(current_user, db)
-        
-        task = download_and_process_task.delay(
-            source_url=request.input_url,
-            niche=request.niche,
-            platform=request.platform,
-            style=request.style,
-            quality_tier=request.quality_tier
+
+        # Consume credits
+        credit_service.consume_credits(
+            user_id=current_user.id,
+            amount=credits_cost,
+            action="video_transformation",
+            description=f"Video transformation: {body.input_url}",
         )
-        
+
+        task = download_and_process_task.delay(
+            source_url=body.input_url,
+            niche=body.niche,
+            platform=body.platform,
+            style=body.style,
+            quality_tier=body.quality_tier,
+            sound_design=body.sound_design or False,
+            motion_graphics=body.motion_graphics or False,
+        )
+
         # Create Job Entry in Database
         new_job = VideoJobDB(
             id=task.id,
@@ -56,20 +91,32 @@ async def start_transformation(request: TransformationRequest, current_user: Use
             status="Queued",
             progress=0,
             input_url=request.input_url,
-            user_id=current_user.id
+            user_id=current_user.id,
         )
         db.add(new_job)
         db.commit()
-        
+
+        audit_service.log(
+            action="VIDEO_TRANSFORM_START",
+            user_id=current_user.id,
+            resource_type="VIDEO",
+            resource_id=task.id,
+            details={"input_url": body.input_url, "niche": body.niche},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            db=db,
+        )
+
         return {
-            "message": "Transformation started in background", 
+            "message": "Transformation started in background",
             "task_id": task.id,
-            "status": "Queued"
+            "status": "Queued",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
+
 
 @router.get("/jobs")
 async def list_jobs(current_user: UserDB = Depends(get_current_user)):
@@ -82,59 +129,74 @@ async def list_jobs(current_user: UserDB = Depends(get_current_user)):
         query = db.query(VideoJobDB)
         if current_user.role != "admin":
             query = query.filter(VideoJobDB.user_id == current_user.id)
-            
+
         jobs = query.order_by(VideoJobDB.created_at.desc()).all()
         return jobs
     finally:
         db.close()
+
+
 @router.post("/jobs/{job_id}/abort")
 async def abort_job(job_id: str, current_user: UserDB = Depends(get_current_user)):
     # ... (rest of the abort_job code)
     from api.utils.celery import celery_app
+
     db = SessionLocal()
     try:
         job = db.query(VideoJobDB).filter(VideoJobDB.id == job_id).first()
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
-        
+
         # User isolation
         if current_user.role != "admin" and job.user_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Not authorized to abort this job")
+            raise HTTPException(
+                status_code=403, detail="Not authorized to abort this job"
+            )
 
         # Revoke Celery Task
         celery_app.control.revoke(job_id, terminate=True)
-        
+
         # Update Database
         job.status = "Aborted"
         db.commit()
 
         # Notify Dashboard via WebSocket
         from api.routes.ws import notify_job_update_sync
-        notify_job_update_sync({
-            "id": job_id,
-            "status": "Aborted",
-            "progress": job.progress,
-            "output_path": job.output_path
-        })
 
-        return {"status": "Aborted", "message": f"Job {job_id} revocation signal transmitted."}
+        notify_job_update_sync(
+            {
+                "id": job_id,
+                "status": "Aborted",
+                "progress": job.progress,
+                "output_path": job.output_path,
+            }
+        )
+
+        return {
+            "status": "Aborted",
+            "message": f"Job {job_id} revocation signal transmitted.",
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
+
 class TestDriveRequest(BaseModel):
     niche: str
     style: Optional[str] = "Default"
 
+
 @router.post("/test-drive")
-async def test_drive(request: TestDriveRequest, current_user: UserDB = Depends(get_current_user)):
+async def test_drive(
+    request: TestDriveRequest, current_user: UserDB = Depends(get_current_user)
+):
     """
     Identifies the top viral candidate for a niche and triggers a preview-only transformation.
     """
     from services.discovery.service import base_discovery_service
     from api.utils.models import ContentCandidateDB
-    
+
     db = SessionLocal()
     try:
         # Enforce daily generation limits
@@ -144,36 +206,50 @@ async def test_drive(request: TestDriveRequest, current_user: UserDB = Depends(g
         # - Must have a thumbnail
         # - Must have a niche
         # - Order by viral score
-        candidate = db.query(ContentCandidateDB).filter(
-            ContentCandidateDB.niche == request.niche,
-            ContentCandidateDB.thumbnail_url.isnot(None),
-            ContentCandidateDB.thumbnail_url != ""
-        ).order_by(ContentCandidateDB.viral_score.desc()).first()
-        
+        candidate = (
+            db.query(ContentCandidateDB)
+            .filter(
+                ContentCandidateDB.niche == request.niche,
+                ContentCandidateDB.thumbnail_url.isnot(None),
+                ContentCandidateDB.thumbnail_url != "",
+            )
+            .order_by(ContentCandidateDB.viral_score.desc())
+            .first()
+        )
+
         if not candidate:
             # Try a quick scan if none found
-            logging.info(f"[TestDrive] No valid candidates with thumbnails found for {request.niche}. Triggering scan...")
-            trends = await base_discovery_service.find_trending_content(request.niche, horizon="30d")
+            logging.info(
+                f"[TestDrive] No valid candidates with thumbnails found for {request.niche}. Triggering scan..."
+            )
+            trends = await base_discovery_service.find_trending_content(
+                request.niche, horizon="30d"
+            )
             if trends:
-                candidate = db.query(ContentCandidateDB).filter(
-                    ContentCandidateDB.niche == request.niche,
-                    ContentCandidateDB.thumbnail_url.isnot(None),
-                    ContentCandidateDB.thumbnail_url != ""
-                ).order_by(ContentCandidateDB.viral_score.desc()).first()
-        
+                candidate = (
+                    db.query(ContentCandidateDB)
+                    .filter(
+                        ContentCandidateDB.niche == request.niche,
+                        ContentCandidateDB.thumbnail_url.isnot(None),
+                        ContentCandidateDB.thumbnail_url != "",
+                    )
+                    .order_by(ContentCandidateDB.viral_score.desc())
+                    .first()
+                )
+
         if not candidate:
             raise HTTPException(
-                status_code=404, 
-                detail=f"No high-quality video candidates with thumbnails found for {request.niche}. Please try again in a few minutes after the scanners update."
+                status_code=404,
+                detail=f"No high-quality video candidates with thumbnails found for {request.niche}. Please try again in a few minutes after the scanners update.",
             )
 
         # 2. Trigger Preview Task
         task = download_and_process_task.delay(
             source_url=candidate.url,
             niche=request.niche,
-            platform="YouTube Shorts", # Default format for test drive
+            platform="YouTube Shorts",  # Default format for test drive
             preview_only=True,
-            style=request.style
+            style=request.style,
         )
 
         # 3. Create Job Entry
@@ -183,7 +259,7 @@ async def test_drive(request: TestDriveRequest, current_user: UserDB = Depends(g
             status="Queued",
             progress=0,
             input_url=candidate.url,
-            user_id=current_user.id
+            user_id=current_user.id,
         )
         db.add(new_job)
         db.commit()
@@ -194,103 +270,123 @@ async def test_drive(request: TestDriveRequest, current_user: UserDB = Depends(g
             "candidate": {
                 "id": candidate.id,
                 "title": candidate.title,
-                "url": candidate.url
-            }
+                "url": candidate.url,
+            },
         }
     except Exception as e:
         import traceback
+
         logging.error(f"[TestDrive] Error: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
+
 @router.post("/generate")
-async def start_generation(
-    request: GenerationRequest, 
-    current_user: UserDB = Depends(get_current_user)
+@limiter.limit("5/minute")
+async def generate_single_video(
+    request: Request,
+    body: GenerationRequest,
+    current_user: UserDB = Depends(get_current_user),
 ):
     """
     Triggers an AI video synthesis task. Restricted by engine tiers.
     """
     db = SessionLocal()
     try:
-        # 0. Tier Gating Logic
-        tier_values = {
-            SubscriptionTier.FREE: 0,
-            SubscriptionTier.BASIC: 1,
-            SubscriptionTier.PREMIUM: 2,
-            SubscriptionTier.SOVEREIGN: 3,
-            SubscriptionTier.STUDIO: 4
-        }
-        user_tier_val = tier_values.get(current_user.subscription, 0)
-        
-        # Engine-to-Tier Mapping
-        required_tier = SubscriptionTier.STUDIO # Default for most synthesis engines
-        
-        if request.engine == "lite4k":
-            required_tier = SubscriptionTier.PREMIUM
-        elif request.engine in ["ltx-video", "hunyuan", "mochi", "cogvideo", "wan"]:
-            required_tier = SubscriptionTier.SOVEREIGN
-        elif request.engine in ["veo3", "wan2.2", "runway", "pika"]:
-            required_tier = SubscriptionTier.STUDIO
-            
-        required_tier_val = tier_values.get(required_tier, 4)
-        
-        # Special check: Empire (PREMIUM) uses lite4k ONLY
-        if current_user.subscription == SubscriptionTier.PREMIUM and request.engine != "lite4k":
-            raise HTTPException(
-                status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail="Empire tier is restricted to the 'lite4k' engine. Upgrade to Sovereign or Studio for advanced synthesis."
-            )
-        
-        if user_tier_val < required_tier_val:
-            raise HTTPException(
-                status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail=f"Subscription upgrade required. The '{request.engine}' engine requires {required_tier.value} tier."
-            )
-
+        # 0. Tier Gating Logic via Standard Dependency
+        await engine_access_required(body.engine)(current_user)
 
         # Enforce daily limits
         await check_daily_limit(current_user, db)
-        
-        # 1. Optimize Prompt
-        optimized_prompt = generative_service.optimize_prompt(request.prompt, request.style)
-        
-        # 2. Trigger Synthesis Task
-        task = generate_video_task.delay(
-            prompt=optimized_prompt,
-            engine=request.engine,
-            style=request.style,
-            aspect_ratio=request.aspect_ratio,
-            user_id=current_user.id
+
+        # Credit Consumption Logic
+        engine_to_action = {
+            "ltx-video": "video_generation_ltx",
+            "hunyuan": "video_generation_hunyuan",
+            "veo3": "video_generation_veo3",
+            "runway": "video_generation_runway",
+            "pika": "video_generation_runway",
+            "lite4k": "video_generation_ltx",
+            "mochi": "video_generation_hunyuan",
+            "cogvideo": "video_generation_hunyuan",
+            "wan": "video_generation_hunyuan",
+            "wan2.2": "video_generation_hunyuan",
+        }
+
+        action = engine_to_action.get(body.engine, "video_generation_ltx")
+
+        # Check and consume credits using dependency helper logic
+        credits_cost = await credits_required(action)(current_user)
+
+        # Consume credits
+        success, msg = credit_service.consume_credits(
+            user_id=current_user.id,
+            amount=credits_cost,
+            action=action,
+            description=f"Video generation: {body.engine} - {body.prompt[:50]}...",
         )
-        
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to process payment: {msg}",
+            )
+
+        # 1. Trigger Synthesis Task (Service handles internal optimization per engine)
+        task = generate_video_task.delay(
+            prompt=body.prompt,
+            engine=body.engine,
+            style=body.style,
+            aspect_ratio=body.aspect_ratio,
+            user_id=current_user.id,
+        )
+
+        # We can still show the user what it *will* look like
+        preview_prompt = generative_service.optimize_prompt(
+            body.prompt, body.style, body.engine
+        )
+
         # 3. Create Job Entry
         new_job = VideoJobDB(
             id=task.id,
-            title=f"AI Synthesis - {request.engine}",
+            title=f"AI Synthesis - {body.engine}",
             status="Queued",
             progress=0,
             input_url="Generation Prompt",
-            user_id=current_user.id
+            user_id=current_user.id,
         )
         db.add(new_job)
         db.commit()
-        
+
+        audit_service.log(
+            action="VIDEO_GENERATE_START",
+            user_id=current_user.id,
+            resource_type="VIDEO",
+            resource_id=task.id,
+            details={"engine": body.engine, "style": body.style},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            db=db,
+        )
+
         return {
             "message": "Generation started",
             "task_id": task.id,
-            "optimized_prompt": optimized_prompt
+            "optimized_prompt_preview": preview_prompt,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
+
 @router.post("/generate-story")
 async def start_story_generation(
-    request: StoryRequest, 
-    current_user: UserDB = Depends(subscription_required(SubscriptionTier.BASIC))
+    request: Request,
+    body: StoryRequest,
+    current_user: UserDB = Depends(subscription_required(SubscriptionTier.BASIC)),
+    credits_cost: int = Depends(credits_required("storytelling")),
 ):
     """
     Triggers a multi-scene storytelling narrative task. Restricted to BASIC tier and above.
@@ -300,28 +396,44 @@ async def start_story_generation(
         # Enforce daily limits
         await check_daily_limit(current_user, db)
 
-        task = generate_story_task.delay(
-            prompt=request.prompt,
-            engine=request.engine,
-            style=request.style,
-            user_id=current_user.id
+        # Consume credits
+        credit_service.consume_credits(
+            user_id=current_user.id,
+            amount=credits_cost,
+            action="storytelling",
+            description=f"Storytelling narrative: {body.prompt[:50]}...",
         )
-        
+
+        task = generate_story_task.delay(
+            prompt=body.prompt,
+            engine=body.engine,
+            style=body.style,
+            user_id=current_user.id,
+        )
+
         new_job = VideoJobDB(
             id=task.id,
             title=f"Storytelling - {request.style}",
             status="Queued",
             progress=0,
             input_url="Narrative Prompt",
-            user_id=current_user.id
+            user_id=current_user.id,
         )
         db.add(new_job)
         db.commit()
-        
-        return {
-            "message": "Storytelling narrative started",
-            "task_id": task.id
-        }
+
+        audit_service.log(
+            action="STORY_GENERATE_START",
+            user_id=current_user.id,
+            resource_type="VIDEO",
+            resource_id=task.id,
+            details={"engine": body.engine, "style": body.style},
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            db=db,
+        )
+
+        return {"message": "Storytelling narrative started", "task_id": task.id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
