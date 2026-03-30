@@ -13,6 +13,7 @@ import imageio
 import numpy as np
 import soundfile as sf
 import traceback
+import subprocess
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -25,6 +26,7 @@ import traceback
 from PIL import Image
 import cv2
 import torch.hub
+from video_model_manager import model_manager
 # GFPGAN and RealESRGAN - optional for face restoration
 try:
     from gfpgan import GFPGANer
@@ -171,9 +173,9 @@ def load_encodec():
         from encodec import EncodecModel
         encodec_model = EncodecModel.encodec_model_24khz()
         encodec_model.set_target_bandwidth(6.0)
-        if torch.cuda.is_available():
-            encodec_model = encodec_model.cuda()
-        print("✅ EnCodec loaded", flush=True)
+        if model_manager.device != "cpu":
+            encodec_model = encodec_model.to(model_manager.device)
+        print(f"✅ EnCodec loaded on {model_manager.device}", flush=True)
     return encodec_model
 
 def generate_audio_conditioning(text_prompt, num_frames=121):
@@ -189,8 +191,8 @@ def generate_audio_conditioning(text_prompt, num_frames=121):
         # 1. TTS Generation
         speech = tts(text_prompt, forward_params={"speaker_embeddings": speaker_embedding})
         audio_data = torch.from_numpy(speech["audio"]).float().unsqueeze(0).unsqueeze(0) # (1, 1, T)
-        if torch.cuda.is_available():
-            audio_data = audio_data.cuda()
+        if model_manager.device != "cpu":
+            audio_data = audio_data.to(model_manager.device)
             
         # 2. EnCodec Latents (audio_hidden_states)
         # EnCodec expects (batch, channels, time)
@@ -235,8 +237,46 @@ os.makedirs(CONTENT_DIR, exist_ok=True)
 
 app = FastAPI(title="ettametta Remote AI Engine (LTX + SpeechT5 + Moondream2)")
 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE = model_manager.device
 print(f"📡 Using Device: {DEVICE}")
+
+HAS_NVENC = (model_manager.encoder == "h264_nvenc")
+BEST_ENCODER = model_manager.encoder
+print(f"🎞️ Hardware Encoding: {BEST_ENCODER}")
+
+def hardware_export_to_video(frames, output_path, fps=24):
+    """Export frames to video using the best available hardware encoder"""
+    print(f"🚀 Exporting via {BEST_ENCODER} to {output_path}...", flush=True)
+    try:
+        import numpy as np
+        first_frame = np.array(frames[0])
+        h, w = first_frame.shape[:2]
+        
+        # Dynamic Encoder Settings
+        codec_args = ['-c:v', BEST_ENCODER]
+        if BEST_ENCODER == "h264_nvenc":
+            codec_args += ['-preset', 'p4', '-tune', 'hq', '-b:v', '10M']
+        elif BEST_ENCODER == "libx264":
+            codec_args += ['-preset', 'superfast', '-crf', '23']
+        else:
+            codec_args += ['-b:v', '10M']
+
+        cmd = [
+            'ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo',
+            '-s', f'{w}x{h}', '-pix_fmt', 'rgb24', '-r', str(fps),
+            '-i', '-', *codec_args, '-pix_fmt', 'yuv420p', output_path
+        ]
+        
+        process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        for frame in frames:
+            process.stdin.write(np.array(frame).astype('uint8').tobytes())
+        process.stdin.close()
+        process.wait()
+        print(f"✅ {BEST_ENCODER} Export Complete")
+    except Exception as e:
+        print(f"⚠️ Hardware Export failed: {e}, falling back to slow export")
+        from diffusers.utils import export_to_video
+        return export_to_video(frames, output_path, fps=fps)
 
 # =========================
 # GLOBALS (Lazy Loading)
@@ -256,9 +296,7 @@ upscaler_model = None
 # GPU CLEANUP
 # =========================
 def clear_gpu():
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    model_manager.clear_gpu()
 
 def clear_hunyuan_model():
     """Clear HunyuanVideo model from GPU to free memory"""
@@ -281,13 +319,13 @@ def load_tts():
         tts_pipeline = pipeline(
             "text-to-speech",
             model="microsoft/speecht5_tts",
-            device=0 if torch.cuda.is_available() else -1
+            device=0 if model_manager.device == "cuda" else -1
         )
         # Create stable default speaker embedding (512-dim)
         torch.manual_seed(42)
         speaker_embedding = torch.randn(1, 512)
-        if torch.cuda.is_available():
-            speaker_embedding = speaker_embedding.cuda()
+        if model_manager.device != "cpu":
+            speaker_embedding = speaker_embedding.to(model_manager.device)
     return tts_pipeline
 
 def load_vlm():
@@ -348,6 +386,7 @@ def load_ltx_base_components():
         torch_dtype=torch.bfloat16, local_files_only=False
     ).to(DEVICE)
     vae.enable_tiling()
+    vae.enable_slicing()
     from diffusers import FlowMatchEulerDiscreteScheduler
     scheduler = FlowMatchEulerDiscreteScheduler.from_pretrained("Lightricks/LTX-Video", subfolder="scheduler")
     
@@ -377,7 +416,7 @@ def encode_prompt_ltx2(prompt, negative_prompt, tokenizer):
 
     print("🧹 Phase 1 Complete. Evicting T5 & Projection Layer...", flush=True)
     del t5, text_projection
-    torch.cuda.empty_cache()
+    clear_gpu()
     import gc
     gc.collect()
     return p_embeds, p_mask, n_embeds, n_mask
@@ -437,6 +476,15 @@ def load_ltx_19b_transformer():
             setattr(parent, module_path[-1], torch.empty(b.shape, dtype=torch.bfloat16).to(DEVICE))
 
     print("🚀 19B Transformer live.", flush=True)
+    
+    # ⚡ JIT Compilation for 19B Transformer
+    try:
+        print("🔥 Optimization: Compiling 19B Transformer (Phase 2)...", flush=True)
+        transformer = torch.compile(transformer, mode="reduce-overhead", fullgraph=False)
+        print("✅ Compilation Triggered.")
+    except Exception as e:
+        print(f"⚠️ Compilation failed: {e}")
+
     GLOBAL_MODELS["transformer"] = transformer
     return transformer
 
@@ -462,7 +510,7 @@ def load_tts():
     global tts_pipeline, speaker_embedding
     if tts_pipeline is None:
         print("📥 Loading Microsoft SpeechT5 TTS...")
-        tts_pipeline = pipeline("text-to-speech", model="microsoft/speecht5_tts", device=0 if torch.cuda.is_available() else -1)
+        tts_pipeline = pipeline("text-to-speech", model="microsoft/speecht5_tts", device=0 if model_manager.device == "cuda" else -1)
         torch.manual_seed(42)
         speaker_embedding = torch.randn(1, 512).to(DEVICE)
     return tts_pipeline
@@ -545,9 +593,9 @@ async def health():
     total, used, free = shutil.disk_usage("/")
     return {
         "status": "healthy", 
-        "gpu": DEVICE, 
-        "gpu_available": torch.cuda.is_available(),
-        "vram_allocated": f"{torch.cuda.memory_allocated()/1024**3:.2f}GB" if torch.cuda.is_available() else "0GB",
+        "device": DEVICE, 
+        "encoder": BEST_ENCODER,
+        "vram_allocated": f"{torch.cuda.memory_allocated()/1024**3:.2f}GB" if DEVICE == "cuda" else "N/A",
         "disk_free": f"{free/1024**3:.2f}GB",
         "disk_used_percent": f"{(used/total)*100:.1f}%"
     }
@@ -704,7 +752,7 @@ def render_video(job_id, req):
         # --------------------------------------------------
         out_path = os.path.join(CONTENT_DIR, f"{job_id}.mp4")
         print(f"🎬 Exporting Video: {len(final_frames)} frames to {out_path}...", flush=True)
-        export_to_video(final_frames, out_path, fps=24)
+        hardware_export_to_video(final_frames, out_path, fps=24)
         
         print(f"✅ Job {job_id} Complete -> {out_path}", flush=True)
         

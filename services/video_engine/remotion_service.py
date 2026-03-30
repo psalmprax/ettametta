@@ -3,6 +3,7 @@ import json
 import subprocess
 import logging
 import uuid
+import shutil
 from typing import Dict, Any, Optional
 from pathlib import Path
 
@@ -15,6 +16,12 @@ class RemotionService:
         self.studio_path = os.path.abspath(studio_path)
         self.output_dir = os.path.join(self.studio_path, "out")
         os.makedirs(self.output_dir, exist_ok=True)
+        # Dynamic browser discovery
+        self.browser_path = os.getenv("CHROMIUM_PATH") or \
+                           shutil.which("chromium") or \
+                           shutil.which("chromium-browser") or \
+                           "/usr/bin/chromium"
+        logging.info(f"[RemotionService] Using browser at: {self.browser_path}")
 
     async def render_video(self, composition_id: str, props: Dict[str, Any], output_name: str = None) -> Optional[str]:
         """
@@ -42,7 +49,7 @@ class RemotionService:
                 composition_id,
                 output_path,
                 "--props", input_props_path,
-                "--browser-executable", "/usr/bin/chromium" # Expected path in Docker
+                "--browser-executable", self.browser_path
             ]
 
             process = subprocess.Popen(

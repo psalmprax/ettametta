@@ -773,10 +773,14 @@ class MultiPlatformPublishRequest(BaseModel):
 
 
 @router.post("/package")
-async def generate_package(niche: str, platform: str = "YouTube Shorts"):
+async def generate_package(
+    niche: str,
+    platform: str = "YouTube Shorts",
+    current_user: UserDB = Depends(get_current_user),
+):
     try:
-        # Generate a UUID for the content ID since no user is authenticated
-        content_id = str(uuid.uuid4())
+        # Use authenticated user's ID
+        content_id = str(current_user.id) + "-" + str(uuid.uuid4())[:8]
         package = await base_optimization_service.generate_viral_package(
             content_id, niche, platform
         )
