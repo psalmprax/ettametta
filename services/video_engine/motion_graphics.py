@@ -19,17 +19,17 @@ class MotionGraphicsService:
     Optional motion graphics enhancement for video processing.
     Adds animated text overlays, titles, and motion graphics.
     """
-    
+
     # Text animation styles
     ANIMATION_STYLES = [
         "fade_in",
-        "slide_up", 
+        "slide_up",
         "scale_in",
         "typewriter",
         "bounce",
-        "glitch"
+        "glitch",
     ]
-    
+
     # Title templates by niche
     NICHE_TITLE_STYLES = {
         "finance": ["professional", "elegant", "minimal"],
@@ -38,25 +38,27 @@ class MotionGraphicsService:
         "tech": ["futuristic", "clean", "digital"],
         "luxury": ["elegant", "sophisticated", "gold"],
         "news": ["breaking", "professional", "bold"],
-        "default": ["cinematic", "modern", "clean"]
+        "default": ["cinematic", "modern", "clean"],
     }
-    
+
     def __init__(self):
         self.enabled = os.getenv("ENABLE_MOTION_GRAPHICS", "false").lower() == "true"
         self.engine = os.getenv("MOTION_GRAPHICS_ENGINE", "local")
-        
-        logger.info(f"[MotionGraphics] Initialized - Enabled: {self.enabled}, Engine: {self.engine}")
-    
+
+        logger.info(
+            f"[MotionGraphics] Initialized - Enabled: {self.enabled}, Engine: {self.engine}"
+        )
+
     def _get_title_style_for_niche(self, niche: str) -> str:
         """Get appropriate title style for a given niche"""
         niche_lower = niche.lower()
-        
+
         for key, styles in self.NICHE_TITLE_STYLES.items():
             if key in niche_lower:
                 return random.choice(styles)
-        
+
         return random.choice(self.NICHE_TITLE_STYLES["default"])
-    
+
     async def add_title_sequence(
         self,
         video_path: str,
@@ -64,7 +66,7 @@ class MotionGraphicsService:
         subtitle: Optional[str] = None,
         style: Optional[str] = None,
         duration: float = 3.0,
-        position: str = "center"  # center, top, bottom
+        position: str = "center",  # center, top, bottom
     ) -> Optional[str]:
         """
         Add animated title sequence to video using Remotion.
@@ -72,118 +74,150 @@ class MotionGraphicsService:
         if not self.enabled:
             logger.debug("[MotionGraphics] Disabled, skipping title sequence")
             return None
-        
+
         logger.info(f"[MotionGraphics] Rendering Remotion title - title: {title}")
-        
+
         try:
             from services.video_engine.remotion_service import remotion_service
-            
+
             # Prepare props for Remotion
             props = {
                 "title": title,
                 "subtitle": subtitle or "",
-                "videoUrl": video_path  # We use the existing video as background
+                "videoUrl": video_path,  # We use the existing video as background
             }
-            
+
             output_name = f"mg_{os.path.basename(video_path)}"
             rendered_path = await remotion_service.render_video(
-                composition_id="ViralClip",
-                props=props,
-                output_name=output_name
+                composition_id="ViralClip", props=props, output_name=output_name
             )
-            
+
             return rendered_path
-            
+
         except Exception as e:
             logger.error(f"[MotionGraphics] Remotion render failed: {e}")
             return None
-    
+
     async def add_animated_overlay(
         self,
         video_path: str,
         text: str,
         animation_style: str = "fade_in",
         position: str = "bottom",
-        timing: Optional[List[float]] = None
+        timing: Optional[List[float]] = None,
     ) -> Optional[str]:
         """
         Add animated text overlay at specific timestamps.
-        
+
         Args:
             video_path: Path to input video
             text: Overlay text
             animation_style: Type of animation
             position: Screen position (top, bottom, center)
             timing: List of timestamps when to show overlay
-            
+
         Returns:
             Path to enhanced video with overlay, or None if disabled
         """
         if not self.enabled:
             logger.debug("[MotionGraphics] Disabled, skipping overlay")
             return None
-        
-        logger.info(f"[MotionGraphics] Adding overlay - text: {text}, style: {animation_style}")
-        
+
+        logger.info(
+            f"[MotionGraphics] Adding overlay - text: {text}, style: {animation_style}"
+        )
+
         try:
             output_path = video_path.replace(".mp4", "_with_overlay.mp4")
-            
-            # Implementation would use FFmpeg with complex filters
-            # or moviepy TextClip compositing
-            
-            logger.warning(f"[MotionGraphics] Animated overlay not implemented")
-            return None
-            
+
+            import subprocess
+
+            # Position mapping for ffmpeg drawtext
+            pos_map = {
+                "top": "x=(w-text_w)/2:y=20",
+                "center": "x=(w-text_w)/2:y=(h-text_h)/2",
+                "bottom": "x=(w-text_w)/2:y=h-text_h-20",
+            }
+            position_filter = pos_map.get(animation_style, pos_map["bottom"])
+
+            # Escape special characters for ffmpeg drawtext
+            safe_text = text.replace("'", "'\\''").replace(":", "\\:")
+
+            cmd = [
+                "ffmpeg",
+                "-y",
+                "-i",
+                video_path,
+                "-vf",
+                f"drawtext=text='{safe_text}':fontsize=36:fontcolor=white:borderw=2:bordercolor=black:{position_filter}:enable='between(t,0,5)'",
+                "-c:a",
+                "copy",
+                output_path,
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+
+            if result.returncode == 0 and os.path.exists(output_path):
+                logger.info(
+                    f"[MotionGraphics] Overlay added successfully: {output_path}"
+                )
+                return output_path
+            else:
+                logger.warning(
+                    f"[MotionGraphics] FFmpeg overlay failed: {result.stderr[:200]}"
+                )
+                return video_path  # Return original on failure
+
         except Exception as e:
             logger.error(f"[MotionGraphics] Error adding overlay: {e}")
             return None
-    
+
     async def add_watermark(
         self,
         video_path: str,
         watermark_text: str = "Created with ettametta",
         opacity: float = 0.3,
-        position: str = "bottom_right"
+        position: str = "bottom_right",
     ) -> Optional[str]:
         """
         Add watermark to video.
-        
+
         Args:
             video_path: Path to input video
             watermark_text: Watermark text
             opacity: Watermark opacity (0.0 - 1.0)
             position: Screen position
-            
+
         Returns:
             Path to enhanced video with watermark
         """
         if not self.enabled:
             return video_path  # Return original if disabled
-        
+
         logger.info(f"[MotionGraphics] Adding watermark")
-        
+
         try:
             # Simple FFmpeg watermark implementation
             # This could be done even when service is disabled
-            
+
             return video_path  # Placeholder
-            
+
         except Exception as e:
             logger.error(f"[MotionGraphics] Error adding watermark: {e}")
             return video_path
-    
+
     def get_available_styles(self) -> List[str]:
         """Get list of available animation styles"""
         return self.ANIMATION_STYLES.copy()
-    
+
     def get_niche_styles(self, niche: str) -> List[str]:
         """Get available styles for a specific niche"""
         niche_lower = niche.lower()
-        
+
         for key, styles in self.NICHE_TITLE_STYLES.items():
             if key in niche_lower:
                 return styles
-        
+
         return self.NICHE_TITLE_STYLES["default"]
 
 

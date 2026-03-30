@@ -1,6 +1,6 @@
 import logging
 import random
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from .base import BaseMonetizationStrategy
 from api.utils.database import SessionLocal
 from api.utils.models import SystemSettings
@@ -84,6 +84,40 @@ class CryptoStrategy(BaseMonetizationStrategy):
         finally:
             db.close()
     
+    async def validate_address(self, address: str, symbol: str) -> bool:
+        """
+        Validates a crypto address using regex or public APIs.
+        """
+        import re
+        if symbol.upper() == "BTC":
+            return bool(re.match(r"^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$|^bc1[ac-hj-np-z02-9]{11,71}$", address))
+        elif symbol.upper() == "ETH" or symbol.upper() == "USDT":
+            return bool(re.match(r"^0x[a-fA-F0-9]{40}$", address))
+        return len(address) > 20
+
+    async def get_balance(self, address: str, symbol: str) -> Optional[float]:
+        """
+        Fetches real balance from public blockchain APIs.
+        """
+        import httpx
+        try:
+            if symbol.upper() == "BTC":
+                url = f"https://blockchain.info/q/addressbalance/{address}"
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(url, timeout=5.0)
+                    if resp.status_code == 200:
+                        return float(resp.text) / 10**8 # Satoshi to BTC
+            elif symbol.upper() == "ETH":
+                # Etherscan requires API key for high volume, but has some public endpoints
+                url = f"https://api.blockcypher.com/v1/eth/main/addrs/{address}/balance"
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(url, timeout=5.0)
+                    if resp.status_code == 200:
+                        return resp.json().get("balance", 0) / 10**18
+        except Exception as e:
+            logging.error(f"[CryptoStrategy] Balance check failed for {symbol}: {e}")
+        return None
+
     def _extract_wallet(self, wallet_str: str, symbol: str) -> str:
         """Extract wallet address for a given symbol"""
         try:
@@ -91,7 +125,7 @@ class CryptoStrategy(BaseMonetizationStrategy):
             for part in parts:
                 if symbol.upper() in part.upper():
                     addr = part.split(":")[-1].strip()
-                    if addr and len(addr) > 10:  # Basic validation
+                    if addr and len(addr) > 10:
                         return addr
         except Exception:
             pass

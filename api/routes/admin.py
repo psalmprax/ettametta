@@ -13,23 +13,24 @@ from api.utils.user_models import UserDB
 from api.routes.auth import get_current_user
 from api.config import settings
 
-router = APIRouter(prefix="/settings/system", tags=["admin"])
+router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 class SystemSettingsUpdate(BaseModel):
     """System-wide settings that only admins can modify"""
+
     # OAuth Credentials
     google_client_id: Optional[str] = None
     google_client_secret: Optional[str] = None
     tiktok_client_key: Optional[str] = None
     tiktok_client_secret: Optional[str] = None
-    
+
     # API Keys
     groq_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
     elevenlabs_api_key: Optional[str] = None
     pexels_api_key: Optional[str] = None
-    
+
     # Cloud Storage
     aws_access_key_id: Optional[str] = None
     aws_secret_access_key: Optional[str] = None
@@ -41,24 +42,24 @@ class SystemSettingsUpdate(BaseModel):
     storage_bucket: Optional[str] = None
     storage_endpoint: Optional[str] = None
     storage_region: Optional[str] = None
-    
+
     # Payment
     stripe_secret_key: Optional[str] = None
     stripe_webhook_secret: Optional[str] = None
-    
+
     # Commerce
     shopify_shop_url: Optional[str] = None
     shopify_access_token: Optional[str] = None
-    
+
     # Infrastructure
     production_domain: Optional[str] = None
     render_node_url: Optional[str] = None
-    
+
     # Twilio/WhatsApp
     twilio_account_sid: Optional[str] = None
     twilio_auth_token: Optional[str] = None
     twilio_whatsapp_number: Optional[str] = None
-    
+
     # Feature Toggles
     enable_sound_design: Optional[str] = None
     enable_motion_graphics: Optional[str] = None
@@ -128,69 +129,127 @@ async def get_system_settings(current_user: UserDB = Depends(require_admin)):
 
 @router.post("")
 async def update_system_settings(
-    settings_update: SystemSettingsUpdate,
-    current_user: UserDB = Depends(require_admin)
+    settings_update: SystemSettingsUpdate, current_user: UserDB = Depends(require_admin)
 ):
     """
     Update system-wide settings (admin only).
-    
-    Note: In production, these should be stored in a secure configuration
-    store (e.g., HashiCorp Vault, AWS Secrets Manager) rather than 
-    environment variables. For now, this endpoint validates the settings
-    and returns success - actual persistence would require additional work.
+    Persists settings to the database (system_settings table).
     """
+    from api.utils.models import SystemSettings
+    from datetime import datetime
+
     # Convert Pydantic model to dict, filtering out None values
-    update_data = {k: v for k, v in settings_update.model_dump().items() if v is not None}
-    
+    update_data = {
+        k: v for k, v in settings_update.model_dump().items() if v is not None
+    }
+
     # Validate specific settings
     if "production_domain" in update_data:
         domain = update_data["production_domain"]
-        if domain and not (domain.startswith("http://") or domain.startswith("https://")):
+        if domain and not (
+            domain.startswith("http://") or domain.startswith("https://")
+        ):
             raise HTTPException(
-                status_code=400, 
-                detail="production_domain must start with http:// or https://"
+                status_code=400,
+                detail="production_domain must start with http:// or https://",
             )
-    
+
     if "storage_provider" in update_data:
         valid_providers = ["LOCAL", "AWS", "OCI", "GCP", "AZURE", "CUSTOM"]
         if update_data["storage_provider"] not in valid_providers:
             raise HTTPException(
                 status_code=400,
-                detail=f"storage_provider must be one of: {', '.join(valid_providers)}"
+                detail=f"storage_provider must be one of: {', '.join(valid_providers)}",
             )
-    
+
     if "ai_video_provider" in update_data:
         valid_providers = ["none", "runway", "pika"]
         if update_data["ai_video_provider"] not in valid_providers:
             raise HTTPException(
                 status_code=400,
-                detail=f"ai_video_provider must be one of: {', '.join(valid_providers)}"
+                detail=f"ai_video_provider must be one of: {', '.join(valid_providers)}",
             )
-    
-    # In production, save to secure config store
-    # For now, we log the update and return success
+
+    # Persist to database
+    db = SessionLocal()
+    try:
+        for key, value in update_data.items():
+            # Determine category
+            category = "general"
+            if "key" in key or "secret" in key or "token" in key or "password" in key:
+                category = "api_key"
+            elif "enable_" in key or "auto_" in key or "force_" in key:
+                category = "feature_toggle"
+            elif (
+                "provider" in key
+                or "region" in key
+                or "bucket" in key
+                or "endpoint" in key
+            ):
+                category = "infrastructure"
+
+            # Upsert: update if exists, insert if not
+            existing = (
+                db.query(SystemSettings).filter(SystemSettings.key == key).first()
+            )
+            if existing:
+                existing.value = value
+                existing.category = category
+                existing.updated_at = datetime.utcnow()
+            else:
+                new_setting = SystemSettings(
+                    key=key,
+                    value=value,
+                    category=category,
+                    description=f"System setting: {key}",
+                )
+                db.add(new_setting)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        import logging
+
+        logging.error(f"Failed to persist system settings: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to save settings: {str(e)}"
+        )
+    finally:
+        db.close()
+
     import logging
-    logging.info(f"System settings update requested by admin {current_user.username}")
-    logging.info(f"Fields to update: {list(update_data.keys())}")
-    
+
+    logging.info(
+        f"System settings updated by admin {current_user.username}: {list(update_data.keys())}"
+    )
+
     # Return success with masked values for sensitive fields
     response_data = {}
     sensitive_fields = [
-        "google_client_secret", "tiktok_client_secret", "groq_api_key",
-        "openai_api_key", "elevenlabs_api_key", "pexels_api_key",
-        "aws_access_key_id", "aws_secret_access_key", "storage_access_key",
-        "storage_secret_key", "stripe_secret_key", "stripe_webhook_secret",
-        "shopify_access_token", "twilio_account_sid", "twilio_auth_token"
+        "google_client_secret",
+        "tiktok_client_secret",
+        "groq_api_key",
+        "openai_api_key",
+        "elevenlabs_api_key",
+        "pexels_api_key",
+        "aws_access_key_id",
+        "aws_secret_access_key",
+        "storage_access_key",
+        "storage_secret_key",
+        "stripe_secret_key",
+        "stripe_webhook_secret",
+        "shopify_access_token",
+        "twilio_account_sid",
+        "twilio_auth_token",
     ]
-    
+
     for key, value in update_data.items():
         if key in sensitive_fields and value:
             response_data[key] = "***"
         else:
             response_data[key] = value
-    
+
     return {
         "status": "success",
-        "message": "System settings updated successfully",
-        "updated_fields": response_data
+        "message": "System settings persisted to database",
+        "updated_fields": response_data,
     }

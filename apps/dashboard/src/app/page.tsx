@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { motion, Variants } from "framer-motion";
+import { toast } from "sonner";
 import { API_BASE } from "@/lib/config";
 
 const containerVariants: Variants = {
@@ -40,6 +41,9 @@ interface DashboardStats {
   videos_processed: number;
   total_reach: string;
   success_rate: string;
+  recent_discovery_count?: number;
+  engine_load?: string;
+  velocity?: string;
   storage?: {
     current_size_gb: number;
     threshold_gb: number;
@@ -54,49 +58,78 @@ export default function Home() {
     active_trends: 0,
     videos_processed: 0,
     total_reach: "0",
-    success_rate: "0%"
+    success_rate: "0%",
+    velocity: "Nominal",
+    engine_load: "0%"
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
   const [activityFeed, setActivityFeed] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const token = localStorage.getItem("et_token");
-        const response = await fetch(`${API_BASE}/analytics/stats/summary`, {
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem("et_token");
+      const response = await fetch(`${API_BASE}/analytics/stats/summary`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+
+        // Fetch storage stats
+        const storageResponse = await fetch(`${API_BASE}/analytics/stats/storage`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (response.ok) {
-          const data = await response.json();
-
-          // Fetch storage stats
-          const storageResponse = await fetch(`${API_BASE}/analytics/stats/storage`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (storageResponse.ok) {
-            data.storage = await storageResponse.json();
-          }
-
-          setStats(data);
-
-          // Fetch Egress history for activity feed
-          const historyRes = await fetch(`${API_BASE}/publish/history`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (historyRes.ok) {
-            const history = await historyRes.json();
-            setActivityFeed(history.slice(0, 5));
-          }
+        if (storageResponse.ok) {
+          data.storage = await storageResponse.json();
         }
-      } catch (error) {
-        console.error("Failed to fetch stats:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
+        setStats(data);
+
+        // Fetch Egress history for activity feed
+        const historyRes = await fetch(`${API_BASE}/publish/history`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (historyRes.ok) {
+          const history = await historyRes.json();
+          setActivityFeed(history.slice(0, 5));
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+      toast.error("Failed to load dashboard stats");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchStats();
   }, []);
+
+  const handleTriggerScan = async () => {
+    setIsScanning(true);
+    try {
+      const token = localStorage.getItem("et_token");
+      const response = await fetch(`${API_BASE}/discovery/scan`, {
+        method: "POST",
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ niches: ["AI", "Motivation", "Finance"] })
+      });
+      
+      if (response.ok) {
+        // Refresh stats after scan trigger
+        setTimeout(fetchStats, 2000); 
+      }
+    } catch (error) {
+      console.error("Scan trigger failed:", error);
+      toast.error("Failed to trigger scan");
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -111,10 +144,10 @@ export default function Home() {
             <div className="h-1 w-8 bg-primary rounded-full" />
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">System Command</span>
           </div>
-          <h1 className="text-5xl md:text-6xl font-black tracking-tighter italic uppercase text-white">Neural <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500 text-hollow">Dashboard</span></h1>
+          <h1 className="text-5xl md:text-6xl font-black tracking-tighter italic uppercase text-white">Neural <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-purple-500 text-hollow">Dashboard</span></h1>
           <p className="text-zinc-500 font-medium max-w-lg">
             Aggregated intelligence from Nigerian & Global social clusters.
-            Engine status: <span className="text-emerald-500 font-bold uppercase">Nominal</span>
+            Engine status: <span className={`${stats.velocity === 'High' ? 'text-primary' : 'text-emerald-500'} font-bold uppercase`}>{stats.velocity || "Nominal"}</span>
           </p>
         </motion.div>
 
@@ -125,21 +158,21 @@ export default function Home() {
             value={stats.active_trends.toString()}
             icon={<TrendingUp className="h-5 w-5 text-emerald-400" />}
             label="Real-time scan"
-            subtext={`+${(stats as any).recent_discovery_count || 0} discovered`}
+            subtext={`+${stats.recent_discovery_count || 0} discovered`}
           />
           <TelemetryTile
             title="Core Throughput"
             value={stats.videos_processed.toString()}
             icon={<Zap className="h-5 w-5 text-primary" />}
             label="Total Processed"
-            subtext={`Load: ${(stats as any).engine_load || "0%"}`}
+            subtext={`Load: ${stats.engine_load || "0%"}`}
           />
           <TelemetryTile
             title="Global Reach"
             value={stats.total_reach}
             icon={<Play className="h-5 w-5 text-blue-400" />}
             label="Est. Impressions"
-            subtext={`Velocity: ${(stats as any).velocity || "Nominal"}`}
+            subtext={`Velocity: ${stats.velocity || "Nominal"}`}
           />
           <TelemetryTile
             title="Model Precision"
@@ -174,7 +207,7 @@ export default function Home() {
 
         {/* Storage Monitoring Section */}
         {stats.storage && (
-          <motion.div variants={itemVariants} className="glass-card p-8 rounded-[2rem] relative overflow-hidden group border border-white/5 hover:border-primary/30 transition-all">
+          <motion.div variants={itemVariants} className="glass-card p-8 rounded-4xl relative overflow-hidden group border border-white/5 hover:border-primary/30 transition-all">
             <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
             <div className="flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="space-y-4 text-center md:text-left">
@@ -224,8 +257,8 @@ export default function Home() {
 
           {!activityFeed || activityFeed.length === 0 ? (
             <motion.div className="glass-card flex flex-col items-center justify-center text-center py-16 gap-6 relative overflow-hidden group">
-              <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
-              <div className="h-16 w-16 rounded-3xl bg-white/[0.03] border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+              <div className="absolute inset-0 scanline opacity-(--scanline-opacity) pointer-events-none" />
+              <div className="h-16 w-16 rounded-3xl bg-white/3 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
                 <Clock className="h-8 w-8 text-zinc-600" />
               </div>
               <div className="space-y-2 relative">
@@ -282,7 +315,7 @@ function TelemetryTile({ title, value, icon, label, subtext }: { title: string, 
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{title}</p>
           <h2 className="text-3xl font-black text-white tracking-tighter">{value}</h2>
         </div>
-        <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/5 group-hover:border-primary/30 transition-colors">
+        <div className="p-3 rounded-2xl bg-white/3 border border-white/5 group-hover:border-primary/30 transition-colors">
           {icon}
         </div>
       </div>
@@ -294,26 +327,48 @@ function TelemetryTile({ title, value, icon, label, subtext }: { title: string, 
   );
 }
 
-function ActionCard({ title, description, buttonText, href }: { title: string, description: string, buttonText: string, href: string }) {
+function ActionCard({ 
+  title, 
+  description, 
+  buttonText, 
+  href, 
+  onClick, 
+  isLoading 
+}: { 
+  title: string, 
+  description: string, 
+  buttonText: string, 
+  href?: string, 
+  onClick?: () => void, 
+  isLoading?: boolean 
+}) {
+  const content = (
+    <motion.div
+      whileHover={{ scale: 1.02, y: -8 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 350, damping: 20 }}
+      className={`glass-card p-8 rounded-[2rem] h-full flex flex-col justify-between space-y-6 hover:border-primary/50 transition-all duration-300 group text-left relative overflow-hidden ${isLoading ? 'opacity-70 pointer-events-none' : ''}`}
+    >
+      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
+        <Zap className="h-24 w-24 text-primary" />
+      </div>
+      <div className="space-y-3 relative">
+        <h3 className="text-xl font-black text-white uppercase tracking-tight">{title}</h3>
+        <p className="text-zinc-500 text-sm font-medium leading-relaxed">{description}</p>
+      </div>
+      <div className="w-full bg-zinc-900 border border-white/10 group-hover:border-primary/50 text-zinc-400 group-hover:text-white font-black py-4 px-6 rounded-xl transition-all duration-300 text-center uppercase text-xs tracking-widest relative">
+        {buttonText}
+      </div>
+    </motion.div>
+  );
+
+  if (onClick) {
+    return <button onClick={onClick} className="w-full text-left appearance-none focus:outline-none">{content}</button>;
+  }
+
   return (
-    <Link href={href}>
-      <motion.div
-        whileHover={{ scale: 1.02, y: -8 }}
-        whileTap={{ scale: 0.98 }}
-        transition={{ type: "spring", stiffness: 350, damping: 20 }}
-        className="glass-card p-8 rounded-[2rem] h-full flex flex-col justify-between space-y-6 hover:border-primary/50 transition-all duration-300 group text-left relative overflow-hidden"
-      >
-        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
-          <Zap className="h-24 w-24 text-primary" />
-        </div>
-        <div className="space-y-3 relative">
-          <h3 className="text-xl font-black text-white uppercase tracking-tight">{title}</h3>
-          <p className="text-zinc-500 text-sm font-medium leading-relaxed">{description}</p>
-        </div>
-        <div className="w-full bg-zinc-900 border border-white/10 group-hover:border-primary/50 text-zinc-400 group-hover:text-white font-black py-4 px-6 rounded-xl transition-all duration-300 text-center uppercase text-xs tracking-widest relative">
-          {buttonText}
-        </div>
-      </motion.div>
+    <Link href={href || "#"}>
+      {content}
     </Link>
   );
 }

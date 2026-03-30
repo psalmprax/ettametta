@@ -1,0 +1,195 @@
+import time
+import threading
+import uuid
+import base64
+import io
+import os
+import gc
+import shutil
+import asyncio
+import numpy as np
+import cv2
+import PIL.Image as Image
+import torch
+from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+
+# =========================
+# CONFIGURATION
+# =========================
+CONTENT_DIR = "/tmp/ai_content"
+os.makedirs(CONTENT_DIR, exist_ok=True)
+
+app = FastAPI(title="Viral Forge Remote AI Engine (Optimized Lazy Loading)")
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"📡 Using Device: {DEVICE}")
+
+# =========================
+# GLOBALS (Lazy Loading)
+# =========================
+pipe = None
+face_enhancer = None
+upscaler_model = None
+
+# =========================
+# MODELS
+# =========================
+class VideoRequest(BaseModel):
+    prompt: str
+    image_base64: str = None
+    frames: int = 25
+    steps: int = 30
+    upscale_factor: int = 4
+    enhance_face: bool = True
+
+def clear_gpu():
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+def load_ltx(is_i2v=False):
+    global pipe
+    from diffusers import LTXVideoPipeline, LTXImageToVideoPipeline # LAZY
+    
+    target_class = LTXImageToVideoPipeline if is_i2v else LTXVideoPipeline
+    
+    if pipe is not None and not isinstance(pipe, target_class):
+        print(f"🔄 Switching LTX Pipeline to {'I2V' if is_i2v else 'T2V'}...")
+        pipe = None
+        clear_gpu()
+
+    if pipe is None:
+        print(f"📥 Loading LTX-Video ({'I2V' if is_i2v else 'T2V'})...")
+        pipe = target_class.from_pretrained(
+            "Lightricks/LTX-Video",
+            torch_dtype=torch.float16,
+            low_cpu_mem_usage=True,
+            local_files_only=True
+        )
+        if DEVICE == "cuda":
+            pipe.enable_model_cpu_offload() 
+        else:
+            pipe.to("cpu")
+    return pipe
+
+def load_enhancers(upscale_factor=2):
+    global face_enhancer, upscaler_model
+    from gfpgan import GFPGANer # LAZY
+    from realesrgan import RealESRGANer # LAZY
+    from basicsr.archs.rrdbnet_arch import RRDBNet # LAZY
+    
+    if face_enhancer is None:
+        print("📥 Loading GFPGAN (Face Restoration)...")
+        face_enhancer = GFPGANer(
+            model_path='https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth',
+            upscale=1, arch='clean', channel_multiplier=2, bg_upsampler=None
+        )
+    if upscaler_model is None:
+        print(f"📥 Loading Real-ESRGAN (x{upscale_factor})...")
+        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
+        upscaler_model = RealESRGANer(
+            scale=4, 
+            model_path='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth',
+            model=model, tile=400, tile_pad=10, pre_pad=0, half=True
+        )
+    return face_enhancer, upscaler_model
+
+# =========================
+# CORE RENDERER
+# =========================
+def render_video(job_id, req):
+    try:
+        # 1. Diffusion Pass
+        pipe_local = load_ltx(is_i2v=bool(req.image_base64))
+        
+        image_obj = None
+        if req.image_base64:
+            print("📸 Processing Reference Image for I2V...")
+            img_data = base64.b64decode(req.image_base64)
+            image_obj = Image.open(io.BytesIO(img_data)).convert("RGB")
+
+        guidance_scale = 4.0
+        realism_keywords = ["human", "person", "man", "woman", "portrait", "face", "real", "photo"]
+        if any(k in req.prompt.lower() for k in realism_keywords):
+            print("📸 Injecting 4K Ultra-Real Photo details...")
+            req.prompt += ", raw photo, 8k resolution, cinematic 35mm lens, f/1.8, bokeh, extreme skin textures, hightly detailed skin pores"
+            guidance_scale = 6.0
+
+        negative_prompt = "low quality, animation, cartoon, blur, distorted, text, watermark"
+
+        with torch.inference_mode():
+            if image_obj:
+                result = pipe_local(
+                    prompt=req.prompt, image=image_obj, 
+                    negative_prompt=negative_prompt,
+                    num_frames=req.frames, num_inference_steps=req.steps, 
+                    guidance_scale=guidance_scale
+                )
+            else:
+                result = pipe_local(
+                    prompt=req.prompt, negative_prompt=negative_prompt,
+                    num_frames=req.frames, num_inference_steps=req.steps, 
+                    guidance_scale=guidance_scale
+                )
+        
+        frames = result.frames[0]
+        
+        # 2. 4K Post-Processing (Phase 89/91)
+        if req.upscale_factor > 1 or req.enhance_face:
+            print(f"✨ Post-Processing (GFPGAN / {req.upscale_factor}x Real-ESRGAN)...")
+            global pipe
+            pipe = None # Unload model to free VRAM for 4K upscaling
+            clear_gpu()
+            
+            face_restorer, upscaler = load_enhancers(upscale_factor=req.upscale_factor)
+            enhanced_frames = []
+            for i, frame in enumerate(frames):
+                img_bgr = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
+                if req.enhance_face:
+                    try: _, _, img_bgr = face_restorer.enhance(img_bgr, has_aligned=False, only_center_face=False, paste_back=True)
+                    except: pass
+                if req.upscale_factor > 1:
+                    try: img_bgr, _ = upscaler.enhance(img_bgr, outscale=req.upscale_factor)
+                    except: pass
+                enhanced_frames.append(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
+                if i % 10 == 0: print(f"   Processed {i}/{len(frames)} frames...")
+            frames = enhanced_frames
+
+        # 3. Final Encode
+        out_path = f"{CONTENT_DIR}/{job_id}.mp4"
+        print(f"🎬 4K Encoding: {len(frames)} frames to {out_path}...")
+        
+        import imageio
+        writer = imageio.get_writer(out_path, fps=24, codec='libx264', quality=None, ffmpeg_params=['-crf', '16', '-preset', 'slower', '-pix_fmt', 'yuv420p'])
+        for f in frames: writer.append_data(np.array(f))
+        writer.close()
+        
+        print(f"✅ Job {job_id} Completed!")
+    except Exception as e:
+        print(f"❌ Error (Video): {e}")
+
+# =========================
+# ENDPOINTS
+# =========================
+@app.post("/video")
+def trigger_video(req: VideoRequest, background_tasks: BackgroundTasks):
+    job_id = f"vid_{uuid.uuid4().hex[:6]}"
+    background_tasks.add_task(render_video, job_id, req)
+    return {"job_id": job_id, "download": f"/download/{job_id}"}
+
+@app.get("/download/{job_id}")
+def download_video(job_id: str):
+    path = f"{CONTENT_DIR}/{job_id}.mp4"
+    if os.path.exists(path):
+        return FileResponse(path)
+    raise HTTPException(status_code=404, detail="File not found")
+
+@app.get("/health")
+def health():
+    return {"status": "healthy", "device": DEVICE}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

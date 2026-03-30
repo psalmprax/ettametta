@@ -2,6 +2,7 @@ from api.utils.vault import get_secret
 from typing import Optional
 import os
 import logging
+import boto3
 
 class StorageService:
     def __init__(self):

@@ -562,56 +562,83 @@ class VideoProcessor:
         """
         Assembles multi-scene stories with precise voice-visual alignment.
         """
+        import httpx
         processing_scenes = []
+        temp_files = []
+        os.makedirs("temp", exist_ok=True)
         
-        for i, scene in enumerate(scenes):
-            video_url = scene.get("video_url")
-            audio_url = scene.get("audio_url")
-            duration_hint = scene.get("duration_hint", 5.0)
+        async def _download_media(url: str, ext: str) -> str:
+            if url.startswith("http"):
+                local_path = os.path.join("temp", f"dl_{uuid.uuid4()}{ext}")
+                async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
+                    resp = await client.get(url)
+                    resp.raise_for_status()
+                    with open(local_path, "wb") as f:
+                        f.write(resp.content)
+                temp_files.append(local_path)
+                return local_path
+            return url
             
-            # 1. Load Video Clip
-            # For simplicity in this roadmap implementation, we assume local mocks or paths
-            # In production, this would use a download helper
-            clip = VideoFileClip(video_url)
-            
-            # 2. Add Narration Audio if exists
-            if audio_url:
-                from moviepy import AudioFileClip
-                narration = AudioFileClip(audio_url)
+        try:
+            for i, scene in enumerate(scenes):
+                video_url = scene.get("video_url")
+                audio_url = scene.get("audio_url")
+                duration_hint = scene.get("duration_hint", 5.0)
                 
-                # PRECISISION ALIGNMENT: Stretch/Compress video to match audio duration
-                audio_duration = narration.duration
-                if audio_duration > 0:
-                    speed_factor = clip.duration / audio_duration
-                    clip = clip.with_effects([vfx.MultiplySpeed(speed_factor)])
-                    clip = clip.with_audio(narration)
-            else:
-                # Fallback to duration hint
-                clip = clip.subclipped(0, min(clip.duration, duration_hint))
+                if not video_url:
+                    continue
+                    
+                # 1. Download Video Clip if it's a URL
+                local_vid = await _download_media(video_url, ".mp4")
+                clip = VideoFileClip(local_vid)
+                
+                # 2. Add Narration Audio if exists
+                if audio_url:
+                    from moviepy import AudioFileClip
+                    local_aud = await _download_media(audio_url, ".mp3")
+                    narration = AudioFileClip(local_aud)
+                    
+                    # PRECISISION ALIGNMENT: Stretch/Compress video to match audio duration
+                    audio_duration = narration.duration
+                    if audio_duration > 0:
+                        speed_factor = clip.duration / audio_duration
+                        clip = clip.with_effects([vfx.MultiplySpeed(speed_factor)])
+                        clip = clip.with_audio(narration)
+                else:
+                    # Fallback to duration hint
+                    clip = clip.subclipped(0, min(clip.duration, duration_hint))
 
-            # 3. Add Dynamic Captions for this scene's narration
-            if scene.get("narration_text"):
-                txt = TextClip(
-                    text=scene["narration_text"].upper(),
-                    font_size=60,
-                    color='white',
-                    font=self.font_path,
-                    stroke_color='black',
-                    stroke_width=2.0,
-                    method='caption',
-                    size=(int(clip.w * 0.8), None)
-                ).with_duration(clip.duration).with_position(('center', 0.8))
-                clip = CompositeVideoClip([clip, txt])
+                # 3. Add Dynamic Captions for this scene's narration
+                if scene.get("narration_text"):
+                    txt = TextClip(
+                        text=scene["narration_text"].upper(),
+                        font_size=60,
+                        color='white',
+                        font=self.font_path,
+                        stroke_color='black',
+                        stroke_width=2.0,
+                        method='caption',
+                        size=(int(clip.w * 0.8), None)
+                    ).with_duration(clip.duration).with_position(('center', 0.8))
+                    clip = CompositeVideoClip([clip, txt])
 
-            processing_scenes.append(clip)
+                processing_scenes.append(clip)
 
-        # 4. Concatenate all scenes with CrossFades
-        final_clip = concatenate_videoclips(processing_scenes, method="compose")
-        
-        output_path = os.path.join(self.output_dir, output_name)
-        final_clip.write_videofile(output_path, codec=self.codec, audio_codec="aac")
-        
-        return output_path
+            # 4. Concatenate all scenes with CrossFades
+            final_clip = concatenate_videoclips(processing_scenes, method="compose")
+            
+            output_path = os.path.join(self.output_dir, output_name)
+            final_clip.write_videofile(output_path, codec=self.codec, audio_codec="aac")
+            
+            return output_path
+        except Exception as e:
+            logging.error(f"[VideoProcessor] Error assembling clips: {e}")
+            raise
+        finally:
+            for f in temp_files:
+                if os.path.exists(f):
+                    try: os.remove(f)
+                    except: pass
 
     async def process_full_pipeline(
         self, 

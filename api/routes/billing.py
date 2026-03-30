@@ -53,9 +53,10 @@ async def create_checkout_session(
             )
             stripe_customer_id = customer["stripe_customer_id"]
             
-            # TODO: Save stripe_customer_id to user record
-            # current_user.stripe_customer_id = stripe_customer_id
-            # db.commit()
+            # Save stripe_customer_id to user record
+            current_user.stripe_customer_id = stripe_customer_id
+            db.merge(current_user) # Using merge to ensure we're attached to current session
+            db.commit()
         
         # Create checkout session
         payment_service = get_payment_service()
@@ -76,19 +77,81 @@ async def create_checkout_session(
 @router.get("/subscription")
 async def get_subscription(current_user: UserDB = Depends(get_current_user)):
     """Get current user's subscription status"""
-    # TODO: Implement - query user's subscription from DB
-    return {
-        "tier": "free",
-        "status": "active",
-        "features": SUBSCRIPTION_TIERS["free"]["features"]
-    }
+    from services.payment.stripe_service import get_payment_service, SUBSCRIPTION_TIERS
+    
+    # Get user's subscription from database
+    db = SessionLocal()
+    try:
+        user = db.query(UserDB).filter(UserDB.id == current_user.id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        tier = user.subscription.value if user.subscription else "free"
+        tier_info = SUBSCRIPTION_TIERS.get(tier, SUBSCRIPTION_TIERS["free"])
+        
+        # If user has a stripe subscription, get live status
+        if user.stripe_subscription_id:
+            try:
+                payment_service = get_payment_service()
+                sub_info = await payment_service.get_subscription(user.stripe_subscription_id)
+                return {
+                    "tier": tier,
+                    "status": sub_info.get("status", "active"),
+                    "current_period_end": sub_info.get("current_period_end"),
+                    "features": tier_info.get("features", []),
+                    "stripe_subscription_id": user.stripe_subscription_id
+                }
+            except Exception as e:
+                # If Stripe call fails, return DB status
+                pass
+        
+        return {
+            "tier": tier,
+            "status": "active",
+            "features": tier_info.get("features", [])
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching subscription: {str(e)}")
+    finally:
+        db.close()
 
 
 @router.post("/cancel")
 async def cancel_subscription(current_user: UserDB = Depends(get_current_user)):
     """Cancel current subscription"""
-    # TODO: Implement - cancel Stripe subscription
-    raise HTTPException(status_code=501, detail="Subscription cancellation not yet implemented")
+    from services.payment.stripe_service import get_payment_service
+    
+    db = SessionLocal()
+    try:
+        user = db.query(UserDB).filter(UserDB.id == current_user.id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if not user.stripe_subscription_id:
+            raise HTTPException(status_code=400, detail="No active subscription to cancel")
+        
+        # Cancel in Stripe
+        payment_service = get_payment_service()
+        result = await payment_service.cancel_subscription(user.stripe_subscription_id)
+        
+        # Note: User stays on paid tier until period ends
+        # The webhook will handle the actual downgrade when period ends
+        
+        return {
+            "status": "cancellation_scheduled",
+            "cancels_at": result.get("cancel_at"),
+            "message": "Subscription will be cancelled at the end of the billing period"
+        }
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error cancelling subscription: {str(e)}")
+    finally:
+        db.close()
 
 
 @router.post("/webhook")

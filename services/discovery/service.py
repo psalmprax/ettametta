@@ -29,76 +29,73 @@ from api.utils.vault import get_secret
 from api.utils.celery import celery_app
 from groq import Groq
 
+from api.routes.ws import notify_system_log_async
+
 class DiscoveryService:
     def __init__(self):
+        # Primary scanners (run for every niche)
+        # These are the production-ready scanners with real APIs
         self.scanners = [
-            YouTubeShortsScanner(),
-            YouTubeLongScanner(),
-            TikTokScanner(),
-            base_duckduckgo_scanner,  # Free fallback - always runs
+            YouTubeShortsScanner(),      # Real API ✓
+            YouTubeLongScanner(),       # Real API ✓
+            TikTokScanner(),            # Web scrape ✓
+            base_duckduckgo_scanner,    # Free fallback ✓
         ]
+        # Secondary scanners (supplementary, web scraping)
+        # Now all implemented with web scraping (no API keys needed)
         self.global_scanners = [
-            base_reddit_scanner,
-            base_x_scanner,
-            base_public_domain_scanner,
-            base_metasearch_scanner,
-            base_rumble_scanner,
-            base_instagram_scanner,
-            base_facebook_scanner,
-            base_twitch_scanner,
-            base_snapchat_scanner,
-            base_pinterest_scanner,
-            base_linkedin_scanner,
-            base_bilibili_scanner,
-            base_skool_scanner,
+            base_reddit_scanner,        # Real API (JSON) ✓
+            base_x_scanner,            # Web scrape
+            base_instagram_scanner,    # Web scrape
+            base_facebook_scanner,     # Web scrape
+            base_twitch_scanner,        # Web scrape (NEW)
+            base_pinterest_scanner,     # Web scrape (NEW)
+            base_linkedin_scanner,     # Web scrape (NEW)
+            base_snapchat_scanner,     # Web scrape (NEW)
+            base_bilibili_scanner,     # Web scrape (NEW)
+            base_rumble_scanner,       # Web scrape (NEW)
+            base_public_domain_scanner, # Partial (Pexels)
+            base_metasearch_scanner,    # Partial
+            base_skool_scanner,        # Partial
         ]
 
-    async def find_trending_content(self, niche: str, horizon: str = "30d", tier: str = "free") -> List[ContentCandidate]:
+    async def _log(self, message: str, level: str = "INFO"):
+        """Broadcasts a discovery log message."""
+        await notify_system_log_async(message, level=level, module="DISCOVERY")
+        print(f"[Discovery] {message}")
+
+    async def find_trending_content(
+        self, 
+        niche: str, 
+        horizon: str = "30d", 
+        tier: str = "free",
+        min_viral_score: int = 0,
+        exclude_shorts: bool = False,
+        deep_scan: bool = False
+    ) -> List[ContentCandidate]:
         import json
         import redis
         from api.config import settings
 
-        # 1. Check Cache
+        # 1. Check Cache (Skip if deep scan)
         redis_url = settings.REDIS_URL
-        # Ensure we're using the correct hostname within docker
-        # If running in docker, 'localhost' won't work for accessing other containers
-        # We need to replace 'localhost' with 'redis' but keep the port/db
         if "//localhost" in redis_url:
              redis_url = redis_url.replace("//localhost", "//redis")
-
-        # Custom JSON Encoder for datetime
-        def json_serial(obj):
-            from datetime import datetime
-            if isinstance(obj, datetime):
-                return obj.isoformat()
-            raise TypeError (f"Type {type(obj)} not serializable")
-
-        import datetime
-        
-        # Calculate published_after based on horizon
-        now = datetime.datetime.now(datetime.timezone.utc)
-        published_after = None
-        if horizon == "24h":
-            published_after = now - datetime.timedelta(days=1)
-        elif horizon == "7d":
-            published_after = now - datetime.timedelta(days=7)
-        elif horizon == "30d":
-            published_after = now - datetime.timedelta(days=30)
 
         try:
             r = redis.from_url(redis_url)
             cache_key = f"discovery:trends:{niche}:{horizon}"
-            cached_data = r.get(cache_key)
-            
-            if cached_data:
-                print(f"[Discovery] Cache HIT for {niche} ({horizon})")
-                data = json.loads(cached_data)
-                return [ContentCandidate(**item) for item in data]
+            if not deep_scan:
+                cached_data = r.get(cache_key)
+                if cached_data:
+                    await self._log(f"Cache HIT for '{niche}' ({horizon}). Loading stored patterns.", "SUCCESS")
+                    data = json.loads(cached_data)
+                    return [ContentCandidate(**item) for item in data]
         except Exception as e:
-             print(f"[Discovery] Redis connection failed: {e}")
+             await self._log(f"Redis connection failed: {e}", "WARNING")
              r = None
 
-        print(f"[Discovery] Cache MISS for {niche} ({horizon}), scanning...")
+        await self._log(f"Initiating {'DEEP SCAN' if deep_scan else 'Fast Scan'} for '{niche}' ({horizon})...", "SYSTEM")
 
         # 2. Parallel Scanning
         import asyncio
@@ -106,15 +103,21 @@ class DiscoveryService:
         # Prepare scanner tasks
         tasks = []
         for scanner in self.scanners:
-            tasks.append(scanner.scan_trends(niche, published_after=published_after))
+            tasks.append(scanner.scan_trends(niche, published_after=None if deep_scan else None)) # Deep scan might use different horizon
         
-        # Gate global scanners for FREE tier
-        if tier != "free":
-            print(f"[Discovery] Tier {tier}: Unleashing all {len(self.global_scanners)} global scanners.")
-            for g_scanner in self.global_scanners:
-                tasks.append(g_scanner.scan_trends(niche, published_after=published_after))
-        else:
-            print(f"[Discovery] Tier FREE: Restricted to core {len(self.scanners)} platforms.")
+        # Deep scan unleashes ALL scanners regardless of tier for that specific request
+        scanners_to_use = self.global_scanners if deep_scan or tier != "free" else [
+            base_x_scanner,
+            base_instagram_scanner,
+            base_facebook_scanner,
+            base_twitch_scanner,
+            base_bilibili_scanner,
+            base_rumble_scanner,
+        ]
+
+        await self._log(f"Deploying swarm: {len(self.scanners) + len(scanners_to_use)} specialized scanners active.", "INFO")
+        for g_scanner in scanners_to_use:
+            tasks.append(g_scanner.scan_trends(niche, published_after=None))
             
         # Execute all scans concurrently
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -126,6 +129,13 @@ class DiscoveryService:
                 all_candidates.extend(res)
             elif isinstance(res, Exception):
                 print(f"[Discovery] Scanner Exception: {res}")
+
+        # If Deep Scan: Automatically trigger analysis for top 5 candidates
+        if deep_scan and all_candidates:
+            print(f"[Discovery] Deep Scan: Auto-triggering analysis for top candidates.")
+            from services.discovery.tasks import analyze_viral_pattern_task
+            for c in all_candidates[:5]:
+                analyze_viral_pattern_task.delay(c.dict())
 
         # If no results from scan, fall back to database
         if not all_candidates:
@@ -165,10 +175,19 @@ class DiscoveryService:
             monetization_mode = mode_setting.value if mode_setting else "all"
             
             if monetization_mode == "selective":
-                threshold = 65
+                threshold = max(65, min_viral_score)
                 original_count = len(all_candidates)
                 all_candidates = [c for c in all_candidates if (getattr(c, 'viral_score', 0) or 0) >= threshold]
                 print(f"[Discovery] Selective Mode: Filtered {original_count} -> {len(all_candidates)} candidates (Threshold: {threshold})")
+            elif min_viral_score > 0:
+                original_count = len(all_candidates)
+                all_candidates = [c for c in all_candidates if (getattr(c, 'viral_score', 0) or 0) >= min_viral_score]
+                print(f"[Discovery] Filtered by Min Viral Score: {original_count} -> {len(all_candidates)} (Threshold: {min_viral_score})")
+
+            if exclude_shorts:
+                original_count = len(all_candidates)
+                all_candidates = [c for c in all_candidates if "short" not in (c.platform or "").lower()]
+                print(f"[Discovery] Exclude Shorts: Filtered {original_count} -> {len(all_candidates)}")
         finally:
             db.close()
         
@@ -386,7 +405,13 @@ class DiscoveryService:
         finally:
             db.close()
 
-    async def search_content(self, query: str, limit: int = 50) -> List[ContentCandidate]:
+    async def search_content(
+        self, 
+        query: str, 
+        limit: int = 50,
+        min_viral_score: int = 0,
+        exclude_shorts: bool = False
+    ) -> List[ContentCandidate]:
         """
         Searches specific viral candidates by keyword (Title or Description).
         Triggers a live scan if local results are insufficient.
@@ -422,7 +447,12 @@ class DiscoveryService:
 
                 # We reuse find_trending_content but use the query as the niche
                 # This will populate the DB and return the fresh candidates
-                live_results = await self.find_trending_content(query, horizon="30d")
+                live_results = await self.find_trending_content(
+                    query, 
+                    horizon="30d",
+                    min_viral_score=min_viral_score,
+                    exclude_shorts=exclude_shorts
+                )
                 if live_results:
                      return live_results
 

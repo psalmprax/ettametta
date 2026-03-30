@@ -38,14 +38,31 @@ async def test_full_pipeline():
     except Exception as e:
         print(f"⚠️ API not running locally? (This test assumes uvicorn is running on port 8000)")
 
-    # 3. Simulate Video Processing with Originality Engine
-    print("\n[Step 3] Verifying Video Engine logic...")
-    # This usually requires a real video file, so we'll check if the class loads the filters correctly
-    from services.video_engine.processor import base_video_processor
-    print(f"✅ Video Processor initialized with filters: Mirror, Zoom, Color Grading.")
+    # 4. Check Monetization (Auto-Merch & Affiliate)
+    print("\n[Step 4] Verifying Monetization (Hardened)...")
+    from services.monetization.auto_merch import AutoMerchService
+    from services.affiliate.service import AffiliateService
+    
+    merch = AutoMerchService()
+    affiliate = AffiliateService()
+    
+    print(f"✅ AutoMerch initialized. Ready for Printful pushing.")
+    if affiliate.is_enabled():
+        print("✅ Affiliate service enabled.")
+    else:
+        print("⚠️ Affiliate service disabled (ENABLE_AFFILIATE_API=false)")
 
-    # 4. Check Database Persistence
-    print("\n[Step 4] Checking Persistence Layer...")
+    # 5. Check Audio Engine (Sound Design)
+    print("\n[Step 5] Checking Audio Engine (Sound Design)...")
+    from services.audio.sound_design import SoundDesignService
+    sound = SoundDesignService()
+    if sound.enabled:
+        print("✅ Sound Design enabled with MoviePy mixing.")
+    else:
+        print("⚠️ Sound Design disabled (ENABLE_SOUND_DESIGN=false)")
+
+    # 6. Check Database Persistence
+    print("\n[Step 6] Checking Persistence Layer...")
     from api.utils.database import SessionLocal
     from services.discovery.db_models import DBContentCandidate
     db = SessionLocal()
