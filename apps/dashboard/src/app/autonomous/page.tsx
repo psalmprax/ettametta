@@ -18,31 +18,72 @@ import {
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 export default function AutonomousPage() {
     const [isRunning, setIsRunning] = useState(false);
     const [status, setStatus] = useState("Idle");
     const [logs, setLogs] = useState<string[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [currentStep, setCurrentStep] = useState("IDLE");
+    const [insights, setInsights] = useState<any>(null);
+    const [lastRun, setLastRun] = useState<number | null>(null);
+    const [nextRun, setNextRun] = useState<number | null>(null);
 
     useEffect(() => {
-        // Fetch current status on mount
+        // Fetch current status on mount and subscribe to updates
         const fetchStatus = async () => {
             const token = localStorage.getItem("et_token");
             try {
-                const res = await fetch(`${API_BASE}/zero/status`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
+                const [statusRes, insightsRes] = await Promise.all([
+                    fetch(`${API_BASE}/zero/status`, { headers: { Authorization: `Bearer ${token}` } }),
+                    fetch(`${API_BASE}/zero/insights`, { headers: { Authorization: `Bearer ${token}` } })
+                ]);
+                
+                if (statusRes.ok) {
+                    const data = await statusRes.json();
                     setIsRunning(data.is_running);
-                    setStatus(data.is_running ? "Autonomous Loop Active" : "Idle");
+                    setCurrentStep(data.current_step);
+                    setLastRun(data.last_run);
+                    setNextRun(data.next_run);
+                    setStatus(data.is_running ? `Autonomous Active: ${data.current_step}` : "Idle");
+                }
+
+                if (insightsRes.ok) {
+                    const data = await insightsRes.json();
+                    setInsights(data.insights);
                 }
             } catch (err) {
                 console.error("Failed to fetch zero status:", err);
+                toast.error("Failed to load autonomous status");
+                toast.error("Failed to load insights");
             }
         };
         fetchStatus();
+        const interval = setInterval(fetchStatus, 30000); // Less frequent poll, logs are real-time
+
+        // Real-time Console WebSocket
+        const wsUrl = API_BASE.replace("http", "ws") + "/ws/logs";
+        const ws = new WebSocket(wsUrl);
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === "log" && (data.module === "AGENT_ZERO" || data.module === "SYSTEM")) {
+                    setLogs(prev => [`[${data.level}] ${data.message}`, ...prev.slice(0, 49)]);
+                }
+            } catch (e) {
+                console.error("WS Message Error:", e);
+            }
+        };
+
+        ws.onopen = () => console.log("[WS] Console Connected");
+        ws.onclose = () => console.log("[WS] Console Disconnected");
+
+        return () => {
+            clearInterval(interval);
+            ws.close();
+        };
     }, []);
 
     const handleToggle = async () => {
@@ -120,25 +161,25 @@ export default function AutonomousPage() {
                     <StatusCard
                         icon={Activity}
                         label="Engine State"
-                        value={isRunning ? "Active Loop" : "Deactivated"}
+                        value={isRunning ? `${currentStep}` : "Deactivated"}
                         color={isRunning ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-zinc-900 text-zinc-600 border-white/5"}
                     />
                     <StatusCard
                         icon={RefreshCw}
-                        label="Sync Interval"
-                        value="4 Hours"
+                        label="Next Iteration"
+                        value={nextRun ? new Date(nextRun * 1000).toLocaleTimeString() : "Pending"}
                         color="bg-primary/10 text-primary border-primary/20"
                     />
                     <StatusCard
                         icon={CheckCircle2}
                         label="Loop Integrity"
-                        value="Nominal"
-                        color="bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                        value={currentStep === "ERROR" ? "Degraded" : "Nominal"}
+                        color={currentStep === "ERROR" ? "bg-rose-500/10 text-rose-500 border-rose-500/20" : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"}
                     />
                     <StatusCard
                         icon={AlertCircle}
                         label="Policy"
-                        value="Self-Correcting"
+                        value={isRunning ? "Self-Correcting" : "Static"}
                         color="bg-amber-500/10 text-amber-500 border-amber-500/20"
                     />
                 </div>
@@ -150,13 +191,13 @@ export default function AutonomousPage() {
                             <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
 
                             <div className="flex items-center gap-12 relative">
-                                <LogicNode icon={Search} label="Scout" active={isRunning} pulse />
-                                <Connector active={isRunning} />
-                                <LogicNode icon={Cpu} label="Brain" active={isRunning} pulse delay={0.5} />
-                                <Connector active={isRunning} delay={1} />
-                                <LogicNode icon={Layers} label="Render" active={isRunning} pulse delay={1.5} />
-                                <Connector active={isRunning} delay={2} />
-                                <LogicNode icon={Share2} label="Post" active={isRunning} pulse delay={2.5} />
+                                <LogicNode icon={Search} label="Scout" active={isRunning && currentStep === "SCOUTING"} pulse={currentStep === "SCOUTING"} />
+                                <Connector active={isRunning && ["SCREENING", "BRAINSTORMING", "RENDERING", "PUBLISHING", "WAITING"].includes(currentStep)} />
+                                <LogicNode icon={Cpu} label="Brain" active={isRunning && ["SCREENING", "BRAINSTORMING"].includes(currentStep)} pulse={currentStep === "BRAINSTORMING"} />
+                                <Connector active={isRunning && ["RENDERING", "PUBLISHING", "WAITING"].includes(currentStep)} />
+                                <LogicNode icon={Layers} label="Render" active={isRunning && currentStep === "RENDERING"} pulse={currentStep === "RENDERING"} />
+                                <Connector active={isRunning && ["PUBLISHING", "WAITING"].includes(currentStep)} />
+                                <LogicNode icon={Share2} label="Post" active={isRunning && currentStep === "PUBLISHING"} pulse={currentStep === "PUBLISHING"} />
                             </div>
 
                             <div className="mt-16 text-center space-y-2 opacity-50">
@@ -165,18 +206,39 @@ export default function AutonomousPage() {
                             </div>
                         </div>
 
-                        {/* Recent Activity Mini-List */}
+                        {/* Autonomous Insight Oracle */}
                         <div className="space-y-6 px-4">
                             <div className="flex items-center gap-3">
-                                <Activity className="h-4 w-4 text-zinc-500" />
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Autonomous Telemetry</h3>
+                                <Activity className="h-4 w-4 text-primary neon-glow" />
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Autonomous Intelligence Oracle</h3>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {[1, 2].map((i) => (
-                                    <div key={i} className="glass-card p-5 border-dashed opacity-40 flex items-center justify-center">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700 italic">Awaiting Next Iteration...</p>
+                            <div className="glass-card p-8 border-primary/20 bg-primary/[0.02] relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4">
+                                     <div className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
+                                </div>
+                                {insights ? (
+                                    <div className="space-y-6">
+                                        <div className="space-y-2">
+                                            <p className="text-[8px] font-black text-primary uppercase tracking-[0.4em]">Current Strategy</p>
+                                            <h4 className="text-2xl font-black italic tracking-tighter text-white uppercase">{insights.title}</h4>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="space-y-1">
+                                                <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Recommended Product</p>
+                                                <p className="text-xs font-bold text-emerald-400">{insights.recommended_product}</p>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Viral Hook</p>
+                                                <p className="text-[10px] text-zinc-300 italic leading-relaxed">"{insights.hook}"</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                ))}
+                                ) : (
+                                    <div className="py-10 flex flex-col items-center justify-center gap-4 text-center">
+                                        <Search className="h-8 w-8 text-zinc-800 animate-pulse" />
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700 italic">Listening for Market Pulses...</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -228,7 +290,11 @@ export default function AutonomousPage() {
                                 <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Autonomous Insight</span>
                             </div>
                             <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
-                                "Agent Zero has identified <span className="text-white font-bold">AI Productivity</span> as a high-velocity niche. Auto-scaling production density for peak EU hours."
+                                {insights ? (
+                                    <>"{insights.title || `Agent Zero monitoring ${insights.recommended_product || 'market pulses'} for high-velocity opportunities.`}"</>
+                                ) : (
+                                    <>"Awaiting market intelligence. Launch Director to activate autonomous scouting."</>
+                                )}
                             </p>
                         </div>
                     </div>

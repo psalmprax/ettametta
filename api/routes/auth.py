@@ -13,6 +13,8 @@ from api.utils.security import (
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from api.config import settings
+from api.utils.audit_service import audit_service
+from fastapi import Request
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -22,6 +24,7 @@ class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
+    referral_code: Optional[str] = None
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
@@ -34,10 +37,13 @@ class PasswordChange(BaseModel):
     new_password: str
 
 class UserResponse(BaseModel):
+    id: int
     username: str
     email: str
     role: str
     subscription: str
+    credits: int
+    referral_code: Optional[str] = None
     telegram_chat_id: Optional[str] = None
     telegram_token: Optional[str] = None
 
@@ -49,7 +55,9 @@ class Token(BaseModel):
     token_type: str
 
 @router.post("/register", response_model=UserResponse)
-async def register(user: UserCreate, db: Session = Depends(get_db)):
+async def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
+    from services.payment.credit_service import credit_service
+
     db_user = db.query(UserDB).filter(UserDB.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -74,10 +82,30 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Initial credits & Referral
+    credit_service.add_credits(
+        new_user.id, 
+        100 if role == UserRole.ADMIN else 10, 
+        "earned", 
+        "Welcome bonus"
+    )
+    
+    if user.referral_code:
+        credit_service.apply_referral_code(new_user.id, user.referral_code)
+    
+    audit_service.log(
+        action="USER_REGISTER",
+        user_id=new_user.id,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        db=db
+    )
+    
     return new_user
 
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(UserDB).filter(UserDB.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -87,6 +115,15 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         )
     
     access_token = create_access_token(data={"sub": user.username, "role": user.role})
+    
+    audit_service.log(
+        action="USER_LOGIN",
+        user_id=user.id,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        db=db
+    )
+    
     return {"access_token": access_token, "token_type": "bearer"}
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -115,7 +152,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: UserDB = Depends(get_current_user)):
-    return current_user
+    from services.payment.credit_service import credit_service
+    
+    # Enrich user response with monetization data
+    response = UserResponse.model_validate(current_user)
+    response.credits = credit_service.get_balance(current_user.id)
+    response.referral_code = credit_service.get_referral_code(current_user.id)
+    return response
 
 @router.patch("/me", response_model=UserResponse)
 async def update_me(user_update: UserUpdate, current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -150,7 +193,7 @@ async def change_password(password_change: PasswordChange, current_user: UserDB 
     return {"message": "Password changed successfully"}
 
 @router.post("/me/upgrade-subscription")
-async def upgrade_subscription(tier: str, current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
+async def upgrade_subscription(request: Request, tier: str, current_user: UserDB = Depends(get_current_user), db: Session = Depends(get_db)):
     """Upgrade user subscription tier"""
     valid_tiers = ["free", "basic", "premium"]
     if tier.lower() not in valid_tiers:
@@ -159,6 +202,18 @@ async def upgrade_subscription(tier: str, current_user: UserDB = Depends(get_cur
     current_user.subscription = tier.lower()
     db.commit()
     db.refresh(current_user)
+    
+    audit_service.log(
+        action="SUBSCRIPTION_CHANGE",
+        user_id=current_user.id,
+        resource_type="USER",
+        resource_id=str(current_user.id),
+        details={"tier": tier.lower()},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        db=db
+    )
+    
     return {"message": f"Subscription upgraded to {tier}", "subscription": current_user.subscription}
 
 @router.get("/verify-telegram/{telegram_id}", response_model=UserResponse)

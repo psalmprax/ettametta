@@ -23,10 +23,18 @@ import {
     ShoppingCart,
     TrendingUp,
     Lock,
-    AlertTriangle
+    AlertTriangle,
+    Activity,
+    ScanLine,
+    Clock,
+    AlertOctagon,
+    CheckCircle,
+    XCircle,
+    RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
+import { toast } from "sonner";
 
 // Admin-only system configuration
 export default function AdminSettingsPage() {
@@ -92,6 +100,22 @@ export default function AdminSettingsPage() {
     const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
     const [activeTab, setActiveTab] = useState("OAuth");
 
+    // Security state
+    const [securityStatus, setSecurityStatus] = useState<{
+        health_score: number;
+        threat_level: string;
+        recent_threats: Array<{ id: string; type: string; severity: string; description: string; timestamp: string }>;
+        system_integrity: string;
+    } | null>(null);
+    const [securityEvents, setSecurityEvents] = useState<Array<{
+        id: string;
+        event_type: string;
+        description: string;
+        timestamp: string;
+    }>>([]);
+    const [isScanning, setIsScanning] = useState(false);
+    const [securityLoading, setSecurityLoading] = useState(false);
+
     // Redirect if not admin
     useEffect(() => {
         if (!authLoading && (!user || user.role !== "admin")) {
@@ -106,7 +130,7 @@ export default function AdminSettingsPage() {
     const fetchSettings = async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem("token");
+            const token = localStorage.getItem("et_token");
             const response = await fetch(`${API_BASE}/settings/system`, {
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -128,7 +152,7 @@ export default function AdminSettingsPage() {
         setIsSaving(true);
         setSaveStatus("idle");
         try {
-            const token = localStorage.getItem("token");
+            const token = localStorage.getItem("et_token");
             const response = await fetch(`${API_BASE}/settings/system`, {
                 method: "POST",
                 headers: {
@@ -155,11 +179,87 @@ export default function AdminSettingsPage() {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
 
+    const fetchSecurityStatus = async () => {
+        try {
+            const token = localStorage.getItem("et_token");
+            const response = await fetch(`${API_BASE}/security/status`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setSecurityStatus(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch security status:", error);
+        }
+    };
+
+    const fetchSecurityEvents = async () => {
+        try {
+            const token = localStorage.getItem("et_token");
+            const response = await fetch(`${API_BASE}/security/events`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setSecurityEvents(data.events ?? data ?? []);
+            }
+        } catch (error) {
+            console.error("Failed to fetch security events:", error);
+        }
+    };
+
+    const runSecurityScan = async () => {
+        setIsScanning(true);
+        try {
+            const token = localStorage.getItem("et_token");
+            const response = await fetch(`${API_BASE}/security/scan`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                toast.success("Security audit completed", {
+                    description: data.summary ?? "Scan finished successfully"
+                });
+                fetchSecurityStatus();
+                fetchSecurityEvents();
+            } else {
+                toast.error("Security audit failed", {
+                    description: "The scan could not be completed"
+                });
+            }
+        } catch (error) {
+            console.error("Security scan error:", error);
+            toast.error("Security audit failed", {
+                description: "Network error during scan"
+            });
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
     useEffect(() => {
         if (user && user.role === "admin") {
             fetchSettings();
         }
     }, [user]);
+
+    useEffect(() => {
+        if (activeTab === "Security" && user?.role === "admin") {
+            setSecurityLoading(true);
+            Promise.all([fetchSecurityStatus(), fetchSecurityEvents()]).finally(() => setSecurityLoading(false));
+        }
+    }, [activeTab, user]);
 
     if (authLoading || !user || user.role !== "admin") {
         return (
@@ -184,6 +284,7 @@ export default function AdminSettingsPage() {
         { id: "Monetization", label: "Monetization", icon: ShoppingCart },
         { id: "Infrastructure", label: "Infrastructure", icon: Server },
         { id: "WhatsApp", label: "WhatsApp", icon: Bot },
+        { id: "Security", label: "Security", icon: Shield },
     ];
 
     return (
@@ -713,6 +814,197 @@ export default function AdminSettingsPage() {
                                     </div>
                                 </div>
                             </section>
+                        )}
+
+                        {activeTab === "Security" && (
+                            <div className="space-y-8">
+                                {securityLoading ? (
+                                    <div className="h-64 flex items-center justify-center">
+                                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Security Status Panel */}
+                                        <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-8 shadow-2xl">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-6">
+                                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
+                                                        <Shield className="h-8 w-8 text-red-500" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Security <span className="text-hollow">Status</span></h3>
+                                                        <p className="text-zinc-500 text-sm">Real-time threat monitoring and system integrity overview.</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={runSecurityScan}
+                                                    disabled={isScanning}
+                                                    className={cn(
+                                                        "bg-red-500/15 hover:bg-red-500/25 text-red-500 font-black py-3 px-6 rounded-xl transition-all flex items-center gap-3 uppercase tracking-widest text-[10px] border border-red-500/20",
+                                                        isScanning && "opacity-50 cursor-not-allowed"
+                                                    )}
+                                                >
+                                                    {isScanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
+                                                    {isScanning ? "Scanning..." : "Run Security Audit"}
+                                                </button>
+                                            </div>
+
+                                            {securityStatus && (
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-white/5">
+                                                    <div className="p-6 rounded-2xl bg-zinc-950/50 border border-white/5 space-y-3">
+                                                        <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+                                                            <Activity className="h-3 w-3" />
+                                                            Health Score
+                                                        </div>
+                                                        <div className={cn(
+                                                            "text-4xl font-black",
+                                                            securityStatus.health_score >= 80 ? "text-emerald-500" :
+                                                            securityStatus.health_score >= 50 ? "text-amber-500" : "text-red-500"
+                                                        )}>
+                                                            {securityStatus.health_score}%
+                                                        </div>
+                                                        <div className={cn(
+                                                            "text-xs font-bold uppercase tracking-wider",
+                                                            securityStatus.health_score >= 80 ? "text-emerald-500/60" :
+                                                            securityStatus.health_score >= 50 ? "text-amber-500/60" : "text-red-500/60"
+                                                        )}>
+                                                            {securityStatus.threat_level ?? (securityStatus.health_score >= 80 ? "Low Risk" : securityStatus.health_score >= 50 ? "Moderate Risk" : "Critical")}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-6 rounded-2xl bg-zinc-950/50 border border-white/5 space-y-3">
+                                                        <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+                                                            <CheckCircle className="h-3 w-3" />
+                                                            System Integrity
+                                                        </div>
+                                                        <div className={cn(
+                                                            "text-lg font-black uppercase",
+                                                            securityStatus.system_integrity === "healthy" ? "text-emerald-500" :
+                                                            securityStatus.system_integrity === "degraded" ? "text-amber-500" : "text-red-500"
+                                                        )}>
+                                                            {securityStatus.system_integrity ?? "Unknown"}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-6 rounded-2xl bg-zinc-950/50 border border-white/5 space-y-3">
+                                                        <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+                                                            <AlertOctagon className="h-3 w-3" />
+                                                            Recent Threats
+                                                        </div>
+                                                        <div className="text-4xl font-black text-white">
+                                                            {securityStatus.recent_threats?.length ?? 0}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {securityStatus?.recent_threats && securityStatus.recent_threats.length > 0 && (
+                                                <div className="space-y-4 pt-6 border-t border-white/5">
+                                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Threat Feed</h4>
+                                                    <div className="space-y-3">
+                                                        {securityStatus.recent_threats.map((threat, idx) => (
+                                                            <div key={threat.id ?? idx} className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 flex items-start gap-4">
+                                                                <div className={cn(
+                                                                    "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
+                                                                    threat.severity === "critical" ? "bg-red-500/15 text-red-500" :
+                                                                    threat.severity === "high" ? "bg-amber-500/15 text-amber-500" :
+                                                                    "bg-zinc-500/15 text-zinc-400"
+                                                                )}>
+                                                                    <AlertTriangle className="h-4 w-4" />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className="text-sm font-bold text-white">{threat.type}</span>
+                                                                        <span className={cn(
+                                                                            "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                                                                            threat.severity === "critical" ? "bg-red-500/15 text-red-500" :
+                                                                            threat.severity === "high" ? "bg-amber-500/15 text-amber-500" :
+                                                                            "bg-zinc-500/15 text-zinc-400"
+                                                                        )}>
+                                                                            {threat.severity}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-xs text-zinc-500 mt-1">{threat.description}</p>
+                                                                </div>
+                                                                {threat.timestamp && (
+                                                                    <span className="text-[10px] text-zinc-600 shrink-0">
+                                                                        {new Date(threat.timestamp).toLocaleString()}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </section>
+
+                                        {/* Security Events Log */}
+                                        <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-6 shadow-2xl">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-6">
+                                                    <div className="h-12 w-12 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                                                        <Clock className="h-6 w-6 text-red-500" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-xl font-black text-white uppercase tracking-tight">Events <span className="text-hollow">Log</span></h3>
+                                                        <p className="text-zinc-500 text-xs">Chronological security event history.</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        setSecurityLoading(true);
+                                                        fetchSecurityEvents().finally(() => setSecurityLoading(false));
+                                                    }}
+                                                    className="text-zinc-500 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5"
+                                                >
+                                                    <RefreshCw className="h-4 w-4" />
+                                                </button>
+                                            </div>
+
+                                            <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+                                                {securityEvents.length === 0 ? (
+                                                    <div className="text-center py-12 text-zinc-600">
+                                                        <Shield className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                                                        <p className="text-sm">No security events recorded</p>
+                                                    </div>
+                                                ) : (
+                                                    securityEvents.map((event, idx) => (
+                                                        <div key={event.id ?? idx} className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 flex items-center gap-4">
+                                                            <div className={cn(
+                                                                "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
+                                                                event.event_type?.toLowerCase().includes("threat") || event.event_type?.toLowerCase().includes("breach")
+                                                                    ? "bg-red-500/15 text-red-500"
+                                                                    : event.event_type?.toLowerCase().includes("warn")
+                                                                    ? "bg-amber-500/15 text-amber-500"
+                                                                    : "bg-emerald-500/15 text-emerald-500"
+                                                            )}>
+                                                                {event.event_type?.toLowerCase().includes("threat") || event.event_type?.toLowerCase().includes("breach") ? (
+                                                                    <XCircle className="h-4 w-4" />
+                                                                ) : event.event_type?.toLowerCase().includes("warn") ? (
+                                                                    <AlertTriangle className="h-4 w-4" />
+                                                                ) : (
+                                                                    <CheckCircle className="h-4 w-4" />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-sm font-bold text-white">{event.event_type}</span>
+                                                                </div>
+                                                                <p className="text-xs text-zinc-500 truncate">{event.description}</p>
+                                                            </div>
+                                                            {event.timestamp && (
+                                                                <span className="text-[10px] text-zinc-600 shrink-0">
+                                                                    {new Date(event.timestamp).toLocaleString()}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </section>
+                                    </>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>

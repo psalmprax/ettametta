@@ -1,4 +1,6 @@
 import os
+import httpx
+import logging
 from typing import Optional
 from api.utils.vault import get_secret
 

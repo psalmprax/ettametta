@@ -29,3 +29,6 @@ praat-parselmouth
 ffmpeg-python
 pyworld
 numba==0.64.0
+llama-cpp-python
+diffusers>=0.31.0
+accelerate

@@ -14,8 +14,12 @@ import {
     TrendingUp,
     ChevronRight,
     Search,
-    MessageSquareQuote
+    MessageSquareQuote,
+    ShoppingBag,
+    LinkIcon,
+    Package
 } from "lucide-react";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
@@ -31,6 +35,17 @@ export default function EmpirePage() {
     const [promoProduct, setPromoProduct] = useState("");
     const [isGeneratingPromo, setIsGeneratingPromo] = useState(false);
     const [promoScript, setPromoScript] = useState<any>(null);
+    const [affiliateLinks, setAffiliateLinks] = useState<any[]>([]);
+    const [newLink, setNewLink] = useState({ product_name: "", niche: "", link: "", cta_text: "" });
+    const [isAddingLink, setIsAddingLink] = useState(false);
+    const [revenueReport, setRevenueReport] = useState<any>(null);
+    const [autoMerchTopic, setAutoMerchTopic] = useState("");
+    const [isGeneratingMerch, setIsGeneratingMerch] = useState(false);
+    const [recommendNiche, setRecommendNiche] = useState("");
+    const [recommendScript, setRecommendScript] = useState("");
+    const [recommendations, setRecommendations] = useState<any[]>([]);
+    const [isRecommending, setIsRecommending] = useState(false);
+    const [isSyncingShopify, setIsSyncingShopify] = useState(false);
 
     const fetchSentinel = async () => {
         setIsRefreshing(true);
@@ -45,6 +60,7 @@ export default function EmpirePage() {
             }
         } catch (err) {
             console.error(err);
+            toast.error("Failed to load sentinel status");
         } finally {
             setIsRefreshing(false);
         }
@@ -73,10 +89,19 @@ export default function EmpirePage() {
                 })
             });
             if (res.ok) {
-                alert(`SUCCESS: Strategy cloned to ${cloningNiche} niche.`);
+                toast.success("Strategy Cloned Successfully", {
+                    description: `Neural weights for ${selectedStrategy?.niche || "Original"} have been successfully mapped to the ${cloningNiche} niche.`
+                });
+            } else {
+                toast.error("Cloning Failed", {
+                    description: "Neural cluster was unable to replicate the strategy at this time."
+                });
             }
         } catch (err) {
             console.error(err);
+            toast.error("Failed to clone strategy", {
+                description: "Failed to establish a neural connection to the monetization orchestrator."
+            });
         } finally {
             setIsRefreshing(false);
         }
@@ -94,6 +119,7 @@ export default function EmpirePage() {
             }
         } catch (err) {
             console.error(err);
+            toast.error("Failed to load empire metrics");
         }
     };
 
@@ -109,6 +135,74 @@ export default function EmpirePage() {
             }
         } catch (err) {
             console.error(err);
+            toast.error("Failed to load blueprints");
+        }
+    };
+
+    const fetchAffiliateLinks = async () => {
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/monetization/links`, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setAffiliateLinks(data.links || data || []);
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to load affiliate links");
+        }
+    };
+
+    const handleAddAffiliateLink = async () => {
+        if (!newLink.product_name || !newLink.link) return;
+        setIsAddingLink(true);
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/monetization/links`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(newLink)
+            });
+            if (res.ok) {
+                toast.success("Affiliate Link Added", {
+                    description: `"${newLink.product_name}" is now available in the viral injection catalog.`
+                });
+                setNewLink({ product_name: "", niche: "", link: "", cta_text: "" });
+                fetchAffiliateLinks();
+            } else {
+                toast.error("Processing Error", {
+                    description: "Failed to register the link in the affiliate database."
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Nexus Disconnect", {
+                description: "Failed to persist the affiliate link."
+            });
+        } finally {
+            setIsAddingLink(false);
+        }
+    };
+
+    const fetchRevenueReport = async () => {
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/monetization/report`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setRevenueReport(data);
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to load revenue report");
         }
     };
 
@@ -116,6 +210,8 @@ export default function EmpirePage() {
         fetchSentinel();
         fetchEmpireMetrics();
         fetchBlueprints();
+        fetchAffiliateLinks();
+        fetchRevenueReport();
     }, []);
 
     const handleGeneratePromo = async () => {
@@ -137,12 +233,95 @@ export default function EmpirePage() {
             }
         } catch (err) {
             console.error(err);
+            toast.error("Failed to generate promo");
         } finally {
             setIsGeneratingPromo(false);
         }
     };
 
+    const handleAutoMerch = async () => {
+        if (!autoMerchTopic) return;
+        setIsGeneratingMerch(true);
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/monetization/auto-merch`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ trend_topic: autoMerchTopic })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                toast.success("Auto-Merch Generated", { description: data.message || `Merch created for "${autoMerchTopic}"` });
+                setAutoMerchTopic("");
+            } else {
+                toast.error("Auto-Merch Failed", { description: "Could not generate auto-merch." });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Network Error", { description: "Failed to reach server." });
+        } finally {
+            setIsGeneratingMerch(false);
+        }
+    };
+
+    const handleRecommendLinks = async () => {
+        if (!recommendNiche || !recommendScript) return;
+        setIsRecommending(true);
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/monetization/recommend-links`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ niche: recommendNiche, script_text: recommendScript })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setRecommendations(data.links || data || []);
+                toast.success("Recommendations Ready", { description: `${(data.links || data || []).length} links found.` });
+            } else {
+                toast.error("Recommendation Failed", { description: "Could not fetch link recommendations." });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Network Error", { description: "Failed to reach server." });
+        } finally {
+            setIsRecommending(false);
+        }
+    };
+
+    const handleShopifySync = async () => {
+        setIsSyncingShopify(true);
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/monetization/commerce/sync`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                toast.success("Shopify Synced", { description: data.message || "Commerce data synchronized." });
+            } else {
+                toast.error("Sync Failed", { description: "Could not sync Shopify data." });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Network Error", { description: "Failed to reach server." });
+        } finally {
+            setIsSyncingShopify(false);
+        }
+    };
+
     const [networkData, setNetworkData] = useState<any>({ nodes: [], links: [] });
+    const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
 
     const fetchNetwork = async () => {
         try {
@@ -156,12 +335,48 @@ export default function EmpirePage() {
             }
         } catch (err) {
             console.error(err);
+            toast.error("Failed to load network data");
         }
     };
 
     useEffect(() => {
         fetchNetwork();
     }, []);
+
+    useEffect(() => {
+        const events: any[] = [];
+        if (sentinelStatus?.recommendations) {
+            sentinelStatus.recommendations.forEach((rec: string, i: number) => {
+                events.push({
+                    time: new Date(Date.now() - (i + 1) * 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    event: "Sentinel Correction",
+                    desc: rec
+                });
+            });
+        }
+        if (empireMetrics?.account_count > 0) {
+            events.push({
+                time: new Date(Date.now() - 7200000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                event: "Node Expansion",
+                desc: `Managing ${empireMetrics.account_count} active accounts across network.`
+            });
+        }
+        if (blueprints.length > 0) {
+            events.push({
+                time: new Date(Date.now() - 10800000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                event: "Blueprint Captured",
+                desc: `${blueprints.length} winning strategies logged in repository.`
+            });
+        }
+        if (events.length === 0) {
+            events.push({
+                time: "--:--",
+                event: "Awaiting Activity",
+                desc: "System monitoring for algorithm shifts and expansion opportunities."
+            });
+        }
+        setTimelineEvents(events);
+    }, [sentinelStatus, empireMetrics, blueprints]);
 
     return (
         <DashboardLayout>
@@ -189,7 +404,7 @@ export default function EmpirePage() {
                     {/* Algorithm Sentinel Monitor */}
                     <div className="space-y-8">
                         <div className="glass-card space-y-8 relative overflow-hidden h-fit">
-                            <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
+                            <div className="absolute inset-0 pointer-events-none opacity-(--scanline-opacity) bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%]" />
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
                                     <h3 className="font-black uppercase tracking-tight text-white">Algorithm Sentinel</h3>
@@ -307,11 +522,34 @@ export default function EmpirePage() {
                                     )}
                                 </div>
                             </div>
+
+                            <div className="glass-card space-y-4 bg-emerald-500/5 border-emerald-500/10">
+                                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                                    <TrendingUp className="h-5 w-5 text-emerald-500" />
+                                </div>
+                                <h3 className="font-black uppercase text-white tracking-tight">Revenue Matrix</h3>
+                                <div className="space-y-4 pt-4">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Total Revenue</span>
+                                        <span className="text-xl font-black text-emerald-500">${revenueReport?.total_revenue?.toFixed(2) || "0.00"}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">EPM</span>
+                                        <span className="text-lg font-black text-white">${revenueReport?.epm?.toFixed(2) || "0.00"}</span>
+                                    </div>
+                                    {revenueReport?.by_platform && Object.entries(revenueReport.by_platform).map(([platform, amount]: [string, any]) => (
+                                        <div key={platform} className="flex justify-between items-center text-[10px]">
+                                            <span className="text-zinc-600 font-bold uppercase">{platform}</span>
+                                            <span className="text-zinc-400 font-bold">${Number(amount).toFixed(2)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Promo Generator Section */}
                         <div className="glass-card bg-primary/5 border-primary/10 space-y-8 relative overflow-hidden">
-                            <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)]" />
+                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity)" />
                             <div className="flex items-center gap-4">
                                 <div className="h-12 w-12 rounded-2xl bg-primary/20 flex items-center justify-center border border-primary/30">
                                     <Zap className="h-6 w-6 text-primary neon-glow" />
@@ -358,6 +596,187 @@ export default function EmpirePage() {
                                         <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
                                             <Search className="h-8 w-8 text-zinc-700 mb-2" />
                                             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Awaiting Product Intel</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Affiliate Link Manager */}
+                        <div className="glass-card bg-amber-500/5 border-amber-500/10 space-y-8 relative overflow-hidden">
+                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity)" />
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-2xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
+                                    <TrendingUp className="h-6 w-6 text-amber-500" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h3 className="font-black uppercase tracking-tight text-white">Affiliate Network</h3>
+                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Link Management & Tracking</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <p className="text-xs text-zinc-500 font-medium">Add affiliate links to auto-inject into your content.</p>
+                                    <input
+                                        type="text"
+                                        placeholder="Product Name"
+                                        value={newLink.product_name}
+                                        onChange={(e) => setNewLink({ ...newLink, product_name: e.target.value })}
+                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-amber-500/50 transition-all font-bold placeholder:text-zinc-600"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Affiliate URL"
+                                        value={newLink.link}
+                                        onChange={(e) => setNewLink({ ...newLink, link: e.target.value })}
+                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-amber-500/50 transition-all font-bold placeholder:text-zinc-600"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="CTA Text (e.g. Get 20% Off)"
+                                        value={newLink.cta_text}
+                                        onChange={(e) => setNewLink({ ...newLink, cta_text: e.target.value })}
+                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-amber-500/50 transition-all font-bold placeholder:text-zinc-600"
+                                    />
+                                    <button
+                                        onClick={handleAddAffiliateLink}
+                                        disabled={isAddingLink || !newLink.product_name || !newLink.link}
+                                        className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
+                                    >
+                                        {isAddingLink ? <RefreshCw className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
+                                        Add Affiliate Link
+                                    </button>
+                                </div>
+
+                                <div className="bg-zinc-950/40 rounded-3xl border border-white/5 p-6 h-64 overflow-y-auto relative">
+                                    {affiliateLinks.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {affiliateLinks.map((link: any, i: number) => (
+                                                <div key={link.id || i} className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+                                                    <p className="text-[10px] font-black text-white uppercase tracking-wider">{link.product_name}</p>
+                                                    <p className="text-[9px] text-zinc-500 truncate">{link.link}</p>
+                                                    {link.cta_text && <p className="text-[9px] text-amber-500 font-bold">{link.cta_text}</p>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
+                                            <Search className="h-8 w-8 text-zinc-700 mb-2" />
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">No Affiliate Links</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Auto-Merch Generator */}
+                        <div className="glass-card bg-purple-500/5 border-purple-500/10 space-y-8 relative overflow-hidden">
+                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity)" />
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-2xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+                                    <ShoppingBag className="h-6 w-6 text-purple-500" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h3 className="font-black uppercase tracking-tight text-white">Auto-Merch Engine</h3>
+                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Trend-Driven Product Generation</p>
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <p className="text-xs text-zinc-500 font-medium">Enter a trending topic to auto-generate merchandise.</p>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Stoic Quotes 2026"
+                                    value={autoMerchTopic}
+                                    onChange={(e) => setAutoMerchTopic(e.target.value)}
+                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-purple-500/50 transition-all font-bold placeholder:text-zinc-600"
+                                />
+                                <button
+                                    onClick={handleAutoMerch}
+                                    disabled={isGeneratingMerch || !autoMerchTopic}
+                                    className="w-full bg-purple-500 hover:bg-purple-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
+                                >
+                                    {isGeneratingMerch ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ShoppingBag className="h-4 w-4" />}
+                                    Generate Auto-Merch
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Shopify Sync */}
+                        <div className="glass-card bg-green-500/5 border-green-500/10 space-y-6 relative overflow-hidden">
+                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity)" />
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-2xl bg-green-500/20 flex items-center justify-center border border-green-500/30">
+                                    <Package className="h-6 w-6 text-green-500" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h3 className="font-black uppercase tracking-tight text-white">Commerce Sync</h3>
+                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Shopify Integration</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleShopifySync}
+                                disabled={isSyncingShopify}
+                                className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
+                            >
+                                {isSyncingShopify ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                Sync Shopify
+                            </button>
+                        </div>
+
+                        {/* AI Link Recommendations */}
+                        <div className="glass-card bg-sky-500/5 border-sky-500/10 space-y-8 relative overflow-hidden">
+                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity)" />
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-2xl bg-sky-500/20 flex items-center justify-center border border-sky-500/30">
+                                    <LinkIcon className="h-6 w-6 text-sky-500" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h3 className="font-black uppercase tracking-tight text-white">AI Link Recommender</h3>
+                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Smart Affiliate Suggestions</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <input
+                                        type="text"
+                                        placeholder="Niche (e.g. Stoic Wisdom)"
+                                        value={recommendNiche}
+                                        onChange={(e) => setRecommendNiche(e.target.value)}
+                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-zinc-600"
+                                    />
+                                    <textarea
+                                        placeholder="Paste your script text here..."
+                                        value={recommendScript}
+                                        onChange={(e) => setRecommendScript(e.target.value)}
+                                        rows={4}
+                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-zinc-600 resize-none"
+                                    />
+                                    <button
+                                        onClick={handleRecommendLinks}
+                                        disabled={isRecommending || !recommendNiche || !recommendScript}
+                                        className="w-full bg-sky-500 hover:bg-sky-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
+                                    >
+                                        {isRecommending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
+                                        Get Recommendations
+                                    </button>
+                                </div>
+                                <div className="bg-zinc-950/40 rounded-3xl border border-white/5 p-6 h-64 overflow-y-auto relative">
+                                    {recommendations.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {recommendations.map((rec: any, i: number) => (
+                                                <div className="p-1 rounded-lg hover:bg-white/2 transition-colors cursor-pointer" onClick={fetchSentinel}>
+                                                    <p className="text-[10px] font-black text-white uppercase tracking-wider">{rec.product_name || rec.name || `Link ${i + 1}`}</p>
+                                                    <p className="text-[9px] text-zinc-500 truncate">{rec.link || rec.url}</p>
+                                                    {rec.reason && <p className="text-[9px] text-sky-500 font-bold">{rec.reason}</p>}
+                                                    {rec.cta_text && <p className="text-[9px] text-sky-400 font-bold">{rec.cta_text}</p>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
+                                            <LinkIcon className="h-8 w-8 text-zinc-700 mb-2" />
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Awaiting Script Analysis</p>
                                         </div>
                                     )}
                                 </div>
@@ -424,13 +843,10 @@ export default function EmpirePage() {
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Sentinel Drift Events</p>
                                 </div>
                                 <div className="space-y-6">
-                                    {[
-                                        { time: "02:45", event: "Algorithm Shift Detected", desc: "TikTok hook retention metrics updated globally." },
-                                        { time: "01:20", event: "Node Expansion", desc: "Cloned 'Stoic Wisdom' strategy to 4 new regional accounts." },
-                                        { time: "22:10", event: "Sentinel Correction", desc: "Auto-adjusted caption density for viral optimization." }
-                                    ].map((item, i) => (
+                                    {timelineEvents.map((item, i) => (
                                         <div key={i} className="flex gap-6 group">
                                             <div className="flex flex-col items-center gap-2">
+                                                <div className="h-0.5 rounded-full bg-linear-to-r from-emerald-500/0 via-emerald-500/20 to-emerald-500/0" />
                                                 <div className="h-3 w-3 rounded-full border-2 border-primary bg-zinc-950 group-hover:bg-primary transition-colors" />
                                                 <div className="w-px flex-1 bg-white/5 group-last:hidden" />
                                             </div>
@@ -451,8 +867,8 @@ export default function EmpirePage() {
                                         <div className="absolute inset-0 rounded-full border border-primary animate-ping opacity-20" />
                                         <Layers className="h-10 w-10 text-primary" />
                                     </div>
-                                    <h4 className="text-2xl font-black text-white italic tracking-tighter uppercase">98% Autonomy</h4>
-                                    <p className="text-zinc-500 text-xs font-medium">System is operating in <span className="text-emerald-500 font-bold italic">FULL_AUTO</span> mode. No manual overrides required.</p>
+                                    <h4 className="text-2xl font-black text-white italic tracking-tighter uppercase">{sentinelStatus?.score || 0}% Autonomy</h4>
+                                    <p className="text-zinc-500 text-xs font-medium">System is operating in <span className={`${sentinelStatus?.status === "NOMINAL" ? "text-emerald-500" : "text-amber-500"} font-bold italic`}>{sentinelStatus?.status || "SYNCING"}</span> mode. {sentinelStatus?.status === "NOMINAL" ? "No manual overrides required." : "Review sentinel recommendations."}</p>
                                 </div>
                             </div>
                         </div>

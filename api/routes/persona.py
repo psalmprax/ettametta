@@ -6,7 +6,7 @@ from api.routes.auth import get_current_user
 import uuid
 import os
 import requests
-from config import settings
+from api.config import settings
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/persona", tags=["Persona Engine"])
