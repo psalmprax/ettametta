@@ -8,14 +8,14 @@ import { Info, Cpu, Sparkles, Database } from "lucide-react";
 interface FlowStep {
     id: string;
     label: string;
-    status: 'pending' | 'active' | 'complete';
+    status: 'pending' | 'active' | 'complete' | 'error';
 }
 
-const STAGE_DETAILS: Record<string, { desc: string; icon: any; metric: string }> = {
-    ingest: { desc: "Byte-stream verification and multi-threaded source retrieval.", icon: Database, metric: "Throughput: 124MB/s" },
-    analyze: { desc: "Deep semantic deconstruction and hook identification.", icon: Cpu, metric: "Confidence: 98.2% Alpha" },
-    remix: { desc: "Neural pattern injection and social compliance wrapping.", icon: Sparkles, metric: "Entropy: 0.42 Sigma" },
-    render: { desc: "High-velocity parallel synthesis and encoding.", icon: Info, metric: "GPU Load: 88%" }
+const STAGE_DETAILS: Record<string, { desc: string; icon: any; default_metric: string }> = {
+    ingest: { desc: "Byte-stream verification and multi-threaded source retrieval.", icon: Database, default_metric: "Verifying Integrity" },
+    analyze: { desc: "Deep semantic deconstruction and hook identification.", icon: Cpu, default_metric: "Semantic Extraction" },
+    remix: { desc: "Neural pattern injection and social compliance wrapping.", icon: Sparkles, default_metric: "Neural Optimization" },
+    render: { desc: "High-velocity parallel synthesis and encoding.", icon: Info, default_metric: "GPU Synthesis" }
 };
 
 export default React.memo(function ProcessingFlow({ steps }: { steps: FlowStep[] }) {
@@ -48,19 +48,23 @@ export default React.memo(function ProcessingFlow({ steps }: { steps: FlowStep[]
                                 className={cn(
                                     "relative z-10 p-6 rounded-3xl border transition-all duration-700 w-full md:w-64 cursor-pointer",
                                     step.status === 'active' ? "bg-primary shadow-[0_0_40px_rgba(var(--primary-rgb),0.2)] border-white/20" :
-                                        step.status === 'complete' ? "bg-zinc-900 border-emerald-500/30" : "bg-zinc-950/50 border-white/5",
+                                        step.status === 'complete' ? "bg-zinc-900 border-emerald-500/30" : 
+                                        step.status === 'error' ? "bg-red-500/10 border-red-500/50" : "bg-zinc-950/50 border-white/5",
                                     selectedDetail === step.id && "ring-2 ring-white/20 border-white/40"
                                 )}
                             >
                                 <div className="flex items-center justify-between mb-4">
                                     <span className={cn(
                                         "text-[8px] font-black uppercase tracking-widest",
-                                        step.status === 'active' ? "text-black" : step.status === 'complete' ? "text-emerald-500" : "text-zinc-600"
+                                        step.status === 'active' ? "text-black" : 
+                                        step.status === 'complete' ? "text-emerald-500" : 
+                                        step.status === 'error' ? "text-red-500" : "text-zinc-600"
                                     )}>
                                         Stage_{idx + 1}
                                     </span>
                                     {step.status === 'active' && <div className="h-1.5 w-1.5 rounded-full bg-black animate-ping" />}
                                     {step.status === 'complete' && <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
+                                    {step.status === 'error' && <div className="h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" />}
                                 </div>
                                 <h4 className={cn(
                                     "text-lg font-black uppercase tracking-tighter italic",
@@ -88,7 +92,7 @@ export default React.memo(function ProcessingFlow({ steps }: { steps: FlowStep[]
                                                 step.status === 'active' ? "text-black" : "text-primary"
                                             )}>
                                                 <DetailIcon className="h-3 w-3" />
-                                                {STAGE_DETAILS[step.id]?.metric}
+                                                {STAGE_DETAILS[step.id]?.default_metric}
                                             </div>
                                         </motion.div>
                                     )}
@@ -107,6 +111,7 @@ export default React.memo(function ProcessingFlow({ steps }: { steps: FlowStep[]
                                         />
                                     )}
                                     {step.status === 'complete' && <div className="h-full w-full bg-emerald-500" aria-hidden="true" />}
+                                    {step.status === 'error' && <div className="h-full w-full bg-red-500" aria-hidden="true" />}
                                 </div>
                             </motion.div>
 

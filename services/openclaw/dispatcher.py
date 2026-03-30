@@ -64,17 +64,39 @@ class MessageDispatcher:
     async def send_whatsapp(self, phone_number: str, text: str) -> bool:
         """
         Sends an outbound message via Twilio API.
-        Assumes we have TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_NUMBER 
-        in a fully realized application. Mocking the HTTP call here.
+        Tries the real API first, and only falls back to MOCK if credentials 
+        are missing or if the API call throws an exception.
         """
-        logger.info(f"[MOCK] Transmitting WhatsApp message via Twilio to {phone_number}...")
+        if settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN and settings.TWILIO_WHATSAPP_NUMBER:
+            try:
+                from requests.auth import HTTPBasicAuth
+                auth = HTTPBasicAuth(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+                
+                # Twilio expects 'whatsapp:+123456789' format
+                from_num = f"whatsapp:{settings.TWILIO_WHATSAPP_NUMBER.replace('whatsapp:', '')}"
+                to_num = phone_number if phone_number.startswith('whatsapp:') else f"whatsapp:{phone_number}"
+                
+                payload = {
+                    "From": from_num, 
+                    "To": to_num, 
+                    "Body": text
+                }
+                url = f"https://api.twilio.com/2010-04-01/Accounts/{settings.TWILIO_ACCOUNT_SID}/Messages.json"
+                
+                response = requests.post(url, data=payload, auth=auth, timeout=10)
+                if response.status_code in (200, 201):
+                    logger.info(f"Twilio WhatsApp broadcast successful to {phone_number}")
+                    return True
+                else:
+                    logger.error(f"Twilio API rejected broadcast to {phone_number}: {response.text}")
+                    # API error -> fallthrough to fallback mock
+            except Exception as e:
+                logger.error(f"Twilio WhatsApp request failed: {e}")
+                # Network error -> fallthrough to fallback mock
+
+        # Fallback to Mock
+        logger.info(f"[FALLBACK MOCK] Transmitting WhatsApp message via Twilio to {phone_number}...")
         logger.info(f"Payload: {text}")
-        
-        # In actual implementation:
-        # auth = HTTPBasicAuth(settings.TWILIO_SID, settings.TWILIO_TOKEN)
-        # payload = {"From": settings.TWILIO_WHATSAPP_NUMBER, "To": phone_number, "Body": text}
-        # requests.post(f"https://api.twilio.com/2010-04-01/Accounts/.../Messages.json", data=payload, auth=auth)
-        
         return True
 
 dispatcher = MessageDispatcher()

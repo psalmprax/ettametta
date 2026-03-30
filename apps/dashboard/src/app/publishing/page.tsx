@@ -24,7 +24,8 @@ import {
     Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { API_BASE } from "@/lib/config";
+import { API_BASE, WS_BASE } from "@/lib/config";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 interface SocialAccount {
     id: number;
@@ -41,6 +42,11 @@ interface SocialPost {
     url: string | null;
     published_at: string;
     video_path?: string; // Local path to processed video
+    view_count?: number;
+    likes?: number;
+    shares?: number;
+    comments?: number;
+    retention_rate?: number;
 }
 
 const getPlatformIcon = (platform: string) => {
@@ -49,6 +55,8 @@ const getPlatformIcon = (platform: string) => {
 };
 
 import { motion, AnimatePresence } from "framer-motion";
+
+import { toast } from "sonner";
 
 export default function PublishingPage() {
     const [accounts, setAccounts] = useState<SocialAccount[]>([]);
@@ -68,9 +76,18 @@ export default function PublishingPage() {
     const [injectMonetization, setInjectMonetization] = useState(false);
     const [isScheduled, setIsScheduled] = useState(false);
     const [scheduleTime, setScheduleTime] = useState("");
-    const [connectionSuccess, setConnectionSuccess] = useState<string | null>(null);
     const [niches, setNiches] = useState<string[]>([]);
     const [selectedNiche, setSelectedNiche] = useState("Technology");
+    const [selectedPlatform, setSelectedPlatform] = useState("YouTube Shorts");
+    const [selectedAccountId, setSelectedAccountId] = useState<number | "">("");
+    const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
+    const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+    const [isMultiDeploying, setIsMultiDeploying] = useState(false);
+    const [isGeneratingSeo, setIsGeneratingSeo] = useState(false);
+    const [retryingPostId, setRetryingPostId] = useState<number | null>(null);
+    const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+    const { data: telemetryData } = useWebSocket(`${WS_BASE}/ws/telemetry`);
 
     const handleManage = (acc: SocialAccount) => {
         setSelectedAccountForDetail(acc);
@@ -92,65 +109,271 @@ export default function PublishingPage() {
 
     React.useEffect(() => {
         const fetchData = async () => {
+            const token = localStorage.getItem("et_token");
+            const headers = { Authorization: `Bearer ${token}` };
             try {
-                const token = localStorage.getItem("et_token");
-                const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
-                const [accountsRes, historyRes, jobsRes] = await Promise.all([
+                const [accRes, histRes, jobsRes, nichesRes] = await Promise.all([
                     fetch(`${API_BASE}/publish/accounts`, { headers }),
                     fetch(`${API_BASE}/publish/history`, { headers }),
-                    fetch(`${API_BASE}/video/jobs`, { headers })
+                    fetch(`${API_BASE}/video/jobs`, { headers }),
+                    fetch(`${API_BASE}/discovery/niches`, { headers })
                 ]);
-                if (accountsRes.ok) setAccounts(await accountsRes.json());
-                if (historyRes.ok) setHistory(await historyRes.json());
-                if (jobsRes.ok) setJobs(await jobsRes.json());
 
-                // Fetch niches
-                const nichesRes = await fetch(`${API_BASE}/discovery/niches`, { headers });
+                if (accRes.ok) setAccounts(await accRes.json());
+                if (histRes.ok) setHistory(await histRes.json());
+                if (jobsRes.ok) setJobs(await jobsRes.json());
                 if (nichesRes.ok) setNiches(await nichesRes.json());
-            } catch (error) {
-                console.error("Failed to fetch publishing data:", error);
+
+                // Fetch scheduled posts from history (filter by status)
+                try {
+                    const schedRes = await fetch(`${API_BASE}/publish/history`, { headers });
+                    if (schedRes.ok) {
+                        const allPosts = await schedRes.json();
+                        setScheduledPosts(allPosts.filter((p: any) => p.status === "scheduled" || p.status === "pending"));
+                    }
+                } catch (e) {}
+            } catch (err) {
+                console.error("Failed to fetch publishing data:", err);
+                toast.error("Failed to load publishing data");
             } finally {
                 setIsLoading(false);
             }
         };
         fetchData();
-        const interval = setInterval(fetchData, 5000);
+        const interval = setInterval(fetchData, 10000); // Polling for job updates
         return () => clearInterval(interval);
     }, []);
 
+    const handleSync = async (postId: number) => {
+        const token = localStorage.getItem("et_token");
+        toast.promise(
+            fetch(`${API_BASE}/publish/sync/${postId}`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            }).then(async res => {
+                if (!res.ok) throw new Error("Sync failed");
+                const historyRes = await fetch(`${API_BASE}/publish/history`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (historyRes.ok) setHistory(await historyRes.json());
+                return res.json();
+            }),
+            {
+                loading: 'Synchronizing Neural Metrics...',
+                success: 'Telemetry Updated Successfully',
+                error: 'Sync Failed - Service Unavailable'
+            }
+        );
+    };
+
     const handleManualDeploy = async () => {
-        if (!selectedJobForDeploy || accounts.length === 0) return;
+        if (!selectedJobForDeploy || accounts.length === 0) {
+            toast.error("Deployment Guard", {
+                description: "Select a valid asset and linked account node."
+            });
+            return;
+        }
         setIsDeploying(true);
         try {
             const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/publish/post`, {
+            
+            const endpoint = isScheduled && scheduleTime ? `${API_BASE}/publish/schedule` : `${API_BASE}/publish/post`;
+            const body: any = {
+                video_path: selectedJobForDeploy.output_path,
+                niche: selectedNiche,
+                platform: selectedPlatform,
+                account_id: selectedAccountId || (accounts.length > 0 ? accounts[0].id : undefined),
+                inject_monetization: injectMonetization,
+                variant_b_title: variantBTitle || undefined,
+                variant_b_description: variantBDescription || undefined
+            };
+            
+            if (isScheduled && scheduleTime) {
+                body.scheduled_at = new Date(scheduleTime).toISOString();
+            }
+            
+            const res = await fetch(endpoint, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    video_path: selectedJobForDeploy.output_path || "outputs/output.mp4",
-                    niche: selectedNiche,
-                    platform: "YouTube Shorts",
-                    account_id: accounts[0].id,
-                    inject_monetization: injectMonetization,
-                    variant_b_title: variantBTitle || undefined,
-                    variant_b_description: variantBDescription || undefined
-                })
+                body: JSON.stringify(body)
             });
             if (res.ok) {
-                setConnectionSuccess("Transmission Initiated");
-                setTimeout(() => {
-                    setConnectionSuccess(null);
-                    setIsDeployModalOpen(false);
-                }, 2000);
+                toast.success("Transmission Initiated", {
+                    description: "Handshake verified. Packets streaming to target node."
+                });
+                setIsDeployModalOpen(false);
+                // Refresh history
+                const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
+                const historyRes = await fetch(`${API_BASE}/publish/history`, { headers });
+                if (historyRes.ok) setHistory(await historyRes.json());
+            } else {
+                const error = await res.json();
+                toast.error("Transmission Failed", {
+                    description: error.detail || "Neural link rejected. Check auth tokens."
+                });
             }
         } catch (err) {
             console.error(err);
+            toast.error("Signal Lost", {
+                description: "Failed to reach the publishing cluster."
+            });
         } finally {
             setIsDeploying(false);
         }
+    };
+
+    const handleMultiDeploy = async () => {
+        if (!selectedJobForDeploy || accounts.length === 0) {
+            toast.error("Deployment Guard", {
+                description: "Select a valid asset and linked account node."
+            });
+            return;
+        }
+        if (selectedPlatforms.length === 0) {
+            toast.error("Deployment Guard", {
+                description: "Select at least one target network protocol."
+            });
+            return;
+        }
+        setIsMultiDeploying(true);
+        try {
+            const token = localStorage.getItem("et_token");
+            const body: any = {
+                video_path: selectedJobForDeploy.output_path,
+                niche: selectedNiche,
+                platforms: selectedPlatforms,
+                account_id: selectedAccountId || (accounts.length > 0 ? accounts[0].id : undefined),
+                inject_monetization: injectMonetization,
+                variant_b_title: variantBTitle || undefined,
+                variant_b_description: variantBDescription || undefined
+            };
+            const res = await fetch(`${API_BASE}/publish/post-multi`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(body)
+            });
+            if (res.ok) {
+                toast.success("Multi-Node Transmission Initiated", {
+                    description: "Broadcasting across all selected networks."
+                });
+                setIsDeployModalOpen(false);
+                setSelectedPlatforms([]);
+                const headers = { Authorization: `Bearer ${token}` };
+                const historyRes = await fetch(`${API_BASE}/publish/history`, { headers });
+                if (historyRes.ok) setHistory(await historyRes.json());
+            } else {
+                const error = await res.json();
+                toast.error("Multi-Transmission Failed", {
+                    description: error.detail || "One or more network links rejected."
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Signal Lost", {
+                description: "Failed to reach the publishing cluster."
+            });
+        } finally {
+            setIsMultiDeploying(false);
+        }
+    };
+
+    const handleRetry = async (contentId: number) => {
+        const token = localStorage.getItem("et_token");
+        setRetryingPostId(contentId);
+        toast.promise(
+            fetch(`${API_BASE}/publish/retry/${contentId}`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            }).then(async res => {
+                if (!res.ok) throw new Error("Retry failed");
+                const historyRes = await fetch(`${API_BASE}/publish/history`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (historyRes.ok) setHistory(await historyRes.json());
+                return res.json();
+            }).finally(() => setRetryingPostId(null)),
+            {
+                loading: 'Retrying Transmission...',
+                success: 'Handshake Re-Established',
+                error: 'Retry Failed - Service Unavailable'
+            }
+        );
+    };
+
+    const handleDisconnect = async (accountId: number) => {
+        const token = localStorage.getItem("et_token");
+        setIsDisconnecting(true);
+        try {
+            const res = await fetch(`${API_BASE}/publish/account/${accountId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                toast.success("Node Disconnected", {
+                    description: "Account link has been severed."
+                });
+                setAccounts(prev => prev.filter(a => a.id !== accountId));
+                setIsAccountModalOpen(false);
+                setSelectedAccountForDetail(null);
+            } else {
+                const error = await res.json();
+                toast.error("Disconnect Failed", {
+                    description: error.detail || "Unable to sever node connection."
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Signal Lost", {
+                description: "Failed to reach the publishing cluster."
+            });
+        } finally {
+            setIsDisconnecting(false);
+        }
+    };
+
+    const handleGenerateSeo = async () => {
+        setIsGeneratingSeo(true);
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(
+                `${API_BASE}/publish/package?niche=${encodeURIComponent(selectedNiche)}&platform=${encodeURIComponent(selectedPlatform)}`,
+                {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+            if (res.ok) {
+                toast.success("SEO Package Generated", {
+                    description: "Metadata optimization bundle ready for injection."
+                });
+            } else {
+                const error = await res.json();
+                toast.error("SEO Generation Failed", {
+                    description: error.detail || "Unable to generate SEO package."
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Signal Lost", {
+                description: "Failed to reach the publishing cluster."
+            });
+        } finally {
+            setIsGeneratingSeo(false);
+        }
+    };
+
+    const togglePlatformSelection = (platform: string) => {
+        setSelectedPlatforms(prev =>
+            prev.includes(platform)
+                ? prev.filter(p => p !== platform)
+                : [...prev, platform]
+        );
     };
 
     return (
@@ -181,8 +404,14 @@ export default function PublishingPage() {
                                     </button>
                                 </div>
                                 <div className="mb-10" />
-                                <div className="grid grid-cols-2 gap-6">
-                                    {[{ name: "YouTube", icon: Youtube, color: "text-red-500" }, { name: "TikTok", icon: Share2, color: "text-white" }].map((p) => (
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                                    {[
+                                        { name: "YouTube", icon: Youtube, color: "text-red-500" },
+                                        { name: "TikTok", icon: Share2, color: "text-white" },
+                                        { name: "Instagram", icon: Instagram, color: "text-pink-500" },
+                                        { name: "X", icon: Twitter, color: "text-blue-400" },
+                                        { name: "LinkedIn", icon: Globe, color: "text-blue-600" }
+                                    ].map((p) => (
                                         <motion.button
                                             key={p.name}
                                             onClick={() => handleSelectPlatform(p.name)}
@@ -242,7 +471,8 @@ export default function PublishingPage() {
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Source Asset</label>
                                         <select
-                                            className="w-full glass-card bg-zinc-950 border-white/10 rounded-2xl p-5 text-sm font-bold text-white uppercase outline-none focus:ring-1 focus:ring-primary/40"
+                                            className="w-full glass-card bg-zinc-950 border-white/10 rounded-2xl p-5 text-sm font-bold text-white uppercase outline-none focus:ring-1 focus:ring-primary/40 transition-all hover:border-primary/30"
+                                            value={selectedJobForDeploy?.id || ""}
                                             onChange={(e) => {
                                                 const job = jobs.find(j => j.id === e.target.value);
                                                 setSelectedJobForDeploy(job);
@@ -253,6 +483,39 @@ export default function PublishingPage() {
                                                 <option key={j.id} value={j.id}>{j.title} ({j.id.slice(0, 8)})</option>
                                             ))}
                                         </select>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-6">
+                                        {/* Platform Selection */}
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Network Protocol</label>
+                                            <select
+                                                className="w-full glass-card bg-zinc-950 border-white/10 rounded-2xl p-5 text-xs font-bold text-white uppercase outline-none focus:ring-1 focus:ring-primary/40 transition-all hover:border-primary/30"
+                                                value={selectedPlatform}
+                                                onChange={(e) => setSelectedPlatform(e.target.value)}
+                                            >
+                                                <option value="YouTube Shorts">YouTube Shorts</option>
+                                                <option value="TikTok">TikTok</option>
+                                                <option value="Instagram Reels">Instagram Reels</option>
+                                                <option value="X">X (Twitter)</option>
+                                                <option value="LinkedIn">LinkedIn</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Account Selection */}
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Identity Node</label>
+                                            <select
+                                                className="w-full glass-card bg-zinc-950 border-white/10 rounded-2xl p-5 text-xs font-bold text-white uppercase outline-none focus:ring-1 focus:ring-primary/40 transition-all hover:border-primary/30"
+                                                value={selectedAccountId}
+                                                onChange={(e) => setSelectedAccountId(Number(e.target.value))}
+                                            >
+                                                <option value="">Choose Account...</option>
+                                                {accounts.map(acc => (
+                                                    <option key={acc.id} value={acc.id}>{acc.username} ({acc.platform})</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
 
                                     {/* Niche Selection */}
@@ -266,6 +529,28 @@ export default function PublishingPage() {
                                             <option value="">Select Niche...</option>
                                             {niches.map(n => <option key={n} value={n}>{n}</option>)}
                                         </select>
+                                    </div>
+
+                                    {/* Multi-Platform Selection */}
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Multi-Node Broadcast Targets</label>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {["YouTube Shorts", "TikTok", "Instagram Reels", "X", "LinkedIn"].map((platform) => (
+                                                <button
+                                                    key={platform}
+                                                    type="button"
+                                                    onClick={() => togglePlatformSelection(platform)}
+                                                    className={cn(
+                                                        "p-4 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all",
+                                                        selectedPlatforms.includes(platform)
+                                                            ? "bg-primary/10 border-primary/40 text-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.15)]"
+                                                            : "bg-zinc-950 border-white/5 text-zinc-500 hover:border-primary/20 hover:text-zinc-300"
+                                                    )}
+                                                >
+                                                    {platform}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
 
                                     {/* A/B Testing */}
@@ -311,23 +596,31 @@ export default function PublishingPage() {
                                     {isDeploying ? <RefreshCw className="h-5 w-5 animate-spin" /> : <ArrowUpRight className="h-5 w-5" />}
                                     {isDeploying ? "Deploying..." : "Initialize Transmission"}
                                 </button>
+
+                                <button
+                                    onClick={handleMultiDeploy}
+                                    disabled={isMultiDeploying || !selectedJobForDeploy || accounts.length === 0 || selectedPlatforms.length === 0}
+                                    className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black py-6 rounded-[2rem] transition-all shadow-[0_0_50px_rgba(37,99,235,0.3)] flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em]"
+                                >
+                                    {isMultiDeploying ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Globe className="h-5 w-5" />}
+                                    {isMultiDeploying ? "Broadcasting..." : `Publish Everywhere (${selectedPlatforms.length})`}
+                                </button>
+
+                                <button
+                                    onClick={handleGenerateSeo}
+                                    disabled={isGeneratingSeo}
+                                    className="w-full bg-zinc-900 hover:bg-zinc-800 disabled:opacity-50 text-white font-black py-5 rounded-2xl transition-all border border-white/5 hover:border-primary/30 flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em]"
+                                >
+                                    {isGeneratingSeo ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4 text-primary" />}
+                                    {isGeneratingSeo ? "Generating..." : "Generate SEO Package"}
+                                </button>
                             </motion.div>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* Success Overlay */}
+                {/* Success Overlay Removed in favor of Sonner Toasts */}
                 <AnimatePresence>
-                    {connectionSuccess && (
-                        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-xl">
-                            <div className="flex flex-col items-center gap-10 text-center">
-                                <div className="h-24 w-24 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-lg">
-                                    <CheckCircle2 className="h-12 w-12 text-emerald-500" />
-                                </div>
-                                <h4 className="text-3xl font-black italic tracking-tighter text-emerald-500 uppercase">Connection Verified</h4>
-                            </div>
-                        </div>
-                    )}
                 </AnimatePresence>
 
                 {/* Account Modal */}
@@ -348,8 +641,28 @@ export default function PublishingPage() {
                                             <X className="h-5 w-5 text-zinc-500" />
                                         </button>
                                     </div>
-                                    <button className="w-full bg-primary text-white font-black py-5 rounded-2xl shadow-lg uppercase text-xs tracking-widest">
-                                        Configure Node
+                                    <button
+                                        onClick={() => {
+                                            setIsAccountModalOpen(false);
+                                            if (selectedAccountForDetail) {
+                                                window.location.href = `${API_BASE}/publish/auth/${selectedAccountForDetail.platform.toLowerCase()}`;
+                                            }
+                                        }}
+                                        className="w-full bg-primary text-white font-black py-5 rounded-2xl shadow-lg uppercase text-xs tracking-widest"
+                                    >
+                                        Re-Authenticate Node
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (selectedAccountForDetail) {
+                                                handleDisconnect(selectedAccountForDetail.id);
+                                            }
+                                        }}
+                                        disabled={isDisconnecting}
+                                        className="w-full bg-red-900/30 hover:bg-red-900/50 disabled:opacity-50 text-red-400 font-black py-5 rounded-2xl border border-red-500/20 hover:border-red-500/40 uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-3"
+                                    >
+                                        {isDisconnecting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                                        {isDisconnecting ? "Severing..." : "Disconnect Node"}
                                     </button>
                                 </div>
                             </motion.div>
@@ -512,6 +825,37 @@ export default function PublishingPage() {
                     </motion.div>
                 </div>
 
+                {/* Scheduled Posts */}
+                {scheduledPosts.length > 0 && (
+                    <div className="glass-card overflow-hidden shadow-2xl border-white/5 mt-16">
+                        <div className="px-10 py-8 border-b border-white/5 bg-amber-500/[0.02] flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                                <Play className="h-5 w-5 text-amber-500" />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-xl uppercase tracking-tighter text-white">Scheduled <span className="text-amber-400">Transmissions</span></h3>
+                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Pending deployment queue</p>
+                            </div>
+                        </div>
+                        <div className="divide-y divide-white/5">
+                            {scheduledPosts.map((post) => (
+                                <div key={post.id} className="p-6 flex items-center justify-between hover:bg-white/[0.02] transition-all">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-3 w-3 rounded-full bg-amber-500 animate-pulse" />
+                                        <div>
+                                            <p className="text-sm font-black text-white uppercase">{post.title}</p>
+                                            <p className="text-[10px] text-zinc-500">{post.platform} • {new Date(post.published_at || post.scheduled_at).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="px-3 py-1 rounded-lg bg-amber-500/10 text-amber-500 text-[9px] font-black uppercase tracking-widest border border-amber-500/20">
+                                        {post.status}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Distribution History */}
                 <div className="glass-card overflow-hidden shadow-[0_32px_128px_rgba(0,0,0,0.5)] border-white/5 mt-32">
                     <div className="px-10 py-12 border-b border-white/5 bg-white/[0.01] flex items-center justify-between relative overflow-hidden">
@@ -565,13 +909,9 @@ export default function PublishingPage() {
                                 </motion.div>
                             ) : (
                                 history.map((post, idx) => {
-                                    const Icon = getPlatformIcon(post.platform);
-                                    // Generate stable "random" telemetry based on ID
-                                    const seed = post.id % 100;
-                                    const signalStrength = 95 + (seed % 5);
-                                    const bitrate = 40 + (seed % 10);
-                                    const nodeIdx = seed % 4;
                                     const nodes = ["US-EAST-ALPHA", "EU-WEST-BETA", "ASIA-SOUTH-GAMMA", "LATAM-DELTA"];
+                                    const nodeIdx = post.id % 4;
+                                    const Icon = getPlatformIcon(post.platform);
 
                                     return (
                                         <motion.div
@@ -628,24 +968,66 @@ export default function PublishingPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Center: Telemetry Grid */}
+                                            {/* Center: Live Telemetry Grid */}
                                             <div className="hidden xl:grid grid-cols-2 gap-x-12 gap-y-3 px-12 border-x border-white/5 relative z-10">
                                                 <div className="space-y-1">
-                                                    <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest text-hollow">Sig_Strength</p>
-                                                    <p className="text-xs font-bold text-white tabular-nums">{signalStrength}.2%</p>
+                                                    <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest text-hollow">Real_Views</p>
+                                                    <p className="text-xs font-bold tabular-nums text-primary">
+                                                        {post.view_count?.toLocaleString() || "0"}
+                                                    </p>
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest text-hollow">Transmission_Bitrate</p>
-                                                    <p className="text-xs font-bold text-white tabular-nums">{bitrate} Mbps</p>
+                                                    <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest text-hollow">Engagements</p>
+                                                    <p className="text-xs font-bold tabular-nums text-white">
+                                                        {post.likes?.toLocaleString() || "0"} <span className="text-[10px] text-zinc-500 font-medium">Likes</span>
+                                                    </p>
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest text-hollow">Neural_Node</p>
-                                                    <p className="text-xs font-bold text-primary truncate max-w-[80px]">{nodes[nodeIdx]}</p>
+                                                    <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest text-hollow">Node_Oracle</p>
+                                                    <p className="text-xs font-bold text-zinc-400 truncate max-w-[80px]">{nodes[nodeIdx]}</p>
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest text-hollow">Packet_Loss</p>
-                                                    <p className="text-xs font-bold text-emerald-500">0.00{seed % 5}%</p>
+                                                    <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest text-hollow">Retention</p>
+                                                    <p className="text-xs font-bold text-emerald-500">{post.retention_rate ? `${post.retention_rate.toFixed(1)}%` : "N/A"}</p>
                                                 </div>
+                                            </div>
+
+                                            {/* Right: Actions */}
+                                            <div className="flex items-center gap-4 relative z-10 pl-8">
+                                                <motion.button
+                                                    whileHover={{ scale: 1.1, rotate: 180 }}
+                                                    whileTap={{ scale: 0.9 }}
+                                                    onClick={() => handleSync(post.id)}
+                                                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-950 border border-white/5 text-zinc-500 hover:text-primary hover:border-primary/50 transition-all pointer-events-auto"
+                                                    title="Neural Metrics Sync"
+                                                >
+                                                    <RefreshCw className="h-4 w-4" />
+                                                </motion.button>
+
+                                                {post.status === "PENDING_AUTH" && (
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => handleRetry(post.id)}
+                                                        disabled={retryingPostId === post.id}
+                                                        className="h-10 px-5 flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/20 hover:border-amber-500/40 transition-all pointer-events-auto disabled:opacity-50"
+                                                        title="Retry Transmission"
+                                                    >
+                                                        {retryingPostId === post.id ? <RefreshCw className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                                        Retry
+                                                    </motion.button>
+                                                )}
+                                                
+                                                {post.url && (
+                                                    <Link 
+                                                        href={post.url} 
+                                                        target="_blank"
+                                                        className="h-10 px-6 flex items-center gap-3 rounded-xl bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black transition-all"
+                                                    >
+                                                        <ExternalLink className="h-3 w-3" />
+                                                        View Live
+                                                    </Link>
+                                                )}
                                             </div>
 
                                             {/* Right: Status & Actions */}

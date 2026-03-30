@@ -9,6 +9,11 @@ class SocialPublisher(ABC):
         pass
 
     @abstractmethod
-    def health_check(self) -> bool:
+    async def get_metrics(self, platform_id: str, user_id: int, account_id: Optional[int] = None) -> dict:
+        """Fetches live engagement metrics (views, likes, shares, comments) for a post."""
+        pass
+
+    @abstractmethod
+    def health_check(self, user_id: int) -> bool:
         """Verifies API credentials and connectivity."""
         pass

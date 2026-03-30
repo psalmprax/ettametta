@@ -11,8 +11,29 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 
+# Mock heavy dependencies BEFORE any service imports to allow tests to run in light environments
+import types
+
+class MockModule(types.ModuleType):
+    def __getattr__(self, name):
+        return MagicMock()
+
+def create_mock_module(name):
+    m = MockModule(name)
+    sys.modules[name] = m
+    return m
+
+mock_names = [
+    "faster_whisper", "diffusers", "diffusers.utils", "moviepy", "moviepy.editor", 
+    "moviepy.video.io", "moviepy.video.io.VideoFileClip", "moviepy.video.compositing",
+    "moviepy.audio.AudioClip", "moviepy.audio.fx", "moviepy.audio.fx.all", "moviepy.afx",
+    "moviepy.audio.AudioClip.CompositeAudioClip",
+    "cv2", "numpy", "torch", "gtts", "easyocr", "PIL", "pil", "replicate", "fal_client", "remotion"
+]
+for name in mock_names:
+    create_mock_module(name)
+
 # Add parent directory to path for imports
-# When running from /app/api, we need /app
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Set test environment before importing app

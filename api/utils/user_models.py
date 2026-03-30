@@ -28,4 +28,6 @@ class UserDB(Base):
     telegram_chat_id = Column(String, unique=True, index=True, nullable=True)
     telegram_token = Column(String, unique=True, index=True, nullable=True)
     whatsapp_number = Column(String, unique=True, index=True, nullable=True)
+    stripe_customer_id = Column(String, unique=True, index=True, nullable=True)
+    stripe_subscription_id = Column(String, unique=True, index=True, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

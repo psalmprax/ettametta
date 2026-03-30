@@ -22,6 +22,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
+import { toast } from "sonner";
 
 interface ScriptSegment {
     type: string;
@@ -50,6 +51,8 @@ export default function CreationPage() {
 
     const [isValidating, setIsValidating] = useState(false);
     const [hookAnalysis, setHookAnalysis] = useState<any>(null);
+    const [isExporting, setIsExporting] = useState(false);
+    const [isLaunchingProduction, setIsLaunchingProduction] = useState(false);
 
     const handleGenerateScript = async () => {
         if (!topic) return;
@@ -71,6 +74,7 @@ export default function CreationPage() {
             }
         } catch (err) {
             console.error(err);
+            toast.error("Failed to generate script");
         } finally {
             setIsGenerating(false);
         }
@@ -124,6 +128,7 @@ export default function CreationPage() {
             }
         } catch (err) {
             console.error(err);
+            toast.error("Failed to generate voiceover");
         } finally {
             setLoadingSegment(null);
         }
@@ -150,6 +155,7 @@ export default function CreationPage() {
             }
         } catch (err) {
             console.error(err);
+            toast.error("Failed to generate image");
         } finally {
             setLoadingSegment(null);
         }
@@ -171,6 +177,7 @@ export default function CreationPage() {
             }
         } catch (err) {
             console.error(err);
+            toast.error("Failed to search stock media");
         } finally {
             setLoadingSegment(null);
         }
@@ -197,6 +204,73 @@ export default function CreationPage() {
             console.error(err);
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const handleExportAssets = () => {
+        if (!script) return;
+        setIsExporting(true);
+        try {
+            const exportData = {
+                title: script.title,
+                segments: script.segments.map((seg, i) => ({
+                    ...seg,
+                    audio_url: segmentAssets[i]?.audio || null,
+                    image_url: segmentAssets[i]?.image || null,
+                    stock_videos: segmentAssets[i]?.videos || []
+                })),
+                hashtags: script.hashtags,
+                metadata: {
+                    niche,
+                    style,
+                    duration,
+                    exported_at: new Date().toISOString()
+                }
+            };
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${script.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_blueprint.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleLaunchProduction = async () => {
+        if (!script) return;
+        setIsLaunchingProduction(true);
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/nexus/compose`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    niche,
+                    topic,
+                    blueprint_id: "story-factory",
+                    cinema_mode: false,
+                    script_data: {
+                        title: script.title,
+                        segments: script.segments,
+                        hashtags: script.hashtags
+                    }
+                })
+            });
+            if (res.ok) {
+                window.location.href = "/transformation";
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsLaunchingProduction(false);
         }
     };
 
@@ -539,17 +613,21 @@ export default function CreationPage() {
 
                                         <div className="pt-10 flex gap-4">
                                             <button
+                                                onClick={handleExportAssets}
+                                                disabled={isExporting}
                                                 className="flex-1 bg-white/5 hover:bg-white/10 text-zinc-400 font-black py-5 rounded-2xl transition-all uppercase text-xs tracking-[0.2em] italic border border-white/5"
                                             >
-                                                Export Assets
+                                                {isExporting ? "Exporting..." : "Export Assets"}
                                             </button>
                                             <motion.button
                                                 whileHover={{ scale: 1.05, y: -2 }}
                                                 whileTap={{ scale: 0.98 }}
+                                                onClick={handleLaunchProduction}
+                                                disabled={isLaunchingProduction}
                                                 className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-5 rounded-2xl transition-all shadow-[0_0_40px_rgba(16,185,129,0.2)] flex items-center justify-center gap-3 uppercase text-xs tracking-[0.2em] italic"
                                             >
                                                 <Zap className="h-5 w-5" />
-                                                Launch Production
+                                                {isLaunchingProduction ? "Launching..." : "Launch Production"}
                                             </motion.button>
                                         </div>
                                     </div>
