@@ -10,6 +10,7 @@ import time
 import subprocess
 from typing import Optional, Dict, Any
 from huggingface_hub import snapshot_download, hf_hub_download
+from .hardware_manager import hardware_manager
 
 # Model registry - defines all available video models
 VIDEO_MODELS = {
@@ -105,19 +106,12 @@ class VideoModelManager:
         self.current_model = None
         self.current_pipe = None
         self.lock = threading.Lock()
-        self.device = self._get_best_device()
+        self.device = hardware_manager.device
+        self.device_obj = hardware_manager.get_device_obj()
         self.encoder = self._get_best_encoder()
-        print(f"✨ Hardware Detection: Device={self.device}, Encoder={self.encoder}", flush=True)
+        print(f"✨ Hardware Detection: Device={self.device}, Backend={hardware_manager.backend}, Encoder={self.encoder}", flush=True)
 
-    def _get_best_device(self) -> str:
-        """Detect best available torch device"""
-        if torch.cuda.is_available():
-            return "cuda"
-        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-            return "mps"
-        elif hasattr(torch, "xpu") and torch.xpu.is_available():
-            return "xpu" # Intel GPUs
-        return "cpu"
+    # _get_best_device removed - now managed by HardwareManager
 
     def _get_best_encoder(self) -> str:
         """Probes FFmpeg for the best hardware-accelerated encoder"""
@@ -219,15 +213,8 @@ class VideoModelManager:
             return {"success": False, "error": str(e)}
     
     def clear_gpu(self):
-        """Clear GPU memory dynamically based on hardware"""
-        if self.device == "cuda":
-            torch.cuda.empty_cache()
-            torch.cuda.synchronize()
-        elif self.device == "mps":
-            # torch.mps only exists in newer torch versions
-            if hasattr(torch, "mps"):
-                torch.mps.empty_cache()
-        gc.collect()
+        """Clear GPU memory dynamically using HardwareManager abstraction"""
+        hardware_manager.clear_cache()
         print(f"🧹 Cleared GPU memory ({self.device})", flush=True)
     
     def unload_current_model(self):
@@ -258,9 +245,9 @@ class VideoModelManager:
                 from diffusers import DiffusionPipeline
                 import torch
                 
-                # Setup Quantization if requested
+                # Setup Hardware-Optimal Dtype
                 load_kwargs = {
-                    "torch_dtype": torch.float16,
+                    "torch_dtype": hardware_manager.dtype,
                     "low_cpu_mem_usage": True,
                 }
 
@@ -281,12 +268,18 @@ class VideoModelManager:
                 self.current_pipe.enable_vae_tiling()
                 self.current_pipe.enable_vae_slicing()
                 
-                # ⚡ Apply Inference Optimizations
+                # ⚡ Apply Inference Optimizations (SDPA for Hardware Agnosticism)
                 try:
-                    self.current_pipe.enable_xformers_memory_efficient_attention()
-                    print("✨ Optimization: xformers enabled", flush=True)
+                    # Scaled Dot Product Attention is natively supported in PyTorch 2.0+ 
+                    # and is more agnostic than xformers
+                    if hasattr(self.current_pipe, "enable_attention_slicing"):
+                        self.current_pipe.enable_attention_slicing()
+                    
+                    if self.device == "cuda":
+                        self.current_pipe.enable_xformers_memory_efficient_attention()
+                        print("✨ Optimization: xformers enabled (CUDA)", flush=True)
                 except Exception as e:
-                    print(f"⚠️ xformers not available: {e}", flush=True)
+                    print(f"⚠️ Specialized attention not available: {e}", flush=True)
 
                 # 🚀 JIT Compilation
                 if compile_model:

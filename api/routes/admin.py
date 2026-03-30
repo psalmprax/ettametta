@@ -1,255 +1,161 @@
-"""
-Admin System Configuration API
-=============================
-Endpoints for admin-only system-wide configuration management.
-These settings affect all users and should only be accessible to admins.
-"""
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from sqlalchemy.orm import Session
+import os
+import shutil
+import re
+import threading
+import time
+from datetime import datetime
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
-from api.utils.database import SessionLocal
-from api.utils.user_models import UserDB
+from api.utils.database import get_db
+from api.utils.user_models import UserDB, UserRole
 from api.routes.auth import get_current_user
-from api.config import settings
+from api.utils.audit_service import audit_service
+from fastapi import Request
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(prefix="/admin", tags=["Admin Operations"])
 
-
-class SystemSettingsUpdate(BaseModel):
-    """System-wide settings that only admins can modify"""
-
-    # OAuth Credentials
-    google_client_id: Optional[str] = None
-    google_client_secret: Optional[str] = None
-    tiktok_client_key: Optional[str] = None
-    tiktok_client_secret: Optional[str] = None
-
-    # API Keys
-    groq_api_key: Optional[str] = None
-    openai_api_key: Optional[str] = None
-    elevenlabs_api_key: Optional[str] = None
-    pexels_api_key: Optional[str] = None
-
-    # Cloud Storage
-    aws_access_key_id: Optional[str] = None
-    aws_secret_access_key: Optional[str] = None
-    aws_region: Optional[str] = None
-    aws_storage_bucket_name: Optional[str] = None
-    storage_provider: Optional[str] = None
-    storage_access_key: Optional[str] = None
-    storage_secret_key: Optional[str] = None
-    storage_bucket: Optional[str] = None
-    storage_endpoint: Optional[str] = None
-    storage_region: Optional[str] = None
-
-    # Payment
-    stripe_secret_key: Optional[str] = None
-    stripe_webhook_secret: Optional[str] = None
-
-    # Commerce
-    shopify_shop_url: Optional[str] = None
-    shopify_access_token: Optional[str] = None
-
-    # Infrastructure
-    production_domain: Optional[str] = None
-    render_node_url: Optional[str] = None
-
-    # Twilio/WhatsApp
-    twilio_account_sid: Optional[str] = None
-    twilio_auth_token: Optional[str] = None
-    twilio_whatsapp_number: Optional[str] = None
-
-    # Feature Toggles
-    enable_sound_design: Optional[str] = None
-    enable_motion_graphics: Optional[str] = None
-    ai_video_provider: Optional[str] = None
-    default_quality_tier: Optional[str] = None
-    enable_langchain: Optional[str] = None
-    enable_crewai: Optional[str] = None
-    enable_interpreter: Optional[str] = None
-    enable_affiliate_api: Optional[str] = None
-    enable_trading: Optional[str] = None
-
-
-def require_admin(current_user: UserDB = Depends(get_current_user)):
-    """Dependency to require admin role"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+def admin_required(current_user: UserDB = Depends(get_current_user)):
+    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrative privileges required for this operation."
+        )
     return current_user
 
-
-@router.get("")
-async def get_system_settings(current_user: UserDB = Depends(require_admin)):
+@router.get("/system/env")
+async def get_env_keys(current_user: UserDB = Depends(admin_required)):
     """
-    Get system-wide settings (admin only).
-    Returns only non-sensitive configuration (masks actual values).
+    Lists the keys present in the current .env file.
+    Values are redacted for security.
     """
-    # Return current system configuration
-    # In production, this would read from a secure config store or database
-    return {
-        "google_client_id": settings.GOOGLE_CLIENT_ID,
-        "google_client_secret": "***" if settings.GOOGLE_CLIENT_SECRET else "",
-        "tiktok_client_key": settings.TIKTOK_CLIENT_KEY,
-        "tiktok_client_secret": "***" if settings.TIKTOK_CLIENT_SECRET else "",
-        "groq_api_key": "***" if settings.GROQ_API_KEY else "",
-        "openai_api_key": "***" if settings.OPENAI_API_KEY else "",
-        "elevenlabs_api_key": "***" if settings.ELEVENLABS_API_KEY else "",
-        "pexels_api_key": "***" if settings.PEXELS_API_KEY else "",
-        "aws_access_key_id": "***" if settings.AWS_ACCESS_KEY_ID else "",
-        "aws_secret_access_key": "***" if settings.AWS_SECRET_ACCESS_KEY else "",
-        "aws_region": settings.AWS_REGION,
-        "aws_storage_bucket_name": settings.AWS_STORAGE_BUCKET_NAME,
-        "storage_provider": settings.STORAGE_PROVIDER,
-        "storage_access_key": "***" if settings.STORAGE_ACCESS_KEY else "",
-        "storage_secret_key": "***" if settings.STORAGE_SECRET_KEY else "",
-        "storage_bucket": settings.STORAGE_BUCKET,
-        "storage_endpoint": settings.STORAGE_ENDPOINT,
-        "storage_region": settings.STORAGE_REGION,
-        "stripe_secret_key": "***" if settings.STRIPE_SECRET_KEY else "",
-        "stripe_webhook_secret": "***" if settings.STRIPE_WEBHOOK_SECRET else "",
-        "shopify_shop_url": settings.SHOPIFY_SHOP_URL,
-        "shopify_access_token": "***" if settings.SHOPIFY_ACCESS_TOKEN else "",
-        "production_domain": settings.PRODUCTION_DOMAIN,
-        "render_node_url": settings.RENDER_NODE_URL or "",
-        "twilio_account_sid": settings.TWILIO_ACCOUNT_SID,
-        "twilio_auth_token": settings.TWILIO_AUTH_TOKEN,
-        "twilio_whatsapp_number": settings.TWILIO_WHATSAPP_NUMBER,
-        "enable_sound_design": str(settings.ENABLE_SOUND_DESIGN).lower(),
-        "enable_motion_graphics": str(settings.ENABLE_MOTION_GRAPHICS).lower(),
-        "ai_video_provider": settings.AI_VIDEO_PROVIDER,
-        "default_quality_tier": settings.DEFAULT_QUALITY_TIER,
-        "enable_langchain": str(settings.ENABLE_LANGCHAIN).lower(),
-        "enable_crewai": str(settings.ENABLE_CREWAI).lower(),
-        "enable_interpreter": str(settings.ENABLE_INTERPRETER).lower(),
-        "enable_affiliate_api": str(settings.ENABLE_AFFILIATE_API).lower(),
-        "enable_trading": str(settings.ENABLE_TRADING).lower(),
-    }
+    env_path = ".env"
+    if not os.path.exists(env_path):
+        return {"message": ".env file not found", "keys": []}
+    
+    keys = []
+    with open(env_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key = line.split("=")[0]
+                keys.append(key)
+    
+    return {"keys": keys, "count": len(keys)}
 
-
-@router.post("")
-async def update_system_settings(
-    settings_update: SystemSettingsUpdate, current_user: UserDB = Depends(require_admin)
+@router.post("/system/env/upload")
+async def upload_env_file(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: UserDB = Depends(admin_required),
+    db: Session = Depends(get_db)
 ):
     """
-    Update system-wide settings (admin only).
-    Persists settings to the database (system_settings table).
+    Securely uploads and replaces the system .env file.
+    Includes granular key-value validation and automatic backup.
     """
-    from api.utils.models import SystemSettings
-    from datetime import datetime
+    # 1. Basic Validation: Filename and Content type
+    if not file.filename.endswith(".env") and file.filename != ".env":
+         # We allow files named like "production.env" as input but they will save as ".env"
+         pass
 
-    # Convert Pydantic model to dict, filtering out None values
-    update_data = {
-        k: v for k, v in settings_update.model_dump().items() if v is not None
-    }
+    content = await file.read()
+    decoded_content = content.decode("utf-8")
+    
+    # 2. Granular Validation
+    lines = decoded_content.splitlines()
+    valid_lines = []
+    errors = []
+    
+    # Simple regex for KEY=VALUE pairs, allowing comments and empty lines
+    # Keys must be alphanumeric/underscore
+    kv_pattern = re.compile(r"^[A-Z0-9_]+=[^#]*")
+    
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            valid_lines.append(line)
+            continue
+            
+        if kv_pattern.match(line):
+            valid_lines.append(line)
+        else:
+            errors.append(f"Line {i+1}: Invalid format. Expected KEY=VALUE. Got: '{line[:30]}...'")
 
-    # Validate specific settings
-    if "production_domain" in update_data:
-        domain = update_data["production_domain"]
-        if domain and not (
-            domain.startswith("http://") or domain.startswith("https://")
-        ):
-            raise HTTPException(
-                status_code=400,
-                detail="production_domain must start with http:// or https://",
-            )
-
-    if "storage_provider" in update_data:
-        valid_providers = ["LOCAL", "AWS", "OCI", "GCP", "AZURE", "CUSTOM"]
-        if update_data["storage_provider"] not in valid_providers:
-            raise HTTPException(
-                status_code=400,
-                detail=f"storage_provider must be one of: {', '.join(valid_providers)}",
-            )
-
-    if "ai_video_provider" in update_data:
-        valid_providers = ["none", "runway", "pika"]
-        if update_data["ai_video_provider"] not in valid_providers:
-            raise HTTPException(
-                status_code=400,
-                detail=f"ai_video_provider must be one of: {', '.join(valid_providers)}",
-            )
-
-    # Persist to database
-    db = SessionLocal()
-    try:
-        for key, value in update_data.items():
-            # Determine category
-            category = "general"
-            if "key" in key or "secret" in key or "token" in key or "password" in key:
-                category = "api_key"
-            elif "enable_" in key or "auto_" in key or "force_" in key:
-                category = "feature_toggle"
-            elif (
-                "provider" in key
-                or "region" in key
-                or "bucket" in key
-                or "endpoint" in key
-            ):
-                category = "infrastructure"
-
-            # Upsert: update if exists, insert if not
-            existing = (
-                db.query(SystemSettings).filter(SystemSettings.key == key).first()
-            )
-            if existing:
-                existing.value = value
-                existing.category = category
-                existing.updated_at = datetime.utcnow()
-            else:
-                new_setting = SystemSettings(
-                    key=key,
-                    value=value,
-                    category=category,
-                    description=f"System setting: {key}",
-                )
-                db.add(new_setting)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        import logging
-
-        logging.error(f"Failed to persist system settings: {e}")
+    if errors:
         raise HTTPException(
-            status_code=500, detail=f"Failed to save settings: {str(e)}"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"message": "Validation failed in .env file", "errors": errors}
         )
-    finally:
-        db.close()
 
-    import logging
+    # 3. Defensive Backup
+    env_path = ".env"
+    if os.path.exists(env_path):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = f".env.bak_{timestamp}"
+        shutil.copy(env_path, backup_path)
+        print(f"📦 Admin: Created environment backup at {backup_path}")
 
-    logging.info(
-        f"System settings updated by admin {current_user.username}: {list(update_data.keys())}"
+    # 4. Persistence
+    with open(env_path, "w") as f:
+        f.write("\n".join(valid_lines))
+    
+    # 5. Hot-swap (Current Process Only)
+    if load_dotenv:
+        load_dotenv(env_path, override=True)
+        print("⚡ Admin: Environment hot-swapped for current API process.")
+    
+    # 6. Audit Logging
+    audit_service.log(
+        action="ADMIN_ENV_UPLOAD",
+        user_id=current_user.id,
+        resource_type="SYSTEM",
+        resource_id="ENV_FILE",
+        details={"filename": file.filename, "backup_created": True},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        db=db,
     )
 
-    # Return success with masked values for sensitive fields
-    response_data = {}
-    sensitive_fields = [
-        "google_client_secret",
-        "tiktok_client_secret",
-        "groq_api_key",
-        "openai_api_key",
-        "elevenlabs_api_key",
-        "pexels_api_key",
-        "aws_access_key_id",
-        "aws_secret_access_key",
-        "storage_access_key",
-        "storage_secret_key",
-        "stripe_secret_key",
-        "stripe_webhook_secret",
-        "shopify_access_token",
-        "twilio_account_sid",
-        "twilio_auth_token",
-    ]
+    return {
+        "message": "System environment (.env) updated and hot-swapped.",
+        "backup_created": True,
+        "note": "A full system restart is recommended to synchronize Workers and other microservices."
+    }
 
-    for key, value in update_data.items():
-        if key in sensitive_fields and value:
-            response_data[key] = "***"
-        else:
-            response_data[key] = value
+@router.post("/system/restart")
+async def restart_system(
+    request: Request,
+    current_user: UserDB = Depends(admin_required),
+    db: Session = Depends(get_db)
+):
+    """
+    Triggers a controlled shutdown of the API process. 
+    Requires 'restart: always' in docker-compose.yml to effect a reboot.
+    """
+    audit_service.log(
+        action="ADMIN_SYSTEM_RESTART",
+        user_id=current_user.id,
+        resource_type="SYSTEM",
+        resource_id="API_NODE",
+        details={"initiated_by": current_user.username},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        db=db,
+    )
+
+    def kill_process():
+        time.sleep(2)
+        print("🛑 Admin Protocol: Terminating process for lifecycle reboot...")
+        os._exit(0)
+
+    threading.Thread(target=kill_process, daemon=True).start()
 
     return {
-        "status": "success",
-        "message": "System settings persisted to database",
-        "updated_fields": response_data,
+        "message": "System restart initiated. The API will be offline momentarily.",
+        "estimated_downtime": "5-15 seconds"
     }

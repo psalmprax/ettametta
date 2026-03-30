@@ -4,23 +4,20 @@ import time
 from diffusers import HunyuanVideo15Pipeline
 from diffusers.utils import export_to_video
 from huggingface_hub import InferenceClient
+from .hardware_manager import hardware_manager
 
 # Model cache
 _hunyuan_pipe = None
 _hunyuan_gguf_pipe = None
 
 def clear_hunyuan_model():
-    """Clear HunyuanVideo model from GPU to free memory"""
+    """Clear HunyuanVideo model from GPU using HardwareManager abstraction"""
     global _hunyuan_pipe
     if _hunyuan_pipe is not None:
         del _hunyuan_pipe
         _hunyuan_pipe = None
-    import gc
-    import torch
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-    print("🗑️ Cleared HunyuanVideo model from GPU", flush=True)
+    hardware_manager.clear_cache()
+    print(f"🗑️ Cleared HunyuanVideo model from {hardware_manager.device}", flush=True)
 
 # Available HunyuanVideo models
 HUNYUAN_MODELS = {
@@ -48,8 +45,8 @@ def load_hunyuan_model(model_type: str = "480p", quantize: bool = True, force_re
     print(f"📥 Loading HunyuanVideo: {model_path} (Quantize: {quantize})", flush=True)
     
     pipe_kwargs = {
-        "torch_dtype": torch.float16,
-        "device_map": "balanced", # Use balanced for multi-GPU or cuda for single GPU
+        "torch_dtype": hardware_manager.dtype,
+        "device_map": "auto" if hardware_manager.device != "cpu" else None,
         "low_cpu_mem_usage": True,
     }
 
@@ -155,10 +152,8 @@ def generate_hunyuan_video(
     start_time = time.time()
     
     try:
-        # Clear GPU memory
-        torch.cuda.empty_cache()
-        import gc
-        gc.collect()
+        # Clear hardware-optimized cache
+        hardware_manager.clear_cache()
         
         pipe = load_hunyuan_model(model_type, quantize=quantize, force_reload=force_reload)
         

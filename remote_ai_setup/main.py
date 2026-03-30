@@ -26,7 +26,8 @@ import traceback
 from PIL import Image
 import cv2
 import torch.hub
-from video_model_manager import model_manager
+from .hardware_manager import hardware_manager
+from .video_model_manager import model_manager
 # GFPGAN and RealESRGAN - optional for face restoration
 try:
     from gfpgan import GFPGANer
@@ -173,9 +174,11 @@ def load_encodec():
         from encodec import EncodecModel
         encodec_model = EncodecModel.encodec_model_24khz()
         encodec_model.set_target_bandwidth(6.0)
-        if model_manager.device != "cpu":
-            encodec_model = encodec_model.to(model_manager.device)
-        print(f"✅ EnCodec loaded on {model_manager.device}", flush=True)
+        
+        device_obj = hardware_manager.get_device_obj()
+        if hardware_manager.device != "cpu":
+            encodec_model = encodec_model.to(device_obj)
+        print(f"✅ EnCodec loaded on {hardware_manager.device}", flush=True)
     return encodec_model
 
 def generate_audio_conditioning(text_prompt, num_frames=121):
@@ -237,8 +240,8 @@ os.makedirs(CONTENT_DIR, exist_ok=True)
 
 app = FastAPI(title="ettametta Remote AI Engine (LTX + SpeechT5 + Moondream2)")
 
-DEVICE = model_manager.device
-print(f"📡 Using Device: {DEVICE}")
+DEVICE = hardware_manager.device
+print(f"📡 Using Device: {DEVICE} ({hardware_manager.backend})")
 
 HAS_NVENC = (model_manager.encoder == "h264_nvenc")
 BEST_ENCODER = model_manager.encoder
@@ -293,10 +296,10 @@ face_enhancer = None
 upscaler_model = None
 
 # =========================
-# GPU CLEANUP
+# HARDWARE CLEANUP
 # =========================
 def clear_gpu():
-    model_manager.clear_gpu()
+    hardware_manager.clear_cache()
 
 def clear_hunyuan_model():
     """Clear HunyuanVideo model from GPU to free memory"""
@@ -319,13 +322,13 @@ def load_tts():
         tts_pipeline = pipeline(
             "text-to-speech",
             model="microsoft/speecht5_tts",
-            device=0 if model_manager.device == "cuda" else -1
+            device=0 if hardware_manager.device == "cuda" else -1
         )
         # Create stable default speaker embedding (512-dim)
         torch.manual_seed(42)
         speaker_embedding = torch.randn(1, 512)
-        if model_manager.device != "cpu":
-            speaker_embedding = speaker_embedding.to(model_manager.device)
+        if hardware_manager.device != "cpu":
+            speaker_embedding = speaker_embedding.to(hardware_manager.get_device_obj())
     return tts_pipeline
 
 def load_vlm():
@@ -337,7 +340,7 @@ def load_vlm():
         rev = "2024-05-20"
         vlm_model = AutoModelForCausalLM.from_pretrained(
             model_id, trust_remote_code=True, revision=rev
-        ).to(DEVICE)
+        ).to(hardware_manager.get_device_obj())
         vlm_tokenizer = AutoTokenizer.from_pretrained(model_id, revision=rev)
     return vlm_model, vlm_tokenizer
 
@@ -383,8 +386,8 @@ def load_ltx_base_components():
     tokenizer = T5Tokenizer.from_pretrained("Lightricks/LTX-Video", subfolder="tokenizer")
     vae = AutoencoderKLLTXVideo.from_pretrained(
         "Lightricks/LTX-Video", subfolder="vae", 
-        torch_dtype=torch.bfloat16, local_files_only=False
-    ).to(DEVICE)
+        torch_dtype=hardware_manager.dtype, local_files_only=False
+    ).to(hardware_manager.get_device_obj())
     vae.enable_tiling()
     vae.enable_slicing()
     from diffusers import FlowMatchEulerDiscreteScheduler
@@ -398,10 +401,10 @@ def encode_prompt_ltx2(prompt, negative_prompt, tokenizer):
     """Phase 1: Encode with T5 then EVICT from VRAM"""
     print(f"📥 Phase 1: Encoding with T5 ('{prompt[:40]}')...", flush=True)
     from transformers import T5EncoderModel
-    t5 = T5EncoderModel.from_pretrained("Lightricks/LTX-Video", subfolder="text_encoder", torch_dtype=torch.bfloat16).to(DEVICE)
+    t5 = T5EncoderModel.from_pretrained("Lightricks/LTX-Video", subfolder="text_encoder", torch_dtype=hardware_manager.dtype).to(hardware_manager.get_device_obj())
     
     # Also need the projection layer: 4096 -> 3840 for LTX-2
-    text_projection = torch.nn.Linear(4096, 3840, bias=False).to(torch.bfloat16).to(DEVICE)
+    text_projection = torch.nn.Linear(4096, 3840, bias=False).to(hardware_manager.dtype).to(hardware_manager.get_device_obj())
     
     def get_embeds(p):
         inputs = tokenizer(p, return_tensors="pt", padding="max_length", max_length=128, truncation=True).to(DEVICE)
@@ -436,7 +439,7 @@ def load_ltx_19b_transformer():
     
     from accelerate import init_empty_weights
     with init_empty_weights():
-        transformer = LTX2VideoTransformer3DModel(**transformer_config).to(torch.bfloat16)
+        transformer = LTX2VideoTransformer3DModel(**transformer_config).to(hardware_manager.dtype)
 
     from safetensors import safe_open
     model_keys = list(transformer.state_dict().keys())
@@ -448,7 +451,7 @@ def load_ltx_19b_transformer():
         for k in model_keys:
             sd_key = f"model.diffusion_model.{k}" if has_prefix else k
             if sd_key in sd_keys:
-                tensor = f.get_tensor(sd_key).to(torch.bfloat16).to(DEVICE)
+                tensor = f.get_tensor(sd_key).to(hardware_manager.dtype).to(hardware_manager.get_device_obj())
                 module_path = k.split('.')
                 parent = transformer
                 for attr in module_path[:-1]:
@@ -466,14 +469,14 @@ def load_ltx_19b_transformer():
             parent = transformer
             for attr in module_path[:-1]:
                 parent = getattr(parent, attr)
-            setattr(parent, module_path[-1], torch.nn.Parameter(torch.empty(p.shape, dtype=torch.bfloat16).to(DEVICE), requires_grad=False))
+            setattr(parent, module_path[-1], torch.nn.Parameter(torch.empty(p.shape, dtype=hardware_manager.dtype).to(hardware_manager.get_device_obj()), requires_grad=False))
     for name, b in transformer.named_buffers():
         if b.device.type == "meta":
             module_path = name.split('.')
             parent = transformer
             for attr in module_path[:-1]:
                 parent = getattr(parent, attr)
-            setattr(parent, module_path[-1], torch.empty(b.shape, dtype=torch.bfloat16).to(DEVICE))
+            setattr(parent, module_path[-1], torch.empty(b.shape, dtype=hardware_manager.dtype).to(hardware_manager.get_device_obj()))
 
     print("🚀 19B Transformer live.", flush=True)
     
@@ -502,7 +505,7 @@ def load_enhancers(upscale_factor=2):
         upscaler_model = RealESRGANer(
             scale=4, # Still use x4 model but we will multi-pass if needed
             model_path='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth',
-            model=model, tile=400, tile_pad=10, pre_pad=0, half=True if DEVICE == "cuda" else False
+            model=model, tile=400, tile_pad=10, pre_pad=0, half=True if hardware_manager.device in ["cuda", "xpu"] else False
         )
     return face_enhancer, upscaler_model
 
@@ -539,17 +542,25 @@ def load_llm():
         print("📥 Loading Llama-3.1-8B-Instruct (4-bit)...")
         model_id = "unsloth/Meta-Llama-3.1-8B-Instruct"
         llm_tokenizer = AutoTokenizer.from_pretrained(model_id)
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_use_double_quant=True
-        )
-        llm_model = AutoModelForCausalLM.from_pretrained(
-            model_id, 
-            quantization_config=bnb_config, 
-            device_map="auto"
-        )
+        if hardware_manager.device == "cuda":
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_use_double_quant=True
+            )
+            llm_model = AutoModelForCausalLM.from_pretrained(
+                model_id, 
+                quantization_config=bnb_config, 
+                device_map="auto"
+            )
+        else:
+            # Non-NVIDIA fallback: Load in high precision or use HAL-optimal dtype
+            llm_model = AutoModelForCausalLM.from_pretrained(
+                model_id,
+                torch_dtype=hardware_manager.dtype,
+                device_map="auto"
+            )
     return llm_model, llm_tokenizer
 
 # =========================
@@ -591,11 +602,11 @@ async def startup_event():
 @app.get("/health")
 async def health():
     total, used, free = shutil.disk_usage("/")
+    telemetry = hardware_manager.get_telemetry()
     return {
         "status": "healthy", 
-        "device": DEVICE, 
+        "hardware": telemetry,
         "encoder": BEST_ENCODER,
-        "vram_allocated": f"{torch.cuda.memory_allocated()/1024**3:.2f}GB" if DEVICE == "cuda" else "N/A",
         "disk_free": f"{free/1024**3:.2f}GB",
         "disk_used_percent": f"{(used/total)*100:.1f}%"
     }
@@ -736,8 +747,8 @@ def render_video(job_id, req):
         from diffusers import LTX2LatentUpsamplePipeline
         upscaler = LTX2LatentUpsamplePipeline.from_pretrained(
             "Lightricks/ltxv-spatial-upscaler-0.9.7",
-            torch_dtype=torch.float16
-        ).to(DEVICE)
+            torch_dtype=hardware_manager.dtype
+        ).to(hardware_manager.get_device_obj())
         
         print("✨ Upscaling to High Resolution...", flush=True)
         with torch.inference_mode():
@@ -758,7 +769,7 @@ def render_video(job_id, req):
         
         # Cleanup upscaler only to keep Transformer cached for next scene
         del upscaler
-        torch.cuda.empty_cache()
+        hardware_manager.clear_cache()
         gc.collect()
 
     except Exception as e:
