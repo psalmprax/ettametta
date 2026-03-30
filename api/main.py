@@ -5,30 +5,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi.exceptions import RequestValidationError
-from api.routes import (
-    discovery,
-    video,
-    publish,
-    analytics,
-    auth,
-    settings as settings_router,
-    ws,
-    no_face,
-    monetization,
-    nexus,
-    ab_testing,
-    security,
-    billing,
-    remotion,
-    admin,
-    trading,
-    agent,
-    credits,
-    persona,
-    webhooks,
-    zero,
-    opencli,
-)
+from api.utils.database import engine, Base, SessionLocal
+from api.utils.models import SystemSettings, ContentCandidateDB, MonitoredNiche
+from api.utils.user_models import UserDB
+
+# Ensure tables are created before importing routes/services that might query them at module level 
+Base.metadata.create_all(bind=engine)
+
 from services.security.service import base_security_sentinel
 from api.utils import credit_models  # Import to register models with SQLAlchemy
 from api.config import settings
@@ -45,6 +28,12 @@ from redis import asyncio as aioredis
 from prometheus_fastapi_instrumentator import Instrumentator
 
 logger = logging.getLogger(__name__)
+
+from fastapi import FastAPI, Request, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 
 app = FastAPI(title=settings.APP_NAME)
 Instrumentator().instrument(app).expose(app)
@@ -84,11 +73,30 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(RequestLoggingMiddleware)
 
-from api.utils.models import SystemSettings, ContentCandidateDB, MonitoredNiche
-from api.utils.database import engine, Base, SessionLocal
-from api.utils.user_models import UserDB
-
-Base.metadata.create_all(bind=engine)
+from api.routes import (
+    discovery,
+    video,
+    publish,
+    analytics,
+    auth,
+    settings as settings_router,
+    ws,
+    no_face,
+    monetization,
+    nexus,
+    ab_testing,
+    security,
+    billing,
+    remotion,
+    admin,
+    trading,
+    agent,
+    credits,
+    persona,
+    webhooks,
+    zero,
+    opencli,
+)
 
 from fastapi.staticfiles import StaticFiles
 
