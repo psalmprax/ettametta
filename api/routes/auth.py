@@ -222,50 +222,50 @@ async def change_password(
     return {"message": "Password changed successfully"}
 
 
- @router.post("/me/upgrade-subscription")
- async def upgrade_subscription(
-     request: Request,
-     tier: str,
-     current_user: UserDB = Depends(get_current_user),
-     db: Session = Depends(get_db),
- ):
-     """
-     Upgrade user subscription tier.
-     SECURITY: This endpoint is restricted to ADMIN users only. For regular users, use the billing flow.
-     """
-     # Restrict to admin only to prevent unauthorized upgrades
-     if current_user.role != "admin":
-         raise HTTPException(
-             status_code=403,
-             detail="Direct tier upgrades are admin-only. Please use the billing checkout flow for upgrades."
-         )
-     
-     valid_tiers = ["free", "basic", "premium"]
-     if tier.lower() not in valid_tiers:
-         raise HTTPException(
-             status_code=400,
-             detail=f"Invalid tier. Must be one of: {', '.join(valid_tiers)}",
-         )
+@router.post("/me/upgrade-subscription")
+async def upgrade_subscription(
+    request: Request,
+    tier: str,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Upgrade user subscription tier.
+    SECURITY: This endpoint is restricted to ADMIN users only. For regular users, use the billing flow.
+    """
+    # Restrict to admin only to prevent unauthorized upgrades
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Direct tier upgrades are admin-only. Please use the billing checkout flow for upgrades."
+        )
+    
+    valid_tiers = ["free", "basic", "premium"]
+    if tier.lower() not in valid_tiers:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid tier. Must be one of: {', '.join(valid_tiers)}",
+        )
 
-     current_user.subscription = tier.lower()
-     db.commit()
-     db.refresh(current_user)
+    current_user.subscription = tier.lower()
+    db.commit()
+    db.refresh(current_user)
 
-     audit_service.log(
-         action="SUBSCRIPTION_CHANGE",
-         user_id=current_user.id,
-         resource_type="USER",
-         resource_id=str(current_user.id),
-         details={"tier": tier.lower()},
-         ip_address=request.client.host if request.client else None,
-         user_agent=request.headers.get("user-agent"),
-         db=db,
-     )
+    audit_service.log(
+        action="SUBSCRIPTION_CHANGE",
+        user_id=current_user.id,
+        resource_type="USER",
+        resource_id=str(current_user.id),
+        details={"tier": tier.lower()},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        db=db,
+    )
 
-     return {
-         "message": f"Subscription upgraded to {tier}",
-         "subscription": current_user.subscription,
-     }
+    return {
+        "message": f"Subscription upgraded to {tier}",
+        "subscription": current_user.subscription,
+    }
 
 
 @router.get("/verify-telegram/{telegram_id}", response_model=UserResponse)

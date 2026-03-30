@@ -55,6 +55,9 @@ function TransformationPageContent() {
     const [enableSoundDesign, setEnableSoundDesign] = useState(false);
     const [enableMotionGraphics, setEnableMotionGraphics] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [aiInsight, setAiInsight] = useState<any>(null);
+    const [currentNiche, setCurrentNiche] = useState("AI");
+    const [niches, setNiches] = useState<string[]>([]);
 
     useEffect(() => {
         const urlParam = searchParams.get("url");
@@ -81,7 +84,7 @@ function TransformationPageContent() {
                 body: JSON.stringify({
                     input_url: newJobUrl,
                     platform: targetPlatform,
-                    niche: "AI Technology",
+                    niche: currentNiche,
                     generate_thumbnail: generateThumbnail,
                     tier: premiumQuality ? "premium" : "standard",
                     sound_design: enableSoundDesign,
@@ -205,12 +208,14 @@ function TransformationPageContent() {
                 if (!token) return;
                 const headers = { Authorization: `Bearer ${token}` };
 
-                const [jobsRes, filtersRes] = await Promise.all([
+                const [jobsRes, filtersRes, nichesRes] = await Promise.all([
                     fetch(`${API_BASE}/video/jobs`, { headers }).then(r => r.json()),
-                    fetch(`${API_BASE}/settings/filters`, { headers }).then(r => r.json())
+                    fetch(`${API_BASE}/settings/filters`, { headers }).then(r => r.json()),
+                    fetch(`${API_BASE}/discovery/niches`, { headers }).then(r => r.json())
                 ]);
                 setProcessingJobs(jobsRes);
                 setActiveFilters(filtersRes);
+                setNiches(nichesRes || ["AI", "Motivation", "Finance"]);
                 if (jobsRes.length > 0 && !selectedJob) {
                     setSelectedJob(jobsRes[0]);
                 } else if (selectedJob) {
@@ -224,6 +229,21 @@ function TransformationPageContent() {
 
         fetchData();
     }, []); // Only fetch initial data on mount
+
+    // Fetch AI insights based on niche
+    useEffect(() => {
+        const fetchInsight = async () => {
+            const token = localStorage.getItem("et_token");
+            if (!token) return;
+            try {
+                const res = await fetch(`${API_BASE}/discovery/insights/${currentNiche}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) setAiInsight(await res.json());
+            } catch (e) { console.error("Insight fetch error:", e); }
+        };
+        fetchInsight();
+    }, [currentNiche]);
 
     const activeFilterCount = Array.isArray(activeFilters) ? activeFilters.filter(f => f.enabled).length : 0;
 
@@ -287,7 +307,7 @@ function TransformationPageContent() {
                                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                                 animate={{ scale: 1, opacity: 1, y: 0 }}
                                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                                className="glass-card w-full max-w-xl rounded-[3rem] p-12 shadow-[0_32px_128px_rgba(0,0,0,0.8)] space-y-10 relative overflow-hidden"
+                                className="glass-card w-full max-w-xl rounded-6xl p-12 shadow-[0_32px_128px_rgba(0,0,0,0.8)] space-y-10 relative overflow-hidden"
                             >
                                 <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
                                 <div className="space-y-3">
@@ -355,6 +375,18 @@ function TransformationPageContent() {
                                                 className="absolute top-1 w-3 h-3 bg-white rounded-full transition-all"
                                             />
                                         </div>
+                                    </div>
+
+                                    {/* Niche Selection */}
+                                    <div className="space-y-3 pb-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Content Niche (Alpha)</label>
+                                        <select
+                                            className="w-full bg-zinc-950/30 border border-white/10 rounded-xl p-5 text-xs font-bold text-white uppercase outline-none focus:ring-1 focus:ring-primary/40 transition-all hover:border-primary/30"
+                                            value={currentNiche}
+                                            onChange={(e) => setCurrentNiche(e.target.value)}
+                                        >
+                                            {niches.map(n => <option key={n} value={n}>{n}</option>)}
+                                        </select>
                                     </div>
 
                                     {/* Remotion Premium Toggle */}
@@ -465,7 +497,7 @@ function TransformationPageContent() {
                             <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Production Hub</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter italic uppercase text-white leading-none">Originality <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-500 text-hollow">Studio</span></h1>
+                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter italic uppercase text-white leading-none">Originality <span className="text-transparent bg-clip-text bg-linear-to-r from-pink-500 to-rose-500 text-hollow">Studio</span></h1>
                         <p className="text-zinc-500 font-medium">Applying cinematic filters and managing <span className="text-zinc-300 font-bold">social compliance</span> workflows.</p>
                     </div>
                     <div className="flex gap-4">
@@ -499,7 +531,7 @@ function TransformationPageContent() {
                         {/* Live Studio Preview */}
                         <div className="glass-card overflow-hidden flex flex-col shadow-[0_32px_64px_rgba(0,0,0,0.4)] relative">
                             <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
-                            <div className="p-8 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+                            <div className="p-8 border-b border-white/5 bg-white/2 flex items-center justify-between">
                                 <div className="flex items-center gap-4">
                                     <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
                                         <Play className="h-5 w-5 text-emerald-500 neon-glow" />
@@ -613,7 +645,7 @@ function TransformationPageContent() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <AnimatePresence mode="popLayout">
                                     {!Array.isArray(processingJobs) || processingJobs.length === 0 ? (
-                                        <div className="col-span-full py-16 glass-card border-dashed rounded-[2.5rem] flex flex-col items-center gap-4 opacity-40">
+                                        <div className="col-span-full py-16 glass-card border-dashed rounded-5xl flex flex-col items-center gap-4 opacity-40">
                                             <PlusCircle className="h-10 w-10 text-zinc-700" />
                                             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Pipeline Offline</p>
                                         </div>
@@ -698,7 +730,7 @@ function TransformationPageContent() {
                             <div className="h-[1px] flex-1 bg-white/5" />
                         </div>
 
-                        <div className="glass-card rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[700px]">
+                        <div className="glass-card rounded-5xl overflow-hidden shadow-2xl flex flex-col max-h-[700px]">
                             <div className="flex-1 overflow-y-auto divide-y divide-white/5 custom-scrollbar">
                                 {(!Array.isArray(activeFilters) || activeFilters.length === 0) && (
                                     <div className="p-8 text-zinc-600 font-black uppercase tracking-[0.2em] text-[10px] text-center">Nodes Desynchronized</div>
@@ -710,7 +742,7 @@ function TransformationPageContent() {
                                         animate={{ x: 0, opacity: 1 }}
                                         transition={{ delay: idx * 0.05 }}
                                         onClick={() => handleToggleFilter(filter.id)}
-                                        className="p-8 flex flex-col gap-4 group cursor-pointer hover:bg-white/[0.02] transition-colors relative"
+                                        className="p-8 flex flex-col gap-4 group cursor-pointer hover:bg-white/2 transition-colors relative"
                                     >
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
@@ -747,7 +779,7 @@ function TransformationPageContent() {
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="glass-card p-8 rounded-[2rem] space-y-5 relative overflow-hidden"
+                            className="glass-card p-8 rounded-4xl space-y-5 relative overflow-hidden"
                         >
                             <div className="absolute inset-0 scanline opacity-5" />
                             <div className="flex items-center gap-3">
@@ -757,10 +789,19 @@ function TransformationPageContent() {
                                 <span className="text-emerald-500 text-[10px] font-black uppercase tracking-[0.2em]">Neural Recommendation</span>
                             </div>
                             <p className="text-zinc-400 text-xs leading-relaxed font-medium">
-                                "{Array.isArray(activeFilters) ? activeFilters.filter(f => f.enabled).map(f => f.name).join(" + ") : 'N/A'} is recommended for this niche to maximize reach in US regions."
+                                {aiInsight ? `"${aiInsight.recommendation}"` : "Analyzing cluster trends for optimal node configuration..."}
                             </p>
-                            <div className="pt-2">
-                                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Confidence: 94.2% Alpha</span>
+                            <div className="flex items-center justify-between pt-2">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">
+                                    Confidence: {aiInsight ? (aiInsight.confidence * 100).toFixed(1) : "88.2"}% {aiInsight?.alpha_status ? "Alpha" : ""}
+                                </span>
+                                {aiInsight?.target_regions && (
+                                    <div className="flex gap-2">
+                                        {aiInsight.target_regions.map((reg: string) => (
+                                            <span key={reg} className="text-[8px] font-bold text-primary/60 border border-primary/20 px-1.5 rounded">{reg}</span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </div>

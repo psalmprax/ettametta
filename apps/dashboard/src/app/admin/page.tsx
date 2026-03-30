@@ -30,11 +30,13 @@ import {
     AlertOctagon,
     CheckCircle,
     XCircle,
-    RefreshCw
+    RefreshCw,
+    Terminal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
 import { toast } from "sonner";
+import EnvManager from "@/components/admin/EnvManager";
 
 // Admin-only system configuration
 export default function AdminSettingsPage() {
@@ -118,7 +120,7 @@ export default function AdminSettingsPage() {
 
     // Redirect if not admin
     useEffect(() => {
-        if (!authLoading && (!user || user.role !== "admin")) {
+        if (!authLoading && (!user || (user.role !== "admin" && user.role !== "super_admin"))) {
             router.push("/");
         }
     }, [authLoading, user, router]);
@@ -255,13 +257,13 @@ export default function AdminSettingsPage() {
     }, [user]);
 
     useEffect(() => {
-        if (activeTab === "Security" && user?.role === "admin") {
+        if (activeTab === "Security" && (user?.role === "admin" || user?.role === "super_admin")) {
             setSecurityLoading(true);
             Promise.all([fetchSecurityStatus(), fetchSecurityEvents()]).finally(() => setSecurityLoading(false));
         }
     }, [activeTab, user]);
 
-    if (authLoading || !user || user.role !== "admin") {
+    if (authLoading || !user || (user.role !== "admin" && user.role !== "super_admin")) {
         return (
             <DashboardLayout>
                 <div className="flex items-center justify-center h-[60vh]">
@@ -285,6 +287,7 @@ export default function AdminSettingsPage() {
         { id: "Infrastructure", label: "Infrastructure", icon: Server },
         { id: "WhatsApp", label: "WhatsApp", icon: Bot },
         { id: "Security", label: "Security", icon: Shield },
+        { id: "Environment", label: "Protocol", icon: Terminal },
     ];
 
     return (
@@ -1005,6 +1008,10 @@ export default function AdminSettingsPage() {
                                     </>
                                 )}
                             </div>
+                        )}
+
+                        {activeTab === "Environment" && (
+                            <EnvManager />
                         )}
                     </div>
                 </div>
