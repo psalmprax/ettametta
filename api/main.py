@@ -8,12 +8,12 @@ from fastapi.exceptions import RequestValidationError
 from api.utils.database import engine, Base, SessionLocal
 from api.utils.models import SystemSettings, ContentCandidateDB, MonitoredNiche
 from api.utils.user_models import UserDB
+from api.utils import credit_models  # Import to register credit models with SQLAlchemy
 
-# Ensure tables are created before importing routes/services that might query them at module level 
+# Ensure tables are created before importing routes/services that might query them at module level
 Base.metadata.create_all(bind=engine)
 
 from services.security.service import base_security_sentinel
-from api.utils import credit_models  # Import to register models with SQLAlchemy
 from api.config import settings
 import os
 import time

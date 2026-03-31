@@ -60,8 +60,8 @@ export default function NexusPage() {
     const [isChatting, setIsChatting] = useState(false);
     const [agentCapabilities, setAgentCapabilities] = useState<string[]>([]);
 
-    const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/ws/jobs`);
-    const { data: logUpdate } = useWebSocket<any>(`${WS_BASE}/ws/logs`);
+    const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/jobs`);
+    const { data: logUpdate } = useWebSocket<any>(`${WS_BASE}/logs`);
 
     // Persona Lab state
     const [personaName, setPersonaName] = useState("");
