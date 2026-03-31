@@ -169,7 +169,7 @@ class TestTradingService:
     
     @patch.dict(os.environ, {"ENABLE_TRADING": "false"})
     def test_service_disabled_by_default(self):
-        """Test trading service disabled state"
+        """Test trading service disabled state"""
         from services.trading.service import TradingService
         
         service = TradingService()
@@ -177,7 +177,7 @@ class TestTradingService:
     
     @patch.dict(os.environ, {"ENABLE_TRADING": "true", "ALPHA_VANTAGE_API_KEY": "test_key", "COINGECKO_API_KEY": "test_key"})
     def test_service_enabled_with_api_keys(self):
-        """Test trading service with API keys"
+        """Test trading service with API keys"""
         with patch('api.config.settings') as mock_settings:
             mock_settings.ENABLE_TRADING = True
             mock_settings.ALPHA_VANTAGE_API_KEY = "test_key"
@@ -198,7 +198,7 @@ class TestTradingService:
     
     @patch.dict(os.environ, {"ENABLE_TRADING": "true", "ALPHA_VANTAGE_API_KEY": "test_key"})
     def test_service_enabled_with_alpha_vantage_only(self):
-        """Test trading service with only Alpha Vantage key"
+        """Test trading service with only Alpha Vantage key"""
         with patch('api.config.settings') as mock_settings:
             mock_settings.ENABLE_TRADING = True
             mock_settings.ALPHA_VANTAGE_API_KEY = "test_key"
@@ -218,10 +218,10 @@ class TestTradingService:
             # coingecko_key should be empty string from settings
             assert service.coingecko_key == ""
     
-    @patch.dict(os.environ, {"ENABLE_TRADING": "true", "COINGECKO_API_KEY": "test_key}")
+    @patch.dict(os.environ, {"ENABLE_TRADING": "true", "COINGECKO_API_KEY": "test_key"})
     def test_service_enabled_with_coingecko_only(self):
-        """Test trading service with only CoinGecko key"
-        with patch('api.config.settings') as mock_settings:
+        """Test trading service with only CoinGecko key"""
+        with patch('api.config.settings') = mock_settings:
             mock_settings.ENABLE_TRADING = True
             mock_settings.ALPHA_VANTAGE_API_KEY = ""
             mock_settings.COINGECKO_API_KEY = "test_key"
@@ -246,7 +246,7 @@ class TestInterpreterService:
     
     @patch.dict(os.environ, {"ENABLE_INTERPRETER": "false"})
     def test_service_disabled_by_default(self):
-        """Test interpreter service disabled state"
+        """Test interpreter service disabled state"""
         from services.interpreter.service import InterpreterService
         
         service = InterpreterService()
@@ -267,11 +267,11 @@ class TestInterpreterService:
     @patch.dict(os.environ, {"ENABLE_INTERPRETER": "true", "INTERPRETER_MAX_RUNTIME": "30"})
     def test_max_runtime_config(self):
         """Test interpreter max runtime configuration"
-        with patch('api.config.settings') as mock_settings:
+        with patch('api.config.settings') = mock_settings:
             mock_settings.ENABLE_INTERPRETER = True
             mock_settings.INTERPRETER_MAX_RUNTIME = 30
             
-            from services.interpreter.service import InterpreterService
+            from services.interpreter.service = InterpreterService
             
             service = InterpreterService()
             assert service.max_runtime == 30
@@ -280,7 +280,7 @@ class TestInterpreterService:
     def test_execute_code_raises_when_disabled(self):
         """Test that execute_code raises when service disabled"
         import asyncio
-        from services.interpreter.service import InterpreterService
+        from services.interpreter.service = InterpreterService
         
         service = InterpreterService()
         
