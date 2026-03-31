@@ -175,7 +175,7 @@ function TransformationPageContent() {
         }
     };
 
-    const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/ws/jobs`);
+    const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/jobs`);
 
     useEffect(() => {
         if (!jobUpdate) return;
