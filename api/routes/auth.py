@@ -170,8 +170,12 @@ async def get_me(current_user: UserDB = Depends(get_current_user)):
 
     # Enrich user response with monetization data
     response = UserResponse.model_validate(current_user)
-    response.credits = credit_service.get_balance(current_user.id)
-    response.referral_code = credit_service.get_referral_code(current_user.id)
+    try:
+        response.credits = credit_service.get_balance(current_user.id)
+        response.referral_code = credit_service.get_referral_code(current_user.id)
+    except Exception:
+        response.credits = 0
+        response.referral_code = None
     return response
 
 

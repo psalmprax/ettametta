@@ -87,7 +87,7 @@ export default function PublishingPage() {
     const [retryingPostId, setRetryingPostId] = useState<number | null>(null);
     const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-    const { data: telemetryData } = useWebSocket(`${WS_BASE}/ws/telemetry`);
+    const { data: telemetryData } = useWebSocket(`${WS_BASE}/telemetry`);
 
     const handleManage = (acc: SocialAccount) => {
         setSelectedAccountForDetail(acc);

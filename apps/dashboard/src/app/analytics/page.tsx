@@ -190,7 +190,7 @@ export default function AnalyticsPage() {
     }, []);
 
     // Real-time Telemetry Stream
-    const { data: telemetry } = useWebSocket<any>(`${WS_BASE}/ws/telemetry`);
+    const { data: telemetry } = useWebSocket<any>(`${WS_BASE}/telemetry`);
     const pulseIntensity = telemetry?.metrics?.signal_strength || 0;
 
     const columnHelper = createColumnHelper<SocialPost>();
