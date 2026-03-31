@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
@@ -14,7 +14,12 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from api.config import settings
 from api.utils.audit_service import audit_service
-from fastapi import Request
+from fastapi.responses import RedirectResponse
+from google_auth_oauthlib.flow import Flow
+from google.oauth2 import id_token
+from google.auth.transport import requests
+import os
+import json
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -322,3 +327,103 @@ async def get_internal_users_with_bots(
         .all()
     )
     return users
+
+
+@router.get("/callback/google")
+async def google_auth_callback(
+    request: Request, code: str = None, state: str = None, db: Session = Depends(get_db)
+):
+    """
+    Google OAuth callback endpoint.
+    Handles the redirect from Google after user authentication.
+    """
+    if not code:
+        raise HTTPException(status_code=400, detail="Authorization code not provided")
+
+    try:
+        # Exchange authorization code for tokens
+        flow = Flow.from_client_config(
+            client_config={
+                "web": {
+                    "client_id": settings.GOOGLE_CLIENT_ID,
+                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [settings.GOOGLE_REDIRECT_URI],
+                }
+            },
+            scopes=[
+                "openid",
+                "https://www.googleapis.com/auth/userinfo.email",
+                "https://www.googleapis.com/auth/userinfo.profile",
+            ],
+            redirect_uri=settings.GOOGLE_REDIRECT_URI,
+        )
+
+        flow.fetch_token(code=code)
+        credentials = flow.credentials
+
+        # Verify ID token
+        id_info = id_token.verify_oauth2_token(
+            credentials.id_token, requests.Request(), settings.GOOGLE_CLIENT_ID
+        )
+
+        # Extract user info
+        email = id_info.get("email")
+        username = id_info.get("name", email.split("@")[0] if email else "google_user")
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Email not provided by Google")
+
+        # Check if user already exists
+        user = db.query(UserDB).filter(UserDB.email == email).first()
+
+        if not user:
+            # Create new user
+            role = UserRole.ADMIN if db.query(UserDB).count() == 0 else UserRole.USER
+            subscription = (
+                SubscriptionTier.PREMIUM
+                if role == UserRole.ADMIN
+                else SubscriptionTier.FREE
+            )
+
+            user = UserDB(
+                username=username,
+                email=email,
+                hashed_password=get_password_hash(
+                    secrets.token_urlsafe(32)
+                ),  # Random password for OAuth users
+                role=role,
+                subscription=subscription,
+                is_google_oauth=True,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+            # Give welcome credits
+            from services.payment.credit_service import credit_service
+
+            credit_service.add_credits(
+                user.id,
+                100 if role == UserRole.ADMIN else 10,
+                "earned",
+                "Welcome bonus",
+            )
+
+        # Create access token
+        access_token = create_access_token(
+            data={"sub": user.username, "role": user.role}
+        )
+
+        # Redirect to frontend with token
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        return RedirectResponse(
+            url=f"{frontend_url}/auth/callback?token={access_token}&provider=google",
+            status_code=302,
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=400, detail=f"Google authentication failed: {str(e)}"
+        )
