@@ -170,7 +170,7 @@ async def auth_youtube_callback(code: str, state: str):
         },
         scopes=YOUTUBE_SCOPES,
     )
-    flow.redirect_uri = settings.GOOGLE_REDIRECT_URI
+    flow.redirect_uri = settings.GOOGLE_YOUTUBE_REDIRECT_URI
     flow.fetch_token(code=code)
 
     credentials = flow.credentials
