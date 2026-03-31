@@ -63,7 +63,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                             </div>
 
                             <div className="space-y-2">
-                                <h3 className="text-3xl font-black text-white uppercase tracking-tighter italic">
+                                <h3 className="text-3xl font-black text-white uppercase tracking-tighter">
                                     {title}
                                 </h3>
                                 <p className="text-zinc-500 font-medium text-sm leading-relaxed max-w-xs mx-auto">

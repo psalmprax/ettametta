@@ -341,7 +341,7 @@ export default function CreditsPage() {
                             <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Credits System</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter italic uppercase text-white leading-none">
+                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
                             Credit <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500 text-hollow">Vault</span>
                         </h1>
                         <p className="text-zinc-500 font-medium">Manage your <span className="text-zinc-300 font-bold">credit balance</span>, purchase packages, and track usage.</p>

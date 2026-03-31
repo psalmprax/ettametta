@@ -151,7 +151,7 @@ export default function EnvManager() {
                 <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center space-y-6">
                     <RefreshCw className="h-16 w-16 text-red-500 animate-spin" />
                     <div className="text-center">
-                        <h4 className="text-2xl font-black text-white italic uppercase">System <span className="text-hollow">Rebooting</span></h4>
+                        <h4 className="text-2xl font-black text-white uppercase">System <span className="text-hollow">Rebooting</span></h4>
                         <p className="text-zinc-500 text-sm mt-2">Diverting power for kernel synchronization...</p>
                     </div>
                 </div>
@@ -163,7 +163,7 @@ export default function EnvManager() {
                         <Lock className="h-8 w-8 text-red-500" />
                     </div>
                     <div>
-                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Environment <span className="text-hollow">Master</span></h3>
+                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Environment <span className="text-hollow">Master</span></h3>
                         <p className="text-zinc-500 text-sm">Direct manipulation of the production .env protocol.</p>
                     </div>
                 </div>
@@ -195,7 +195,7 @@ export default function EnvManager() {
                             <TriangleAlert className="h-6 w-6 text-red-500" />
                         </div>
                         <div className="space-y-2">
-                            <h4 className="text-lg font-black text-white uppercase italic">Confirm System Cycler</h4>
+                            <h4 className="text-lg font-black text-white uppercase">Confirm System Cycler</h4>
                             <p className="text-zinc-500 text-sm leading-relaxed">This will terminate the API process to force a Docker reboot. Active sessions might experience a momentary disconnect. Continue?</p>
                         </div>
                     </div>

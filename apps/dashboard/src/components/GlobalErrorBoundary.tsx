@@ -75,7 +75,7 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
                 <AlertTriangle className="h-12 w-12 text-red-500" />
               </div>
               <div>
-                <h1 className="text-4xl md:text-5xl font-black text-white italic uppercase tracking-tighter">
+                <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter">
                   Nexus <span className="text-hollow text-red-500">Critical Error</span>
                 </h1>
                 <p className="text-zinc-500 text-sm mt-3 uppercase tracking-widest font-black opacity-60">
@@ -108,7 +108,7 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
             </div>
 
             <p className="text-[10px] text-zinc-600 uppercase font-bold tracking-widest">
-              Engine Status: <span className="text-red-500/50 italic">Compromised</span>
+              Engine Status: <span className="text-red-500/50">Compromised</span>
             </p>
           </div>
         </div>

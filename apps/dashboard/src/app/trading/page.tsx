@@ -213,7 +213,7 @@ export default function TradingPage() {
                             <div className="h-1 w-8 bg-primary rounded-full" />
                             <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Market Intelligence</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter uppercase text-white leading-none">
+                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
                             Trading <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">Terminal</span>
                         </h1>
                         <p className="text-zinc-500 mt-2 max-w-lg text-sm font-medium leading-relaxed">
@@ -235,7 +235,7 @@ export default function TradingPage() {
                                 <BarChart3 className="h-5 w-5 text-primary" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black text-white uppercase tracking-tighter italic">Market Search</h3>
+                                <h3 className="text-lg font-black text-white uppercase tracking-tighter">Market Search</h3>
                                 <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest">Equity Lookup</p>
                             </div>
                         </div>
@@ -319,7 +319,7 @@ export default function TradingPage() {
                                 <DollarSign className="h-5 w-5 text-amber-500" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-black text-white uppercase tracking-tighter italic">Crypto Lookup</h3>
+                                <h3 className="text-lg font-black text-white uppercase tracking-tighter">Crypto Lookup</h3>
                                 <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest">Digital Asset Intelligence</p>
                             </div>
                         </div>
@@ -393,7 +393,7 @@ export default function TradingPage() {
                                     <Sparkles className="h-6 w-6 text-amber-500" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">
+                                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">
                                         AI <span className="text-amber-400">Analysis</span>
                                     </h3>
                                     <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest">
@@ -414,7 +414,7 @@ export default function TradingPage() {
                                 <TrendingUp className="h-5 w-5 text-emerald-500" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">
+                                <h3 className="text-xl font-black text-white uppercase tracking-tighter">
                                     Trending <span className="text-emerald-400">Cryptos</span>
                                 </h3>
                                 <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest">Live Market Pulse</p>
@@ -481,7 +481,7 @@ export default function TradingPage() {
                                 <Activity className="h-5 w-5 text-blue-500" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">
+                                <h3 className="text-xl font-black text-white uppercase tracking-tighter">
                                     Market <span className="text-blue-400">Screener</span>
                                 </h3>
                                 <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest">Opportunity Scanner</p>

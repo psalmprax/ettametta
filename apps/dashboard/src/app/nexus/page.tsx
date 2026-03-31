@@ -376,14 +376,14 @@ export default function NexusPage() {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4">
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="h-1 w-12 bg-primary rounded-full" />
-                            <span className="text-[10px] font-black tracking-[0.4em] text-primary uppercase italic">Neural Orchestration</span>
+                            <div className="h-1 w-12 bg-neon-violet rounded-full shadow-glow-violet/50" />
+                            <span className="text-[10px] font-black tracking-[0.4em] text-neon-violet uppercase">Neural Orchestration</span>
                         </div>
-                        <h1 className="text-6xl md:text-7xl font-black italic tracking-tighter uppercase text-white leading-none">
-                            Nexus <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">Engine</span>
+                        <h1 className="text-6xl md:text-7xl font-black tracking-tighter uppercase text-white leading-none">
+                            Nexus <span className="text-transparent bg-clip-text bg-linear-to-r from-violet-500 to-cyan-400 text-hollow">Engine</span>
                         </h1>
-                        <p className="text-zinc-500 max-w-xl text-sm font-medium leading-relaxed">
-                            Deploy end-to-end autonomous media pipelines. Ettametta's Nexus translates niche signals into cinematic realities through a four-stage neural synthesis.
+                        <p className="text-zinc-500 max-w-xl text-sm font-medium leading-relaxed tracking-tight">
+                            Deploy end-to-end autonomous media pipelines. Ettametta's Nexus translates niche signals into cinematic realities through a <span className="text-cyan-400 font-black">four-stage neural synthesis</span>.
                         </p>
                     </div>
 
@@ -401,14 +401,14 @@ export default function NexusPage() {
                         <div className="h-12 w-px bg-white/10 mx-2" />
                         <div className="text-right">
                             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tier Access</p>
-                            <p className="text-white font-black uppercase tracking-tighter italic">{userTier} CLUSTER</p>
+                            <p className="text-white font-black uppercase tracking-tighter">{userTier} CLUSTER</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Configuration Bar */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-5xl bg-zinc-950/40 border border-white/5 backdrop-blur-3xl shadow-2xl">
-                    <div className="flex flex-col gap-2 p-4 rounded-3xl bg-white/3 border border-white/5 group hover:border-primary/20 transition-all">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-5xl bg-zinc-950/40 border border-white/5 backdrop-blur-3xl shadow-2xl shadow-neon-cyan/5">
+                    <div className="flex flex-col gap-2 p-4 rounded-3xl bg-white/2 border border-white/5 group hover:border-neon-cyan/20 transition-all">
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
                             <Layers className="h-3 w-3" /> Targeted Niche
                         </label>
@@ -447,12 +447,12 @@ export default function NexusPage() {
                         onClick={handleLaunchPipeline}
                         disabled={isLaunching || !selectedNiche}
                         className={cn(
-                        "h-full rounded-3xl bg-primary flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 group relative overflow-hidden",
+                        "h-full rounded-3xl bg-linear-to-r from-violet-600 to-cyan-500 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 group relative overflow-hidden shadow-glow-cyan/20",
                         (isLaunching || !selectedNiche) && "opacity-50 cursor-not-allowed"
                     )}>
                         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-                        {isLaunching ? <Loader2 className="h-6 w-6 text-black animate-spin" /> : <Play className="h-6 w-6 text-black" />}
-                        <span className="text-black font-black uppercase tracking-widest text-sm relative">Launch Pipeline</span>
+                        {isLaunching ? <Loader2 className="h-6 w-6 text-white animate-spin" /> : <Play className="h-6 w-6 text-white fill-white" />}
+                        <span className="text-white font-black uppercase tracking-widest text-sm relative">Launch Pipeline</span>
                     </button>
                 </div>
 
@@ -462,7 +462,7 @@ export default function NexusPage() {
                         <div className="relative aspect-21/9 rounded-6xl bg-zinc-950 border border-white/5 overflow-hidden shadow-inner group">
                             {/* Animated Background Mesh */}
                             <div className="absolute inset-0 opacity-20 pointer-events-none">
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--primary)_0%,transparent_100%)] opacity-10 animate-pulse" />
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--neon-violet)_0%,transparent_100%)] opacity-10 animate-pulse" />
                                 <svg className="w-full h-full">
                                     <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
                                         <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5" strokeOpacity="0.05"/>
@@ -505,15 +505,15 @@ export default function NexusPage() {
                                 <div className="flex items-center gap-4">
                                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                                     <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                                        Stream: <span className="text-white italic">Neural_Cluster_#402</span>
+                                        Stream: <span className="text-white">Neural_Cluster_#402</span>
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="absolute top-10 right-10 p-4 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl group-hover:border-primary/30 transition-all">
+                            <div className="absolute top-10 right-10 p-4 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl group-hover:border-neon-cyan/30 transition-all">
                                  <div className="flex items-center gap-4">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Status:</p>
-                                    <p className="text-primary font-black uppercase tracking-tight italic">
+                                    <p className="text-neon-cyan font-black uppercase tracking-tight shadow-glow-cyan/20">
                                         {telemetry?.status || (activeJobId ? 'OPERATIONAL' : 'IDLE')}
                                     </p>
                                  </div>
@@ -528,18 +528,18 @@ export default function NexusPage() {
                                         <Settings2 className="h-6 w-6" />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-black text-white italic tracking-tighter uppercase">Node Settings</h3>
+                                        <h3 className="text-xl font-black text-white tracking-tighter uppercase group-hover:text-neon-cyan transition-colors">Node Settings</h3>
                                         <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Configuration Matrix</p>
                                     </div>
                                 </div>
                                 <div className="space-y-4 pt-4">
                                     <div className="flex items-center justify-between p-4 rounded-2xl bg-white/2 border border-white/5">
                                         <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Execution Priority</span>
-                                        <span className="text-xs font-black text-white uppercase italic">Ultra_High</span>
+                                        <span className="text-xs font-black text-white uppercase">Ultra_High</span>
                                     </div>
                                     <div className="flex items-center justify-between p-4 rounded-2xl bg-white/2 border border-white/5">
                                         <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Cluster Routing</span>
-                                        <span className="text-xs font-black text-white uppercase italic">{telemetry?.cluster_node || "EU-Central-1"}</span>
+                                        <span className="text-xs font-black text-white uppercase">{telemetry?.cluster_node || "EU-Central-1"}</span>
                                     </div>
                                 </div>
                             </div>
@@ -549,7 +549,7 @@ export default function NexusPage() {
                                     <Plus className="h-8 w-8 text-zinc-700" />
                                 </div>
                                 <div className="space-y-1">
-                                    <h3 className="text-lg font-black text-zinc-500 group-hover:text-white transition-colors uppercase tracking-tight italic">Initialize Custom Recipe</h3>
+                                    <h3 className="text-lg font-black text-zinc-500 group-hover:text-white transition-colors uppercase tracking-tight">Initialize Custom Recipe</h3>
                                     <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-widest leading-relaxed">Design your own neural pipeline for custom workflows.</p>
                                 </div>
                             </div>
@@ -561,7 +561,7 @@ export default function NexusPage() {
                         {/* Live Log Stream */}
                         <div className="glass-card p-8 min-h-[500px] flex flex-col space-y-6 relative overflow-hidden bg-black shadow-2xl">
                              <div className="flex items-center justify-between">
-                                <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2 italic">
+                                <h3 className="text-xs font-black uppercase tracking-widest text-neon-cyan flex items-center gap-2">
                                     <Activity className="h-3 w-3" /> Live Event Stream
                                 </h3>
                                 <div className="px-2 py-1 rounded-md bg-zinc-900 border border-white/5 text-[8px] font-bold text-zinc-500 font-mono">
@@ -603,7 +603,7 @@ export default function NexusPage() {
 
                          {/* Global Pulse Indicator */}
                         <div className="p-8 rounded-5xl bg-linear-to-br from-zinc-900 to-black border border-white/5 space-y-4">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">Network Health</h4>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Network Health</h4>
                             <div className="flex gap-1 h-8 items-end">
                                 {[...Array(24)].map((_, i) => {
                                     const load = telemetry?.load_avg || 0.1;
@@ -613,7 +613,7 @@ export default function NexusPage() {
                                         <div 
                                             key={i}
                                             style={{ height: `${height}%` }}
-                                            className="flex-1 bg-primary/20 rounded-t-sm transition-all duration-1000"
+                                            className="flex-1 bg-neon-cyan/20 rounded-t-sm transition-all duration-1000 shadow-glow-cyan/10"
                                         />
                                     );
                                 })}
@@ -638,7 +638,7 @@ export default function NexusPage() {
                             <User className="h-5 w-5" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-white italic tracking-tighter uppercase">Persona Lab</h2>
+                            <h2 className="text-xl font-black text-white tracking-tighter uppercase">Persona Lab</h2>
                             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Create &amp; Generate Digital Personas</p>
                         </div>
                     </div>
@@ -757,11 +757,11 @@ export default function NexusPage() {
                                     onClick={handleGenerateVideo}
                                     disabled={isGeneratingVideo || !videoTopic}
                                     className={cn(
-                                        "w-full py-3 rounded-xl bg-primary text-black font-black uppercase tracking-widest text-xs transition-all hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2",
+                                        "w-full py-3 rounded-xl bg-linear-to-r from-violet-600 to-cyan-500 text-white font-black uppercase tracking-widest text-xs transition-all hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2 shadow-glow-cyan/10",
                                         (isGeneratingVideo || !videoTopic) && "opacity-50 cursor-not-allowed hover:scale-100"
                                     )}
                                 >
-                                    {isGeneratingVideo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                                    {isGeneratingVideo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-white" />}
                                     Generate Persona Video
                                 </button>
                             </div>
@@ -773,7 +773,7 @@ export default function NexusPage() {
                 <div className="space-y-8 pb-20">
                     <div className="flex items-center justify-between border-b border-white/5 pb-4">
                         <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-3">
-                        <Zap className="h-5 w-5 text-primary" />
+                        <Zap className="h-5 w-5 text-neon-violet shadow-glow-violet/20" />
                         Activity Stream
                         </h3>
                         <button 
@@ -789,14 +789,14 @@ export default function NexusPage() {
                         nexusJobs.map((job) => (
                             <div key={job.id} className="flex gap-4 p-4 rounded-2xl bg-white/2 border border-white/5 hover:border-white/10 transition-colors group">
                                 <div className="shrink-0 pt-1">
-                                    {job.status === 'COMPLETED' ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : 
+                                    {job.status === 'COMPLETED' ? <CheckCircle2 className="h-5 w-5 text-neon-cyan neon-glow-cyan" /> : 
                                     job.status === 'FAILED' ? <AlertCircle className="h-5 w-5 text-red-500" /> : 
-                                    <RefreshCw className="h-5 w-5 text-primary animate-spin" />}
+                                    <RefreshCw className="h-5 w-5 text-neon-violet animate-spin" />}
                                 </div>
                                 <div className="flex-1 space-y-1">
                                     <div className="flex justify-between items-start">
                                         <p className="text-xs font-black uppercase tracking-tight text-white">{job.niche} / {job.status}</p>
-                                        <span className="text-[8px] font-bold text-zinc-600 font-mono italic">{new Date(job.created_at).toLocaleTimeString()}</span>
+                                        <span className="text-[8px] font-bold text-zinc-600 font-mono">{new Date(job.created_at).toLocaleTimeString()}</span>
                                     </div>
                                     <p className="text-[10px] font-medium text-zinc-500">{job.blueprint_id} pipeline {job.status === 'COMPLETED' ? 'successfully finished' : 'is currently in ' + (job.node_status ? Object.entries(job.node_status).find(([_, s]) => s === 'PROCESSING')?.[0] : 'idle') + ' state'}.</p>
                                 </div>
@@ -934,7 +934,7 @@ export default function NexusPage() {
                                         <ShieldCheck className="h-6 w-6" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-black text-white italic tracking-tighter uppercase">Capabilities</h3>
+                                        <h3 className="text-lg font-black text-white tracking-tighter uppercase">Capabilities</h3>
                                         <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Agent Skill Matrix</p>
                                     </div>
                                 </div>

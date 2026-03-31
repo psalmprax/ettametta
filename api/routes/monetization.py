@@ -55,7 +55,7 @@ async def auto_merch(
     """
     Triggers the Reverse Monetization flow: Trend -> Design -> Mockup -> Store.
     """
-    from services.monetization.auto_merch import auto_merch_service
+    from services.monetization.auto_merch import base_auto_merch_service as auto_merch_service
 
     # Consume credits
     credit_service.consume_credits(
