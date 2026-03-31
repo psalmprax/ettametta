@@ -251,18 +251,18 @@ services:
       - "7210:9100"
     restart: unless-stopped
 
-  gpu-exporter:
-    image: utkuozdemir/nvidia_gpu_exporter:latest
-    ports:
-      - "7211:9835"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    restart: unless-stopped
+   # gpu-exporter:
+   #   image: utkuozdemir/nvidia_gpu_exporter:latest
+   #   ports:
+   #     - "7211:9835"
+   #   deploy:
+   #     resources:
+   #       reservations:
+   #         devices:
+   #           - driver: nvidia
+   #             count: all
+   #             capabilities: [gpu]
+   #   restart: unless-stopped
 
   loki:
     image: grafana/loki:latest

@@ -403,7 +403,7 @@ export default function EmpirePage() {
                                     "px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest",
                                     sentinelStatus?.status === "NOMINAL" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-amber-500/10 border-amber-500/30 text-amber-500"
                                 )}>
-                                    {sentinelStatus?.status || "SYNCING..."}
+                                    {sentinelStatus?.status || "CONNECTING..."}
                                 </div>
                             </div>
 
@@ -857,7 +857,7 @@ export default function EmpirePage() {
                                         <Layers className="h-10 w-10 text-primary" />
                                     </div>
                                     <h4 className="text-2xl font-black text-white italic tracking-tighter uppercase">{sentinelStatus?.score || 0}% Autonomy</h4>
-                                    <p className="text-zinc-500 text-xs font-medium">System is operating in <span className={`${sentinelStatus?.status === "NOMINAL" ? "text-emerald-500" : "text-amber-500"} font-bold italic`}>{sentinelStatus?.status || "SYNCING"}</span> mode. {sentinelStatus?.status === "NOMINAL" ? "No manual overrides required." : "Review sentinel recommendations."}</p>
+                                    <p className="text-zinc-500 text-xs font-medium">System is operating in <span className={`${sentinelStatus?.status === "NOMINAL" ? "text-emerald-500" : "text-amber-500"} font-bold italic`}>{sentinelStatus?.status || "CONNECTING"}</span> mode. {sentinelStatus?.status === "NOMINAL" ? "No manual overrides required." : "Review sentinel recommendations."}</p>
                                 </div>
                             </div>
                         </div>
