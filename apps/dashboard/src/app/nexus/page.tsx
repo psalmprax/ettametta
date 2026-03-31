@@ -501,7 +501,7 @@ export default function NexusPage() {
                             </div>
 
                             {/* HUD Overlays */}
-                            <div className="absolute bottom-10 left-10 p-4 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl">
+                            <div className="absolute bottom-6 left-8 p-4 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl pointer-events-none">
                                 <div className="flex items-center gap-4">
                                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                                     <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
@@ -510,7 +510,7 @@ export default function NexusPage() {
                                 </div>
                             </div>
 
-                            <div className="absolute top-10 right-10 p-4 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl group-hover:border-neon-cyan/30 transition-all">
+                            <div className="absolute top-6 right-8 p-4 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl group-hover:border-neon-cyan/30 transition-all pointer-events-none">
                                  <div className="flex items-center gap-4">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Status:</p>
                                     <p className="text-neon-cyan font-black uppercase tracking-tight shadow-glow-cyan/20">
