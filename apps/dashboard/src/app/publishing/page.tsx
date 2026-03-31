@@ -680,7 +680,7 @@ export default function PublishingPage() {
                     title="Sever Neural Link?"
                     description="This will permanently disconnect the account node from the Viral Forge cluster. Synchronized metrics may be lost."
                     variant="danger"
-                    confirmLabel="Sever Link"
+                    confirmText="Sever Link"
                 />
 
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
