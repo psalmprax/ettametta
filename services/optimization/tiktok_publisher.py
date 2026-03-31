@@ -105,6 +105,16 @@ class TikTokPublisher(SocialPublisher):
             print(f"[TikTokPublisher] Token expired for user {user_id}. Refresh needed.")
             pass
 
+    async def get_metrics(self, platform_id: str, user_id: int, account_id: Optional[int] = None) -> dict:
+        """Fetches live engagement metrics for a TikTok post."""
+        # Placeholder implementation - would integrate with TikTok Analytics API
+        return {
+            "views": 0,
+            "likes": 0,
+            "comments": 0,
+            "shares": 0
+        }
+
     def health_check(self, user_id: int) -> bool:
         return token_manager.get_token("tiktok", user_id=user_id) is not None
 
