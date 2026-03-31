@@ -129,7 +129,7 @@ async def auth_youtube(current_user: UserDB = Depends(get_current_user)):
         },
         scopes=YOUTUBE_SCOPES,
     )
-    flow.redirect_uri = settings.GOOGLE_REDIRECT_URI
+    flow.redirect_uri = settings.GOOGLE_YOUTUBE_REDIRECT_URI
 
     # Securely encode user_id in the state
     import json
