@@ -80,7 +80,11 @@ class Settings(BaseSettings):
     LIMIT_SOVEREIGN: int = 500
 
     @property
-    def GOOGLE_REDIRECT_URI(self) -> str:
+    def GOOGLE_AUTH_REDIRECT_URI(self) -> str:
+        return f"{self.PRODUCTION_DOMAIN.rstrip('/')}/auth/callback/google"
+
+    @property
+    def GOOGLE_YOUTUBE_REDIRECT_URI(self) -> str:
         return f"{self.PRODUCTION_DOMAIN.rstrip('/')}/publish/auth/youtube/callback"
 
     @property
