@@ -87,10 +87,10 @@ async def start_transformation(
         # Create Job Entry in Database
         new_job = VideoJobDB(
             id=task.id,
-            title=f"Viral Transform - {request.niche}",
+            title=f"Viral Transform - {body.niche}",
             status="Queued",
             progress=0,
-            input_url=request.input_url,
+            input_url=body.input_url,
             user_id=current_user.id,
         )
         db.add(new_job)

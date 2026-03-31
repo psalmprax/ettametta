@@ -106,6 +106,19 @@ async def get_empire_metrics(
     return base_empire_service.get_empire_metrics(db, current_user.id)
 
 
+@router.get("/empire/activity")
+async def get_empire_activity(
+    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """
+    Returns the recent activity logs for the empire timeline.
+    Aggregates monetization events and sentinel shifts.
+    """
+    from services.monetization.empire_service import base_empire_service
+
+    return await base_empire_service.get_activity_stream(db, current_user.id)
+
+
 class CloneRequest(BaseModel):
     source_niche: str
     target_niche: str

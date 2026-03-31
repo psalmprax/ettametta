@@ -34,6 +34,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { NexusNode, NodeType } from "@/components/ui/NexusNode";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 interface Blueprint {
     id: string;
@@ -51,6 +52,7 @@ export default function NexusPage() {
     const [selectedNiche, setSelectedNiche] = useState("");
     const [userTier, setUserTier] = useState<string>("free");
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
+    const [isClearModalOpen, setIsClearModalOpen] = useState(false);
     const [selectedNodeIndex, setSelectedNodeIndex] = useState<number>(0);
     const [logStream, setLogStream] = useState<string[]>([]);
 
@@ -58,6 +60,7 @@ export default function NexusPage() {
     const [chatMessages, setChatMessages] = useState<{ role: "user" | "agent"; content: string }[]>([]);
     const [chatInput, setChatInput] = useState("");
     const [isChatting, setIsChatting] = useState(false);
+    const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
     const [agentCapabilities, setAgentCapabilities] = useState<string[]>([]);
 
     const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/jobs`);
@@ -146,7 +149,7 @@ export default function NexusPage() {
         };
 
         fetchTelemetry();
-        const interval = setInterval(fetchTelemetry, 10000); // 10s intervals for real-first dashboarding
+        const interval = setInterval(fetchTelemetry, 5000); // 5s intervals for real-first dashboarding
         return () => clearInterval(interval);
     }, []);
 
@@ -356,6 +359,19 @@ export default function NexusPage() {
     return (
         <DashboardLayout>
             <div className="max-w-[1600px] mx-auto p-8 space-y-12">
+                <ConfirmModal 
+                    isOpen={isConfirmClearOpen}
+                    onClose={() => setIsConfirmClearOpen(false)}
+                    onConfirm={() => {
+                        setLogStream([]);
+                        setIsConfirmClearOpen(false);
+                        toast.success("Event Stream Purged");
+                    }}
+                    title="Purge Event Stream?"
+                    description="This will clear all localized telemetry logs from the current session view. Raw cluster data remains intact."
+                    variant="danger"
+                    confirmLabel="Purge Stream"
+                />
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4">
                     <div className="space-y-4">
@@ -424,7 +440,7 @@ export default function NexusPage() {
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
                            <Database className="h-3 w-3" /> Storage Node
                         </label>
-                        <p className="text-white font-black uppercase tracking-tight">Cloud-S3 Master</p>
+                        <p className="text-white font-black uppercase tracking-tight">{telemetry?.cluster_node || "Cloud-S3 Master"}</p>
                     </div>
 
                     <button 
@@ -589,17 +605,21 @@ export default function NexusPage() {
                         <div className="p-8 rounded-5xl bg-linear-to-br from-zinc-900 to-black border border-white/5 space-y-4">
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">Network Health</h4>
                             <div className="flex gap-1 h-8 items-end">
-                                {[...Array(24)].map((_, i) => (
-                                    <motion.div 
-                                        key={i}
-                                        animate={{ height: [`${20 + Math.random() * 60}%`, `${40 + Math.random() * 40}%`, `${20 + Math.random() * 60}%`] }}
-                                        transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.05 }}
-                                        className="flex-1 bg-primary/20 rounded-t-sm"
-                                    />
-                                ))}
+                                {[...Array(24)].map((_, i) => {
+                                    const load = telemetry?.load_avg || 0.1;
+                                    const variance = Math.sin(i * 0.5) * 5; // Deterministic wave instead of random
+                                    const height = Math.min(Math.max(20 + (load * 50) + variance, 10), 100);
+                                    return (
+                                        <div 
+                                            key={i}
+                                            style={{ height: `${height}%` }}
+                                            className="flex-1 bg-primary/20 rounded-t-sm transition-all duration-1000"
+                                        />
+                                    );
+                                })}
                             </div>
                             <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-tighter text-zinc-700">
-                                <span>Signal_01: {telemetry?.signals?.[0]?.status || (Math.random() > 0.5 ? 'Active' : 'Standby')}</span>
+                                <span>Signal_01: {telemetry?.signals?.[0]?.status || 'STANDBY'}</span>
                                 <span>Latency: {telemetry?.latency_ms ? `${telemetry.latency_ms}ms` : "---ms"}</span>
                             </div>
                         </div>
@@ -756,7 +776,12 @@ export default function NexusPage() {
                         <Zap className="h-5 w-5 text-primary" />
                         Activity Stream
                         </h3>
-                        <button className="text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary transition-colors">Clear Stream</button>
+                        <button 
+                            onClick={() => setIsClearModalOpen(true)}
+                            className="text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary transition-colors"
+                        >
+                            Clear Stream
+                        </button>
                     </div>
 
                     <div className="space-y-4 max-h-[400px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
@@ -940,6 +965,23 @@ export default function NexusPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Confirmation Modals */}
+            <ConfirmModal
+                isOpen={isClearModalOpen}
+                onClose={() => setIsClearModalOpen(false)}
+                onConfirm={() => {
+                    setLogStream([]);
+                    setIsClearModalOpen(false);
+                    toast.info("Activity Stream Purged", {
+                        description: "Telemetry logs have been flushed from the local buffer."
+                    });
+                }}
+                title="Purge Activity Stream?"
+                description="This will clear all telemetry logs and system activity from your current session cache. This action won't affect backend audit logs."
+                confirmText="Purge Stream"
+                variant="danger"
+            />
         </DashboardLayout>
     );
 }

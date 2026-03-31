@@ -161,6 +161,7 @@ class DiscoveryService:
                         engagement_score=r.engagement_score,
                         viral_score=r.viral_score,
                         duration_seconds=r.duration_seconds,
+                        category=r.category or "video",
                         published_at=r.discovery_date.isoformat() if r.discovery_date else None,
                         niche=r.niche,
                         metadata=r.metadata_json or {}
@@ -209,6 +210,7 @@ class DiscoveryService:
                     engagement_score=c.engagement_score,
                     viral_score=c.viral_score,
                     duration_seconds=c.duration_seconds,
+                    category=c.category,
                     thumbnail_url=c.thumbnail_url,
                     metadata_json=c.metadata,
                     niche=niche
@@ -473,6 +475,7 @@ class DiscoveryService:
                     engagement_score=r.engagement_score,
                     viral_score=r.viral_score,
                     duration_seconds=r.duration_seconds,
+                    category=r.category or "video",
                     published_at=r.discovery_date.isoformat() if r.discovery_date else None,
                     niche=r.niche,
                     metadata=r.metadata_json or {}

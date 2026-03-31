@@ -130,25 +130,37 @@ async def get_nexus_telemetry(current_user = Depends(get_current_user), db: Sess
     """
     from api.utils.models import VideoJobDB
     import time
-    import random
-
+    import os
+    
+    start_time = time.time()
+    
+    # 1. Database Access Metrics (Real Job Count)
     active_nexus_jobs = db.query(NexusJobDB).filter(NexusJobDB.status.in_(["PENDING", "COMPOSING"])).count()
     active_video_jobs = db.query(VideoJobDB).filter(VideoJobDB.status.in_(["Queued", "Downloading", "Processing", "Rendering"])).count()
     
-    # Simulate a small amount of jitter for "Real-First" feel of latency
-    latency_ms = 18 + random.randint(0, 7)
+    db_query_time_ms = int((time.time() - start_time) * 1000)
+    
+    # 2. System Load (Real OS load avg)
+    try:
+        load_1, _, _ = os.getloadavg()
+    except:
+        load_1 = 0.0 # Fallback for non-unix or restricted envs
+        
+    # 3. Real Latency Measurement (Synthetic RTT)
+    # We'll use the DB query time as our proxy for cluster responsiveness
+    latency_ms = max(db_query_time_ms, 5)
     
     return {
         "status": "OPERATIONAL",
-        "cluster_node": "EU-Central-1",
+        "cluster_node": os.getenv("NEXUS_NODE_ID", "Global-Master-01"),
         "active_jobs": active_nexus_jobs + active_video_jobs,
         "nexus_active": active_nexus_jobs,
         "video_active": active_video_jobs,
         "latency_ms": latency_ms,
         "timestamp": time.time(),
-        "load_avg": round((active_nexus_jobs + active_video_jobs) / 10.0, 2),
+        "load_avg": round(load_1, 2),
         "signals": [
-            {"id": "Signal_01", "status": "ACTIVE", "offset": f"{latency_ms}ms"},
-            {"id": "Signal_02", "status": "STANDBY", "offset": "0ms"}
+            {"id": "Signal_01", "status": "ACTIVE" if active_nexus_jobs > 0 else "STANDBY", "offset": f"{latency_ms}ms"},
+            {"id": "Signal_02", "status": "READY", "offset": "0ms"}
         ]
     }

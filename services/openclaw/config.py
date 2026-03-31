@@ -1,15 +1,27 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
+from typing import Any, Optional
 
 class Settings(BaseSettings):
     APP_NAME: str = "OpenClaw Gateway"
     ENV: str = "development"
     
     # Telegram Configuration
-    TELEGRAM_BOT_TOKEN: str
-    TELEGRAM_ADMIN_ID: int = 0  # Default to 0 to prevent crash if not set
+    TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_ADMIN_ID: int = 0
+    
+    @field_validator("TELEGRAM_ADMIN_ID", mode="before")
+    @classmethod
+    def parse_admin_id(cls, v: Any) -> int:
+        if isinstance(v, str) and v.strip() == "":
+            return 0
+        try:
+            return int(v) if v else 0
+        except (ValueError, TypeError):
+            return 0
     
     # AI Configuration
-    GROQ_API_KEY: str
+    GROQ_API_KEY: str = ""
     MODEL: str = "llama-3.3-70b-versatile"
     
     # ettametta Internal APIs
