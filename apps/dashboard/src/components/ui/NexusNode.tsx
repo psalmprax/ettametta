@@ -47,7 +47,7 @@ export function NexusNode({ type, label, description, status, active, progress, 
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
             className={cn(
-                "w-72 p-6 rounded-4xl border transition-all duration-300 relative overflow-hidden group mb-4",
+                "w-72 p-6 rounded-4xl border transition-all duration-300 relative overflow-hidden group",
                 active
                     ? "bg-zinc-900 border-neon-violet/40 shadow-glow-violet/20"
                     : "bg-zinc-950/40 border-white/5 hover:border-neon-cyan/20",
