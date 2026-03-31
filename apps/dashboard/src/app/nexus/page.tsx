@@ -370,7 +370,7 @@ export default function NexusPage() {
                     title="Purge Event Stream?"
                     description="This will clear all localized telemetry logs from the current session view. Raw cluster data remains intact."
                     variant="danger"
-                    confirmLabel="Purge Stream"
+                    confirmText="Purge Stream"
                 />
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4">
