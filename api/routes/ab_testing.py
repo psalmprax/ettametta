@@ -168,3 +168,34 @@ async def get_active_tests(
             for t in tests
         ]
     }
+
+
+@router.get("/tests/completed")
+async def get_completed_tests(
+    db: Session = Depends(get_db), current_user=Depends(get_current_user)
+):
+    """
+    Get all completed A/B tests (with winner).
+    """
+    tests = (
+        db.query(ABTestDB)
+        .filter(ABTestDB.winner_variant != None)
+        .order_by(ABTestDB.created_at.desc())
+        .limit(20)
+        .all()
+    )
+    return {
+        "completed_tests": [
+            {
+                "id": t.id,
+                "content_id": t.content_id,
+                "variant_a_title": t.variant_a_title,
+                "variant_b_title": t.variant_b_title,
+                "variant_a_views": t.variant_a_views,
+                "variant_b_views": t.variant_b_views,
+                "winner_variant": t.winner_variant,
+                "created_at": t.created_at,
+            }
+            for t in tests
+        ]
+    }

@@ -87,7 +87,7 @@ function TransformationPageContent() {
                     platform: targetPlatform,
                     niche: currentNiche,
                     generate_thumbnail: generateThumbnail,
-                    tier: premiumQuality ? "premium" : "standard",
+                    quality_tier: premiumQuality ? "premium" : "standard",
                     sound_design: enableSoundDesign,
                     motion_graphics: enableMotionGraphics
                 })
@@ -496,7 +496,7 @@ function TransformationPageContent() {
                             <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Production Hub</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter italic uppercase text-white leading-none">Originality <span className="text-transparent bg-clip-text bg-linear-to-r from-pink-500 to-rose-500 text-hollow">Studio</span></h1>
+                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">Originality <span className="text-transparent bg-clip-text bg-linear-to-r from-pink-500 to-rose-500 text-hollow">Studio</span></h1>
                         <p className="text-zinc-500 font-medium">Applying cinematic filters and managing <span className="text-zinc-300 font-bold">social compliance</span> workflows.</p>
                     </div>
                     <div className="flex gap-4">

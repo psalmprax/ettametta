@@ -376,15 +376,15 @@ export default function EmpirePage() {
                             <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Empire Protocol</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter italic uppercase text-white leading-none">Command <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600 text-hollow">Center</span></h1>
-                        <p className="text-zinc-500 font-medium">Managing multi-account <span className="text-zinc-300 font-bold">global scaling</span> and algorithm synchronization.</p>
+                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">Command <span className="text-transparent bg-clip-text bg-linear-to-r from-violet-500 to-cyan-400 text-hollow">Center</span></h1>
+                        <p className="text-zinc-500 font-medium tracking-tight">Managing multi-account <span className="text-cyan-400 font-black">global scaling</span> and algorithm synchronization.</p>
                     </div>
                     <button
                         onClick={fetchSentinel}
                         disabled={isRefreshing}
-                        className="glass-card px-6 py-4 rounded-xl flex items-center gap-3 group hover:border-primary/50 transition-all font-black uppercase tracking-widest text-[10px]"
+                        className="glass-card px-6 py-4 rounded-xl flex items-center gap-3 group hover:border-neon-cyan/50 transition-all font-black uppercase tracking-widest text-[10px] shadow-glow-cyan/10"
                     >
-                        <RefreshCw className={cn("h-4 w-4 text-zinc-500 group-hover:text-primary transition-colors", isRefreshing && "animate-spin")} />
+                        <RefreshCw className={cn("h-4 w-4 text-zinc-500 group-hover:text-neon-cyan transition-colors", isRefreshing && "animate-spin")} />
                         <span className="text-zinc-500 group-hover:text-white">Sync Sentinel</span>
                     </button>
                 </div>
@@ -400,8 +400,8 @@ export default function EmpirePage() {
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Platform Drift Analyzer</p>
                                 </div>
                                 <div className={cn(
-                                    "px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest",
-                                    sentinelStatus?.status === "NOMINAL" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-amber-500/10 border-amber-500/30 text-amber-500"
+                                    "px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all shadow-glow-violet/20",
+                                    sentinelStatus?.status === "NOMINAL" ? "bg-neon-cyan/10 border-neon-cyan/30 text-neon-cyan shadow-glow-cyan/20" : "bg-neon-violet/10 border-neon-violet/30 text-neon-violet shadow-glow-violet/20"
                                 )}>
                                     {sentinelStatus?.status || "CONNECTING..."}
                                 </div>
@@ -417,7 +417,7 @@ export default function EmpirePage() {
                                         />
                                         <motion.circle
                                             cx="80" cy="80" r="70"
-                                            className="fill-none stroke-primary stroke-[8px]"
+                                            className="fill-none stroke-neon-violet stroke-[8px]"
                                             strokeDasharray="440"
                                             initial={{ strokeDashoffset: 440 }}
                                             animate={{ strokeDashoffset: 440 - (440 * (sentinelStatus?.score || 0)) / 100 }}
@@ -520,7 +520,7 @@ export default function EmpirePage() {
                                 <div className="space-y-4 pt-4">
                                     <div className="flex justify-between items-center">
                                         <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Total Revenue</span>
-                                        <span className="text-xl font-black text-emerald-500">${revenueReport?.total_revenue?.toFixed(2) || "0.00"}</span>
+                                        <span className="text-xl font-black text-neon-cyan neon-glow-cyan">${revenueReport?.total_revenue?.toFixed(2) || "0.00"}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">EPM</span>
@@ -828,7 +828,7 @@ export default function EmpirePage() {
                             {/* Strategic Timeline */}
                             <div className="glass-card p-10 space-y-8">
                                 <div className="space-y-1">
-                                    <h3 className="font-black uppercase tracking-tight text-white italic">Strategic <span className="text-cyan-400">Timeline</span></h3>
+                                    <h3 className="font-black uppercase tracking-tight text-white">Strategic <span className="text-cyan-400">Timeline</span></h3>
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Sentinel Drift Events</p>
                                 </div>
                                 <div className="space-y-6">
@@ -856,8 +856,8 @@ export default function EmpirePage() {
                                         <div className="absolute inset-0 rounded-full border border-primary animate-ping opacity-20" />
                                         <Layers className="h-10 w-10 text-primary" />
                                     </div>
-                                    <h4 className="text-2xl font-black text-white italic tracking-tighter uppercase">{sentinelStatus?.score || 0}% Autonomy</h4>
-                                    <p className="text-zinc-500 text-xs font-medium">System is operating in <span className={`${sentinelStatus?.status === "NOMINAL" ? "text-emerald-500" : "text-amber-500"} font-bold italic`}>{sentinelStatus?.status || "CONNECTING"}</span> mode. {sentinelStatus?.status === "NOMINAL" ? "No manual overrides required." : "Review sentinel recommendations."}</p>
+                                    <h4 className="text-2xl font-black text-white tracking-tighter uppercase">{sentinelStatus?.score || 0}% Autonomy</h4>
+                                    <p className="text-zinc-500 text-xs font-medium">System is operating in <span className={`${sentinelStatus?.status === "NOMINAL" ? "text-emerald-500" : "text-amber-500"} font-bold`}>{sentinelStatus?.status || "CONNECTING"}</span> mode. {sentinelStatus?.status === "NOMINAL" ? "No manual overrides required." : "Review sentinel recommendations."}</p>
                                 </div>
                             </div>
                         </div>

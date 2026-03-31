@@ -47,7 +47,7 @@ export default function RegisterPage() {
                     <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 border border-primary/20 animate-pulse">
                         <Zap className="h-10 w-10 text-primary fill-primary" />
                     </div>
-                    <h1 className="text-5xl font-black italic uppercase tracking-tighter text-white">JOIN THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 text-hollow">FORGE</span></h1>
+                    <h1 className="text-5xl font-black uppercase tracking-tighter text-white">JOIN THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 text-hollow">FORGE</span></h1>
                     <p className="text-zinc-500 font-medium">Scale your content with AI precision</p>
                 </div>
 

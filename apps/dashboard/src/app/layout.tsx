@@ -31,8 +31,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans font-mono antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} font-sans font-mono antialiased relative`}
       >
+        <div className="ambient-mesh" />
         <QueryProvider>
           <UIProvider>
             <AuthProvider>

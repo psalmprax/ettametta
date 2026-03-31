@@ -296,7 +296,7 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center justify-between mb-10">
                     <div>
                         <div className="flex items-center gap-4 mb-2">
-                            <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter text-white">
+                            <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-white">
                                 System <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-white text-hollow">Master</span>
                             </h1>
                             <div className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
@@ -352,7 +352,7 @@ export default function AdminSettingsPage() {
                                         <Key className="h-8 w-8 text-red-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">OAuth <span className="text-hollow">Credentials</span></h3>
+                                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter">OAuth <span className="text-hollow">Credentials</span></h3>
                                         <p className="text-zinc-500 text-sm">System-wide OAuth configuration for global integrations.</p>
                                     </div>
                                 </div>
@@ -406,7 +406,7 @@ export default function AdminSettingsPage() {
                                         <Bot className="h-8 w-8 text-red-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">API <span className="text-hollow">Master Keys</span></h3>
+                                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter">API <span className="text-hollow">Master Keys</span></h3>
                                         <p className="text-zinc-500 text-sm">System-wide API keys for background scanning and core intelligence.</p>
                                     </div>
                                 </div>
@@ -455,7 +455,7 @@ export default function AdminSettingsPage() {
                                         <Database className="h-8 w-8 text-red-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Cloud <span className="text-hollow">Vault</span></h3>
+                                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Cloud <span className="text-hollow">Vault</span></h3>
                                         <p className="text-zinc-500 text-sm">AWS S3 and OCI storage configuration for global asset delivery.</p>
                                     </div>
                                 </div>
@@ -523,7 +523,7 @@ export default function AdminSettingsPage() {
                                         <CreditCard className="h-8 w-8 text-red-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Payment <span className="text-hollow">Gateway</span></h3>
+                                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Payment <span className="text-hollow">Gateway</span></h3>
                                         <p className="text-zinc-500 text-sm">Stripe configuration for system-wide subscription processing.</p>
                                     </div>
                                 </div>
@@ -556,7 +556,7 @@ export default function AdminSettingsPage() {
                                         <ShoppingCart className="h-8 w-8 text-red-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Monetization <span className="text-hollow">Master</span></h3>
+                                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Monetization <span className="text-hollow">Master</span></h3>
                                         <p className="text-zinc-500 text-sm">Global commerce, sponsorship, and affiliate infrastructure.</p>
                                     </div>
                                 </div>
@@ -612,7 +612,7 @@ export default function AdminSettingsPage() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-white/5">
                                         <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">Autonomous Money</h4>
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Autonomous Money</h4>
                                             <ToggleSwitch
                                                 label="Auto-Merch Engine"
                                                 description="Automatic design & Shopify publishing"
@@ -635,7 +635,7 @@ export default function AdminSettingsPage() {
                                             </div>
                                         </div>
                                         <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">Global Fallbacks</h4>
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Global Fallbacks</h4>
                                             <div>
                                                 <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Global Lead Gen URL</label>
                                                 <input
@@ -669,7 +669,7 @@ export default function AdminSettingsPage() {
                                         <Server className="h-8 w-8 text-red-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">System <span className="text-hollow">Node</span></h3>
+                                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter">System <span className="text-hollow">Node</span></h3>
                                         <p className="text-zinc-500 text-sm">Production domain and render cluster configuration.</p>
                                     </div>
                                 </div>
@@ -706,7 +706,7 @@ export default function AdminSettingsPage() {
                                         <Bot className="h-8 w-8 text-red-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Nexus <span className="text-hollow">Comms</span></h3>
+                                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Nexus <span className="text-hollow">Comms</span></h3>
                                         <p className="text-zinc-500 text-sm">Twilio WhatsApp gateway for system-wide notifications.</p>
                                     </div>
                                 </div>
@@ -749,7 +749,7 @@ export default function AdminSettingsPage() {
                                         <Wand2 className="h-8 w-8 text-red-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Viral <span className="text-hollow">Engine</span></h3>
+                                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Viral <span className="text-hollow">Engine</span></h3>
                                         <p className="text-zinc-500 text-sm">Autonomous parameters and feature clusters for the production pipeline.</p>
                                     </div>
                                 </div>
@@ -835,7 +835,7 @@ export default function AdminSettingsPage() {
                                                         <Shield className="h-8 w-8 text-red-500" />
                                                     </div>
                                                     <div>
-                                                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Security <span className="text-hollow">Status</span></h3>
+                                                        <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Security <span className="text-hollow">Status</span></h3>
                                                         <p className="text-zinc-500 text-sm">Real-time threat monitoring and system integrity overview.</p>
                                                     </div>
                                                 </div>

@@ -313,7 +313,7 @@ export default function CreationPage() {
                             <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Intelligence Hub</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter italic uppercase text-white leading-none">Creation <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-fuchsia-500 text-hollow">Suite</span></h1>
+                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">Creation <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-fuchsia-500 text-hollow">Suite</span></h1>
                         <p className="text-zinc-500 font-medium">Engineer high-velocity <span className="text-zinc-300 font-bold">faceless content</span> with neural script generation.</p>
                     </div>
                 </div>
@@ -334,7 +334,7 @@ export default function CreationPage() {
                                             value={topic}
                                             onChange={(e) => setTopic(e.target.value)}
                                             placeholder="The History of Quantum AI..."
-                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-5 pl-16 pr-6 focus:outline-none focus:ring-1 focus:ring-primary/40 text-sm font-bold text-white placeholder:text-zinc-700 italic"
+                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-5 pl-16 pr-6 focus:outline-none focus:ring-1 focus:ring-primary/40 text-sm font-bold text-white placeholder:text-zinc-700"
                                         />
                                     </div>
                                 </div>
@@ -438,9 +438,9 @@ export default function CreationPage() {
                                                 {hookAnalysis.status === "KILL" ? "Neural Kill-Switch Activated" : "Hook Validated"}
                                             </span>
                                         </div>
-                                        <span className="text-2xl font-black italic text-white">{hookAnalysis.score}%</span>
+                                        <span className="text-2xl font-black text-white">{hookAnalysis.score}%</span>
                                     </div>
-                                    <p className="text-zinc-400 text-xs italic leading-relaxed font-medium">
+                                    <p className="text-zinc-400 text-xs leading-relaxed font-medium">
                                         "{hookAnalysis.analysis}"
                                     </p>
 
@@ -448,7 +448,7 @@ export default function CreationPage() {
                                         <div className="space-y-4 pt-2">
                                             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Suggested Pivots:</p>
                                             {hookAnalysis.alternatives.map((alt: string, i: number) => (
-                                                <div key={i} className="p-4 bg-zinc-950/80 rounded-xl border border-white/5 text-[11px] font-bold text-zinc-300 italic group hover:border-primary/40 transition-all cursor-pointer">
+                                                <div key={i} className="p-4 bg-zinc-950/80 rounded-xl border border-white/5 text-[11px] font-bold text-zinc-300 group hover:border-primary/40 transition-all cursor-pointer">
                                                     {alt}
                                                 </div>
                                             ))}
@@ -469,7 +469,7 @@ export default function CreationPage() {
                                         <Edit3 className="h-5 w-5 text-primary neon-glow" />
                                     </div>
                                     <div className="space-y-0.5">
-                                        <h3 className="font-black italic uppercase tracking-tight text-white">Neural Blueprint</h3>
+                                        <h3 className="font-black uppercase tracking-tight text-white">Neural Blueprint</h3>
                                         <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Script & Retention Architecture</p>
                                     </div>
                                 </div>
@@ -492,7 +492,7 @@ export default function CreationPage() {
                                         <button
                                             onClick={handleValidateHook}
                                             disabled={isValidating}
-                                            className="glass-card hover:border-primary/50 text-zinc-400 hover:text-white text-[10px] font-black py-3 px-6 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest italic"
+                                            className="glass-card hover:border-primary/50 text-zinc-400 hover:text-white text-[10px] font-black py-3 px-6 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest"
                                         >
                                             {isValidating ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                                             Analyze Retention
@@ -506,7 +506,7 @@ export default function CreationPage() {
                                     <div className="space-y-12">
                                         <div className="space-y-2">
                                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Viral Title</span>
-                                            <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter">{script.title}</h2>
+                                            <h2 className="text-3xl font-black text-white uppercase tracking-tighter">{script.title}</h2>
                                         </div>
 
                                         <div className="space-y-10">
@@ -530,12 +530,12 @@ export default function CreationPage() {
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">{seg.type}</span>
                                                             <span className="text-[10px] font-mono text-zinc-800 tracking-tighter">{seg.duration} SEC</span>
                                                         </div>
-                                                        <p className="text-lg font-bold text-zinc-200 leading-relaxed italic">{seg.text}</p>
+                                                        <p className="text-lg font-bold text-zinc-200 leading-relaxed">{seg.text}</p>
 
                                                         <div className="flex gap-4 items-center">
                                                             <div className="flex items-center gap-3 bg-zinc-950/40 p-3 rounded-xl border border-white/5 w-fit">
                                                                 <Film className="h-3 w-3 text-zinc-500" />
-                                                                <span className="text-[10px] font-bold text-zinc-500 uppercase italic tracking-widest">{seg.visual_cue}</span>
+                                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{seg.visual_cue}</span>
                                                             </div>
 
                                                             <div className="flex gap-2">
@@ -612,7 +612,7 @@ export default function CreationPage() {
                                             <button
                                                 onClick={handleExportAssets}
                                                 disabled={isExporting}
-                                                className="flex-1 bg-white/5 hover:bg-white/10 text-zinc-400 font-black py-5 rounded-2xl transition-all uppercase text-xs tracking-[0.2em] italic border border-white/5"
+                                                className="flex-1 bg-white/5 hover:bg-white/10 text-zinc-400 font-black py-5 rounded-2xl transition-all uppercase text-xs tracking-[0.2em] border border-white/5"
                                             >
                                                 {isExporting ? "Exporting..." : "Export Assets"}
                                             </button>
@@ -621,7 +621,7 @@ export default function CreationPage() {
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={handleLaunchProduction}
                                                 disabled={isLaunchingProduction}
-                                                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-5 rounded-2xl transition-all shadow-[0_0_40px_rgba(16,185,129,0.2)] flex items-center justify-center gap-3 uppercase text-xs tracking-[0.2em] italic"
+                                                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-5 rounded-2xl transition-all shadow-[0_0_40px_rgba(16,185,129,0.2)] flex items-center justify-center gap-3 uppercase text-xs tracking-[0.2em]"
                                             >
                                                 <Zap className="h-5 w-5" />
                                                 {isLaunchingProduction ? "Launching..." : "Launch Production"}

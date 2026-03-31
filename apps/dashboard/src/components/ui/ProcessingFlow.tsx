@@ -67,7 +67,7 @@ export default React.memo(function ProcessingFlow({ steps }: { steps: FlowStep[]
                                     {step.status === 'error' && <div className="h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" />}
                                 </div>
                                 <h4 className={cn(
-                                    "text-lg font-black uppercase tracking-tighter italic",
+                                    "text-lg font-black uppercase tracking-tighter",
                                     step.status === 'active' ? "text-black" : "text-white"
                                 )}>
                                     {step.label}

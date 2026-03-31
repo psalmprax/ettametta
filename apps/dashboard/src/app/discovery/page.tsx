@@ -521,7 +521,7 @@ export default function DiscoveryPage() {
                                 </span>
                             </div>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter uppercase text-white leading-none">
+                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
                             Viral <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">{mode === "discovery" ? "Discovery" : "Synthesis"}</span>
                         </h1>
                         <p className="text-zinc-500 mt-2 max-w-lg text-sm font-medium leading-relaxed">
@@ -636,7 +636,7 @@ export default function DiscoveryPage() {
                     <div className="glass-card p-10 flex flex-col justify-center space-y-8 bg-primary/[0.02] border-primary/20 relative overflow-hidden">
                         <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
                         <div className="space-y-1">
-                            <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">Keyword <span className="text-primary">Neural Cloud</span></h3>
+                            <h3 className="text-xl font-black text-white uppercase tracking-tighter">Keyword <span className="text-primary">Neural Cloud</span></h3>
                             <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Semantic Density Analysis</p>
                         </div>
                         <div className="flex flex-wrap gap-3">
@@ -689,7 +689,7 @@ export default function DiscoveryPage() {
                         >
                             <div className="flex items-center gap-4">
                                 <div className="h-2 w-2 bg-primary rounded-full animate-ping" />
-                                <p className="text-xs font-black uppercase tracking-widest text-primary italic">
+                                <p className="text-xs font-black uppercase tracking-widest text-primary">
                                     Sourcing Intelligence: <span className="text-white">"{searchQuery}"</span>
                                 </p>
                             </div>
@@ -796,7 +796,7 @@ export default function DiscoveryPage() {
                                         ))}
                                     </div>
                                     <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest leading-relaxed">
-                                        Forces AI Decision Engine to prioritize <span className="text-zinc-400 italic">"{selectedStyle}"</span> pacing and filters.
+                                        Forces AI Decision Engine to prioritize <span className="text-zinc-400">"{selectedStyle}"</span> pacing and filters.
                                     </p>
                                 </div>
                                 <div className="space-y-4">
@@ -871,7 +871,7 @@ export default function DiscoveryPage() {
                                 >
                                     <Filter className="h-4 w-4 text-zinc-500 group-hover:text-primary transition-colors" />
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                                        Filter: <span className="text-primary italic">{filter}</span>
+                                        Filter: <span className="text-primary">{filter}</span>
                                     </span>
                                 </button>
                             </div>
@@ -922,18 +922,18 @@ export default function DiscoveryPage() {
                                                                 <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-60" />
                                                                 <div className="absolute bottom-4 left-4 flex items-center gap-2">
                                                                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                                                                    <span className="text-[8px] font-black text-white uppercase tracking-widest italic opacity-0 group-hover:opacity-100 transition-opacity">Live Alpha</span>
+                                                                    <span className="text-[8px] font-black text-white uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Live Alpha</span>
                                                                 </div>
                                                             </div>
 
                                                             <div className="space-y-4">
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="h-1 w-8 bg-primary/40 rounded-full" />
-                                                                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em] italic">
+                                                                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">
                                                                         {candidate.platform} <span className="text-zinc-600 mx-2">/</span> <span className="text-zinc-500 uppercase">Opportunity Node</span>
                                                                     </span>
                                                                 </div>
-                                                                <h4 className="font-black text-2xl tracking-tighter text-white uppercase italic line-clamp-1 group-hover:text-primary transition-colors duration-300 max-w-xl">
+                                                                <h4 className="font-black text-2xl tracking-tighter text-white uppercase line-clamp-1 group-hover:text-primary transition-colors duration-300 max-w-xl">
                                                                     {candidate.description?.split('\n')[0] || "UNTITLED_INTEL_STREAM"}
                                                                 </h4>
                                                                 <div className="flex items-center gap-6">
@@ -971,7 +971,7 @@ export default function DiscoveryPage() {
 
                                                         <div className="flex items-center gap-10 mt-6 lg:mt-0 relative z-10">
                                                             <div className="text-right flex flex-col items-end gap-2">
-                                                                <div className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em] italic">Viral Score</div>
+                                                                <div className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]">Viral Score</div>
                                                                 <div className="text-2xl font-black text-white tabular-nums drop-shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]">
                                                                     {candidate.viral_score}<span className="text-primary text-sm">/100</span>
                                                                 </div>
@@ -1069,7 +1069,7 @@ export default function DiscoveryPage() {
                                                 </div>
                                                 <div className="space-y-3 relative z-10">
                                                     <p className="text-sm font-black uppercase tracking-[0.6em] text-zinc-700">No Viral Signals Detected</p>
-                                                    <p className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest italic">Scanning Inter-Social Cluster High-Velocity Nodes</p>
+                                                    <p className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest">Scanning Inter-Social Cluster High-Velocity Nodes</p>
                                                     <button onClick={fetchTrends} className="mt-6 text-xs font-black uppercase tracking-[0.4em] text-primary hover:neon-glow transition-all">Re-Initialize Scan</button>
                                                 </div>
                                             </div>
@@ -1126,7 +1126,7 @@ export default function DiscoveryPage() {
                                                         <Globe className="h-6 w-6 text-emerald-400" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-xl font-black text-white uppercase italic">Premium Cloud</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase">Premium Cloud</h4>
                                                         <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Luma / Google / Runway</p>
                                                     </div>
                                                 </div>
@@ -1159,7 +1159,7 @@ export default function DiscoveryPage() {
                                                         <Zap className="h-6 w-6 text-primary" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-xl font-black text-white uppercase italic">Open Source</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase">Open Source</h4>
                                                         <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">ComfyUI + Wan + Hunyuan</p>
                                                     </div>
                                                 </div>
@@ -1206,7 +1206,7 @@ export default function DiscoveryPage() {
                                                             <span className="text-[10px] font-black uppercase tracking-widest">{userTier === 'studio' ? 'UNLOCKED' : 'Studio Tier Req'}</span>
                                                             {genEngine === "veo3" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase italic">Google Veo 3</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase">Google Veo 3</h4>
                                                         <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Native 4K + Synchronized Audio</p>
                                                         <div className="mt-6 flex gap-2">
                                                             <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Fast</span>
@@ -1231,7 +1231,7 @@ export default function DiscoveryPage() {
                                                             <span className="text-[10px] font-black uppercase tracking-widest">{userTier === 'studio' ? 'UNLOCKED' : 'Studio Tier Req'}</span>
                                                             {genEngine === "luma" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase italic">Luma Dream Machine</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase">Luma Dream Machine</h4>
                                                         <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Cinematic 1080p + 3:4/16:9</p>
                                                         <div className="mt-6 flex gap-2">
                                                             <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Cinematic</span>
@@ -1252,7 +1252,7 @@ export default function DiscoveryPage() {
                                                             <span className="text-[10px] font-black uppercase tracking-widest">Self-Hosted</span>
                                                             {genEngine === "wan" && <CheckCircle2 className="h-4 w-4 text-primary" />}
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase italic">Wan-AI 2.2</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase">Wan-AI 2.2</h4>
                                                         <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Multi-Expert Video Architecture</p>
                                                         <div className="mt-6 flex gap-2">
                                                             <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Open Weights</span>
@@ -1270,7 +1270,7 @@ export default function DiscoveryPage() {
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-primary">VERIFIED STABLE</span>
                                                             {genEngine === "hunyuan" && <CheckCircle2 className="h-4 w-4 text-primary" />}
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase italic">HunyuanVideo 1.5</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase">HunyuanVideo 1.5</h4>
                                                         <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Advanced Visual Semantic Model</p>
                                                         <div className="mt-6 flex gap-2">
                                                             <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">24GB VRAM+</span>
@@ -1288,7 +1288,7 @@ export default function DiscoveryPage() {
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-primary">VERIFIED STABLE</span>
                                                             {genEngine === "ltx-video" && <CheckCircle2 className="h-4 w-4 text-primary" />}
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase italic">LTX-Video</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase">LTX-Video</h4>
                                                         <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Lightricks Real-time T2V</p>
                                                         <div className="mt-6 flex gap-2">
                                                             <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">16GB VRAM</span>
@@ -1306,7 +1306,7 @@ export default function DiscoveryPage() {
                                                             <span className="text-[10px] font-black uppercase tracking-widest">Self-Hosted</span>
                                                             {genEngine === "zeroscope" && <CheckCircle2 className="h-4 w-4 text-primary" />}
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase italic">Zeroscope v2 XL</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase">Zeroscope v2 XL</h4>
                                                         <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Fast Multi-stage refinement</p>
                                                         <div className="mt-6 flex gap-2">
                                                             <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Fast</span>
@@ -1323,7 +1323,7 @@ export default function DiscoveryPage() {
                                                             <span className="text-[10px] font-black uppercase tracking-widest">Transient</span>
                                                             {genEngine === "mochi" && <CheckCircle2 className="h-4 w-4 text-primary" />}
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase italic">Mochi-1</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase">Mochi-1</h4>
                                                         <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Extreme Motion + Real-time Physics</p>
                                                         <div className="mt-6 flex gap-2">
                                                             <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-primary">Space Saving</span>
@@ -1340,7 +1340,7 @@ export default function DiscoveryPage() {
                                                             <span className="text-[10px] font-black uppercase tracking-widest">Persistent</span>
                                                             {genEngine === "cogvideo" && <CheckCircle2 className="h-4 w-4 text-primary" />}
                                                         </div>
-                                                        <h4 className="text-xl font-black text-white uppercase italic">CogVideoX-5b</h4>
+                                                        <h4 className="text-xl font-black text-white uppercase">CogVideoX-5b</h4>
                                                         <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">3D-Causal Convolutional Engine</p>
                                                         <div className="mt-6 flex gap-2">
                                                             <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Installed</span>
@@ -1366,7 +1366,7 @@ export default function DiscoveryPage() {
                                                 </div>
                                                 <div className="text-left">
                                                     <p className={cn("text-[10px] font-black uppercase tracking-widest", isStoryMode ? "text-violet-400" : "text-zinc-600")}>Evolutionary Mode</p>
-                                                    <h4 className={cn("text-lg font-black uppercase italic", isStoryMode ? "text-white" : "text-zinc-500")}>Storytelling <span className="text-hollow opacity-40">Orchestration</span></h4>
+                                                    <h4 className={cn("text-lg font-black uppercase", isStoryMode ? "text-white" : "text-zinc-500")}>Storytelling <span className="text-hollow opacity-40">Orchestration</span></h4>
                                                 </div>
                                                 <div className={cn(
                                                     "w-12 h-6 rounded-full relative transition-all duration-500",
