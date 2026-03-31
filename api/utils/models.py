@@ -159,6 +159,7 @@ class AffiliateLinkDB(Base):
     __tablename__ = "affiliate_links"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
     product_name = Column(String)
     niche = Column(String, index=True)
     link = Column(String)

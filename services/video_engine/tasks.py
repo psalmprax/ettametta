@@ -6,7 +6,10 @@ from services.optimization.youtube_publisher import base_youtube_publisher
 from services.optimization.service import base_optimization_service
 import asyncio
 import logging
+import os
 from api.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 # Bridge to use async code in synchronous Celery worker
