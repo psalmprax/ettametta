@@ -3,17 +3,19 @@ from .database import Base
 from datetime import datetime
 import enum
 
+
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
     SUPER_ADMIN = "super_admin"
     USER = "user"
 
+
 class SubscriptionTier(str, enum.Enum):
     FREE = "free"
     BASIC = "basic"
     PREMIUM = "premium"
-    SOVEREIGN = "sovereign" # Access to LTX-Video
-    STUDIO = "studio"       # Access to Runway/Pika
+    SOVEREIGN = "sovereign"  # Access to LTX-Video
+    STUDIO = "studio"  # Access to Runway/Pika
 
 
 class UserDB(Base):
@@ -31,4 +33,5 @@ class UserDB(Base):
     whatsapp_number = Column(String, unique=True, index=True, nullable=True)
     stripe_customer_id = Column(String, unique=True, index=True, nullable=True)
     stripe_subscription_id = Column(String, unique=True, index=True, nullable=True)
+    is_google_oauth = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
