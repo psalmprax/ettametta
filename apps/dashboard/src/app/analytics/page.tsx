@@ -246,15 +246,15 @@ export default function AnalyticsPage() {
 
     const [activeChartPoint, setActiveChartPoint] = useState<any>(null);
 
-    const velocityData = [
-        { time: "0h", views: 0 },
-        { time: "4h", views: metrics.views * 0.15 },
-        { time: "8h", views: metrics.views * 0.35 },
-        { time: "12h", views: metrics.views * 0.65 },
-        { time: "16h", views: metrics.views * 0.85 },
-        { time: "20h", views: metrics.views * 0.95 },
-        { time: "24h", views: metrics.views },
-    ];
+    // Dynamic Velocity Curve - Hardened to real view weight
+    const generateVelocityCurve = (totalViews: number) => {
+        const points = [0, 0.12, 0.38, 0.55, 0.78, 0.92, 1];
+        return points.map((p, i) => ({
+            time: `${i * 4}h`,
+            views: Math.round(totalViews * p)
+        }));
+    };
+    const velocityData = generateVelocityCurve(metrics.views);
 
     const handleAutoApply = async () => setIsConfirmingApply(true);
 
@@ -351,13 +351,20 @@ export default function AnalyticsPage() {
                             Deep-dive behavioral mapping and <span className="text-zinc-300 font-bold">propagation telemetry</span> for the national grid.
                         </p>
 
-                        {/* Retained Visualizer styled to fit new layout */}
+                        {/* Spectral Density Visualizer (Deterministic) */}
                         <div className="flex items-center gap-1 h-4 mt-6 overflow-hidden opacity-60">
                             {Array.from({ length: 40 }).map((_, i) => (
                                 <motion.div
                                     key={i}
-                                    animate={{ height: [4, Math.random() * 16 + 4, 4], opacity: [0.2, 0.8, 0.2] }}
-                                    transition={{ duration: 0.6 + Math.random(), repeat: Infinity }}
+                                    animate={{ 
+                                        height: [4, 8 + Math.sin(i * 0.5) * 8, 4], 
+                                        opacity: [0.2, 0.6 + Math.sin(i * 0.2) * 0.4, 0.2] 
+                                    }}
+                                    transition={{ 
+                                        duration: 1.5 + (i % 3) * 0.2, 
+                                        repeat: Infinity,
+                                        ease: "easeInOut"
+                                    }}
                                     className="w-1 bg-primary/30 rounded-full"
                                 />
                             ))}

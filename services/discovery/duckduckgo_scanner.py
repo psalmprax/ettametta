@@ -111,9 +111,15 @@ class DuckDuckGoScanner:
                     # Determine platform from URL
                     platform = self._detect_platform(url)
                     
+                    # STRICTOR PATH VALIDATION: Ensure it's a direct video link, not a landing page
+                    category = self._classify_url(url.lower(), platform)
+                    if category == "skip":
+                         continue
+
                     candidates.append(ContentCandidate(
                         id=f"ddg_{hash(url) % 100000}",
                         platform=platform,
+                        category=category,
                         url=url,
                         author="",
                         title=title,
@@ -139,6 +145,60 @@ class DuckDuckGoScanner:
         
         return candidates
     
+    def _classify_url(self, url: str, platform: str) -> str:
+        """Determines the content category and platform-specific directness."""
+        # Common "ignore" patterns (search results, settings, etc.)
+        ignore_patterns = [
+            "/search", "/results", "/trending", "/explore", "/hashtag/",
+            "/groups/", "/marketplace/", "/events/", "/settings",
+        ]
+
+        if any(pattern in url for pattern in ignore_patterns):
+            return "skip"
+
+        # 1. VIDEOS (Highest priority)
+        if platform == "YouTube":
+            if any(p in url for p in ["/watch?v=", "/shorts/", "youtu.be/"]):
+                return "video"
+            return "skip"
+        
+        if platform == "TikTok":
+            if any(p in url for p in ["/video/", "/v/", "vt.tiktok.com/"]):
+                return "video"
+            return "skip"
+
+        if any(p in url for p in ["/reels/", "/reel/", "/watch/", "/videos/"]):
+            return "video"
+
+        # 2. BLOGS / ARTICLES
+        blog_patterns = [
+            "medium.com", "substack.com", "linkedin.com/pulse", "ghost.io", "wordpress.com",
+            "blogger.com", "dev.to", "hashnode.com", "/blog/", "/article/", "/posts/",
+        ]
+        if any(pattern in url for pattern in blog_patterns):
+            return "blog"
+
+        # 3. NEWS
+        news_domains = [
+            "cnn.com", "bbc.com", "reuters.com", "nytimes.com", "theguardian.com",
+            "news.google.com", "forbes.com", "bloomberg.com", "techcrunch.com",
+        ]
+        if any(domain in url for domain in news_domains):
+            return "news"
+
+        # 4. SOCIAL (General posts)
+        if platform == "X" and "/status/" in url:
+            return "social"
+        if platform == "Reddit" and "/comments/" in url:
+            return "social"
+
+        # 5. OTHER (Generic page)
+        parts = url.split("/")
+        if len(parts) > 3:
+            return "other"
+
+        return "skip"
+
     def _detect_platform(self, url: str) -> str:
         """Detect platform from URL."""
         url_lower = url.lower()

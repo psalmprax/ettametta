@@ -30,6 +30,7 @@ type ScanResult struct {
 	Title        string  `json:"title"`
 	ViewCount    int64   `json:"view_count"`
 	Platform     string  `json:"platform"`
+	Category     string  `json:"category"` // video, blog, social, news, other
 }
 
 type Scanner struct {
@@ -110,6 +111,7 @@ func (s *Scanner) scanYouTube(niche string) []ScanResult {
 			Title:        item.Snippet.Title,
 			ViewCount:    viewCount,
 			Platform:     "youtube",
+			Category:     "video",
 		})
 	}
 
@@ -204,6 +206,12 @@ func (s *Scanner) parseDuckDuckGoResults(html string, niche string) []ScanResult
 				platform = "Reddit"
 			}
 
+			// STRICTOR PATH VALIDATION: Ensure it's a direct video link, not a landing page
+			category := classifyURL(urlLower, platform)
+			if category == "skip" {
+				continue
+			}
+
 			// Estimate velocity based on platform
 			velocity := 0.5
 			if platform == "YouTube" {
@@ -216,12 +224,85 @@ func (s *Scanner) parseDuckDuckGoResults(html string, niche string) []ScanResult
 				URL:      url,
 				Title:    title,
 				Platform: platform,
+				Category: category,
 			})
 		}
 	}
 
 	fmt.Printf("[Scanner] DuckDuckGo found %d results for: %s\n", len(results), niche)
 	return results
+}
+
+// classifyURL determines the content category and platform-specific directness
+func classifyURL(url string, platform string) string {
+	// Common "ignore" patterns (search results, settings, etc.)
+	ignorePatterns := []string{
+		"/search", "/results", "/trending", "/explore", "/hashtag/",
+		"/groups/", "/marketplace/", "/events/", "/settings",
+	}
+
+	for _, pattern := range ignorePatterns {
+		if strings.Contains(url, pattern) {
+			return "skip"
+		}
+	}
+
+	// 1. VIDEOS (Highest priority)
+	if platform == "YouTube" {
+		if strings.Contains(url, "/watch?v=") || strings.Contains(url, "/shorts/") || strings.Contains(url, "youtu.be/") {
+			return "video"
+		}
+		return "skip" // YouTube non-videos (channels) are skipped for now
+	}
+
+	if platform == "TikTok" {
+		if strings.Contains(url, "/video/") || strings.Contains(url, "/v/") || strings.Contains(url, "vt.tiktok.com/") {
+			return "video"
+		}
+		return "skip"
+	}
+
+	if strings.Contains(url, "/reels/") || strings.Contains(url, "/reel/") || strings.Contains(url, "/watch/") || strings.Contains(url, "/videos/") {
+		return "video"
+	}
+
+	// 2. BLOGS / ARTICLES
+	blogPatterns := []string{
+		"medium.com", "substack.com", "linkedin.com/pulse", "ghost.io", "wordpress.com",
+		"blogger.com", "dev.to", "hashnode.com", "/blog/", "/article/", "/posts/",
+	}
+	for _, pattern := range blogPatterns {
+		if strings.Contains(url, pattern) {
+			return "blog"
+		}
+	}
+
+	// 3. NEWS
+	newsDomains := []string{
+		"cnn.com", "bbc.com", "reuters.com", "nytimes.com", "theguardian.com",
+		"news.google.com", "forbes.com", "bloomberg.com", "techcrunch.com",
+	}
+	for _, domain := range newsDomains {
+		if strings.Contains(url, domain) {
+			return "news"
+		}
+	}
+
+	// 4. SOCIAL (General posts)
+	if platform == "X" && strings.Contains(url, "/status/") {
+		return "social"
+	}
+	if platform == "Reddit" && strings.Contains(url, "/comments/") {
+		return "social"
+	}
+
+	// 5. OTHER (Generic page)
+	parts := strings.Split(url, "/")
+	if len(parts) > 3 {
+		return "other"
+	}
+
+	return "skip"
 }
 
 // calculateVelocity returns a velocity score based on view count
@@ -243,7 +324,7 @@ func calculateVelocity(viewCount int64) float64 {
 
 func (s *Scanner) StartMultiScan(niches []string) []ScanResult {
 	nichesChan := make(chan string, len(niches))
-	resultsChan := make(chan ScanResult, len(niches)*5) // Expect up to 5 results per niche
+	resultsChan := make(chan ScanResult, len(niches)*100) // Much larger buffer to prevent deadlocks
 	var wg sync.WaitGroup
 
 	// 1. Spawn Workers

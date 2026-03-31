@@ -19,7 +19,11 @@ import {
     Sparkles,
     Flame,
     BookOpen,
-    Calendar
+    Calendar,
+    MessageSquare,
+    Newspaper,
+    Heart,
+    UserPlus
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -38,6 +42,7 @@ const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: 
 interface ContentCandidate {
     id: string;
     platform: string;
+    category: string; // video, blog, social, news, other
     description: string;
     thumbnail_url: string;
     views: number;
@@ -47,6 +52,13 @@ interface ContentCandidate {
     author: string;
     url: string;
     duration_seconds: number;
+    title: string;
+}
+
+interface OpenCLISession {
+    platform: string;
+    status: string;
+    last_verified: string | null;
 }
 
 interface NicheTrend {
@@ -61,6 +73,7 @@ export default function DiscoveryPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeNiche, setActiveNiche] = useState("Motivation");
     const [filter, setFilter] = useState("all"); // all, youtube, tiktok, instagram, facebook, x, twitch, etc.
+    const [activeCategory, setActiveCategory] = useState("all"); // all, video, blog, social, news
     const [showConfig, setShowConfig] = useState(false);
     const [mode, setMode] = useState<"discovery" | "generative">("discovery");
     const [timeHorizon, setTimeHorizon] = useState("30d"); // 24h, 7d, 30d
@@ -88,6 +101,8 @@ export default function DiscoveryPage() {
     const [genStack, setGenStack] = useState<"cloud" | "self-hosted">("cloud");
     const [isGenerating, setIsGenerating] = useState(false);
     const [isStoryMode, setIsStoryMode] = useState(false);
+    const [busyInteractions, setBusyInteractions] = useState<Record<string, boolean>>({});
+    const [sessions, setSessions] = useState<OpenCLISession[]>([]);
 
     useEffect(() => {
         const fetchNiches = async () => {
@@ -122,8 +137,24 @@ export default function DiscoveryPage() {
             }
         };
 
+        const fetchSessions = async () => {
+            try {
+                const token = localStorage.getItem("et_token");
+                const res = await fetch(`${API_BASE}/opencli/sessions`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setSessions(data.sessions || []);
+                }
+            } catch (err) {
+                console.error("Failed to fetch sessions", err);
+            }
+        };
+
         fetchNiches();
         fetchProfile();
+        fetchSessions();
     }, []);
 
     useEffect(() => {
@@ -233,6 +264,55 @@ export default function DiscoveryPage() {
         }
     }, [activeNiche, router]);
 
+    const handleInteract = useCallback(async (candidate: ContentCandidate, action: string) => {
+        const interactionKey = `${candidate.id}-${action}`;
+        setBusyInteractions(prev => ({ ...prev, [interactionKey]: true }));
+        
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/opencli/interact`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    platform: candidate.platform.toLowerCase().includes('youtube') ? 'youtube' : 
+                             candidate.platform.toLowerCase().includes('tiktok') ? 'tiktok' : 
+                             candidate.platform.toLowerCase().includes('x') ? 'x' : 
+                             candidate.platform.toLowerCase().includes('twitter') ? 'x' :
+                             candidate.platform.toLowerCase().includes('instagram') ? 'instagram' :
+                             candidate.platform.toLowerCase().split(' ')[0],
+                    action: action,
+                    content_url: candidate.url
+                })
+            });
+            
+            if (res.ok) {
+                toast.success(`${action.charAt(0).toUpperCase() + action.slice(1)} Handshake Verified`, {
+                    description: `Successfully synchronized ${action} on ${candidate.platform}.`,
+                    icon: action === 'like' ? <Heart className="h-4 w-4 text-primary fill-primary" /> : <UserPlus className="h-4 w-4 text-primary" />
+                });
+            } else {
+                const err = await res.json().catch(() => ({}));
+                toast.error(`${action.charAt(0).toUpperCase() + action.slice(1)} Rejected`, {
+                    description: err.detail || "Check your session cookies in Settings."
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Neural Disconnect", {
+                description: "Failed to reach the interaction cluster."
+            });
+        } finally {
+            setBusyInteractions(prev => {
+                const newState = { ...prev };
+                delete newState[interactionKey];
+                return newState;
+            });
+        }
+    }, []);
+
     // Open candidate URL in new tab
     const handleOpenUrl = useCallback((url: string) => {
         if (url) {
@@ -319,11 +399,11 @@ export default function DiscoveryPage() {
     const filteredCandidates = React.useMemo(() => {
         if (!Array.isArray(candidates)) return [];
         return candidates.filter(c => {
-            if (filter === 'all') return true;
-            // Match platform names (partial match for flexibility)
-            return c.platform.toLowerCase().includes(filter.toLowerCase());
+            const platformMatch = filter === 'all' || c.platform.toLowerCase().includes(filter.toLowerCase());
+            const categoryMatch = activeCategory === 'all' || (c.category || 'video').toLowerCase() === activeCategory.toLowerCase();
+            return platformMatch && categoryMatch;
         });
-    }, [candidates, filter]);
+    }, [candidates, filter, activeCategory]);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearching, setIsSearching] = useState(false);
@@ -391,7 +471,9 @@ export default function DiscoveryPage() {
                         setIsTestDriving(false);
                         setTestJobId(null);
                     } else if (data.data.status === "Failed") {
-                        alert("Test Drive Failed. Check logs for details.");
+                        toast.error("Test Drive Failed", {
+                            description: "Review system logs in Settings for error details."
+                        });
                         setIsTestDriving(false);
                         setTestJobId(null);
                     }
@@ -408,9 +490,36 @@ export default function DiscoveryPage() {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="h-1 w-8 bg-primary rounded-full" />
-                            <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Global Intelligence</span>
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="h-1 w-8 bg-primary rounded-full" />
+                                <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Global Intelligence</span>
+                            </div>
+                            
+                            {/* Neural Session Heartbeat */}
+                            <div className="flex items-center gap-2 bg-zinc-950/50 border border-white/5 px-3 py-1.5 rounded-xl ml-4">
+                                <div className="flex -space-x-1">
+                                    {['youtube', 'tiktok', 'x'].map(plat => {
+                                        const session = sessions.find(s => s.platform === plat);
+                                        const isActive = session?.status === 'connected';
+                                        return (
+                                            <div 
+                                                key={plat}
+                                                className={cn(
+                                                    "h-4 w-4 rounded-full border-2 border-zinc-950 flex items-center justify-center text-[6px] font-black uppercase",
+                                                    isActive ? "bg-primary text-black" : "bg-zinc-800 text-zinc-500"
+                                                )}
+                                                title={`${plat.toUpperCase()}: ${session?.status || 'Disconnected'}`}
+                                            >
+                                                {plat[0]}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest hidden sm:block">
+                                    {sessions.some(s => s.status === 'connected') ? 'Neural Link Active' : 'Link Offline'}
+                                </span>
+                            </div>
                         </div>
                         <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter uppercase text-white leading-none">
                             Viral <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">{mode === "discovery" ? "Discovery" : "Synthesis"}</span>
@@ -446,7 +555,7 @@ export default function DiscoveryPage() {
                                         await fetch(`${API_BASE}/discovery/scan`, {
                                             method: "POST",
                                             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                                            body: JSON.stringify({ niches: [searchQuery] })
+                                            body: JSON.stringify({ niches: [searchQuery], deep: true })
                                         });
                                         fetchTrends();
                                     }}
@@ -615,6 +724,31 @@ export default function DiscoveryPage() {
                         <Sparkles className="h-4 w-4" />
                         Neural Config
                     </button>
+                </div>
+
+                {/* Category Filtering Tabs */}
+                <div className="flex items-center gap-2 p-1.5 bg-zinc-950/50 backdrop-blur-xl border border-white/5 rounded-2xl w-fit">
+                    {[
+                        { id: 'all', label: 'All Content', icon: Globe },
+                        { id: 'video', label: 'Videos', icon: Play },
+                        { id: 'blog', label: 'Blogs', icon: BookOpen },
+                        { id: 'social', label: 'Social', icon: MessageSquare },
+                        { id: 'news', label: 'News', icon: Newspaper },
+                    ].map((cat) => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setActiveCategory(cat.id)}
+                            className={cn(
+                                "flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                activeCategory === cat.id
+                                    ? "bg-primary text-black shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]"
+                                    : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                            )}
+                        >
+                            <cat.icon className="h-3.5 w-3.5" />
+                            {cat.label}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Neural Config Drawer (Animate Height) */}
@@ -871,6 +1005,56 @@ export default function DiscoveryPage() {
                                                                  <Zap className="h-8 w-8 fill-black group-hover/btn:scale-125 transition-transform duration-500" />
                                                              </motion.button>
                                                              <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">Transform</span>
+
+                                                             <div className="h-px w-8 bg-white/5 my-2" />
+
+                                                             {/* Like Button */}
+                                                             <motion.button
+                                                                 whileHover={{ scale: 1.1, y: -2 }}
+                                                                 whileTap={{ scale: 0.9 }}
+                                                                 disabled={busyInteractions[`${candidate.id}-like`]}
+                                                                 onClick={(e) => {
+                                                                     e.stopPropagation();
+                                                                     handleInteract(candidate, "like");
+                                                                 }}
+                                                                 className={cn(
+                                                                     "h-10 w-10 rounded-2xl flex items-center justify-center transition-all",
+                                                                     busyInteractions[`${candidate.id}-like`] 
+                                                                         ? "bg-zinc-900 border border-white/5" 
+                                                                         : "bg-zinc-800 text-zinc-400 hover:bg-primary/20 hover:text-primary hover:border-primary/30 border border-transparent"
+                                                                 )}
+                                                             >
+                                                                 {busyInteractions[`${candidate.id}-like`] ? (
+                                                                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                                                 ) : (
+                                                                     <Heart className="h-4 w-4" />
+                                                                 )}
+                                                             </motion.button>
+                                                             <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">Like</span>
+
+                                                             {/* Follow Button */}
+                                                             <motion.button
+                                                                 whileHover={{ scale: 1.1, y: -2 }}
+                                                                 whileTap={{ scale: 0.9 }}
+                                                                 disabled={busyInteractions[`${candidate.id}-follow`]}
+                                                                 onClick={(e) => {
+                                                                     e.stopPropagation();
+                                                                     handleInteract(candidate, "follow");
+                                                                 }}
+                                                                 className={cn(
+                                                                     "h-10 w-10 rounded-2xl flex items-center justify-center transition-all",
+                                                                     busyInteractions[`${candidate.id}-follow`] 
+                                                                         ? "bg-zinc-900 border border-white/5" 
+                                                                         : "bg-zinc-800 text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-500 hover:border-emerald-500/30 border border-transparent"
+                                                                 )}
+                                                             >
+                                                                 {busyInteractions[`${candidate.id}-follow`] ? (
+                                                                     <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+                                                                 ) : (
+                                                                     <UserPlus className="h-4 w-4" />
+                                                                 )}
+                                                             </motion.button>
+                                                             <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">Follow</span>
                                                          </div>
                                                         </div>
                                                     </motion.div>
