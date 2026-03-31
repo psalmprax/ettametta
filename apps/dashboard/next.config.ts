@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
+  server: {
+    allowedHosts: ["149.104.110.122.sslip.io"],
+  },
+} as NextConfig;
 
 export default nextConfig;
