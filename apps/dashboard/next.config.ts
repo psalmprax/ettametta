@@ -11,10 +11,6 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: `${apiUrl}/api/:path*`,
       },
-      {
-        source: "/ws/:path*",
-        destination: `${apiUrl.replace(/^http/, "ws")}/ws/:path*`,
-      },
     ];
   },
 } as NextConfig;
