@@ -15,7 +15,10 @@ import {
     CheckCircle2,
     Search,
     Play,
-    Clock
+    Clock,
+    History,
+    Trophy,
+    Medal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -102,8 +105,12 @@ export default function AnalyticsPage() {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [globalFilter, setGlobalFilter] = useState("");
     const [activeTests, setActiveTests] = useState<any[]>([]);
+    const [completedTests, setCompletedTests] = useState<any[]>([]);
     const [isCreatingTest, setIsCreatingTest] = useState(false);
     const [newTestContentId, setNewTestContentId] = useState("");
+
+    const [showWinnerModal, setShowWinnerModal] = useState(false);
+    const [lastWinner, setLastWinner] = useState<any>(null);
 
     // --- DATA FETCHING ---
     useEffect(() => {
@@ -173,20 +180,29 @@ export default function AnalyticsPage() {
     }, [selectedPostId]);
     // --- END DATA FETCHING ---
 
+    const fetchData = async () => {
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/ab-testing/ab/tests/active`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setActiveTests(data.active_tests || data.tests || data || []);
+            }
+
+            const compRes = await fetch(`${API_BASE}/ab-testing/ab/tests/completed`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (compRes.ok) {
+                const data = await compRes.json();
+                setCompletedTests(data.completed_tests || []);
+            }
+        } catch (e) {}
+    };
+
     useEffect(() => {
-        const fetchActiveTests = async () => {
-            try {
-                const token = localStorage.getItem("et_token");
-                const res = await fetch(`${API_BASE}/ab-testing/ab/tests/active`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setActiveTests(data.tests || data || []);
-                }
-            } catch (e) {}
-        };
-        fetchActiveTests();
+        fetchData();
     }, []);
 
     // Real-time Telemetry Stream
@@ -344,8 +360,8 @@ export default function AnalyticsPage() {
                             <div className="h-1 w-8 bg-primary rounded-full" />
                             <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Neural Intelligence</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter uppercase text-white leading-none">
-                            Analytic <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">Engine</span>
+                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
+                            Analytic <span className="text-transparent bg-clip-text bg-linear-to-r from-violet-500 to-cyan-400 text-hollow">Engine</span>
                         </h1>
                         <p className="text-zinc-500 mt-2 max-w-lg text-sm font-medium leading-relaxed">
                             Deep-dive behavioral mapping and <span className="text-zinc-300 font-bold">propagation telemetry</span> for the national grid.
@@ -381,7 +397,7 @@ export default function AnalyticsPage() {
                         <div className="space-y-1">
                             <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest text-right">Selected Node</p>
                             <div className="bg-zinc-950/50 border border-white/5 rounded-2xl px-6 py-4 flex items-center gap-4">
-                                <span className="text-white font-black italic">VF-{selectedPostId || "GLOBAL"}</span>
+                                <span className="text-white font-black">VF-{selectedPostId || "GLOBAL"}</span>
                                 <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                             </div>
                         </div>
@@ -444,11 +460,11 @@ export default function AnalyticsPage() {
                             >
                                 <div className="flex items-center justify-between border-b border-white/5 pb-6">
                                     <div className="space-y-1">
-                                        <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">Retention <span className="text-primary">Spectrum</span></h3>
+                                        <h3 className="text-xl font-black text-white uppercase tracking-tighter">Retention <span className="text-primary">Spectrum</span></h3>
                                         <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest">Attention Decay Analysis</p>
                                     </div>
-                                    <div className="flex items-center gap-2 bg-zinc-950/50 px-4 py-2 rounded-xl border border-white/5">
-                                        <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                    <div className="flex items-center gap-2 bg-zinc-950/50 px-4 py-2 rounded-xl border border-white/5 shadow-glow-violet/10">
+                                        <div className="h-2 w-2 rounded-full bg-neon-violet animate-pulse shadow-glow-violet" />
                                         <span className="text-[10px] font-black text-zinc-500 uppercase">Live Telemetry</span>
                                     </div>
                                 </div>
@@ -544,7 +560,7 @@ export default function AnalyticsPage() {
                                             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">New Followers Predicted</p>
                                         </div>
                                     </div>
-                                    <p className="text-zinc-500 text-xs font-medium leading-relaxed italic">
+                                    <p className="text-zinc-500 text-xs font-medium leading-relaxed">
                                         "{report?.optimization_insight.split('.')[0] || "Global cluster synchronization active..."}"
                                     </p>
                                 </div>
@@ -559,7 +575,7 @@ export default function AnalyticsPage() {
                                 >
                                     <div className="absolute inset-0 scanline opacity-5" />
                                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-20 rounded-full bg-zinc-950 border border-white/10 flex items-center justify-center z-10 hidden md:flex">
-                                        <span className="text-primary font-black italic text-xl">VS</span>
+                                        <span className="text-primary font-black text-xl">VS</span>
                                     </div>
 
                                     <div className="space-y-6">
@@ -567,7 +583,7 @@ export default function AnalyticsPage() {
                                             <div className={cn("h-3 w-3 rounded-full", abResults.winner === 'A' ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-zinc-800")} />
                                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Variant A (Standard)</p>
                                         </div>
-                                        <h4 className="text-2xl font-black text-white tracking-tighter uppercase italic truncate">{abResults.variant_a_title}</h4>
+                                        <h4 className="text-2xl font-black text-white tracking-tighter uppercase truncate">{abResults.variant_a_title}</h4>
                                         <div className="space-y-2">
                                             <div className="flex justify-between text-[10px] font-bold text-zinc-400">
                                                 <span>Reach</span>
@@ -584,7 +600,7 @@ export default function AnalyticsPage() {
                                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Variant B (Optimized)</p>
                                             <div className={cn("h-3 w-3 rounded-full", abResults.winner === 'B' ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-zinc-800")} />
                                         </div>
-                                        <h4 className="text-2xl font-black text-primary tracking-tighter uppercase italic truncate">{abResults.variant_b_title}</h4>
+                                        <h4 className="text-2xl font-black text-primary tracking-tighter uppercase truncate">{abResults.variant_b_title}</h4>
                                         <div className="space-y-2">
                                             <div className="flex justify-between text-[10px] font-bold text-zinc-400">
                                                 <span className="text-white">{(abResults.variant_b_views || 0).toLocaleString()}</span>
@@ -610,11 +626,11 @@ export default function AnalyticsPage() {
                                             <Zap className="h-6 w-6 text-amber-500" />
                                         </div>
                                         <div>
-                                            <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">AI <span className="text-amber-400">Insights</span></h3>
+                                            <h3 className="text-xl font-black text-white uppercase tracking-tighter">AI <span className="text-amber-400">Insights</span></h3>
                                             <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest">Neural Optimization Recommendations</p>
                                         </div>
                                     </div>
-                                    <p className="text-zinc-400 text-sm font-medium leading-relaxed italic">{insights}</p>
+                                    <p className="text-zinc-400 text-sm font-medium leading-relaxed">{insights}</p>
                                 </motion.div>
                             )}
                         </div>
@@ -624,7 +640,7 @@ export default function AnalyticsPage() {
                             <div className="glass-card p-10 space-y-8">
                                 <div className="flex items-center justify-between border-b border-white/5 pb-6">
                                     <div className="space-y-1">
-                                        <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">Performance <span className="text-primary">Matrix</span></h3>
+                                        <h3 className="text-xl font-black text-white uppercase tracking-tighter">Performance <span className="text-primary">Matrix</span></h3>
                                         <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest">Multi-dimensional Signal Strength</p>
                                     </div>
                                 </div>
@@ -663,7 +679,7 @@ export default function AnalyticsPage() {
                             <div className="glass-card p-10 space-y-8">
                                 <div className="flex items-center justify-between border-b border-white/5 pb-6">
                                     <div className="space-y-1">
-                                        <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">Distribution <span className="text-primary">Node</span></h3>
+                                        <h3 className="text-xl font-black text-white uppercase tracking-tighter">Distribution <span className="text-primary">Node</span></h3>
                                         <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest">Global Propagation Streams</p>
                                     </div>
                                     <div className="relative group">
@@ -764,7 +780,7 @@ export default function AnalyticsPage() {
                                 <Target className="h-5 w-5 text-purple-500" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">A/B Testing <span className="text-purple-400">Matrix</span></h3>
+                                <h3 className="text-xl font-black text-white uppercase tracking-tighter">A/B Testing <span className="text-purple-400">Matrix</span></h3>
                                 <p className="text-zinc-500 text-[9px] font-black uppercase tracking-widest">Active Variant Tracking</p>
                             </div>
                         </div>
@@ -850,13 +866,12 @@ export default function AnalyticsPage() {
                                                         headers: { Authorization: `Bearer ${token}` }
                                                     });
                                                     if (res.ok) {
-                                                        const refreshRes = await fetch(`${API_BASE}/ab-testing/ab/tests/active`, {
-                                                            headers: { Authorization: `Bearer ${token}` }
-                                                        });
-                                                        if (refreshRes.ok) {
-                                                            const data = await refreshRes.json();
-                                                            setActiveTests(data.tests || data || []);
+                                                        const data = await res.json();
+                                                        if (data.status === "winner_determined") {
+                                                            setLastWinner(data);
+                                                            setShowWinnerModal(true);
                                                         }
+                                                        fetchData(); // Refresh all
                                                     }
                                                 } catch (e) {}
                                             }}
@@ -872,6 +887,100 @@ export default function AnalyticsPage() {
                         <p className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest text-center py-8">No active A/B tests</p>
                     )}
                 </div>
+
+                {/* Victory Matrix - Completed Tests */}
+                <div className="glass-card rounded-[2.5rem] p-10 space-y-8 mt-10">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-xl bg-neon-violet/10 flex items-center justify-center border border-neon-violet/20 shadow-glow-violet/20">
+                                <Trophy className="h-6 w-6 text-neon-violet neon-glow-violet" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-white uppercase tracking-tight">Victory <span className="text-transparent bg-clip-text bg-linear-to-r from-neon-violet to-neon-cyan">Matrix</span></h3>
+                                <p className="text-[10px] text-cyan-400 font-black uppercase tracking-widest">Optimized DNA Heritage</p>
+                            </div>
+                        </div>
+                        <History className="h-5 w-5 text-zinc-700" />
+                    </div>
+
+                    {completedTests.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {completedTests.map((test: any) => {
+                                const total = (test.variant_a_views || 0) + (test.variant_b_views || 0);
+                                const winRate = total > 0 ? (test.winner_variant === 'A' ? test.variant_a_views / total : test.variant_b_views / total) : 0;
+                                return (
+                                    <div key={test.id} className="p-5 rounded-2xl bg-zinc-950/40 border border-white/5 flex items-center justify-between group hover:border-amber-500/30 transition-all">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <Medal className="h-3 w-3 text-amber-500" />
+                                                <p className="text-[10px] font-black text-white uppercase">Variant {test.winner_variant}</p>
+                                            </div>
+                                            <p className="text-[11px] text-zinc-400 font-bold">{test.winner_variant === 'A' ? test.variant_a_title : test.variant_b_title}</p>
+                                            <p className="text-[9px] text-zinc-600 uppercase font-black">Content: {test.content_id}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-lg font-black text-amber-500 tracking-tighter">+{Math.round((winRate - 0.5) * 200)}%</p>
+                                            <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">Growth Lift</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <p className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest text-center py-8">No optimization victories recorded yet</p>
+                    )}
+                </div>
+
+                {/* Winner Success Modal */}
+                <AnimatePresence>
+                    {showWinnerModal && lastWinner && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
+                        >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="max-w-md w-full glass-card border-neon-violet/50 bg-zinc-950 p-10 rounded-[3rem] text-center space-y-8 relative overflow-hidden shadow-glow-violet/30"
+                        >
+                            <div className="absolute inset-0 bg-linear-to-b from-neon-violet/10 via-transparent to-neon-cyan/5 pointer-events-none" />
+                            <div className="h-24 w-24 rounded-[2rem] bg-neon-violet/20 border border-neon-violet/30 flex items-center justify-center mx-auto shadow-glow-violet">
+                                <Trophy className="h-12 w-12 text-neon-violet animate-float" />
+                            </div>
+                            <div className="space-y-2">
+                                <h2 className="text-4xl font-black text-white uppercase tracking-tighter">Optimization <span className="text-neon-cyan">Victory</span></h2>
+                                <p className="text-zinc-400 text-sm font-bold uppercase tracking-widest">Variant {lastWinner.winner} Has Ascended</p>
+                            </div>
+                                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+                                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                                        <span>Winning Title</span>
+                                        <span className="text-amber-500">Winner</span>
+                                    </div>
+                                    <p className="text-xl font-black text-white uppercase tracking-tight">{lastWinner.winner_title}</p>
+                                    <div className="pt-4 border-t border-white/5 flex justify-between items-end">
+                                        <div>
+                                            <p className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Engagement</p>
+                                            <p className="text-2xl font-black text-white">{lastWinner.variant_a_views + lastWinner.variant_b_views}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Performance Lift</p>
+                                            <p className="text-2xl font-black text-emerald-500">+{Math.round((Math.max(lastWinner.variant_a_views, lastWinner.variant_b_views) / (lastWinner.variant_a_views + lastWinner.variant_b_views) - 0.5) * 200)}%</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowWinnerModal(false)}
+                                    className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black py-5 rounded-2xl transition-all uppercase text-xs tracking-[0.2em] shadow-[0_0_30px_rgba(245,158,11,0.3)]"
+                                >
+                                    Seal Result
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Overdrive Neural Panel */}
                 <motion.div
@@ -890,7 +999,7 @@ export default function AnalyticsPage() {
                             <h4 className="text-3xl font-black uppercase tracking-tighter text-white">Neural Optimizer</h4>
                             <span className="px-3 py-1 rounded-lg bg-zinc-900 border border-white/10 text-[8px] font-black text-zinc-500 uppercase tracking-widest">Active_Cluster</span>
                         </div>
-                        <p className="text-zinc-500 font-medium text-sm leading-relaxed italic max-w-4xl">
+                        <p className="text-zinc-500 font-medium text-sm leading-relaxed max-w-4xl">
                             {report?.optimization_insight || (
                                 <span className="opacity-70">
                                     Awaiting telemetry data. Publish content to activate neural optimization cluster.
@@ -931,7 +1040,7 @@ function TelemetryTile({ title, value, icon, label, subtext }: { title: string, 
                 </div>
             </div>
             <div className="pt-6 flex items-center justify-between border-t border-white/5 relative z-10">
-                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest italic">{label}</span>
+                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{label}</span>
                 <div className="flex items-center gap-2">
                     <ArrowUpRight className="h-3 w-3 text-primary animate-bounce-subtle" />
                     <span className="text-[11px] font-black text-primary uppercase tracking-tighter neon-glow">{subtext}</span>

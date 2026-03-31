@@ -97,7 +97,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                                 <div className="h-1 w-6 bg-primary rounded-full" />
                                 <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Outcome Preview</span>
                             </div>
-                            <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter truncate max-w-md">
+                            <h2 className="text-2xl font-black text-white uppercase tracking-tighter truncate max-w-md">
                                 {title || "Untitled Viral Fragment"}
                             </h2>
                         </div>
@@ -151,7 +151,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                         <div className="hidden md:flex items-center gap-10">
                             <div className="text-right">
                                 <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Status</p>
-                                <p className="text-xs font-black text-emerald-500 uppercase italic">Ready to Publish</p>
+                                <p className="text-xs font-black text-emerald-500 uppercase">Ready to Publish</p>
                             </div>
                             <button
                                 onClick={handleShare}

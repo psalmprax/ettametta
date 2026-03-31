@@ -329,39 +329,53 @@ class InsightResponse(BaseModel):
 async def get_niche_insights(niche: str, user: UserDB = Depends(get_current_user)):
     """
     Get AI-driven insights and recommendations for a specific niche.
-    In production, this queries the aggregate trend data and uses an LLM to generate advice.
+    Uses Groq Llama-3 to generate high-fidelity, real-time advice based on the niche.
     """
-    # Simple rule-based engine as a robust backend implementation
-    niche_lower = niche.lower()
-    
-    insights_map = {
-        "ai": {
-            "recommendation": "Use high-contrast glitch overlays and fast-paced jump cuts. AI audience responds best to 'behind-the-scenes' technical reveals and rapid-fire feature lists.",
-            "filters": ["Glitch Alpha", "Neural Sharpener"],
-            "confidence": 0.942
-        },
-        "motivation": {
-            "recommendation": "Leverage low-frequency cinematic audio and center-weighted bold captions. Emotional resonance peaks with high-dynamic range color grading and direct-to-camera addresses.",
-            "filters": ["Cinematic Pulse", "Bold Typography"],
-            "confidence": 0.895
-        },
-        "finance": {
-            "recommendation": "Prioritize data visualization overlays and muted professional color palettes. Stability indicators (Green/Emerald accents) increase trust and retention for educational content.",
-            "filters": ["Modern Overlay", "Professional Grade"],
-            "confidence": 0.918
-        }
-    }
-    
-    # Check if we have specific advice, otherwise return general high-performing advice
-    advice = insights_map.get(niche_lower, insights_map.get("ai")) # Fallback to ai for now for high-quality baseline
-    
+    from groq import Groq
+    from api.config import settings
+    import json
+
+    # Default fallback data
+    recommendation = "Use high-contrast visuals and rapid-fire segments. Maintain a high information density to maximize retention in the first 5 seconds."
+    filters = ["Glitch Alpha", "Cinematic Pulse"]
+    confidence = 0.85
+
+    if settings.GROQ_API_KEY and settings.GROQ_API_KEY != "your_key_here":
+        try:
+            client = Groq(api_key=settings.GROQ_API_KEY)
+            prompt = f"""
+            You are a viral growth expert for the {niche} niche on YouTube Shorts/TikTok.
+            Provide a viral optimization strategy for this niche.
+            
+            Return ONLY a JSON object with this structure:
+            {{
+                "recommendation": "string (single actionable sentence, max 30 words)",
+                "filters_suggested": ["string", "string"],
+                "confidence": float (0.0 to 1.0)
+            }}
+            """
+
+            chat_completion = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model="llama-3.3-70b-versatile",
+                response_format={"type": "json_object"}
+            )
+            
+            ai_data = json.loads(chat_completion.choices[0].message.content)
+            recommendation = ai_data.get("recommendation", recommendation)
+            filters = ai_data.get("filters_suggested", filters)
+            confidence = ai_data.get("confidence", confidence)
+        except Exception as e:
+            import logging
+            logging.error(f"[Discovery] Groq Insight Failure: {e}")
+
     return InsightResponse(
         niche=niche,
-        recommendation=advice["recommendation"],
-        confidence=advice["confidence"],
-        filters_suggested=advice["filters"],
+        recommendation=recommendation,
+        confidence=confidence,
+        filters_suggested=filters,
         target_regions=["US", "GB", "DE"],
-        alpha_status=True
+        alpha_status=False # No longer alpha, it's real
     )
 
 

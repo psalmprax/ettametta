@@ -150,13 +150,13 @@ export default function Home() {
       >
         <motion.div variants={itemVariants} className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <div className="h-1 w-8 bg-primary rounded-full" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">System Command</span>
+            <div className="h-1 w-8 bg-neon-violet rounded-full shadow-glow-violet/50" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-violet">System Command</span>
           </div>
-          <h1 className="text-5xl md:text-6xl font-black tracking-tighter italic uppercase text-white">Neural <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-purple-500 text-hollow">Dashboard</span></h1>
-          <p className="text-zinc-500 font-medium max-w-lg">
-            Aggregated intelligence from Nigerian & Global social clusters.
-            Engine status: <span className={`${stats.velocity === 'High' ? 'text-primary' : 'text-emerald-500'} font-bold uppercase`}>{stats.velocity || "Nominal"}</span>
+          <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white">Neural <span className="text-transparent bg-clip-text bg-linear-to-r from-violet-500 to-cyan-400 text-hollow">Dashboard</span></h1>
+          <p className="text-zinc-500 font-medium max-w-lg tracking-tight">
+            Aggregated intelligence from global social clusters.
+            Engine status: <span className={`${stats.velocity === 'High' ? 'text-neon-cyan' : 'text-neon-cyan'} font-bold uppercase neon-glow-cyan`}>{stats.velocity || "Nominal"}</span>
           </p>
         </motion.div>
 
@@ -172,7 +172,7 @@ export default function Home() {
           <TelemetryTile
             title="Core Throughput"
             value={stats.videos_processed.toString()}
-            icon={<Zap className="h-5 w-5 text-primary" />}
+            icon={<Zap className="h-5 w-5 text-neon-violet" />}
             label="Total Processed"
             subtext={`Load: ${stats.engine_load || "0%"}`}
           />
@@ -221,10 +221,10 @@ export default function Home() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="space-y-4 text-center md:text-left">
                 <div className="flex items-center gap-3 justify-center md:justify-start">
-                  <div className={`h-2 w-2 rounded-full animate-pulse ${stats.storage.status === 'Healthy' ? 'bg-emerald-500' : stats.storage.status === 'Warning' ? 'bg-amber-500' : 'bg-red-500'}`} />
+                  <div className={`h-2 w-2 rounded-full animate-pulse ${stats.storage.status === 'Healthy' ? 'bg-neon-cyan shadow-glow-cyan/50' : stats.storage.status === 'Warning' ? 'bg-amber-500' : 'bg-red-500'}`} />
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Storage Lifecycle Manager</span>
                 </div>
-                <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter">Autonomous <span className="text-primary">Archival</span> Status</h3>
+                <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Autonomous <span className="text-neon-cyan">Archival</span> Status</h3>
                 <p className="text-zinc-500 font-medium max-w-md">
                   Monitoring local video assets. Automatic migration to <span className="text-white font-bold">{stats.storage.provider}</span> triggers at {stats.storage.threshold_gb}GB.
                 </p>
@@ -240,7 +240,7 @@ export default function Home() {
                     initial={{ width: 0 }}
                     animate={{ width: `${stats.storage.usage_percent}%` }}
                     transition={{ duration: 1.5, ease: "easeOut" }}
-                    className={`h-full rounded-full ${stats.storage.status === 'Healthy' ? 'bg-emerald-500' : stats.storage.status === 'Warning' ? 'bg-amber-500' : 'bg-red-500'}`}
+                    className={`h-full rounded-full ${stats.storage.status === 'Healthy' ? 'bg-neon-cyan shadow-glow-cyan/50' : stats.storage.status === 'Warning' ? 'bg-amber-500' : 'bg-red-500'}`}
                   />
                 </div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-600">
@@ -259,7 +259,7 @@ export default function Home() {
               <Clock className="h-5 w-5 text-zinc-500" />
               <h3 className="text-xs font-black uppercase tracking-[0.25em] text-zinc-500">Global Egress Feed</h3>
             </div>
-            <Link href="/publishing" className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline transition-all">
+            <Link href="/publishing" className="text-[10px] font-black text-neon-cyan uppercase tracking-widest hover:underline transition-all neon-glow-cyan">
               View Node Matrix →
             </Link>
           </div>
@@ -297,8 +297,8 @@ export default function Home() {
                       activityUrl ? "cursor-pointer" : ""
                     )}
                   >
-                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <Zap className="h-6 w-6 text-primary neon-glow" />
+                    <div className="h-12 w-12 rounded-2xl bg-neon-violet/10 flex items-center justify-center shrink-0 border border-neon-violet/20">
+                      <Zap className="h-6 w-6 text-neon-violet neon-glow-violet" />
                     </div>
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center justify-between">

@@ -38,11 +38,18 @@ const config: Config = {
                 border: "hsl(var(--border))",
                 input: "hsl(var(--input))",
                 ring: "hsl(var(--ring))",
+                "neon-violet": "#8b5cf6",
+                "neon-cyan": "#22d3ee",
             },
             borderRadius: {
                 lg: "var(--radius)",
                 md: "calc(var(--radius) - 2px)",
                 sm: "calc(var(--radius) - 4px)",
+            },
+            boxShadow: {
+                "glow-violet": "0 0 20px rgba(139, 92, 246, 0.3), 0 0 40px rgba(139, 92, 246, 0.1)",
+                "glow-cyan": "0 0 20px rgba(34, 211, 238, 0.3), 0 0 40px rgba(34, 211, 238, 0.1)",
+                "inner-glow": "inset 0 1px 1px rgba(255, 255, 255, 0.05)",
             },
             fontFamily: {
                 sans: ["var(--font-sans)"],
@@ -50,6 +57,18 @@ const config: Config = {
             },
             animation: {
                 "spin-slow": "spin 3s linear infinite",
+                "pulse-neon": "pulse-neon 4s ease-in-out infinite",
+                "float": "float 6s ease-in-out infinite",
+            },
+            keyframes: {
+                "pulse-neon": {
+                    "0%, 100%": { opacity: "1", filter: "brightness(1)" },
+                    "50%": { opacity: "0.8", filter: "brightness(1.5)" },
+                },
+                "float": {
+                    "0%, 100%": { transform: "translateY(0px)" },
+                    "50%": { transform: "translateY(-10px)" },
+                },
             },
         },
     },
