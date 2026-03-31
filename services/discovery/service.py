@@ -29,7 +29,6 @@ from api.utils.vault import get_secret
 from api.utils.celery import celery_app
 from groq import Groq
 
-from api.routes.ws import notify_system_log_async
 
 class DiscoveryService:
     def __init__(self):
@@ -62,7 +61,21 @@ class DiscoveryService:
     async def _log(self, message: str, level: str = "INFO"):
         """Broadcasts a discovery log message."""
         await notify_system_log_async(message, level=level, module="DISCOVERY")
-        print(f"[Discovery] {message}")
+        # Send log via Redis to avoid circular import
+        import json
+        import redis
+        import datetime
+        from api.config import settings
+        try:
+            r = redis.from_url(settings.REDIS_URL)
+            r.publish("system_logs", json.dumps({
+                "message": message,
+                "level": level,
+                "module": "DISCOVERY",
+                "timestamp": str(datetime.datetime.now())
+            }))
+        except Exception as e:
+            print(f"[Discovery] Failed to send log: {e}")
 
     async def find_trending_content(
         self, 
