@@ -404,7 +404,7 @@ async def google_auth_callback(
                     "client_secret": settings.GOOGLE_CLIENT_SECRET,
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [settings.GOOGLE_REDIRECT_URI],
+                    "redirect_uris": [settings.GOOGLE_AUTH_REDIRECT_URI],
                 }
             },
             scopes=[
@@ -412,7 +412,7 @@ async def google_auth_callback(
                 "https://www.googleapis.com/auth/userinfo.email",
                 "https://www.googleapis.com/auth/userinfo.profile",
             ],
-            redirect_uri=settings.GOOGLE_REDIRECT_URI,
+            redirect_uri=settings.GOOGLE_AUTH_REDIRECT_URI,
         )
 
         flow.fetch_token(code=code)
