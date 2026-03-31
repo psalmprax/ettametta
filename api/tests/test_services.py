@@ -8,6 +8,7 @@ import os
 import sys
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
+from pydantic import BaseModel
 
 # Add parent directory to path
 from pathlib import Path
@@ -39,11 +40,21 @@ class TestLangChainService:
             if mod in sys.modules:
                 del sys.modules[mod]
         
-        from services.langchain.service import LangChainService
-        
-        service = LangChainService()
-        assert service.enabled == False
-        assert service.llm is None
+        with patch('api.config.settings') as mock_settings:
+            mock_settings.ENABLE_LANGCHAIN = False
+            
+            # Mock LangChain imports
+            with patch.dict('sys.modules', {
+                'langchain': MagicMock(),
+                'langchain_community': MagicMock(),
+                'langchain_community.llms': MagicMock(),
+                'langchain_community.chat_models': MagicMock(),
+            }):
+                from services.langchain.service import LangChainService
+                
+                service = LangChainService()
+                assert service.enabled == False
+                assert service.llm is None
 
 
 class TestCrewAIService:
@@ -64,11 +75,23 @@ class TestCrewAIService:
             if mod in sys.modules:
                 del sys.modules[mod]
         
-        from services.crewai.service import CrewAIService
+        with patch('api.config.settings') as mock_settings:
+            mock_settings.ENABLE_CREWAI = False
+            
+            # Mock CrewAI imports
+            with patch.dict('sys.modules', {
+                'crewai': MagicMock(),
+                'crewai.agent': MagicMock(),
+                'crewai.task': MagicMock(),
+                'crewai.crew': MagicMock(),
+                'langchain_community': MagicMock(),
+                'langchain_community.tools': MagicMock(),
+            }):
+                from services.crewai.service import CrewAIService
         
-        service = CrewAIService()
-        assert service.enabled == False
-        assert service.llm is None
+                service = CrewAIService()
+                assert service.enabled == False
+                assert service.llm is None
     
     @patch.dict(os.environ, {"ENABLE_CREWAI": "false", "CREWAI_AGENTS": "researcher,writer"})
     def test_agents_config_parsing(self):
@@ -79,11 +102,24 @@ class TestCrewAIService:
             if mod in sys.modules:
                 del sys.modules[mod]
         
-        from services.crewai.service import CrewAIService
-        
-        service = CrewAIService()
-        # Just check that agents_config exists
-        assert hasattr(service, 'agents_config')
+        with patch('api.config.settings') as mock_settings:
+            mock_settings.ENABLE_CREWAI = False
+            mock_settings.CREWAI_AGENTS = "researcher,writer"
+            
+            # Mock CrewAI imports
+            with patch.dict('sys.modules', {
+                'crewai': MagicMock(),
+                'crewai.agent': MagicMock(),
+                'crewai.task': MagicMock(),
+                'crewai.crew': MagicMock(),
+                'langchain_community': MagicMock(),
+                'langchain_community.tools': MagicMock(),
+            }):
+                from services.crewai.service import CrewAIService
+                
+                service = CrewAIService()
+                # Just check that agents_config exists
+                assert hasattr(service, 'agents_config')
 
 
 class TestAffiliateService:
@@ -100,11 +136,17 @@ class TestAffiliateService:
     @patch.dict(os.environ, {"ENABLE_AFFILIATE_API": "true", "AMAZON_ASSOCIATES_TAG": "test_tag"})
     def test_service_enabled_with_api_keys(self):
         """Test affiliate service with API keys"""
-        from services.affiliate.service import AffiliateService
-        
-        service = AffiliateService()
-        assert service.enabled == True
-        assert service.amazon_tag == "test_tag"
+        with patch('api.config.settings') as mock_settings:
+            mock_settings.ENABLE_AFFILIATE_API = True
+            mock_settings.AMAZON_ASSOCIATES_TAG = "test_tag"
+            mock_settings.IMPACT_RADIUS_API_KEY = ""
+            mock_settings.SHAREASALE_API_KEY = ""
+            
+            from services.affiliate.service import AffiliateService
+            
+            service = AffiliateService()
+            assert service.enabled == True
+            assert service.amazon_tag == "test_tag"
     
     @patch.dict(os.environ, {"ENABLE_AFFILIATE_API": "false"})
     def test_generate_affiliate_link_amazon(self):
@@ -113,11 +155,12 @@ class TestAffiliateService:
         import asyncio
         
         service = AffiliateService()
-        # Disabled service should still generate links
-        url = service.generate_affiliate_link(
+        # Disabled service should still generate links (async method)
+        import asyncio
+        url = asyncio.run(service.generate_affiliate_link(
             "https://amazon.com/product", 
             "amazon"
-        )
+        ))
         assert "amazon.com" in url
 
 
@@ -126,7 +169,7 @@ class TestTradingService:
     
     @patch.dict(os.environ, {"ENABLE_TRADING": "false"})
     def test_service_disabled_by_default(self):
-        """Test trading service disabled state"""
+        """Test trading service disabled state"
         from services.trading.service import TradingService
         
         service = TradingService()
@@ -134,53 +177,68 @@ class TestTradingService:
     
     @patch.dict(os.environ, {"ENABLE_TRADING": "true", "ALPHA_VANTAGE_API_KEY": "test_key", "COINGECKO_API_KEY": "test_key"})
     def test_service_enabled_with_api_keys(self):
-        """Test trading service with API keys"""
-        # Clear module cache
-        modules_to_clear = [k for k in sys.modules.keys() if k.startswith('services.trading')]
-        for mod in modules_to_clear:
-            if mod in sys.modules:
-                del sys.modules[mod]
-        
-        from services.trading.service import TradingService
-        
-        service = TradingService()
-        assert service.enabled == True
-        assert service.alpha_vantage_key == "test_key"
-        assert service.coingecko_key == "test_key"
+        """Test trading service with API keys"
+        with patch('api.config.settings') as mock_settings:
+            mock_settings.ENABLE_TRADING = True
+            mock_settings.ALPHA_VANTAGE_API_KEY = "test_key"
+            mock_settings.COINGECKO_API_KEY = "test_key"
+            
+            # Clear module cache
+            modules_to_clear = [k for k in sys.modules.keys() if k.startswith('services.trading')]
+            for mod in modules_to_clear:
+                if mod in sys.modules:
+                    del sys.modules[mod]
+            
+            from services.trading.service import TradingService
+            
+            service = TradingService()
+            assert service.enabled == True
+            assert service.alpha_vantage_key == "test_key"
+            assert service.coingecko_key == "test_key"
     
     @patch.dict(os.environ, {"ENABLE_TRADING": "true", "ALPHA_VANTAGE_API_KEY": "test_key"})
     def test_service_enabled_with_alpha_vantage_only(self):
-        """Test trading service with only Alpha Vantage key"""
-        # Clear module cache
-        modules_to_clear = [k for k in sys.modules.keys() if k.startswith('services.trading')]
-        for mod in modules_to_clear:
-            if mod in sys.modules:
-                del sys.modules[mod]
-        
-        from services.trading.service import TradingService
-        
-        service = TradingService()
-        assert service.enabled == True
-        assert service.alpha_vantage_key == "test_key"
-        # coingecko_key should be empty string from settings
-        assert service.coingecko_key == ""
+        """Test trading service with only Alpha Vantage key"
+        with patch('api.config.settings') as mock_settings:
+            mock_settings.ENABLE_TRADING = True
+            mock_settings.ALPHA_VANTAGE_API_KEY = "test_key"
+            mock_settings.COINGECKO_API_KEY = ""
+            
+            # Clear module cache
+            modules_to_clear = [k for k in sys.modules.keys() if k.startswith('services.trading')]
+            for mod in modules_to_clear:
+                if mod in sys.modules:
+                    del sys.modules[mod]
+            
+            from services.trading.service import TradingService
+            
+            service = TradingService()
+            assert service.enabled == True
+            assert service.alpha_vantage_key == "test_key"
+            # coingecko_key should be empty string from settings
+            assert service.coingecko_key == ""
     
-    @patch.dict(os.environ, {"ENABLE_TRADING": "true", "COINGECKO_API_KEY": "test_key"})
+    @patch.dict(os.environ, {"ENABLE_TRADING": "true", "COINGECKO_API_KEY": "test_key}")
     def test_service_enabled_with_coingecko_only(self):
-        """Test trading service with only CoinGecko key"""
-        # Clear module cache
-        modules_to_clear = [k for k in sys.modules.keys() if k.startswith('services.trading')]
-        for mod in modules_to_clear:
-            if mod in sys.modules:
-                del sys.modules[mod]
-        
-        from services.trading.service import TradingService
-        
-        service = TradingService()
-        assert service.enabled == True
-        assert service.coingecko_key == "test_key"
-        # alpha_vantage_key should be empty string from settings
-        assert service.alpha_vantage_key == ""
+        """Test trading service with only CoinGecko key"
+        with patch('api.config.settings') as mock_settings:
+            mock_settings.ENABLE_TRADING = True
+            mock_settings.ALPHA_VANTAGE_API_KEY = ""
+            mock_settings.COINGECKO_API_KEY = "test_key"
+            
+            # Clear module cache
+            modules_to_clear = [k for k in sys.modules.keys() if k.startswith('services.trading')]
+            for mod in modules_to_clear:
+                if mod in sys.modules:
+                    del sys.modules[mod]
+            
+            from services.trading.service import TradingService
+            
+            service = TradingService()
+            assert service.enabled == True
+            assert service.coingecko_key == "test_key"
+            # alpha_vantage_key should be empty string from settings
+            assert service.alpha_vantage_key == ""
 
 
 class TestInterpreterService:
@@ -188,7 +246,7 @@ class TestInterpreterService:
     
     @patch.dict(os.environ, {"ENABLE_INTERPRETER": "false"})
     def test_service_disabled_by_default(self):
-        """Test interpreter service disabled state"""
+        """Test interpreter service disabled state"
         from services.interpreter.service import InterpreterService
         
         service = InterpreterService()
@@ -196,23 +254,31 @@ class TestInterpreterService:
     
     @patch.dict(os.environ, {"ENABLE_INTERPRETER": "true", "INTERPRETER_SANDBOX": "true"})
     def test_sandbox_mode_config(self):
-        """Test interpreter sandbox configuration"""
-        from services.interpreter.service import InterpreterService
-        
-        service = InterpreterService()
-        assert service.sandbox_mode == True
+        """Test interpreter sandbox configuration"
+        with patch('api.config.settings') as mock_settings:
+            mock_settings.ENABLE_INTERPRETER = True
+            mock_settings.INTERPRETER_SANDBOX = True
+            
+            from services.interpreter.service import InterpreterService
+            
+            service = InterpreterService()
+            assert service.sandbox_mode == True
     
     @patch.dict(os.environ, {"ENABLE_INTERPRETER": "true", "INTERPRETER_MAX_RUNTIME": "30"})
     def test_max_runtime_config(self):
-        """Test interpreter max runtime configuration"""
-        from services.interpreter.service import InterpreterService
-        
-        service = InterpreterService()
-        assert service.max_runtime == 30
+        """Test interpreter max runtime configuration"
+        with patch('api.config.settings') as mock_settings:
+            mock_settings.ENABLE_INTERPRETER = True
+            mock_settings.INTERPRETER_MAX_RUNTIME = 30
+            
+            from services.interpreter.service import InterpreterService
+            
+            service = InterpreterService()
+            assert service.max_runtime == 30
     
     @patch.dict(os.environ, {"ENABLE_INTERPRETER": "false"})
     def test_execute_code_raises_when_disabled(self):
-        """Test that execute_code raises when service disabled"""
+        """Test that execute_code raises when service disabled"
         import asyncio
         from services.interpreter.service import InterpreterService
         
