@@ -15,7 +15,7 @@ export default function DashboardLayout({
             <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
 
             {/* Persistent Texture Overlay (Elite Grain) */}
-            <div className="absolute inset-0 elite-grain-overlay z-50" />
+            <div className="absolute inset-0 elite-grain-overlay z-50 pointer-events-none" />
 
             <Sidebar />
 
