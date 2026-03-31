@@ -9,43 +9,55 @@ from fastapi_cache.decorator import cache
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
+
 @router.get("/posts")
 async def list_analytics_posts(
-    page: int = 1, 
-    size: int = 20,
-    current_user: UserDB = Depends(get_current_user)
+    page: int = 1, size: int = 20, current_user: UserDB = Depends(get_current_user)
 ):
     from api.utils.database import SessionLocal
     from api.utils.models import PublishedContentDB
+
     db = SessionLocal()
     try:
-        query = db.query(PublishedContentDB).filter(PublishedContentDB.status == "Published")
+        query = db.query(PublishedContentDB).filter(
+            PublishedContentDB.status == "Published"
+        )
         if current_user.role != "admin":
             query = query.filter(PublishedContentDB.user_id == current_user.id)
-            
-        posts = query.order_by(PublishedContentDB.published_at.desc()) \
-            .offset((page - 1) * size) \
-            .limit(size) \
+
+        posts = (
+            query.order_by(PublishedContentDB.published_at.desc())
+            .offset((page - 1) * size)
+            .limit(size)
             .all()
+        )
         return posts
     finally:
         db.close()
+
 
 @router.get("/report/{post_id}", response_model=ContentPerformance)
 @cache(expire=600)
 async def get_report(post_id: str, current_user: UserDB = Depends(get_current_user)):
     from api.utils.database import SessionLocal
     from api.utils.models import PublishedContentDB
+
     db = SessionLocal()
     try:
         # Verify user owns this content
-        content = db.query(PublishedContentDB).filter(PublishedContentDB.id == post_id).first()
+        content = (
+            db.query(PublishedContentDB)
+            .filter(PublishedContentDB.id == post_id)
+            .first()
+        )
         if not content:
             raise HTTPException(status_code=404, detail="Content not found")
         if content.user_id != current_user.id and current_user.role != "admin":
             raise HTTPException(status_code=403, detail="Access denied")
-        
-        report = await base_analytics_service.get_performance_report(post_id)
+
+        report = await base_analytics_service.get_performance_report(
+            post_id, current_user.id
+        )
         return report
     except HTTPException:
         raise
@@ -54,20 +66,28 @@ async def get_report(post_id: str, current_user: UserDB = Depends(get_current_us
     finally:
         db.close()
 
+
 @router.get("/insights/{post_id}")
 async def get_insights(post_id: str, current_user: UserDB = Depends(get_current_user)):
     from api.utils.database import SessionLocal
     from api.utils.models import PublishedContentDB
+
     db = SessionLocal()
     try:
         # Verify user owns this content
-        content = db.query(PublishedContentDB).filter(PublishedContentDB.id == post_id).first()
+        content = (
+            db.query(PublishedContentDB)
+            .filter(PublishedContentDB.id == post_id)
+            .first()
+        )
         if not content:
             raise HTTPException(status_code=404, detail="Content not found")
         if content.user_id != current_user.id and current_user.role != "admin":
             raise HTTPException(status_code=403, detail="Access denied")
-        
-        report = await base_analytics_service.get_performance_report(post_id)
+
+        report = await base_analytics_service.get_performance_report(
+            post_id, current_user.id
+        )
         return {"insight": report.optimization_insight}
     except HTTPException:
         raise
@@ -76,20 +96,32 @@ async def get_insights(post_id: str, current_user: UserDB = Depends(get_current_
     finally:
         db.close()
 
+
 @router.get("/monetization/{post_id}")
-async def get_monetization_suggestions(post_id: str, niche: str = "Motivation", current_user: UserDB = Depends(get_current_user)):
+async def get_monetization_suggestions(
+    post_id: str,
+    niche: str = "Motivation",
+    current_user: UserDB = Depends(get_current_user),
+):
     from api.utils.database import SessionLocal
     from api.utils.models import PublishedContentDB
+
     db = SessionLocal()
     try:
         # Verify user owns this content
-        content = db.query(PublishedContentDB).filter(PublishedContentDB.id == post_id).first()
+        content = (
+            db.query(PublishedContentDB)
+            .filter(PublishedContentDB.id == post_id)
+            .first()
+        )
         if not content:
             raise HTTPException(status_code=404, detail="Content not found")
         if content.user_id != current_user.id and current_user.role != "admin":
             raise HTTPException(status_code=403, detail="Access denied")
-        
-        report = await base_analytics_service.get_performance_report(post_id)
+
+        report = await base_analytics_service.get_performance_report(
+            post_id, current_user.id
+        )
         suggestions = base_analytics_service.suggest_optimal_monetization(report, niche)
         return {"report": report, "suggestions": suggestions}
     except HTTPException:
@@ -99,6 +131,7 @@ async def get_monetization_suggestions(post_id: str, niche: str = "Motivation", 
     finally:
         db.close()
 
+
 @router.get("/stats/summary")
 @cache(expire=600)
 async def get_stats_summary(current_user: UserDB = Depends(get_current_user)):
@@ -106,37 +139,55 @@ async def get_stats_summary(current_user: UserDB = Depends(get_current_user)):
     from api.utils.database import SessionLocal
     from api.utils.models import PublishedContentDB, VideoJobDB
     from sqlalchemy import func
-    
+
     db = SessionLocal()
     try:
         # Base queries
-        post_query = db.query(PublishedContentDB).filter(PublishedContentDB.status == "Published")
+        post_query = db.query(PublishedContentDB).filter(
+            PublishedContentDB.status == "Published"
+        )
         job_query = db.query(VideoJobDB)
-        
+
         # User isolation
         if current_user.role != "admin":
-            post_query = post_query.filter(PublishedContentDB.user_id == current_user.id)
+            post_query = post_query.filter(
+                PublishedContentDB.user_id == current_user.id
+            )
             job_query = job_query.filter(VideoJobDB.user_id == current_user.id)
 
         # Count published posts
         total_posts = post_query.count()
-        
+
         # Count total video jobs
         total_jobs = job_query.count()
-        
+
         # Calculate success rate
         success_rate = (total_posts / total_jobs * 100) if total_jobs > 0 else 0
-        
+
         # Get total views from DB
-        total_views = db.query(func.sum(PublishedContentDB.view_count)).filter(
-            PublishedContentDB.user_id == current_user.id if current_user.role != "admin" else True
-        ).scalar() or 0
-        
+        total_views = (
+            db.query(func.sum(PublishedContentDB.view_count))
+            .filter(
+                PublishedContentDB.user_id == current_user.id
+                if current_user.role != "admin"
+                else True
+            )
+            .scalar()
+            or 0
+        )
+
         # Get total engagement
-        total_likes = db.query(func.sum(PublishedContentDB.like_count)).filter(
-            PublishedContentDB.user_id == current_user.id if current_user.role != "admin" else True
-        ).scalar() or 0
-        
+        total_likes = (
+            db.query(func.sum(PublishedContentDB.like_count))
+            .filter(
+                PublishedContentDB.user_id == current_user.id
+                if current_user.role != "admin"
+                else True
+            )
+            .scalar()
+            or 0
+        )
+
         # Format reach
         if total_views >= 1000000:
             reach_formatted = f"{total_views / 1000000:.1f}M"
@@ -144,20 +195,32 @@ async def get_stats_summary(current_user: UserDB = Depends(get_current_user)):
             reach_formatted = f"{total_views / 1000:.1f}K"
         else:
             reach_formatted = str(total_views)
-        
+
         # Count active trends (unique niches from telemetry)
         from api.utils.models import NicheTrendDB
+
         active_trends_count = db.query(NicheTrendDB.niche).distinct().count() or 0
-        
+
         # Calculate velocity (discovered in last 24h)
         yesterday = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
-        recent_count = db.query(NicheTrendDB).filter(NicheTrendDB.last_updated >= yesterday).count() or 0
-        
+        recent_count = (
+            db.query(NicheTrendDB)
+            .filter(NicheTrendDB.last_updated >= yesterday)
+            .count()
+            or 0
+        )
+
         # Calculate engine load (Queue vs Capacity)
-        pending_jobs = db.query(VideoJobDB).filter(VideoJobDB.status.in_(["Queued", "Transcribing", "Rendering"])).count()
-        MAX_CAPACITY = 10 # Sample threshold
-        engine_load = int((pending_jobs / MAX_CAPACITY) * 100) if MAX_CAPACITY > 0 else 0
-        
+        pending_jobs = (
+            db.query(VideoJobDB)
+            .filter(VideoJobDB.status.in_(["Queued", "Transcribing", "Rendering"]))
+            .count()
+        )
+        MAX_CAPACITY = 10  # Sample threshold
+        engine_load = (
+            int((pending_jobs / MAX_CAPACITY) * 100) if MAX_CAPACITY > 0 else 0
+        )
+
         return {
             "active_trends": active_trends_count,
             "videos_processed": total_jobs,
@@ -165,10 +228,11 @@ async def get_stats_summary(current_user: UserDB = Depends(get_current_user)):
             "success_rate": f"{success_rate:.1f}%",
             "recent_discovery_count": recent_count,
             "engine_load": f"{engine_load}%",
-            "velocity": "High" if recent_count > 5 else "Nominal"
+            "velocity": "High" if recent_count > 5 else "Nominal",
         }
     finally:
         db.close()
+
 
 @router.get("/stats/storage")
 @cache(expire=3600)
@@ -176,40 +240,52 @@ async def get_storage_stats(current_user: UserDB = Depends(get_current_user)):
     """Get storage usage statistics for the outputs directory."""
     from services.storage.manager import storage_manager
     from api.config import settings
-    
+
     try:
         current_size = storage_manager.get_output_dir_size()
         threshold_bytes = storage_manager.threshold_bytes
-        
+
         return {
             "current_size_gb": round(current_size / (1024**3), 2),
             "threshold_gb": storage_manager.threshold_gb,
-            "usage_percent": round((current_size / threshold_bytes) * 100, 1) if threshold_bytes > 0 else 0,
-            "status": "Healthy" if current_size < threshold_bytes * 0.9 else "Warning" if current_size < threshold_bytes else "Critical",
-            "provider": settings.STORAGE_PROVIDER
+            "usage_percent": round((current_size / threshold_bytes) * 100, 1)
+            if threshold_bytes > 0
+            else 0,
+            "status": "Healthy"
+            if current_size < threshold_bytes * 0.9
+            else "Warning"
+            if current_size < threshold_bytes
+            else "Critical",
+            "provider": settings.STORAGE_PROVIDER,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/ab/results/{content_id}")
-async def get_ab_results(content_id: str, current_user: UserDB = Depends(get_current_user)):
+async def get_ab_results(
+    content_id: str, current_user: UserDB = Depends(get_current_user)
+):
     """
     Returns A/B test performance for a specific content job.
     """
     from api.utils.database import SessionLocal
     from api.utils.models import ABTestDB
+
     db = SessionLocal()
     try:
         test = db.query(ABTestDB).filter(ABTestDB.content_id == content_id).first()
         if not test:
-            raise HTTPException(status_code=404, detail="A/B test not found for this content")
-        
+            raise HTTPException(
+                status_code=404, detail="A/B test not found for this content"
+            )
+
         # Calculate winning variant (simplified logic)
         total_views = test.variant_a_views + test.variant_b_views
         winner = None
-        if total_views > 10: # Threshold for significant data
+        if total_views > 10:  # Threshold for significant data
             winner = "A" if test.variant_a_views > test.variant_b_views else "B"
-            
+
         return {
             "test_id": test.id,
             "variant_a_title": test.variant_a_title,
@@ -217,7 +293,7 @@ async def get_ab_results(content_id: str, current_user: UserDB = Depends(get_cur
             "variant_a_views": test.variant_a_views,
             "variant_b_views": test.variant_b_views,
             "winner": winner,
-            "created_at": test.created_at
+            "created_at": test.created_at,
         }
     finally:
         db.close()
