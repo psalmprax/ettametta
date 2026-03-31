@@ -16,6 +16,7 @@ class ContentCandidate(BaseModel):
     engagement_score: float = 0.0
     viral_score: int = 0
     duration_seconds: float = 0.0
+    category: str = "video"  # video, blog, social, news, other
     discovery_date: datetime = Field(default_factory=datetime.utcnow)
     tags: List[str] = []
     metadata: dict = {}

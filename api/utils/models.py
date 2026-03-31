@@ -62,6 +62,7 @@ class ContentCandidateDB(Base):
     viral_score = Column(Integer, default=0)
     duration_seconds = Column(Float, default=0.0)
     discovery_date = Column(DateTime, default=datetime.utcnow)
+    category = Column(String, default="video")  # video, blog, social, news, other
     tags = Column(JSON, nullable=True)
     thumbnail_url = Column(String, nullable=True)
     metadata_json = Column(JSON, default={})

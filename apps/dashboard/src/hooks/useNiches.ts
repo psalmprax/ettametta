@@ -1,0 +1,43 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { API_BASE } from "@/lib/config";
+
+export function useNiches() {
+    const [niches, setNiches] = useState<string[]>([]);
+    const [styles, setStyles] = useState<string[]>(["Default", "Cinematic", "Hectic/Viral", "ASMR/Calm", "Educational", "Dramatic", "Glitch/High-Art", "Noir/Classic"]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const refreshNiches = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/discovery/niches`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    // Filter out any empty strings or duplicates
+                    const validNiches = Array.from(new Set(data.filter(n => n && n.trim() !== "")));
+                    setNiches(validNiches);
+                }
+            }
+        } catch (err) {
+            console.error("useNiches: Failed to fetch niches", err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        refreshNiches();
+    }, [refreshNiches]);
+
+    return {
+        niches: niches.length > 0 ? niches : ["Motivation", "AI Tech", "Finance", "History"], // Fallback to basic if backend is totally empty
+        styles,
+        isLoading,
+        refreshNiches
+    };
+}
