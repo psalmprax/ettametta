@@ -27,6 +27,7 @@ import dynamic from "next/dynamic";
 const ProcessingFlow = dynamic(() => import("@/components/ui/ProcessingFlow"), { ssr: false });
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_BASE } from "@/lib/config";
+import { useNiches } from "@/hooks/useNiches";
 
 import { toast } from "sonner";
 
@@ -43,6 +44,7 @@ import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 function TransformationPageContent() {
+    const { niches } = useNiches();
     const searchParams = useSearchParams();
     const [processingJobs, setProcessingJobs] = useState<VideoJob[]>([]);
     const [activeFilters, setActiveFilters] = useState<any[]>([]);
@@ -56,8 +58,7 @@ function TransformationPageContent() {
     const [enableMotionGraphics, setEnableMotionGraphics] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [aiInsight, setAiInsight] = useState<any>(null);
-    const [currentNiche, setCurrentNiche] = useState("AI");
-    const [niches, setNiches] = useState<string[]>([]);
+    const [currentNiche, setCurrentNiche] = useState("Motivation");
 
     useEffect(() => {
         const urlParam = searchParams.get("url");
@@ -208,14 +209,12 @@ function TransformationPageContent() {
                 if (!token) return;
                 const headers = { Authorization: `Bearer ${token}` };
 
-                const [jobsRes, filtersRes, nichesRes] = await Promise.all([
+                const [jobsRes, filtersRes] = await Promise.all([
                     fetch(`${API_BASE}/video/jobs`, { headers }).then(r => r.json()),
-                    fetch(`${API_BASE}/settings/filters`, { headers }).then(r => r.json()),
-                    fetch(`${API_BASE}/discovery/niches`, { headers }).then(r => r.json())
+                    fetch(`${API_BASE}/settings/filters`, { headers }).then(r => r.json())
                 ]);
                 setProcessingJobs(jobsRes);
                 setActiveFilters(filtersRes);
-                setNiches(nichesRes || ["AI", "Motivation", "Finance"]);
                 if (jobsRes.length > 0 && !selectedJob) {
                     setSelectedJob(jobsRes[0]);
                 } else if (selectedJob) {

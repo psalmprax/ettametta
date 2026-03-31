@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
 import { toast } from "sonner";
+import { useNiches } from "@/hooks/useNiches";
 
 interface ScriptSegment {
     type: string;
@@ -38,8 +39,9 @@ interface ScriptOutput {
 }
 
 export default function CreationPage() {
+    const { niches, styles: availableStyles } = useNiches();
     const [topic, setTopic] = useState("");
-    const [niche, setNiche] = useState("AI Technology");
+    const [niche, setNiche] = useState("Motivation");
     const [style, setStyle] = useState("story");
     const [duration, setDuration] = useState(60);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -347,10 +349,7 @@ export default function CreationPage() {
                                             onChange={(e) => setNiche(e.target.value)}
                                             className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-5 focus:outline-none focus:ring-1 focus:ring-primary/40 text-xs font-black uppercase tracking-wider text-zinc-400 appearance-none cursor-pointer hover:bg-zinc-900/50"
                                         >
-                                            <option>AI Technology</option>
-                                            <option>Stoic Wisdom</option>
-                                            <option>Market Trends</option>
-                                            <option>History</option>
+                                            {niches.map(n => <option key={n} value={n}>{n}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-2">
@@ -360,9 +359,7 @@ export default function CreationPage() {
                                             onChange={(e) => setStyle(e.target.value)}
                                             className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-5 focus:outline-none focus:ring-1 focus:ring-primary/40 text-xs font-black uppercase tracking-wider text-zinc-400 appearance-none cursor-pointer hover:bg-zinc-900/50"
                                         >
-                                            <option value="story">Storytelling</option>
-                                            <option value="listicle">Listicle</option>
-                                            <option value="educational">Educational</option>
+                                            {availableStyles.map(s => <option key={s} value={s.toLowerCase()}>{s}</option>)}
                                         </select>
                                     </div>
                                 </div>

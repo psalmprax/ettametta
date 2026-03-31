@@ -114,6 +114,7 @@ async def websocket_logs_endpoint(websocket: WebSocket):
 
 import random
 import time
+from datetime import datetime, timedelta
 
 
 @router.websocket("/telemetry")
@@ -217,13 +218,12 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     {"label": "AFRICA-NORTH", "load": min(90, 40 + completed_jobs * 3)},
                 ],
                 "geo_activity": [
-                    {
-                        "lat": round(random.uniform(-50, 70), 4),
-                        "lng": round(random.uniform(-120, 140), 4),
-                        "intensity": round(min(1.0, 0.3 + (recent_published * 0.1)), 2),
-                    }
-                    for _ in range(min(4, max(1, recent_published)))
-                ],
+                    {"lat": 6.5244, "lng": 3.3792, "intensity": min(1.0, 0.4 + (recent_published * 0.1))}, # Lagos
+                    {"lat": 40.7128, "lng": -74.0060, "intensity": min(0.8, 0.2 + (active_jobs * 0.05))}, # NYC
+                    {"lat": 51.5074, "lng": -0.1278, "intensity": min(0.7, 0.1 + (completed_jobs * 0.01))}, # London
+                    {"lat": 1.3521, "lng": 103.8198, "intensity": min(0.6, 0.05 + (total_published * 0.005))}, # Singapore
+                ][:max(1, min(4, total_published // 10 + 1))],
+
                 "real_stats": {
                     "active_jobs": active_jobs,
                     "completed_jobs": completed_jobs,

@@ -26,6 +26,7 @@ import { API_BASE } from "@/lib/config";
 import dynamic from "next/dynamic";
 
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export default function EmpirePage() {
     const [sentinelStatus, setSentinelStatus] = useState<any>(null);
@@ -46,6 +47,8 @@ export default function EmpirePage() {
     const [recommendations, setRecommendations] = useState<any[]>([]);
     const [isRecommending, setIsRecommending] = useState(false);
     const [isSyncingShopify, setIsSyncingShopify] = useState(false);
+    const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
+    const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
     const fetchSentinel = async () => {
         setIsRefreshing(true);
@@ -339,44 +342,30 @@ export default function EmpirePage() {
         }
     };
 
-    useEffect(() => {
-        fetchNetwork();
-    }, []);
+    const fetchTimelineEvents = async () => {
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/monetization/empire/activity`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setTimelineEvents(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch empire activity:", err);
+        }
+    };
 
     useEffect(() => {
-        const events: any[] = [];
-        if (sentinelStatus?.recommendations) {
-            sentinelStatus.recommendations.forEach((rec: string, i: number) => {
-                events.push({
-                    time: new Date(Date.now() - (i + 1) * 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    event: "Sentinel Correction",
-                    desc: rec
-                });
-            });
-        }
-        if (empireMetrics?.account_count > 0) {
-            events.push({
-                time: new Date(Date.now() - 7200000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                event: "Node Expansion",
-                desc: `Managing ${empireMetrics.account_count} active accounts across network.`
-            });
-        }
-        if (blueprints.length > 0) {
-            events.push({
-                time: new Date(Date.now() - 10800000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                event: "Blueprint Captured",
-                desc: `${blueprints.length} winning strategies logged in repository.`
-            });
-        }
-        if (events.length === 0) {
-            events.push({
-                time: "--:--",
-                event: "Awaiting Activity",
-                desc: "System monitoring for algorithm shifts and expansion opportunities."
-            });
-        }
-        setTimelineEvents(events);
-    }, [sentinelStatus, empireMetrics, blueprints]);
+        fetchNetwork();
+        fetchTimelineEvents();
+        const interval = setInterval(fetchTimelineEvents, 10000); // Poll every 10s
+        return () => clearInterval(interval);
+    }, []);
+
+    // Removed simulated timeline generator in favor of Real-First backend telemetry
+
 
     return (
         <DashboardLayout>
@@ -489,7 +478,7 @@ export default function EmpirePage() {
                                         <option>Historical Facts</option>
                                     </select>
                                     <button
-                                        onClick={handleClone}
+                                        onClick={() => setIsCloneModalOpen(true)}
                                         className="w-full bg-primary hover:bg-primary/90 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[10px] shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)]"
                                     >
                                         <Copy className="h-4 w-4" />
@@ -714,14 +703,14 @@ export default function EmpirePage() {
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Shopify Integration</p>
                                 </div>
                             </div>
-                            <button
-                                onClick={handleShopifySync}
-                                disabled={isSyncingShopify}
-                                className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
-                            >
-                                {isSyncingShopify ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                                Sync Shopify
-                            </button>
+                                <button
+                                    onClick={() => setIsSyncModalOpen(true)}
+                                    disabled={isSyncingShopify}
+                                    className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
+                                >
+                                    {isSyncingShopify ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                    Sync Shopify
+                                </button>
                         </div>
 
                         {/* AI Link Recommendations */}
@@ -875,6 +864,33 @@ export default function EmpirePage() {
                     </div>
                 </div>
             </div>
+            
+            {/* Confirmation Modals */}
+            <ConfirmModal
+                isOpen={isCloneModalOpen}
+                onClose={() => setIsCloneModalOpen(false)}
+                onConfirm={() => {
+                    handleClone();
+                    setIsCloneModalOpen(false);
+                }}
+                title="Initialize Empire Mode?"
+                description={`This will replicate the neural weights and monetization strategies from ${selectedStrategy?.niche || "Original"} to ${cloningNiche}. This is a non-reversible strategic expansion.`}
+                confirmText="Execute Expansion"
+                variant="primary"
+            />
+
+            <ConfirmModal
+                isOpen={isSyncModalOpen}
+                onClose={() => setIsSyncModalOpen(false)}
+                onConfirm={() => {
+                    handleShopifySync();
+                    setIsSyncModalOpen(false);
+                }}
+                title="Sync Shopify Node?"
+                description="Synchronizing commerce data will overwrite local cache with live storefront telemetry. Ensure your API connection is stable."
+                confirmText="Sync Now"
+                variant="success"
+            />
         </DashboardLayout>
     );
 }

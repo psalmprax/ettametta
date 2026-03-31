@@ -331,4 +331,104 @@ class EmpireService:
             return False
 
 
+    async def get_activity_stream(self, db: Session, user_id: int) -> List[Dict[str, Any]]:
+        """
+        Aggregates real system and monetization events into a single timeline.
+        Transitions from simulation to real telemetry.
+        """
+        import datetime
+        from api.utils.models import (
+            PublishedContentDB,
+            AffiliateLinkDB,
+            RevenueLogDB,
+            SystemActivityDB,
+        )
+
+        events = []
+
+        # 1. Recent Publications
+        recent_posts = (
+            db.query(PublishedContentDB)
+            .filter(PublishedContentDB.user_id == user_id)
+            .order_by(PublishedContentDB.published_at.desc())
+            .limit(10)
+            .all()
+        )
+        for post in recent_posts:
+            events.append(
+                {
+                    "id": f"post_{post.id}",
+                    "timestamp": post.published_at.isoformat(),
+                    "time_label": post.published_at.strftime("%H:%M ZULU"),
+                    "type": "NODE_EXPANSION",
+                    "message": f"Successfully expanded network to {post.platform}: {post.title[:30]}...",
+                    "status": "SUCCESS",
+                }
+            )
+
+        # 2. Revenue Logs
+        recent_rev = (
+            db.query(RevenueLogDB)
+            .filter(RevenueLogDB.user_id == user_id)
+            .order_by(RevenueLogDB.date.desc())
+            .limit(5)
+            .all()
+        )
+        for rev in recent_rev:
+            events.append(
+                {
+                    "id": f"rev_{rev.id}",
+                    "timestamp": rev.date.isoformat(),
+                    "time_label": rev.date.strftime("%H:%M ZULU"),
+                    "type": "REVENUE_ACHIEVEMENT",
+                    "message": f"Revenue milestone reached on {rev.platform}: ${rev.amount:,.2f}",
+                    "status": "SUCCESS",
+                }
+            )
+
+        # 3. New Affiliate Links
+        recent_links = (
+            db.query(AffiliateLinkDB)
+            .filter(AffiliateLinkDB.user_id == user_id)
+            .order_by(AffiliateLinkDB.created_at.desc())
+            .limit(5)
+            .all()
+        )
+        for link in recent_links:
+            events.append(
+                {
+                    "id": f"link_{link.id}",
+                    "timestamp": link.created_at.isoformat(),
+                    "time_label": link.created_at.strftime("%H:%M ZULU"),
+                    "type": "STRATEGY_DEPLOYMENT",
+                    "message": f"New monetization node active: {link.product_name} ({link.niche})",
+                    "status": "SUCCESS",
+                }
+            )
+
+        # 4. Global Sentinel Events (Module Broad)
+        sentinel_logs = (
+            db.query(SystemActivityDB)
+            .filter(SystemActivityDB.module == "SENTINEL")
+            .order_by(SystemActivityDB.created_at.desc())
+            .limit(5)
+            .all()
+        )
+        for log in sentinel_logs:
+            events.append(
+                {
+                    "id": f"sys_{log.id}",
+                    "timestamp": log.created_at.isoformat(),
+                    "time_label": log.created_at.strftime("%H:%M ZULU"),
+                    "type": "SENTINEL_SHIFT",
+                    "message": log.message,
+                    "status": log.level,
+                }
+            )
+
+        # Final Sorting & Limiting
+        events.sort(key=lambda x: x["timestamp"], reverse=True)
+        return events[:15]
+
+
 base_empire_service = EmpireService()

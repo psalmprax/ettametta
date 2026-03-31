@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 interface SocialAccount {
     id: number;
@@ -86,6 +87,7 @@ export default function PublishingPage() {
     const [isGeneratingSeo, setIsGeneratingSeo] = useState(false);
     const [retryingPostId, setRetryingPostId] = useState<number | null>(null);
     const [isDisconnecting, setIsDisconnecting] = useState(false);
+    const [isConfirmDisconnectOpen, setIsConfirmDisconnectOpen] = useState(false);
 
     const { data: telemetryData } = useWebSocket(`${WS_BASE}/telemetry`);
 
@@ -653,11 +655,7 @@ export default function PublishingPage() {
                                         Re-Authenticate Node
                                     </button>
                                     <button
-                                        onClick={() => {
-                                            if (selectedAccountForDetail) {
-                                                handleDisconnect(selectedAccountForDetail.id);
-                                            }
-                                        }}
+                                        onClick={() => setIsConfirmDisconnectOpen(true)}
                                         disabled={isDisconnecting}
                                         className="w-full bg-red-900/30 hover:bg-red-900/50 disabled:opacity-50 text-red-400 font-black py-5 rounded-2xl border border-red-500/20 hover:border-red-500/40 uppercase text-xs tracking-widest transition-all flex items-center justify-center gap-3"
                                     >
@@ -669,6 +667,21 @@ export default function PublishingPage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                <ConfirmModal 
+                    isOpen={isConfirmDisconnectOpen}
+                    onClose={() => setIsConfirmDisconnectOpen(false)}
+                    onConfirm={() => {
+                        if (selectedAccountForDetail) {
+                            handleDisconnect(selectedAccountForDetail.id);
+                        }
+                        setIsConfirmDisconnectOpen(false);
+                    }}
+                    title="Sever Neural Link?"
+                    description="This will permanently disconnect the account node from the Viral Forge cluster. Synchronized metrics may be lost."
+                    variant="danger"
+                    confirmLabel="Sever Link"
+                />
 
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                     <div className="space-y-3">

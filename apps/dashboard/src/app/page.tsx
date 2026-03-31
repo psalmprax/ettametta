@@ -11,10 +11,12 @@ import {
   Play,
   CheckCircle2
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-import { motion, Variants } from "framer-motion";
+import { motion, Variants, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { API_BASE } from "@/lib/config";
+import { useNiches } from "@/hooks/useNiches";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -54,6 +56,7 @@ interface DashboardStats {
 }
 
 export default function Home() {
+  const { niches } = useNiches();
   const [stats, setStats] = useState<DashboardStats>({
     active_trends: 0,
     videos_processed: 0,
@@ -91,7 +94,7 @@ export default function Home() {
         });
         if (historyRes.ok) {
           const history = await historyRes.json();
-          setActivityFeed(history.slice(0, 5));
+          setActivityFeed(history.slice(0, 6));
         }
       }
     } catch (error) {
@@ -110,16 +113,22 @@ export default function Home() {
     setIsScanning(true);
     try {
       const token = localStorage.getItem("et_token");
+      // Use top 3 niches from our real backend niches list
+      const scanNiches = niches.slice(0, 3);
+      
       const response = await fetch(`${API_BASE}/discovery/scan`, {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ niches: ["AI", "Motivation", "Finance"] })
+        body: JSON.stringify({ niches: scanNiches })
       });
       
       if (response.ok) {
+        toast.info("Discovery Cycle Initiated", {
+          description: `Scanning clusters for ${scanNiches.join(", ")}...`
+        });
         // Refresh stats after scan trigger
         setTimeout(fetchStats, 2000); 
       }
@@ -273,27 +282,35 @@ export default function Home() {
               </div>
             </motion.div>
           ) : (
+          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {activityFeed.map((activity, idx) => (
-                <motion.div
-                  key={activity.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="glass-card p-6 flex items-center gap-4 group hover:border-primary/30 transition-all border border-white/5"
-                >
-                  <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Zap className="h-6 w-6 text-primary neon-glow" />
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{activity.platform}</p>
-                      <p className="text-[9px] font-bold text-zinc-600 tabular-nums uppercase">{new Date(activity.published_at).toLocaleTimeString()}</p>
+              {activityFeed.map((activity, idx) => {
+                const activityUrl = activity.url || activity.input_url || activity.output_path;
+                return (
+                  <motion.div
+                    key={activity.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    onClick={() => activityUrl && window.open(activityUrl, "_blank", "noopener,noreferrer")}
+                    className={cn(
+                      "glass-card p-6 flex items-center gap-4 group hover:border-primary/30 transition-all border border-white/5",
+                      activityUrl ? "cursor-pointer" : ""
+                    )}
+                  >
+                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <Zap className="h-6 w-6 text-primary neon-glow" />
                     </div>
-                    <h4 className="text-sm font-black text-white truncate uppercase tracking-tight">{activity.title}</h4>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{activity.platform || "Video Node"}</p>
+                        <p className="text-[9px] font-bold text-zinc-600 tabular-nums uppercase">{new Date(activity.published_at || activity.created_at).toLocaleTimeString()}</p>
+                      </div>
+                      <h4 className="text-sm font-black text-white truncate uppercase tracking-tight">{activity.title || activity.niche || "Untitled Fragment"}</h4>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </motion.div>
