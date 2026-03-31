@@ -55,6 +55,7 @@ class UserResponse(BaseModel):
     referral_code: Optional[str] = None
     telegram_chat_id: Optional[str] = None
     telegram_token: Optional[str] = None
+    whatsapp_number: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -283,6 +284,60 @@ async def verify_telegram(telegram_id: str, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+@router.post("/verify-comms")
+async def verify_comms(
+    platform: str,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Sends a test verification message to the user's configured communication platform.
+    """
+    try:
+        import requests
+
+        message = f"🦅 *Viral Forge Identity Verification*\n\nYour connection to the Nexus is active. Comms for user *{current_user.username}* have been verified at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC."
+
+        target_id = None
+        if platform.lower() == "telegram":
+            target_id = current_user.telegram_chat_id
+        elif platform.lower() == "whatsapp":
+            target_id = current_user.whatsapp_number
+            if target_id and not target_id.startswith("whatsapp:"):
+                target_id = f"whatsapp:{target_id}"
+
+        if not target_id:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No configuration found for platform: {platform}",
+            )
+
+        # Call OpenClaw broadcast endpoint
+        openclaw_url = os.getenv("OPENCLAW_URL", "http://openclaw:3001")
+        response = requests.post(
+            f"{openclaw_url}/broadcast",
+            json={
+                "user_ids": [target_id],
+                "message": message,
+                "platform_hint": platform.lower(),
+            },
+            timeout=5,
+        )
+
+        if response.status_code == 200:
+            return {"status": "success", "message": f"Verification sent to {platform}"}
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to send verification via OpenClaw: {response.text}",
+            )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Internal error during verification: {str(e)}"
+        )
 
 
 @router.get("/verify-whatsapp/{whatsapp_id}", response_model=UserResponse)

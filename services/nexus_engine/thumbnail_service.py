@@ -1,6 +1,9 @@
 import httpx
 import logging
 import os
+import uuid
+from pathlib import Path
+from services.storage.service import base_storage_service
 from api.config import settings
 
 class ThumbnailGenerator:
@@ -11,6 +14,7 @@ class ThumbnailGenerator:
     async def generate_thumbnail(self, script_summary: str) -> str:
         """
         Generates a viral thumbnail using Pollinations.ai (free/open).
+        Downloads the asset and stores it in the configured storage provider.
         """
         logging.info(f"[Thumbnail] Generating for script: {script_summary[:50]}...")
         
@@ -22,10 +26,29 @@ class ThumbnailGenerator:
         image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&nologo=true&seed=42"
         
         try:
-            # We just return the URL for now as it's a direct generator
-            return image_url
+            # 1. Download the generated asset
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(image_url)
+                if response.status_code != 200:
+                    raise RuntimeError(f"Pollinations returned status {response.status_code}")
+                
+                # 2. Save to local temporary file
+                filename = f"thumb_{uuid.uuid4().hex[:8]}.jpg"
+                temp_path = os.path.join(self.output_dir, filename)
+                
+                with open(temp_path, "wb") as f:
+                    f.write(response.content)
+                
+                # 3. Upload to official storage
+                storage_path = base_storage_service.upload_file(temp_path)
+                public_url = base_storage_service.get_public_url(storage_path)
+                
+                logging.info(f"[Thumbnail] Successfully stored at: {public_url}")
+                return public_url
+                
         except Exception as e:
             logging.error(f"[Thumbnail] Generation Failed: {e}")
-            raise RuntimeError(f"Thumbnail generation failed: {e}")
+            # Return original Pollinations URL as a non-breaking fallback
+            return image_url
 
 base_thumbnail_generator = ThumbnailGenerator()

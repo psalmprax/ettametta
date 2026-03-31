@@ -399,7 +399,7 @@ export default function PublishingPage() {
                                             <div className="h-1 w-8 bg-primary rounded-full shadow-sm" />
                                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Network Expansion</span>
                                         </div>
-                                        <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white leading-none">Expand Distribution</h3>
+                                        <h3 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">Expand Distribution</h3>
                                     </div>
                                     <button onClick={() => setIsPlatformModalOpen(false)} className="p-4 glass-card border-none hover:bg-white/5 rounded-2xl transition-all">
                                         <X className="h-6 w-6 text-zinc-500" />
@@ -437,7 +437,7 @@ export default function PublishingPage() {
                         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/95 backdrop-blur-xl">
                             <div className="flex flex-col items-center gap-10 text-center">
                                 <RefreshCw className="h-20 w-20 text-primary animate-spin" />
-                                <h4 className="text-2xl font-black italic tracking-tighter text-white uppercase">Securing Handshake...</h4>
+                                <h4 className="text-2xl font-black tracking-tighter text-white uppercase">Securing Handshake...</h4>
                             </div>
                         </div>
                     )}
@@ -461,7 +461,7 @@ export default function PublishingPage() {
                                             <div className="h-1 w-8 bg-primary rounded-full shadow-sm" />
                                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Neural Transmit</span>
                                         </div>
-                                        <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white leading-none">Manual Deployment</h3>
+                                        <h3 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">Manual Deployment</h3>
                                     </div>
                                     <button onClick={() => setIsDeployModalOpen(false)} className="p-4 glass-card border-none hover:bg-white/5 rounded-2xl transition-all">
                                         <X className="h-6 w-6 text-zinc-500" />
@@ -638,7 +638,7 @@ export default function PublishingPage() {
                             >
                                 <div className="p-10 space-y-8">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">{selectedAccountForDetail.username}</h3>
+                                        <h3 className="text-2xl font-black uppercase tracking-tighter text-white">{selectedAccountForDetail.username}</h3>
                                         <button onClick={() => setIsAccountModalOpen(false)} className="p-3 glass-card border-none hover:bg-white/5 rounded-xl transition-all">
                                             <X className="h-5 w-5 text-zinc-500" />
                                         </button>
@@ -689,7 +689,7 @@ export default function PublishingPage() {
                             <div className="h-1 w-8 bg-primary rounded-full shadow-sm" />
                             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Distribution HQ</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter uppercase text-white leading-none">
+                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
                             Social <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 to-indigo-500 text-hollow">Hub</span>
                         </h1>
                     </div>
@@ -727,11 +727,11 @@ export default function PublishingPage() {
                                         <div className="p-4 rounded-xl bg-zinc-950 border border-white/5 text-primary group-hover:scale-110 transition-all">
                                             <Icon className="h-8 w-8" />
                                         </div>
-                                        <div className="px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-sm italic">
+                                        <div className="px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-sm">
                                             Linked
                                         </div>
                                     </div>
-                                    <h3 className="text-2xl font-black italic tracking-tighter text-white truncate">{acc.username || "SECURED_ALPHA"}</h3>
+                                    <h3 className="text-2xl font-black tracking-tighter text-white truncate">{acc.username || "SECURED_ALPHA"}</h3>
                                 </motion.div>
                             );
                         })}
@@ -917,7 +917,7 @@ export default function PublishingPage() {
                                     </div>
                                     <div className="space-y-3 relative z-10">
                                         <p className="text-sm font-black uppercase tracking-[0.6em] text-zinc-700 animate-pulse">Awaiting Initial Transmission</p>
-                                        <p className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest italic">Global Distribution Network Standby</p>
+                                        <p className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest">Global Distribution Network Standby</p>
                                     </div>
                                 </motion.div>
                             ) : (
@@ -968,9 +968,9 @@ export default function PublishingPage() {
                                                                 />
                                                             ))}
                                                         </div>
-                                                        <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] italic">Active Signal Matrix</span>
+                                                        <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Active Signal Matrix</span>
                                                     </div>
-                                                    <h4 className="font-black text-3xl tracking-tighter group-hover:text-primary transition-all duration-300 line-clamp-1 truncate max-w-xl uppercase italic text-white drop-shadow-2xl">
+                                                    <h4 className="font-black text-3xl tracking-tighter group-hover:text-primary transition-all duration-300 line-clamp-1 truncate max-w-xl uppercase text-white drop-shadow-2xl">
                                                         {post.title}
                                                     </h4>
                                                     <div className="flex items-center gap-6">
@@ -1049,7 +1049,7 @@ export default function PublishingPage() {
                                                     <div className="flex items-center gap-2">
                                                         <div className={cn("h-1.5 w-1.5 rounded-full", post.status === "Published" ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-red-500")} />
                                                         <span className={cn(
-                                                            "text-[10px] font-black uppercase tracking-[0.3em] italic",
+                                                            "text-[10px] font-black uppercase tracking-[0.3em]",
                                                             post.status === "Published" ? "text-emerald-500" : "text-red-500"
                                                         )}>
                                                             {post.status === "Published" ? "Synchronized" : "Failure"}

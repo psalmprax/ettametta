@@ -29,10 +29,10 @@ interface NexusNodeProps {
 }
 
 const NODE_CONFIG: Record<NodeType, { icon: any; color: string; bg: string }> = {
-    ingress: { icon: Database, color: "text-blue-400", bg: "bg-blue-400/10" },
-    cognition: { icon: Cpu, color: "text-purple-400", bg: "bg-purple-400/10" },
-    synthesis: { icon: Sparkles, color: "text-primary", bg: "bg-primary/10" },
-    egress: { icon: Share2, color: "text-emerald-400", bg: "bg-emerald-400/10" }
+    ingress: { icon: Database, color: "text-neon-cyan", bg: "bg-neon-cyan/10" },
+    cognition: { icon: Cpu, color: "text-violet-400", bg: "bg-violet-400/10" },
+    synthesis: { icon: Sparkles, color: "text-neon-violet", bg: "bg-neon-violet/10" },
+    egress: { icon: Share2, color: "text-neon-cyan", bg: "bg-neon-cyan/10" }
 };
 
 export function NexusNode({ type, label, description, status, active, progress, metrics, onClick }: NexusNodeProps) {
@@ -47,12 +47,12 @@ export function NexusNode({ type, label, description, status, active, progress, 
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
             className={cn(
-                "w-72 p-6 rounded-[2rem] border transition-all duration-300 relative overflow-hidden group mb-4",
+                "w-72 p-6 rounded-4xl border transition-all duration-300 relative overflow-hidden group mb-4",
                 active
-                    ? "bg-zinc-900 border-primary/40 shadow-[0_0_50px_rgba(var(--primary-rgb),0.15)]"
-                    : "bg-zinc-950/40 border-white/5 hover:border-primary/20",
+                    ? "bg-zinc-900 border-neon-violet/40 shadow-glow-violet/20"
+                    : "bg-zinc-950/40 border-white/5 hover:border-neon-cyan/20",
                 onClick && "cursor-pointer",
-                status === 'complete' && "border-emerald-500/30 bg-emerald-500/[0.02]"
+                status === 'complete' && "border-neon-cyan/30 bg-neon-cyan/2"
             )}
         >
             <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
@@ -68,14 +68,14 @@ export function NexusNode({ type, label, description, status, active, progress, 
                             <span className="text-[8px] font-black text-primary uppercase tracking-widest">Active</span>
                         </div>
                     )}
-                    {status === 'complete' && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                    {status === 'complete' && <CheckCircle2 className="h-4 w-4 text-neon-cyan neon-glow-cyan" />}
                     {status === 'pending' && <Clock className="h-4 w-4 text-zinc-600" />}
                     {status === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
                 </div>
             </div>
 
             <div className="space-y-1 mb-4">
-                <h4 className="text-sm font-black text-white uppercase tracking-tight italic group-hover:text-primary transition-colors">
+                <h4 className="text-sm font-black text-white uppercase tracking-tight group-hover:text-neon-cyan transition-colors">
                     {label}
                 </h4>
                 <p className="text-[10px] font-medium text-zinc-500 leading-relaxed line-clamp-2">
@@ -93,7 +93,7 @@ export function NexusNode({ type, label, description, status, active, progress, 
                         <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${progress}%` }}
-                            className="h-full bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
+                            className="h-full bg-linear-to-r from-neon-violet to-neon-cyan shadow-glow-cyan/50"
                         />
                     </div>
                 </div>

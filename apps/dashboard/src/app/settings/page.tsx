@@ -32,7 +32,9 @@ import {
     Globe,
     Link2,
     Unlink,
-    RefreshCw
+    RefreshCw,
+    Phone,
+    Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
@@ -141,9 +143,10 @@ export default function SettingsPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
     const [activeTab, setActiveTab] = useState("Profile");
-    const [userProfile, setUserProfile] = useState<{ telegram_chat_id: string, telegram_token: string, role: string, subscription: string }>({
+    const [userProfile, setUserProfile] = useState<{ telegram_chat_id: string, telegram_token: string, whatsapp_number: string, role: string, subscription: string }>({
         telegram_chat_id: "",
         telegram_token: "",
+        whatsapp_number: "",
         role: "user",
         subscription: "free"
     });
@@ -185,6 +188,7 @@ export default function SettingsPage() {
                 setUserProfile({
                     telegram_chat_id: data.telegram_chat_id || "",
                     telegram_token: data.telegram_token || "",
+                    whatsapp_number: data.whatsapp_number || "",
                     role: data.role || "user",
                     subscription: data.subscription || "free"
                 });
@@ -241,7 +245,8 @@ export default function SettingsPage() {
                 },
                 body: JSON.stringify({
                     telegram_chat_id: userProfile.telegram_chat_id || null,
-                    telegram_token: userProfile.telegram_token || null
+                    telegram_token: userProfile.telegram_token || null,
+                    whatsapp_number: userProfile.whatsapp_number || null
                 })
             });
 
@@ -294,6 +299,31 @@ export default function SettingsPage() {
         } finally {
             setIsCancelling(false);
             setTimeout(() => setSaveStatus("idle"), 3000);
+        }
+    };
+
+    const [isVerifying, setIsVerifying] = useState<Record<string, boolean>>({});
+    const [verifyStatus, setVerifyStatus] = useState<Record<string, "success" | "error" | "idle">>({});
+
+    const handleVerifyComms = async (platform: "telegram" | "whatsapp") => {
+        setIsVerifying(prev => ({ ...prev, [platform]: true }));
+        setVerifyStatus(prev => ({ ...prev, [platform]: "idle" }));
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/auth/verify-comms?platform=${platform}`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setVerifyStatus(prev => ({ ...prev, [platform]: "success" }));
+            } else {
+                setVerifyStatus(prev => ({ ...prev, [platform]: "error" }));
+            }
+        } catch (e) {
+            setVerifyStatus(prev => ({ ...prev, [platform]: "error" }));
+        } finally {
+            setIsVerifying(prev => ({ ...prev, [platform]: false }));
+            setTimeout(() => setVerifyStatus(prev => ({ ...prev, [platform]: "idle" })), 3000);
         }
     };
 
@@ -350,7 +380,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between mb-10">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h1 className="text-5xl md:text-6xl font-black italic uppercase tracking-tighter text-white">My <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-400 to-white text-hollow">Settings</span></h1>
+                            <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-white">My <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-400 to-white text-hollow">Settings</span></h1>
                             <div className={cn(
                                 "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
                                 userProfile.subscription === "studio" ? "bg-purple-500/10 text-purple-500 border-purple-500/20 shadow-[0_0_10px_rgba(168,85,247,0.2)]" :
@@ -362,7 +392,7 @@ export default function SettingsPage() {
                                 {userProfile.subscription === "basic" ? "Creator" : userProfile.subscription === "premium" ? "Empire" : userProfile.subscription}
                             </div>
                         </div>
-                        <p className="text-zinc-500 text-sm italic font-bold tracking-tight">Configure personal overrides and manage your identity.</p>
+                        <p className="text-zinc-500 text-sm font-bold tracking-tight">Configure personal overrides and manage your identity.</p>
                     </div>
                     <button
                         onClick={handleSave}
@@ -404,7 +434,7 @@ export default function SettingsPage() {
                                         <Key className="h-10 w-10 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Private <span className="text-hollow">Overrides</span></h3>
+                                        <h3 className="text-4xl font-black text-white uppercase tracking-tighter">Private <span className="text-hollow">Overrides</span></h3>
                                         <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">Personal vault for high-priority secrets</p>
                                     </div>
                                 </div>
@@ -455,33 +485,87 @@ export default function SettingsPage() {
                                         <Bell className="h-10 w-10 text-blue-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Nexus <span className="text-hollow">Comms</span></h3>
+                                        <h3 className="text-4xl font-black text-white uppercase tracking-tighter">Nexus <span className="text-hollow">Comms</span></h3>
                                         <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">Inbound alerts and autonomous status updates</p>
                                     </div>
                                 </div>
 
                                 <div className="space-y-8 pt-10 border-t border-white/5">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-3 block">Telegram Identity</label>
-                                            <input
-                                                type="text"
-                                                value={userProfile.telegram_chat_id}
-                                                onChange={(e) => setUserProfile({ ...userProfile, telegram_chat_id: e.target.value })}
-                                                className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 px-6 text-white font-black text-sm focus:ring-2 ring-primary/50 outline-none transition-all"
-                                                placeholder="Chat ID (e.g. 12345678)"
-                                            />
-                                            <p className="text-[10px] text-zinc-600 uppercase font-bold pl-2">Get your ID via @userinfobot</p>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-3 block">Telegram Identity</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={userProfile.telegram_chat_id}
+                                                        onChange={(e) => setUserProfile({ ...userProfile, telegram_chat_id: e.target.value })}
+                                                        className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 px-6 text-white font-black text-sm focus:ring-2 ring-primary/50 outline-none transition-all pr-32"
+                                                        placeholder="Chat ID (e.g. 12345678)"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleVerifyComms("telegram")}
+                                                        disabled={isVerifying["telegram"] || !userProfile.telegram_chat_id}
+                                                        className={cn(
+                                                            "absolute right-2 top-2 bottom-2 px-4 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                                                            verifyStatus["telegram"] === "success" ? "bg-emerald-500/20 text-emerald-500 border border-emerald-500/30" :
+                                                                verifyStatus["telegram"] === "error" ? "bg-red-500/20 text-red-500 border border-red-500/30" :
+                                                                    "bg-white/5 text-zinc-400 hover:bg-white/10"
+                                                        )}
+                                                    >
+                                                        {isVerifying["telegram"] ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                                                        {verifyStatus["telegram"] === "success" ? "Sent!" : "Verify"}
+                                                    </button>
+                                                </div>
+                                                <p className="text-[10px] text-zinc-600 uppercase font-bold pl-2">Get your ID via @userinfobot</p>
+                                            </div>
+
+                                            <div className="space-y-2 pt-4">
+                                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-3 block">WhatsApp Number</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={userProfile.whatsapp_number}
+                                                        onChange={(e) => setUserProfile({ ...userProfile, whatsapp_number: e.target.value })}
+                                                        className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-4 px-6 text-white font-black text-sm focus:ring-2 ring-emerald-500/50 outline-none transition-all pr-32"
+                                                        placeholder="+1234567890"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleVerifyComms("whatsapp")}
+                                                        disabled={isVerifying["whatsapp"] || !userProfile.whatsapp_number}
+                                                        className={cn(
+                                                            "absolute right-2 top-2 bottom-2 px-4 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                                                            verifyStatus["whatsapp"] === "success" ? "bg-emerald-500/20 text-emerald-500 border border-emerald-500/30" :
+                                                                verifyStatus["whatsapp"] === "error" ? "bg-red-500/20 text-red-500 border border-red-500/30" :
+                                                                    "bg-white/5 text-zinc-400 hover:bg-white/10"
+                                                        )}
+                                                    >
+                                                        {isVerifying["whatsapp"] ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                                                        {verifyStatus["whatsapp"] === "success" ? "Sent!" : "Verify"}
+                                                    </button>
+                                                </div>
+                                                <p className="text-[10px] text-zinc-600 uppercase font-bold pl-2">E.164 Format: +[Country][Number]</p>
+                                            </div>
                                         </div>
-                                        <KeyInput
-                                            label="Bot Token Override"
-                                            id="telegram_token"
-                                            value={userProfile.telegram_token}
-                                            onChange={(val) => setUserProfile({ ...userProfile, telegram_token: val })}
-                                            isVisible={showKey["tg_token"]}
-                                            onToggle={() => toggleKey("tg_token")}
-                                            placeholder="XXXX:YYYYYYYYY"
-                                        />
+                                        <div className="space-y-6">
+                                            <KeyInput
+                                                label="Bot Token Override"
+                                                id="telegram_token"
+                                                value={userProfile.telegram_token}
+                                                onChange={(val) => setUserProfile({ ...userProfile, telegram_token: val })}
+                                                isVisible={showKey["tg_token"]}
+                                                onToggle={() => toggleKey("tg_token")}
+                                                placeholder="XXXX:YYYYYYYYY"
+                                            />
+                                            <div className="p-6 rounded-[2rem] bg-zinc-950/30 border border-white/5 space-y-3">
+                                                <h5 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                                    <Phone className="h-3 w-3 text-emerald-500" /> WhatsApp Sandbox
+                                                </h5>
+                                                <p className="text-[10px] text-zinc-500 font-medium leading-relaxed">
+                                                    To receive messages via Twilio Sandbox, send <span className="text-emerald-500 font-black">join [sandbox-code]</span> to the system number first.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </section>
@@ -492,7 +576,7 @@ export default function SettingsPage() {
                                         <User className="h-10 w-10 text-white" />
                                     </div>
                                     <div>
-                                        <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">User <span className="text-hollow">Identity</span></h3>
+                                        <h3 className="text-4xl font-black text-white uppercase tracking-tighter">User <span className="text-hollow">Identity</span></h3>
                                         <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">Authentication and authorization parameters</p>
                                     </div>
                                 </div>
@@ -505,7 +589,7 @@ export default function SettingsPage() {
                                                 <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                                                     <Shield className="h-6 w-6 text-primary" />
                                                 </div>
-                                                <div className="text-2xl font-black text-white uppercase italic">{userProfile.role}</div>
+                                                <div className="text-2xl font-black text-white uppercase">{userProfile.role}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -516,7 +600,7 @@ export default function SettingsPage() {
                                                 <div className="h-12 w-12 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
                                                     <Sparkles className="h-6 w-6 text-amber-500" />
                                                 </div>
-                                                <div className="text-2xl font-black text-white uppercase italic">{userProfile.subscription}</div>
+                                                <div className="text-2xl font-black text-white uppercase">{userProfile.subscription}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -579,7 +663,7 @@ export default function SettingsPage() {
                                         <CreditCard className="h-10 w-10 text-emerald-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Empire <span className="text-hollow">Credits</span></h3>
+                                        <h3 className="text-4xl font-black text-white uppercase tracking-tighter">Empire <span className="text-hollow">Credits</span></h3>
                                         <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">Subscription and resource allocation</p>
                                     </div>
                                 </div>
@@ -590,7 +674,7 @@ export default function SettingsPage() {
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-1">
                                                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Current Plan</p>
-                                                <h4 className="text-3xl font-black text-white uppercase italic">{userProfile.subscription === "basic" ? "Creator" : userProfile.subscription === "premium" ? "Empire" : userProfile.subscription}</h4>
+                                                <h4 className="text-3xl font-black text-white uppercase">{userProfile.subscription === "basic" ? "Creator" : userProfile.subscription === "premium" ? "Empire" : userProfile.subscription}</h4>
                                             </div>
                                             <div className={cn(
                                                 "px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest",
@@ -667,7 +751,7 @@ export default function SettingsPage() {
                                         <TrendingUp className="h-10 w-10 text-amber-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Growth <span className="text-hollow">Monetization</span></h3>
+                                        <h3 className="text-4xl font-black text-white uppercase tracking-tighter">Growth <span className="text-hollow">Monetization</span></h3>
                                         <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">Revenue streams and audience support vectors</p>
                                     </div>
                                 </div>
@@ -676,12 +760,12 @@ export default function SettingsPage() {
                                     {/* Precision Distribution Control */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                         <div className="space-y-6">
-                                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6 italic">Precision Control</h4>
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">Precision Control</h4>
                                             <div className="space-y-8">
                                                 <div className="p-6 bg-zinc-950/50 border border-white/5 rounded-2xl space-y-4">
                                                     <div className="flex justify-between items-center">
                                                         <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Aggression Level</label>
-                                                        <span className="text-primary font-black text-sm italic">{settings.monetization_aggression}%</span>
+                                                        <span className="text-primary font-black text-sm">{settings.monetization_aggression}%</span>
                                                     </div>
                                                     <input
                                                         type="range"
@@ -691,7 +775,7 @@ export default function SettingsPage() {
                                                         onChange={(e) => updateSetting("monetization_aggression", e.target.value)}
                                                         className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary"
                                                     />
-                                                    <p className="text-[9px] text-zinc-600 uppercase font-bold text-center tracking-tighter italic">Controls frequency of monetization pitch injection</p>
+                                                    <p className="text-[9px] text-zinc-600 uppercase font-bold text-center tracking-tighter">Controls frequency of monetization pitch injection</p>
                                                 </div>
 
                                                 <div className="space-y-3">
@@ -715,7 +799,7 @@ export default function SettingsPage() {
                                         </div>
 
                                         <div className="space-y-6">
-                                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6 italic">Active Strategy</h4>
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">Active Strategy</h4>
                                             <div className="grid grid-cols-2 gap-3">
                                                 {[
                                                     { id: 'commerce', label: 'E-Commerce' },
@@ -750,7 +834,7 @@ export default function SettingsPage() {
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center px-2">
                                                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest transition-colors">Membership Platform (Patreon/Substack)</label>
-                                                        {errors.membership_platform_url && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter italic">{errors.membership_platform_url.message}</span>}
+                                                        {errors.membership_platform_url && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter">{errors.membership_platform_url.message}</span>}
                                                     </div>
                                                     <input
                                                         type="text"
@@ -766,7 +850,7 @@ export default function SettingsPage() {
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center px-2">
                                                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest transition-colors">Lead Magnet / Lead Gen URL</label>
-                                                        {errors.lead_gen_url && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter italic">{errors.lead_gen_url.message}</span>}
+                                                        {errors.lead_gen_url && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter">{errors.lead_gen_url.message}</span>}
                                                     </div>
                                                     <input
                                                         type="text"
@@ -788,7 +872,7 @@ export default function SettingsPage() {
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center px-2">
                                                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest transition-colors">Online Academy / Course URL</label>
-                                                        {errors.course_platform_url && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter italic">{errors.course_platform_url.message}</span>}
+                                                        {errors.course_platform_url && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter">{errors.course_platform_url.message}</span>}
                                                     </div>
                                                     <input
                                                         type="text"
@@ -804,7 +888,7 @@ export default function SettingsPage() {
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center px-2">
                                                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest transition-colors">Digital Downloads Store</label>
-                                                        {errors.digital_product_url && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter italic">{errors.digital_product_url.message}</span>}
+                                                        {errors.digital_product_url && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter">{errors.digital_product_url.message}</span>}
                                                     </div>
                                                     <input
                                                         type="text"
@@ -829,7 +913,7 @@ export default function SettingsPage() {
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center px-2">
                                                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest transition-colors">Donation/Tip Link</label>
-                                                        {errors.donation_link && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter italic">{errors.donation_link.message}</span>}
+                                                        {errors.donation_link && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter">{errors.donation_link.message}</span>}
                                                     </div>
                                                     <input
                                                         type="text"
@@ -876,7 +960,7 @@ export default function SettingsPage() {
 
                                     {/* Brands */}
                                     <div className="space-y-6 pt-10 border-t border-white/5">
-                                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6 italic">Brand Partnerships</h4>
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-6">Brand Partnerships</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Sponsorship Protocol (Email/URL)</label>
@@ -909,7 +993,7 @@ export default function SettingsPage() {
                                         <Sparkles className="h-10 w-10 text-orange-500" />
                                     </div>
                                     <div>
-                                        <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Personal <span className="text-hollow">Engine</span></h3>
+                                        <h3 className="text-4xl font-black text-white uppercase tracking-tighter">Personal <span className="text-hollow">Engine</span></h3>
                                         <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">Aesthetic and performance quality overrides</p>
                                     </div>
                                 </div>
@@ -1072,7 +1156,7 @@ function OpenCLITab() {
                         <Globe className="h-10 w-10 text-red-500" />
                     </div>
                     <div>
-                        <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Browser <span className="text-hollow">Bridge</span></h3>
+                        <h3 className="text-4xl font-black text-white uppercase tracking-tighter">Browser <span className="text-hollow">Bridge</span></h3>
                         <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">opencli-rs not available</p>
                     </div>
                 </div>
@@ -1103,7 +1187,7 @@ function OpenCLITab() {
                     <Globe className="h-10 w-10 text-cyan-500" />
                 </div>
                 <div>
-                    <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">Browser <span className="text-hollow">Bridge</span></h3>
+                    <h3 className="text-4xl font-black text-white uppercase tracking-tighter">Browser <span className="text-hollow">Bridge</span></h3>
                     <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">Connect your Chrome sessions — no API keys needed</p>
                 </div>
                 <button onClick={fetchSessions} className="ml-auto p-3 rounded-xl bg-zinc-900/50 border border-white/5 hover:border-primary/20 transition-all">
@@ -1255,7 +1339,7 @@ function KeyInput({ label, id, value, onChange, isVisible, onToggle, placeholder
         <div className="space-y-3 group">
             <div className="flex justify-between items-center px-2">
                 <label htmlFor={id} className={cn("text-[10px] font-black uppercase tracking-[0.2em] transition-colors", error ? "text-red-500" : "text-zinc-500 group-focus-within:text-primary")}>{label}</label>
-                {error && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter italic">{error}</span>}
+                {error && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter">{error}</span>}
             </div>
             <div className="relative">
                 <input
@@ -1284,7 +1368,7 @@ function ToggleSwitch({ label, description, checked, onChange }: { label: string
     return (
         <div className="p-6 bg-zinc-950/50 border border-white/5 rounded-[1.5rem] flex items-center justify-between group hover:border-white/10 transition-all shadow-lg">
             <div className="space-y-1">
-                <span className="text-sm font-black text-white block uppercase italic tracking-tight group-hover:text-primary transition-colors">{label}</span>
+                <span className="text-sm font-black text-white block uppercase tracking-tight group-hover:text-primary transition-colors">{label}</span>
                 <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest opacity-60">{description}</p>
             </div>
             <button

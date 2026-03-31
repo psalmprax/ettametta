@@ -49,27 +49,27 @@ export function Sidebar() {
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col h-full w-72 glass-sidebar text-zinc-400 relative overflow-hidden z-40"
         >
-            <div className="absolute inset-0 scanline opacity-10 pointer-events-none" />
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" />
+            <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-linear-to-r from-transparent via-cyan-400/30 to-transparent shadow-[0_0_15px_rgba(34,211,238,0.5)]" />
 
-            <Link href="/" className="flex items-center gap-4 px-8 py-12 hover:opacity-90 transition-all relative group">
+            <Link href="/" className="flex items-center gap-4 px-8 py-10 hover:opacity-90 transition-all relative group">
                 <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
-                    className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_30px_rgba(var(--primary-rgb),0.4)] relative overflow-hidden"
+                    className="h-11 w-11 rounded-xl bg-linear-to-br from-violet-600 to-cyan-500 flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.3)] relative overflow-hidden"
                 >
                     <div className="absolute inset-0 shimmer opacity-20" />
-                    <Zap className="h-7 w-7 text-white fill-white neon-glow" />
+                    <Zap className="h-6 w-6 text-white fill-white neon-glow-violet" />
                 </motion.div>
                 <div className="flex flex-col">
-                    <span className="text-2xl font-black text-white tracking-tighter uppercase italic leading-none group-hover:text-primary transition-colors">ettametta</span>
-                    <span className="text-[10px] font-black text-primary tracking-[0.3em] uppercase mt-1.5 opacity-80 flex items-center gap-1.5">
-                        <div className="h-1 w-1 rounded-full bg-primary animate-pulse" />
-                        Neural Cluster v2.4
+                    <span className="text-xl font-black text-white tracking-tighter uppercase leading-none group-hover:text-cyan-400 transition-colors">ettametta</span>
+                    <span className="text-[9px] font-black text-cyan-400 tracking-[0.4em] uppercase mt-1.5 opacity-80 flex items-center gap-1.5">
+                        <div className="h-1 w-1 rounded-full bg-cyan-400 animate-pulse" />
+                        OS // V3.0
                     </span>
                 </div>
             </Link>
 
-            <nav className="flex-1 px-5 space-y-2 pt-2 relative z-10">
+            <nav className="flex-1 px-4 space-y-1 relative z-10">
                 {navItems.map((item, index) => {
                     const isActive = pathname === item.href;
                     return (
@@ -77,96 +77,79 @@ export function Sidebar() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 group relative overflow-hidden",
+                                "flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all duration-300 group relative cyber-border",
                                 isActive
-                                    ? "text-primary shadow-[0_0_30px_rgba(var(--primary-rgb),0.1)] border border-white/10"
-                                    : "hover:bg-white/[0.04] hover:text-white"
+                                    ? "text-cyan-400 bg-white/2"
+                                    : "hover:text-white"
                             )}
                         >
                             <AnimatePresence>
                                 {isActive && (
                                     <motion.div
                                         layoutId="nav-active"
-                                        className="absolute inset-0 bg-primary/5"
+                                        className="absolute inset-0 bg-cyan-400/5 rounded-xl"
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.4 }}
                                     >
-                                        <div className="absolute left-0 top-0 w-[3px] h-full bg-gradient-to-b from-primary via-primary/50 to-primary neon-glow" />
+                                        <div className="absolute -left-px top-1/4 w-[2px] h-1/2 bg-cyan-400 neon-glow-cyan" />
                                     </motion.div>
                                 )}
                             </AnimatePresence>
                             <motion.div
-                                whileHover={{ scale: 1.15, rotate: -2 }}
-                                whileTap={{ scale: 0.95 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                                whileHover={{ scale: 1.1 }}
                                 className="z-10"
                             >
                                 <item.icon className={cn(
-                                    "h-5 w-5 transition-all duration-300",
-                                    isActive ? "text-primary neon-glow" : "text-zinc-600 group-hover:text-zinc-200"
+                                    "h-4.5 w-4.5 transition-all duration-300",
+                                    isActive ? "text-cyan-400 neon-glow-cyan" : "text-zinc-500 group-hover:text-zinc-200"
                                 )} />
                             </motion.div>
                             <span className={cn(
-                                "font-black text-xs uppercase tracking-[0.15em] z-10 transition-colors duration-300 italic",
-                                isActive ? "text-primary" : "text-zinc-500 group-hover:text-zinc-200"
+                                "font-black text-[10px] uppercase tracking-[0.2em] z-10",
+                                isActive ? "text-cyan-400" : "text-zinc-500 group-hover:text-zinc-200"
                             )}>{item.name}</span>
                         </Link>
                     );
                 })}
             </nav>
 
-            <div className="px-6 py-8 space-y-6 relative z-10 border-t border-white/5 bg-black/20">
-                {/* System Status Display (Investor durability feature) */}
-                <div className="p-6 rounded-3xl bg-zinc-950/50 border border-white/5 space-y-4 shadow-inner relative overflow-hidden group">
-                    <div className="absolute inset-0 scanline opacity-5" />
-                    <div className="flex items-center justify-between relative">
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600 italic">Engine Status Matrix</span>
-                        <div className="flex gap-1.5">
-                            <div className="h-1 w-4 rounded-full bg-primary shadow-[0_0_5px_rgba(var(--primary-rgb),0.5)]" />
-                            <div className="h-1 w-4 rounded-full bg-zinc-800" />
+            <div className="px-6 py-8 space-y-6 relative z-10 border-t border-white/5 bg-zinc-950/20">
+                <div className="p-5 rounded-2xl bg-zinc-900/50 border border-white/5 space-y-4 relative overflow-hidden group shadow-inner">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">Engine Core</span>
+                        <div className="h-1 w-8 rounded-full bg-cyan-400/20 relative overflow-hidden">
+                            <motion.div 
+                                className="absolute inset-0 bg-cyan-400"
+                                animate={{ x: ["-100%", "100%"] }}
+                                transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                            />
                         </div>
                     </div>
-                    <div className="space-y-3 relative">
-                        <StatusLine label="Intelligence Cluster" pulse color="bg-emerald-500" />
-                        <StatusLine label="High-Velocity Nodes" pulse color="bg-primary" />
-                        <StatusLine label="Neural Syncing" color="bg-zinc-700" />
+                    <div className="space-y-2.5">
+                        <StatusLine label="Neural Network" pulse color="bg-cyan-400" />
+                        <StatusLine label="Distribution" color="bg-violet-500" />
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    {/* Admin System Configuration Link - Only visible to admins */}
-                    {user?.role === "admin" && (
-                        <Link
-                            href="/admin"
-                            className={cn(
-                                "flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-500 hover:bg-red-500/10 hover:text-red-400 group border border-transparent hover:border-red-500/20",
-                                pathname === "/admin" ? "bg-red-500/10 text-red-400 border-red-500/20" : ""
-                            )}
-                        >
-                            <Lock className="h-5 w-5 text-red-500" />
-                            <span className="font-black text-[10px] uppercase tracking-[0.2em] italic">System Config</span>
-                        </Link>
-                    )}
-
+                <div className="space-y-1">
                     <Link
                         href="/settings"
                         className={cn(
-                            "flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-500 hover:bg-white/[0.03] hover:text-white group border border-transparent hover:border-white/5",
-                            pathname === "/settings" ? "bg-white/5 text-white border-white/5" : ""
+                            "flex items-center gap-4 px-5 py-3 rounded-xl transition-all duration-300 hover:text-white group border border-transparent hover:border-white/5",
+                            pathname === "/settings" ? "text-white" : ""
                         )}
                     >
-                        <Settings className="h-5 w-5 text-zinc-600 group-hover:text-primary transition-colors" />
-                        <span className="font-black text-[10px] uppercase tracking-[0.2em] italic">My Settings</span>
+                        <Settings className="h-4 w-4 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
+                        <span className="font-black text-[9px] uppercase tracking-[0.25em]">Config</span>
                     </Link>
 
                     <button
                         onClick={logout}
-                        className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-500 hover:bg-primary/10 hover:text-primary group text-left border border-transparent hover:border-primary/20"
+                        className="w-full flex items-center gap-4 px-5 py-3 rounded-xl transition-all duration-300 hover:bg-violet-500/10 hover:text-violet-400 group border border-transparent hover:border-violet-500/10"
                     >
-                        <LogOut className="h-5 w-5 text-zinc-600 group-hover:text-primary transition-colors" />
-                        <span className="font-black text-[10px] uppercase tracking-[0.2em] italic">Terminate Connection</span>
+                        <LogOut className="h-4 w-4 text-zinc-600 group-hover:text-violet-400" />
+                        <span className="font-black text-[9px] uppercase tracking-[0.25em]">Exit</span>
                     </button>
                 </div>
             </div>
@@ -177,7 +160,7 @@ export function Sidebar() {
 function StatusLine({ label, color, pulse = false }: { label: string, color: string, pulse?: boolean }) {
     return (
         <div className="flex items-center justify-between group/line">
-            <span className="text-[9px] font-black text-zinc-500 tracking-widest uppercase transition-colors group-hover/line:text-zinc-300 italic">{label}</span>
+            <span className="text-[9px] font-black text-zinc-500 tracking-widest uppercase transition-colors group-hover/line:text-zinc-300">{label}</span>
             <div className="flex items-center gap-3">
                 <span className="text-[8px] font-black font-mono text-zinc-700 uppercase tracking-tighter group-hover/line:text-zinc-500 transition-colors">Nominal</span>
                 <div className={cn(
