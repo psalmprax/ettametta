@@ -100,13 +100,39 @@ export default function PublishingPage() {
         setIsPlatformModalOpen(true);
     };
 
-    const handleSelectPlatform = (platform: string) => {
+    const handleSelectPlatform = async (platform: string) => {
         setIsPlatformModalOpen(false);
         setIsRedirecting(platform);
 
-        // Real Redirect to Backend OAuth Endpoints
-        const lowerPlatform = platform.toLowerCase();
-        window.location.href = `${API_BASE}/publish/auth/${lowerPlatform}`;
+        const lowerPlatform = platform.toLowerCase().replace(" Shorts", "").replace(" Reels", "");
+        
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/publish/auth/${lowerPlatform}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    throw new Error("Missing authorization URL in response");
+                }
+            } else {
+                const error = await res.json();
+                toast.error("Auth Handshake Failed", {
+                    description: error.detail || "Neural link rejected by server."
+                });
+                setIsRedirecting(null);
+            }
+        } catch (err) {
+            console.error("OAuth Init Failed:", err);
+            toast.error("Signal Interpretation Failure", {
+                description: "Failed to parse OAuth handshake packets."
+            });
+            setIsRedirecting(null);
+        }
     };
 
     React.useEffect(() => {
