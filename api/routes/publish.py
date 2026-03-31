@@ -141,7 +141,7 @@ async def auth_youtube(current_user: UserDB = Depends(get_current_user)):
     authorization_url, _ = flow.authorization_url(
         access_type="offline", include_granted_scopes="true", state=state
     )
-    return RedirectResponse(authorization_url)
+    return {"url": authorization_url}
 
 
 @router.get("/auth/youtube/callback")
@@ -402,7 +402,7 @@ async def auth_tiktok(current_user: UserDB = Depends(get_current_user)):
 
     query_string = urllib.parse.urlencode(params)
     auth_url = f"https://www.tiktok.com/v2/auth/authorize?{query_string}"
-    return RedirectResponse(auth_url)
+    return {"url": auth_url}
 
 
 @router.get("/auth/tiktok/callback")
@@ -503,7 +503,7 @@ async def auth_instagram(current_user: UserDB = Depends(get_current_user)):
 
     query_string = urllib.parse.urlencode(params)
     auth_url = f"https://api.instagram.com/oauth/authorize?{query_string}"
-    return RedirectResponse(auth_url)
+    return {"url": auth_url}
 
 
 @router.get("/auth/instagram/callback")
@@ -596,7 +596,7 @@ async def auth_x(current_user: UserDB = Depends(get_current_user)):
 
     query_string = urllib.parse.urlencode(params)
     auth_url = f"https://twitter.com/i/oauth2/authorize?{query_string}"
-    return RedirectResponse(auth_url)
+    return {"url": auth_url}
 
 
 @router.get("/auth/x/callback")
@@ -690,7 +690,7 @@ async def auth_linkedin(current_user: UserDB = Depends(get_current_user)):
 
     query_string = urllib.parse.urlencode(params)
     auth_url = f"https://www.linkedin.com/oauth/v2/authorization?{query_string}"
-    return RedirectResponse(auth_url)
+    return {"url": auth_url}
 
 
 @router.get("/auth/linkedin/callback")
