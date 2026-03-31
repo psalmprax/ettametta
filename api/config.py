@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     TIKTOK_CLIENT_KEY: str = ""
     TIKTOK_CLIENT_SECRET: str = ""
 
+    # Telegram Configuration
+    TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_ADMIN_ID: int = 0
+
     # Shopify Configuration
     SHOPIFY_SHOP_URL: str = ""
     SHOPIFY_ACCESS_TOKEN: str = ""
