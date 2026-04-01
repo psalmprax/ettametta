@@ -235,7 +235,9 @@ os.makedirs("/workspace/remote_ai_group/outputs", exist_ok=True)
 warnings.filterwarnings("ignore")
 # nest_asyncio removed for stability
 
-CONTENT_DIR = "/workspace/ai_content"
+# --- STORAGE ORCHESTRATION ---
+DEFAULT_DISK = os.environ.get("AI_CONTENT_DIR", "/workspace")
+CONTENT_DIR = os.path.join(DEFAULT_DISK, "ai_content")
 os.makedirs(CONTENT_DIR, exist_ok=True)
 
 app = FastAPI(title="ettametta Remote AI Engine (LTX + SpeechT5 + Moondream2)")
@@ -395,7 +397,8 @@ def load_ltx_19b_transformer():
     print("📥 Phase 2: Streaming 19B Transformer (Meta-to-GPU)...", flush=True)
     # Use HF_HOME environment variable for model cache location
     import os
-    hf_home = os.environ.get('HF_HOME', '/workspace/.cache/huggingface/hub')
+    # Priority: Env Var > Best Disk Fallback > Static Default
+    hf_home = os.environ.get('HF_HOME', os.path.join(os.environ.get("AI_CONTENT_DIR", "/workspace"), ".cache/huggingface/hub"))
     model_uri = f"{hf_home}/models--Lightricks--LTX-2/snapshots/47da56e2ad66ce4125a9922b4a8826bf407f9d0a/ltx-2-19b-dev-fp4.safetensors"
     transformer_config = LTX2VideoTransformer3DModel.load_config("Lightricks/LTX-2", subfolder="transformer")
     
