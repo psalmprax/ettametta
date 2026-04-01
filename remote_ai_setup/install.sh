@@ -7,6 +7,20 @@ set -e
 
 echo "🚀 Starting Universal Remote AI Setup..."
 
+# 0. Smart Storage Discovery (High-Disk Allocation)
+echo "🔍 [Storage] Discovering optimal high-capacity writable disk..."
+BEST_DISK=$(python3 storage_helper.py)
+echo "💾 [Storage] Allocated: $BEST_DISK"
+
+# Ensure required directories exist and are symlinked if needed
+# We want models in .cache and outputs in ai_content
+mkdir -p "$BEST_DISK/.cache/huggingface"
+mkdir -p "$BEST_DISK/ai_content"
+
+# Set persistent HF_HOME for this session
+export HF_HOME="$BEST_DISK/.cache/huggingface"
+export AI_CONTENT_DIR="$BEST_DISK/ai_content"
+
 # 1. OS Detection and System Dependencies
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     if [ -f /etc/os-release ]; then
