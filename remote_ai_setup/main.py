@@ -26,8 +26,8 @@ import traceback
 from PIL import Image
 import cv2
 import torch.hub
-from .hardware_manager import hardware_manager
-from .video_model_manager import model_manager
+from hardware_manager import hardware_manager
+from video_model_manager import model_manager
 # GFPGAN and RealESRGAN - optional for face restoration
 try:
     from gfpgan import GFPGANer
@@ -315,56 +315,8 @@ def clear_hunyuan_model():
 # =========================
 # Legacy LTX-1 removed for LTX-2 19B migration
 
-def load_tts():
-    global tts_pipeline, speaker_embedding
-    if tts_pipeline is None:
-        print("📥 Loading Microsoft SpeechT5 TTS...")
-        tts_pipeline = pipeline(
-            "text-to-speech",
-            model="microsoft/speecht5_tts",
-            device=0 if hardware_manager.device == "cuda" else -1
-        )
-        # Create stable default speaker embedding (512-dim)
-        torch.manual_seed(42)
-        speaker_embedding = torch.randn(1, 512)
-        if hardware_manager.device != "cpu":
-            speaker_embedding = speaker_embedding.to(hardware_manager.get_device_obj())
-    return tts_pipeline
-
-def load_vlm():
-    global vlm_model, vlm_tokenizer
-    if vlm_model is None:
-        print("📥 Loading Moondream2...")
-        clear_gpu()
-        model_id = "vikhyatk/moondream2"
-        rev = "2024-05-20"
-        vlm_model = AutoModelForCausalLM.from_pretrained(
-            model_id, trust_remote_code=True, revision=rev
-        ).to(hardware_manager.get_device_obj())
-        vlm_tokenizer = AutoTokenizer.from_pretrained(model_id, revision=rev)
-    return vlm_model, vlm_tokenizer
-
-def load_whisper():
-    global whisper_model
-    if whisper_model is None:
-        from faster_whisper import WhisperModel
-        print("📥 Loading Faster-Whisper (Large-v3)...")
-        whisper_model = WhisperModel("large-v3", device=DEVICE, compute_type="float16")
-    return whisper_model
-
-def load_llm():
-    global llm_model, llm_tokenizer
-    if llm_model is None:
-        print("📥 Loading Llama-3.1-8B-Instruct (4-bit)...")
-        model_id = "unsloth/Meta-Llama-3.1-8B-Instruct" # Using a pre-quantized or light version
-        llm_tokenizer = AutoTokenizer.from_pretrained(model_id)
-        llm_model = AutoModelForCausalLM.from_pretrained(
-            model_id,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            load_in_4bit=True
-        )
-    return llm_model, llm_tokenizer
+# --- Utility Loaders (Legacy) ---
+# Moved to centralized VideoModelManager for Smart VRAM protection
 
 # =========================
 # LOADERS
@@ -604,267 +556,50 @@ async def health():
     total, used, free = shutil.disk_usage("/")
     telemetry = hardware_manager.get_telemetry()
     return {
-        "status": "healthy", 
+        "status": "healthy",
+        "busy": model_manager.is_busy, 
+        "current_model": model_manager.current_model or (list(model_manager.utils.keys())[0] if model_manager.utils else None),
         "hardware": telemetry,
-        "encoder": BEST_ENCODER,
+        "encoder": model_manager.encoder,
         "disk_free": f"{free/1024**3:.2f}GB",
         "disk_used_percent": f"{(used/total)*100:.1f}%"
     }
 
 render_lock = threading.Lock()
 
+from job_orchestrator import orchestrator
+
 @app.post("/generate")
-async def generate_video(request: VideoRequest, background_tasks: BackgroundTasks):
-    sanitized_prefix = request.prompt[:3].lower().replace(" ", "_")
-    job_id = f"vid_{sanitized_prefix}_{torch.randint(0, 1000000, (1,)).item():06x}"
-    print(f"📥 [/generate] Request received: {request.prompt[:50]}... -> Job ID: {job_id}", flush=True)
-    
-    def job_wrapper():
-        with render_lock:
-            try:
-                print(f"🎬 [Thread] Starting job {job_id}...", flush=True)
-                render_video(job_id, request) 
-                print(f"✅ [Thread] Job {job_id} done.", flush=True)
-            except Exception as e:
-                print(f"❌ Error in job_wrapper: {e}", flush=True)
-                traceback.print_exc()
-
-    # Use manual threading for reliability vs background_tasks
-    threading.Thread(target=job_wrapper, daemon=True).start()
-    return {"job_id": job_id, "status": "queued"}
-
-# =====================================================
-# HUNYUANVIDEO ENDPOINT
-# =====================================================
+async def generate_video(request: VideoRequest):
+    job_id = orchestrator.add_job("video", "ltx_2_19b", request)
+    return {"job_id": job_id, "status": "queued", "model": "ltx_2_19b"}
 
 @app.post("/generate_hunyuan")
 async def hunyuan_endpoint(request: VideoRequest):
-    """
-    HunyuanVideo - Tencent's state-of-the-art text-to-video model
-    
-    Best for: High-quality text-to-video generation
-    VRAM: 12GB+ (SD version), 24GB+ (full version)
-    """
-    if not HUNYUAN_AVAILABLE:
-        return {"error": "HunyuanVideo not available. Please install dependencies."}
-    
-    job_id = f"hunyuan_{uuid.uuid4().hex[:8]}"
-    
-    def hunyuan_job():
-        try:
-            print(f"🎬 HunyuanVideo Job {job_id}...", flush=True)
-            
-            # Generate video
-            # Use 480p resolution (832x480) - may need force_reload for VRAM
-            height = 480
-            width = 832
-            job_id_result, video_path = generate_hunyuan_video(
-                prompt=request.prompt,
-                negative_prompt="low quality, blurry, distorted, watermark",
-                num_inference_steps=request.steps or 30,
-                height=height,
-                width=width,
-                num_frames=request.frames or 73,
-                guidance_scale=7.5,
-                model_type="480p",
-                quantize=request.quantize,
-                force_reload=request.force_reload
-            )
-            
-            print(f"✅ HunyuanVideo Job {job_id} complete: {video_path}", flush=True)
-        except Exception as e:
-            print(f"❌ HunyuanVideo Error: {e}", flush=True)
-            traceback.print_exc()
-    
-    threading.Thread(target=hunyuan_job, daemon=True).start()
-    return {"job_id": job_id, "status": "queued", "model": "hunyuanvideo"}
-
-def render_video(job_id, req):
-    try:
-        print(f"🎨 Phase-Based Rendering for Job {job_id}...", flush=True)
-        negative_prompt = "low quality, animation, cartoon, cgi, 3d, render, blur, distorted, text, watermark, grainy, flicker, low resolution, bad anatomy, stylized"
-        
-        # Phase 0: Base Components (Tokenizer, VAE, Scheduler)
-        # --------------------------------------------------
-        tokenizer, vae, scheduler = load_ltx_base_components()
-        
-        # Phase 1: Encode Prompt and FREE T5 (Freed up 11GB VRAM)
-        # --------------------------------------------------
-        p_embeds, p_mask, n_embeds, n_mask = encode_prompt_ltx2(req.prompt, negative_prompt, tokenizer)
-
-        # Phase 2: Load 19B Transformer (38GB VRAM)
-        # --------------------------------------------------
-        transformer = load_ltx_19b_transformer()
-        
-        # Phase 3a: Generate Audio Conditioning (RESTORED)
-        # --------------------------------------------------
-        audio_hidden_states, audio_encoder_hidden_states = generate_audio_conditioning(req.prompt, num_frames=int(req.frames))
-
-        # Phase 3b: Diffusion Pass
-        # --------------------------------------------------
-        print("🚀 Assembling LTX-2 19B Pipeline...", flush=True)
-        from diffusers import LTXPipeline, LTXImageToVideoPipeline
-        target_class = LTXImageToVideoPipeline if req.image_base64 else LTXPipeline
-        
-        pipe = target_class(
-            text_encoder=None,
-            tokenizer=tokenizer,
-            vae=vae,
-            transformer=transformer,
-            scheduler=scheduler
-        )
-
-        image_obj = None
-        if req.image_base64:
-            img_data = base64.b64decode(req.image_base64)
-            image_obj = Image.open(io.BytesIO(img_data)).convert("RGB")
-
-        print(f"🎬 Starting Diffusion Pass ({req.frames} frames, {req.steps} steps)...", flush=True)
-        # Note: LTX-2 19B requires audio_hidden_states and audio_encoder_hidden_states
-        # If the pipeline doesn't natively accept them, we may need to inject them 
-        # via a patched forward call or custom pipeline.
-        with torch.inference_mode():
-            pipe_kwargs = {
-                "prompt_embeds": p_embeds, "prompt_attention_mask": p_mask,
-                "negative_prompt_embeds": n_embeds, "negative_prompt_attention_mask": n_mask,
-                "num_frames": int(req.frames), "num_inference_steps": int(req.steps), 
-                "guidance_scale": 6.0, "output_type": "pt"
-            }
-            if image_obj:
-                pipe_kwargs["image"] = image_obj
-            
-            # Inject audio conditioning
-            pipe_kwargs["audio_hidden_states"] = audio_hidden_states
-            pipe_kwargs["audio_encoder_hidden_states"] = audio_encoder_hidden_states
-
-            result = pipe(**pipe_kwargs)
-        
-        video_latents = result.frames # tensor output for Stage 2
-        
-        # Phase 4: Spatial Upscaling (Stage 2) -> 8K
-        # --------------------------------------------------
-        print("📥 Phase 4: Loading Spatial Upscaler (Stage 2)...", flush=True)
-        from diffusers import LTX2LatentUpsamplePipeline
-        upscaler = LTX2LatentUpsamplePipeline.from_pretrained(
-            "Lightricks/ltxv-spatial-upscaler-0.9.7",
-            torch_dtype=hardware_manager.dtype
-        ).to(hardware_manager.get_device_obj())
-        
-        print("✨ Upscaling to High Resolution...", flush=True)
-        with torch.inference_mode():
-            upscaled_result = upscaler(
-                video_latents, prompt_embeds=p_embeds, 
-                prompt_attention_mask=p_mask,
-                num_inference_steps=10
-            )
-        final_frames = upscaled_result.frames # List of PIL Images
-        
-        # Phase 5: Export and Cleanup
-        # --------------------------------------------------
-        out_path = os.path.join(CONTENT_DIR, f"{job_id}.mp4")
-        print(f"🎬 Exporting Video: {len(final_frames)} frames to {out_path}...", flush=True)
-        hardware_export_to_video(final_frames, out_path, fps=24)
-        
-        print(f"✅ Job {job_id} Complete -> {out_path}", flush=True)
-        
-        # Cleanup upscaler only to keep Transformer cached for next scene
-        del upscaler
-        hardware_manager.clear_cache()
-        gc.collect()
-
-    except Exception as e:
-        print(f"❌ Error in render_video: {e}", flush=True)
-        traceback.print_exc()
-    except Exception as e:
-        print(f"❌ Error (Video): {e}")
+    job_id = orchestrator.add_job("video", "hunyuan_480p", request)
+    return {"job_id": job_id, "status": "queued", "model": "hunyuan_480p"}
 
 @app.post("/voice")
-async def generate_voice(req: VoiceRequest):
-    clear_gpu()
-    tts = load_tts()
-    job_id = f"aud_{uuid.uuid4().hex[:6]}"
-    path = os.path.join(CONTENT_DIR, f"{job_id}.wav")
-
-    try:
-        with torch.no_grad():
-            speech = tts(
-                req.text,
-                forward_params={"speaker_embeddings": speaker_embedding}
-            )
-            sf.write(path, speech["audio"], speech["sampling_rate"])
-        print(f"✅ Success: Audio saved to {path}")
-        return {"job_id": job_id, "download": f"/download/{job_id}"}
-    except Exception as e:
-        print(f"❌ Error (TTS): {e}")
-        return {"error": str(e)}
+async def generate_voice_endpoint(req: VoiceRequest):
+    job_id = orchestrator.add_job("voice", "tts", req)
+    return {"job_id": job_id, "status": "queued"}
 
 @app.post("/vlm")
-async def analyze(req: VLMRequest):
-    clear_gpu()
-    model, tokenizer = load_vlm()
-    try:
-        img = Image.open(io.BytesIO(base64.b64decode(req.image_base64)))
-        enc = model.encode_image(img)
-        answer = model.answer_question(enc, req.prompt, tokenizer)
-        return {"analysis": answer}
-    except Exception as e:
-        print(f"❌ Error (VLM): {e}")
-        return {"error": str(e)}
+async def analyze_vlm_endpoint(req: VLMRequest):
+    job_id = orchestrator.add_job("vlm", "vlm", req)
+    return {"job_id": job_id, "status": "queued"}
 
 @app.post("/transcribe")
-async def transcribe(bg: BackgroundTasks, file_path: str = None):
-    """
-    In a full production setup, this would handle file uploads.
-    For this remote node, we can point it to a file generated/downloaded locally.
-    """
-    if not file_path or not os.path.exists(file_path):
-        return {"error": "File not found"}
-        
-    clear_gpu()
-    model = load_whisper()
-    try:
-        segments, info = model.transcribe(file_path, beam_size=5)
-        results = []
-        for segment in segments:
-            results.append({
-                "start": segment.start,
-                "end": segment.end,
-                "text": segment.text
-            })
-        return {"language": info.language, "segments": results}
-    except Exception as e:
-        print(f"❌ Error (Whisper): {e}")
-        return {"error": str(e)}
+async def transcribe_endpoint(file_path: str = None):
+    if not file_path: return {"error": "No file path"}
+    job_id = orchestrator.add_job("transcribe", "whisper", {"file_path": file_path})
+    return {"job_id": job_id, "status": "queued"}
 
-@app.post("/llm")
-async def text_gen(req: LLMRequest):
-    # Unload large models if needed to prevent OOM
-    # In a 16GB environment, we might need to unload LTX before loading Llama
-    global pipe
-    if pipe is not None:
-        print("💾 Unloading LTX-Video to free VRAM for LLM...")
-        pipe = None
-        clear_gpu()
+@app.get("/status/{job_id}")
+async def get_job_status(job_id: str):
+    return orchestrator.get_job_status(job_id)
 
-    model, tokenizer = load_llm()
-    try:
-        messages = [
-            {"role": "system", "content": req.system_prompt},
-            {"role": "user", "content": req.prompt},
-        ]
-        input_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to(DEVICE)
-        
-        outputs = model.generate(
-            input_ids, 
-            max_new_tokens=req.max_tokens, 
-            do_sample=True, 
-            temperature=0.7
-        )
-        response = tokenizer.decode(outputs[0][input_ids.shape[-1]:], skip_special_tokens=True)
-        return {"response": response}
-    except Exception as e:
-        traceback.print_exc()
-        return {"error": str(e)}
+# --- Legacy Endpoints (Moved to ai_actions.py) ---
 
 def delete_file(path: str):
     """Background task to delete a file after download."""

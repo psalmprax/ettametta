@@ -8,23 +8,17 @@ class TikTokPublisher(SocialPublisher):
         """
         TikTok Video Kit API integration with automated refresh.
         """
-        # 1. Ensure token is valid
-        await self.ensure_valid_token(user_id, account_id)
+        # 1. Get Auth Headers (OAuth or Cookies)
+        headers = token_manager.get_auth_headers("tiktok", user_id, account_id)
+        if not headers:
+            import logging
+            logging.error(f"[TikTokPublisher] ERROR: No authentication (token or cookies) for user {user_id}.")
+            return None
 
+        # Determine the user identifier (username or open_id)
         token_data = token_manager.get_token_data("tiktok", user_id=user_id, account_id=account_id)
-        if not token_data or "access_token" not in token_data:
-            import logging
-            logging.error(f"[TikTokPublisher] ERROR: No access token for user {user_id}.")
-            return None
+        open_id = token_data.get("username") if token_data else "me"
             
-        access_token = token_data["access_token"]
-        open_id = token_data.get("open_id") or token_data.get("username")
-        
-        if not open_id:
-            import logging
-            logging.error(f"[TikTokPublisher] open_id/username missing for user {user_id}. Re-auth required.")
-            return None
-
         import httpx
         import os
         import logging
@@ -32,10 +26,8 @@ class TikTokPublisher(SocialPublisher):
         # TikTok Video Kit API Endpoints
         INIT_URL = "https://open.tiktokapis.com/v2/post/publish/video/init/"
         
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json; charset=UTF-8"
-        }
+        # 2. Add Content-Type to headers
+        headers["Content-Type"] = "application/json; charset=UTF-8"
 
         CHUNK_SIZE = 10 * 1024 * 1024  # 10MB Chunks
 

@@ -346,42 +346,47 @@ class GenerativeService:
                     )
                     if resp.status_code == 200:
                         logging.info(
-                            f"[GenerativeService] ComfyUI job submitted successfully."
+                            f"[GenerativeService] ComfyUI job submitted. Polling for completion..."
                         )
-                        # In full implementation, we poll /history for completion.
-                        # For now, simulate the delay of processing since we reached the API.
-                        await asyncio.sleep(2)
-                        success = True
+                        # Poll /history for job completion
+                        job_id = resp.json().get("prompt_id")
+                        if job_id:
+                            for attempt in range(30):
+                                await asyncio.sleep(2)
+                                hist_resp = await client.get(
+                                    f"{settings.COMFYUI_URL.rstrip('/')}/history/{job_id}"
+                                )
+                                if hist_resp.status_code == 200:
+                                    hist_data = hist_resp.json()
+                                    if job_id in hist_data and hist_data[job_id].get(
+                                        "outputs"
+                                    ):
+                                        success = True
+                                        break
+                        if not success:
+                            raise RuntimeError(
+                                "ComfyUI job did not complete within timeout"
+                            )
                     else:
-                        logging.warning(
-                            f"[GenerativeService] ComfyUI returned {resp.status_code}. Falling back."
+                        raise RuntimeError(
+                            f"ComfyUI returned {resp.status_code}: {resp.text[:200]}"
                         )
             except Exception as e:
                 logging.error(
                     f"[GenerativeService] ComfyUI connection failed: {e}. Falling back."
                 )
 
-            # Fallback mp4 generation to prevent OpenCV / pipeline crashes downstream
+            # No dummy fallback - let the error propagate
             if not success:
-                try:
-                    import cv2
-                    import numpy as np
-
-                    out = cv2.VideoWriter(
-                        output_path, cv2.VideoWriter_fourcc(*"mp4v"), 1, (16, 16)
-                    )
-                    frame = np.zeros((16, 16, 3), dtype=np.uint8)
-                    out.write(frame)
-                    out.release()
-                except Exception as cv2_err:
-                    with open(output_path, "wb") as f:
-                        f.write(b"fallback mp4 content")
+                raise RuntimeError(
+                    "Generative video synthesis failed: ComfyUI unavailable and no fallback configured."
+                )
 
             return output_path
 
         except Exception as e:
             logging.error(f"[GenerativeService] Synthesis orchestrator failed: {e}")
-            return None
+            raise
         finally:
             # 3. Release Model (Cleans up only if count is 0)
             await self.model_manager.release_model(model_name)
@@ -615,7 +620,6 @@ class GenerativeService:
             try:
                 # We would typically use httpx here for an async call, and either await the result
                 # or rely on a webhook callback for long-running jobs.
-                # Since synthesis takes minutes, we simulate the async request structure.
                 payload = {
                     "prompt": prompt,
                     "resolution": "720p",
@@ -629,10 +633,11 @@ class GenerativeService:
                 if response.status_code == 200:
                     data = response.json()
                     job_id = data.get("job_id")
-
-                    # NOTE: A robust implementation would involve Celery polling `download_url`
-                    # For demonstration, we return a URL pattern that the system would eventually fetch.
-                    return f"{render_node_url}/download/{job_id}"
+                    if job_id:
+                        return f"{render_node_url}/download/{job_id}"
+                raise RuntimeError(
+                    f"Remote GPU node returned {response.status_code}: {response.text[:200]}"
+                )
             except Exception as e:
                 logging.error(
                     f"[GenerativeService] Failed to contact Remote GPU Node: {e}"

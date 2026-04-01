@@ -1,4 +1,5 @@
 import logging
+import socket
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from api.utils.database import get_db
@@ -152,7 +153,7 @@ async def get_nexus_telemetry(current_user = Depends(get_current_user), db: Sess
     
     return {
         "status": "OPERATIONAL",
-        "cluster_node": os.getenv("NEXUS_NODE_ID", "Global-Master-01"),
+        "cluster_node": os.getenv("NEXUS_NODE_ID", socket.gethostname()),
         "active_jobs": active_nexus_jobs + active_video_jobs,
         "nexus_active": active_nexus_jobs,
         "video_active": active_video_jobs,
@@ -160,7 +161,7 @@ async def get_nexus_telemetry(current_user = Depends(get_current_user), db: Sess
         "timestamp": time.time(),
         "load_avg": round(load_1, 2),
         "signals": [
-            {"id": "Signal_01", "status": "ACTIVE" if active_nexus_jobs > 0 else "STANDBY", "offset": f"{latency_ms}ms"},
-            {"id": "Signal_02", "status": "READY", "offset": "0ms"}
+            {"id": "Primary_Node", "status": "ACTIVE" if active_nexus_jobs > 0 else "IDLE", "offset": f"{latency_ms}ms"},
+            {"id": "Neural_Mesh", "status": "SYNCED" if active_video_jobs > 0 else "STANDBY", "offset": "2ms"}
         ]
     }

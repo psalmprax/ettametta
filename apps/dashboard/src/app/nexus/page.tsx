@@ -35,6 +35,7 @@ import { NexusNode, NodeType } from "@/components/ui/NexusNode";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { ClusterManager } from "@/components/ui/ClusterManager";
 
 interface Blueprint {
     id: string;
@@ -75,6 +76,7 @@ export default function NexusPage() {
     const [videoScript, setVideoScript] = useState("");
     const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
     const [telemetry, setTelemetry] = useState<any>(null);
+    const [showClusterManager, setShowClusterManager] = useState(false);
 
     // Fetch initial data
     useEffect(() => {
@@ -184,7 +186,7 @@ export default function NexusPage() {
 
     // Button handlers
     const handleClusterSettings = () => {
-        window.location.href = '/settings';
+        setShowClusterManager(true);
     };
 
     const handleCustomRecipe = () => {
@@ -359,7 +361,7 @@ export default function NexusPage() {
     return (
         <DashboardLayout>
             <div className="max-w-[1600px] mx-auto p-8 space-y-12">
-                <ConfirmModal 
+                <ConfirmModal
                     isOpen={isConfirmClearOpen}
                     onClose={() => setIsConfirmClearOpen(false)}
                     onConfirm={() => {
@@ -440,7 +442,7 @@ export default function NexusPage() {
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
                            <Database className="h-3 w-3" /> Storage Node
                         </label>
-                        <p className="text-white font-black uppercase tracking-tight">{telemetry?.cluster_node || "Cloud-S3 Master"}</p>
+                        <p className="text-white font-black uppercase tracking-tight">{telemetry?.hostname || "Cloud-S3 Master"}</p>
                     </div>
 
                     <button 
@@ -505,7 +507,7 @@ export default function NexusPage() {
                                 <div className="flex items-center gap-4">
                                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                                     <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                                        Stream: <span className="text-white">Neural_Cluster_#402</span>
+                                        Stream: <span className="text-white">{telemetry?.hostname || "Neural_Cluster_#402"}</span>
                                     </p>
                                 </div>
                             </div>
@@ -982,6 +984,8 @@ export default function NexusPage() {
                 confirmText="Purge Stream"
                 variant="danger"
             />
+
+            {showClusterManager && <ClusterManager onClose={() => setShowClusterManager(false)} />}
         </DashboardLayout>
     );
 }

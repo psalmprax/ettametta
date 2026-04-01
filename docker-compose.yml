@@ -198,6 +198,20 @@ services:
     depends_on:
       - api
 
+  ai-gateway:
+    build:
+      context: .
+      dockerfile: ./remote_ai_setup/Dockerfile.gateway
+    ports:
+      - "8133:8133"
+    environment:
+      - AI_NODES=${AI_NODES}
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
+    volumes:
+      - ./remote_ai_setup:/app
+      - gateway_data:/workspace
+    restart: always
+
   voiceover:
     profiles:
       - optional
@@ -294,3 +308,4 @@ volumes:
   prometheus_data:
   grafana_data:
   loki_data:
+  gateway_data:

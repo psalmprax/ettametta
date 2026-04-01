@@ -21,14 +21,12 @@ class InstagramPublisher(SocialPublisher):
         """
         Uploads a video to Instagram via Meta Graph API.
         """
-        # 1. Get access token
-        access_token = token_manager.get_token(
-            "instagram", user_id=user_id, account_id=account_id
-        )
-        if not access_token:
-            print(
-                f"[InstagramPublisher] ERROR: No access token found for user {user_id}. Please authenticate via Dashboard."
-            )
+        # 1. Get Auth Headers (OAuth or Cookies)
+        headers = token_manager.get_auth_headers("instagram", user_id, account_id)
+        
+        access_token = token_manager.get_token("instagram", user_id=user_id, account_id=account_id)
+        if not access_token and "Cookie" not in headers:
+            print(f"[InstagramPublisher] ERROR: No authentication (token or cookies) for user {user_id}.")
             return None
 
         try:
@@ -42,7 +40,7 @@ class InstagramPublisher(SocialPublisher):
                 "media_type": "VIDEO",
                 "video_url": video_url,
                 "caption": f"{metadata.title}\n\n{metadata.description}\n\n{' '.join(metadata.hashtags)}",
-                "access_token": access_token,
+                "access_token": access_token or headers.get("Cookie"), # Fallback for Graph API
             }
 
             async with httpx.AsyncClient() as client:
@@ -64,7 +62,7 @@ class InstagramPublisher(SocialPublisher):
                 publish_url = "https://graph.facebook.com/v18.0/me/media_publish"
                 publish_data = {
                     "creation_id": container_id,
-                    "access_token": access_token,
+                    "access_token": access_token or headers.get("Cookie"), # Fallback for Graph API
                 }
 
                 publish_response = await client.post(publish_url, data=publish_data)
