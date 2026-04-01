@@ -134,8 +134,17 @@ async def auth_youtube(current_user: UserDB = Depends(get_current_user)):
     # Securely encode user_id in the state
     import json
     import base64
+    import secrets
 
-    state_data = {"user_id": current_user.id, "csrf": uuid.uuid4().hex}
+    # Generate a manual code_verifier for PKCE pass-through
+    code_verifier = secrets.token_urlsafe(64)
+    flow.code_verifier = code_verifier
+
+    state_data = {
+        "user_id": current_user.id,
+        "csrf": uuid.uuid4().hex,
+        "code_verifier": code_verifier,
+    }
     state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
 
     authorization_url, _ = flow.authorization_url(
@@ -149,13 +158,14 @@ async def auth_youtube_callback(code: str, state: str):
     """
     Handles the YouTube OAuth callback with user isolation.
     """
+    # Decode state to get user_id and code_verifier
     import json
     import base64
 
     try:
-        # Decode state to get user_id
         state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
         user_id = state_data.get("user_id")
+        code_verifier = state_data.get("code_verifier")
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
 
@@ -171,6 +181,11 @@ async def auth_youtube_callback(code: str, state: str):
         scopes=YOUTUBE_SCOPES,
     )
     flow.redirect_uri = settings.GOOGLE_YOUTUBE_REDIRECT_URI
+    
+    # Restore the code_verifier for PKCE validation
+    if code_verifier:
+        flow.code_verifier = code_verifier
+
     flow.fetch_token(code=code)
 
     credentials = flow.credentials
