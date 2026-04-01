@@ -285,6 +285,7 @@ services:
 
   loki:
     image: grafana/loki:2.9.10
+    user: "0:0"
     volumes:
       - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml
       - loki_data:/loki
