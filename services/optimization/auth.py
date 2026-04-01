@@ -7,6 +7,7 @@ from cryptography.fernet import Fernet
 from api.utils.database import SessionLocal
 from api.utils.models import SocialAccount
 from api.config import settings
+from .cookie_manager import cookie_manager
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,25 @@ class TokenManager:
             return self._decrypt(account.access_token) if account else None
         finally:
             db.close()
+
+    def get_auth_headers(self, platform: str, user_id: int, account_id: Optional[int] = None) -> Dict[str, str]:
+        """
+        Unified helper to get authentication headers.
+        Returns either Authorization: Bearer ... or Cookie: ...
+        """
+        # 1. Try OAuth Token first
+        token = self.get_token(platform, user_id, account_id)
+        if token:
+            return {"Authorization": f"Bearer {token}"}
+
+        # 2. Fallback to Cookies
+        cookies = cookie_manager.get_cookies_for_platform(platform)
+        if cookies:
+            cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
+            logger.info(f"[TokenManager] Using Cookie-based fallback for {platform}")
+            return {"Cookie": cookie_str}
+
+        return {}
 
     def get_token_data(
         self, platform: str, user_id: int, account_id: Optional[int] = None
@@ -121,6 +141,12 @@ class TokenManager:
             )
         finally:
             db.close()
+
+    def has_auth(self, platform: str, user_id: int, account_id: Optional[int] = None) -> bool:
+        """Checks if either a token or cookies exist for the platform."""
+        if self.get_token(platform, user_id, account_id):
+            return True
+        return cookie_manager.has_cookies(platform)
 
     async def ensure_valid_token(
         self, platform: str, user_id: int, account_id: Optional[int] = None

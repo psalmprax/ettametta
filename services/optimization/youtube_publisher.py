@@ -20,12 +20,12 @@ class YouTubePublisher(SocialPublisher):
         if not youtube_breaker.can_execute():
             logger.warning(f"[YouTubePublisher] Circuit breaker OPEN. Service unavailable.")
             raise CircuitBreakerOpenError("YouTube API temporarily unavailable")
-        # 1. Ensure token is valid (Refresh if needed)
-        await self.ensure_valid_token(user_id, account_id)
-
+        # 1. Get Auth Headers (OAuth or Cookies)
+        headers = token_manager.get_auth_headers("youtube", user_id, account_id)
+        
         access_token = token_manager.get_token("youtube", user_id=user_id, account_id=account_id)
-        if not access_token:
-            print(f"[YouTubePublisher] ERROR: No access token found for user {user_id}. Please authenticate via Dashboard.")
+        if not access_token and "Cookie" not in headers:
+            print(f"[YouTubePublisher] ERROR: No authentication (token or cookies) for user {user_id}.")
             return None
 
         # Build credentials

@@ -23,20 +23,11 @@ class XPublisher(SocialPublisher):
         account_id: Optional[int] = None,
     ) -> Optional[str]:
         """Uploads a video to X (Twitter) via chunked media upload v1.1 + tweet v2."""
-        access_token = token_manager.get_token(
-            "x", user_id=user_id, account_id=account_id
-        )
-        if not access_token:
-            logger.error(f"[XPublisher] No access token for user {user_id}")
+        # 1. Get Auth Headers (OAuth or Cookies)
+        headers = token_manager.get_auth_headers("x", user_id, account_id)
+        if not headers:
+            logger.error(f"[XPublisher] No authentication (token or cookies) for user {user_id}")
             return None
-
-        # Validate token before upload
-        await self.ensure_valid_token(user_id, account_id)
-        access_token = token_manager.get_token(
-            "x", user_id=user_id, account_id=account_id
-        )
-
-        headers = {"Authorization": f"Bearer {access_token}"}
 
         try:
             # Resolve local file path vs URL

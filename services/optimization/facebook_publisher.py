@@ -21,13 +21,12 @@ class FacebookPublisher(SocialPublisher):
         """
         Uploads a video to Facebook via Meta Graph API.
         """
-        access_token = token_manager.get_token(
-            "facebook", user_id=user_id, account_id=account_id
-        )
-        if not access_token:
-            print(
-                f"[FacebookPublisher] ERROR: No access token found for user {user_id}. Please authenticate via Dashboard."
-            )
+        # 1. Get Auth Headers (OAuth or Cookies)
+        headers = token_manager.get_auth_headers("facebook", user_id, account_id)
+        
+        access_token = token_manager.get_token("facebook", user_id=user_id, account_id=account_id)
+        if not access_token and "Cookie" not in headers:
+            print(f"[FacebookPublisher] ERROR: No authentication (token or cookies) for user {user_id}.")
             return None
 
         try:
@@ -39,7 +38,7 @@ class FacebookPublisher(SocialPublisher):
                 "file_url": video_url,
                 "title": metadata.title[:60],
                 "description": metadata.description[:500],
-                "access_token": access_token,
+                "access_token": access_token or headers.get("Cookie"), # Fallback for Graph API
             }
 
             async with httpx.AsyncClient() as client:

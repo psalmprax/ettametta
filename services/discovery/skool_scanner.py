@@ -1,7 +1,6 @@
 import httpx
 import logging
 import json
-import random
 from bs4 import BeautifulSoup
 from typing import List, Optional
 from datetime import datetime
@@ -97,14 +96,12 @@ class SkoolScanner:
                                 ContentCandidate(
                                     id=f"skool_{idx}",
                                     platform=self.platform,
-                                    url="https://skool.com/",  # Needs exact path
+                                    url="https://skool.com/",
                                     author="Skool Community",
                                     title=title.text.strip(),
-                                    description=desc.text.strip()
-                                    if desc
-                                    else "Trending community",
-                                    view_count=1000,  # Simulated proxy for members
-                                    engagement_rate=0.8,
+                                    description=desc.text.strip() if desc else "",
+                                    view_count=0,
+                                    engagement_rate=0.0,
                                     discovery_date=datetime.now(),
                                     tags=[
                                         "skool",
@@ -173,10 +170,8 @@ class SkoolScanner:
                                 author=g.get("author", "Skool Expert"),
                                 title=name,
                                 description=description,
-                                view_count=g.get(
-                                    "memberCount", random.randint(500, 5000)
-                                ),
-                                engagement_rate=0.85,  # Community engagement is high
+                                view_count=g.get("memberCount", 0),
+                                engagement_rate=0.0,
                                 discovery_date=datetime.now(),
                                 tags=[
                                     "skool",

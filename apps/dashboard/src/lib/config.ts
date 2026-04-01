@@ -21,3 +21,5 @@ const getWsBase = () => {
 };
 
 export const WS_BASE = getWsBase();
+
+export const AI_GATEWAY_URL = process.env.NEXT_PUBLIC_AI_GATEWAY_URL || "http://149.104.110.122:8133";

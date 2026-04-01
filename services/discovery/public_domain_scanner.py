@@ -1,6 +1,5 @@
 import aiohttp
 import logging
-import random
 from typing import List, Optional
 from .models import ContentCandidate
 from api.config import settings
@@ -29,6 +28,11 @@ class PublicDomainScanner:
                         if res.status == 200:
                             data = await res.json()
                             for v in data.get("videos", []):
+                                # Compute engagement from available Pexels data
+                                duration = v.get("duration", 0)
+                                quality_score = (
+                                    min(1.0, duration / 60.0) if duration else 0.0
+                                )
                                 candidates.append(
                                     ContentCandidate(
                                         id=f"pexels_{v['id']}",
@@ -36,8 +40,8 @@ class PublicDomainScanner:
                                         url=v["url"],
                                         author=v["user"]["name"],
                                         title=f"Stock B-Roll: {niche}",
-                                        view_count=0,  # Pexels API does not provide view count
-                                        engagement_rate=0.9,  # Quality placeholder (TODO: compute real metric)
+                                        view_count=0,
+                                        engagement_rate=quality_score,
                                         metadata={"video_files": v["video_files"]},
                                     )
                                 )
@@ -58,6 +62,11 @@ class PublicDomainScanner:
                         data = await res.json()
                         docs = data.get("response", {}).get("docs", [])
                         for doc in docs:
+                            # Derive engagement from download count (log-scaled 0-1)
+                            downloads = doc.get("downloads", 0)
+                            engagement = min(
+                                1.0, (downloads / 10000.0) if downloads else 0.0
+                            )
                             candidates.append(
                                 ContentCandidate(
                                     id=f"archive_{doc['identifier']}",
@@ -69,8 +78,8 @@ class PublicDomainScanner:
                                     if isinstance(doc.get("creator"), list)
                                     else doc.get("creator", "Public Domain"),
                                     title=doc.get("title", "Historical Footage"),
-                                    view_count=doc.get("downloads", 0),
-                                    engagement_rate=0.8,
+                                    view_count=downloads,
+                                    engagement_rate=engagement,
                                     metadata={"identifier": doc["identifier"]},
                                 )
                             )

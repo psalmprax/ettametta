@@ -49,6 +49,7 @@ export default function EmpirePage() {
     const [isSyncingShopify, setIsSyncingShopify] = useState(false);
     const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+    const [availableNiches, setAvailableNiches] = useState<string[]>([]);
 
     const fetchSentinel = async () => {
         setIsRefreshing(true);
@@ -142,6 +143,24 @@ export default function EmpirePage() {
         }
     };
 
+    const fetchAvailableNiches = async () => {
+        try {
+            const token = localStorage.getItem("et_token");
+            const res = await fetch(`${API_BASE}/discovery/niches`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setAvailableNiches(data);
+                if (data.length > 0 && !cloningNiche) {
+                    setCloningNiche(data[0]);
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const fetchAffiliateLinks = async () => {
         try {
             const token = localStorage.getItem("et_token");
@@ -215,6 +234,7 @@ export default function EmpirePage() {
         fetchBlueprints();
         fetchAffiliateLinks();
         fetchRevenueReport();
+        fetchAvailableNiches();
     }, []);
 
     const handleGeneratePromo = async () => {
@@ -472,10 +492,17 @@ export default function EmpirePage() {
                                         onChange={(e) => setCloningNiche(e.target.value)}
                                         className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-[10px] font-black uppercase tracking-widest text-zinc-300 outline-none cursor-pointer hover:bg-zinc-900/50 transition-all"
                                     >
-                                        <option>Stoic Wisdom</option>
-                                        <option>Billionaire Mindset</option>
-                                        <option>AI Productivity</option>
-                                        <option>Historical Facts</option>
+                                        {availableNiches.map((niche) => (
+                                            <option key={niche} value={niche}>{niche}</option>
+                                        ))}
+                                        {availableNiches.length === 0 && (
+                                            <>
+                                                <option>Stoic Wisdom</option>
+                                                <option>Billionaire Mindset</option>
+                                                <option>AI Productivity</option>
+                                                <option>Historical Facts</option>
+                                            </>
+                                        )}
                                     </select>
                                     <button
                                         onClick={() => setIsCloneModalOpen(true)}
