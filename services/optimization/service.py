@@ -9,8 +9,11 @@ import logging
 import random
 from services.monetization.auto_merch import base_auto_merch_service
 
+
 class OptimizationService:
-    async def generate_viral_package(self, content_id: str, niche: str, platform: str) -> PostMetadata:
+    async def generate_viral_package(
+        self, content_id: str, niche: str, platform: str
+    ) -> PostMetadata:
         """
         Uses shared AIWorker to generate SEO-optimized title, description, and hashtags.
         Automatically injects relevant affiliate links and CTAs if available.
@@ -18,46 +21,82 @@ class OptimizationService:
         db = SessionLocal()
         affiliate_info = ""
         commerce_info = ""
-        aggression = 100 # Default
-        
+        aggression = 100  # Default
+
         try:
             # 1. Check Monetization Settings
-            agg_setting = db.query(SystemSettings).filter(SystemSettings.key == "monetization_aggression").first()
+            agg_setting = (
+                db.query(SystemSettings)
+                .filter(SystemSettings.key == "monetization_aggression")
+                .first()
+            )
             if agg_setting:
                 aggression = int(agg_setting.value)
-            
-            strategy_setting = db.query(SystemSettings).filter(SystemSettings.key == "active_monetization_strategy").first()
-            active_strategy = strategy_setting.value if strategy_setting else "affiliate"
-            
+
+            strategy_setting = (
+                db.query(SystemSettings)
+                .filter(SystemSettings.key == "active_monetization_strategy")
+                .first()
+            )
+            active_strategy = (
+                strategy_setting.value if strategy_setting else "affiliate"
+            )
+
             # Determine if we should harvest this time (Probability check)
             should_harvest = random.randint(1, 100) <= aggression
 
             if should_harvest:
                 # 2. Source Monetization based on Strategy
                 if active_strategy == "commerce":
-                    product = await base_monetization_engine.match_viral_to_product(niche, content_id)
+                    product = await base_monetization_engine.match_viral_to_product(
+                        niche, content_id
+                    )
                     if product:
-                        from services.monetization.strategies.commerce import CommerceStrategy
+                        from services.monetization.strategies.commerce import (
+                            CommerceStrategy,
+                        )
+
                         strategy = CommerceStrategy()
                         commerce_cta = await strategy.generate_cta(niche, content_id)
                         commerce_info = f"\n- MONETIZATION CTA: {commerce_cta}"
-                
+
                 elif active_strategy == "affiliate":
-                    aff_product = db.query(AffiliateLinkDB).filter(AffiliateLinkDB.niche == niche).order_by(AffiliateLinkDB.created_at.desc()).first()
+                    aff_product = (
+                        db.query(AffiliateLinkDB)
+                        .filter(AffiliateLinkDB.niche == niche)
+                        .order_by(AffiliateLinkDB.created_at.desc())
+                        .first()
+                    )
                     if aff_product:
-                        from services.monetization.strategies.affiliate import AffiliateStrategy
+                        from services.monetization.strategies.affiliate import (
+                            AffiliateStrategy,
+                        )
+
                         strategy = AffiliateStrategy()
                         affiliate_cta = await strategy.generate_cta(niche, content_id)
                         affiliate_info = f"\n- MONETIZATION CTA: {affiliate_cta}"
 
                 # 3. Monetization Arbitrage (Reverse Strategy)
                 # If content is deemed high-potential, recommend creating a custom merch design
-                if aggression > 50: # Only for aggressive growth accounts
-                    # In a real scenario, we'd check a 'ViralScore' from DiscoveryService here
-                    # For now, we simulate arbitrage potential
-                    if random.random() > 0.7:
-                        arbitrage_suggestion = await base_auto_merch_service.trigger_auto_merch(niche)
-                        commerce_info += f"\n- ARBITRAGE SUGGESTION: {arbitrage_suggestion}"
+                if aggression > 50:  # Only for aggressive growth accounts
+                    # Check viral potential from discovery engagement score
+                    try:
+                        from services.discovery.service import base_discovery_service
+
+                        recent_content = await base_discovery_service.discover_niche(
+                            niche, platform
+                        )
+                        if recent_content and any(
+                            c.engagement_rate > 0.7 for c in recent_content
+                        ):
+                            arbitrage_suggestion = (
+                                await base_auto_merch_service.trigger_auto_merch(niche)
+                            )
+                            commerce_info += (
+                                f"\n- ARBITRAGE SUGGESTION: {arbitrage_suggestion}"
+                            )
+                    except Exception:
+                        pass  # Discovery unavailable, skip arbitrage
 
             # Fallback if no real key is configured
             if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
@@ -77,7 +116,7 @@ class OptimizationService:
             """
 
             response_content = await ai_worker.analyze_viral_pattern(prompt)
-            
+
             if "Error" in response_content:
                 return self._get_fallback_package(niche, platform)
 
@@ -89,18 +128,20 @@ class OptimizationService:
                     data = json.loads(response_content[start:end])
                 else:
                     raise ValueError("No JSON found in response")
-                    
+
             except (json.JSONDecodeError, ValueError):
                 # Fallback to simple parsing or just use defaults
                 return self._get_fallback_package(niche, platform)
-            
+
             return PostMetadata(
                 title=data.get("title", f"Secret of {niche} in 2026"),
-                description=data.get("description", f"Uncovering the reality of {niche}."),
+                description=data.get(
+                    "description", f"Uncovering the reality of {niche}."
+                ),
                 hashtags=data.get("hashtags", ["Viral", niche.replace(" ", "")]),
                 cta=data.get("cta", "Follow for more!"),
                 best_posting_time="Optimal Time Identified",
-                platform=platform
+                platform=platform,
             )
         except Exception as e:
             logging.error(f"Optimization Job Error: {e}")
@@ -113,14 +154,15 @@ class OptimizationService:
         description = f"Generate content for your {niche} niche."
         if product:
             description += f" \n\n{product.cta_text}: {product.link}"
-        
+
         return PostMetadata(
             title=f"{niche} Content",
             description=description,
             hashtags=[niche.replace(" ", "")],
             cta="Subscribe for more!",
             best_posting_time="Configure API to enable",
-            platform=platform
+            platform=platform,
         )
+
 
 base_optimization_service = OptimizationService()

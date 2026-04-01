@@ -109,8 +109,17 @@ def download_and_process_task(
         update_job(status="Strategizing", progress=40)
         from services.decision_engine.service import base_strategy_service
 
-        # We need a transcript placeholder or actual extraction
-        transcript = "Visual-only analysis conducted."
+        # Extract transcript from video if available
+        from .transcription import transcription_service
+
+        transcript_segments = run_async(
+            transcription_service.transcribe_video(video_path)
+        )
+        transcript = (
+            " ".join(seg.get("text", "") for seg in transcript_segments)
+            if transcript_segments
+            else "Visual-only analysis conducted."
+        )
         strategy_obj = run_async(
             base_strategy_service.generate_visual_strategy(
                 transcript, niche, style=style, visual_insights=visual_insights

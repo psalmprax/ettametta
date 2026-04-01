@@ -114,8 +114,26 @@ class OpenCLIService:
         return user_dir
 
     def _cookie_path(self, user_id: int, platform: str) -> Path:
-        """Get the cookie file path for a user+platform."""
-        return self._user_session_dir(user_id) / f"{platform}_cookies.txt"
+        """Get the cookie file path for a user+platform, with global fallback."""
+        # 1. User-specific path
+        user_path = self._user_session_dir(user_id) / f"{platform}_cookies.txt"
+        if user_path.exists():
+            return user_path
+            
+        # 2. Global fallback (from our new ./cookies folder)
+        from .scanner import logger
+        global_mapping = {
+            "twitter": "twitter_cookies.txt",
+            "x": "twitter_cookies.txt"
+        }
+        filename = global_mapping.get(platform, f"{platform}_cookies.txt")
+        global_path = Path("cookies") / filename
+        
+        if global_path.exists():
+            logger.info(f"[OpenCLI] Using global cookie fallback for {platform}")
+            return global_path
+            
+        return user_path
 
     def _config_path(self, user_id: int) -> Path:
         """Get the opencli config path for a user."""
