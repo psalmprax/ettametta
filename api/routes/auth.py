@@ -473,9 +473,9 @@ async def google_auth_callback(
         )
 
         # Redirect to frontend with token
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        dashboard_url = settings.PRODUCTION_DOMAIN.split("/api/v1")[0].rstrip("/") or "http://localhost:7202"
         return RedirectResponse(
-            url=f"{frontend_url}/auth/callback?token={access_token}&provider=google",
+            url=f"{dashboard_url}/auth/callback?token={access_token}&provider=google",
             status_code=302,
         )
 

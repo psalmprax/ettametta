@@ -205,11 +205,11 @@ async def auth_youtube_callback(code: str, state: str):
         },
     )
 
-    return {
-        "status": "success",
-        "message": "YouTube authenticated successfully",
-        "user_id": user_id,
-    }
+    # Redirect back to the frontend dashboard
+    dashboard_url = settings.PRODUCTION_DOMAIN.split("/api/v1")[0].rstrip("/") or "http://localhost:7202"
+    return RedirectResponse(
+        url=f"{dashboard_url}/publishing?success=true&platform=youtube"
+    )
 
 
 @router.get("/accounts")
