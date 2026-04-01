@@ -124,7 +124,8 @@ async def update_node_health():
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(update_node_health())
-    print(f"🚀 AI Gateway started with {len(AI_NODES)} nodes registered.", flush=True)
+    nodes = job_store.get_nodes()
+    print(f"🚀 AI Gateway started with {len(nodes)} nodes registered.", flush=True)
 
 def select_best_node(requested_model: Optional[str] = None) -> str:
     """Smart routing: Least-busy + Model-aware preference"""
