@@ -13,14 +13,15 @@ def verify_config():
     print(f"PRODUCTION_DOMAIN: {settings.PRODUCTION_DOMAIN}")
     
     print("\n--- OAuth Redirect URIs ---")
-    print(f"Google Callback: {settings.GOOGLE_REDIRECT_URI}")
+    print(f"Google Auth Callback: {settings.GOOGLE_AUTH_REDIRECT_URI}")
+    print(f"Google YouTube Callback: {settings.GOOGLE_YOUTUBE_REDIRECT_URI}")
     print(f"TikTok Callback: {settings.TIKTOK_REDIRECT_URI}")
     
-    expected_google = f"{settings.PRODUCTION_DOMAIN}/publish/auth/youtube/callback"
-    if settings.GOOGLE_REDIRECT_URI == expected_google:
+    expected_google = f"{settings.PRODUCTION_DOMAIN.rstrip('/')}/publish/auth/youtube/callback"
+    if settings.GOOGLE_YOUTUBE_REDIRECT_URI == expected_google:
         print("✅ Google Redirect URI matches expected pattern.")
     else:
-        print(f"❌ Google Redirect URI Mismatch! Got: {settings.GOOGLE_REDIRECT_URI}")
+        print(f"❌ Google Redirect URI Mismatch! Got: {settings.GOOGLE_YOUTUBE_REDIRECT_URI}")
 
 def verify_font_logic():
     print("\n--- Video Engine Font Resolution ---")

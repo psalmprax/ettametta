@@ -20,6 +20,9 @@ from services.payment.credit_service import credit_service
 import datetime
 import uuid
 import logging
+import os
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/publish", tags=["Publishing"])
 
@@ -154,20 +157,35 @@ async def auth_youtube(current_user: UserDB = Depends(get_current_user)):
 
 
 @router.get("/auth/youtube/callback")
-async def auth_youtube_callback(code: str, state: str):
+async def auth_youtube_callback(state: str, code: Optional[str] = None, error: Optional[str] = None):
     """
-    Handles the YouTube OAuth callback with user isolation.
+    Handles the YouTube OAuth callback with user isolation and robust error logging.
     """
     # Decode state to get user_id and code_verifier
     import json
     import base64
 
+    logger.info(f"YouTube Callback received: state_len={len(state)}, code_present={bool(code)}, error={error}")
+
+    if error:
+        raise HTTPException(status_code=400, detail=f"OAuth Error from Google: {error}")
+
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing OAuth code from Google")
+
     try:
         state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
         user_id = state_data.get("user_id")
         code_verifier = state_data.get("code_verifier")
-    except Exception:
+        logger.info(f"Decoded State: user_id={user_id}, has_verifier={bool(code_verifier)}")
+    except Exception as e:
+        logger.error(f"Failed to decode OAuth state: {str(e)}")
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
+
+    # Allow insecure transport for development/local sslip.io setups if using HTTP
+    if settings.PRODUCTION_DOMAIN.startswith("http://"):
+        os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+        logger.warning("OAUTHLIB_INSECURE_TRANSPORT enabled for HTTP session")
 
     flow = Flow.from_client_config(
         {
@@ -181,12 +199,22 @@ async def auth_youtube_callback(code: str, state: str):
         scopes=YOUTUBE_SCOPES,
     )
     flow.redirect_uri = settings.GOOGLE_YOUTUBE_REDIRECT_URI
+    logger.info(f"Using Redirect URI for token exchange: {flow.redirect_uri}")
     
     # Restore the code_verifier for PKCE validation
     if code_verifier:
         flow.code_verifier = code_verifier
 
-    flow.fetch_token(code=code)
+    try:
+        flow.fetch_token(code=code)
+    except Exception as e:
+        logger.error(f"YouTube Token Exchange Failed: {str(e)}", exc_info=True)
+        # Check for specific redirect_uri mismatch in error message
+        error_detail = str(e)
+        if "redirect_uri_mismatch" in error_detail.lower():
+            error_detail = f"Redirect URI Mismatch. Check if {flow.redirect_uri} is registered in Google Cloud Console."
+        
+        raise HTTPException(status_code=400, detail=f"Token exchange failed: {error_detail}")
 
     credentials = flow.credentials
     token_manager.store_token(
@@ -204,6 +232,8 @@ async def auth_youtube_callback(code: str, state: str):
             else 3600,
         },
     )
+
+    logger.info(f"Successfully stored YouTube token for user_id={user_id}")
 
     # Redirect back to the frontend dashboard
     dashboard_url = settings.PRODUCTION_DOMAIN.split("/api/v1")[0].rstrip("/") or "http://localhost:7202"
