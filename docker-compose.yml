@@ -287,7 +287,8 @@ services:
     image: grafana/loki:latest
     volumes:
       - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml
-    # No command override; use the default which points to /etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
     ports:
       - "7212:3100"
     restart: unless-stopped
