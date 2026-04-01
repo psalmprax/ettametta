@@ -95,7 +95,9 @@ WORKER_TOKEN = os.environ.get("AI_CLUSTER_SECRET") # Shared secret for Gateway -
 # Initial seed from .env
 env_nodes = os.environ.get("AI_NODES", "").split(",")
 for node in env_nodes:
-    if node: job_store.add_node(node.strip())
+    clean_node = node.strip()
+    if clean_node:
+        job_store.add_node(clean_node)
 
 NODE_HEALTH: Dict[str, Dict[str, Any]] = {}
 LOCK = threading.Lock()
