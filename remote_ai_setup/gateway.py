@@ -19,7 +19,12 @@ app = FastAPI(title="AI Cluster Gateway")
 # --- CONNECTIVITY STABILIZATION ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In high-security environments, restrict to dashboard origin
+    allow_origins=[
+        "http://149.104.110.122.sslip.io:7200",
+        "http://149.104.110.122:7200",
+        "http://localhost:3000",
+        "*" # Fallback (Note: will fail if credentials=True is strictly enforced)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

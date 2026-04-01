@@ -246,7 +246,12 @@ app = FastAPI(title="ettametta Remote AI Engine (LTX + SpeechT5 + Moondream2)")
 # --- CONNECTIVITY STABILIZATION ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://149.104.110.122.sslip.io:7200",
+        "http://149.104.110.122:7200",
+        "http://localhost:3000",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
