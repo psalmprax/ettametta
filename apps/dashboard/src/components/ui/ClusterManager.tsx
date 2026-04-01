@@ -14,7 +14,7 @@ import {
     AlertCircle,
     Key
 } from "lucide-react";
-import { AI_GATEWAY_URL } from "@/lib/config";
+import { AI_GATEWAY_URL, INTERNAL_API_TOKEN } from "@/lib/config";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,7 +32,7 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
     const [newNodeUrl, setNewNodeUrl] = useState("");
     const [provisioningNode, setProvisioningNode] = useState<string | null>(null);
     const [sshKey, setSshKey] = useState("");
-    const [isAdminToken, setAdminToken] = useState("");
+    const [isAdminToken, setAdminToken] = useState(INTERNAL_API_TOKEN);
 
     const fetchNodes = async () => {
         try {

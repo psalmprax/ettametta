@@ -23,11 +23,11 @@ app.add_middleware(
         "http://149.104.110.122.sslip.io:7200",
         "http://149.104.110.122:7200",
         "http://localhost:3000",
-        "*" # Fallback (Note: will fail if credentials=True is strictly enforced)
+        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "X-Admin-Token", "X-Worker-Token"],
 )
 
 # Persistent Storage for Jobs
@@ -237,19 +237,19 @@ async def verify_admin(x_admin_token: str = Header(None)):
         raise HTTPException(status_code=401, detail="Unauthorized Admin Action")
 
 @app.post("/nodes")
-async def add_node_to_cluster(url: str, token: str = Header(None)):
-    await verify_admin(token)
+async def add_node_to_cluster(url: str, x_admin_token: str = Header(None)):
+    await verify_admin(x_admin_token)
     job_store.add_node(url)
     return {"status": "added", "node": url}
 
 @app.delete("/nodes/{node_url:path}")
-async def remove_node_from_cluster(node_url: str, token: str = Header(None)):
-    await verify_admin(token)
+async def remove_node_from_cluster(node_url: str, x_admin_token: str = Header(None)):
+    await verify_admin(x_admin_token)
     job_store.remove_node(node_url)
     return {"status": "removed"}
 
 @app.post("/nodes/provision")
-async def provision_node(ip: str, ssh_key: str, port: int = 22, user: str = "root", token: str = Header(None)):
+async def provision_node(ip: str, ssh_key: str, port: int = 22, user: str = "root", x_admin_token: str = Header(None)):
     """
     Hardened Provisioning: Key is passed in Body, stays in RAM only.
     Zero-Storage architecture ensures key never hits Gateway disk.
