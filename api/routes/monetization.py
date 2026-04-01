@@ -147,15 +147,17 @@ async def get_network_graph(
 
 @router.post("/commerce/sync")
 async def sync_commerce_products(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    niche: str = "General",
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Triggers a test sync with the configured Shopify store.
     """
     from services.monetization.commerce_service import base_commerce_service
 
-    # Test with a generic niche to verify connection
-    products = await base_commerce_service.get_relevant_products("Growth")
+    # Test with the provided niche to verify connection
+    products = await base_commerce_service.get_relevant_products(niche)
     if not products:
         return {
             "status": "warning",

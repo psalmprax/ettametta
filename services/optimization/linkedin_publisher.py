@@ -23,22 +23,14 @@ class LinkedInPublisher(SocialPublisher):
         account_id: Optional[int] = None,
     ) -> Optional[str]:
         """Uploads a video to LinkedIn via 3-step flow: register → upload → create post."""
-        access_token = token_manager.get_token(
-            "linkedin", user_id=user_id, account_id=account_id
-        )
-        if not access_token:
-            logger.error(f"[LinkedInPublisher] No access token for user {user_id}")
+        # 1. Get Auth Headers (OAuth or Cookies)
+        headers = token_manager.get_auth_headers("linkedin", user_id, account_id)
+        if not headers:
+            logger.error(f"[LinkedInPublisher] No authentication (token or cookies) for user {user_id}")
             return None
 
-        await self.ensure_valid_token(user_id, account_id)
-        access_token = token_manager.get_token(
-            "linkedin", user_id=user_id, account_id=account_id
-        )
-
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "X-Restli-Protocol-Version": "2.0.0",
-        }
+        # Ensure restli protocol version is present
+        headers["X-Restli-Protocol-Version"] = "2.0.0"
 
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
@@ -99,10 +91,8 @@ class LinkedInPublisher(SocialPublisher):
                         logger.info(
                             f"[LinkedInPublisher] Uploading {len(file_data)} bytes to LinkedIn storage..."
                         )
-                        upload_headers = {
-                            "Authorization": f"Bearer {access_token}",
-                            "Content-Type": "application/octet-stream",
-                        }
+                        upload_headers = headers.copy()
+                        upload_headers["Content-Type"] = "application/octet-stream"
                         upload_resp = await client.put(
                             upload_url, content=file_data, headers=upload_headers
                         )

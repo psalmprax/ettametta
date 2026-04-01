@@ -164,67 +164,48 @@ def generate_wan_v2v(
 
 
 def generate_wan_api(prompt: str, output_dir: str) -> Tuple[str, str]:
-    """Generate video using real API call to remote GPU node before falling back"""
+    """Generate video using real API call to remote GPU node"""
     import json
 
     job_id = f"wan_api_{int(time.time())}"
     output_path = os.path.join(output_dir, f"{job_id}.mp4")
     os.makedirs(output_dir, exist_ok=True)
 
-    try:
-        if settings.RENDER_NODE_URL:
-            print(
-                f"📡 Attempting Wan remote generation via {settings.RENDER_NODE_URL}...",
-                flush=True,
-            )
-            payload = {"prompt": prompt, "model": "wan-2.2-t2v", "resolution": "480p"}
-            headers = {"Content-Type": "application/json"}
-            if hasattr(settings, "INTERNAL_API_TOKEN") and settings.INTERNAL_API_TOKEN:
-                headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-
-            response = requests.post(
-                f"{settings.RENDER_NODE_URL}/generate",
-                json=payload,
-                headers=headers,
-                timeout=120,
-            )
-            if response.status_code == 200:
-                # Expecting binary video stream or JSON with a URL back
-                # For MVP safety, if it returns video bytes directly:
-                if "video" in response.headers.get("Content-Type", ""):
-                    with open(output_path, "wb") as f:
-                        f.write(response.content)
-                    print(f"✅ Wan Remote API success for {job_id}", flush=True)
-                    return job_id, output_path
-                else:
-                    data = response.json()
-                    dl_url = data.get("download_url")
-                    if dl_url:
-                        dl_resp = requests.get(dl_url, timeout=60)
-                        with open(output_path, "wb") as f:
-                            f.write(dl_resp.content)
-                        return job_id, output_path
-
-            raise Exception(
-                f"Validation or Network failure (Status {response.status_code})"
-            )
-    except Exception as e:
-        print(
-            f"⚠️ Wan Remote API failed ({e}). Falling back to dummy video file.",
-            flush=True,
+    if not settings.RENDER_NODE_URL:
+        raise RuntimeError(
+            "RENDER_NODE_URL not configured. Cannot generate Wan 2.2 video remotely."
         )
 
-    # Ultimate dummy fallback that OpenCV can at least parse (prevent OpenCV crashes later)
-    try:
-        import cv2
-        import numpy as np
+    print(
+        f"📡 Attempting Wan remote generation via {settings.RENDER_NODE_URL}...",
+        flush=True,
+    )
+    payload = {"prompt": prompt, "model": "wan-2.2-t2v", "resolution": "480p"}
+    headers = {"Content-Type": "application/json"}
+    if hasattr(settings, "INTERNAL_API_TOKEN") and settings.INTERNAL_API_TOKEN:
+        headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
 
-        out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*"mp4v"), 1, (16, 16))
-        frame = np.zeros((16, 16, 3), dtype=np.uint8)
-        out.write(frame)
-        out.release()
-    except:
-        with open(output_path, "wb") as f:
-            f.write(b"fallback mp4")
+    response = requests.post(
+        f"{settings.RENDER_NODE_URL}/generate",
+        json=payload,
+        headers=headers,
+        timeout=120,
+    )
+    if response.status_code == 200:
+        if "video" in response.headers.get("Content-Type", ""):
+            with open(output_path, "wb") as f:
+                f.write(response.content)
+            print(f"✅ Wan Remote API success for {job_id}", flush=True)
+            return job_id, output_path
+        else:
+            data = response.json()
+            dl_url = data.get("download_url")
+            if dl_url:
+                dl_resp = requests.get(dl_url, timeout=60)
+                with open(output_path, "wb") as f:
+                    f.write(dl_resp.content)
+                return job_id, output_path
 
-    return job_id, output_path
+    raise RuntimeError(
+        f"Wan 2.2 remote generation failed with status {response.status_code}: {response.text[:200]}"
+    )

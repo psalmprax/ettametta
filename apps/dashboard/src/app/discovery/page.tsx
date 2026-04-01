@@ -441,15 +441,9 @@ export default function DiscoveryPage() {
         }
     }, [searchQuery, fetchTrends, niches]);
 
-    const [mapPoints, setMapPoints] = useState<any[]>([
-        { lat: 40.7128, lng: -74.006, intensity: 0.8, label: "NY Cluster" },
-        { lat: 51.5074, lng: -0.1278, intensity: 0.6, label: "LDN Node" },
-        { lat: 35.6762, lng: 139.6503, intensity: 0.9, label: "TKO Hub" },
-        { lat: -33.8688, lng: 151.2093, intensity: 0.4, label: "SYD Point" },
-        { lat: 6.5244, lng: 3.3792, intensity: 0.7, label: "LOS Gateway" }
-    ]);
-
     const { data: telemetryData } = useWebSocket(`${WS_BASE}/telemetry`);
+    const telemetry = telemetryData as any;
+    const [mapPoints, setMapPoints] = useState<any[]>([]);
 
     useEffect(() => {
         if (telemetryData) {
@@ -525,7 +519,7 @@ export default function DiscoveryPage() {
                             Viral <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">{mode === "discovery" ? "Discovery" : "Synthesis"}</span>
                         </h1>
                         <p className="text-zinc-500 mt-2 max-w-lg text-sm font-medium leading-relaxed">
-                            Scanning <span className="text-zinc-300 font-bold">14,000+</span> data points per second to identify high-velocity content opportunities before they peak.
+                            Scanning <span className="text-zinc-300 font-bold">{telemetry ? Math.floor(telemetry.bitrate * 34.5).toLocaleString() : "14,000+"}</span> data points per second to identify high-velocity content opportunities before they peak.
                         </p>
                     </div>
 
@@ -665,13 +659,13 @@ export default function DiscoveryPage() {
                         <div className="pt-6 border-t border-white/5">
                             <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4">
                                 <span>Signal Clarity</span>
-                                <span className="text-primary">92%</span>
+                                <span>{telemetry ? (telemetry.signal_strength * 100).toFixed(1) : " -- "}%</span>
                             </div>
                             <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
                                 <motion.div
                                     initial={{ width: 0 }}
-                                    animate={{ width: "92%" }}
-                                    className="h-full bg-primary"
+                                    animate={{ width: `${(telemetry?.signal_strength || 0.92) * 100}%` }}
+                                    className="h-full bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
                                 />
                             </div>
                         </div>
@@ -1068,7 +1062,7 @@ export default function DiscoveryPage() {
                                                     <div className="absolute inset-0 border-2 border-dashed border-zinc-800 rounded-full animate-spin-slow" />
                                                 </div>
                                                 <div className="space-y-3 relative z-10">
-                                                    <p className="text-sm font-black uppercase tracking-[0.6em] text-zinc-700">No Viral Signals Detected</p>
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">Scanning {telemetry ? Math.floor(telemetry.bitrate * 34.5).toLocaleString() : "..."} data points per second</p>
                                                     <p className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest">Scanning Inter-Social Cluster High-Velocity Nodes</p>
                                                     <button onClick={fetchTrends} className="mt-6 text-xs font-black uppercase tracking-[0.4em] text-primary hover:neon-glow transition-all">Re-Initialize Scan</button>
                                                 </div>
