@@ -75,6 +75,7 @@ job_store = JobStore()
 
 # Configuration
 ADMIN_TOKEN = os.environ.get("INTERNAL_API_TOKEN") # Reusing internal token for admin actions
+WORKER_TOKEN = os.environ.get("AI_CLUSTER_SECRET") # Shared secret for Gateway -> Worker communication
 
 # Initial seed from .env
 env_nodes = os.environ.get("AI_NODES", "").split(",")
@@ -99,7 +100,8 @@ async def update_node_health():
             for node_data in nodes:
                 node = node_data["url"]
                 try:
-                    resp = await client.get(f"{node}/health")
+                    headers = {"X-Worker-Token": WORKER_TOKEN} if WORKER_TOKEN else {}
+                    resp = await client.get(f"{node}/health", headers=headers)
                     if resp.status_code == 200:
                         data = resp.json()
                         job_store.update_node_status(node, "READY")
@@ -161,9 +163,11 @@ async def proxy_post(path: str, request: Request):
     
     target_node = select_best_node(model_key)
     
+    headers = {"X-Worker-Token": WORKER_TOKEN} if WORKER_TOKEN else {}
+    
     async with httpx.AsyncClient(timeout=300.0) as client:
         try:
-            resp = await client.post(f"{target_node}/{path}", json=body)
+            resp = await client.post(f"{target_node}/{path}", json=body, headers=headers)
             data = resp.json()
             
             # Remember which node has this job for status/download requests
@@ -186,15 +190,17 @@ async def proxy_status(job_id: str):
             available_nodes = [n for n, h in NODE_HEALTH.items() if h.get("online")]
         for node in available_nodes:
             try:
+                headers = {"X-Worker-Token": WORKER_TOKEN} if WORKER_TOKEN else {}
                 async with httpx.AsyncClient(timeout=5.0) as client:
-                    resp = await client.get(f"{node}/status/{job_id}")
+                    resp = await client.get(f"{node}/status/{job_id}", headers=headers)
                     if resp.status_code == 200:
                         return resp.json()
             except: continue
         raise HTTPException(status_code=404, detail="Job not found in cluster")
 
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(f"{target_node}/status/{job_id}")
+        headers = {"X-Worker-Token": WORKER_TOKEN} if WORKER_TOKEN else {}
+        resp = await client.get(f"{target_node}/status/{job_id}", headers=headers)
         return resp.json()
 
 @app.get("/health")
@@ -256,6 +262,7 @@ async def provision_node(ip: str, ssh_key: str, port: int = 22, user: str = "roo
                 os.chmod(temp_key, 0o600)
                 
                 env["SSH_KEY"] = temp_key
+                env["AI_CLUSTER_SECRET"] = WORKER_TOKEN or ""
                 result = subprocess.run(cmd, env=env, capture_output=True, text=True)
                 
                 if result.returncode == 0:

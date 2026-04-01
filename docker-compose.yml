@@ -207,6 +207,7 @@ services:
     environment:
       - AI_NODES=${AI_NODES:-""}
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
+      - AI_CLUSTER_SECRET=${AI_CLUSTER_SECRET:-"viral_forge_neural_default_secret"}
     volumes:
       - ./remote_ai_setup:/app
       - gateway_data:/workspace

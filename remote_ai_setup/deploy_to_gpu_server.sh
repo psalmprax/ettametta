@@ -36,9 +36,10 @@ ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -p "$REMOTE_PORT" "$REMOTE_USER@$R
 "
 
 # 4. Start Engine Process
-echo "🔥 [Deploy] Starting AI Engine processes..."
+echo "🔥 [Deploy] Starting AI Engine processes with Cluster Secret..."
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "
     cd $REMOTE_DIR && 
+    export AI_CLUSTER_SECRET=\"$AI_CLUSTER_SECRET\" &&
     nohup ./venv/bin/python3 -u main.py > server_out.log 2>&1 &
 "
 
