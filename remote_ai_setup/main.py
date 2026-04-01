@@ -14,7 +14,8 @@ import numpy as np
 import soundfile as sf
 import traceback
 import subprocess
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Request, Header
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from diffusers import DiffusionPipeline, LTXPipeline, LTXImageToVideoPipeline, AutoencoderKLLTXVideo, LTXVideoTransformer3DModel, LTX2VideoTransformer3DModel
@@ -241,6 +242,15 @@ CONTENT_DIR = os.path.join(DEFAULT_DISK, "ai_content")
 os.makedirs(CONTENT_DIR, exist_ok=True)
 
 app = FastAPI(title="ettametta Remote AI Engine (LTX + SpeechT5 + Moondream2)")
+
+# --- CONNECTIVITY STABILIZATION ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DEVICE = hardware_manager.device
 print(f"📡 Using Device: {DEVICE} ({hardware_manager.backend})")

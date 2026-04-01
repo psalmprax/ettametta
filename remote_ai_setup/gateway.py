@@ -11,9 +11,19 @@ import asyncio
 import traceback
 import uuid
 from fastapi import FastAPI, Request, HTTPException, Header
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Dict, Any, Optional
 
 app = FastAPI(title="AI Cluster Gateway")
+
+# --- CONNECTIVITY STABILIZATION ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In high-security environments, restrict to dashboard origin
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Persistent Storage for Jobs
 class JobStore:
