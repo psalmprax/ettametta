@@ -247,6 +247,16 @@ HAS_NVENC = (model_manager.encoder == "h264_nvenc")
 BEST_ENCODER = model_manager.encoder
 print(f"🎞️ Hardware Encoding: {BEST_ENCODER}")
 
+# --- SECURITY MIDDLEWARE ---
+from fastapi import Header
+
+WORKER_SECRET = os.environ.get("AI_CLUSTER_SECRET")
+
+async def verify_worker_token(x_worker_token: str = Header(None)):
+    if WORKER_SECRET and x_worker_token != WORKER_SECRET:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="Unauthorized AI Worker Action")
+
 def hardware_export_to_video(frames, output_path, fps=24):
     """Export frames to video using the best available hardware encoder"""
     print(f"🚀 Exporting via {BEST_ENCODER} to {output_path}...", flush=True)
@@ -552,7 +562,8 @@ async def startup_event():
     print("💡 Model will load on first video request.")
 
 @app.get("/health")
-async def health():
+async def health(x_worker_token: str = Header(None)):
+    await verify_worker_token(x_worker_token)
     total, used, free = shutil.disk_usage("/")
     telemetry = hardware_manager.get_telemetry()
     return {
@@ -570,33 +581,39 @@ render_lock = threading.Lock()
 from job_orchestrator import orchestrator
 
 @app.post("/generate")
-async def generate_video(request: VideoRequest):
+async def generate_video(request: VideoRequest, x_worker_token: str = Header(None)):
+    await verify_worker_token(x_worker_token)
     job_id = orchestrator.add_job("video", "ltx_2_19b", request)
     return {"job_id": job_id, "status": "queued", "model": "ltx_2_19b"}
 
 @app.post("/generate_hunyuan")
-async def hunyuan_endpoint(request: VideoRequest):
+async def hunyuan_endpoint(request: VideoRequest, x_worker_token: str = Header(None)):
+    await verify_worker_token(x_worker_token)
     job_id = orchestrator.add_job("video", "hunyuan_480p", request)
     return {"job_id": job_id, "status": "queued", "model": "hunyuan_480p"}
 
 @app.post("/voice")
-async def generate_voice_endpoint(req: VoiceRequest):
+async def generate_voice_endpoint(req: VoiceRequest, x_worker_token: str = Header(None)):
+    await verify_worker_token(x_worker_token)
     job_id = orchestrator.add_job("voice", "tts", req)
     return {"job_id": job_id, "status": "queued"}
 
 @app.post("/vlm")
-async def analyze_vlm_endpoint(req: VLMRequest):
+async def analyze_vlm_endpoint(req: VLMRequest, x_worker_token: str = Header(None)):
+    await verify_worker_token(x_worker_token)
     job_id = orchestrator.add_job("vlm", "vlm", req)
     return {"job_id": job_id, "status": "queued"}
 
 @app.post("/transcribe")
-async def transcribe_endpoint(file_path: str = None):
+async def transcribe_endpoint(file_path: str = None, x_worker_token: str = Header(None)):
+    await verify_worker_token(x_worker_token)
     if not file_path: return {"error": "No file path"}
     job_id = orchestrator.add_job("transcribe", "whisper", {"file_path": file_path})
     return {"job_id": job_id, "status": "queued"}
 
 @app.get("/status/{job_id}")
-async def get_job_status(job_id: str):
+async def get_job_status(job_id: str, x_worker_token: str = Header(None)):
+    await verify_worker_token(x_worker_token)
     return orchestrator.get_job_status(job_id)
 
 # --- Legacy Endpoints (Moved to ai_actions.py) ---
@@ -627,7 +644,8 @@ def cleanup_old_files(max_age_hours=24):
         time.sleep(3600) # Run every hour
 
 @app.get("/download/{job_id}")
-async def download(job_id: str, bg: BackgroundTasks):
+async def download(job_id: str, bg: BackgroundTasks, x_worker_token: str = Header(None)):
+    await verify_worker_token(x_worker_token)
     print(f"📥 Download requested: {job_id}")
     for ext in ["mp4", "wav"]:
         path = os.path.join(CONTENT_DIR, f"{job_id}.{ext}")
@@ -672,8 +690,9 @@ if __name__ == "__main__":
 from video_model_manager import model_manager, VIDEO_MODELS
 
 @app.get("/models")
-async def list_models():
+async def list_models(x_worker_token: str = Header(None)):
     """List all available video models"""
+    await verify_worker_token(x_worker_token)
     return {
         "models": VIDEO_MODELS,
         "disk_usage": model_manager.get_disk_usage(),
