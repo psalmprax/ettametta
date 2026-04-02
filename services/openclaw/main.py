@@ -24,11 +24,17 @@ agent = OpenClawAgent()
 class BotManager:
     def __init__(self):
         self.apps: Dict[int, any] = {}
+        self._starting_ids: set = set()
 
     async def start_bot(self, user_id: int, token: str):
+        if user_id in self._starting_ids:
+            logger.warning(f"Bot for user {user_id} is already starting. Skipping.")
+            return
+
         if user_id in self.apps:
             await self.stop_bot(user_id)
         
+        self._starting_ids.add(user_id)
         try:
             logger.info(f"Starting bot for user {user_id}...")
             application = ApplicationBuilder().token(token).build()
@@ -41,15 +47,9 @@ class BotManager:
                 )
 
             async def msg_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-                # IMPORTANT: Use the telegram user ID as it usually matches what they'll put in dashboard
-                # OR we verify against the provided user_id for this specific bot instance.
-                # In white-label mode, we trust anyone messaging this private bot? 
-                # No, we still verify against the user_id that owns the token.
                 tg_user_id = update.effective_user.id
                 text = update.message.text
                 
-                # Verify that the person messaging the bot is the owner (or has access)
-                # For white-label, we check if tg_user_id matches the user's saved chat_id
                 response = await agent.process_message(tg_user_id, text)
                 
                 await context.bot.send_message(
@@ -68,21 +68,29 @@ class BotManager:
             logger.info(f"Bot for user {user_id} started successfully.")
         except Exception as e:
             logger.error(f"Failed to start bot for user {user_id}: {e}")
+        finally:
+            if user_id in self._starting_ids:
+                self._starting_ids.remove(user_id)
 
     async def stop_bot(self, user_id: int):
         if user_id in self.apps:
             logger.info(f"Stopping bot for user {user_id}...")
             app = self.apps[user_id]
-            await app.updater.stop()
-            await app.stop()
-            await app.shutdown()
-            del self.apps[user_id]
+            try:
+                await app.updater.stop()
+                await app.stop()
+                await app.shutdown()
+            except Exception as e:
+                logger.error(f"Error during stop_bot: {e}")
+            finally:
+                del self.apps[user_id]
 
     async def init_bots(self):
         # 1. Start the Master Bot from settings
         if settings.TELEGRAM_BOT_TOKEN and settings.TELEGRAM_ADMIN_ID:
-            logger.info("Initializing Master Bot from system settings...")
-            asyncio.create_task(self.start_bot(0, settings.TELEGRAM_BOT_TOKEN))
+            if 0 not in self.apps and 0 not in self._starting_ids:
+                logger.info("Initializing Master Bot from system settings...")
+                asyncio.create_task(self.start_bot(0, settings.TELEGRAM_BOT_TOKEN))
         
         # 2. Fetch all users with tokens from API
         max_retries = 5
@@ -92,7 +100,7 @@ class BotManager:
                 if settings.INTERNAL_API_TOKEN:
                     headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
                 
-                response = requests.get(f"{settings.API_URL}/auth/internal/users-with-bots", headers=headers, timeout=5)
+                response = requests.get(f"{settings.API_URL}/api/v1/auth/internal/users-with-bots", headers=headers, timeout=5)
                 if response.status_code == 200:
                     users = response.json()
                     logger.info(f"Auto-starting bots for {len(users)} users...")
@@ -100,7 +108,9 @@ class BotManager:
                         user_id = user.get("id")
                         token = user.get("telegram_token")
                         if user_id and token:
-                            asyncio.create_task(self.start_bot(user_id, token))
+                            # Avoid restarting 0 if it's already managed or starting
+                            if user_id not in self.apps and user_id not in self._starting_ids:
+                                asyncio.create_task(self.start_bot(user_id, token))
                     break
                 else:
                     logger.error(f"Failed to fetch users (Attempt {attempt+1}/{max_retries}): {response.status_code}")
@@ -121,7 +131,7 @@ async def refresh_bot(user_id: int, background_tasks: BackgroundTasks):
     try:
         # Internal call to get user info (we'll need to make sure this returns the token)
         # Note: In production, this should be internal-only and secure
-        response = requests.get(f"{settings.API_URL}/auth/verify-telegram-internal/{user_id}")
+        response = requests.get(f"{settings.API_URL}/api/v1/auth/verify-telegram-internal/{user_id}")
         if response.status_code == 200:
             user_data = response.json()
             token = user_data.get("telegram_token")

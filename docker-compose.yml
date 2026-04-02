@@ -15,6 +15,12 @@ services:
       resources:
         limits:
           memory: 1G
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     volumes:
       - .:/app
       - /app/apps/remotion-studio/node_modules
@@ -74,6 +80,8 @@ services:
       args:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://149.104.110.122.sslip.io:7200/api/v1}
         - NEXT_PUBLIC_API_PORT=7200
+        - NEXT_PUBLIC_INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
+        - NEXT_PUBLIC_AI_GATEWAY_URL=http://149.104.110.122.sslip.io:7200/ai-gateway
     ports:
       - "7202:3000"
     environment:
@@ -82,6 +90,11 @@ services:
       - API_INTERNAL_URL=http://api:8000
       - NEXT_PUBLIC_INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
     restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:alpine
@@ -181,8 +194,10 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
     depends_on:
-      - api
-      - dashboard
+      api:
+        condition: service_healthy
+      dashboard:
+        condition: service_healthy
 
   openclaw:
     build:
@@ -197,12 +212,13 @@ services:
       - API_URL=http://api:8000
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   ai-gateway:
     build:
-      context: .
-      dockerfile: ./remote_ai_setup/Dockerfile.gateway
+      context: ./remote_ai_setup
+      dockerfile: Dockerfile.gateway
     ports:
       - "8133:8133"
     environment:
