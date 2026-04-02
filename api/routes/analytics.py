@@ -178,7 +178,7 @@ async def get_stats_summary(current_user: UserDB = Depends(get_current_user)):
 
         # Get total engagement
         total_likes = (
-            db.query(func.sum(PublishedContentDB.like_count))
+            db.query(func.sum(PublishedContentDB.likes))
             .filter(
                 PublishedContentDB.user_id == current_user.id
                 if current_user.role != "admin"
