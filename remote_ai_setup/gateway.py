@@ -221,11 +221,16 @@ async def register_node(request: RegisterNodeRequest, x_admin_token: str = Heade
     job_store.add_node(request.url)
     return {"status": "registered", "url": request.url}
 
+from urllib.parse import unquote
+
 @app.delete("/nodes/{node_url:path}")
 async def remove_node_from_cluster(node_url: str, x_admin_token: str = Header(None)):
     await verify_admin(x_admin_token)
-    job_store.remove_node(node_url)
-    return {"status": "removed"}
+    # Ensure URL is unquoted to match DB format
+    decoded_url = unquote(node_url)
+    job_store.remove_node(decoded_url)
+    print(f"🗑️ [Gateway] Internal Delete Request: Raw={node_url}, Decoded={decoded_url}", flush=True)
+    return {"status": "removed", "node": decoded_url}
 
 @app.post("/nodes/provision")
 async def provision_node(request: ProvisionNodeRequest, x_admin_token: str = Header(None)):
