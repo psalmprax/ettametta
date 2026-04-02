@@ -578,10 +578,60 @@ async def startup_event():
     """Skip eager loading to avoid OOM - model loads lazily on first request."""
     print("🚀 AI Engine ready (Lazy Loading Mode)...")
     print("💡 Model will load on first video request.")
+    
+    # Start Push Heartbeat back to Gateway
+    threading.Thread(target=push_heartbeat_loop, daemon=True).start()
+
+def push_heartbeat_loop():
+    """Persistent Push Heartbeat to circumvent Firewalls on Vast.ai / RunPod"""
+    gateway_url = os.environ.get("AI_GATEWAY_URL")
+    if not gateway_url:
+        print("⚠️ No AI_GATEWAY_URL configured, skipping Push Heartbeat", flush=True)
+        return
+        
+    cluster_secret = os.environ.get("AI_CLUSTER_SECRET")
+    # Identify our own public IP/Port if possible, or use one explicitly passed
+    my_public_url = os.environ.get("AI_NODE_PUBLIC_URL")
+    
+    if not my_public_url:
+        # Fallback to local reachability if no public URL provided
+        import socket
+        try:
+            hostname = socket.gethostname()
+            ip_addr = socket.gethostbyname(hostname)
+            my_public_url = f"http://{ip_addr}:8122"
+        except:
+            my_public_url = "http://localhost:8122"
+
+    print(f"💓 Heartbeat loop started for: {my_public_url} -> {gateway_url}", flush=True)
+    
+    import httpx
+    while True:
+        try:
+            hardware = hardware_manager.get_telemetry()
+            payload = {
+                "url": my_public_url,
+                "busy": model_manager.is_busy,
+                "current_model": model_manager.current_model or (list(model_manager.utils.keys())[0] if model_manager.utils else None),
+                "hardware": hardware,
+                "status": "ready"
+            }
+            headers = {"X-Worker-Token": cluster_secret} if cluster_secret else {}
+            
+            with httpx.Client(timeout=10.0) as client:
+                resp = client.post(f"{gateway_url}/heartbeat", json=payload, headers=headers)
+                if resp.status_code == 200:
+                    pass # Success
+                else:
+                    print(f"⚠️ Heartbeat rejected ({resp.status_code}): {resp.text}", flush=True)
+        except Exception as e:
+            print(f"⚠️ Heartbeat failed: {e}", flush=True)
+            
+        time.sleep(10) # 10 second pulse
 
 @app.get("/health")
-async def health(x_worker_token: str = Header(None)):
-    await verify_worker_token(x_worker_token)
+async def health():
+    """Public health endpoint (Softened to avoid Cloud Orchestrator 401 restarts)"""
     total, used, free = shutil.disk_usage("/")
     telemetry = hardware_manager.get_telemetry()
     return {

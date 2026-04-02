@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     iputils-ping \
     openssh-client \
+    rsync \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
