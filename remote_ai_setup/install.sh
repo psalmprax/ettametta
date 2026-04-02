@@ -6,10 +6,11 @@
 set -e
 
 echo "🚀 Starting Universal Remote AI Setup..."
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # 0. Smart Storage Discovery (High-Disk Allocation)
 echo "🔍 [Storage] Discovering optimal high-capacity writable disk..."
-BEST_DISK=$(python3 storage_helper.py)
+BEST_DISK=$(python3 storage_helper.py 2>/dev/null || echo ".")
 echo "💾 [Storage] Allocated: $BEST_DISK"
 
 # Ensure required directories exist and are symlinked if needed
@@ -28,52 +29,77 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         case $ID in
             ubuntu|debian)
                 echo "📦 [System] Detected Ubuntu/Debian. Ensuring build chain..."
-                sudo apt-get update
-                sudo apt-get install -y build-essential cmake git python3-dev \
-                    ffmpeg libx265-dev libnuma-dev libsm6 libxext6 libgl1 libglib2.0-0 \
-                    libsndfile1 libfftw3-dev sox
+                apt-get update
+                # System updates & PATH hardening
+                export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                echo "🌐 [System] Path: $PATH"
+
+                apt-get update && apt-get install -y build-essential cmake git python3-dev python3-venv ffmpeg libx265-dev libnuma-dev libsm6 libxext6 libgl1 libglib2.0-0t64 libsndfile1 libfftw3-dev sox rsync
                 ;;
             fedora|rhel|centos)
                 echo "📦 [System] Detected RHEL/Fedora. Ensuring build chain..."
-                sudo dnf groupinstall -y "Development Tools"
-                sudo dnf install -y cmake python3-devel ffmpeg ffmpeg-devel libnuma \
+                dnf groupinstall -y "Development Tools"
+                dnf install -y cmake python3-devel ffmpeg ffmpeg-devel libnuma \
                     mesa-libGL glib2 sox
                 ;;
         esac
     fi
 fi
 
-# 2. Python Environment Setup
-if [ ! -d "venv" ]; then
-    echo "🐍 [Python] Creating production virtual environment..."
-    python3 -m venv venv
+# 2. Base Environment (Always fresh for provision)
+echo "📦 [System] Standardizing virtual environment..."
+if [ -d "venv" ]; then
+    echo "⚠️ [System] Stale environment detected. Purging for clean provision..."
+    rm -rf venv
 fi
 
-source venv/bin/activate
-pip install --upgrade pip "setuptools<82" wheel cython numpy
+echo "📦 [System] Creating isolated virtual environment..."
+python3 -W ignore -m venv --clear venv || echo "⚠️ [System] Virtual environment creation failed. Attempting global install fallback."
+rm -f .install_complete # Reset status
+
+# Define PIP_CMD based on absolute environment path
+PIP_BIN="$SCRIPT_DIR/venv/bin/pip"
+PYTHON_BIN="$SCRIPT_DIR/venv/bin/python3"
+
+if [ -x "$PIP_BIN" ] && "$PIP_BIN" --version > /dev/null 2>&1; then
+    PIP_CMD="$PIP_BIN"
+else
+    # Fallback for Global Install
+    PIP_CMD="python3 -m pip"
+    PIP_FLAGS="--break-system-packages"
+fi
+
+$PIP_CMD install $PIP_FLAGS --upgrade pip "setuptools<82" wheel cython numpy
 
 # 3. Hardware-Specific PyTorch Installation
 echo "🔍 [Hardware] Detecting optimal compute backend..."
-TORCH_CMD=$(python3 check_hardware.py --pip)
+RAW_TORCH_CMD=$("$PYTHON_BIN" "$SCRIPT_DIR/check_hardware.py" --pip || python3 "$SCRIPT_DIR/check_hardware.py" --pip)
+if [[ $RAW_TORCH_CMD == pip* ]]; then
+    # Inject flags into the command
+    TORCH_CMD="${RAW_TORCH_CMD/pip install/ $PIP_CMD install $PIP_FLAGS }"
+else
+    TORCH_CMD="$RAW_TORCH_CMD"
+fi
+
 echo "⚡ [Hardware] Installing: $TORCH_CMD"
-eval $TORCH_CMD
+eval "$TORCH_CMD"
 
 # 4. Manual Stable Installations (Problematic Packages)
 echo "🛠️  [Build] Installing stable fairseq from source..."
 if [ ! -d "fairseq" ]; then
     git clone https://github.com/facebookresearch/fairseq.git
-    cd fairseq && pip install -e . && cd ..
+    cd fairseq && "$PIP_CMD" install $PIP_FLAGS -e . && cd ..
 fi
 
 echo "🛠️  [Build] Installing stable basicsr..."
-pip install basicsr --no-build-isolation
+# Use --no-deps to skip complex resolution loops for aux libraries
+"$PIP_CMD" install $PIP_FLAGS basicsr --no-build-isolation --no-deps
 
 # 5. Global Dependencies
 echo "📚 [Main] Installing remaining requirements..."
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-pip install -r "$SCRIPT_DIR/requirements.txt"
+"$PIP_CMD" install $PIP_FLAGS -r "$SCRIPT_DIR/requirements.txt"
 
 # 6. Final Validation
 echo "🎨 [Summary] Hardware Activation Report:"
-python3 check_hardware.py
+"$PYTHON_BIN" "$SCRIPT_DIR/check_hardware.py" || python3 "$SCRIPT_DIR/check_hardware.py"
 echo "✅ Viral Forge AI Engine is ready for production."

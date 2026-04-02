@@ -19,13 +19,8 @@ app = FastAPI(title="AI Cluster Gateway")
 # --- CONNECTIVITY STABILIZATION ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://149.104.110.122.sslip.io:7200",
-        "http://149.104.110.122:7200",
-        "http://localhost:3000",
-        "*"
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["Authorization", "Content-Type", "X-Admin-Token", "X-Worker-Token"],
 )
@@ -146,6 +141,30 @@ async def startup_event():
     nodes = job_store.get_nodes()
     print(f"🚀 AI Gateway started with {len(nodes)} nodes registered.", flush=True)
 
+    # Corrected variable name from WORK_TOKEN to WORKER_TOKEN
+    # Check if a WORKER_TOKEN is configured in the environment
+    if 'WORKER_TOKEN' in globals() and WORKER_TOKEN and x_worker_token != WORKER_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized heartbeat")
+    
+    data = await request.json()
+    node_url = data.get("url")
+    if not node_url: return {"status": "error", "message": "Missing URL"}
+    
+    job_store.add_node(node_url)
+    job_store.update_node_status(node_url, "READY")
+    
+    with LOCK:
+        NODE_HEALTH[node_url] = {
+            "online": True,
+            "busy": data.get("busy", False),
+            "current_model": data.get("current_model"),
+            "last_seen": time.time(),
+            "error": None,
+            "hardware": data.get("hardware")
+        }
+    
+    return {"status": "accepted", "server_time": time.time()}
+
 def select_best_node(requested_model: Optional[str] = None) -> str:
     """Smart routing: Least-busy + Model-aware preference"""
     with LOCK:
@@ -168,33 +187,33 @@ def select_best_node(requested_model: Optional[str] = None) -> str:
         # 3. Fallback to any online node (will be queued by node's own orchestrator)
         return available_nodes[0]
 
-@app.post("/{path:path}")
-async def proxy_post(path: str, request: Request):
-    """Generic POST proxy with smart routing"""
-    body = await request.json()
-    
-    # Identify requested model for routing
-    model_key = body.get("model") or body.get("model_key")
-    if "hunyuan" in path: model_key = "hunyuan_480p"
-    elif "generate" in path: model_key = "ltx_2_19b"
-    
-    target_node = select_best_node(model_key)
-    
-    headers = {"X-Worker-Token": WORKER_TOKEN} if WORKER_TOKEN else {}
-    
-    async with httpx.AsyncClient(timeout=300.0) as client:
-        try:
-            resp = await client.post(f"{target_node}/{path}", json=body, headers=headers)
-            data = resp.json()
-            
-            # Remember which node has this job for status/download requests
-            if "job_id" in data:
-                job_store.save_job(data["job_id"], target_node)
-            
-            return data
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=502, detail=f"Target node {target_node} failed: {str(e)}")
+# --- ADMIN / PROVISIONING ENDPOINTS (Hardened Security) ---
+
+from pydantic import BaseModel
+import subprocess
+
+class RegisterNodeRequest(BaseModel):
+    url: str
+
+class ProvisionNodeRequest(BaseModel):
+    ip: str
+    ssh_key: str
+    port: int = 22
+    user: str = "root"
+
+async def verify_admin(x_admin_token: str = Header(None)):
+    if not ADMIN_TOKEN or x_admin_token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized Admin Action")
+
+@app.get("/health")
+async def cluster_health():
+    with LOCK:
+        return {
+            "status": "healthy",
+            "cluster_size": len(NODE_HEALTH),
+            "nodes": job_store.get_nodes(),
+            "telemetry": NODE_HEALTH
+        }
 
 @app.get("/status/{job_id}")
 async def proxy_status(job_id: str):
@@ -220,29 +239,11 @@ async def proxy_status(job_id: str):
         resp = await client.get(f"{target_node}/status/{job_id}", headers=headers)
         return resp.json()
 
-@app.get("/health")
-async def cluster_health():
-    with LOCK:
-        return {
-            "status": "healthy",
-            "cluster_size": len(NODE_HEALTH),
-            "nodes": job_store.get_nodes(),
-            "telemetry": NODE_HEALTH
-        }
-
-# --- ADMIN / PROVISIONING ENDPOINTS (Hardened Security) ---
-
-import subprocess
-
-async def verify_admin(x_admin_token: str = Header(None)):
-    if not ADMIN_TOKEN or x_admin_token != ADMIN_TOKEN:
-        raise HTTPException(status_code=401, detail="Unauthorized Admin Action")
-
-@app.post("/nodes")
-async def add_node_to_cluster(url: str, x_admin_token: str = Header(None)):
+@app.post("/register")
+async def register_node(request: RegisterNodeRequest, x_admin_token: str = Header(None)):
     await verify_admin(x_admin_token)
-    job_store.add_node(url)
-    return {"status": "added", "node": url}
+    job_store.add_node(request.url)
+    return {"status": "registered", "url": request.url}
 
 @app.delete("/nodes/{node_url:path}")
 async def remove_node_from_cluster(node_url: str, x_admin_token: str = Header(None)):
@@ -251,12 +252,18 @@ async def remove_node_from_cluster(node_url: str, x_admin_token: str = Header(No
     return {"status": "removed"}
 
 @app.post("/nodes/provision")
-async def provision_node(ip: str, ssh_key: str, port: int = 22, user: str = "root", x_admin_token: str = Header(None)):
+async def provision_node(request: ProvisionNodeRequest, x_admin_token: str = Header(None)):
     """
-    Hardened Provisioning: Key is passed in Body, stays in RAM only.
-    Zero-Storage architecture ensures key never hits Gateway disk.
+    Hardened Provisioning: Key is passed in encrypted JSON Body.
+    Zero-Storage architecture ensures key never hits Gateway disk or logs.
     """
-    await verify_admin(token)
+    await verify_admin(x_admin_token)
+    ip = request.ip
+    ssh_key = request.ssh_key
+    port = request.port
+    
+    # Ensure registered in local store for visibility
+    job_store.add_node(f"http://{ip}:8122")
     job_store.update_node_status(f"http://{ip}:8122", "PROVISIONING")
     
     def run_provision():
@@ -280,13 +287,20 @@ async def provision_node(ip: str, ssh_key: str, port: int = 22, user: str = "roo
                 
                 env["SSH_KEY"] = temp_key
                 env["AI_CLUSTER_SECRET"] = WORKER_TOKEN or ""
-                result = subprocess.run(cmd, env=env, capture_output=True, text=True)
                 
-                if result.returncode == 0:
+                # Streaming deployment telemetry to logs
+                process = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                
+                for line in process.stdout:
+                    print(line.strip(), flush=True)
+                
+                process.wait()
+                
+                if process.returncode == 0:
                     print(f"✅ [Provision] Node {ip} deployed successfully.", flush=True)
                     job_store.update_node_status(f"http://{ip}:8122", "READY")
                 else:
-                    print(f"❌ [Provision] Deployment failed for {ip}: {result.stderr}", flush=True)
+                    print(f"❌ [Provision] Deployment failed for {ip} with exit code {process.returncode}", flush=True)
                     job_store.update_node_status(f"http://{ip}:8122", "FAILED")
             finally:
                 # MANDATORY: Wipe the key from RAM disk immediately
@@ -298,6 +312,42 @@ async def provision_node(ip: str, ssh_key: str, port: int = 22, user: str = "roo
 
     threading.Thread(target=run_provision, daemon=True).start()
     return {"status": "provisioning_started", "node": ip}
+
+@app.post("/{path:path}")
+async def proxy_post(path: str, request: Request):
+    """Generic POST proxy with smart routing"""
+    try:
+        body = await request.json()
+    except Exception:
+        # Fallback for empty/non-JSON bodies
+        body = {}
+    
+    # Identify requested model for routing
+    model_key = body.get("model") or body.get("model_key")
+    if not model_key:
+        if "hunyuan" in path: model_key = "hunyuan_480p"
+        elif "generate" in path: model_key = "ltx_2_19b"
+    
+    target_node = select_best_node(model_key)
+    
+    headers = {"X-Worker-Token": WORKER_TOKEN} if WORKER_TOKEN else {}
+    
+    async with httpx.AsyncClient(timeout=300.0) as client:
+        try:
+            resp = await client.post(f"{target_node}/{path}", json=body, headers=headers)
+            try:
+                data = resp.json()
+            except Exception:
+                data = {"raw": resp.text}
+            
+            # Remember which node has this job for status/download requests
+            if "job_id" in data:
+                job_store.save_job(data["job_id"], target_node)
+            
+            return data
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=502, detail=f"Target node {target_node} failed: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

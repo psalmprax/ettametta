@@ -32,6 +32,7 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
     const [newNodeUrl, setNewNodeUrl] = useState("");
     const [provisioningNode, setProvisioningNode] = useState<string | null>(null);
     const [sshKey, setSshKey] = useState("");
+    const [sshPort, setSshPort] = useState("22");
     const [isAdminToken, setAdminToken] = useState(INTERNAL_API_TOKEN);
 
     const fetchNodes = async () => {
@@ -67,9 +68,12 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
             });
             if (res.ok) {
                 toast.success("Node added to cluster registry");
+                const addedUrl = newNodeUrl; // Capture for transition
                 setNewNodeUrl("");
                 setIsAdding(false);
                 fetchNodes();
+                // SEAMLESS TRANSITION: Open provisioning for the newly added node
+                setProvisioningNode(addedUrl);
             } else {
                 toast.error("Unauthorized: Please provide Admin Token");
             }
@@ -104,9 +108,17 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
         const ip = ipMatch ? ipMatch[1] : provisioningNode;
 
         try {
-            const res = await fetch(`${AI_GATEWAY_URL}/nodes/provision?ip=${ip}&ssh_key=${encodeURIComponent(sshKey)}`, {
+            const res = await fetch(`${AI_GATEWAY_URL}/nodes/provision`, {
                 method: 'POST',
-                headers: { 'X-Admin-Token': isAdminToken }
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Admin-Token': isAdminToken 
+                },
+                body: JSON.stringify({
+                    ip: ip,
+                    ssh_key: sshKey,
+                    port: parseInt(sshPort) || 22
+                })
             });
             if (res.ok) {
                 toast.success("Provisioning started in background");
@@ -118,7 +130,7 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                 toast.error(`Provisioning failed: ${err.detail || "Check Admin Token"}`);
             }
         } catch (e) {
-            toast.error("Connection to Gateway failed");
+            toast.error("Network synchronization error");
         }
     };
 
@@ -327,6 +339,24 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                                     <h4 className="text-5xl font-black text-white uppercase tracking-tighter leading-tight">Hardened Provisioning</h4>
                                     <p className="text-xs font-bold text-zinc-500 uppercase tracking-[0.5em] mt-3">{provisioningNode.replace('http://', '')}</p>
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] px-4">SSH Deployment Port</label>
+                                        <input 
+                                            placeholder="22"
+                                            value={sshPort}
+                                            onChange={(e) => setSshPort(e.target.value)}
+                                            className="w-full p-6 bg-zinc-900 border border-white/5 rounded-3xl text-sm font-black text-white placeholder:text-zinc-800 tracking-widest focus:border-neon-cyan/40 outline-none"
+                                        />
+                                    </div>
+                                    <div className="space-y-4">
+                                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] px-4">Active User</label>
+                                        <div className="w-full p-6 bg-zinc-800/30 border border-white/5 rounded-3xl text-sm font-black text-white/30 tracking-widest cursor-not-allowed">
+                                            ROOT (DEFAULT)
+                                        </div>
+                                    </div>
+                                </div>
                                 
                                 <div className="p-8 bg-red-950/20 border-2 border-red-500/20 rounded-[48px] relative overflow-hidden">
                                     <div className="absolute top-0 left-0 w-full h-1 bg-red-500/30" />
@@ -335,10 +365,11 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                                             <AlertCircle className="h-8 w-8 text-red-500" />
                                         </div>
                                         <div>
-                                            <h5 className="text-xs font-black text-red-500 uppercase tracking-[0.2em] mb-2">Zero-Storage Security Protocol</h5>
-                                            <p className="text-[10px] font-bold text-red-100/50 leading-relaxed uppercase tracking-widest">
-                                                The provided SSH key exists strictly in RAM. Architecture verifies 
-                                                ephemeral usage—zero disk footprint. Wiped immediately on task exit.
+                                            <h5 className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em] mb-2">Zero-Storage Handshake Protocol</h5>
+                                            <p className="text-[9px] font-bold text-red-100/50 leading-relaxed uppercase tracking-widest">
+                                                This private key is held strictly in volatile RAM. It is never saved to disk 
+                                                and is purged immediately upon task resolution. Architecture confirms 
+                                                ephemeral usage–zero persistence.
                                             </p>
                                         </div>
                                     </div>
@@ -346,11 +377,14 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
 
                                 <div className="space-y-4">
                                     <div className="flex justify-between px-4">
-                                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em]">Neural Access Credentials</label>
-                                        <span className="text-[8px] font-black text-neon-cyan/50 uppercase tracking-[0.3em]">Encrypted Handshake Enabled</span>
+                                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em]">Neural Access Credentials (Ephemeral)</label>
+                                        <span className="text-[8px] font-black text-neon-cyan/50 uppercase tracking-[0.3em] font-mono">ONE-TIME DEPLOYMENT KEY</span>
                                     </div>
                                     <textarea 
                                         autoFocus
+                                        data-gramm="false"
+                                        data-gramm_editor="false"
+                                        data-enable-grammarly="false"
                                         placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
                                         rows={10}
                                         value={sshKey}
@@ -369,9 +403,9 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                                     </button>
                                     <button 
                                         type="submit"
-                                        className="flex-2 py-6 bg-neon-cyan text-black text-[12px] font-black uppercase tracking-[0.2em] rounded-3xl hover:bg-white transition-all transform hover:-translate-y-1 shadow-[0_20px_50px_rgba(0,255,255,0.2)]"
+                                        className="flex-[2] py-6 bg-[#22d3ee] text-black text-[12px] font-black uppercase tracking-[0.2em] rounded-3xl hover:bg-white transition-all transform hover:-translate-y-1 shadow-[0_20px_50px_rgba(0,255,255,0.2)]"
                                     >
-                                        Initialize Grid Deployment
+                                        Confirm & Deploy
                                     </button>
                                 </div>
                             </motion.form>
