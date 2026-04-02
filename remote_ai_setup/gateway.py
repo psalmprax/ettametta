@@ -141,30 +141,6 @@ async def startup_event():
     nodes = job_store.get_nodes()
     print(f"🚀 AI Gateway started with {len(nodes)} nodes registered.", flush=True)
 
-    # Corrected variable name from WORK_TOKEN to WORKER_TOKEN
-    # Check if a WORKER_TOKEN is configured in the environment
-    if 'WORKER_TOKEN' in globals() and WORKER_TOKEN and x_worker_token != WORKER_TOKEN:
-        raise HTTPException(status_code=401, detail="Unauthorized heartbeat")
-    
-    data = await request.json()
-    node_url = data.get("url")
-    if not node_url: return {"status": "error", "message": "Missing URL"}
-    
-    job_store.add_node(node_url)
-    job_store.update_node_status(node_url, "READY")
-    
-    with LOCK:
-        NODE_HEALTH[node_url] = {
-            "online": True,
-            "busy": data.get("busy", False),
-            "current_model": data.get("current_model"),
-            "last_seen": time.time(),
-            "error": None,
-            "hardware": data.get("hardware")
-        }
-    
-    return {"status": "accepted", "server_time": time.time()}
-
 def select_best_node(requested_model: Optional[str] = None) -> str:
     """Smart routing: Least-busy + Model-aware preference"""
     with LOCK:
