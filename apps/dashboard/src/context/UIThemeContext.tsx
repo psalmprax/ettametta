@@ -10,7 +10,11 @@ interface UIThemeContextType {
     toggleTheme: () => void;
 }
 
-const UIThemeContext = createContext<UIThemeContextType | undefined>(undefined);
+const UIThemeContext = createContext<UIThemeContextType>({
+    theme: "legacy",
+    setTheme: () => {},
+    toggleTheme: () => {},
+});
 
 const THEME_KEY = "viralforge_ui_theme";
 
@@ -53,9 +57,5 @@ export function UIThemeProvider({ children }: { children: ReactNode }) {
 }
 
 export function useUITheme() {
-    const context = useContext(UIThemeContext);
-    if (!context) {
-        throw new Error("useUITheme must be used within UIThemeProvider");
-    }
-    return context;
+    return useContext(UIThemeContext);
 }
