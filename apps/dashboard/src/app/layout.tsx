@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 
 import { AuthProvider } from "@/context/AuthContext";
 import { UIProvider } from "@/context/UIContext";
+import { UIThemeProvider } from "@/context/UIThemeContext";
 import QueryProvider from "@/components/providers/QueryProvider";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 import { Toaster } from "sonner";
@@ -35,13 +36,15 @@ export default function RootLayout({
       >
         <div className="ambient-mesh" />
         <QueryProvider>
-          <UIProvider>
-            <AuthProvider>
-              <GlobalErrorBoundary>
-                {children}
-              </GlobalErrorBoundary>
-            </AuthProvider>
-          </UIProvider>
+          <UIThemeProvider>
+            <UIProvider>
+              <AuthProvider>
+                <GlobalErrorBoundary>
+                  {children}
+                </GlobalErrorBoundary>
+              </AuthProvider>
+            </UIProvider>
+          </UIThemeProvider>
         </QueryProvider>
         <Toaster
           theme="dark"
