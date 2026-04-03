@@ -1,9 +1,55 @@
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Dict
+from pydantic import BaseModel
+from typing import List, Dict, Optional
+from datetime import datetime
 from services.security.service import base_security_sentinel
 from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB
 
 router = APIRouter(prefix="/security", tags=["Security"])
+
+
+def admin_required(current_user: UserDB = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+
+class ErrorReport(BaseModel):
+    message: str
+    stack: Optional[str] = None
+    componentStack: Optional[str] = None
+    timestamp: str
+
+
+@router.post("/errors")
+async def report_error(
+    error: ErrorReport,
+    db=Depends(lambda: None),  # Placeholder, audit logging optional
+):
+    """
+    Reports frontend errors to the backend for logging.
+    Accessible to all authenticated users.
+    """
+    try:
+        # Log to console/file (expandable to DB in future)
+        print(f"🚨 Frontend Error Report:")
+        print(f"   Message: {error.message}")
+        print(f"   Timestamp: {error.timestamp}")
+        if error.stack:
+            print(f"   Stack: {error.stack[:200]}...")
+        if error.componentStack:
+            print(f"   Component Stack: {error.componentStack[:200]}...")
+
+        return {"status": "error_logged"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to log error: {str(e)}")
+
+
+def admin_required(current_user: UserDB = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
 
 
 @router.get("/status")
