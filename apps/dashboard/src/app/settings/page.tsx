@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import DashboardLayout from "@/components/layout";
 import { useUI } from "@/context/UIContext";
+import { ThemeSwitcher } from "@/components/theme-toggle";
 import {
     Key,
     Database,
@@ -578,6 +579,17 @@ export default function SettingsPage() {
                                     <div>
                                         <h3 className="text-4xl font-black text-white uppercase tracking-tighter">User <span className="text-hollow">Identity</span></h3>
                                         <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">Authentication and authorization parameters</p>
+                                    </div>
+                                </div>
+
+                                {/* Theme Switcher - User Preference */}
+                                <div className="pt-8 border-t border-white/5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h4 className="text-lg font-bold text-white">UI Theme</h4>
+                                            <p className="text-sm text-zinc-500">Choose your preferred interface design</p>
+                                        </div>
+                                        <ThemeSwitcher />
                                     </div>
                                 </div>
 
