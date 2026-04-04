@@ -103,7 +103,7 @@ export default function SettingsPage() {
             shopify_access_token: "",
             shopify_shop_url: "",
             elevenlabs_api_key: "",
-            fish_speech_endpoint: "http://voiceover:8080",
+            fish_speech_endpoint: (typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host}/ai-gateway/voice` : "http://ai-gateway:8133/voice"),
             voice_engine: "fish_speech",
             pexels_api_key: "",
             aws_access_key_id: "",
