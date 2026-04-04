@@ -209,15 +209,15 @@ export default function AnalyticsPage() {
         );
 
         // Global Tests
-        const testsData = await withRealFallback<any[]>(
-            () => fetch(`${API_BASE}/ab-testing/ab/tests/active`, { headers }),
-            { fallback: [] }
+        const testsData = await withRealFallback<any>(
+            () => fetch(`${API_BASE}/ab-testing/ab-tests/active`, { headers }),
+            { fallback: {} }
         );
         setActiveTests(testsData.active_tests || testsData.tests || testsData || []);
 
-        const compData = await withRealFallback<any[]>(
-            () => fetch(`${API_BASE}/ab-testing/ab/tests/completed`, { headers }),
-            { fallback: [] }
+        const compData = await withRealFallback<any>(
+            () => fetch(`${API_BASE}/ab-testing/ab-tests/completed`, { headers }),
+            { fallback: {} }
         );
         setCompletedTests(compData.completed_tests || compData || []);
     }, [selectedPostId]);
