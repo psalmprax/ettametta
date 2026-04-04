@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { withRealFallback } from "@/lib/real_first_utils";
 import DashboardLayout from "@/components/layout";
 import {
     Coins,
@@ -19,7 +20,6 @@ import { motion, Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
 import { toast } from "sonner";
-import { withRealFallback } from "@/lib/real_first_utils";
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },

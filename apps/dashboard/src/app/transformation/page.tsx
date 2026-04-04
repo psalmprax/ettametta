@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
+import { withRealFallback } from "@/lib/real_first_utils";
 import DashboardLayout from "@/components/layout";
 import {
     Video,
@@ -30,7 +31,6 @@ import { WS_BASE } from "@/lib/config";
 import { useNiches } from "@/hooks/useNiches";
 
 import { toast } from "sonner";
-import { withRealFallback } from "@/lib/real_first_utils";
 
 interface VideoJob {
     id: string;
