@@ -34,7 +34,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
                 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
                 echo "🌐 [System] Path: $PATH"
 
-                apt-get update && apt-get install -y build-essential cmake git python3-dev python3-venv ffmpeg libx265-dev libnuma-dev libsm6 libxext6 libgl1 libglib2.0-0t64 libsndfile1 libfftw3-dev sox rsync
+                apt-get update && apt-get install -y build-essential cmake git python3-dev python3-venv ffmpeg libx265-dev libnuma-dev libsm6 libxext6 libgl1 libglib2.0-0 libsndfile1 libfftw3-dev sox rsync
                 ;;
             fedora|rhel|centos)
                 echo "📦 [System] Detected RHEL/Fedora. Ensuring build chain..."
