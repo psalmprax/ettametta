@@ -10,7 +10,7 @@ from .tools.publish import publish_tool
 from .tools.affiliate import affiliate_tool
 from .tools.market_screener import market_screener_tool
 from .tools.paperclip_kpi import paperclip_kpi
-from .tools.remotion_render import remotion_render_tool
+from .tools.remotion_render import remotion_tool
 from api.routes.ws import notify_system_log_async
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class AgentZero:
             "affiliate": affiliate_tool,
             "screener": market_screener_tool,
             "paperclip": paperclip_kpi,
-            "remotion": remotion_render_tool,
+            "remotion": remotion_tool,
         }
 
     async def _log(self, message: str, level: str = "INFO"):
@@ -165,7 +165,7 @@ class AgentZero:
                 "Technical niche detected. Engaging Remotion for high-fidelity data overlays...",
                 "SYSTEM",
             )
-            remotion_res = remotion_render_tool.run(
+            remotion_res = remotion_tool.run(
                 composition="ScienceOverlay",
                 props={"title": strategy["title"], "data_points": [88, 92, 95]},
             )
