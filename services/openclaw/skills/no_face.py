@@ -1,6 +1,6 @@
 import requests
 import logging
-from config import settings
+from api.config import settings
 from typing import Optional
 
 logger = logging.getLogger(__name__)
