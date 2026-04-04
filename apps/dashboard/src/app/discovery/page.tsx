@@ -229,6 +229,30 @@ export default function DiscoveryPage() {
         fetchTrends();
     }, [fetchTrends]);
 
+    const handleAddToQueue = useCallback(async (candidate: ContentCandidate) => {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/video/transform`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    input_url: candidate.url,
+                    niche: activeNiche,
+                    platform: "YouTube Shorts",
+                    style: selectedStyle
+                })
+            }),
+            {
+                fallback: null,
+                onSuccess: () => router.push("/transformation"),
+                errorMessage: "Transformation queue full. Try again shortly."
+            }
+        );
+    }, [activeNiche, router, selectedStyle]);
+
     const handleAnalyze = useCallback(async (candidate: ContentCandidate) => {
         const token = localStorage.getItem("et_token");
         
@@ -242,6 +266,7 @@ export default function DiscoveryPage() {
                 body: JSON.stringify(candidate)
             }),
             {
+                fallback: { status: "failed", error: "Offline" },
                 onSuccess: (data) => {
                     const taskId = data.task_id;
                     setAnalysisTaskId(taskId);
@@ -282,29 +307,6 @@ export default function DiscoveryPage() {
         );
     }, [handleAddToQueue]);
 
-    const handleAddToQueue = useCallback(async (candidate: ContentCandidate) => {
-        const token = localStorage.getItem("et_token");
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/video/transform`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    input_url: candidate.url,
-                    niche: activeNiche,
-                    platform: "YouTube Shorts",
-                    style: selectedStyle
-                })
-            }),
-            {
-                onSuccess: () => router.push("/transformation"),
-                errorMessage: "Transformation queue full. Try again shortly."
-            }
-        );
-    }, [activeNiche, router, selectedStyle]);
-
 
 // ... in DiscoveryPage ...
     const handleInteract = useCallback(async (candidate: ContentCandidate, action: string) => {
@@ -316,7 +318,7 @@ export default function DiscoveryPage() {
             
             // Real-First Interaction Protocol
             const data = await withRealFallback<any>(
-                fetch(`${API_BASE}/discovery/interact`, {
+                () => fetch(`${API_BASE}/discovery/interact`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -399,6 +401,7 @@ export default function DiscoveryPage() {
                 body: JSON.stringify({ niche: activeNiche, style: selectedStyle })
             }),
             {
+                fallback: { task_id: "test-drive-offline" },
                 onSuccess: (data) => {
                     setTestJobId(data.task_id);
                     setPreviewTitle(`Test Drive Outcome: ${activeNiche}`);
@@ -434,6 +437,7 @@ export default function DiscoveryPage() {
                 })
             }),
             {
+                fallback: { task_id: "generate-offline" },
                 onSuccess: (data) => {
                     setTestJobId(data.task_id);
                     setPreviewTitle(isStoryMode ? `Story: ${genPrompt.substring(0, 20)}...` : `Generative: ${genPrompt.substring(0, 20)}...`);

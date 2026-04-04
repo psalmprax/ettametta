@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { withRealFallback } from "@/lib/real_first_utils";
 import DashboardLayout from "@/components/layout";
 import {
     Zap,
@@ -36,7 +37,6 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ClusterManager } from "@/components/ui/ClusterManager";
-import { withRealFallback } from "@/lib/real_first_utils";
 
 interface Blueprint {
     id: string;

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { withRealFallback } from "@/lib/real_first_utils";
 import DashboardLayout from "@/components/layout";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -37,7 +38,6 @@ import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
 import { toast } from "sonner";
 import EnvManager from "@/components/admin/EnvManager";
-import { withRealFallback } from "@/lib/real_first_utils";
 
 // Admin-only system configuration
 export default function AdminSettingsPage() {
