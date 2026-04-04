@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { withRealFallback } from "@/lib/real_first_utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -39,7 +40,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
-import { withRealFallback } from "@/lib/real_first_utils";
 import { toast } from "sonner";
 
 const SettingsSchema = z.object({
