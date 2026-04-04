@@ -75,6 +75,10 @@ class Settings(BaseSettings):
 
     # Infrastructure
     PRODUCTION_DOMAIN: str = "http://localhost:8000"
+    API_URL: str = "http://api:8000"  # Internal service URL
+    INTERNAL_API_TOKEN: Optional[str] = (
+        None  # Token for internal service-to-service auth
+    )
     CORS_ORIGINS: str = (
         "http://localhost:3000,http://localhost:8080"  # Comma-separated list
     )
