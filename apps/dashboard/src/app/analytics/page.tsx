@@ -242,6 +242,7 @@ export default function AnalyticsPage() {
                             headers: { Authorization: `Bearer ${token}` }
                         }),
                         {
+                            fallback: { status: "pending" },
                             silent: true,
                             onSuccess: (data) => {
                                 if (data.status === "winner_determined") {
@@ -885,7 +886,7 @@ export default function AnalyticsPage() {
                                                 })
                                             }),
                                             {
-                                                fallback: { status: "success" },
+                                                fallback: { status: "error" },
                                                 onSuccess: () => {
                                                     setIsCreatingTest(false);
                                                     setNewTestContentId("");
@@ -930,6 +931,7 @@ export default function AnalyticsPage() {
                                                         headers: { Authorization: `Bearer ${token}` }
                                                     }),
                                                     {
+                                                        fallback: { status: "pending" },
                                                         errorMessage: "Neural decision pending cluster consensus.",
                                                         onSuccess: (data) => {
                                                             if (data.status === "winner_determined") {
