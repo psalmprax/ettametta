@@ -32,7 +32,6 @@ from api.utils.models import (
 from api.config import settings
 from api.utils.vault import get_secret
 from api.utils.celery import celery_app
-from api.routes.ws import notify_system_log_async
 from groq import Groq
 
 
@@ -66,6 +65,8 @@ class DiscoveryService:
 
     async def _log(self, message: str, level: str = "INFO"):
         """Broadcasts a discovery log message."""
+        from api.routes.ws import notify_system_log_async
+
         await notify_system_log_async(message, level=level, module="DISCOVERY")
         # Send log via Redis to avoid circular import
         import json
