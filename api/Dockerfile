@@ -29,6 +29,10 @@ RUN apt-get update && apt-get install -y \
     libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
+# Install opencli-rs binary
+RUN curl -fsSL https://raw.githubusercontent.com/nashsu/opencli-rs/main/scripts/install.sh | sh && \
+    ln -sf /usr/local/bin/opencli-rs /usr/local/bin/opencli
+
 COPY api/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --default-timeout=100 --upgrade pip && \
     pip install --no-cache-dir --default-timeout=100 --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt && \
