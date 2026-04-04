@@ -1,146 +1,126 @@
-from .publisher_base import SocialPublisher
-from .models import PostMetadata
+"""
+YouTube Publisher for Viral Forge
+Handles video uploads to YouTube via Data API v3
+Features: Circuit breaker, token refresh, resumable uploads, proper logging
+"""
+
+import os
 from typing import Optional
-from .auth import token_manager
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-from google.oauth2.credentials import Credentials
-from .circuit_breaker import youtube_breaker, CircuitBreakerOpenError
 import logging
+
+from .publisher_base import SocialPublisher, RetryConfig, RateLimitConfig
+from .models import PostMetadata
+from .auth import token_manager
 
 logger = logging.getLogger(__name__)
 
+
 class YouTubePublisher(SocialPublisher):
-    async def upload_video(self, video_path: str, metadata: PostMetadata, user_id: int, account_id: Optional[int] = None) -> Optional[str]:
-        """
-        Uploads a video to YouTube as a Short using the Data API v3.
-        Includes circuit breaker and automated token refresh logic.
-        """
-        # Check circuit breaker first
-        if not youtube_breaker.can_execute():
-            logger.warning(f"[YouTubePublisher] Circuit breaker OPEN. Service unavailable.")
-            raise CircuitBreakerOpenError("YouTube API temporarily unavailable")
-        # 1. Get Auth Headers (OAuth or Cookies)
-        headers = token_manager.get_auth_headers("youtube", user_id, account_id)
-        
-        access_token = token_manager.get_token("youtube", user_id=user_id, account_id=account_id)
-        if not access_token and "Cookie" not in headers:
-            print(f"[YouTubePublisher] ERROR: No authentication (token or cookies) for user {user_id}.")
-            return None
+    """YouTube video publisher with production-grade features"""
 
-        # Build credentials
-        creds = Credentials(token=access_token)
-        youtube = build("youtube", "v3", credentials=creds)
-
-        body = {
-            "snippet": {
-                "title": metadata.title[:100], # YouTube limit
-                "description": f"{metadata.description}\n\n#shorts {' '.join(metadata.hashtags)}",
-                "categoryId": "22" # People & Blogs
-            },
-            "status": {
-                "privacyStatus": "public",
-                "selfDeclaredMadeForKids": False
-            }
-        }
-
-        insert_request = youtube.videos().insert(
-            part="snippet,status",
-            body=body,
-            media_body=MediaFileUpload(video_path, chunksize=-1, resumable=True)
+    def __init__(self):
+        super().__init__(
+            platform_name="youtube",
+            max_file_size_mb=256,  # YouTube Shorts limit
+            supported_formats=["mp4", "mov"],
+            retry_config=RetryConfig(max_retries=3, base_delay=2.0),
+            rate_limit_config=RateLimitConfig(max_retries=5),
         )
 
-        try:
-            print(f"[YouTubePublisher] Uploading {video_path} to YouTube for user {user_id}...")
-            response = insert_request.execute()
-            video_id = response.get("id")
-            youtube_breaker.record_success()  # Record success for circuit breaker
-            return f"https://youtube.com/shorts/{video_id}"
-        except Exception as e:
-            print(f"[YouTubePublisher] FAILED: {str(e)}")
-            youtube_breaker.record_failure(e)  # Record failure for circuit breaker
+    async def _upload_impl(
+        self,
+        video_path: str,
+        metadata: PostMetadata,
+        user_id: int,
+        account_id: Optional[int],
+        headers: dict,
+    ) -> Optional[str]:
+        """YouTube-specific upload implementation"""
+        from googleapiclient.discovery import build
+        from googleapiclient.http import MediaFileUpload
+        from google.oauth2.credentials import Credentials
+
+        access_token = token_manager.get_token(
+            "youtube", user_id=user_id, account_id=account_id
+        )
+        if not access_token:
+            logger.error(f"[YouTubePublisher] No authentication for user {user_id}")
             return None
 
-    async def get_metrics(self, platform_id: str, user_id: int, account_id: Optional[int] = None) -> dict:
-        """
-        Fetches live engagement stats for a YouTube video.
-        """
-        await self.ensure_valid_token(user_id, account_id)
-        access_token = token_manager.get_token("youtube", user_id=user_id, account_id=account_id)
-        if not access_token:
-            return {"views": 0, "likes": 0, "comments": 0, "shares": 0}
+        try:
+            creds = Credentials(token=access_token)
+            youtube = build("youtube", "v3", credentials=creds)
 
-        creds = Credentials(token=access_token)
-        youtube = build("youtube", "v3", credentials=creds)
+            body = {
+                "snippet": {
+                    "title": metadata.title[:100],
+                    "description": f"{metadata.description}\n\n#shorts {' '.join(metadata.hashtags[:15])}",
+                    "categoryId": "22",
+                },
+                "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False},
+            }
+
+            media = MediaFileUpload(video_path, chunksize=-1, resumable=True)
+            request = youtube.videos().insert(
+                part="snippet,status", body=body, media_body=media
+            )
+
+            logger.info(f"[YouTubePublisher] Uploading {video_path} to YouTube...")
+            response = request.execute()
+
+            video_id = response.get("id")
+            if video_id:
+                logger.info(f"[YouTubePublisher] Uploaded successfully: {video_id}")
+                return f"https://youtube.com/shorts/{video_id}"
+
+            logger.error("[YouTubePublisher] No video ID in response")
+            return None
+
+        except Exception as e:
+            logger.error(f"[YouTubePublisher] Upload failed: {e}")
+            return None
+
+    async def _get_metrics_impl(
+        self,
+        platform_id: str,
+        user_id: int,
+        account_id: Optional[int],
+        headers: dict,
+    ) -> dict:
+        """Fetch YouTube video statistics"""
+        from googleapiclient.discovery import build
+        from google.oauth2.credentials import Credentials
+
+        access_token = token_manager.get_token(
+            "youtube", user_id=user_id, account_id=account_id
+        )
+        if not access_token:
+            return {"error": "No authentication"}
 
         try:
-            request = youtube.videos().list(
-                part="statistics",
-                id=platform_id
-            )
+            creds = Credentials(token=access_token)
+            youtube = build("youtube", "v3", credentials=creds)
+
+            request = youtube.videos().list(part="statistics", id=platform_id)
             response = request.execute()
-            
+
             if not response.get("items"):
                 return {"views": 0, "likes": 0, "comments": 0, "shares": 0}
-            
+
             stats = response["items"][0]["statistics"]
             return {
                 "views": int(stats.get("viewCount", 0)),
                 "likes": int(stats.get("likeCount", 0)),
                 "comments": int(stats.get("commentCount", 0)),
-                "shares": 0 # YouTube Data API doesn't provide share count directly in v3 statistics
+                "shares": 0,
             }
         except Exception as e:
-            print(f"[YouTubePublisher] Metrics Fetch FAILED: {str(e)}")
-            return {"views": 0, "likes": 0, "comments": 0, "shares": 0}
-
-    async def ensure_valid_token(self, user_id: int, account_id: Optional[int] = None):
-        """Checks if token is expired and triggers a refresh if a refresh_token exists."""
-        if token_manager.is_token_expired("youtube", user_id=user_id, account_id=account_id):
-            print(f"[YouTubePublisher] Token expired for user {user_id}. Attempting refresh...")
-            # refresh_token logic would be implemented in TokenManager or here
-            # For this wave, we focus on the structure for triggered refresh.
-            pass
+            logger.error(f"[YouTubePublisher] Metrics fetch failed: {e}")
+            return {"error": str(e)}
 
     def health_check(self, user_id: int) -> bool:
+        """Verify YouTube credentials"""
         return token_manager.get_token("youtube", user_id=user_id) is not None
-
-    async def update_metadata(self, video_id: str, tags: list, user_id: int, account_id: Optional[int] = None) -> bool:
-        """
-        Updates video metadata (tags) to reflect a neural pattern injection.
-        """
-        access_token = token_manager.get_token("youtube", user_id=user_id, account_id=account_id)
-        if not access_token:
-            return False
-
-        creds = Credentials(token=access_token)
-        youtube = build("youtube", "v3", credentials=creds)
-
-        try:
-            # 1. Get existing snippet
-            request = youtube.videos().list(part="snippet", id=video_id)
-            response = request.execute()
-            if not response.get("items"):
-                return False
-            
-            snippet = response["items"][0]["snippet"]
-            # 2. Append new tags
-            existing_tags = snippet.get("tags", [])
-            for tag in tags:
-                if tag not in existing_tags:
-                    existing_tags.append(tag)
-            snippet["tags"] = existing_tags
-            
-            # 3. Update
-            update_request = youtube.videos().update(
-                part="snippet",
-                body={"id": video_id, "snippet": snippet}
-            )
-            update_request.execute()
-            return True
-        except Exception as e:
-            logger.error(f"[YouTubePublisher] Update Metadata FAILED: {str(e)}")
-            return False
 
 
 base_youtube_publisher = YouTubePublisher()

@@ -1,45 +1,52 @@
-from .publisher_base import SocialPublisher
-from .models import PostMetadata
+"""
+TikTok Publisher for Viral Forge
+Handles video uploads to TikTok via Video Kit API
+Features: Chunked uploads, token refresh, proper logging
+"""
+
+import os
 from typing import Optional
+import httpx
+import logging
+
+from .publisher_base import SocialPublisher, RetryConfig, RateLimitConfig
+from .models import PostMetadata
 from .auth import token_manager
+
+logger = logging.getLogger(__name__)
 
 
 class TikTokPublisher(SocialPublisher):
-    async def upload_video(
+    """TikTok video publisher with production-grade features"""
+
+    def __init__(self):
+        super().__init__(
+            platform_name="tiktok",
+            max_file_size_mb=287,  # TikTok limit
+            supported_formats=["mp4", "mov"],
+            retry_config=RetryConfig(max_retries=3, base_delay=2.0, max_delay=60.0),
+            rate_limit_config=RateLimitConfig(max_retries=5),
+        )
+
+    async def _upload_impl(
         self,
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int] = None,
+        account_id: Optional[int],
+        headers: dict,
     ) -> Optional[str]:
-        """
-        TikTok Video Kit API integration with automated refresh.
-        """
-        # 1. Get Auth Headers (OAuth or Cookies)
-        headers = token_manager.get_auth_headers("tiktok", user_id, account_id)
+        """TikTok-specific upload implementation with chunked uploads"""
         if not headers:
-            import logging
-
-            logging.error(
-                f"[TikTokPublisher] ERROR: No authentication (token or cookies) for user {user_id}."
-            )
+            logger.error(f"[TikTokPublisher] No authentication for user {user_id}")
             return None
 
-        # Determine the user identifier (username or open_id)
+        headers["Content-Type"] = "application/json; charset=UTF-8"
+
         token_data = token_manager.get_token_data(
             "tiktok", user_id=user_id, account_id=account_id
         )
         open_id = token_data.get("username") if token_data else "me"
-
-        import httpx
-        import os
-        import logging
-
-        # TikTok Video Kit API Endpoints
-        INIT_URL = "https://open.tiktokapis.com/v2/post/publish/video/init/"
-
-        # 2. Add Content-Type to headers
-        headers["Content-Type"] = "application/json; charset=UTF-8"
 
         CHUNK_SIZE = 10 * 1024 * 1024  # 10MB Chunks
 
@@ -47,8 +54,10 @@ class TikTokPublisher(SocialPublisher):
             file_size = os.path.getsize(video_path)
             total_chunk_count = (file_size + CHUNK_SIZE - 1) // CHUNK_SIZE
 
-            # 1. Initialize Upload
-            async with httpx.AsyncClient() as client:
+            INIT_URL = "https://open.tiktokapis.com/v2/post/publish/video/init/"
+
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                # Step 1: Initialize Upload
                 init_payload = {
                     "post_info": {
                         "title": metadata.title[:150],
@@ -66,26 +75,26 @@ class TikTokPublisher(SocialPublisher):
                     },
                 }
 
-                print(
-                    f"[TikTokPublisher] Init chunked upload for user {user_id}: {metadata.title}"
+                logger.info(
+                    f"[TikTokPublisher] Initializing chunked upload for user {user_id}"
                 )
                 init_response = await client.post(
                     INIT_URL, json=init_payload, headers=headers
                 )
 
                 if init_response.status_code != 200:
-                    logging.error(
-                        f"[TikTokPublisher] Init failed: {init_response.text}"
-                    )
+                    logger.error(f"[TikTokPublisher] Init failed: {init_response.text}")
                     return None
 
                 init_data = init_response.json()
                 upload_url = init_data["data"]["upload_url"]
                 publish_id = init_data["data"]["publish_id"]
 
-                # 2. Upload Video in Chunks
-                print(f"[TikTokPublisher] Uploading {file_size} bytes...")
+                logger.info(
+                    f"[TikTokPublisher] Uploading {file_size} bytes in {total_chunk_count} chunks..."
+                )
 
+                # Step 2: Upload Video in Chunks
                 with open(video_path, "rb") as f:
                     for i in range(total_chunk_count):
                         start_byte = i * CHUNK_SIZE
@@ -102,52 +111,40 @@ class TikTokPublisher(SocialPublisher):
                         )
 
                         if upload_response.status_code not in [200, 201]:
-                            logging.error(
-                                f"[TikTokPublisher] Chunk {i + 1} upload failed"
+                            logger.error(
+                                f"[TikTokPublisher] Chunk {i + 1} upload failed: {upload_response.text}"
                             )
                             return None
 
-                print(f"[TikTokPublisher] Upload successful! Publish ID: {publish_id}")
+                logger.info(
+                    f"[TikTokPublisher] Upload successful! Publish ID: {publish_id}"
+                )
                 return f"https://www.tiktok.com/@{open_id}/video/{publish_id}"
 
         except Exception as e:
-            logging.error(f"[TikTokPublisher] Exception: {e}")
+            logger.error(f"[TikTokPublisher] Upload failed: {e}")
             return None
 
-    async def ensure_valid_token(self, user_id: int, account_id: Optional[int] = None):
-        if token_manager.is_token_expired(
-            "tiktok", user_id=user_id, account_id=account_id
-        ):
-            print(
-                f"[TikTokPublisher] Token expired for user {user_id}. Refresh needed."
-            )
-            pass
-
-    async def get_metrics(
-        self, platform_id: str, user_id: int, account_id: Optional[int] = None
+    async def _get_metrics_impl(
+        self,
+        platform_id: str,
+        user_id: int,
+        account_id: Optional[int],
+        headers: dict,
     ) -> dict:
-        """Fetches live engagement metrics for a TikTok post via TikTok Analytics API."""
-        import httpx
-        import logging
-
-        headers = token_manager.get_auth_headers("tiktok", user_id, account_id)
-        if not headers:
-            logging.warning(f"[TikTokPublisher] No auth headers for user {user_id}")
-            return {"views": 0, "likes": 0, "comments": 0, "shares": 0}
-
+        """Fetch TikTok video metrics"""
         headers["Content-Type"] = "application/json"
 
-        try:
-            async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            try:
                 video_response = await client.get(
-                    f"https://open.tiktokapis.com/v2/video/list/?fields=id,like_count,comment_count,share_count,view_count",
+                    "https://open.tiktokapis.com/v2/video/list/?fields=id,like_count,comment_count,share_count,view_count",
                     headers=headers,
-                    timeout=30.0,
                 )
 
                 if video_response.status_code != 200:
-                    logging.warning(
-                        f"[TikTokPublisher] Failed to fetch video metrics: {video_response.status_code}"
+                    logger.error(
+                        f"[TikTokPublisher] Failed to fetch metrics: {video_response.status_code}"
                     )
                     return {"views": 0, "likes": 0, "comments": 0, "shares": 0}
 
@@ -163,16 +160,15 @@ class TikTokPublisher(SocialPublisher):
                             "shares": video.get("share_count", 0),
                         }
 
-                logging.warning(
-                    f"[TikTokPublisher] Video {platform_id} not found in user's videos"
-                )
+                logger.warning(f"[TikTokPublisher] Video {platform_id} not found")
                 return {"views": 0, "likes": 0, "comments": 0, "shares": 0}
 
-        except Exception as e:
-            logging.error(f"[TikTokPublisher] Error fetching metrics: {e}")
-            return {"views": 0, "likes": 0, "comments": 0, "shares": 0}
+            except Exception as e:
+                logger.error(f"[TikTokPublisher] Metrics fetch error: {e}")
+                return {"error": str(e)}
 
     def health_check(self, user_id: int) -> bool:
+        """Verify TikTok credentials"""
         return token_manager.get_token("tiktok", user_id=user_id) is not None
 
 

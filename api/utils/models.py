@@ -211,12 +211,24 @@ class ABTestDB(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     content_id = Column(String, index=True)  # Parent video ID
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
     variant_a_title = Column(String)
     variant_b_title = Column(String)
+    variant_a_description = Column(String, nullable=True)
+    variant_b_description = Column(String, nullable=True)
     variant_a_views = Column(Integer, default=0)
     variant_b_views = Column(Integer, default=0)
+    variant_a_clicks = Column(Integer, default=0)
+    variant_b_clicks = Column(Integer, default=0)
+    variant_a_conversions = Column(Integer, default=0)
+    variant_b_conversions = Column(Integer, default=0)
+    target_metric = Column(String, default="views")  # views, clicks, conversions
+    status = Column(String, default="active")  # active, completed, paused
     winner_variant = Column(String, nullable=True)  # 'A' or 'B'
+    confidence_level = Column(Float, nullable=True)
+    p_value = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
 
 
 class ScheduledPostDB(Base):
@@ -230,6 +242,9 @@ class ScheduledPostDB(Base):
     metadata_json = Column(JSON)
     account_id = Column(Integer)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    retry_count = Column(Integer, default=0)  # Number of retry attempts
+    error_message = Column(String, nullable=True)  # Last error message
+    published_at = Column(DateTime, nullable=True)  # When actually published
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -296,3 +311,13 @@ class DiscoveryInteractionDB(Base):
     details = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
+class WebhookEventDB(Base):
+    __tablename__ = "webhook_events"
+    id = Column(Integer, primary_key=True, index=True)
+    event_type = Column(String, index=True)
+    platform = Column(String, index=True)
+    external_id = Column(String, index=True)
+    payload_json = Column(JSON, nullable=True)
+    processed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
