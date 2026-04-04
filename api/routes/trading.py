@@ -40,7 +40,7 @@ async def get_market_data(
         "1wk": "TIME_SERIES_WEEKLY",
         "1mo": "TIME_SERIES_MONTHLY",
     }
-    
+
     av_function = function_map.get(interval, "TIME_SERIES_DAILY")
 
     try:
@@ -51,7 +51,7 @@ async def get_market_data(
                 "symbol": symbol,
                 "apikey": settings.ALPHA_VANTAGE_API_KEY,
             }
-            
+
             if av_function == "TIME_SERIES_INTRADAY":
                 params["interval"] = interval
 
@@ -59,14 +59,20 @@ async def get_market_data(
             data = response.json()
 
             if "Error Message" in data:
-                raise HTTPException(status_code=400, detail=f"Invalid symbol or interval for {symbol}")
-            
+                raise HTTPException(
+                    status_code=400, detail=f"Invalid symbol or interval for {symbol}"
+                )
+
             if "Note" in data and "rate limit" in data["Note"].lower():
-                 raise HTTPException(status_code=429, detail="Market data rate limit reached. Please wait a minute.")
+                raise HTTPException(
+                    status_code=429,
+                    detail="Market data rate limit reached. Please wait a minute.",
+                )
 
             return data
     except Exception as e:
-        if isinstance(e, HTTPException): raise e
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -269,3 +275,124 @@ async def get_symbol_analysis(
         return {"symbol": symbol, "market_data": market_data, "analysis": analysis}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class PortfolioPosition(BaseModel):
+    symbol: str
+    quantity: float
+    price: float
+    position_type: str = "buy"
+
+
+class PriceAlertRequest(BaseModel):
+    symbol: str
+    target_price: float
+    condition: str = "above"
+
+
+@router.get("/portfolio")
+async def get_portfolio(current_user: UserDB = Depends(get_current_user)):
+    """
+    Get user's trading portfolio with current values.
+    """
+    from services.trading.service import trading_service
+
+    if not trading_service.is_enabled():
+        raise HTTPException(status_code=503, detail="Trading service not enabled")
+
+    return trading_service.get_portfolio_value(current_user.id)
+
+
+@router.post("/portfolio/position")
+async def add_portfolio_position(
+    position: PortfolioPosition, current_user: UserDB = Depends(get_current_user)
+):
+    """
+    Add a buy or sell position to portfolio.
+    """
+    from services.trading.service import trading_service
+
+    if not trading_service.is_enabled():
+        raise HTTPException(status_code=503, detail="Trading service not enabled")
+
+    return trading_service.add_position(
+        current_user.id,
+        position.symbol.upper(),
+        position.quantity,
+        position.price,
+        position.position_type,
+    )
+
+
+@router.get("/alerts")
+async def get_price_alerts(current_user: UserDB = Depends(get_current_user)):
+    """
+    Get all price alerts for user.
+    """
+    from services.trading.service import trading_service
+
+    if not trading_service.is_enabled():
+        raise HTTPException(status_code=503, detail="Trading service not enabled")
+
+    return {"alerts": trading_service.get_price_alerts(current_user.id)}
+
+
+@router.post("/alerts")
+async def add_price_alert(
+    alert: PriceAlertRequest, current_user: UserDB = Depends(get_current_user)
+):
+    """
+    Add a price alert.
+    """
+    from services.trading.service import trading_service
+
+    if not trading_service.is_enabled():
+        raise HTTPException(status_code=503, detail="Trading service not enabled")
+
+    return trading_service.add_price_alert(
+        current_user.id, alert.symbol.upper(), alert.target_price, alert.condition
+    )
+
+
+@router.get("/alerts/check")
+async def check_price_alerts(current_user: UserDB = Depends(get_current_user)):
+    """
+    Check for triggered price alerts.
+    """
+    from services.trading.service import trading_service
+
+    if not trading_service.is_enabled():
+        raise HTTPException(status_code=503, detail="Trading service not enabled")
+
+    triggered = trading_service.check_price_alerts(current_user.id)
+    return {"triggered": triggered, "count": len(triggered)}
+
+
+@router.get("/history/{symbol}")
+async def get_symbol_history(
+    symbol: str, days: int = 30, current_user: UserDB = Depends(get_current_user)
+):
+    """
+    Get historical price data for a symbol.
+    """
+    from services.trading.service import trading_service
+
+    if not trading_service.is_enabled():
+        raise HTTPException(status_code=503, detail="Trading service not enabled")
+
+    return await trading_service.get_historical_data(symbol.upper(), days)
+
+
+@router.get("/technical/{symbol}")
+async def get_technical_analysis(
+    symbol: str, current_user: UserDB = Depends(get_current_user)
+):
+    """
+    Get technical indicators for a symbol (SMA, RSI, trend).
+    """
+    from services.trading.service import trading_service
+
+    if not trading_service.is_enabled():
+        raise HTTPException(status_code=503, detail="Trading service not enabled")
+
+    return await trading_service.get_technical_indicators(symbol.upper())

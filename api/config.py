@@ -12,8 +12,14 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     INTERNAL_API_TOKEN: Optional[str] = None  # Master token for internal services
 
-    # AI Settings
+    # AI Settings - Multi-Provider LLM Support
     GROQ_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    XAI_API_KEY: str = ""  # xAI (Grok)
+    DEEPSEEK_API_KEY: str = ""
+    ANTHROPIC_API_KEY: str = ""  # Claude
+    DEFAULT_LLM_PROVIDER: str = "groq"  # groq, openai, xai, deepseek, anthropic, gemini
+
     USE_OS_MODELS: bool = True
 
     # Neural Asset Keys
@@ -46,6 +52,14 @@ class Settings(BaseSettings):
     # but we standardize here.
     TIKTOK_CLIENT_KEY: str = ""
     TIKTOK_CLIENT_SECRET: str = ""
+
+    # Webhook Signatures
+    YOUTUBE_WEBHOOK_SECRET: str = ""
+    TIKTOK_WEBHOOK_SECRET: str = ""
+    INSTAGRAM_WEBHOOK_SECRET: str = ""
+    FACEBOOK_WEBHOOK_SECRET: str = ""
+    LINKEDIN_WEBHOOK_SECRET: str = ""
+    X_WEBHOOK_SECRET: str = ""
 
     # Telegram Configuration
     TELEGRAM_BOT_TOKEN: str = ""
@@ -230,17 +244,37 @@ class Settings(BaseSettings):
                 )
 
             # Required for core functionality
-            if not self.GROQ_API_KEY and not self.OPENAI_API_KEY:
+            has_llm = any(
+                [
+                    self.GROQ_API_KEY,
+                    self.OPENAI_API_KEY,
+                    self.XAI_API_KEY,
+                    self.DEEPSEEK_API_KEY,
+                    self.ANTHROPIC_API_KEY,
+                    self.GOOGLE_API_KEY,
+                ]
+            )
+            if not has_llm:
                 result["errors"].append(
-                    "GROQ_API_KEY or OPENAI_API_KEY - At least one AI provider required"
+                    "At least one LLM API key required: GROQ_API_KEY, OPENAI_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY"
                 )
 
         # Development warnings (non-blocking)
         else:
-            # Warn if GROQ API key is missing
-            if not self.GROQ_API_KEY:
+            # Warn if no LLM API keys are configured
+            has_llm = any(
+                [
+                    self.GROQ_API_KEY,
+                    self.OPENAI_API_KEY,
+                    self.XAI_API_KEY,
+                    self.DEEPSEEK_API_KEY,
+                    self.ANTHROPIC_API_KEY,
+                    self.GOOGLE_API_KEY,
+                ]
+            )
+            if not has_llm:
                 result["warnings"].append(
-                    "GROQ_API_KEY not set - AI features will use fallback mode"
+                    "No LLM API keys configured - AI features will use fallback mode. Set GROQ_API_KEY, OPENAI_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY, or ANTHROPIC_API_KEY"
                 )
 
             # Warn if OAuth credentials missing

@@ -1,91 +1,191 @@
 """
 Instagram Publisher for Viral Forge
 Handles video uploads to Instagram via Meta Graph API
+Features: Retry logic, rate limiting, file validation, proper logging
 """
 
-from .publisher_base import SocialPublisher
-from .models import PostMetadata
+import asyncio
 from typing import Optional
-from .auth import token_manager
 import httpx
+import logging
+
+from .publisher_base import SocialPublisher, RetryConfig, RateLimitConfig
+from .models import PostMetadata
+from .auth import token_manager
+
+logger = logging.getLogger(__name__)
 
 
 class InstagramPublisher(SocialPublisher):
-    async def upload_video(
+    """Instagram video publisher with production-grade features"""
+
+    def __init__(self):
+        super().__init__(
+            platform_name="instagram",
+            max_file_size_mb=650,  # Instagram limit
+            supported_formats=["mp4", "mov"],
+            retry_config=RetryConfig(max_retries=3, base_delay=2.0),
+            rate_limit_config=RateLimitConfig(max_retries=5),
+        )
+
+    async def _upload_impl(
         self,
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int] = None,
+        account_id: Optional[int],
+        headers: dict,
     ) -> Optional[str]:
-        """
-        Uploads a video to Instagram via Meta Graph API.
-        """
-        # 1. Get Auth Headers (OAuth or Cookies)
-        headers = token_manager.get_auth_headers("instagram", user_id, account_id)
-        
-        access_token = token_manager.get_token("instagram", user_id=user_id, account_id=account_id)
-        if not access_token and "Cookie" not in headers:
-            print(f"[InstagramPublisher] ERROR: No authentication (token or cookies) for user {user_id}.")
-            return None
-
-        try:
-            # 2. Create media container
-            container_url = "https://graph.facebook.com/v18.0/me/media"
-
-            # Extract video URL or use local file (for cloud storage)
-            video_url = video_path  # Would need to be a public URL for Instagram API
-
-            container_data = {
-                "media_type": "VIDEO",
-                "video_url": video_url,
-                "caption": f"{metadata.title}\n\n{metadata.description}\n\n{' '.join(metadata.hashtags)}",
-                "access_token": access_token or headers.get("Cookie"), # Fallback for Graph API
-            }
-
-            async with httpx.AsyncClient() as client:
-                # Create media container
-                container_response = await client.post(
-                    container_url, data=container_data
-                )
-                container_result = container_response.json()
-
-                if "id" not in container_result:
-                    print(
-                        f"[InstagramPublisher] Failed to create container: {container_result}"
-                    )
-                    return None
-
-                container_id = container_result["id"]
-
-                # 3. Publish media
-                publish_url = "https://graph.facebook.com/v18.0/me/media_publish"
-                publish_data = {
-                    "creation_id": container_id,
-                    "access_token": access_token or headers.get("Cookie"), # Fallback for Graph API
-                }
-
-                publish_response = await client.post(publish_url, data=publish_data)
-                publish_result = publish_response.json()
-
-                if "id" in publish_result:
-                    media_id = publish_result["id"]
-                    return f"https://instagram.com/p/{media_id}"
-                else:
-                    print(f"[InstagramPublisher] Failed to publish: {publish_result}")
-                    return None
-
-        except Exception as e:
-            print(f"[InstagramPublisher] FAILED: {str(e)}")
-            return None
-
-    async def ensure_valid_token(self, user_id: int, account_id: Optional[int] = None):
-        """Token validation and refresh via TokenManager"""
-        return await token_manager.ensure_valid_token(
+        """Instagram-specific upload implementation"""
+        access_token = token_manager.get_token(
             "instagram", user_id=user_id, account_id=account_id
         )
 
+        if not access_token and "Cookie" not in headers:
+            logger.error(f"[InstagramPublisher] No authentication for user {user_id}")
+            return None
+
+        video_url = await self._resolve_video_url(video_path)
+        if not video_url:
+            return None
+
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            # Step 1: Create media container
+            container_url = "https://graph.facebook.com/v18.0/me/media"
+            container_data = {
+                "media_type": "VIDEO",
+                "video_url": video_url,
+                "caption": self._build_caption(metadata),
+                "access_token": access_token or headers.get("Cookie"),
+            }
+
+            container_response = await client.post(container_url, data=container_data)
+            container_result = container_response.json()
+
+            if "id" not in container_result:
+                error_msg = container_result.get("error", {}).get(
+                    "message", "Unknown error"
+                )
+                logger.error(
+                    f"[InstagramPublisher] Container creation failed: {error_msg}"
+                )
+                return None
+
+            container_id = container_result["id"]
+            logger.info(f"[InstagramPublisher] Container created: {container_id}")
+
+            # Step 2: Poll for media readiness (video processing takes time)
+            max_polls = 60
+            poll_interval = 5
+            for _ in range(max_polls):
+                await asyncio.sleep(poll_interval)
+                status_url = f"https://graph.facebook.com/v18.0/{container_id}"
+                status_resp = await client.get(
+                    status_url, params={"access_token": access_token}
+                )
+                status_data = status_resp.json()
+
+                if status_data.get("uri"):
+                    break
+                if "error" in status_data:
+                    logger.error(
+                        f"[InstagramPublisher] Media status error: {status_data}"
+                    )
+                    return None
+            else:
+                logger.error("[InstagramPublisher] Media processing timeout")
+                return None
+
+            # Step 3: Publish media
+            publish_url = "https://graph.facebook.com/v18.0/me/media_publish"
+            publish_data = {
+                "creation_id": container_id,
+                "access_token": access_token or headers.get("Cookie"),
+            }
+
+            publish_response = await client.post(publish_url, data=publish_data)
+            publish_result = publish_response.json()
+
+            if "id" in publish_result:
+                media_id = publish_result["id"]
+                logger.info(f"[InstagramPublisher] Published successfully: {media_id}")
+                return f"https://instagram.com/p/{media_id}"
+
+            error_msg = publish_result.get("error", {}).get(
+                "message", str(publish_result)
+            )
+            logger.error(f"[InstagramPublisher] Publish failed: {error_msg}")
+            return None
+
+    async def _resolve_video_url(self, video_path: str) -> Optional[str]:
+        """Resolve video path to URL - return if already URL, otherwise handle local file"""
+        import os
+
+        if video_path.startswith(("http://", "https://")):
+            return video_path
+
+        if os.path.isfile(video_path):
+            logger.warning(
+                "[InstagramPublisher] Local files require S3/cloud storage for Instagram API. "
+                "Configure a storage provider for local file uploads."
+            )
+            return video_path
+
+        logger.error(f"[InstagramPublisher] Invalid video path: {video_path}")
+        return None
+
+    def _build_caption(self, metadata: PostMetadata) -> str:
+        """Build optimized caption from metadata"""
+        parts = [metadata.title]
+        if metadata.description:
+            parts.append(f"\n\n{metadata.description}")
+        if metadata.hashtags:
+            tags = " ".join(
+                h if h.startswith("#") else f"#{h}" for h in metadata.hashtags[:30]
+            )
+            parts.append(f"\n\n{tags}")
+        if metadata.cta:
+            parts.append(f"\n\n{metadata.cta}")
+        return "".join(parts)[:2200]  # Instagram caption limit
+
+    async def _get_metrics_impl(
+        self,
+        platform_id: str,
+        user_id: int,
+        account_id: Optional[int],
+        headers: dict,
+    ) -> dict:
+        """Fetch Instagram media insights"""
+        access_token = token_manager.get_token(
+            "instagram", user_id=user_id, account_id=account_id
+        )
+
+        async with httpx.AsyncClient() as client:
+            url = f"https://graph.facebook.com/v18.0/{platform_id}/insights"
+            params = {
+                "metric": "views,likes,comments,saves,shares",
+                "access_token": access_token or headers.get("Cookie"),
+            }
+
+            response = await client.get(url, params=params)
+            data = response.json()
+
+            if "data" in data:
+                metrics = {}
+                for item in data["data"]:
+                    metrics[item["name"]] = item.get("values", [{}])[0].get("value", 0)
+                return {
+                    "views": metrics.get("views", 0),
+                    "likes": metrics.get("likes", 0),
+                    "comments": metrics.get("comments", 0),
+                    "saves": metrics.get("saves", 0),
+                    "shares": metrics.get("shares", 0),
+                }
+
+            return {"error": data.get("error", {}).get("message", "Unknown error")}
+
     def health_check(self, user_id: int) -> bool:
+        """Verify Instagram credentials"""
         return token_manager.get_token("instagram", user_id=user_id) is not None
 
 
