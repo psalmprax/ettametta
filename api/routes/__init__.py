@@ -22,4 +22,5 @@ from . import (
     zero,
     opencli,
     tools,
+    llm,
 )
