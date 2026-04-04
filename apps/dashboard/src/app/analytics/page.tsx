@@ -145,15 +145,15 @@ export default function AnalyticsPage() {
             const token = localStorage.getItem("et_token");
             const headers = { Authorization: `Bearer ${token}` };
             
-            const testsData = await withRealFallback<any[]>(
+            const testsData = await withRealFallback<any>(
                 () => fetch(`${API_BASE}/ab-testing/ab/tests/active`, { headers }),
-                { fallback: [] }
+                { fallback: {} }
             );
             setActiveTests(testsData.active_tests || testsData.tests || testsData || []);
 
-            const compData = await withRealFallback<any[]>(
+            const compData = await withRealFallback<any>(
                 () => fetch(`${API_BASE}/ab-testing/ab/tests/completed`, { headers }),
-                { fallback: [] }
+                { fallback: {} }
             );
             setCompletedTests(compData.completed_tests || compData || []);
             return;
