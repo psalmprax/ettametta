@@ -841,7 +841,7 @@ async def health():
     return {
         "status": "healthy",
         "busy": model_manager.is_busy,
-        "current_model": model_manager.current_model
+        "current_model": model_manager.current_model_key
         or (list(model_manager.utils.keys())[0] if model_manager.utils else None),
         "hardware": telemetry,
         "encoder": model_manager.encoder,
