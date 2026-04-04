@@ -133,6 +133,7 @@ from api.routes import (
     zero,
     opencli,
     tools,
+    llm,
 )
 
 from fastapi.staticfiles import StaticFiles
@@ -268,6 +269,7 @@ v1_router.include_router(credits.router, tags=["Credits & Billing"])
 v1_router.include_router(zero.router, tags=["Agent Zero"])
 v1_router.include_router(opencli.router, tags=["opencli-rs"])
 v1_router.include_router(tools.router, tags=["Free Tools"])
+v1_router.include_router(llm.router, tags=["LLM - Multi-Provider"])
 
 # Include versioned router under /api
 app.include_router(v1_router, prefix="/api")

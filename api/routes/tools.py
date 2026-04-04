@@ -279,23 +279,24 @@ async def generate_seo_content(request: dict):
 @router.get("/tradingview/status")
 async def tradingview_status():
     """Check TradingView integration status"""
-    return {
-        "enabled": True,
-        "message": "TradingView widgets available for embedding",
-        "api": "Use /api/v1/tools/trading/quote for market data",
-    }
+    return await tradingview_service.get_market_overview()
+
+
+class BacktestRequest(BaseModel):
+    symbol: str = "AAPL"
+    strategy: str = "simple_ma"
+    start_date: str = "2025-01-01"
+    end_date: str = "2025-12-31"
 
 
 @router.post("/backtest/run")
-async def run_backtest(request: dict):
-    """Run a simple backtest"""
-    symbol = request.get("symbol", "BTC")
-    strategy = request.get("strategy", "simple_ma")
-    start_date = request.get("start_date", "2025-01-01")
-    end_date = request.get("end_date", "2025-12-31")
-
-    result = backtest_service.run_simple_backtest(
-        symbol, strategy, start_date, end_date
+async def run_backtest(request: BacktestRequest):
+    """
+    Run a backtest on historical data with real strategy implementation.
+    Strategies: simple_ma, momentum, mean_reversion
+    """
+    result = await backtest_service.run_backtest(
+        request.symbol, request.strategy, request.start_date, request.end_date
     )
     return result
 
