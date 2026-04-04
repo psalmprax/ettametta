@@ -149,10 +149,12 @@ class MonitoredNiche(Base):
     __tablename__ = "monitored_niches"
 
     id = Column(Integer, primary_key=True, index=True)
-    niche = Column(String, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True)
+    niche = Column(String, index=True)
     is_active = Column(Boolean, default=True)
     last_scanned_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    __table_args__ = (UniqueConstraint("user_id", "niche", name="uix_user_niche"),)
 
 
 class AffiliateLinkDB(Base):
