@@ -58,12 +58,16 @@ class PaymentService:
             )
         stripe.api_key = stripe_api_key
 
-    async def create_customer(self, email: str, user_id: int) -> Dict[str, Any]:
+    async def create_customer(
+        self, email: str, user_id: int, idempotency_key: str = None
+    ) -> Dict[str, Any]:
         """Create a Stripe customer for a user"""
         try:
-            customer = stripe.Customer.create(
-                email=email, metadata={"user_id": str(user_id)}
-            )
+            create_params = {"email": email, "metadata": {"user_id": str(user_id)}}
+            if idempotency_key:
+                create_params["idempotency_key"] = idempotency_key
+
+            customer = stripe.Customer.create(**create_params)
             logger.info(
                 f"[PaymentService] Created Stripe customer {customer.id} for user {user_id}"
             )
@@ -81,6 +85,7 @@ class PaymentService:
         tier: str,
         success_url: str = None,
         cancel_url: str = None,
+        idempotency_key: str = None,
     ) -> Dict[str, Any]:
         """Create a checkout session for subscription"""
         from api.config import settings
@@ -99,20 +104,24 @@ class PaymentService:
             raise ValueError(f"Invalid tier: {tier}")
 
         try:
-            session = stripe.checkout.Session.create(
-                customer=stripe_customer_id,
-                payment_method_types=["card"],
-                line_items=[
+            session_params = {
+                "customer": stripe_customer_id,
+                "payment_method_types": ["card"],
+                "line_items": [
                     {
                         "price": tier_info["price_id"],
                         "quantity": 1,
                     }
                 ],
-                mode="subscription",
-                success_url=success_url,
-                cancel_url=cancel_url,
-                metadata={"tier": tier},
-            )
+                "mode": "subscription",
+                "success_url": success_url,
+                "cancel_url": cancel_url,
+                "metadata": {"tier": tier},
+            }
+            if idempotency_key:
+                session_params["idempotency_key"] = idempotency_key
+
+            session = stripe.checkout.Session.create(**session_params)
             logger.info(
                 f"[PaymentService] Created checkout session {session.id} for tier {tier}"
             )

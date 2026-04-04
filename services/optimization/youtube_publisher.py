@@ -105,4 +105,42 @@ class YouTubePublisher(SocialPublisher):
     def health_check(self, user_id: int) -> bool:
         return token_manager.get_token("youtube", user_id=user_id) is not None
 
+    async def update_metadata(self, video_id: str, tags: list, user_id: int, account_id: Optional[int] = None) -> bool:
+        """
+        Updates video metadata (tags) to reflect a neural pattern injection.
+        """
+        access_token = token_manager.get_token("youtube", user_id=user_id, account_id=account_id)
+        if not access_token:
+            return False
+
+        creds = Credentials(token=access_token)
+        youtube = build("youtube", "v3", credentials=creds)
+
+        try:
+            # 1. Get existing snippet
+            request = youtube.videos().list(part="snippet", id=video_id)
+            response = request.execute()
+            if not response.get("items"):
+                return False
+            
+            snippet = response["items"][0]["snippet"]
+            # 2. Append new tags
+            existing_tags = snippet.get("tags", [])
+            for tag in tags:
+                if tag not in existing_tags:
+                    existing_tags.append(tag)
+            snippet["tags"] = existing_tags
+            
+            # 3. Update
+            update_request = youtube.videos().update(
+                part="snippet",
+                body={"id": video_id, "snippet": snippet}
+            )
+            update_request.execute()
+            return True
+        except Exception as e:
+            logger.error(f"[YouTubePublisher] Update Metadata FAILED: {str(e)}")
+            return False
+
+
 base_youtube_publisher = YouTubePublisher()

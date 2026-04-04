@@ -21,4 +21,5 @@ from . import (
     webhooks,
     zero,
     opencli,
+    tools,
 )

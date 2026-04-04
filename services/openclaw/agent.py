@@ -14,11 +14,14 @@ from skills.niche import niche_skill
 from skills.security import security_skill
 from skills.no_face import noface_skill
 from skills.outreach import outreach_skill
-from skills.render import render_skill
-from skills.agent_zero import agent_zero_skill
+from skills.metrics import social_metrics_skill
+from skills.external.paperclip_integration import paperclip_skill
+from skills.external.claw4science_integration import claw4science_skill
+from skills.render_remotion import remotion_skill
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class OpenClawAgent:
     def __init__(self):
@@ -45,6 +48,12 @@ class OpenClawAgent:
         - STORAGE: Check video storage usage and cloud status. No params needed.
         - RENDER: Trigger a cinematic programmatic video render. Params: {"title": "string", "subtitle": "string", "video_url": "string"}
         - ZERO: Control the Agent Zero autonomous director. Params: {"action": "start|stop|status"}
+        - RESEARCH: Search academic papers (free, no API key). Params: {"action": "search|trends", "topic": "string", "limit": int}
+        - INGESTION: Multi-source data (Reddit, RSS, GitHub). Params: {"action": "reddit|rss|github|multi", "subreddit": "string", "feed_url": "string", "language": "string", "sources": []}
+        - METRICS: Social media metrics (X, Reddit, GitHub, Instagram). Params: {"platform": "x|reddit|github|instagram", "handle": "string"}
+        - PAPERCLIP: KPI-driven organic scaling and performance tracking. Params: {"action": "track|scale", "job_id": "string", "platform": "string", "views": int, "likes": int, "niche": "string"}
+        - SCIENTIFIC: Transforms technical/academic data into viral "Science-Pop" scripts. Params: {"action": "convert|trends", "raw_data": "string", "topic": "string"}
+        - REMOTION: Programmatic React-based video rendering for pixel-perfect overlays. Params: {"composition": "string", "props": dict, "output_name": "string"}
         
         PLANNING MODE:
         When a user gives a complex command, you must first output a brief "Plan" explicitly naming which sub-agents (SCOUT, MUSE, etc.) you are delegating to, followed by the actual tool JSON.
@@ -63,11 +72,11 @@ class OpenClawAgent:
         if str(identifier) == str(settings.TELEGRAM_ADMIN_ID):
             logger.info(f"Admin access verified for {identifier}")
             return {
-                "id": 1, # Match the DB id found earlier for psalmprax
-                "username": "admin", 
-                "role": "admin", 
+                "id": 1,  # Match the DB id found earlier for psalmprax
+                "username": "admin",
+                "role": "admin",
                 "subscription": "premium",
-                "telegram_chat_id": str(identifier)
+                "telegram_chat_id": str(identifier),
             }
 
         # 2. Dynamic User Verification via API
@@ -75,10 +84,14 @@ class OpenClawAgent:
             if str(identifier).startswith("whatsapp:"):
                 # Format: whatsapp:+1234567890
                 clean_id = str(identifier)
-                response = requests.get(f"{settings.API_URL}/auth/verify-whatsapp/{clean_id}", timeout=5)
+                response = requests.get(
+                    f"{settings.API_URL}/auth/verify-whatsapp/{clean_id}", timeout=5
+                )
             else:
-                response = requests.get(f"{settings.API_URL}/auth/verify-telegram/{identifier}", timeout=5)
-                
+                response = requests.get(
+                    f"{settings.API_URL}/auth/verify-telegram/{identifier}", timeout=5
+                )
+
             if response.status_code == 200:
                 return response.json()
             return None
@@ -93,7 +106,7 @@ class OpenClawAgent:
         """
         # Dynamic verification via API
         user = await asyncio.to_thread(self._get_user_from_api, identifier)
-        
+
         if not user:
             logger.warning(f"Unauthorized access attempt from {identifier}")
             return f"⛔ Unauthorized access. Your ID is: `{identifier}`.\n\nPlease log in to the ettametta dashboard and add this ID to your profile settings to enable agent access."
@@ -103,15 +116,15 @@ class OpenClawAgent:
             completion = self.groq_client.chat.completions.create(
                 messages=[
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": message}
+                    {"role": "user", "content": message},
                 ],
                 model=self.model,
                 temperature=0.1,
             )
-            
+
             response_text = completion.choices[0].message.content
             logger.info(f"LLM Raw Response: {response_text}")  # Debug log
-            
+
             # 2. Check if response is a tool call (JSON)
             try:
                 # Naive check for JSON
@@ -120,19 +133,19 @@ class OpenClawAgent:
                     start = response_text.find("{")
                     end = response_text.rfind("}") + 1
                     json_str = response_text[start:end]
-                    
+
                     tool_call = json.loads(json_str)
-                    
+
                     # Prepend the plan/thought if it exists
                     thought = response_text[:start].strip()
                     result = await self.execute_tool(tool_call)
-                    
+
                     if thought:
                         return f"🧠 **{thought}**\n\n{result}"
                     return result
                 else:
                     return response_text
-                    
+
             except json.JSONDecodeError:
                 return response_text
 
@@ -146,16 +159,16 @@ class OpenClawAgent:
         """
         tool = tool_call.get("tool")
         params = tool_call.get("params", {})
-        
+
         logger.info(f"Executing tool: {tool} with params: {params}")
-        
+
         if tool == "SYSTEM":
             return system_skill.check_health()
-            
+
         elif tool == "DISCOVERY":
             topic = params.get("topic", "general")
             return discovery_skill.search_trends(topic)
-            
+
         elif tool == "ANALYTICS":
             action = params.get("action", "summary")
             if action == "revenue":
@@ -166,7 +179,7 @@ class OpenClawAgent:
                 return analytics_skill.get_recent_posts(limit=limit)
             else:
                 return analytics_skill.get_summary()
-                
+
         elif tool == "NOFACE":
             action = params.get("action", "script")
             topic = params.get("topic", "General advice")
@@ -174,14 +187,14 @@ class OpenClawAgent:
                 return noface_skill.generate_hook(topic)
             else:
                 return noface_skill.generate_script(topic)
-                
+
         elif tool == "OUTREACH":
             user_id = params.get("user_id")
             message = params.get("message", "Hello!")
             if not user_id:
                 return "⚠️ Outreach failed: Missing user_id"
             return outreach_skill.send_outreach_message(user_id, message)
-            
+
         elif tool == "PERSONA":
             persona_id = params.get("persona_id")
             topic = params.get("topic", "general chat")
@@ -194,14 +207,18 @@ class OpenClawAgent:
                 headers = {}
                 if settings.INTERNAL_API_TOKEN:
                     headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-                response = requests.post(f"http://localhost:{settings.PORT}/api/v1/persona/generate", json=payload, headers=headers)
+                response = requests.post(
+                    f"http://localhost:{settings.PORT}/api/v1/persona/generate",
+                    json=payload,
+                    headers=headers,
+                )
                 if response.status_code == 200:
                     return f"👤 **Persona Animated!**\nVideo generated successfully.\nLink: {response.json().get('video_url')}"
                 else:
                     return f"⚠️ Persona generation failed. Ensure your Persona is registered in the Dashboard."
             except Exception as e:
                 return f"⚠️ Persona System Error: {str(e)}"
-            
+
         elif tool == "CONTENT":
             return content_skill.create_content(
                 action=params.get("action", "transform"),
@@ -209,16 +226,16 @@ class OpenClawAgent:
                 prompt=params.get("prompt", ""),
                 engine=params.get("engine", "veo3"),
                 niche=params.get("niche", "Motivation"),
-                platform=params.get("platform", "YouTube Shorts")
+                platform=params.get("platform", "YouTube Shorts"),
             )
-            
+
         elif tool == "PUBLISH":
             return publishing_skill.publish_job(
                 job_id=params.get("job_id", ""),
                 platform=params.get("platform", "YouTube Shorts"),
-                niche=params.get("niche", "Motivation")
+                niche=params.get("niche", "Motivation"),
             )
-            
+
         elif tool == "NICHE":
             action = params.get("action", "trends")
             niche = params.get("niche", "General")
@@ -228,7 +245,7 @@ class OpenClawAgent:
                 return niche_skill.trigger_auto_merch(niche)
             else:
                 return niche_skill.get_niche_trends(niche)
-                
+
         elif tool == "SECURITY":
             action = params.get("action", "status")
             if action == "panic":
@@ -237,11 +254,11 @@ class OpenClawAgent:
                 # Check status via skill (reuse system skill or specific security skill)
                 # I'll create a quick status check in security skill or just reuse panic return
                 # Actually security skill logic was written to support panic only?
-                # Let me check security.py... it has panic_lockdown. 
+                # Let me check security.py... it has panic_lockdown.
                 # I should add get_status to security.py if I want it, or just use system skill.
                 # Implementation plan said get_status() calls /api/security/status.
                 # I will update security.py to include get_status if it's missing or just implement basic logic here.
-                # Actually, I wrote security.py with just panic_lockdown? Let me double check content. 
+                # Actually, I wrote security.py with just panic_lockdown? Let me double check content.
                 # Wait, I wrote security.py with panic_lockdown. I didn't add get_status.
                 # I'll stick to panic for now or I can update security.py.
                 # Given the user request was "/panic", I'll focus on that.
@@ -258,7 +275,72 @@ class OpenClawAgent:
             return publishing_skill.publish_job(
                 job_id=params.get("job_id", ""),
                 platform=params.get("platform", "YouTube Shorts"),
-                niche=params.get("niche", "Motivation")
+                niche=params.get("niche", "Motivation"),
+            )
+
+        elif tool == "RESEARCH":
+            action = params.get("action", "search")
+            topic = params.get("topic", "")
+            limit = params.get("limit", 5)
+            if action == "search":
+                return research_skill.search_papers(topic, limit)
+            else:
+                return research_skill.search_trends(topic)
+
+        elif tool == "INGESTION":
+            action = params.get("action", "multi")
+            if action == "reddit":
+                subreddit = params.get("subreddit", "technology")
+                limit = params.get("limit", 5)
+                return data_ingestion_skill.reddit_hot(subreddit, limit)
+            elif action == "rss":
+                feed_url = params.get("feed_url", "")
+                return data_ingestion_skill.fetch_rss(feed_url)
+            elif action == "github":
+                language = params.get("language", "")
+                return data_ingestion_skill.github_trending(language)
+            else:
+                sources = params.get("sources", [])
+                return data_ingestion_skill.ingest_multi_source(sources)
+
+        elif tool == "METRICS":
+            platform = params.get("platform", "")
+            handle = params.get("handle", "")
+            if platform == "x":
+                return social_metrics_skill.get_x_followers(handle)
+            elif platform == "reddit":
+                return social_metrics_skill.get_reddit_stats(handle)
+            elif platform == "github":
+                return social_metrics_skill.get_github_stats(handle)
+            elif platform == "instagram":
+                return social_metrics_skill.get_instagram_profile(handle)
+            else:
+                handles = params.get("handles", {})
+                return social_metrics_skill.get_multi_platform(handles)
+
+        elif tool == "PAPERCLIP":
+            action = params.get("action", "track")
+            if action == "track":
+                return paperclip_skill.track_organic_performance(
+                    params.get("job_id"),
+                    params.get("platform", "TikTok"),
+                    {"views": params.get("views", 0), "likes": params.get("likes", 0)}
+                )
+            else:
+                return paperclip_skill.scale_organic_reach(params.get("niche", "General"))
+
+        elif tool == "SCIENTIFIC":
+            action = params.get("action", "convert")
+            if action == "convert":
+                return claw4science_skill.convert_technical_to_viral(params.get("raw_data", ""))
+            else:
+                return claw4science_skill.fetch_scientific_niche_trends(params.get("topic", "General"))
+
+        elif tool == "REMOTION":
+            return remotion_skill.render_remotion_clip(
+                params.get("composition", "MainText"),
+                params.get("props", {}),
+                params.get("output_name", "remotion_render.mp4")
             )
 
         return f"❓ Unknown tool: {tool}"

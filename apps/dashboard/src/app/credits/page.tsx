@@ -19,6 +19,7 @@ import { motion, Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
 import { toast } from "sonner";
+import { withRealFallback } from "@/lib/real_first_utils";
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -129,101 +130,101 @@ export default function CreditsPage() {
     };
 
     const fetchBalance = async () => {
-        try {
-            const res = await fetch(`${API_BASE}/credits/balance`, {
-                headers: authHeaders()
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setBalance(data);
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/credits/balance`, {
+                    headers: authHeaders()
+                });
+            },
+            {
+                fallback: balance,
+                onSuccess: (data: any) => setBalance(data)
             }
-        } catch (err) {
-            console.error(err);
-        }
+        );
     };
 
     const fetchCosts = async () => {
-        try {
-            const res = await fetch(`${API_BASE}/credits/costs`, {
-                headers: authHeaders()
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setCosts(data);
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/credits/costs`, {
+                    headers: authHeaders()
+                });
+            },
+            {
+                fallback: costs,
+                onSuccess: (data: any) => setCosts(data)
             }
-        } catch (err) {
-            console.error(err);
-        }
+        );
     };
 
     const fetchTransactions = async () => {
-        try {
-            const res = await fetch(`${API_BASE}/credits/transactions`, {
-                headers: authHeaders()
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setTransactions(data);
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/credits/transactions`, {
+                    headers: authHeaders()
+                });
+            },
+            {
+                fallback: transactions,
+                onSuccess: (data: any) => setTransactions(data)
             }
-        } catch (err) {
-            console.error(err);
-        }
+        );
     };
 
     const fetchReferralCode = async () => {
-        try {
-            const res = await fetch(`${API_BASE}/credits/referral/code`, {
-                headers: authHeaders()
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setReferralCode(data);
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/credits/referral/code`, {
+                    headers: authHeaders()
+                });
+            },
+            {
+                fallback: referralCode,
+                onSuccess: (data: any) => setReferralCode(data)
             }
-        } catch (err) {
-            console.error(err);
-        }
+        );
     };
 
     const fetchReferrals = async () => {
-        try {
-            const res = await fetch(`${API_BASE}/credits/referrals`, {
-                headers: authHeaders()
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setReferralStats(data);
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/credits/referrals`, {
+                    headers: authHeaders()
+                });
+            },
+            {
+                fallback: referralStats,
+                onSuccess: (data: any) => setReferralStats(data)
             }
-        } catch (err) {
-            console.error(err);
-        }
+        );
     };
 
     const fetchReferralStatsOverview = async () => {
-        try {
-            const res = await fetch(`${API_BASE}/credits/referral/stats`, {
-                headers: authHeaders()
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setReferralStatsOverview(data);
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/credits/referral/stats`, {
+                    headers: authHeaders()
+                });
+            },
+            {
+                fallback: referralStatsOverview,
+                onSuccess: (data: any) => setReferralStatsOverview(data)
             }
-        } catch (err) {
-            console.error(err);
-        }
+        );
     };
 
     const fetchPackages = async () => {
-        try {
-            const res = await fetch(`${API_BASE}/credits/packages`, {
-                headers: authHeaders()
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setPackages(data);
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/credits/packages`, {
+                    headers: authHeaders()
+                });
+            },
+            {
+                fallback: packages,
+                onSuccess: (data: any) => setPackages(data)
             }
-        } catch (err) {
-            console.error(err);
-        }
+        );
     };
 
     const refreshAll = async () => {
@@ -246,63 +247,62 @@ export default function CreditsPage() {
 
     const handlePurchase = async (packageId: string) => {
         setIsPurchasing(packageId);
-        try {
-            const res = await fetch(`${API_BASE}/credits/purchase`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...authHeaders()
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/credits/purchase`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...authHeaders()
+                    },
+                    body: JSON.stringify({ package_id: packageId })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    if (data.checkout_url || data.url) {
+                        window.location.href = data.checkout_url || data.url;
+                    } else {
+                        toast.success("Purchase initiated", { description: "Session synchronization successful." });
+                        refreshAll();
+                    }
                 },
-                body: JSON.stringify({ package_id: packageId })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                if (data.checkout_url) {
-                    window.location.href = data.checkout_url;
-                } else if (data.url) {
-                    window.location.href = data.url;
-                } else {
-                    toast.success("Purchase initiated successfully");
-                    refreshAll();
+                onFallback: (err: any) => {
+                    toast.error("Purchase Blocked", { description: err.message || "Failed to initiate transaction." });
                 }
-            } else {
-                const err = await res.json().catch(() => ({}));
-                toast.error(err.detail || "Purchase failed");
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Network error during purchase");
-        } finally {
-            setIsPurchasing(null);
-        }
+        );
+        setIsPurchasing(null);
     };
 
     const handleApplyReferral = async () => {
         if (!applyCode.trim()) return;
         setIsApplying(true);
-        try {
-            const res = await fetch(`${API_BASE}/credits/referral/apply`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...authHeaders()
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/credits/referral/apply`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...authHeaders()
+                    },
+                    body: JSON.stringify({ code: applyCode.trim() })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("Code Decrypted", { description: "Referral credits synthesized." });
+                    setApplyCode("");
+                    refreshAll();
                 },
-                body: JSON.stringify({ code: applyCode.trim() })
-            });
-            if (res.ok) {
-                toast.success("Referral code applied successfully");
-                setApplyCode("");
-                refreshAll();
-            } else {
-                const err = await res.json().catch(() => ({}));
-                toast.error(err.detail || "Invalid referral code");
+                onFallback: (err: any) => {
+                    toast.error("Invalid Code", { description: err.message || "Failed to verify referral link." });
+                }
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Network error applying code");
-        } finally {
-            setIsApplying(false);
-        }
+        );
+        setIsApplying(false);
     };
 
     const handleCopyCode = () => {
@@ -342,7 +342,7 @@ export default function CreditsPage() {
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Credits System</span>
                         </div>
                         <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
-                            Credit <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500 text-hollow">Vault</span>
+                            Credit <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-purple-500 text-hollow">Vault</span>
                         </h1>
                         <p className="text-zinc-500 font-medium">Manage your <span className="text-zinc-300 font-bold">credit balance</span>, purchase packages, and track usage.</p>
                     </div>
@@ -359,7 +359,7 @@ export default function CreditsPage() {
                 {/* Balance Overview */}
                 <motion.div variants={itemVariants}>
                     <div className="glass-card p-8 rounded-3xl bg-primary/5 border-primary/10 relative overflow-hidden">
-                        <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
+                        <div className="absolute inset-0 scanline opacity-(--scanline-opacity) pointer-events-none" />
                         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                             <div className="space-y-4 text-center md:text-left">
                                 <div className="flex items-center gap-3 justify-center md:justify-start">
@@ -474,7 +474,7 @@ export default function CreditsPage() {
                 <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Credit Costs */}
                     <div className="glass-card overflow-hidden rounded-3xl">
-                        <div className="p-8 border-b border-white/5 bg-white/[0.02] flex items-center gap-4">
+                        <div className="p-8 border-b border-white/5 bg-white/2 flex items-center gap-4">
                             <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
                                 <Zap className="h-5 w-5 text-amber-500" />
                             </div>
@@ -485,7 +485,7 @@ export default function CreditsPage() {
                         </div>
                         <div className="divide-y divide-white/5">
                             {costs.length > 0 ? costs.map((cost, i) => (
-                                <div key={i} className="flex items-center justify-between p-5 hover:bg-white/[0.02] transition-all">
+                                <div key={i} className="flex items-center justify-between p-5 hover:bg-white/2 transition-all">
                                     <div className="flex items-center gap-4">
                                         <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
                                         <span className="text-sm font-bold text-white uppercase tracking-tight">{cost.action}</span>
@@ -512,7 +512,7 @@ export default function CreditsPage() {
 
                     {/* Transaction History */}
                     <div className="glass-card overflow-hidden rounded-3xl">
-                        <div className="p-8 border-b border-white/5 bg-white/[0.02] flex items-center gap-4">
+                        <div className="p-8 border-b border-white/5 bg-white/2 flex items-center gap-4">
                             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                                 <Clock className="h-5 w-5 text-primary neon-glow" />
                             </div>
@@ -523,7 +523,7 @@ export default function CreditsPage() {
                         </div>
                         <div className="divide-y divide-white/5">
                             {transactions.length > 0 ? transactions.map((tx) => (
-                                <div key={tx.id} className="flex items-center justify-between p-5 hover:bg-white/[0.02] transition-all">
+                                <div key={tx.id} className="flex items-center justify-between p-5 hover:bg-white/2 transition-all">
                                     <div className="flex items-center gap-4">
                                         <div className={cn(
                                             "h-8 w-8 rounded-xl flex items-center justify-center border",
@@ -574,7 +574,7 @@ export default function CreditsPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Referral Code Card */}
                         <div className="glass-card p-8 rounded-3xl space-y-6 bg-primary/5 border-primary/10 relative overflow-hidden">
-                            <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
+                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity) pointer-events-none" />
                             <div className="space-y-1">
                                 <h3 className="font-black uppercase tracking-tight text-white">Your Referral Code</h3>
                                 <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Share and earn credits</p>
@@ -611,12 +611,12 @@ export default function CreditsPage() {
                                 <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Network growth metrics</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-white/[0.02] rounded-2xl border border-white/5 p-5 text-center space-y-2">
+                                <div className="bg-white/2 rounded-2xl border border-white/5 p-5 text-center space-y-2">
                                     <Users className="h-6 w-6 text-blue-400 mx-auto" />
                                     <p className="text-3xl font-black text-white tracking-tighter">{referralStats?.total_referrals ?? 0}</p>
                                     <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Referrals</p>
                                 </div>
-                                <div className="bg-white/[0.02] rounded-2xl border border-white/5 p-5 text-center space-y-2">
+                                <div className="bg-white/2 rounded-2xl border border-white/5 p-5 text-center space-y-2">
                                     <Coins className="h-6 w-6 text-primary mx-auto" />
                                     <p className="text-3xl font-black text-white tracking-tighter">{referralStats?.credits_earned ?? 0}</p>
                                     <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Earned</p>
@@ -672,13 +672,13 @@ export default function CreditsPage() {
 
                     {/* Referral Statistics */}
                     <div className="glass-card p-8 rounded-3xl bg-primary/5 border-primary/10 relative overflow-hidden">
-                        <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
+                        <div className="absolute inset-0 scanline opacity-(--scanline-opacity) pointer-events-none" />
                         <div className="space-y-1 mb-6">
                             <h3 className="font-black uppercase tracking-tight text-white">Referral Statistics</h3>
                             <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Overall referral performance</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-white/[0.02] rounded-2xl border border-white/5 p-6 flex items-center gap-5">
+                            <div className="bg-white/2 rounded-2xl border border-white/5 p-6 flex items-center gap-5">
                                 <div className="h-14 w-14 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                                     <Users className="h-7 w-7 text-blue-400" />
                                 </div>
@@ -687,7 +687,7 @@ export default function CreditsPage() {
                                     <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Total Referrals</p>
                                 </div>
                             </div>
-                            <div className="bg-white/[0.02] rounded-2xl border border-white/5 p-6 flex items-center gap-5">
+                            <div className="bg-white/2 rounded-2xl border border-white/5 p-6 flex items-center gap-5">
                                 <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
                                     <Coins className="h-7 w-7 text-emerald-400" />
                                 </div>

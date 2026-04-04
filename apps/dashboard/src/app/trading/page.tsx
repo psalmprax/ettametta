@@ -19,6 +19,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
+import { withRealFallback } from "@/lib/real_first_utils";
 import { toast } from "sonner";
 
 interface MarketData {
@@ -85,22 +86,24 @@ export default function TradingPage() {
 
     useEffect(() => {
         const fetchTrending = async () => {
-            try {
-                const token = localStorage.getItem("et_token");
-                const res = await fetch(`${API_BASE}/trading/crypto/trending`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setTrendingCoins(data.coins || data || []);
-                } else {
-                    toast.error("Failed to fetch trending cryptos");
+            await withRealFallback(
+                async () => {
+                    const token = localStorage.getItem("et_token");
+                    return fetch(`${API_BASE}/trading/crypto/trending`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                },
+                {
+                    fallback: [],
+                    onSuccess: (data: any) => {
+                        setTrendingCoins(data.coins || data || []);
+                        setIsLoadingTrending(false);
+                    },
+                    onFallback: () => {
+                        setIsLoadingTrending(false);
+                    }
                 }
-            } catch (error) {
-                console.error("Failed to fetch trending cryptos:", error);
-            } finally {
-                setIsLoadingTrending(false);
-            }
+            );
         };
         fetchTrending();
     }, []);
@@ -112,25 +115,26 @@ export default function TradingPage() {
         }
         setIsSearchingMarket(true);
         setAiAnalysis(null);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/trading/market/${marketSymbol.toUpperCase()}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setMarketData(data);
-                toast.success(`Loaded data for ${marketSymbol.toUpperCase()}`);
-            } else {
-                toast.error("Symbol not found");
-                setMarketData(null);
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/trading/market/${marketSymbol.toUpperCase()}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    setMarketData(data);
+                    toast.success(`Intelligence Loaded`, { description: `Data for ${marketSymbol.toUpperCase()} synchronized.` });
+                },
+                onFallback: (err: any) => {
+                    toast.error("Search Failed", { description: err.message });
+                    setMarketData(null);
+                }
             }
-        } catch (error) {
-            toast.error("Failed to fetch market data");
-            setMarketData(null);
-        } finally {
-            setIsSearchingMarket(false);
-        }
+        );
+        setIsSearchingMarket(false);
     };
 
     const handleCryptoLookup = async () => {
@@ -139,68 +143,73 @@ export default function TradingPage() {
             return;
         }
         setIsLookingUpCrypto(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/trading/crypto/${cryptoId.toLowerCase()}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setCryptoData(data);
-                toast.success(`Loaded data for ${cryptoId}`);
-            } else {
-                toast.error("Coin not found");
-                setCryptoData(null);
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/trading/crypto/${cryptoId.toLowerCase()}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    setCryptoData(data);
+                    toast.success(`Asset Loaded`, { description: `Data for ${cryptoId} synchronized.` });
+                },
+                onFallback: (err: any) => {
+                    toast.error("Lookup Failed", { description: err.message });
+                    setCryptoData(null);
+                }
             }
-        } catch (error) {
-            toast.error("Failed to fetch crypto data");
-            setCryptoData(null);
-        } finally {
-            setIsLookingUpCrypto(false);
-        }
+        );
+        setIsLookingUpCrypto(false);
     };
 
     const handleRunScreener = async () => {
         setIsRunningScreener(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/trading/screener`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setScreenerResults(data.results || data || []);
-                toast.success("Screener scan complete");
-            } else {
-                toast.error("Screener failed");
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/trading/screener`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+            },
+            {
+                fallback: [],
+                onSuccess: (data: any) => {
+                    setScreenerResults(data.results || data || []);
+                    toast.success("Scan Complete", { description: "Opportunity matrix updated." });
+                },
+                onFallback: (err: any) => {
+                    toast.error("Scan Failed", { description: err.message });
+                }
             }
-        } catch (error) {
-            toast.error("Failed to run screener");
-        } finally {
-            setIsRunningScreener(false);
-        }
+        );
+        setIsRunningScreener(false);
     };
 
     const handleAiAnalysis = async () => {
         if (!marketData?.symbol) return;
         setIsAnalyzing(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/trading/analysis/${marketData.symbol}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setAiAnalysis(data.analysis || data.insight || data.text || JSON.stringify(data));
-                toast.success("AI analysis complete");
-            } else {
-                toast.error("Analysis failed");
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/trading/analysis/${marketData.symbol}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    setAiAnalysis(data.analysis || data.insight || data.text || JSON.stringify(data));
+                    toast.success("Analysis Complete", { description: "Neural insight generated." });
+                },
+                onFallback: (err: any) => {
+                    toast.error("Analysis Failed", { description: err.message });
+                }
             }
-        } catch (error) {
-            toast.error("Failed to fetch AI analysis");
-        } finally {
-            setIsAnalyzing(false);
-        }
+        );
+        setIsAnalyzing(false);
     };
 
     return (
