@@ -35,7 +35,43 @@ from fastapi.middleware.gzip import GZipMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-app = FastAPI(title=settings.APP_NAME)
+app = FastAPI(
+    title="Viral Forge API",
+    description="""## Overview
+Viral Forge is an AI-powered content creation and monetization platform.
+
+## Features
+- **Discovery**: Find trending content across platforms
+- **Video Generation**: Create videos using AI models
+- **Publishing**: Multi-platform publishing (YouTube, TikTok, etc.)
+- **Analytics**: Performance tracking and insights
+- **Monetization**: Affiliate links, empire building
+
+## Authentication
+Most endpoints require JWT authentication. Get token from `/api/v1/auth/login`.
+
+## Rate Limits
+- Free tier: 60 requests/minute
+- Creator tier: 120 requests/minute
+- Empire tier: 300 requests/minute
+
+## Errors
+All errors follow this format:
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human readable message",
+    "timestamp": "ISO timestamp"
+  }
+}
+```
+""",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+)
 Instrumentator().instrument(app).expose(app)
 
 
@@ -79,7 +115,7 @@ from api.routes import (
     publish,
     analytics,
     auth,
-    settings as settings_router,
+    settings,
     ws,
     no_face,
     monetization,
@@ -96,6 +132,7 @@ from api.routes import (
     webhooks,
     zero,
     opencli,
+    tools,
 )
 
 from fastapi.staticfiles import StaticFiles
@@ -230,6 +267,7 @@ v1_router.include_router(agent.router, tags=["AI Agents"])
 v1_router.include_router(credits.router, tags=["Credits & Billing"])
 v1_router.include_router(zero.router, tags=["Agent Zero"])
 v1_router.include_router(opencli.router, tags=["opencli-rs"])
+v1_router.include_router(tools.router, tags=["Free Tools"])
 
 # Include versioned router under /api
 app.include_router(v1_router, prefix="/api")

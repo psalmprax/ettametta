@@ -15,9 +15,10 @@ from hardware_manager import hardware_manager
 CONTENT_DIR = "/workspace/ai_content"
 os.makedirs(CONTENT_DIR, exist_ok=True)
 
-def action_render_video(job_id, req):
-    print(f"🎨 [Action] Executing Video Rendering for Job {job_id}...", flush=True)
+def action_render_video(job_id, model_key, req):
+    print(f"🎨 [Action] Executing Video Rendering for Job {job_id} ({model_key})...", flush=True)
     result = model_manager.generate_video(
+        model_key=model_key,
         prompt=req.prompt,
         image_base64=req.image_base64,
         num_frames=int(req.frames),

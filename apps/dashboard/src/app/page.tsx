@@ -15,8 +15,9 @@ import { cn } from "@/lib/utils";
 
 import { motion, Variants, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { API_BASE } from "@/lib/config";
+import { API_BASE, WS_BASE } from "@/lib/config";
 import { useNiches } from "@/hooks/useNiches";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -68,6 +69,13 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
   const [activityFeed, setActivityFeed] = useState<any[]>([]);
+  const { data: wsData } = useWebSocket<any>(`${WS_BASE}/telemetry`);
+
+  useEffect(() => {
+    if (wsData && (wsData.type === 'stats_update' || wsData.type === 'discovery_completed')) {
+      fetchStats();
+    }
+  }, [wsData]);
 
   const fetchStats = async () => {
     try {
@@ -129,8 +137,9 @@ export default function Home() {
         toast.info("Discovery Cycle Initiated", {
           description: `Scanning clusters for ${scanNiches.join(", ")}...`
         });
-        // Refresh stats after scan trigger
-        setTimeout(fetchStats, 2000); 
+        
+        // Immediate refresh to update UI state
+        fetchStats();
       }
     } catch (error) {
       console.error("Scan trigger failed:", error);

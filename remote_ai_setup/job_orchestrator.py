@@ -112,7 +112,7 @@ class AIJobOrchestrator:
         
         try:
             if job.job_type == "video":
-                job.result = ai_actions.action_render_video(job.job_id, job.data)
+                job.result = ai_actions.action_render_video(job.job_id, job.model_key, job.data)
             elif job.job_type == "voice":
                 job.result = ai_actions.action_generate_voice(job.data.text)
             elif job.job_type == "vlm":

@@ -1,5 +1,6 @@
 "use client";
 
+import { withRealFallback } from "@/lib/real_first_utils";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import DashboardLayout from "@/components/layout";
 import {
@@ -23,7 +24,8 @@ import {
     MessageSquare,
     Newspaper,
     Heart,
-    UserPlus
+    UserPlus,
+    Wand2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -84,6 +86,7 @@ export default function DiscoveryPage() {
     // New State for "Neural Config"
     const [minViralScore, setMinViralScore] = useState(75);
     const [excludeShorts, setExcludeShorts] = useState(false);
+    const [styleLoaded, setStyleLoaded] = useState(false);
 
     // Test Drive State
     const [isTestDriving, setIsTestDriving] = useState(false);
@@ -104,57 +107,82 @@ export default function DiscoveryPage() {
     const [busyInteractions, setBusyInteractions] = useState<Record<string, boolean>>({});
     const [sessions, setSessions] = useState<OpenCLISession[]>([]);
 
+    // Deep Analysis Results State
+    const [analysisResults, setAnalysisResults] = useState<Record<string, { status: string, result?: any }>>({});
+    const [analysisTaskId, setAnalysisTaskId] = useState<string | null>(null);
+
     useEffect(() => {
         const fetchNiches = async () => {
-            try {
-                const token = localStorage.getItem("et_token");
-                const res = await fetch(`${API_BASE}/discovery/niches`, {
+            const token = localStorage.getItem("et_token");
+            await withRealFallback<string[]>(
+                () => fetch(`${API_BASE}/discovery/niches`, {
                     headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.length > 0) {
-                        setNiches(prev => Array.from(new Set([...prev, ...data])));
+                }),
+                {
+                    fallback: [],
+                    onSuccess: (data) => {
+                        if (data && data.length > 0) {
+                            setNiches(prev => Array.from(new Set([...prev, ...data])));
+                        }
                     }
                 }
-            } catch (err) {
-                console.error("Failed to fetch niches", err);
-            }
+            );
         };
 
         const fetchProfile = async () => {
-            try {
-                const token = localStorage.getItem("et_token");
-                const response = await fetch(`${API_BASE}/auth/me`, {
+            const token = localStorage.getItem("et_token");
+            await withRealFallback<any>(
+                () => fetch(`${API_BASE}/auth/me`, {
                     headers: { Authorization: `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setUserTier(data.subscription || "free");
+                }),
+                {
+                    fallback: { subscription: "free" },
+                    onSuccess: (data) => setUserTier(data.subscription || "free")
                 }
-            } catch (err) {
-                console.error("Failed to fetch profile", err);
-            }
+            );
         };
 
         const fetchSessions = async () => {
-            try {
-                const token = localStorage.getItem("et_token");
-                const res = await fetch(`${API_BASE}/opencli/sessions`, {
+            const token = localStorage.getItem("et_token");
+            await withRealFallback<any>(
+                () => fetch(`${API_BASE}/opencli/sessions`, {
                     headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setSessions(data.sessions || []);
+                }),
+                {
+                    fallback: { sessions: [] },
+                    onSuccess: (data) => setSessions(data.sessions || [])
                 }
-            } catch (err) {
-                console.error("Failed to fetch sessions", err);
-            }
+            );
+        };
+
+        const loadUserSettings = async () => {
+            const token = localStorage.getItem("et_token");
+            await withRealFallback<any>(
+                () => fetch(`${API_BASE}/settings/`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                }),
+                {
+                    fallback: {},
+                    onSuccess: (data) => {
+                        if (data.discovery_min_viral_score) {
+                            setMinViralScore(parseInt(data.discovery_min_viral_score));
+                        }
+                        if (data.discovery_exclude_shorts) {
+                            setExcludeShorts(data.discovery_exclude_shorts === "true");
+                        }
+                        if (data.discovery_style) {
+                            setSelectedStyle(data.discovery_style);
+                        }
+                        setStyleLoaded(true);
+                    }
+                }
+            );
         };
 
         fetchNiches();
         fetchProfile();
         fetchSessions();
+        loadUserSettings();
     }, []);
 
     useEffect(() => {
@@ -163,42 +191,38 @@ export default function DiscoveryPage() {
 
      const fetchTrends = useCallback(async () => {
          setIsLoading(true);
-         try {
-             const token = localStorage.getItem("et_token");
-             // Build query string with filters
-             const params = new URLSearchParams({
-                 niche: activeNiche,
-                 horizon: timeHorizon,
-                 min_viral_score: minViralScore.toString(),
-                 exclude_shorts: excludeShorts.toString()
-             });
-             // Fetch trends
-             const res = await fetch(`${API_BASE}/discovery/trends?${params.toString()}`, {
+         const token = localStorage.getItem("et_token");
+         const params = new URLSearchParams({
+             niche: activeNiche,
+             horizon: timeHorizon,
+             min_viral_score: minViralScore.toString(),
+             exclude_shorts: excludeShorts.toString()
+         });
+
+         // Trends
+         const trends = await withRealFallback<ContentCandidate[]>(
+             () => fetch(`${API_BASE}/discovery/trends?${params.toString()}`, {
                  headers: { Authorization: `Bearer ${token}` }
-             });
-             if (res.ok) {
-                 const data = await res.json();
-                 setCandidates(data);
-             } else {
-                 console.error("Failed to fetch trends", res.status);
-                 setCandidates([]);
-             }
-             // Fetch niche trends for top keywords
-             const trendsRes = await fetch(`${API_BASE}/discovery/niche-trends/${activeNiche}`, {
+             }),
+             { fallback: [] }
+         );
+         setCandidates(trends);
+
+         // Keywords
+         await withRealFallback<any>(
+             () => fetch(`${API_BASE}/discovery/niche-trends/${activeNiche}`, {
                  headers: { Authorization: `Bearer ${token}` }
-             });
-             if (trendsRes.ok) {
-                 const trendsData = await trendsRes.json();
-                 if (trendsData.top_keywords && trendsData.top_keywords.length > 0) {
-                     setTopKeywords(trendsData.top_keywords);
+             }),
+             {
+                 fallback: { top_keywords: [] },
+                 onSuccess: (data) => {
+                     if (data.top_keywords && data.top_keywords.length > 0) {
+                         setTopKeywords(data.top_keywords);
+                     }
                  }
              }
-         } catch (err) {
-             console.error(err);
-             setCandidates([]);
-         } finally {
-             setIsLoading(false);
-         }
+         );
+         setIsLoading(false);
      }, [activeNiche, timeHorizon, minViralScore, excludeShorts]);
 
     useEffect(() => {
@@ -206,44 +230,62 @@ export default function DiscoveryPage() {
     }, [fetchTrends]);
 
     const handleAnalyze = useCallback(async (candidate: ContentCandidate) => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/discovery/analyze`, {
+        const token = localStorage.getItem("et_token");
+        
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/discovery/analyze`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify(candidate)
-            });
-            if (res.ok) {
-                const data = await res.json();
-                toast.success("Analysis Queued", {
-                    description: `Task ID: ${data.task_id}. Results will appear in Nexus.`,
-                    action: {
-                        label: "View Nexus",
-                        onClick: () => router.push("/nexus")
-                    },
-                    duration: 5000
-                });
-            } else {
-                const err = await res.json().catch(() => ({}));
-                toast.error("Analysis Failed", {
-                    description: err.detail || res.statusText
-                });
+            }),
+            {
+                onSuccess: (data) => {
+                    const taskId = data.task_id;
+                    setAnalysisTaskId(taskId);
+                    setAnalysisResults(prev => ({ ...prev, [candidate.id]: { status: "pending" } }));
+                    toast.success("Analysis Started", { description: "Processing content analysis..." });
+
+                    const pollResults = async () => {
+                        let attempts = 0;
+                        const maxAttempts = 30;
+                        while (attempts < maxAttempts) {
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            try {
+                                const statusRes = await fetch(`${API_BASE}/discovery/analyze/${taskId}`, {
+                                    headers: { Authorization: `Bearer ${token}` }
+                                });
+                                if (statusRes.ok) {
+                                    const statusData = await statusRes.json();
+                                    if (statusData.status === "completed") {
+                                        setAnalysisResults(prev => ({ ...prev, [candidate.id]: { status: "completed", result: statusData.result } }));
+                                        toast.success("Analysis Complete", {
+                                            description: "Click 'Transform' to create a video from this analysis.",
+                                            action: { label: "Transform", onClick: () => handleAddToQueue(candidate) }
+                                        });
+                                        return;
+                                    } else if (statusData.status === "failed") {
+                                        setAnalysisResults(prev => ({ ...prev, [candidate.id]: { status: "failed", result: statusData.error } }));
+                                        return;
+                                    }
+                                }
+                            } catch (e) {}
+                            attempts++;
+                        }
+                    };
+                    pollResults();
+                },
+                errorMessage: "Neural analysis link failed. Cluster overloaded."
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Connection Error", {
-                description: "Failed to dispatch analysis task."
-            });
-        }
-    }, [router]);
+        );
+    }, [handleAddToQueue]);
 
     const handleAddToQueue = useCallback(async (candidate: ContentCandidate) => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/video/transform`, {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/video/transform`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -255,49 +297,72 @@ export default function DiscoveryPage() {
                     platform: "YouTube Shorts",
                     style: selectedStyle
                 })
-            });
-            if (res.ok) {
-                router.push("/transformation");
+            }),
+            {
+                onSuccess: () => router.push("/transformation"),
+                errorMessage: "Transformation queue full. Try again shortly."
             }
-        } catch (err) {
-            console.error(err);
-        }
-    }, [activeNiche, router]);
+        );
+    }, [activeNiche, router, selectedStyle]);
 
+
+// ... in DiscoveryPage ...
     const handleInteract = useCallback(async (candidate: ContentCandidate, action: string) => {
         const interactionKey = `${candidate.id}-${action}`;
         setBusyInteractions(prev => ({ ...prev, [interactionKey]: true }));
         
         try {
             const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/opencli/interact`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    platform: candidate.platform.toLowerCase().includes('youtube') ? 'youtube' : 
-                             candidate.platform.toLowerCase().includes('tiktok') ? 'tiktok' : 
-                             candidate.platform.toLowerCase().includes('x') ? 'x' : 
-                             candidate.platform.toLowerCase().includes('twitter') ? 'x' :
-                             candidate.platform.toLowerCase().includes('instagram') ? 'instagram' :
-                             candidate.platform.toLowerCase().split(' ')[0],
-                    action: action,
-                    content_url: candidate.url
-                })
-            });
             
-            if (res.ok) {
+            // Real-First Interaction Protocol
+            const data = await withRealFallback<any>(
+                fetch(`${API_BASE}/discovery/interact`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        candidate_id: candidate.id,
+                        niche: activeNiche,
+                        action: action
+                    })
+                }),
+                {
+                    fallback: { status: "Fallback Handshake", message: "Using local sync protocol." }
+                }
+            );
+            
+            if (data.status === "Handshake Established") {
                 toast.success(`${action.charAt(0).toUpperCase() + action.slice(1)} Handshake Verified`, {
-                    description: `Successfully synchronized ${action} on ${candidate.platform}.`,
+                    description: data.message,
                     icon: action === 'like' ? <Heart className="h-4 w-4 text-primary fill-primary" /> : <UserPlus className="h-4 w-4 text-primary" />
                 });
             } else {
-                const err = await res.json().catch(() => ({}));
-                toast.error(`${action.charAt(0).toUpperCase() + action.slice(1)} Rejected`, {
-                    description: err.detail || "Check your session cookies in Settings."
+                // Secondary Fallback Attempt (OpenCLI)
+                const res = await fetch(`${API_BASE}/opencli/interact`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        platform: candidate.platform.toLowerCase().includes('youtube') ? 'youtube' : 
+                                 candidate.platform.toLowerCase().includes('tiktok') ? 'tiktok' : 
+                                 candidate.platform.toLowerCase().includes('x') ? 'x' : 
+                                 candidate.platform.toLowerCase().includes('twitter') ? 'x' :
+                                 candidate.platform.toLowerCase().includes('instagram') ? 'instagram' :
+                                 candidate.platform.toLowerCase().split(' ')[0],
+                        action: action,
+                        content_url: candidate.url
+                    })
                 });
+                
+                if (res.ok) {
+                    toast.success("Secondary Handshake Verified", {
+                        description: `Successfully synchronized ${action} via OpenCLI.`
+                    });
+                }
             }
         } catch (err) {
             console.error(err);
@@ -311,7 +376,7 @@ export default function DiscoveryPage() {
                 return newState;
             });
         }
-    }, []);
+    }, [activeNiche]);
 
     // Open candidate URL in new tab
     const handleOpenUrl = useCallback((url: string) => {
@@ -322,47 +387,37 @@ export default function DiscoveryPage() {
 
     const handleTestDrive = useCallback(async () => {
         setIsTestDriving(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/video/test-drive`, {
+        const token = localStorage.getItem("et_token");
+
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/video/test-drive`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    niche: activeNiche,
-                    style: selectedStyle
-                })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setTestJobId(data.task_id);
-                setPreviewTitle(`Test Drive Outcome: ${activeNiche}`);
-                toast.info("Test Drive Initiated", {
-                    description: `System is finding and transforming the top viral candidate for ${activeNiche}...`,
-                    duration: 4000
-                });
-            } else {
-                toast.error("Test Drive Failed", {
-                    description: "Ensure discovery has data for this niche."
-                });
-                setIsTestDriving(false);
+                body: JSON.stringify({ niche: activeNiche, style: selectedStyle })
+            }),
+            {
+                onSuccess: (data) => {
+                    setTestJobId(data.task_id);
+                    setPreviewTitle(`Test Drive Outcome: ${activeNiche}`);
+                    toast.info("Test Drive Initiated", { description: `Finding and transforming top viral candidate for ${activeNiche}...` });
+                },
+                errorMessage: "Deep discovery module offline. Check API connectivity."
             }
-        } catch (err) {
-            console.error(err);
-            setIsTestDriving(false);
-        }
+        );
+        setIsTestDriving(false);
     }, [activeNiche, selectedStyle]);
 
     const handleGenerate = useCallback(async () => {
         if (!genPrompt.trim()) return;
         setIsGenerating(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const endpoint = isStoryMode ? "/video/generate-story" : "/video/generate";
+        const token = localStorage.getItem("et_token");
+        const endpoint = isStoryMode ? "/video/generate-story" : "/video/generate";
 
-            const res = await fetch(`${API_BASE}${endpoint}`, {
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}${endpoint}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -377,24 +432,34 @@ export default function DiscoveryPage() {
                           ["hunyuan", "mochi", "cogvideo", "wan", "ltx-video"].includes(genEngine) ? 'sovereign' : 
                           'premium'
                 })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setTestJobId(data.task_id);
-                setPreviewTitle(isStoryMode ? `Story: ${genPrompt.substring(0, 20)}...` : `Generative: ${genPrompt.substring(0, 20)}...`);
-                toast.success(isStoryMode ? "Narrative Synthesis Started" : "Synthesis Started", {
-                    description: isStoryMode 
-                        ? "ettametta is orchestrating your multi-scene story..." 
-                        : `Creating an original video using ${genEngine.toUpperCase()}...`,
-                    duration: 5000
-                });
+            }),
+            {
+                onSuccess: (data) => {
+                    setTestJobId(data.task_id);
+                    setPreviewTitle(isStoryMode ? `Story: ${genPrompt.substring(0, 20)}...` : `Generative: ${genPrompt.substring(0, 20)}...`);
+                    toast.success(isStoryMode ? "Narrative Synthesis Started" : "Synthesis Started", {
+                        description: isStoryMode ? "ettametta is orchestrating your multi-scene story..." : `Creating an original video using ${genEngine.toUpperCase()}...`
+                    });
+                }
             }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setIsGenerating(false);
-        }
+        );
+        setIsGenerating(false);
     }, [genPrompt, genEngine, selectedStyle, isStoryMode]);
+
+    const saveNeuralConfig = useCallback(async (key: string, value: string) => {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/settings/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ key, value, category: "discovery" })
+            }),
+            { fallback: {} }
+        );
+    }, []);
 
     const filteredCandidates = React.useMemo(() => {
         if (!Array.isArray(candidates)) return [];
@@ -411,7 +476,6 @@ export default function DiscoveryPage() {
     const handleSearch = useCallback(async (e?: React.FormEvent, customQuery?: string) => {
         if (e) e.preventDefault();
         const query = customQuery !== undefined ? customQuery : searchQuery;
-
         if (!query.trim()) {
             fetchTrends();
             return;
@@ -419,26 +483,25 @@ export default function DiscoveryPage() {
 
         setIsSearching(true);
         setIsLoading(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(query)}`, {
+        const token = localStorage.getItem("et_token");
+
+        await withRealFallback<ContentCandidate[]>(
+            () => fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(query)}`, {
                 headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setCandidates(data);
-                // If search query is new, add it to our niches list
-                if (!niches.includes(query)) {
-                    setNiches(prev => Array.from(new Set([...prev, query])));
+            }),
+            {
+                fallback: [],
+                onSuccess: (data) => {
+                    setCandidates(data);
+                    if (!niches.includes(query)) {
+                        setNiches(prev => Array.from(new Set([...prev, query])));
+                    }
+                    setActiveNiche(query);
                 }
-                setActiveNiche(query);
             }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setIsLoading(false);
-            setIsSearching(false);
-        }
+        );
+        setIsLoading(false);
+        setIsSearching(false);
     }, [searchQuery, fetchTrends, niches]);
 
     const { data: telemetryData } = useWebSocket(`${WS_BASE}/telemetry`);
@@ -765,7 +828,11 @@ export default function DiscoveryPage() {
                                             min="0"
                                             max="100"
                                             value={minViralScore}
-                                            onChange={(e) => setMinViralScore(parseInt(e.target.value))}
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value);
+                                                setMinViralScore(val);
+                                                if (styleLoaded) saveNeuralConfig("discovery_min_viral_score", val.toString());
+                                            }}
                                             className="flex-1 accent-primary h-2 bg-zinc-800 rounded-full appearance-none"
                                         />
                                         <span className="text-xl font-black text-primary">{minViralScore}</span>
@@ -777,7 +844,10 @@ export default function DiscoveryPage() {
                                         {styles.map((s) => (
                                             <button
                                                 key={s}
-                                                onClick={() => setSelectedStyle(s)}
+                                                onClick={() => {
+                                                    setSelectedStyle(s);
+                                                    if (styleLoaded) saveNeuralConfig("discovery_style", s);
+                                                }}
                                                 className={cn(
                                                     "px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all border",
                                                     selectedStyle === s
@@ -797,7 +867,11 @@ export default function DiscoveryPage() {
                                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Format Filters</label>
                                     <div className="flex items-center gap-4">
                                         <button
-                                            onClick={() => setExcludeShorts(!excludeShorts)}
+                                            onClick={() => {
+                                                const newVal = !excludeShorts;
+                                                setExcludeShorts(newVal);
+                                                if (styleLoaded) saveNeuralConfig("discovery_exclude_shorts", newVal.toString());
+                                            }}
                                             className={cn(
                                                 "px-4 py-2 rounded-lg text-xs font-bold transition-all border",
                                                 excludeShorts ? "bg-red-500/20 border-red-500 text-red-500" : "bg-zinc-950 border-zinc-800 text-zinc-500"
@@ -972,19 +1046,50 @@ export default function DiscoveryPage() {
                                                             </div>
 
                                                          <div className="flex flex-col items-center gap-4">
-                                                             {/* Analyze Button */}
-                                                             <motion.button
-                                                                 whileHover={{ scale: 1.1, rotate: 5 }}
-                                                                 whileTap={{ scale: 0.95 }}
-                                                                 onClick={(e) => {
-                                                                     e.stopPropagation();
-                                                                     handleAnalyze(candidate);
-                                                                 }}
-                                                                 className="h-12 w-12 rounded-3xl bg-zinc-800 text-white flex items-center justify-center hover:bg-primary hover:text-black transition-all"
-                                                             >
-                                                                 <BarChart3 className="h-5 w-5" />
-                                                             </motion.button>
-                                                             <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">Analyze</span>
+                                                              {/* Analyze Button */}
+                                                              <motion.button
+                                                                  whileHover={{ scale: 1.1, rotate: 5 }}
+                                                                  whileTap={{ scale: 0.95 }}
+                                                                  onClick={(e) => {
+                                                                      e.stopPropagation();
+                                                                      handleAnalyze(candidate);
+                                                                  }}
+                                                                  className={cn(
+                                                                      "h-12 w-12 rounded-3xl flex items-center justify-center transition-all",
+                                                                      analysisResults[candidate.id]?.status === "completed"
+                                                                          ? "bg-emerald-500/20 text-emerald-500 border border-emerald-500/30"
+                                                                          : analysisResults[candidate.id]?.status === "pending"
+                                                                          ? "bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse"
+                                                                          : "bg-zinc-800 text-white hover:bg-primary hover:text-black"
+                                                                  )}
+                                                              >
+                                                                  {analysisResults[candidate.id]?.status === "completed" ? (
+                                                                      <CheckCircle2 className="h-5 w-5" />
+                                                                  ) : analysisResults[candidate.id]?.status === "pending" ? (
+                                                                      <Loader2 className="h-5 w-5 animate-spin" />
+                                                                  ) : (
+                                                                      <BarChart3 className="h-5 w-5" />
+                                                                  )}
+                                                              </motion.button>
+                                                              <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">
+                                                                  {analysisResults[candidate.id]?.status === "completed" ? "Done" : 
+                                                                   analysisResults[candidate.id]?.status === "pending" ? "Processing" : "Analyze"}
+                                                              </span>
+                                                              
+                                                              {/* Create Video from Analysis (shows after analysis complete) */}
+                                                              {analysisResults[candidate.id]?.status === "completed" && (
+                                                                  <motion.button
+                                                                      whileHover={{ scale: 1.1, rotate: 5 }}
+                                                                      whileTap={{ scale: 0.95 }}
+                                                                      onClick={(e) => {
+                                                                          e.stopPropagation();
+                                                                          router.push("/creation?fromAnalysis=true&topic=" + encodeURIComponent(candidate.description?.split('\n')[0] || ""));
+                                                                      }}
+                                                                      className="h-12 w-12 rounded-3xl bg-violet-500 text-white flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] transition-all"
+                                                                  >
+                                                                      <Wand2 className="h-5 w-5" />
+                                                                  </motion.button>
+                                                              )}
                                                              
                                                              {/* Transform Button */}
                                                              <motion.button
@@ -1344,44 +1449,56 @@ export default function DiscoveryPage() {
                                             )}
                                         </div>
 
-                                        <div className="flex items-center justify-center pt-8">
-                                            <button
-                                                onClick={() => setIsStoryMode(!isStoryMode)}
-                                                className={cn(
-                                                    "group relative flex items-center gap-4 px-10 py-6 rounded-full border transition-all overflow-hidden",
-                                                    isStoryMode ? "bg-violet-500/10 border-violet-500/50 shadow-[0_0_40px_rgba(139,92,246,0.2)]" : "bg-black/40 border-white/5 hover:border-white/10"
-                                                )}
-                                            >
-                                                <div className={cn(
-                                                    "h-10 w-10 rounded-xl flex items-center justify-center transition-all",
-                                                    isStoryMode ? "bg-violet-500 text-white" : "bg-zinc-900 text-zinc-600"
-                                                )}>
-                                                    <BookOpen className="h-5 w-5" />
+                                        <div className="bg-zinc-950/30 border border-white/5 rounded-5xl p-10 space-y-8">
+                                            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                                                <div className="space-y-1">
+                                                    <h4 className="text-xl font-black text-white uppercase tracking-tight">Synthesis <span className="text-primary">Orchestration</span></h4>
+                                                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Configure Narrative Depth</p>
                                                 </div>
-                                                <div className="text-left">
-                                                    <p className={cn("text-[10px] font-black uppercase tracking-widest", isStoryMode ? "text-violet-400" : "text-zinc-600")}>Evolutionary Mode</p>
-                                                    <h4 className={cn("text-lg font-black uppercase", isStoryMode ? "text-white" : "text-zinc-500")}>Storytelling <span className="text-hollow opacity-40">Orchestration</span></h4>
-                                                </div>
-                                                <div className={cn(
-                                                    "w-12 h-6 rounded-full relative transition-all duration-500",
-                                                    isStoryMode ? "bg-violet-600" : "bg-zinc-800"
-                                                )}>
-                                                    <motion.div
-                                                        animate={{ x: isStoryMode ? 26 : 2 }}
-                                                        className="absolute top-1 left-0 h-4 w-4 rounded-full bg-white shadow-sm"
-                                                    />
-                                                </div>
-                                            </button>
-                                        </div>
+                                                <button
+                                                    onClick={() => setIsStoryMode(!isStoryMode)}
+                                                    className={cn(
+                                                        "group relative flex items-center gap-4 px-8 py-4 rounded-3xl border transition-all overflow-hidden",
+                                                        isStoryMode ? "bg-violet-500/10 border-violet-500/50 shadow-[0_0_40px_rgba(139,92,246,0.2)]" : "bg-black/40 border-white/5 hover:border-white/10"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "h-10 w-10 rounded-xl flex items-center justify-center transition-all",
+                                                        isStoryMode ? "bg-violet-500 text-white" : "bg-zinc-900 text-zinc-600"
+                                                    )}>
+                                                        <BookOpen className="h-5 w-5" />
+                                                    </div>
+                                                    <div className="text-left pr-4">
+                                                        <p className={cn("text-[8px] font-black uppercase tracking-widest", isStoryMode ? "text-violet-400" : "text-zinc-600")}>Neural Mode</p>
+                                                        <h4 className={cn("text-xs font-black uppercase", isStoryMode ? "text-white" : "text-zinc-500")}>Multi-Scene Story</h4>
+                                                    </div>
+                                                    <div className={cn(
+                                                        "w-10 h-5 rounded-full relative transition-all duration-500",
+                                                        isStoryMode ? "bg-violet-600" : "bg-zinc-800"
+                                                    )}>
+                                                        <motion.div
+                                                            animate={{ x: isStoryMode ? 22 : 2 }}
+                                                            className="absolute top-1 left-0 h-3 w-3 rounded-full bg-white shadow-sm"
+                                                        />
+                                                    </div>
+                                                </button>
+                                            </div>
 
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Video Script / Prompt</label>
-                                            <textarea
-                                                value={genPrompt}
-                                                onChange={(e) => setGenPrompt(e.target.value)}
-                                                placeholder="A cinematic shot of a cyberpunk city at night with glowing neon rain..."
-                                                className="w-full h-40 bg-zinc-950/50 border border-white/5 rounded-4xl p-8 text-sm font-bold text-white focus:outline-none focus:border-emerald-500/50 transition-all placeholder:text-zinc-800 resize-none"
-                                            />
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Video {isStoryMode ? "Narrative Blueprint" : "Prompt"}</label>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="h-1 w-1 rounded-full bg-primary" />
+                                                        <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Neural Link Sync</span>
+                                                    </div>
+                                                </div>
+                                                <textarea
+                                                    value={genPrompt}
+                                                    onChange={(e) => setGenPrompt(e.target.value)}
+                                                    placeholder={isStoryMode ? "Act 1: The discovery... Act 2: The realization... Act 3: The legacy..." : "A cinematic shot of a cyberpunk city at night with glowing neon rain..."}
+                                                    className="w-full h-40 bg-zinc-950/50 border border-white/5 rounded-4xl p-8 text-sm font-bold text-white focus:outline-none focus:border-emerald-500/50 transition-all placeholder:text-zinc-800 resize-none shadow-inner"
+                                                />
+                                            </div>
                                         </div>
 
                                         <button

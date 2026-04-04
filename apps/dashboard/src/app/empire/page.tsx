@@ -32,7 +32,7 @@ export default function EmpirePage() {
     const [sentinelStatus, setSentinelStatus] = useState<any>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [selectedStrategy, setSelectedStrategy] = useState<any>(null);
-    const [cloningNiche, setCloningNiche] = useState("Stoic Wisdom");
+    const [cloningNiche, setCloningNiche] = useState("");
     const [promoProduct, setPromoProduct] = useState("");
     const [isGeneratingPromo, setIsGeneratingPromo] = useState(false);
     const [promoScript, setPromoScript] = useState<any>(null);
@@ -78,37 +78,35 @@ export default function EmpirePage() {
     const [blueprints, setBlueprints] = useState<any[]>([]);
 
     const handleClone = async () => {
-        setIsRefreshing(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/empire/clone`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/monetization/empire/clone`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        source_niche: selectedStrategy?.niche || availableNiches[0] || "Stoic Wisdom",
+                        target_niche: cloningNiche
+                    })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("Strategy Cloned Successfully", {
+                        description: `Neural weights for ${selectedStrategy?.niche || "Original"} have been successfully mapped to the ${cloningNiche} niche.`
+                    });
                 },
-                body: JSON.stringify({
-                    source_niche: selectedStrategy?.niche || "Stoic Wisdom",
-                    target_niche: cloningNiche
-                })
-            });
-            if (res.ok) {
-                toast.success("Strategy Cloned Successfully", {
-                    description: `Neural weights for ${selectedStrategy?.niche || "Original"} have been successfully mapped to the ${cloningNiche} niche.`
-                });
-            } else {
-                toast.error("Cloning Failed", {
-                    description: "Neural cluster was unable to replicate the strategy at this time."
-                });
+                onFallback: () => {
+                    toast.error("Cloning Failed", {
+                        description: "Neural cluster was unable to replicate the strategy at this time."
+                    });
+                }
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to clone strategy", {
-                description: "Failed to establish a neural connection to the monetization orchestrator."
-            });
-        } finally {
-            setIsRefreshing(false);
-        }
+        );
     };
 
     const fetchEmpireMetrics = async () => {
@@ -240,26 +238,25 @@ export default function EmpirePage() {
     const handleGeneratePromo = async () => {
         if (!promoProduct) return;
         setIsGeneratingPromo(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/promo/generate`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ product_name: promoProduct, niche: cloningNiche })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setPromoScript(data);
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/monetization/promo/generate`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ product_name: promoProduct, niche: cloningNiche })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data) => setPromoScript(data),
+                onFallback: () => toast.error("Failed to generate promo")
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to generate promo");
-        } finally {
-            setIsGeneratingPromo(false);
-        }
+        );
+        setIsGeneratingPromo(false);
     };
 
     const handleAutoMerch = async () => {
@@ -293,29 +290,29 @@ export default function EmpirePage() {
     const handleRecommendLinks = async () => {
         if (!recommendNiche || !recommendScript) return;
         setIsRecommending(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/recommend-links`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/monetization/recommend-links`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ niche: recommendNiche, script_text: recommendScript })
+                });
+            },
+            {
+                fallback: [],
+                onSuccess: (data: any) => {
+                    const links = data.links || data || [];
+                    setRecommendations(links);
+                    toast.success("Recommendations Ready", { description: `${links.length} links found.` });
                 },
-                body: JSON.stringify({ niche: recommendNiche, script_text: recommendScript })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setRecommendations(data.links || data || []);
-                toast.success("Recommendations Ready", { description: `${(data.links || data || []).length} links found.` });
-            } else {
-                toast.error("Recommendation Failed", { description: "Could not fetch link recommendations." });
+                onFallback: () => toast.error("Recommendation Failed", { description: "Could not fetch link recommendations." })
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Network Error", { description: "Failed to reach server." });
-        } finally {
-            setIsRecommending(false);
-        }
+        );
+        setIsRecommending(false);
     };
 
     const handleShopifySync = async () => {
@@ -393,7 +390,7 @@ export default function EmpirePage() {
                 <div className="flex items-end justify-between">
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                            <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
+                            <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" style={{ width: "85%" }} />
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Empire Protocol</span>
                         </div>
                         <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">Command <span className="text-transparent bg-clip-text bg-linear-to-r from-violet-500 to-cyan-400 text-hollow">Center</span></h1>
@@ -496,12 +493,7 @@ export default function EmpirePage() {
                                             <option key={niche} value={niche}>{niche}</option>
                                         ))}
                                         {availableNiches.length === 0 && (
-                                            <>
-                                                <option>Stoic Wisdom</option>
-                                                <option>Billionaire Mindset</option>
-                                                <option>AI Productivity</option>
-                                                <option>Historical Facts</option>
-                                            </>
+                                            <option disabled>NO NICHES FOUND</option>
                                         )}
                                     </select>
                                     <button
@@ -529,7 +521,7 @@ export default function EmpirePage() {
                                             <div className="h-1 bg-zinc-900 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] transition-all duration-1000"
-                                                    style={{ width: `${v.score}%` }}
+                                                    style={{ width: `${Math.min(100, Math.max(10, parseInt(v.growth) || 45))}%` }}
                                                 />
                                             </div>
                                         </div>
@@ -867,9 +859,9 @@ export default function EmpirePage() {
                                                 <div className="w-px flex-1 bg-white/5 group-last:hidden" />
                                             </div>
                                             <div className="pb-6">
-                                                <p className="text-[10px] font-black text-primary mb-1 tracking-widest">{item.time} ZULU</p>
-                                                <p className="text-white font-black uppercase text-xs mb-1">{item.event}</p>
-                                                <p className="text-zinc-500 text-[10px] font-medium leading-relaxed">{item.desc}</p>
+                                                <p className="text-[10px] font-black text-primary mb-1 tracking-widest">{item.time_label || item.time}</p>
+                                                <p className="text-white font-black uppercase text-xs mb-1">{item.type || item.event}</p>
+                                                <p className="text-zinc-500 text-[10px] font-medium leading-relaxed">{item.message || item.desc}</p>
                                             </div>
                                         </div>
                                     ))}

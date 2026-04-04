@@ -599,9 +599,9 @@ def push_heartbeat_loop():
         try:
             hostname = socket.gethostname()
             ip_addr = socket.gethostbyname(hostname)
-            my_public_url = f"http://{ip_addr}:8122"
+            my_public_url = f"http://{ip_addr}:19675"
         except:
-            my_public_url = "http://localhost:8122"
+            my_public_url = "http://175.155.64.174:19675"
 
     print(f"💓 Heartbeat loop started for: {my_public_url} -> {gateway_url}", flush=True)
     
@@ -619,13 +619,17 @@ def push_heartbeat_loop():
             headers = {"X-Worker-Token": cluster_secret} if cluster_secret else {}
             
             with httpx.Client(timeout=10.0) as client:
-                resp = client.post(f"{gateway_url}/heartbeat", json=payload, headers=headers)
+                full_url = f"{gateway_url}/pulse"
+                resp = client.post(full_url, json=payload, headers=headers)
+                print(f"💓 [Heartbeat] Sent to {full_url}, Status: {resp.status_code}", flush=True)
                 if resp.status_code == 200:
                     pass # Success
                 else:
                     print(f"⚠️ Heartbeat rejected ({resp.status_code}): {resp.text}", flush=True)
         except Exception as e:
-            print(f"⚠️ Heartbeat failed: {e}", flush=True)
+            print(f"⚠️ Heartbeat critical failure: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
             
         time.sleep(10) # 10 second pulse
 
@@ -729,28 +733,6 @@ async def download(job_id: str, bg: BackgroundTasks, x_worker_token: str = Heade
     from fastapi import HTTPException
     raise HTTPException(status_code=404, detail="File not found")
 
-# =========================
-# STARTUP
-# =========================
-if __name__ == "__main__":
-    import sys
-    print("🚀 ettametta Remote AI Engine starting...")
-    
-    # Ngrok disabled for infra-grind
-    # try:
-    #     ...
-    # except Exception as e:
-    #     ...
-
-    # Start TTL Cleanup Thread
-    threading.Thread(target=cleanup_old_files, daemon=True).start()
-
-    import uvicorn
-    import time
-    time.sleep(2)
-    print("🚀 AI Engine binding to Port 8122...", flush=True)
-    uvicorn.run(app, host="0.0.0.0", port=8122)
-
 # =====================================================
 # VIDEO MODEL MANAGER ENDPOINTS
 # =====================================================
@@ -815,6 +797,7 @@ async def generate_with_model(
 ):
     """Generate a video with the loaded model"""
     result = model_manager.generate_video(
+        model_key=model_key,
         prompt=prompt,
         negative_prompt=negative_prompt,
         num_inference_steps=num_inference_steps,
@@ -824,6 +807,54 @@ async def generate_with_model(
         guidance_scale=guidance_scale,
     )
     return result
+
+@app.post("/generate_animatediff")
+async def generate_animatediff(
+    prompt: str,
+    negative_prompt: str = "low quality, blurry, distorted",
+    num_inference_steps: int = 25,
+    num_frames: int = 16, # AnimateDiff defaults to shorter clips
+    height: int = 512,
+    width: int = 512,
+    guidance_scale: float = 7.5,
+):
+    """Specific entry for AnimateDiff animation workflows"""
+    return model_manager.generate_video(
+        model_key="animatediff_v15",
+        prompt=prompt,
+        negative_prompt=negative_prompt,
+        num_inference_steps=num_inference_steps,
+        num_frames=num_frames,
+        height=height,
+        width=width,
+        guidance_scale=guidance_scale,
+    )
+
+# =========================
+# STARTUP
+# =========================
+if __name__ == "__main__":
+    import sys
+    print("🚀 ettametta Remote AI Engine starting...")
+    
+    # Ngrok disabled for infra-grind
+    # try:
+    #     ...
+    # except Exception as e:
+    #     ...
+
+    # Start TTL Cleanup Thread
+    threading.Thread(target=cleanup_old_files, daemon=True).start()
+
+    import uvicorn
+    import time
+    time.sleep(2)
+    print("🚀 AI Engine binding to Port 8080 (Mapped to Public 19675)...", flush=True)
+    uvicorn.run(app, host="0.0.0.0", port=8080)
+
+# =====================================================
+# END
+# =====================================================
 
 # =====================================================
 # END

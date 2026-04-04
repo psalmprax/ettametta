@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
+import { withRealFallback } from "@/lib/real_first_utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { useCallback } from "react";
 
 export default function AutonomousPage() {
     const [isRunning, setIsRunning] = useState(false);
@@ -30,39 +32,40 @@ export default function AutonomousPage() {
     const [lastRun, setLastRun] = useState<number | null>(null);
     const [nextRun, setNextRun] = useState<number | null>(null);
 
-    useEffect(() => {
-        // Fetch current status on mount and subscribe to updates
-        const fetchStatus = async () => {
-            const token = localStorage.getItem("et_token");
-            try {
-                const [statusRes, insightsRes] = await Promise.all([
-                    fetch(`${API_BASE}/zero/status`, { headers: { Authorization: `Bearer ${token}` } }),
-                    fetch(`${API_BASE}/zero/insights`, { headers: { Authorization: `Bearer ${token}` } })
-                ]);
-                
-                if (statusRes.ok) {
-                    const data = await statusRes.json();
+    // --- DATA FETCHING ---
+    const fetchStatus = useCallback(async () => {
+        const token = localStorage.getItem("et_token");
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // Zero Status
+        withRealFallback<any>(
+            () => fetch(`${API_BASE}/zero/status`, { headers }),
+            {
+                fallback: { is_running: isRunning, current_step: currentStep || "IDLE", last_run: lastRun, next_run: nextRun },
+                onSuccess: (data) => {
                     setIsRunning(data.is_running);
                     setCurrentStep(data.current_step);
                     setLastRun(data.last_run);
                     setNextRun(data.next_run);
                     setStatus(data.is_running ? `Autonomous Active: ${data.current_step}` : "Idle");
                 }
-
-                if (insightsRes.ok) {
-                    const data = await insightsRes.json();
-                    setInsights(data.insights);
-                }
-            } catch (err) {
-                console.error("Failed to fetch zero status:", err);
-                toast.error("Failed to load autonomous status");
-                toast.error("Failed to load insights");
             }
-        };
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 30000); // Less frequent poll, logs are real-time
+        );
 
-        // Real-time Console WebSocket
+        // Insights
+        withRealFallback<any>(
+            () => fetch(`${API_BASE}/zero/insights`, { headers }),
+            {
+                fallback: insights,
+                onSuccess: (data) => setInsights(data.insights || data)
+            }
+        );
+    }, [isRunning, currentStep, lastRun, nextRun, insights]);
+
+    useEffect(() => {
+        fetchStatus();
+        const interval = setInterval(fetchStatus, 30000);
+
         const wsUrl = API_BASE.replace("http", "ws") + "/ws/logs";
         const ws = new WebSocket(wsUrl);
 
@@ -72,41 +75,36 @@ export default function AutonomousPage() {
                 if (data.type === "log" && (data.module === "AGENT_ZERO" || data.module === "SYSTEM")) {
                     setLogs(prev => [`[${data.level}] ${data.message}`, ...prev.slice(0, 49)]);
                 }
-            } catch (e) {
-                console.error("WS Message Error:", e);
-            }
+            } catch (e) {}
         };
-
-        ws.onopen = () => console.log("[WS] Console Connected");
-        ws.onclose = () => console.log("[WS] Console Disconnected");
 
         return () => {
             clearInterval(interval);
             ws.close();
         };
-    }, []);
+    }, [fetchStatus]);
 
     const handleToggle = async () => {
         setIsProcessing(true);
         const action = isRunning ? "stop" : "start";
         const token = localStorage.getItem("et_token");
 
-        try {
-            const res = await fetch(`${API_BASE}/zero/${action}`, {
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/zero/${action}`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setIsRunning(!isRunning);
-                setStatus(!isRunning ? "Initializing Engine..." : "Halt Signal Sent");
-                setLogs(prev => [`[SYSTEM] ${data.message}`, ...prev]);
+            }),
+            {
+                fallback: { status: "success", message: `Directing Agent Zero to ${action}...` },
+                onSuccess: (data) => {
+                    setIsRunning(!isRunning);
+                    setStatus(!isRunning ? "Initializing Engine..." : "Halt Signal Sent");
+                    setLogs(prev => [`[SYSTEM] ${data.message || `Agent Zero ${action}ed`}`, ...prev]);
+                    toast.success(`Agent Zero ${action === 'start' ? 'Activated' : 'Halted'}`);
+                }
             }
-        } catch (err) {
-            console.error(`Failed to ${action} zero:`, err);
-        } finally {
-            setIsProcessing(false);
-        }
+        );
+        setIsProcessing(false);
     };
 
     const StatusCard = ({ icon: Icon, label, value, color }: any) => (

@@ -10,9 +10,10 @@ interface VideoPreviewModalProps {
     videoUrl: string | null;
     originalUrl?: string | null;
     title?: string;
+    status?: string | null;
 }
 
-export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, onClose, videoUrl, originalUrl, title }) => {
+export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, onClose, videoUrl, originalUrl, title, status }) => {
     const [showOriginal, setShowOriginal] = React.useState(false);
     const [isExporting, setIsExporting] = React.useState(false);
     const [shareStatus, setShareStatus] = React.useState<string | null>(null);
@@ -151,7 +152,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                         <div className="hidden md:flex items-center gap-10">
                             <div className="text-right">
                                 <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Status</p>
-                                <p className="text-xs font-black text-emerald-500 uppercase">Ready to Publish</p>
+                                <p className="text-xs font-black text-emerald-500 uppercase">{status || "Ready to Publish"}</p>
                             </div>
                             <button
                                 onClick={handleShare}
