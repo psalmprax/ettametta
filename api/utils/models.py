@@ -7,6 +7,7 @@ from sqlalchemy import (
     JSON,
     Boolean,
     ForeignKey,
+    UniqueConstraint,
 )
 from .database import Base
 from datetime import datetime
