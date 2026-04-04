@@ -27,6 +27,7 @@ from api.utils.models import ContentCandidateDB, SystemSettings, NicheTrendDB, M
 from api.config import settings
 from api.utils.vault import get_secret
 from api.utils.celery import celery_app
+from api.routes.ws import notify_system_log_async
 from groq import Groq
 
 
@@ -92,8 +93,9 @@ class DiscoveryService:
 
         # 1. Check Cache (Skip if deep scan)
         redis_url = settings.REDIS_URL
-        if "//localhost" in redis_url:
-             redis_url = redis_url.replace("//localhost", "//redis")
+        # Ensure we use the 'redis' hostname inside Docker, NOT 'localhost'
+        if "localhost" in redis_url:
+             redis_url = redis_url.replace("localhost", "redis")
 
         try:
             r = redis.from_url(redis_url)

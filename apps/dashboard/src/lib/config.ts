@@ -1,8 +1,11 @@
 const getApiBase = () => {
+    if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
     if (typeof window !== "undefined") {
-        return `${window.location.protocol}//${window.location.host}/api/v1`;
+        // If we are on port 7202 (direct dashboard), we likely need port 7200 for API (Nginx)
+        const host = window.location.host.includes(":7202") ? window.location.host.replace(":7202", ":7200") : window.location.host;
+        return `${window.location.protocol}//${host}/api/v1`;
     }
-    return (process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/v1` : "http://localhost:8000/api/v1");
+    return "http://api:8000/api/v1";
 };
 
 export const API_BASE = getApiBase();
@@ -22,6 +25,8 @@ const getWsBase = () => {
 
 export const WS_BASE = getWsBase();
 
-export const AI_GATEWAY_URL = process.env.NEXT_PUBLIC_AI_GATEWAY_URL || "http://149.104.110.122:8133";
+// AI Gateway should point to the Nginx proxy path by default
+export const AI_GATEWAY_URL = process.env.NEXT_PUBLIC_AI_GATEWAY_URL || 
+    (typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host}/ai-gateway` : "http://ai-gateway:8133");
 
 export const INTERNAL_API_TOKEN = process.env.NEXT_PUBLIC_INTERNAL_API_TOKEN || "";
