@@ -25,12 +25,12 @@ from services.openclaw.skills.external import (
     binance_service,
 )
 from services.openclaw.skills.research import ResearchSkill
-from services.openclaw.skills.content import DataIngestionSkill
-from services.openclaw.skills.analytics import SocialMetricsSkill
+from services.openclaw.skills.content import ContentSkill
+from services.openclaw.skills.analytics import SocialAnalyticsSkill
 
 research_skill = ResearchSkill()
-data_ingestion_skill = DataIngestionSkill()
-social_metrics_skill = SocialMetricsSkill()
+content_skill = ContentSkill()
+social_metrics_skill = SocialAnalyticsSkill()
 
 router = APIRouter(prefix="/tools", tags=["Tools & Skills"])
 
