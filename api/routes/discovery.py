@@ -460,3 +460,48 @@ async def opencli_scan(
         "source": "opencli-rs",
         "platforms_scanned": p or "all_connected",
     }
+
+
+class InteractionRequest(BaseModel):
+    candidate_id: str
+    niche: str
+    action: str = "handshake"
+
+
+@router.post("/interact")
+async def record_interaction(
+    request: InteractionRequest, 
+    user: UserDB = Depends(get_current_user)
+):
+    """
+    Records a UI interaction (e.g. handshake, negotiate) with a discovery candidate.
+    In a real-first system, this triggers a backend event rather than a frontend delay.
+    """
+    from api.utils.database import SessionLocal
+    from api.utils.models import DiscoveryInteractionDB
+    import datetime
+
+    db = SessionLocal()
+    try:
+        new_interaction = DiscoveryInteractionDB(
+            candidate_id=request.candidate_id,
+            user_id=user.id,
+            action=request.action,
+            status=1,  # Established
+            details={"niche": request.niche, "timestamp": datetime.datetime.utcnow().isoformat()}
+        )
+        db.add(new_interaction)
+        db.commit()
+        db.refresh(new_interaction)
+        
+        return {
+            "status": "Handshake Established",
+            "candidate_id": request.candidate_id,
+            "interaction_id": new_interaction.id,
+            "timestamp": new_interaction.created_at.isoformat(),
+            "signals": ["SYNC_LOCKED", "NEGOTIATION_ACTIVE"],
+            "message": f"Successfully established {request.action} protocol with target node."
+        }
+    finally:
+        db.close()
+

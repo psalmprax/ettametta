@@ -39,6 +39,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
+import { withRealFallback } from "@/lib/real_first_utils";
+import { toast } from "sonner";
 
 const SettingsSchema = z.object({
     groq_api_key: z.string().optional(),
@@ -163,144 +165,152 @@ export default function SettingsPage() {
 
     const fetchSettings = async () => {
         setIsLoading(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const headers = { Authorization: `Bearer ${token}` };
-            const response = await fetch(`${API_BASE}/settings/`, { headers });
-            const data = await response.json();
-            if (Object.keys(data).length > 0) {
-                reset(data);
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                const headers = { Authorization: `Bearer ${token}` };
+                return fetch(`${API_BASE}/settings/`, { headers });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    if (Object.keys(data).length > 0) {
+                        reset(data);
+                    }
+                }
             }
-        } catch (error) {
-            console.error("Failed to fetch settings", error);
-        } finally {
-            setIsLoading(false);
-        }
+        );
+        setIsLoading(false);
     };
 
     const fetchProfile = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const response = await fetch(`${API_BASE}/auth/me`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setUserProfile({
-                    telegram_chat_id: data.telegram_chat_id || "",
-                    telegram_token: data.telegram_token || "",
-                    whatsapp_number: data.whatsapp_number || "",
-                    role: data.role || "user",
-                    subscription: data.subscription || "free"
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/auth/me`, {
+                    headers: { Authorization: `Bearer ${token}` }
                 });
+            },
+            {
+                fallback: userProfile,
+                onSuccess: (data: any) => {
+                    setUserProfile({
+                        telegram_chat_id: data.telegram_chat_id || "",
+                        telegram_token: data.telegram_token || "",
+                        whatsapp_number: data.whatsapp_number || "",
+                        role: data.role || "user",
+                        subscription: data.subscription || "free"
+                    });
 
-                if (data.role === "admin") {
-                    setActiveTab("Keys");
-                    fetchSettings();
-                } else {
-                    setActiveTab("Profile");
-                    setIsLoading(false);
+                    if (data.role === "admin") {
+                        setActiveTab("Keys");
+                        fetchSettings();
+                    } else {
+                        setActiveTab("Profile");
+                        setIsLoading(false);
+                    }
                 }
             }
-        } catch (error) {
-            console.error("Failed to fetch profile", error);
-        }
+        );
     };
 
     const handleSave = handleSubmit(async (data) => {
         setIsSaving(true);
         setSaveStatus("idle");
-        try {
-            const token = localStorage.getItem("et_token");
+        
+        const token = localStorage.getItem("et_token");
+        const payload = Object.entries(data).map(([key, value]) => ({
+            key,
+            value: String(value ?? ""),
+            category: key.includes("key") || key.includes("id") ? "api_key" : "engine"
+        }));
 
-            const payload = Object.entries(data).map(([key, value]) => ({
-                key,
-                value: String(value ?? ""),
-                category: key.includes("key") || key.includes("id") ? "api_key" : "engine"
-            }));
+        const settingsEndpoint = userProfile.role === "admin"
+            ? `${API_BASE}/settings/bulk`
+            : `${API_BASE}/settings/user`;
 
-            const settingsEndpoint = userProfile.role === "admin"
-                ? `${API_BASE}/settings/bulk`
-                : `${API_BASE}/settings/user`;
+        await withRealFallback(
+            async () => {
+                const sres = await fetch(settingsEndpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!sres.ok) throw new Error("Settings synchronization failed");
 
-            const response = await fetch(settingsEndpoint, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
+                return fetch(`${API_BASE}/auth/me`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        telegram_chat_id: userProfile.telegram_chat_id || null,
+                        telegram_token: userProfile.telegram_token || null,
+                        whatsapp_number: userProfile.whatsapp_number || null
+                    })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setSaveStatus("success");
+                    toast.success("Settings Synchronized", { description: "Identity and engine parameters updated." });
+                    reset(data);
                 },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                setSaveStatus("error");
-                setIsSaving(false);
-                return;
+                onFallback: (err: any) => {
+                    setSaveStatus("error");
+                    toast.error("Sync Failed", { description: err.message });
+                }
             }
-
-            const profileRes = await fetch(`${API_BASE}/auth/me`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    telegram_chat_id: userProfile.telegram_chat_id || null,
-                    telegram_token: userProfile.telegram_token || null,
-                    whatsapp_number: userProfile.whatsapp_number || null
-                })
-            });
-
-            if (profileRes.ok) {
-                setSaveStatus("success");
-                setTimeout(() => setSaveStatus("idle"), 3000);
-                reset(data); // Mark form as pristine again
-            } else {
-                setSaveStatus("error");
-            }
-        } catch (error) {
-            setSaveStatus("error");
-        } finally {
-            setIsSaving(false);
-        }
+        );
+        setIsSaving(false);
     });
 
     const fetchSubscription = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/billing/subscription`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setSubscriptionData(data);
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/billing/subscription`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: subscriptionData,
+                onSuccess: (data: any) => setSubscriptionData(data)
             }
-        } catch (err) {
-            console.error("Failed to fetch subscription:", err);
-        }
+        );
     };
 
     const handleCancelSubscription = async () => {
         setIsCancelling(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/billing/cancel`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setSaveStatus("success");
-                fetchSubscription();
-                fetchProfile();
-            } else {
-                setSaveStatus("error");
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/billing/cancel`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setSaveStatus("success");
+                    toast.success("Subscription Cancelled", { description: "Resource de-allocation initiated." });
+                    fetchSubscription();
+                    fetchProfile();
+                },
+                onFallback: (err: any) => {
+                    setSaveStatus("error");
+                    toast.error("Cancel Failed", { description: err.message });
+                }
             }
-        } catch (err) {
-            setSaveStatus("error");
-        } finally {
-            setIsCancelling(false);
-            setTimeout(() => setSaveStatus("idle"), 3000);
-        }
+        );
+        setIsCancelling(false);
     };
 
     const [isVerifying, setIsVerifying] = useState<Record<string, boolean>>({});
@@ -309,61 +319,71 @@ export default function SettingsPage() {
     const handleVerifyComms = async (platform: "telegram" | "whatsapp") => {
         setIsVerifying(prev => ({ ...prev, [platform]: true }));
         setVerifyStatus(prev => ({ ...prev, [platform]: "idle" }));
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/auth/verify-comms?platform=${platform}`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setVerifyStatus(prev => ({ ...prev, [platform]: "success" }));
-            } else {
-                setVerifyStatus(prev => ({ ...prev, [platform]: "error" }));
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/auth/verify-comms?platform=${platform}`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setVerifyStatus(prev => ({ ...prev, [platform]: "success" }));
+                    toast.success("Signal Sent", { description: `Verification ping dispatched to ${platform}.` });
+                },
+                onFallback: (err: any) => {
+                    setVerifyStatus(prev => ({ ...prev, [platform]: "error" }));
+                    toast.error("Signal Failed", { description: err.message });
+                }
             }
-        } catch (e) {
-            setVerifyStatus(prev => ({ ...prev, [platform]: "error" }));
-        } finally {
-            setIsVerifying(prev => ({ ...prev, [platform]: false }));
-            setTimeout(() => setVerifyStatus(prev => ({ ...prev, [platform]: "idle" })), 3000);
-        }
+        );
+        setIsVerifying(prev => ({ ...prev, [platform]: false }));
     };
 
     const handleChangePassword = async () => {
         if (passwordFields.new_password !== passwordFields.confirm_password) {
             setPasswordStatus("error");
+            toast.error("Mismatch", { description: "New passwords do not match." });
             return;
         }
         if (passwordFields.new_password.length < 6) {
             setPasswordStatus("error");
+            toast.error("Weak Password", { description: "Minimum 6 characters required." });
             return;
         }
         setIsChangingPassword(true);
         setPasswordStatus("idle");
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/auth/me/change-password`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/auth/me/change-password`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        current_password: passwordFields.current_password,
+                        new_password: passwordFields.new_password
+                    })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setPasswordStatus("success");
+                    toast.success("Security Hardened", { description: "Password rotated successfully." });
+                    setPasswordFields({ current_password: "", new_password: "", confirm_password: "" });
                 },
-                body: JSON.stringify({
-                    current_password: passwordFields.current_password,
-                    new_password: passwordFields.new_password
-                })
-            });
-            if (res.ok) {
-                setPasswordStatus("success");
-                setPasswordFields({ current_password: "", new_password: "", confirm_password: "" });
-            } else {
-                setPasswordStatus("error");
+                onFallback: (err: any) => {
+                    setPasswordStatus("error");
+                    toast.error("Auth Error", { description: err.message });
+                }
             }
-        } catch (err) {
-            setPasswordStatus("error");
-        } finally {
-            setIsChangingPassword(false);
-            setTimeout(() => setPasswordStatus("idle"), 3000);
-        }
+        );
+        setIsChangingPassword(false);
     };
 
     useEffect(() => {
@@ -1089,19 +1109,24 @@ function OpenCLITab() {
     const [statusMsg, setStatusMsg] = useState("");
 
     const fetchSessions = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/opencli/sessions`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setSessions(data.sessions || []);
-                setAvailable(data.available || false);
-            } else if (res.status === 404) {
-                setAvailable(false);
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/opencli/sessions`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: { sessions: [], available: false },
+                onSuccess: (data: any) => {
+                    setSessions(data.sessions || []);
+                    setAvailable(data.available || false);
+                },
+                onFallback: (err: any) => {
+                    if (err.status === 404) setAvailable(false);
+                }
             }
-        } catch { setAvailable(false); }
+        );
         setLoading(false);
     };
 
@@ -1111,49 +1136,75 @@ function OpenCLITab() {
         if (!cookies.trim() || !connectModal.platform) return;
         setConnecting(true);
         setStatusMsg("");
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/opencli/sessions/connect`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ platform: connectModal.platform, cookies })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setStatusMsg(data.status === "connected" ? "Connected successfully!" : `Status: ${data.status} — ${data.message}`);
-                setCookies("");
-                fetchSessions();
-            } else {
-                setStatusMsg(`Error: ${data.detail || "Connection failed"}`);
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/opencli/sessions/connect`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ platform: connectModal.platform, cookies })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    setStatusMsg(data.status === "connected" ? "Connected successfully!" : `Status: ${data.status} — ${data.message}`);
+                    setCookies("");
+                    toast.success("Bridge Established", { description: `${connectModal.platform} linked.` });
+                    fetchSessions();
+                },
+                onFallback: (err: any) => {
+                    setStatusMsg(`Error: ${err.message || "Connection failed"}`);
+                    toast.error("Bridge Failed", { description: err.message });
+                }
             }
-        } catch (e: any) {
-            setStatusMsg(`Error: ${e.message}`);
-        }
+        );
         setConnecting(false);
     };
 
     const disconnectPlatform = async (platform: string) => {
-        try {
-            const token = localStorage.getItem("et_token");
-            await fetch(`${API_BASE}/opencli/sessions/disconnect/${platform}`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            fetchSessions();
-        } catch {}
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/opencli/sessions/disconnect/${platform}`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.info("Bridge Terminated", { description: `${platform} session purged.` });
+                    fetchSessions();
+                },
+                onFallback: (err: any) => {
+                    toast.error("Disconnect Failed", { description: err.message });
+                }
+            }
+        );
     };
 
     const verifyPlatform = async (platform: string) => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/opencli/sessions/verify/${platform}`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
-            setStatusMsg(`${platform}: ${data.status} — ${data.message}`);
-            fetchSessions();
-        } catch {}
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/opencli/sessions/verify/${platform}`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    setStatusMsg(`${platform}: ${data.status} — ${data.message}`);
+                    toast.success("Session Verified", { description: `${platform} is operational.` });
+                    fetchSessions();
+                },
+                onFallback: (err: any) => {
+                    toast.error("Verification Error", { description: err.message });
+                }
+            }
+        );
     };
 
     if (loading) {

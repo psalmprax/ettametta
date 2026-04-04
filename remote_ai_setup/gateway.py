@@ -27,7 +27,7 @@ app.add_middleware(
 
 # Persistent Storage for Jobs
 class JobStore:
-    def __init__(self, db_path="/workspace/gateway_state.db"):
+    def __init__(self, db_path="gateway_state.db"):
         self.db_path = db_path
         self._init_db()
 
@@ -67,6 +67,11 @@ class JobStore:
     def remove_node(self, url: str):
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("DELETE FROM nodes WHERE url = ?", (url,))
+        
+        # Clean up in-memory health state
+        with LOCK:
+            if url in NODE_HEALTH:
+                del NODE_HEALTH[url]
 
     def update_node_status(self, url: str, status: str):
         with sqlite3.connect(self.db_path) as conn:
@@ -100,7 +105,7 @@ LOCK = threading.Lock()
 async def update_node_health():
     """Background loop to monitor CPU/GPU node health and model status"""
     last_cleanup = 0
-    async with httpx.AsyncClient(timeout=5.0) as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
         while True:
             # Periodic cleanup of old job records (once per day)
             if time.time() - last_cleanup > 86400:
@@ -111,6 +116,17 @@ async def update_node_health():
             nodes = job_store.get_nodes()
             for node_data in nodes:
                 node = node_data["url"]
+                
+                # --- PUSH/PULL COHESION ---
+                with LOCK:
+                    health = NODE_HEALTH.get(node, {})
+                    # If node is in active PUSH mode (seen via heartbeat in last 60s), skip Pull
+                    if health.get("push_mode") and (time.time() - health.get("last_seen", 0) < 60):
+                        # Ensure DB stays READY if we are skipping pull
+                        if node_data["status"] != "READY":
+                            job_store.update_node_status(node, "READY")
+                        continue
+
                 try:
                     headers = {"X-Worker-Token": WORKER_TOKEN} if WORKER_TOKEN else {}
                     resp = await client.get(f"{node}/health", headers=headers)
@@ -130,6 +146,7 @@ async def update_node_health():
                         with LOCK:
                             NODE_HEALTH[node] = {"online": False, "error": f"Status {resp.status_code}"}
                 except Exception as e:
+                    print(f"Health check for {node} failed: {e}")
                     job_store.update_node_status(node, "OFFLINE")
                     with LOCK:
                         NODE_HEALTH[node] = {"online": False, "error": str(e)}
@@ -177,17 +194,51 @@ class ProvisionNodeRequest(BaseModel):
     port: int = 22
     user: str = "root"
 
+class HeartbeatRequest(BaseModel):
+    url: str
+    busy: bool
+    current_model: Optional[str]
+    hardware: Dict[str, Any]
+    status: str = "ready"
+
 async def verify_admin(x_admin_token: str = Header(None)):
     if not ADMIN_TOKEN or x_admin_token != ADMIN_TOKEN:
         raise HTTPException(status_code=401, detail="Unauthorized Admin Action")
 
+@app.post("/pulse")
+async def node_pulse_heartbeat(request: HeartbeatRequest, x_worker_token: str = Header(None)):
+    """
+    Primary heart-beat sink. Moved to top to ensure zero-shadowing.
+    """
+    print(f"💓 [Pulse] Inbound from {request.url}", flush=True)
+    if WORKER_TOKEN and x_worker_token != WORKER_TOKEN:
+        print(f"⚠️ [Pulse] Token mismatch for {request.url}", flush=True)
+        raise HTTPException(status_code=401, detail="Invalid Worker Token")
+        
+    node = request.url
+    job_store.add_node(node)
+    job_store.update_node_status(node, "READY")
+    
+    with LOCK:
+        NODE_HEALTH[node] = {
+            "online": True,
+            "busy": request.busy,
+            "current_model": request.current_model,
+            "last_seen": time.time(),
+            "hardware": request.hardware,
+            "push_mode": True,
+            "error": None
+        }
+    return {"status": "pulse_stable", "node": node}
+
 @app.get("/health")
 async def cluster_health():
+    nodes = job_store.get_nodes()
     with LOCK:
         return {
             "status": "healthy",
-            "cluster_size": len(NODE_HEALTH),
-            "nodes": job_store.get_nodes(),
+            "cluster_size": len(nodes),
+            "nodes": nodes,
             "telemetry": NODE_HEALTH
         }
 
@@ -220,6 +271,11 @@ async def register_node(request: RegisterNodeRequest, x_admin_token: str = Heade
     await verify_admin(x_admin_token)
     job_store.add_node(request.url)
     return {"status": "registered", "url": request.url}
+
+# Alias for frontend flexibility
+@app.post("/nodes")
+async def register_node_alias(request: RegisterNodeRequest, x_admin_token: str = Header(None)):
+    return await register_node(request, x_admin_token)
 
 from urllib.parse import unquote
 
@@ -297,6 +353,10 @@ async def provision_node(request: ProvisionNodeRequest, x_admin_token: str = Hea
 @app.post("/{path:path}")
 async def proxy_post(path: str, request: Request):
     """Generic POST proxy with smart routing"""
+    # Guard: Do not proxy management endpoints even if they match the catch-all
+    if path in ["register", "nodes", "nodes/provision"]:
+        raise HTTPException(status_code=400, detail="Management path hit proxy handler - check routing order")
+    
     try:
         body = await request.json()
     except Exception:
@@ -307,6 +367,7 @@ async def proxy_post(path: str, request: Request):
     model_key = body.get("model") or body.get("model_key")
     if not model_key:
         if "hunyuan" in path: model_key = "hunyuan_480p"
+        elif "animatediff" in path: model_key = "animatediff_v15"
         elif "generate" in path: model_key = "ltx_2_19b"
     
     target_node = select_best_node(model_key)
@@ -332,4 +393,5 @@ async def proxy_post(path: str, request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8133)
+    port = int(os.environ.get("GATEWAY_PORT", 8133))
+    uvicorn.run(app, host="0.0.0.0", port=port)

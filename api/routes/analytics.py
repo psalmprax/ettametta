@@ -280,12 +280,6 @@ async def get_ab_results(
                 status_code=404, detail="A/B test not found for this content"
             )
 
-        # Calculate winning variant (simplified logic)
-        total_views = test.variant_a_views + test.variant_b_views
-        winner = None
-        if total_views > 10:  # Threshold for significant data
-            winner = "A" if test.variant_a_views > test.variant_b_views else "B"
-
         return {
             "test_id": test.id,
             "variant_a_title": test.variant_a_title,
@@ -295,5 +289,55 @@ async def get_ab_results(
             "winner": winner,
             "created_at": test.created_at,
         }
+    finally:
+        db.close()
+
+
+@router.get("/report/{post_id}/history")
+async def get_report_history(
+    post_id: str, 
+    current_user: UserDB = Depends(get_current_user)
+):
+    """
+    Returns time-series history for a specific post.
+    In a real-first system, this replaces simulated growth curves.
+    """
+    # This would normally query a time-series table.
+    # For now, we'll return a deterministic historical set from the analytics service.
+    try:
+        history = await base_analytics_service.get_historical_performance(post_id)
+        return history
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/inject-pattern/{post_id}")
+async def inject_pattern(post_id: str, current_user: UserDB = Depends(get_current_user)):
+    """
+    Executes a Neural Pattern Injection on the specified post.
+    """
+    from api.utils.database import SessionLocal
+    from api.utils.models import PublishedContentDB
+
+    db = SessionLocal()
+    try:
+        # Verify user owns this content
+        content = (
+            db.query(PublishedContentDB)
+            .filter(PublishedContentDB.id == post_id)
+            .first()
+        )
+        if not content:
+            raise HTTPException(status_code=404, detail="Content not found")
+        if content.user_id != current_user.id and current_user.role != "admin":
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        # Delegate to service
+        result = await base_analytics_service.inject_pattern(post_id, current_user.id)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()

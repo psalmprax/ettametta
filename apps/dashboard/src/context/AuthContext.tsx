@@ -21,6 +21,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 import { API_BASE } from "@/lib/config";
+import { withRealFallback } from "@/lib/real_first_utils";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -39,26 +40,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const fetchUser = async (authToken: string) => {
-        try {
-            const response = await fetch(`${API_BASE}/auth/me`, {
-                headers: { Authorization: `Bearer ${authToken}` },
-            });
-            if (response.ok) {
-                const userData = await response.json();
-                setUser(userData);
-            } else if (response.status === 401) {
-                console.warn("Session expired or invalid token. Logging out.");
-                logout();
-            } else {
-                console.error("Failed to fetch user, status:", response.status);
-                // Optionally logout on other critical errors if needed
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/auth/me`, {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (userData: any) => {
+                    setUser(userData);
+                },
+                onFallback: (err: any) => {
+                    if (err.status === 401) {
+                        console.warn("Session expired or invalid token. Logging out.");
+                        logout();
+                    } else {
+                        console.error("Failed to fetch user, status:", err.status);
+                    }
+                }
             }
-        } catch (err) {
-            console.error("Failed to fetch user:", err);
-            // Don't logout on network error, keep current state
-        } finally {
-            setIsLoading(false);
-        }
+        );
+        setIsLoading(false);
     };
 
     const login = (newToken: string) => {

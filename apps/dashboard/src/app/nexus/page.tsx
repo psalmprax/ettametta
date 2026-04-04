@@ -36,6 +36,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ClusterManager } from "@/components/ui/ClusterManager";
+import { withRealFallback } from "@/lib/real_first_utils";
 
 interface Blueprint {
     id: string;
@@ -207,41 +208,39 @@ export default function NexusPage() {
     const handleLaunchPipeline = async () => {
         if (!selectedNiche || !activeBlueprint) return;
         setIsLaunching(true);
-        const token = localStorage.getItem("et_token");
-
-        try {
-            const res = await fetch(`${API_BASE}/nexus/compose`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/nexus/compose`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        niche: selectedNiche,
+                        blueprint_id: activeBlueprint.id,
+                        cinema_mode: true
+                    })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    setActiveJobId(String(data.job_id));
+                    toast.success("Pipeline Dispatched", {
+                        description: `Job ID: ${data.job_id} is now active in the neural cluster.`
+                    });
+                    setSelectedNodeIndex(0);
                 },
-                body: JSON.stringify({
-                    niche: selectedNiche,
-                    blueprint_id: activeBlueprint.id,
-                    cinema_mode: true
-                })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                setActiveJobId(String(data.job_id));
-                toast.success("Pipeline Dispatched", {
-                    description: `Job ID: ${data.job_id} is now active in the neural cluster.`
-                });
-                setSelectedNodeIndex(0);
-            } else {
-                const err = await res.json();
-                toast.error("Launch Failed", {
-                    description: err.detail || "Neural cluster rejected the composition request."
-                });
+                onFallback: (err: any) => {
+                    toast.error("Launch Failed", {
+                        description: err.message || "Neural cluster rejected the composition request."
+                    });
+                }
             }
-        } catch (err) {
-            console.error("Error launching pipeline:", err);
-            toast.error("Failed to compose video");
-        } finally {
-            setIsLaunching(false);
-        }
+        );
+        setIsLaunching(false);
     };
 
     const handleSendChat = async () => {
@@ -252,110 +251,105 @@ export default function NexusPage() {
         setChatInput("");
         setIsChatting(true);
 
-        const token = localStorage.getItem("et_token");
-        try {
-            const res = await fetch(`${API_BASE}/agent/chat`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ message })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                setChatMessages(prev => [...prev, { role: "agent", content: data.response || data.message || JSON.stringify(data) }]);
-            } else {
-                const err = await res.json();
-                toast.error("Agent Error", {
-                    description: err.detail || "The AI agent failed to process your request."
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/agent/chat`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ message })
                 });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    setChatMessages(prev => [...prev, { role: "agent", content: data.response || data.message || JSON.stringify(data) }]);
+                },
+                onFallback: (err: any) => {
+                    toast.error("Agent Error", {
+                        description: err.message || "The AI agent failed to process your request."
+                    });
+                }
             }
-        } catch (err) {
-            console.error("Chat error:", err);
-            toast.error("Failed to reach AI agent");
-        } finally {
-            setIsChatting(false);
-        }
+        );
+        setIsChatting(false);
     };
 
     const handleCreatePersona = async () => {
         if (!personaName || !personaImageUrl) return;
         setIsCreatingPersona(true);
-        const token = localStorage.getItem("et_token");
-
-        try {
-            const res = await fetch(`${API_BASE}/persona/create`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/persona/create`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        name: personaName,
+                        reference_image_url: personaImageUrl
+                    })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setCreatedPersona({ name: personaName, reference_image_url: personaImageUrl });
+                    toast.success("Persona Created", {
+                        description: `Persona "${personaName}" is ready for video generation.`
+                    });
                 },
-                body: JSON.stringify({
-                    name: personaName,
-                    reference_image_url: personaImageUrl
-                })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                setCreatedPersona({ name: personaName, reference_image_url: personaImageUrl });
-                toast.success("Persona Created", {
-                    description: `Persona "${personaName}" is ready for video generation.`
-                });
-            } else {
-                const err = await res.json();
-                toast.error("Creation Failed", {
-                    description: err.detail || "Could not create the persona."
-                });
+                onFallback: (err: any) => {
+                    toast.error("Creation Failed", {
+                        description: err.message || "Could not create the persona."
+                    });
+                }
             }
-        } catch (err) {
-            console.error("Error creating persona:", err);
-            toast.error("Failed to create persona");
-        } finally {
-            setIsCreatingPersona(false);
-        }
+        );
+        setIsCreatingPersona(false);
     };
 
     const handleGenerateVideo = async () => {
         if (!createdPersona || !videoTopic) return;
         setIsGeneratingVideo(true);
-        const token = localStorage.getItem("et_token");
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                const body: Record<string, string> = {
+                    reference_image_url: createdPersona.reference_image_url,
+                    topic: videoTopic,
+                };
+                if (videoScript) body.script = videoScript;
 
-        try {
-            const body: Record<string, string> = {
-                reference_image_url: createdPersona.reference_image_url,
-                topic: videoTopic,
-            };
-            if (videoScript) body.script = videoScript;
-
-            const res = await fetch(`${API_BASE}/persona/generate`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+                return fetch(`${API_BASE}/persona/generate`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    toast.success("Video Generated", {
+                        description: data.video_url || "Persona video has been generated successfully."
+                    });
                 },
-                body: JSON.stringify(body)
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                toast.success("Video Generated", {
-                    description: data.video_url || "Persona video has been generated successfully."
-                });
-            } else {
-                const err = await res.json();
-                toast.error("Generation Failed", {
-                    description: err.detail || "Could not generate the persona video."
-                });
+                onFallback: (err: any) => {
+                    toast.error("Generation Failed", {
+                        description: err.message || "Could not generate the persona video."
+                    });
+                }
             }
-        } catch (err) {
-            console.error("Error generating video:", err);
-            toast.error("Failed to generate persona video");
-        } finally {
-            setIsGeneratingVideo(false);
-        }
+        );
+        setIsGeneratingVideo(false);
     };
 
     return (
@@ -442,7 +436,7 @@ export default function NexusPage() {
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
                            <Database className="h-3 w-3" /> Storage Node
                         </label>
-                        <p className="text-white font-black uppercase tracking-tight">{telemetry?.hostname || "Cloud-S3 Master"}</p>
+                        <p className="text-white font-black uppercase tracking-tight">{telemetry?.hostname || (telemetry ? "---" : "Primary Node")}</p>
                     </div>
 
                     <button 
@@ -507,7 +501,7 @@ export default function NexusPage() {
                                 <div className="flex items-center gap-4">
                                     <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                                     <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                                        Stream: <span className="text-white">{telemetry?.hostname || "Neural_Cluster_#402"}</span>
+                                        Stream: <span className="text-white">{telemetry?.hostname || "---"}</span>
                                     </p>
                                 </div>
                             </div>
@@ -541,7 +535,7 @@ export default function NexusPage() {
                                     </div>
                                     <div className="flex items-center justify-between p-4 rounded-2xl bg-white/2 border border-white/5">
                                         <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Cluster Routing</span>
-                                        <span className="text-xs font-black text-white uppercase">{telemetry?.cluster_node || "EU-Central-1"}</span>
+                                        <span className="text-xs font-black text-white uppercase">{telemetry?.cluster_node || "Local-Edge-1"}</span>
                                     </div>
                                 </div>
                             </div>
@@ -839,7 +833,7 @@ export default function NexusPage() {
                         {/* Chat Interface */}
                         <div className="xl:col-span-2 glass-card p-0 flex flex-col bg-black border border-white/5 rounded-4xl overflow-hidden">
                             {/* Messages Area */}
-                            <div className="flex-1 min-h-[400px] max-h-[500px] overflow-y-auto p-8 space-y-6 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+                            <div className="flex-1 min-h-[400px] max-h-[500px] overflow-y-auto p-8 space-y-6 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent" data-testid="agent-chat-messages">
                                 {chatMessages.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center opacity-30 space-y-4 py-16">
                                         <Bot className="h-12 w-12" />
@@ -912,10 +906,12 @@ export default function NexusPage() {
                                         onChange={(e) => setChatInput(e.target.value)}
                                         onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
                                         placeholder="Ask the AI agent anything..."
+                                        data-testid="agent-chat-input"
                                         className="flex-1 bg-white/3 border border-white/5 rounded-2xl px-5 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/30 transition-colors"
                                     />
                                     <button
                                         onClick={handleSendChat}
+                                        data-testid="agent-chat-send"
                                         disabled={!chatInput.trim() || isChatting}
                                         className={cn(
                                             "h-12 w-12 rounded-2xl bg-primary flex items-center justify-center transition-all hover:scale-105 active:scale-95",

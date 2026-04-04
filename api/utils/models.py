@@ -284,3 +284,15 @@ class OpenCLISessionDB(Base):
     error_message = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class DiscoveryInteractionDB(Base):
+    __tablename__ = "discovery_interactions"
+    id = Column(Integer, primary_key=True, index=True)
+    candidate_id = Column(String, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    action = Column(String)  # handshake, negotiate, bookmark, ignore
+    status = Column(Integer, default=0)  # 0: pending, 1: established, 2: failed
+    details = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+

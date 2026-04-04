@@ -4,17 +4,14 @@
 
 set -e
 
-# --- CONFIGURATION (Defaulting to the RTX 8000 Node) ---
-REMOTE_HOST="220.135.0.171"
-REMOTE_PORT="45672"
-REMOTE_USER="root"
+# --- CONFIGURATION (Zero-Hardcode Agnostic Config) ---
+REMOTE_HOST=${1}
+REMOTE_PORT=${2:-22}
+REMOTE_USER=${3:-"root"}
 SSH_KEY=${SSH_KEY:-"/home/psalmprax/Music/id_rsa"}
 REMOTE_DIR="/workspace/viral_forge_ai"
 LOCAL_DIR="$(pwd)/remote_ai_setup"
-if [ ! -d "$LOCAL_DIR" ]; then
-    # Fallback for when running inside Docker context
-    LOCAL_DIR="$(pwd)"
-fi
+
 
 # Allow override via environment variables
 REMOTE_HOST=${1:-$REMOTE_HOST}
@@ -55,7 +52,7 @@ ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout
     
     cd $REMOTE_DIR && 
     export AI_CLUSTER_SECRET=\"$AI_CLUSTER_SECRET\" &&
-    export AI_GATEWAY_URL=\"http://149.104.110.122:8133\" &&
+    export AI_GATEWAY_URL=\"${AI_GATEWAY_URL:-http://localhost:8133}\" &&
     export AI_NODE_PUBLIC_URL=\"http://$REMOTE_HOST:8122\" &&
     
     # Precise Python Discovery: Prioritize the local venv over system Ghost-Pythons

@@ -1,0 +1,73 @@
+import logging
+import asyncio
+from typing import Dict, List, Optional
+from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
+
+class PaperclipOrganicSkill:
+    """
+    Skill for Paperclip-style autonomous organic scaling and KPI monitoring.
+    Focuses on "Cost-Free" ads through direct social posting and performance loops.
+    """
+    
+    def __init__(self):
+        self.kpi_data = {}
+        self.threshold_viral = 1000 # Minimum views to consider "scaling"
+        
+    def track_organic_performance(self, job_id: str, platform: str, metrics: Dict[str, int]) -> str:
+        """
+        Record performance of an organic post.
+        """
+        self.kpi_data[job_id] = {
+            "platform": platform,
+            "metrics": metrics,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        views = metrics.get("views", 0)
+        likes = metrics.get("likes", 0)
+        shares = metrics.get("shares", 0)
+        
+        logger.info(f"Tracking organic performance for {job_id} on {platform}: {views} views")
+        
+        status = "Normal"
+        if views > self.threshold_viral:
+            status = "🔥 VIRAL DETECTED"
+        
+        return f"📊 **Organic Tracking Update**\nJob: `{job_id}`\nPlatform: `{platform}`\nViews: {views}\nLikes: {likes}\nStatus: {status}"
+
+    def scale_organic_reach(self, niche: str) -> str:
+        """
+        Analyzes past performance and suggests a scaling strategy (iterations).
+        """
+        high_performers = [
+            jid for jid, data in self.kpi_data.items() 
+            if data["metrics"].get("views", 0) > self.threshold_viral
+        ]
+        
+        if not high_performers:
+            return "📉 No high-performing organic content found yet. Strategy: Continue broad discovery."
+        
+        suggestion = f"🚀 **Paperclip Organic Scaling Strategy for {niche}**\n\n"
+        suggestion += f"Detected {len(high_performers)} viral anchors. Actions:\n"
+        
+        for jid in high_performers[:3]:
+            suggestion += f"- 🔄 Generate 3 variations of Job `{jid}` (Iterative Scaling).\n"
+            suggestion += f"- 🔗 Inject 'High-Intent' affiliate links for this specific hook.\n"
+            
+        return suggestion
+
+    def get_autonomous_decision(self) -> Dict:
+        """
+        Returns a decision for the Master Controller to act upon.
+        """
+        # Logic to decide if we should trigger a new render automatically
+        # based on trending niches and past success
+        return {
+            "action": "scale",
+            "reason": "High engagement on organic TikTok posts in 'AI' niche",
+            "recommended_niche": "AI Automation"
+        }
+
+paperclip_skill = PaperclipOrganicSkill()

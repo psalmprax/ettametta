@@ -100,6 +100,19 @@ echo "📚 [Main] Installing remaining requirements..."
 "$PIP_CMD" install $PIP_FLAGS -r "$SCRIPT_DIR/requirements.txt"
 
 # 6. Final Validation
-echo "🎨 [Summary] Hardware Activation Report:"
-"$PYTHON_BIN" "$SCRIPT_DIR/check_hardware.py" || python3 "$SCRIPT_DIR/check_hardware.py"
+echo "🎨 [Summary]# Global variables
+LOG_FILE="/var/log/viral_forge_setup.log"
+PYTHON_VERSION="3.12"
+NODE_VERSION="20"
+
+# --- REMOTION AND NODE.JS SETUP ---
+echo "⚙️ Installing Node.js ${NODE_VERSION} for Remotion and Programmatic Tools..."
+curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | sudo -E bash -
+sudo apt-get install -y nodejs
+sudo npm install -g npx
+
+# Install Chromium for Remotion (Headless rendering)
+echo "🌐 Installing Chromium for Headless Video Rendering..."
+sudo apt-get install -y chromium-browser libgbm-dev
+$SCRIPT_DIR/check_hardware.py" || python3 "$SCRIPT_DIR/check_hardware.py"
 echo "✅ Viral Forge AI Engine is ready for production."

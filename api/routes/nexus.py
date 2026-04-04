@@ -46,12 +46,13 @@ async def run_nexus_composition(job_id: int, request: NexusComposeRequest, db: S
             )
         elif request.blueprint_id == "story-factory":
              # 2. Strategy for Storytelling Blueprint
-             # For now, route to auto creator with a storytelling prompt
+             target_topic = request.topic or f"Viral trends in {request.niche}"
              output_path = await base_auto_creator.create_cinema_video(
                 job_id=job_id,
-                topic="The future of AI Automation", # Example
+                topic=target_topic,
                 niche=request.niche
             )
+
         else:
             # 3. Manual Nexus Assembly or Viral Reskin (Default)
             # Thumbnail Generation (if requested)
@@ -150,10 +151,12 @@ async def get_nexus_telemetry(current_user = Depends(get_current_user), db: Sess
     # 3. Real Latency Measurement (Synthetic RTT)
     # We'll use the DB query time as our proxy for cluster responsiveness
     latency_ms = max(db_query_time_ms, 5)
+    node_id = os.getenv("NEXUS_NODE_ID", socket.gethostname())
     
     return {
         "status": "OPERATIONAL",
-        "cluster_node": os.getenv("NEXUS_NODE_ID", socket.gethostname()),
+        "cluster_node": node_id,
+        "hostname": node_id,
         "active_jobs": active_nexus_jobs + active_video_jobs,
         "nexus_active": active_nexus_jobs,
         "video_active": active_video_jobs,
@@ -165,3 +168,5 @@ async def get_nexus_telemetry(current_user = Depends(get_current_user), db: Sess
             {"id": "Neural_Mesh", "status": "SYNCED" if active_video_jobs > 0 else "STANDBY", "offset": "2ms"}
         ]
     }
+
+
