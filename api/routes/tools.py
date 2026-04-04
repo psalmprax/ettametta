@@ -26,11 +26,9 @@ from services.openclaw.skills.external import (
 )
 from services.openclaw.skills.research import ResearchSkill
 from services.openclaw.skills.content import ContentSkill
-from services.openclaw.skills.analytics import SocialAnalyticsSkill
+from services.openclaw.skills.analytics import AnalyticsSkill
 
-research_skill = ResearchSkill()
-content_skill = ContentSkill()
-social_metrics_skill = SocialAnalyticsSkill()
+social_metrics_skill = AnalyticsSkill()
 
 router = APIRouter(prefix="/tools", tags=["Tools & Skills"])
 
