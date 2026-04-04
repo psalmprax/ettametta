@@ -21,7 +21,7 @@ import {
     Medal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorNode } from "@/components/ui/ErrorNode";
 import { useWebSocket } from "@/hooks/useWebSocket";
