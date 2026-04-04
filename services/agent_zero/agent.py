@@ -9,17 +9,19 @@ from .tools.render import render_tool
 from .tools.publish import publish_tool
 from .tools.affiliate import affiliate_tool
 from .tools.market_screener import market_screener_tool
-from .tools.paperclip_kpi import paperclip_kpi_tool
+from .tools.paperclip_kpi import paperclip_kpi
 from .tools.remotion_render import remotion_render_tool
 from api.routes.ws import notify_system_log_async
 
 logger = logging.getLogger(__name__)
+
 
 class AgentZero:
     """
     The Autonomous Director of ettametta.
     Orchestrates Discovery, Analysis, Production, and Publishing.
     """
+
     def __init__(self):
         self.client = Groq(api_key=settings.GROQ_API_KEY)
         self.model = "llama-3.3-70b-versatile"
@@ -34,8 +36,8 @@ class AgentZero:
             "publish": publish_tool,
             "affiliate": affiliate_tool,
             "screener": market_screener_tool,
-            "paperclip": paperclip_kpi_tool,
-            "remotion": remotion_render_tool
+            "paperclip": paperclip_kpi,
+            "remotion": remotion_render_tool,
         }
 
     async def _log(self, message: str, level: str = "INFO"):
@@ -50,22 +52,26 @@ class AgentZero:
         self.is_running = True
         self.current_step = "IDLE"
         await self._log("Autonomous Loop Ignition Sequence Initiated.", "SYSTEM")
-        
+
         while self.is_running:
             try:
                 self.last_run_at = asyncio.get_event_loop().time()
                 self.next_run_at = self.last_run_at + (4 * 3600)
                 await self.run_iteration()
                 self.current_step = "WAITING"
-                await self._log(f"Cycle Complete. Engine entering standby. Next run in 4 hours.", "SUCCESS")
+                await self._log(
+                    f"Cycle Complete. Engine entering standby. Next run in 4 hours.",
+                    "SUCCESS",
+                )
                 # Wait for 4 hours between iterations (configurable)
                 for _ in range(4 * 3600):
-                    if not self.is_running: break
+                    if not self.is_running:
+                        break
                     await asyncio.sleep(1)
             except Exception as e:
                 self.current_step = "ERROR"
                 await self._log(f"Loop Integrity Failure: {e}", "ERROR")
-                await asyncio.sleep(300) # Wait 5 mins before retry on error
+                await asyncio.sleep(300)  # Wait 5 mins before retry on error
 
     def stop(self):
         """Stops the autonomous loop."""
@@ -75,72 +81,97 @@ class AgentZero:
     async def run_iteration(self):
         """A single iteration of the autonomous cycle."""
         await self._log("Iteration Started: Scouting for market trends...")
-        
+
         # 1. Discover Trends
         self.current_step = "SCOUTING"
         trends = discovery_tool.run(topic="Viral Tech Trends", limit=5)
-        
+
         if "error" in trends or not trends.get("valid_candidates"):
-            await self._log("No viable trends detected in current cluster. Retrying later.", "WARNING")
+            await self._log(
+                "No viable trends detected in current cluster. Retrying later.",
+                "WARNING",
+            )
             self.current_step = "WAITING"
             return
 
         # 2. Screen Trends for Monetization Potential
         self.current_step = "SCREENING"
-        await self._log(f"Scanned {len(trends['valid_candidates'])} candidates. Analyzing monetization velocity...")
+        await self._log(
+            f"Scanned {len(trends['valid_candidates'])} candidates. Analyzing monetization velocity..."
+        )
         raw_trends = json.dumps(trends["valid_candidates"])
         analysis = market_screener_tool.run(raw_trends)
-        
+
         if analysis.get("monetization_potential") == "Low":
-            await self._log("Market potential below threshold (Low). Terminating current branch.", "NEUTRAL")
+            await self._log(
+                "Market potential below threshold (Low). Terminating current branch.",
+                "NEUTRAL",
+            )
             self.current_step = "WAITING"
             return
 
         top_trend = trends["valid_candidates"][0]
-        await self._log(f"High-Velocity Signal Detected: {top_trend['title']} (Score: {analysis.get('sentiment_score')})", "SUCCESS")
+        await self._log(
+            f"High-Velocity Signal Detected: {top_trend['title']} (Score: {analysis.get('sentiment_score')})",
+            "SUCCESS",
+        )
 
         # 3. Ideate Strategy and Affiliate Links
         self.current_step = "BRAINSTORMING"
         await self._log("Synthesizing cinematic strategy and affiliate alignment...")
         strategy = await self._brainstorm(top_trend, analysis)
         self.latest_insights = strategy
-        
+
         # Real-First Affiliate Integration
         recommendations = affiliate_tool.recommend_links(
-            niche="Tech", 
-            script_text=f"{strategy['title']} - {strategy['hook']}"
+            niche="Tech", script_text=f"{strategy['title']} - {strategy['hook']}"
         )
-        
+
         selected_link = "https://viralforge.ai/monetize"
-        if recommendations.get("available_links") and len(recommendations["available_links"]) > 0:
+        if (
+            recommendations.get("available_links")
+            and len(recommendations["available_links"]) > 0
+        ):
             best_link = recommendations["available_links"][0]
             selected_link = best_link.get("link", selected_link)
-            await self._log(f"Selected conversion vector: {best_link.get('product_name')}", "SUCCESS")
+            await self._log(
+                f"Selected conversion vector: {best_link.get('product_name')}",
+                "SUCCESS",
+            )
         else:
-             await self._log("No existing affiliate links for target niche. Proceeding with generic monetization.", "WARNING")
+            await self._log(
+                "No existing affiliate links for target niche. Proceeding with generic monetization.",
+                "WARNING",
+            )
 
         # 4. Produce and Render
         self.current_step = "RENDERING"
         await self._log(f"Triggering Neural Render: {strategy['title']}", "SYSTEM")
         render_res = render_tool.run(
-            title=strategy["title"],
-            subtitle=strategy["subtitle"]
+            title=strategy["title"], subtitle=strategy["subtitle"]
         )
 
         if "error" in render_res:
-             await self._log(f"Render Pipeline Fault: {render_res['error']}", "ERROR")
-             return
+            await self._log(f"Render Pipeline Fault: {render_res['error']}", "ERROR")
+            return
 
         await self._log(f"Render Job Serialized: {render_res.get('job_id')}", "SUCCESS")
-        
+
         # 4b. Programmatic Overlays (Remotion)
-        if "scientific" in top_trend.get("category", "").lower() or "Technical" in strategy.get("title", ""):
-            await self._log("Technical niche detected. Engaging Remotion for high-fidelity data overlays...", "SYSTEM")
+        if "scientific" in top_trend.get(
+            "category", ""
+        ).lower() or "Technical" in strategy.get("title", ""):
+            await self._log(
+                "Technical niche detected. Engaging Remotion for high-fidelity data overlays...",
+                "SYSTEM",
+            )
             remotion_res = remotion_render_tool.run(
                 composition="ScienceOverlay",
-                props={"title": strategy["title"], "data_points": [88, 92, 95]}
+                props={"title": strategy["title"], "data_points": [88, 92, 95]},
             )
-            await self._log(f"Remotion Layer Integrated: {remotion_res.get('job_id')}", "SUCCESS")
+            await self._log(
+                f"Remotion Layer Integrated: {remotion_res.get('job_id')}", "SUCCESS"
+            )
 
         # 5. Publishing (Real Integration)
         self.current_step = "PUBLISHING"
@@ -149,24 +180,36 @@ class AgentZero:
             await self._log(f"Initiating Broadcast to Platform Mesh...", "SYSTEM")
             publish_res = publish_tool.run(
                 video_path=video_path,
-                platform="YouTube", # Optimized for primary node
+                platform="YouTube",  # Optimized for primary node
                 title=strategy["title"],
-                description=f"{strategy['subtitle']}\n\nGet it here: {selected_link}"
+                description=f"{strategy['subtitle']}\n\nGet it here: {selected_link}",
             )
-            
+
             if "error" in publish_res:
-                await self._log(f"Publishing Hub Error: {publish_res['error']}", "ERROR")
+                await self._log(
+                    f"Publishing Hub Error: {publish_res['error']}", "ERROR"
+                )
             else:
-                await self._log("Content Successfully Deployed to Production.", "SUCCESS")
+                await self._log(
+                    "Content Successfully Deployed to Production.", "SUCCESS"
+                )
         else:
-            await self._log("No output asset detected. Video rendering in background. Skipping immediate publish.", "INFO")
+            await self._log(
+                "No output asset detected. Video rendering in background. Skipping immediate publish.",
+                "INFO",
+            )
 
         # 6. Register Activity & Performance (Paperclip)
-        await self._log(f"Agent Zero Iteration Finalized. JobID: {render_res.get('job_id')}", "SUCCESS")
-        
+        await self._log(
+            f"Agent Zero Iteration Finalized. JobID: {render_res.get('job_id')}",
+            "SUCCESS",
+        )
+
         # Self-Correcting Performance Loop
         await self._log("Auditing previous job performance via Paperclip...", "SYSTEM")
-        perf_report = paperclip_kpi_tool.run(action="scale", niche=top_trend.get("niche", "General"))
+        perf_report = paperclip_kpi.run(
+            action="scale", niche=top_trend.get("niche", "General")
+        )
         if "Trending" in perf_report:
             await self._log(f"Viral Anchor Detected! {perf_report}", "SUCCESS")
 
@@ -174,7 +217,7 @@ class AgentZero:
         """Uses LLM to decide on video title, hooks, and product alignment."""
         prompt = f"""
         Act as a Viral Content Strategist and Elite Affiliate Marketer.
-        Trend: {trend['title']}
+        Trend: {trend["title"]}
         Sentiment analysis: {json.dumps(analysis)}
         
         Generate a cinematic video strategy.
@@ -189,8 +232,9 @@ class AgentZero:
         chat_completion = self.client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model=self.model,
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
         )
         return json.loads(chat_completion.choices[0].message.content)
+
 
 base_agent_zero = AgentZero()
