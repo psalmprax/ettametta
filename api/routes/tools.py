@@ -23,10 +23,14 @@ from services.openclaw.skills.external import (
     backtest_service,
     metatrader_service,
     binance_service,
-    research_skill,
-    data_ingestion_skill,
-    social_metrics_skill,
 )
+from services.openclaw.skills.research import ResearchSkill
+from services.openclaw.skills.content import DataIngestionSkill
+from services.openclaw.skills.analytics import SocialMetricsSkill
+
+research_skill = ResearchSkill()
+data_ingestion_skill = DataIngestionSkill()
+social_metrics_skill = SocialMetricsSkill()
 
 router = APIRouter(prefix="/tools", tags=["Tools & Skills"])
 
