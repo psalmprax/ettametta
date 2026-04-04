@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { withRealFallback } from "@/lib/real_first_utils";
 
 interface SocialAccount {
     id: number;
@@ -106,33 +107,30 @@ export default function PublishingPage() {
 
         const lowerPlatform = platform.toLowerCase().replace(" Shorts", "").replace(" Reels", "");
         
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/publish/auth/${lowerPlatform}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            if (res.ok) {
-                const data = await res.json();
-                if (data.url) {
-                    window.location.href = data.url;
-                } else {
-                    throw new Error("Missing authorization URL in response");
-                }
-            } else {
-                const error = await res.json();
-                toast.error("Auth Handshake Failed", {
-                    description: error.detail || "Neural link rejected by server."
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/publish/auth/${lowerPlatform}`, {
+                    headers: { Authorization: `Bearer ${token}` }
                 });
-                setIsRedirecting(null);
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    if (data.url) {
+                        window.location.href = data.url;
+                    } else {
+                        throw new Error("Missing authorization URL in response");
+                    }
+                },
+                onFallback: (err: any) => {
+                    toast.error("Auth Handshake Failed", {
+                        description: err.message || "Neural link rejected by server."
+                    });
+                    setIsRedirecting(null);
+                }
             }
-        } catch (err) {
-            console.error("OAuth Init Failed:", err);
-            toast.error("Signal Interpretation Failure", {
-                description: "Failed to parse OAuth handshake packets."
-            });
-            setIsRedirecting(null);
-        }
+        );
     };
 
     React.useEffect(() => {
@@ -202,55 +200,54 @@ export default function PublishingPage() {
             return;
         }
         setIsDeploying(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            
-            const endpoint = isScheduled && scheduleTime ? `${API_BASE}/publish/schedule` : `${API_BASE}/publish/post`;
-            const body: any = {
-                video_path: selectedJobForDeploy.output_path,
-                niche: selectedNiche,
-                platform: selectedPlatform,
-                account_id: selectedAccountId || (accounts.length > 0 ? accounts[0].id : undefined),
-                inject_monetization: injectMonetization,
-                variant_b_title: variantBTitle || undefined,
-                variant_b_description: variantBDescription || undefined
-            };
-            
-            if (isScheduled && scheduleTime) {
-                body.scheduled_at = new Date(scheduleTime).toISOString();
-            }
-            
-            const res = await fetch(endpoint, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                const endpoint = isScheduled && scheduleTime ? `${API_BASE}/publish/schedule` : `${API_BASE}/publish/post`;
+                const body: any = {
+                    video_path: selectedJobForDeploy.output_path,
+                    niche: selectedNiche,
+                    platform: selectedPlatform,
+                    account_id: selectedAccountId || (accounts.length > 0 ? accounts[0].id : undefined),
+                    inject_monetization: injectMonetization,
+                    variant_b_title: variantBTitle || undefined,
+                    variant_b_description: variantBDescription || undefined
+                };
+                
+                if (isScheduled && scheduleTime) {
+                    body.scheduled_at = new Date(scheduleTime).toISOString();
+                }
+                
+                return fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: async () => {
+                    toast.success("Transmission Initiated", {
+                        description: "Handshake verified. Packets streaming to target node."
+                    });
+                    setIsDeployModalOpen(false);
+                    const token = localStorage.getItem("et_token");
+                    const historyRes = await fetch(`${API_BASE}/publish/history`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (historyRes.ok) setHistory(await historyRes.json());
                 },
-                body: JSON.stringify(body)
-            });
-            if (res.ok) {
-                toast.success("Transmission Initiated", {
-                    description: "Handshake verified. Packets streaming to target node."
-                });
-                setIsDeployModalOpen(false);
-                // Refresh history
-                const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
-                const historyRes = await fetch(`${API_BASE}/publish/history`, { headers });
-                if (historyRes.ok) setHistory(await historyRes.json());
-            } else {
-                const error = await res.json();
-                toast.error("Transmission Failed", {
-                    description: error.detail || "Neural link rejected. Check auth tokens."
-                });
+                onFallback: (err: any) => {
+                    toast.error("Transmission Failed", {
+                        description: err.message || "Neural link rejected. Check auth tokens."
+                    });
+                }
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Signal Lost", {
-                description: "Failed to reach the publishing cluster."
-            });
-        } finally {
-            setIsDeploying(false);
-        }
+        );
+        setIsDeploying(false);
     };
 
     const handleMultiDeploy = async () => {
@@ -267,48 +264,49 @@ export default function PublishingPage() {
             return;
         }
         setIsMultiDeploying(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const body: any = {
-                video_path: selectedJobForDeploy.output_path,
-                niche: selectedNiche,
-                platforms: selectedPlatforms,
-                account_id: selectedAccountId || (accounts.length > 0 ? accounts[0].id : undefined),
-                inject_monetization: injectMonetization,
-                variant_b_title: variantBTitle || undefined,
-                variant_b_description: variantBDescription || undefined
-            };
-            const res = await fetch(`${API_BASE}/publish/post-multi`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                const body: any = {
+                    video_path: selectedJobForDeploy.output_path,
+                    niche: selectedNiche,
+                    platforms: selectedPlatforms,
+                    account_id: selectedAccountId || (accounts.length > 0 ? accounts[0].id : undefined),
+                    inject_monetization: injectMonetization,
+                    variant_b_title: variantBTitle || undefined,
+                    variant_b_description: variantBDescription || undefined
+                };
+                return fetch(`${API_BASE}/publish/post-multi`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: async () => {
+                    toast.success("Multi-Node Transmission Initiated", {
+                        description: "Broadcasting across all selected networks."
+                    });
+                    setIsDeployModalOpen(false);
+                    setSelectedPlatforms([]);
+                    const token = localStorage.getItem("et_token");
+                    const historyRes = await fetch(`${API_BASE}/publish/history`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (historyRes.ok) setHistory(await historyRes.json());
                 },
-                body: JSON.stringify(body)
-            });
-            if (res.ok) {
-                toast.success("Multi-Node Transmission Initiated", {
-                    description: "Broadcasting across all selected networks."
-                });
-                setIsDeployModalOpen(false);
-                setSelectedPlatforms([]);
-                const headers = { Authorization: `Bearer ${token}` };
-                const historyRes = await fetch(`${API_BASE}/publish/history`, { headers });
-                if (historyRes.ok) setHistory(await historyRes.json());
-            } else {
-                const error = await res.json();
-                toast.error("Multi-Transmission Failed", {
-                    description: error.detail || "One or more network links rejected."
-                });
+                onFallback: (err: any) => {
+                    toast.error("Multi-Transmission Failed", {
+                        description: err.message || "One or more network links rejected."
+                    });
+                }
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Signal Lost", {
-                description: "Failed to reach the publishing cluster."
-            });
-        } finally {
-            setIsMultiDeploying(false);
-        }
+        );
+        setIsMultiDeploying(false);
     };
 
     const handleRetry = async (contentId: number) => {
@@ -337,63 +335,61 @@ export default function PublishingPage() {
     const handleDisconnect = async (accountId: number) => {
         const token = localStorage.getItem("et_token");
         setIsDisconnecting(true);
-        try {
-            const res = await fetch(`${API_BASE}/publish/account/${accountId}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                toast.success("Node Disconnected", {
-                    description: "Account link has been severed."
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/publish/account/${accountId}`, {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${token}` }
                 });
-                setAccounts(prev => prev.filter(a => a.id !== accountId));
-                setIsAccountModalOpen(false);
-                setSelectedAccountForDetail(null);
-            } else {
-                const error = await res.json();
-                toast.error("Disconnect Failed", {
-                    description: error.detail || "Unable to sever node connection."
-                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("Node Disconnected", {
+                        description: "Account link has been severed."
+                    });
+                    setAccounts(prev => prev.filter(a => a.id !== accountId));
+                    setIsAccountModalOpen(false);
+                    setSelectedAccountForDetail(null);
+                },
+                onFallback: (err: any) => {
+                    toast.error("Disconnect Failed", {
+                        description: err.message || "Unable to sever node connection."
+                    });
+                }
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Signal Lost", {
-                description: "Failed to reach the publishing cluster."
-            });
-        } finally {
-            setIsDisconnecting(false);
-        }
+        );
+        setIsDisconnecting(false);
     };
 
     const handleGenerateSeo = async () => {
         setIsGeneratingSeo(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(
-                `${API_BASE}/publish/package?niche=${encodeURIComponent(selectedNiche)}&platform=${encodeURIComponent(selectedPlatform)}`,
-                {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${token}` }
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(
+                    `${API_BASE}/publish/package?niche=${encodeURIComponent(selectedNiche)}&platform=${encodeURIComponent(selectedPlatform)}`,
+                    {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("SEO Package Generated", {
+                        description: "Metadata optimization bundle ready for injection."
+                    });
+                },
+                onFallback: (err: any) => {
+                    toast.error("SEO Generation Failed", {
+                        description: err.message || "Unable to generate SEO package."
+                    });
                 }
-            );
-            if (res.ok) {
-                toast.success("SEO Package Generated", {
-                    description: "Metadata optimization bundle ready for injection."
-                });
-            } else {
-                const error = await res.json();
-                toast.error("SEO Generation Failed", {
-                    description: error.detail || "Unable to generate SEO package."
-                });
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Signal Lost", {
-                description: "Failed to reach the publishing cluster."
-            });
-        } finally {
-            setIsGeneratingSeo(false);
-        }
+        );
+        setIsGeneratingSeo(false);
     };
 
     const togglePlatformSelection = (platform: string) => {

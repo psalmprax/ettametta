@@ -18,6 +18,7 @@ import { AI_GATEWAY_URL, INTERNAL_API_TOKEN } from "@/lib/config";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { withRealFallback } from "@/lib/real_first_utils";
 
 interface Node {
     url: string;
@@ -36,20 +37,19 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
     const [isAdminToken, setAdminToken] = useState(INTERNAL_API_TOKEN);
 
     const fetchNodes = async () => {
-        try {
-            const res = await fetch(`${AI_GATEWAY_URL}/health`);
-            if (res.ok) {
-                const data = await res.json();
-                // If the health response structure differs, adapt here
-                const nodeData = data.nodes || data.telemetry || [];
-                // data.nodes might be the list from JobStore.get_nodes()
-                setNodes(Array.isArray(nodeData) ? nodeData : []);
+        await withRealFallback(
+            async () => {
+                return fetch(`${AI_GATEWAY_URL}/health`);
+            },
+            {
+                fallback: nodes,
+                onSuccess: (data: any) => {
+                    const nodeData = data.nodes || data.telemetry || [];
+                    setNodes(Array.isArray(nodeData) ? nodeData : []);
+                }
             }
-        } catch (e) {
-            console.error("Failed to fetch cluster nodes", e);
-        } finally {
-            setIsLoading(false);
-        }
+        );
+        setIsLoading(false);
     };
 
     useEffect(() => {
@@ -61,77 +61,92 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
     const handleAddNode = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newNodeUrl) return;
-        try {
-            const res = await fetch(`${AI_GATEWAY_URL}/nodes?url=${encodeURIComponent(newNodeUrl)}`, {
-                method: 'POST',
-                headers: { 'X-Admin-Token': isAdminToken }
-            });
-            if (res.ok) {
-                toast.success("Node added to cluster registry");
-                const addedUrl = newNodeUrl; // Capture for transition
-                setNewNodeUrl("");
-                setIsAdding(false);
-                fetchNodes();
-                // SEAMLESS TRANSITION: Open provisioning for the newly added node
-                setProvisioningNode(addedUrl);
-            } else {
-                toast.error("Unauthorized: Please provide Admin Token");
+        await withRealFallback(
+            async () => {
+                return fetch(`${AI_GATEWAY_URL}/register`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-Admin-Token': isAdminToken 
+                    },
+                    body: JSON.stringify({ url: newNodeUrl })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("Node added to cluster registry");
+                    const addedUrl = newNodeUrl;
+                    setNewNodeUrl("");
+                    setIsAdding(false);
+                    fetchNodes();
+                    setProvisioningNode(addedUrl);
+                },
+                onFallback: (err: any) => {
+                    toast.error("Registration Failed", {
+                        description: err.message || "Unauthorized: Please provide Admin Token"
+                    });
+                }
             }
-        } catch (e) {
-            toast.error("Failed to register node");
-        }
+        );
     };
 
     const handleRemoveNode = async (url: string) => {
-        try {
-            const res = await fetch(`${AI_GATEWAY_URL}/nodes/${encodeURIComponent(url)}`, {
-                method: 'DELETE',
-                headers: { 'X-Admin-Token': isAdminToken }
-            });
-            if (res.ok) {
-                toast.success("Node removed from cluster");
-                fetchNodes();
-            } else {
-                toast.error("Unauthorized: Admin action required");
+        await withRealFallback(
+            async () => {
+                return fetch(`${AI_GATEWAY_URL}/nodes/${encodeURIComponent(url)}`, {
+                    method: 'DELETE',
+                    headers: { 'X-Admin-Token': isAdminToken }
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("Node removed from cluster");
+                    fetchNodes();
+                },
+                onFallback: (err: any) => {
+                    toast.error("Removal Failed", { description: err.message });
+                }
             }
-        } catch (e) {
-            toast.error("Failed to remove node");
-        }
+        );
     };
 
     const handleProvision = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!provisioningNode || !sshKey) return;
         
-        // Extract IP from URL (assuming http://IP:8122)
         const ipMatch = provisioningNode.match(/h?t?t?p?s?:\/\/(.*?):/);
         const ip = ipMatch ? ipMatch[1] : provisioningNode;
 
-        try {
-            const res = await fetch(`${AI_GATEWAY_URL}/nodes/provision`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Admin-Token': isAdminToken 
+        await withRealFallback(
+            async () => {
+                return fetch(`${AI_GATEWAY_URL}/nodes/provision`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-Admin-Token': isAdminToken 
+                    },
+                    body: JSON.stringify({
+                        ip: ip,
+                        ssh_key: sshKey,
+                        port: parseInt(sshPort) || 22
+                    })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("Provisioning started in background");
+                    setProvisioningNode(null);
+                    setSshKey("");
+                    fetchNodes();
                 },
-                body: JSON.stringify({
-                    ip: ip,
-                    ssh_key: sshKey,
-                    port: parseInt(sshPort) || 22
-                })
-            });
-            if (res.ok) {
-                toast.success("Provisioning started in background");
-                setProvisioningNode(null);
-                setSshKey(""); // Zero-Storage in UI RAM
-                fetchNodes();
-            } else {
-                const err = await res.json();
-                toast.error(`Provisioning failed: ${err.detail || "Check Admin Token"}`);
+                onFallback: (err: any) => {
+                    toast.error("Provisioning failed", { description: err.message });
+                }
             }
-        } catch (e) {
-            toast.error("Network synchronization error");
-        }
+        );
     };
 
     return (

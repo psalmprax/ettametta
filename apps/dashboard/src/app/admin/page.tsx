@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
 import { toast } from "sonner";
 import EnvManager from "@/components/admin/EnvManager";
+import { withRealFallback } from "@/lib/real_first_utils";
 
 // Admin-only system configuration
 export default function AdminSettingsPage() {
@@ -131,50 +132,54 @@ export default function AdminSettingsPage() {
 
     const fetchSettings = async () => {
         setIsLoading(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const response = await fetch(`${API_BASE}/settings/system`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/settings/system`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+            },
+            {
+                fallback: settings,
+                onSuccess: (data: any) => {
+                    setSettings(prev => ({ ...prev, ...data }));
                 }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setSettings(prev => ({ ...prev, ...data }));
             }
-        } catch (error) {
-            console.error("Failed to fetch settings:", error);
-        } finally {
-            setIsLoading(false);
-        }
+        );
+        setIsLoading(false);
     };
 
     const saveSettings = async () => {
         setIsSaving(true);
         setSaveStatus("idle");
-        try {
-            const token = localStorage.getItem("et_token");
-            const response = await fetch(`${API_BASE}/settings/system`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/settings/system`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(settings)
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setSaveStatus("success");
+                    toast.success("System protocols updated successfully.");
                 },
-                body: JSON.stringify(settings)
-            });
-            if (response.ok) {
-                setSaveStatus("success");
-                setTimeout(() => setSaveStatus("idle"), 3000);
-            } else {
-                setSaveStatus("error");
+                onFallback: (err: any) => {
+                    setSaveStatus("error");
+                    toast.error("Failed to save settings", { description: err.message });
+                }
             }
-        } catch (error) {
-            console.error("Failed to save settings:", error);
-            setSaveStatus("error");
-        } finally {
-            setIsSaving(false);
-        }
+        );
+        setIsSaving(false);
     };
 
     const updateSetting = (key: string, value: string) => {
@@ -182,72 +187,75 @@ export default function AdminSettingsPage() {
     };
 
     const fetchSecurityStatus = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const response = await fetch(`${API_BASE}/security/status`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/security/status`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+            },
+            {
+                fallback: securityStatus,
+                onSuccess: (data: any) => {
+                    setSecurityStatus(data);
                 }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setSecurityStatus(data);
             }
-        } catch (error) {
-            console.error("Failed to fetch security status:", error);
-        }
+        );
     };
 
     const fetchSecurityEvents = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const response = await fetch(`${API_BASE}/security/events`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/security/events`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+            },
+            {
+                fallback: securityEvents,
+                onSuccess: (data: any) => {
+                    setSecurityEvents(data.events ?? data ?? []);
                 }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setSecurityEvents(data.events ?? data ?? []);
             }
-        } catch (error) {
-            console.error("Failed to fetch security events:", error);
-        }
+        );
     };
 
     const runSecurityScan = async () => {
         setIsScanning(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const response = await fetch(`${API_BASE}/security/scan`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/security/scan`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    toast.success("Security audit completed", {
+                        description: data.summary ?? "Scan finished successfully"
+                    });
+                    fetchSecurityStatus();
+                    fetchSecurityEvents();
+                },
+                onFallback: (err: any) => {
+                    toast.error("Security audit failed", {
+                        description: err.message || "The scan could not be completed"
+                    });
                 }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                toast.success("Security audit completed", {
-                    description: data.summary ?? "Scan finished successfully"
-                });
-                fetchSecurityStatus();
-                fetchSecurityEvents();
-            } else {
-                toast.error("Security audit failed", {
-                    description: "The scan could not be completed"
-                });
             }
-        } catch (error) {
-            console.error("Security scan error:", error);
-            toast.error("Security audit failed", {
-                description: "Network error during scan"
-            });
-        } finally {
-            setIsScanning(false);
-        }
+        );
+        setIsScanning(false);
     };
 
     useEffect(() => {
@@ -297,7 +305,7 @@ export default function AdminSettingsPage() {
                     <div>
                         <div className="flex items-center gap-4 mb-2">
                             <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-white">
-                                System <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-white text-hollow">Master</span>
+                                System <span className="text-transparent bg-clip-text bg-linear-to-r from-red-400 to-white text-hollow">Master</span>
                             </h1>
                             <div className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
                                 Admin Protocol

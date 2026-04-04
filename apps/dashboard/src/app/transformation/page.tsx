@@ -30,6 +30,7 @@ import { WS_BASE } from "@/lib/config";
 import { useNiches } from "@/hooks/useNiches";
 
 import { toast } from "sonner";
+import { withRealFallback } from "@/lib/real_first_utils";
 
 interface VideoJob {
     id: string;
@@ -74,69 +75,72 @@ function TransformationPageContent() {
         if (!newJobUrl) return;
 
         setIsSubmitting(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const response = await fetch(`${API_BASE}/video/transform`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/video/transform`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        input_url: newJobUrl,
+                        platform: targetPlatform,
+                        niche: currentNiche,
+                        generate_thumbnail: generateThumbnail,
+                        quality_tier: premiumQuality ? "premium" : "standard",
+                        sound_design: enableSoundDesign,
+                        motion_graphics: enableMotionGraphics
+                    })
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: async () => {
+                    toast.success("Job Dispatched", {
+                        description: "Video transformation has been queued in the engine."
+                    });
+                    setNewJobUrl("");
+                    setIsJobModalOpen(false);
+                    const token = localStorage.getItem("et_token");
+                    const jobsRes = await fetch(`${API_BASE}/video/jobs`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }).then(r => r.json());
+                    setProcessingJobs(jobsRes);
                 },
-                body: JSON.stringify({
-                    input_url: newJobUrl,
-                    platform: targetPlatform,
-                    niche: currentNiche,
-                    generate_thumbnail: generateThumbnail,
-                    quality_tier: premiumQuality ? "premium" : "standard",
-                    sound_design: enableSoundDesign,
-                    motion_graphics: enableMotionGraphics
-                })
-            });
-            
-            if (response.ok) {
-                toast.success("Job Dispatched", {
-                    description: "Video transformation has been queued in the engine."
-                });
-                setNewJobUrl("");
-                setIsJobModalOpen(false);
-                const jobsRes = await fetch(`${API_BASE}/video/jobs`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }).then(r => r.json());
-                setProcessingJobs(jobsRes);
-            } else {
-                const error = await response.json();
-                toast.error("Dispatch Failed", {
-                    description: error.detail || "Check your credits and engine access."
-                });
+                onFallback: (err: any) => {
+                    toast.error("Dispatch Failed", {
+                        description: err.message || "Check your credits and engine access."
+                    });
+                }
             }
-        } catch (error) {
-            console.error("New job error:", error);
-            toast.error("Network Error", {
-                description: "Failed to connect to the transformation cluster."
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
+        );
+        setIsSubmitting(false);
     };
 
     const handleToggleFilter = async (id: string) => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/settings/filters/${id}/toggle`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const updated = await res.json();
-                setActiveFilters(prev => prev.map(f => f.id === id ? updated : f));
-                toast.success(`${updated.name} ${updated.enabled ? 'Activated' : 'Standby'}`);
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/settings/filters/${id}/toggle`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (updated: any) => {
+                    setActiveFilters(prev => prev.map(f => f.id === id ? updated : f));
+                    toast.success(`${updated.name} ${updated.enabled ? 'Activated' : 'Standby'}`);
+                },
+                onFallback: (err: any) => {
+                    toast.error("Node Config Error", {
+                        description: err.message || "Failed to update filter preference."
+                    });
+                }
             }
-        } catch (error) {
-            console.error("Failed to toggle filter:", error);
-            toast.error("Node Config Error", {
-                description: "Failed to update filter preference."
-            });
-        }
+        );
     };
 
     const getStaticUrl = (path: string | undefined) => {
@@ -151,29 +155,30 @@ function TransformationPageContent() {
     };
 
     const handleAbort = async (id: string) => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/video/jobs/${id}/abort`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                setProcessingJobs(prev => prev.map(j => j.id === id ? { ...j, status: "Aborted" } : j));
-                if (selectedJob?.id === id) {
-                    setSelectedJob(prev => prev ? { ...prev, status: "Aborted" } : null);
-                }
-                toast.info("Process Aborted", {
-                    description: "Neural transform terminated successfully."
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/video/jobs/${id}/abort`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` }
                 });
-            } else {
-                toast.error("Abort Failed");
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setProcessingJobs(prev => prev.map(j => j.id === id ? { ...j, status: "Aborted" } : j));
+                    if (selectedJob?.id === id) {
+                        setSelectedJob(prev => prev ? { ...prev, status: "Aborted" } : null);
+                    }
+                    toast.info("Process Aborted", {
+                        description: "Neural transform terminated successfully."
+                    });
+                },
+                onFallback: (err: any) => {
+                    toast.error("Abort Failed", { description: err.message });
+                }
             }
-        } catch (error) {
-            console.error("Failed to abort job:", error);
-            toast.error("Signal Error", {
-                description: "Failed to send abort command."
-            });
-        }
+        );
     };
 
     const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/jobs`);

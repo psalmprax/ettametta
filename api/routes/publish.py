@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse
 from typing import List, Optional
 from services.optimization.service import base_optimization_service
 from services.optimization.youtube_publisher import base_youtube_publisher
+from services.optimization.tiktok_publisher import base_tiktok_publisher
 from services.optimization.models import PostMetadata
 from services.optimization.auth import token_manager
 from pydantic import BaseModel
@@ -896,7 +897,10 @@ async def sync_content_metrics(
             metrics = await base_youtube_publisher.get_metrics(
                 platform_id, user_id=current_user.id
             )
-        # Add tiktok, instagram etc. later as they are implemented
+        elif platform_key == "tiktok":
+            metrics = await base_tiktok_publisher.get_metrics(
+                platform_id, user_id=current_user.id
+            )
 
         # Update Database
         content.view_count = metrics.get("views", 0)
