@@ -39,9 +39,10 @@ class TransformationRequest(BaseModel):
 
 class GenerationRequest(BaseModel):
     prompt: str
-    engine: str = "veo3"  # beo3, wan2.2
+    engine: str = "veo3"  # veo3, wan2.2, custom_image
     style: str = "Cinematic"
     aspect_ratio: str = "9:16"
+    custom_image_url: Optional[str] = None  # For custom image input
 
 
 class StoryRequest(BaseModel):
@@ -138,7 +139,10 @@ async def list_jobs(current_user: UserDB = Depends(get_current_user)):
 
 @router.post("/jobs/{job_id}/abort")
 async def abort_job(job_id: str, current_user: UserDB = Depends(get_current_user)):
-    # ... (rest of the abort_job code)
+    """
+    Abort a running video processing job.
+    Revokes the Celery task and updates job status.
+    """
     from api.utils.celery import celery_app
 
     db = SessionLocal()
@@ -340,6 +344,7 @@ async def generate_single_video(
             style=body.style,
             aspect_ratio=body.aspect_ratio,
             user_id=current_user.id,
+            custom_image_url=body.custom_image_url,
         )
 
         # We can still show the user what it *will* look like
