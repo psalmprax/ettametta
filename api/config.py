@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     SECRET_KEY: Optional[str] = None  # Must be set via environment variable
     ALGORITHM: str = "HS256"
     INTERNAL_API_TOKEN: Optional[str] = None  # Master token for internal services
+    PORT: int = 8000  # API port
 
     # AI Settings - Multi-Provider LLM Support
     GROQ_API_KEY: str = ""
