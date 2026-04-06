@@ -13,11 +13,16 @@ from api.utils.credit_models import (
     SubscriptionCreditDB,
 )
 from api.utils.user_models import UserDB, SubscriptionTier
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import uuid
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def utc_now():
+    """Get current UTC datetime consistently"""
+    return datetime.now(timezone.utc)
 
 
 class CreditService:
@@ -95,7 +100,6 @@ class CreditService:
         Returns (success, message)
         Uses SELECT FOR UPDATE to prevent race conditions.
         """
-        from datetime import datetime, timezone
 
         db = SessionLocal()
         try:
@@ -119,7 +123,7 @@ class CreditService:
             # Deduct credits
             user_credits.balance -= amount
             user_credits.lifetime_spent += amount
-            user_credits.updated_at = datetime.now(timezone.utc)
+                user_credits.updated_at = utc_now()
 
             # Record transaction
             transaction = CreditTransactionDB(
@@ -170,7 +174,7 @@ class CreditService:
                 db.add(user_credits)
             else:
                 user_credits.balance += amount
-                user_credits.updated_at = datetime.now(timezone.utc)
+            user_credits.updated_at = utc_now()
 
                 if transaction_type == "purchase":
                     user_credits.lifetime_purchased += amount

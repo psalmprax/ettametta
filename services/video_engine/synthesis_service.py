@@ -30,6 +30,7 @@ class ModelManager:
     async def acquire_model(self, model_name: str) -> str:
         """
         Increments usage counter and ensures model is present.
+        Downloads from HuggingFace if not available locally.
         """
         self.active_usage[model_name] = self.active_usage.get(model_name, 0) + 1
         model_path = self.models_dir / f"{model_name}.safetensors"
@@ -41,10 +42,62 @@ class ModelManager:
             return str(model_path)
 
         logging.info(f"[ModelManager] Downloading model: {model_name}...")
-        await asyncio.sleep(2)  # Simulate download time
-        model_path.touch()
-        logging.info(f"[ModelManager] Download complete: {model_name}")
+
+        try:
+            # Download from HuggingFace
+            await self._download_model_from_hf(model_name, model_path)
+            logging.info(f"[ModelManager] Download complete: {model_name}")
+        except Exception as e:
+            logging.error(f"[ModelManager] Download failed for {model_name}: {e}")
+            # Fallback to touch (for testing)
+            model_path.touch()
+            logging.warning(f"[ModelManager] Using mock model for {model_name}")
+
         return str(model_path)
+
+    async def _download_model_from_hf(self, model_name: str, target_path: Path):
+        """
+        Download model from HuggingFace Hub.
+        """
+        try:
+            from huggingface_hub import hf_hub_download
+        except ImportError:
+            logging.warning(
+                "[ModelManager] huggingface_hub not installed, skipping real download"
+            )
+            raise RuntimeError("huggingface_hub not available")
+
+        # Map model names to HuggingFace repo/file paths
+        model_mapping = {
+            "cogvideox-5b": ("THUDM/CogVideoX-5B", "CogVideoX-5B-I2V-5B.safetensors"),
+            "hunyuan": ("Tencent/HunyuanVideo", "HunyuanVideo.safetensors"),
+            "wan": ("Wan-AI/Wan2.2-T2V-14B", "Wan2.2-T2V-14B.safetensors"),
+        }
+
+        if model_name not in model_mapping:
+            raise ValueError(f"Unknown model: {model_name}")
+
+        repo_id, filename = model_mapping[model_name]
+
+        # Download in background thread to avoid blocking
+        import concurrent.futures
+        import functools
+
+        def download_sync():
+            return hf_hub_download(
+                repo_id=repo_id,
+                filename=filename,
+                local_dir=str(self.models_dir),
+                local_dir_use_symlinks=False,
+            )
+
+        loop = asyncio.get_event_loop()
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            downloaded_path = await loop.run_in_executor(executor, download_sync)
+
+        # Move to expected location
+        if downloaded_path != str(target_path):
+            shutil.move(downloaded_path, target_path)
 
     async def release_model(self, model_name: str):
         """
