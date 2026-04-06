@@ -125,11 +125,11 @@ class InstagramPublisher(SocialPublisher):
             return video_path
 
         if os.path.isfile(video_path):
-            logger.warning(
+            logger.error(
                 "[InstagramPublisher] Local files require S3/cloud storage for Instagram API. "
-                "Configure a storage provider for local file uploads."
+                "Cannot upload local files directly to Instagram."
             )
-            return video_path
+            return None
 
         logger.error(f"[InstagramPublisher] Invalid video path: {video_path}")
         return None

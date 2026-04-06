@@ -5,6 +5,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+
 class NoFaceSkill:
     def __init__(self):
         self.api_url = f"{settings.API_URL}/no-face"
@@ -21,8 +22,13 @@ class NoFaceSkill:
         """
         try:
             payload = {"topic": topic}
-            response = requests.post(f"{self.api_url}/generate-script", json=payload, headers=self._get_headers(), timeout=20)
-            
+            response = requests.post(
+                f"{self.api_url}/generate-script",
+                json=payload,
+                headers=self._get_headers(),
+                timeout=20,
+            )
+
             if response.status_code == 200:
                 data = response.json()
                 script = data.get("script", "No script returned")
@@ -32,7 +38,7 @@ class NoFaceSkill:
                 return f"📝 **Viral Script Generated for '{topic}'**:\n\n{script}"
             else:
                 return f"⚠️ **Script Generation Failed**: server returned {response.status_code}"
-                
+
         except Exception as e:
             logger.error(f"NoFace Skill Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
@@ -42,9 +48,14 @@ class NoFaceSkill:
         Generates and validates a viral hook for a topic.
         """
         try:
-            payload = {"hook": f"Crazy fact about {topic}"} # Simplified payload for validation
-            response = requests.post(f"{self.api_url}/validate-hook", json=payload, headers=self._get_headers(), timeout=10)
-            
+            payload = {"topic": topic, "hook": topic}
+            response = requests.post(
+                f"{self.api_url}/validate-hook",
+                json=payload,
+                headers=self._get_headers(),
+                timeout=10,
+            )
+
             if response.status_code == 200:
                 data = response.json()
                 score = data.get("score", 0)
@@ -52,8 +63,9 @@ class NoFaceSkill:
                 return f"🪝 **Hook Analysis for '{topic}'**:\nExpected Score: {score}/100\nFeedback: {feedback}"
             else:
                 return f"⚠️ **Hook Generation Failed**: {response.status_code}"
-                
+
         except Exception as e:
             return f"⚠️ Skill Error: {str(e)}"
+
 
 noface_skill = NoFaceSkill()
