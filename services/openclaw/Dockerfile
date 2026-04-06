@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     nodejs \
     npm \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Fix npm CVE-2024-22017 issue
