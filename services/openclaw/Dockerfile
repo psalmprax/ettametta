@@ -19,18 +19,10 @@ RUN npm install -g npx
 COPY services/openclaw/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install OpenClaw agent skills for gaps
-# Memory persistence (addresses long-term memory gap)
-RUN npx skills add anthropics/skills/memory -g -y || echo "Memory skill install failed, continuing..."
-
-# Notification routing (Slack/Discord/email alerting)
-RUN npx skills add openclaw/skills/notification-routing -g -y || echo "Notification skill install failed, continuing..."
-
-# Workflow automation (n8n-style chaining)
-RUN npx skills add composiohq/composio/workflow-automation -g -y || echo "Workflow automation skill install failed, continuing..."
-
-# Self-healing watchdog (AlphaClaw pattern)
-RUN npx skills add openclaw/skills/self-healing-watchdog -g -y || echo "Self-healing skill install failed, continuing..."
+# Install OpenClaw agent skills for gaps via git clone
+RUN git clone https://github.com/vercel-labs/agent-skills.git /tmp/agent-skills && \
+    cp -r /tmp/agent-skills/* /app/.skills/ 2>/dev/null || echo "Skill copy failed, continuing..." && \
+    rm -rf /tmp/agent-skills
 
 # Create skills directory for persistence
 RUN mkdir -p /app/.skills
