@@ -209,6 +209,7 @@ class GenerativeService:
         engine: str = "veo3",
         aspect_ratio: str = "9:16",
         style: str = "Cinematic",
+        custom_image_url: str = None,
     ) -> Optional[str]:
         """
         Synthesizes a new video from a text prompt.
@@ -236,7 +237,7 @@ class GenerativeService:
             try:
                 async with self.gpu_queue.acquire_slot():
                     return await self._dispatch_synthesis(
-                        optimized_prompt, engine, aspect_ratio, params
+                        optimized_prompt, engine, aspect_ratio, params, custom_image_url
                     )
             except TimeoutError as e:
                 logging.warning(f"[GenerativeService] Queue Timeout: {e}")
@@ -244,11 +245,16 @@ class GenerativeService:
         else:
             # Cloud engines don't need the local GPU queue
             return await self._dispatch_synthesis(
-                optimized_prompt, engine, aspect_ratio, params
+                optimized_prompt, engine, aspect_ratio, params, custom_image_url
             )
 
     async def _dispatch_synthesis(
-        self, prompt: str, engine: str, aspect_ratio: str, params: Dict = None
+        self,
+        prompt: str,
+        engine: str,
+        aspect_ratio: str,
+        params: Dict = None,
+        custom_image_url: str = None,
     ) -> Optional[str]:
         """Internal dispatcher for actual synthesis calls."""
         if not params:
@@ -288,6 +294,17 @@ class GenerativeService:
             return path
         elif engine == "lite4k":
             return await self._synthesize_lite_4k(prompt, aspect_ratio)
+        # Free daily providers (external APIs)
+        elif engine in [
+            "zsky",
+            "kling",
+            "pixverse",
+            "replicate",
+            "stability",
+            "runway",
+            "pika",
+        ]:
+            return await self._synthesize_free_provider(engine, prompt, aspect_ratio)
         else:
             logging.error(f"[GenerativeService] Unsupported engine: {engine}")
             return None
@@ -392,7 +409,7 @@ class GenerativeService:
             await self.model_manager.release_model(model_name)
 
     async def _synthesize_lite_4k(
-        self, prompt: str, aspect_ratio: str
+        self, prompt: str, aspect_ratio: str, custom_image_url: str = None
     ) -> Optional[str]:
         # ... (rest of the code stays same)
         """
@@ -675,6 +692,14 @@ class GenerativeService:
             "cogvideo": "3D causal convolution, deep semantic consistency, cinematic realism.",
             "veo3": "Google DeepMind aesthetics, ultra-high definition, artistic masterpiece.",
             "lite4k": "4k resolution, cinematic parallax, sharpest details, stunning clarity.",
+            # Free daily providers
+            "zsky": "High-fidelity, WAN 2.2 model, RTX 5090 quality, smooth motion.",
+            "kling": "Cinematic quality, realistic physics, high detail, professional grade.",
+            "pixverse": "Vibrant colors, smooth animation, dynamic motion, high quality.",
+            "replicate": "Fast generation, efficient, high-quality output.",
+            "stability": "Stable diffusion video, consistent quality, reliable output.",
+            "runway": "Professional filmmaking quality, cinematic, high production value.",
+            "pika": "Fast generation, creative, high energy, polished results.",
         }
 
         style_modifiers = {
@@ -698,6 +723,43 @@ class GenerativeService:
         # return prompt_expert.refine(refined)
 
         return refined
+
+    async def _synthesize_free_provider(
+        self, provider: str, prompt: str, aspect_ratio: str
+    ) -> Optional[str]:
+        """
+        Synthesize video using free daily credit providers (ZSky, Kling, PixVerse, etc.)
+        """
+        from .free_video_providers import free_video_provider
+
+        logging.info(
+            f"[GenerativeService] Calling free provider: {provider} for: {prompt[:50]}..."
+        )
+
+        # Map aspect ratio to provider format
+        aspect_map = {"9:16": "9:16", "16:9": "16:9", "1:1": "1:1"}
+        provider_aspect = aspect_map.get(aspect_ratio, "9:16")
+
+        try:
+            result = await free_video_provider.generate_video(
+                prompt=prompt,
+                duration=5,
+                aspect_ratio=provider_aspect,
+                style=None,
+            )
+
+            if result and result.get("video_url"):
+                logging.info(
+                    f"[GenerativeService] {provider} generated video: {result['video_url'][:50]}..."
+                )
+                return result["video_url"]
+            else:
+                logging.warning(f"[GenerativeService] {provider} returned no result")
+                return None
+
+        except Exception as e:
+            logging.error(f"[GenerativeService] {provider} failed: {e}")
+            return None
 
 
 generative_service = GenerativeService()
