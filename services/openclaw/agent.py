@@ -65,6 +65,8 @@ class OpenClawAgent:
         - MEMORY: Manage persistent data across sessions. Params: {"action": "store|retrieve|list", "key": "string", "value": "string"}
         - NOTIFICATIONS: Send alerts via configured channels. Params: {"channel": "telegram|webhook|all", "message": "string", "priority": "normal|high|critical"}
         - WORKFLOW: Create and execute automated workflows. Params: {"action": "create|execute|status", "name": "string", "steps": [...]}
+        - BROWSER: Advanced browser automation for web scraping. Params: {"action": "navigate|click|extract", "url": "string", "selector": "string"}
+        - DOCUMENT: Process PDF/DOCX/PPTX files. Params: {"type": "pdf|docx|pptx", "action": "extract|analyze", "file_url": "string"}
         - WATCHDOG: Monitor system health and auto-restart processes. Params: {"action": "status|check|restart", "process": "string"}
         
         PLANNING MODE:
@@ -389,6 +391,30 @@ class OpenClawAgent:
                 return workflow_skill.get_workflow_status(name)
             else:
                 return workflow_skill.list_workflows()
+
+        elif tool == "BROWSER":
+            try:
+                response = requests.post(
+                    "http://node-skills:3002/browser-use", json=params, timeout=30
+                )
+                if response.status_code == 200:
+                    return f"🌐 Browser automation: {response.json()}"
+                else:
+                    return f"❌ Browser error: {response.status_code}"
+            except Exception as e:
+                return f"❌ Browser service unavailable: {str(e)}"
+
+        elif tool == "DOCUMENT":
+            doc_type = params.get("type", "pdf")
+            try:
+                endpoint = f"http://node-skills:3002/process-{doc_type}"
+                response = requests.post(endpoint, json=params, timeout=30)
+                if response.status_code == 200:
+                    return f"📄 Document processed: {response.json()}"
+                else:
+                    return f"❌ Document processing error: {response.status_code}"
+            except Exception as e:
+                return f"❌ Document service unavailable: {str(e)}"
 
         elif tool == "WATCHDOG":
             action = params.get("action", "status")

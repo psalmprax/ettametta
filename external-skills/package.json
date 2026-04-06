@@ -1,0 +1,17 @@
+{
+  "name": "viral-forge-external-skills",
+  "version": "1.0.0",
+  "description": "External agent skills integration for Viral Forge",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "install-skills": "npm install && npx skills add browser-use/browser-use/browser-use && npx skills add n8n/n8n-workflows/n8n && npx skills add anthropics/skills/pdf && npx skills add anthropics/skills/pptx && npx skills add anthropics/skills/docx"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0"
+  },
+  "keywords": ["agent", "skills", "ai", "automation"],
+  "author": "Viral Forge",
+  "license": "MIT"
+}
