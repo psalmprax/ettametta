@@ -37,6 +37,7 @@ COPY services/openclaw /app
 
 # Copy necessary sibling services for integration
 COPY services/agent_zero /app/services/agent_zero
+COPY api /app/api
 # Ensure __init__.py exists in services to make it a package
 RUN touch /app/services/__init__.py
 
