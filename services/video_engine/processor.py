@@ -1,4 +1,11 @@
-from moviepy import VideoFileClip, TextClip, CompositeVideoClip, concatenate_videoclips, ColorClip, vfx
+from moviepy import (
+    VideoFileClip,
+    TextClip,
+    CompositeVideoClip,
+    concatenate_videoclips,
+    ColorClip,
+    vfx,
+)
 import os
 import uuid
 import random
@@ -15,10 +22,12 @@ from api.config import settings
 try:
     import cv2
     import numpy as np
+
     CV2_AVAILABLE = True
 except ImportError:
     CV2_AVAILABLE = False
     logging.warning("OpenCV not available, using MoviePy only")
+
 
 class VideoProcessor:
     def __init__(self, output_dir: str = "outputs"):
@@ -27,7 +36,7 @@ class VideoProcessor:
         # Check for GPU availability
         self.use_gpu = os.getenv("USE_GPU", "true").lower() == "true"
         self.codec = "h264_nvenc" if self.use_gpu else "libx264"
-        
+
         # Dynamic Font Resolution
         self.font_path = settings.FONT_PATH
         if not os.path.exists(self.font_path):
@@ -37,36 +46,39 @@ class VideoProcessor:
                 "/usr/share/fonts/DejaVuSans-Bold.ttf",
                 "/usr/share/fonts/liberation/LiberationSans-Bold.ttf",
                 "/usr/local/share/fonts/DejaVuSans-Bold.ttf",
-                "/System/Library/Fonts/Helvetica.ttc", # macOS
-                "arial.ttf" # Windows
+                "/System/Library/Fonts/Helvetica.ttc",  # macOS
+                "arial.ttf",  # Windows
             ]
             for f in fallbacks:
                 if os.path.exists(f):
                     self.font_path = f
                     break
             else:
-                logging.warning(f"⚠️ No valid font found. Captions may fail. Configured: {self.font_path}")
-        
+                logging.warning(
+                    f"⚠️ No valid font found. Captions may fail. Configured: {self.font_path}"
+                )
+
         logging.info(f"Video Engine initialized with font: {self.font_path}")
-        
+
         # Check ffmpeg version and warn about ARM64
         self._check_ffmpeg_version()
-        
+
         # Force use of system ffmpeg instead of imageio-ffmpeg binary
-        os.environ['FFMPEG_BINARY'] = 'ffmpeg'
-        os.environ['IMAGEIO_FFMPEG_BINARY'] = 'ffmpeg'
-        os.environ['IMAGEIO_FFMPEG_BINARY_NAME'] = 'ffmpeg'
-        
+        os.environ["FFMPEG_BINARY"] = "ffmpeg"
+        os.environ["IMAGEIO_FFMPEG_BINARY"] = "ffmpeg"
+        os.environ["IMAGEIO_FFMPEG_BINARY_NAME"] = "ffmpeg"
+
         # Try to patch imageio to use system ffmpeg
         try:
             import imageio_ffmpeg
-            imageio_ffmpeg.get_ffmpeg_exe = lambda: 'ffmpeg'
+
+            imageio_ffmpeg.get_ffmpeg_exe = lambda: "ffmpeg"
             # Clear any cached binary path
-            if hasattr(imageio_ffmpeg, '_ffmpeg_exe'):
+            if hasattr(imageio_ffmpeg, "_ffmpeg_exe"):
                 imageio_ffmpeg._ffmpeg_exe = None
         except Exception as e:
             logging.warning(f"[VideoProcessor] Could not patch imageio_ffmpeg: {e}")
-        
+
         # Video loading timeout (seconds)
         self.video_load_timeout = 30
 
@@ -74,14 +86,11 @@ class VideoProcessor:
         """Check ffmpeg version and log warnings for known issues."""
         try:
             result = subprocess.run(
-                ["ffmpeg", "-version"], 
-                capture_output=True, 
-                text=True, 
-                timeout=5
+                ["ffmpeg", "-version"], capture_output=True, text=True, timeout=5
             )
-            version_line = result.stdout.split('\n')[0]
+            version_line = result.stdout.split("\n")[0]
             logging.info(f"[VideoProcessor] FFmpeg: {version_line}")
-            
+
             logging.info(f"[VideoProcessor] FFmpeg: {version_line}")
         except Exception as e:
             logging.warning(f"[VideoProcessor] Could not check ffmpeg version: {e}")
@@ -89,9 +98,9 @@ class VideoProcessor:
     async def _verify_video_readable(self, clip: VideoFileClip):
         """Verify video can be read by iterating frames."""
         import threading
-        
+
         result = {"success": False, "error": None}
-        
+
         def iterate_frames():
             try:
                 # Try to get first few frames
@@ -101,15 +110,17 @@ class VideoProcessor:
                 result["success"] = True
             except Exception as e:
                 result["error"] = str(e)
-        
+
         thread = threading.Thread(target=iterate_frames)
         thread.start()
         thread.join(timeout=30)
-        
+
         if not result["success"]:
             raise RuntimeError(f"Video not readable: {result.get('error', 'timeout')}")
 
-    async def _create_opencv_based_processing(self, input_path: str, clip: VideoFileClip = None):
+    async def _create_opencv_based_processing(
+        self, input_path: str, clip: VideoFileClip = None
+    ):
         """
         Create OpenCV-based video processing when MoviePy hangs.
         This is a simpler path that processes video frame-by-frame with OpenCV.
@@ -117,9 +128,11 @@ class VideoProcessor:
         if not CV2_AVAILABLE:
             logging.error("[VideoProcessor] OpenCV not available for fallback")
             raise RuntimeError("OpenCV not available")
-        
-        logging.info(f"[VideoProcessor] Creating OpenCV-based processing for: {input_path}")
-        
+
+        logging.info(
+            f"[VideoProcessor] Creating OpenCV-based processing for: {input_path}"
+        )
+
         # Get video info from clip or probe with OpenCV
         if clip:
             width, height = clip.size
@@ -133,7 +146,7 @@ class VideoProcessor:
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             duration = total_frames / fps if fps > 0 else 0
             cap.release()
-        
+
         # Store OpenCV state for processing
         self._opencv_mode = True
         self._opencv_input = input_path
@@ -141,16 +154,19 @@ class VideoProcessor:
             "width": width,
             "height": height,
             "fps": fps,
-            "duration": duration
+            "duration": duration,
         }
-        
-        logging.info(f"[VideoProcessor] OpenCV mode: {width}x{height} @ {fps}fps, {duration:.2f}s")
-        
+
+        logging.info(
+            f"[VideoProcessor] OpenCV mode: {width}x{height} @ {fps}fps, {duration:.2f}s"
+        )
+
         # Try to return MoviePy clip one more time with different settings
         try:
             # Try with different reader
-            clip = VideoFileClip(input_path, audio=False, 
-                               target_resolution=(height, width))
+            clip = VideoFileClip(
+                input_path, audio=False, target_resolution=(height, width)
+            )
             clip.fps = fps
             return clip
         except Exception as e:
@@ -163,35 +179,40 @@ class VideoProcessor:
         Load video with timeout and fallback to OpenCV if it hangs.
         """
         logging.info(f"[VideoProcessor] Loading video: {input_path}")
-        
+
         # First try with asyncio timeout
         try:
             clip = await asyncio.wait_for(
                 asyncio.to_thread(VideoFileClip, input_path),
-                timeout=self.video_load_timeout
+                timeout=self.video_load_timeout,
             )
             logging.info(f"[VideoProcessor] Video loaded successfully via MoviePy")
-            
+
             # Pre-iterate frames to ensure video is readable (handles ARM64 issues)
             try:
-                await asyncio.wait_for(
-                    self._verify_video_readable(clip),
-                    timeout=30
-                )
+                await asyncio.wait_for(self._verify_video_readable(clip), timeout=30)
             except asyncio.TimeoutError:
-                logging.warning("[VideoProcessor] MoviePy frame iteration timed out, switching to OpenCV mode")
+                logging.warning(
+                    "[VideoProcessor] MoviePy frame iteration timed out, switching to OpenCV mode"
+                )
                 return await self._create_opencv_based_processing(input_path, clip)
             except Exception as e:
-                logging.warning(f"[VideoProcessor] Video readable check failed: {e}, trying OpenCV")
+                logging.warning(
+                    f"[VideoProcessor] Video readable check failed: {e}, trying OpenCV"
+                )
                 return await self._create_opencv_based_processing(input_path, clip)
-            
+
             return clip
-            
+
         except asyncio.TimeoutError:
-            logging.warning(f"[VideoProcessor] VideoFileClip timed out after {self.video_load_timeout}s, trying OpenCV fallback...")
+            logging.warning(
+                f"[VideoProcessor] VideoFileClip timed out after {self.video_load_timeout}s, trying OpenCV fallback..."
+            )
         except Exception as e:
-            logging.warning(f"[VideoProcessor] VideoFileClip failed: {e}, trying OpenCV fallback...")
-        
+            logging.warning(
+                f"[VideoProcessor] VideoFileClip failed: {e}, trying OpenCV fallback..."
+            )
+
         # Fallback: Use OpenCV to probe video info, then retry MoviePy
         return await self._load_video_opencv_fallback(input_path)
 
@@ -203,33 +224,34 @@ class VideoProcessor:
         if not CV2_AVAILABLE:
             logging.error("[VideoProcessor] OpenCV not available, cannot fallback")
             raise RuntimeError("Video loading failed and OpenCV fallback unavailable")
-        
+
         logging.info(f"[VideoProcessor] Probing video with OpenCV: {input_path}")
         cap = cv2.VideoCapture(input_path)
-        
+
         if not cap.isOpened():
             cap.release()
             raise RuntimeError(f"OpenCV cannot open video: {input_path}")
-        
+
         # Get video properties
         fps = cap.get(cv2.CAP_PROP_FPS)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         duration = frame_count / fps if fps > 0 else 0
-        
+
         cap.release()
-        
-        logging.info(f"[VideoProcessor] OpenCV probe: {width}x{height}, {fps}fps, {duration:.2f}s, {frame_count} frames")
-        
+
+        logging.info(
+            f"[VideoProcessor] OpenCV probe: {width}x{height}, {fps}fps, {duration:.2f}s, {frame_count} frames"
+        )
+
         # Set environment variable to help MoviePy work around issues
-        os.environ['FFMPEG_BINARY'] = 'ffmpeg'
-        
+        os.environ["FFMPEG_BINARY"] = "ffmpeg"
+
         # Try loading with MoviePy again with extended timeout
         try:
             clip = await asyncio.wait_for(
-                asyncio.to_thread(VideoFileClip, input_path),
-                timeout=60
+                asyncio.to_thread(VideoFileClip, input_path), timeout=60
             )
             logging.info(f"[VideoProcessor] Video loaded successfully on retry")
             return clip
@@ -237,54 +259,60 @@ class VideoProcessor:
             logging.error(f"[VideoProcessor] Final video load attempt failed: {e}")
             raise
 
-    def _process_video_opencv(self, input_path: str, output_name: str, 
-                             enabled_filters: List[str] = None, 
-                             strategy: Dict = None) -> str:
+    def _process_video_opencv(
+        self,
+        input_path: str,
+        output_name: str,
+        enabled_filters: List[str] = None,
+        strategy: Dict = None,
+    ) -> str:
         """
         Full video processing pipeline using OpenCV when MoviePy fails.
         This is a fallback that applies basic transformations.
         """
         if not CV2_AVAILABLE:
             raise RuntimeError("OpenCV not available")
-        
+
         logging.info(f"[VideoProcessor] Processing video with OpenCV: {input_path}")
-        
+
         cap = cv2.VideoCapture(input_path)
         if not cap.isOpened():
             raise RuntimeError(f"Cannot open video: {input_path}")
-        
+
         # Get video properties
         fps = cap.get(cv2.CAP_PROP_FPS)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
+
         # Define output
         output_path = os.path.join(self.output_dir, output_name)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-        
+
         frame_count = 0
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 break
-            
+
             # Apply transformations
             # 1. Mirror (horizontal flip)
             frame = cv2.flip(frame, 1)
-            
+
             # 2. Slight resize (to change hash)
             scale = 1.05
             new_width = int(width * scale)
             new_height = int(height * scale)
-            frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_LINEAR)
-            
+            frame = cv2.resize(
+                frame, (new_width, new_height), interpolation=cv2.INTER_LINEAR
+            )
+
             # Crop back to original size
             start_x = (new_width - width) // 2
             start_y = (new_height - height) // 2
-            frame = frame[start_y:start_y+height, start_x:start_x+width]
-            
+            frame = frame[start_y : start_y + height, start_x : start_x + width]
+
             # Apply enabled filters
             if enabled_filters:
                 if "f10" in enabled_filters:  # Film grain
@@ -293,21 +321,23 @@ class VideoProcessor:
                 if "f11" in enabled_filters:  # Grayscale
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                     frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
-            
+
             out.write(frame)
             frame_count += 1
-            
+
             # Progress logging
             if frame_count % 30 == 0:
                 logging.info(f"[OpenCV] Processed {frame_count}/{total_frames} frames")
-        
+
         cap.release()
         out.release()
-        
+
         logging.info(f"[VideoProcessor] OpenCV processing complete: {output_path}")
         return output_path
 
-    def apply_originality_transformation(self, input_path: str, output_name: str) -> str:
+    def apply_originality_transformation(
+        self, input_path: str, output_name: str
+    ) -> str:
         """
         Applies 'Copyright-Safe' transformations using high-performance FFmpeg.
         - Mirroring
@@ -315,31 +345,37 @@ class VideoProcessor:
         - Color Grading (Contrast/Brightness)
         """
         output_path = os.path.join(self.output_dir, output_name)
-        
-        logging.info(f"[VideoProcessor] Applying FFmpeg Originality Transformation: {input_path} -> {output_path}")
-        
+
+        logging.info(
+            f"[VideoProcessor] Applying FFmpeg Originality Transformation: {input_path} -> {output_path}"
+        )
+
         success = ffmpeg_transformer.apply_originality(
             input_path=input_path,
             output_path=output_path,
             mirror=True,
             zoom=1.04,
             contrast=1.05,
-            brightness=0.02
+            brightness=0.02,
         )
-        
+
         if success:
             return output_path
-        
-        logging.warning("[VideoProcessor] FFmpeg originality failed, falling back to MoviePy (Slow)")
-        
+
+        logging.warning(
+            "[VideoProcessor] FFmpeg originality failed, falling back to MoviePy (Slow)"
+        )
+
         # Original MoviePy Fallback (kept for safety)
         clip = VideoFileClip(input_path)
-        transformed = clip.with_effects([vfx.MirrorX()]).resized(height=int(clip.h * 1.05))
+        transformed = clip.with_effects([vfx.MirrorX()]).resized(
+            height=int(clip.h * 1.05)
+        )
         transformed = transformed.with_effects([vfx.LumContrast(lum=0, contrast=0.05)])
-        
+
         if clip.audio:
             transformed = transformed.with_audio(clip.audio)
-            
+
         transformed.write_videofile(output_path, codec=self.codec, audio_codec="aac")
         return output_path
 
@@ -349,36 +385,45 @@ class VideoProcessor:
         Uses fast FFmpeg concat demuxer (instant) first, falls back to MoviePy.
         """
         output_path = os.path.join(self.output_dir, output_name)
-        logging.info(f"[VideoProcessor] Concatenating {len(clip_paths)} clips to {output_path}")
-        
+        logging.info(
+            f"[VideoProcessor] Concatenating {len(clip_paths)} clips to {output_path}"
+        )
+
         success = ffmpeg_transformer.fast_concat(clip_paths, output_path)
         if success:
             return output_path
-            
-        logging.warning("[VideoProcessor] Fast concat failed, falling back to MoviePy compose")
+
+        logging.warning(
+            "[VideoProcessor] Fast concat failed, falling back to MoviePy compose"
+        )
         clips = [VideoFileClip(p) for p in clip_paths]
         final_clip = concatenate_videoclips(clips, method="compose")
         final_clip.write_videofile(output_path, codec="libx264")
         return output_path
 
-    def apply_speed_ramping(self, clip: VideoFileClip, speed_range: List[float] = [0.95, 1.05]) -> VideoFileClip:
+    def apply_speed_ramping(
+        self, clip: VideoFileClip, speed_range: List[float] = [0.95, 1.05]
+    ) -> VideoFileClip:
         """
         Randomly shifts speed based on AI strategy range to reset algorithm clocks.
         """
         speed = random.uniform(speed_range[0], speed_range[1])
         return clip.with_effects([vfx.MultiplySpeed(speed)])
 
-    def apply_dynamic_jitter(self, clip: VideoFileClip, intensity: float = 1.0) -> VideoFileClip:
+    def apply_dynamic_jitter(
+        self, clip: VideoFileClip, intensity: float = 1.0
+    ) -> VideoFileClip:
         """
         Simulates handheld motion by applying small random position offsets.
         Uses intensity from AI strategy.
         """
+
         def jitter(t):
             # Scale jitter by intensity
             x = int(random.uniform(-1 * intensity, 1 * intensity))
             y = int(random.uniform(-1 * intensity, 1 * intensity))
             return (x, y)
-        
+
         # Increase zoom slightly more as intensity increases to avoid black edges
         zoom_factor = 1.04 + (intensity * 0.01)
         zoomed = clip.resized(height=int(clip.h * zoom_factor))
@@ -388,19 +433,23 @@ class VideoProcessor:
         """
         Adds high-energy light leaks/overlays with smooth transitions.
         """
-        leak = ColorClip(size=clip.size, color=(255, 210, 160)) \
-            .with_start(random.uniform(0, clip.duration - 1.0)) \
-            .with_duration(0.6) \
-            .with_opacity(0.08) \
+        leak = (
+            ColorClip(size=clip.size, color=(255, 210, 160))
+            .with_start(random.uniform(0, clip.duration - 1.0))
+            .with_duration(0.6)
+            .with_opacity(0.08)
             .with_effects([vfx.CrossFadeIn(0.2), vfx.CrossFadeOut(0.2)])
-        
-        return CompositeVideoClip([clip, leak.with_position('center')])
+        )
+
+        return CompositeVideoClip([clip, leak.with_position("center")])
 
     def apply_atmospheric_glow(self, clip: VideoFileClip) -> VideoFileClip:
         """
         Adds a soft, glowing atmospheric layer (f9).
         """
-        glow = clip.with_effects([vfx.LumContrast(lum=5, contrast=0.1)]).with_opacity(0.3)
+        glow = clip.with_effects([vfx.LumContrast(lum=5, contrast=0.1)]).with_opacity(
+            0.3
+        )
         return CompositeVideoClip([clip, glow])
 
     def apply_film_grain(self, clip: VideoFileClip) -> VideoFileClip:
@@ -421,100 +470,243 @@ class VideoProcessor:
         Applies a random glitch effect by shifting RGB channels or adding noise (f12).
         """
         # MoviePy doesn't have a direct RGB shift, so we apply a jittered color shift
-        return clip.with_effects([vfx.Colorx(factor=random.uniform(0.9, 1.1))]).resized(height=int(clip.h * 1.01))
+        return clip.with_effects([vfx.Colorx(factor=random.uniform(0.9, 1.1))]).resized(
+            height=int(clip.h * 1.01)
+        )
 
-    def apply_vibe_adjustments(self, clip: VideoFileClip, insights: Dict) -> VideoFileClip:
+    def apply_vibe_adjustments(
+        self, clip: VideoFileClip, insights: Dict
+    ) -> VideoFileClip:
         """
         Maps VLM visual insights (mood, predominant colors) to MoviePy visual effects.
         """
         mood = insights.get("visual_mood", "Neutral").lower()
         aesthetic = insights.get("aesthetic_rating", 5)
-        
-        logging.info(f"[VideoProcessor] Applying vibe adjustments: {mood} (Aesthetic: {aesthetic})")
-        
+
+        logging.info(
+            f"[VideoProcessor] Applying vibe adjustments: {mood} (Aesthetic: {aesthetic})"
+        )
+
         if "dark" in mood or "mysterious" in mood:
             # Increase contrast and slightly lower brightness for mystery
             clip = clip.with_effects([vfx.LumContrast(lum=-2, contrast=0.1)])
         elif "energetic" in mood or "bright" in mood:
             # Increase saturation (via color factor) and brightness
-            clip = clip.with_effects([vfx.Colorx(factor=1.1), vfx.LumContrast(lum=5, contrast=0.05)])
+            clip = clip.with_effects(
+                [vfx.Colorx(factor=1.1), vfx.LumContrast(lum=5, contrast=0.05)]
+            )
         elif "vintage" in mood or "nostalgic" in mood:
             # Shift colors towards sepia/warmth
-            clip = clip.with_effects([vfx.Colorx(factor=0.95), vfx.LumContrast(lum=0, contrast=-0.05)])
-            
+            clip = clip.with_effects(
+                [vfx.Colorx(factor=0.95), vfx.LumContrast(lum=0, contrast=-0.05)]
+            )
+
         # If aesthetic rating is low, apply subtle smoothing/glow to hide compression artifacts
         if aesthetic < 4:
             clip = self.apply_atmospheric_glow(clip)
-            
+
         return clip
 
-    def trim_to_hooks(self, clip: VideoFileClip, hooks: List[List[float]]) -> VideoFileClip:
+    def trim_to_hooks(
+        self, clip: VideoFileClip, hooks: List[List[float]]
+    ) -> VideoFileClip:
         """
         Cuts the video to only the segments identified as high-energy hooks.
         """
         if not hooks:
             return clip
-        
+
         segments = []
         for start, end in hooks:
             # Buffer the end slightly
             end = min(end + 0.5, clip.duration)
             segments.append(clip.subclipped(start, end))
-        
+
         if not segments:
             return clip
-            
+
         return concatenate_videoclips(segments, method="compose")
 
-            
         return concatenate_videoclips(segments, method="compose")
 
-    async def inject_b_roll(self, clip: VideoFileClip, keywords: List[str]) -> VideoFileClip:
+    async def inject_b_roll(
+        self, clip: VideoFileClip, keywords: List[str]
+    ) -> VideoFileClip:
         """
         Fetches a stock B-roll clip and overlays it onto the main video.
         """
         if not keywords:
             return clip
-            
+
         keyword = random.choice(keywords)
-        logging.info(f"[VideoProcessor] Attempting B-roll injection for keyword: {keyword}")
-        
+        logging.info(
+            f"[VideoProcessor] Attempting B-roll injection for keyword: {keyword}"
+        )
+
         urls = await stock_service.fetch_b_roll(keyword, count=1)
         if not urls:
             return clip
-            
+
         b_roll_path = await stock_service.download_stock_video(urls[0])
         if not b_roll_path:
             return clip
-            
+
         try:
             b_roll_clip = await self._load_video_with_timeout(b_roll_path)
             b_roll_clip = b_roll_clip.resized(width=clip.w)
             # Take 2-3 seconds of B-roll
             b_roll_duration = min(b_roll_clip.duration, 3.0)
             b_roll_clip = b_roll_clip.subclipped(0, b_roll_duration)
-            
+
             # Insert at a random point in the first half of the main clip
             insert_point = random.uniform(2.0, max(2.5, clip.duration / 2))
-            
+
             # Simple overlay (for now, we just place it on top of the elements list later)
-            b_roll_clip = b_roll_clip.with_start(insert_point).with_position('center')
-            
+            b_roll_clip = b_roll_clip.with_start(insert_point).with_position("center")
+
             return b_roll_clip
         except Exception as e:
             logging.error(f"[VideoProcessor] Error in B-roll injection: {e}")
             return None
 
-    async def apply_cinematic_motion(self, image_url: str, output_name: str, aspect_ratio: str = "9:16", duration: float = 5.0) -> str:
+    async def upscale_video(
+        self, video_path: str, target_resolution: str = "4K"
+    ) -> str:
+        """Upscale video to higher resolution using FFmpeg"""
+        import os
+
+        upscale_path = video_path.replace(".mp4", "_upscaled.mp4")
+
+        # FFmpeg upscale command (simple bilinear scaling)
+        scale_filter = (
+            "scale=3840:2160:force_original_aspect_ratio=decrease,pad=3840:2160:(ow-iw)/2:(oh-ih)/2"
+            if target_resolution == "4K"
+            else "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2"
+        )
+
+        cmd = [
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-vf",
+            scale_filter,
+            "-c:v",
+            "libx264",
+            "-preset",
+            "slow",
+            "-crf",
+            "18",
+            "-c:a",
+            "copy",
+            upscale_path,
+            "-y",
+        ]
+
+        try:
+            result = await asyncio.create_subprocess_exec(
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            )
+            await result.wait()
+
+            if result.returncode == 0:
+                logging.info(f"Video upscaled successfully: {upscale_path}")
+                return upscale_path
+            else:
+                logging.error(f"Upscaling failed: {await result.stderr.read()}")
+                return video_path  # Return original if upscale fails
+        except Exception as e:
+            logging.error(f"Upscale error: {e}")
+            return video_path
+
+    async def interpolate_frames(self, video_path: str, target_fps: int = 60) -> str:
+        """Apply frame interpolation for smoother motion using FFmpeg"""
+        import os
+
+        interp_path = video_path.replace(".mp4", "_interp.mp4")
+
+        # FFmpeg frame interpolation (basic motion interpolation)
+        cmd = [
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-vf",
+            f"minterpolate=fps={target_fps}:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "slow",
+            "-crf",
+            "18",
+            "-c:a",
+            "copy",
+            interp_path,
+            "-y",
+        ]
+
+        try:
+            result = await asyncio.create_subprocess_exec(
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            )
+            await result.wait()
+
+            if result.returncode == 0:
+                logging.info(f"Frame interpolation applied: {interp_path}")
+                return interp_path
+            else:
+                logging.error(f"Interpolation failed: {await result.stderr.read()}")
+                return video_path
+        except Exception as e:
+            logging.error(f"Interpolation error: {e}")
+            return video_path
+
+    async def apply_pro_workflow(
+        self,
+        image_url: str,
+        output_name: str,
+        aspect_ratio: str = "9:16",
+        duration: float = 5.0,
+        quality: str = "premium",
+    ) -> str:
+        """Complete pro workflow: Generate high-quality image → Animate with low motion → Upscale → Interpolate"""
+        logging.info(f"[VideoProcessor] Starting pro workflow for {output_name}")
+
+        # 1. Generate high-quality image (already using FLUX via Pollinations)
+        # (This is handled in synthesis_service.py)
+
+        # 2. Animate with low motion
+        video_path = await self.apply_cinematic_motion(
+            image_url, output_name, aspect_ratio, duration
+        )
+
+        # 3. Upscale video
+        if quality == "premium":
+            video_path = await self.upscale_video(video_path, "4K")
+
+        # 4. Apply frame interpolation for smoother motion
+        if quality == "premium":
+            video_path = await self.interpolate_frames(video_path, 60)
+
+        logging.info(f"[VideoProcessor] Pro workflow complete: {video_path}")
+        return video_path
+
+    async def apply_cinematic_motion(
+        self,
+        image_url: str,
+        output_name: str,
+        aspect_ratio: str = "9:16",
+        duration: float = 5.0,
+    ) -> str:
         """
         Takes a static 4K image and applies cinematic zooming/panning to create a video.
         Uses pure CPU-based moviepy logic.
         """
         import httpx
         from moviepy import ImageClip
-        
-        logging.info(f"[VideoProcessor] Applying cinematic motion to 4K asset: {image_url[:50]}...")
-        
+
+        logging.info(
+            f"[VideoProcessor] Applying cinematic motion to 4K asset: {image_url[:50]}..."
+        )
+
         # 1. Download base image
         temp_image = os.path.join("temp", f"lite4k_base_{uuid.uuid4()}.jpg")
         os.makedirs("temp", exist_ok=True)
@@ -525,37 +717,40 @@ class VideoProcessor:
 
         # 2. Create ImageClip at 4K resolution
         clip = ImageClip(temp_image).with_duration(duration)
-        
+
         # 3. Apply Cinematic Zoom (Ken Burns)
         # We start at 100% and zoom into 120% smoothly
         def zoom(t):
             return 1.0 + 0.1 * (t / duration)
-            
+
         clip = clip.with_effects([vfx.Resize(zoom)])
-        
+
         # 4. Set final size based on aspect ratio
         w, h = (3840, 2160) if aspect_ratio == "16:9" else (2160, 3840)
         # Resizing to the final 4K target
-        clip = clip.resized(height=h) if aspect_ratio == "9:16" else clip.resized(width=w)
-        
+        clip = (
+            clip.resized(height=h) if aspect_ratio == "9:16" else clip.resized(width=w)
+        )
+
         # Crop if needed to hit exact 4K spec
-        clip = clip.cropped(width=w, height=h, x_center=clip.w/2, y_center=clip.h/2)
+        clip = clip.cropped(width=w, height=h, x_center=clip.w / 2, y_center=clip.h / 2)
 
         output_path = os.path.join(self.output_dir, output_name)
-        
+
         # 5. Write high-bitrate 4K MP4
         clip.write_videofile(
-            output_path, 
-            fps=30, 
-            codec=self.codec, 
-            audio=False, 
-            preset="slower", # Higher quality compression
-            bitrate="50000k"  # High bitrate for 4K
+            output_path,
+            fps=30,
+            codec=self.codec,
+            audio=False,
+            preset="slower",  # Higher quality compression
+            bitrate="50000k",  # High bitrate for 4K
         )
-        
+
         # Cleanup
-        if os.path.exists(temp_image): os.remove(temp_image)
-        
+        if os.path.exists(temp_image):
+            os.remove(temp_image)
+
         return output_path
 
     async def assemble_story(self, scenes: List[Dict], output_name: str) -> str:
@@ -563,14 +758,17 @@ class VideoProcessor:
         Assembles multi-scene stories with precise voice-visual alignment.
         """
         import httpx
+
         processing_scenes = []
         temp_files = []
         os.makedirs("temp", exist_ok=True)
-        
+
         async def _download_media(url: str, ext: str) -> str:
             if url.startswith("http"):
                 local_path = os.path.join("temp", f"dl_{uuid.uuid4()}{ext}")
-                async with httpx.AsyncClient(follow_redirects=True, timeout=60) as client:
+                async with httpx.AsyncClient(
+                    follow_redirects=True, timeout=60
+                ) as client:
                     resp = await client.get(url)
                     resp.raise_for_status()
                     with open(local_path, "wb") as f:
@@ -578,26 +776,27 @@ class VideoProcessor:
                 temp_files.append(local_path)
                 return local_path
             return url
-            
+
         try:
             for i, scene in enumerate(scenes):
                 video_url = scene.get("video_url")
                 audio_url = scene.get("audio_url")
                 duration_hint = scene.get("duration_hint", 5.0)
-                
+
                 if not video_url:
                     continue
-                    
+
                 # 1. Download Video Clip if it's a URL
                 local_vid = await _download_media(video_url, ".mp4")
                 clip = VideoFileClip(local_vid)
-                
+
                 # 2. Add Narration Audio if exists
                 if audio_url:
                     from moviepy import AudioFileClip
+
                     local_aud = await _download_media(audio_url, ".mp3")
                     narration = AudioFileClip(local_aud)
-                    
+
                     # PRECISISION ALIGNMENT: Stretch/Compress video to match audio duration
                     audio_duration = narration.duration
                     if audio_duration > 0:
@@ -610,26 +809,30 @@ class VideoProcessor:
 
                 # 3. Add Dynamic Captions for this scene's narration
                 if scene.get("narration_text"):
-                    txt = TextClip(
-                        text=scene["narration_text"].upper(),
-                        font_size=60,
-                        color='white',
-                        font=self.font_path,
-                        stroke_color='black',
-                        stroke_width=2.0,
-                        method='caption',
-                        size=(int(clip.w * 0.8), None)
-                    ).with_duration(clip.duration).with_position(('center', 0.8))
+                    txt = (
+                        TextClip(
+                            text=scene["narration_text"].upper(),
+                            font_size=60,
+                            color="white",
+                            font=self.font_path,
+                            stroke_color="black",
+                            stroke_width=2.0,
+                            method="caption",
+                            size=(int(clip.w * 0.8), None),
+                        )
+                        .with_duration(clip.duration)
+                        .with_position(("center", 0.8))
+                    )
                     clip = CompositeVideoClip([clip, txt])
 
                 processing_scenes.append(clip)
 
             # 4. Concatenate all scenes with CrossFades
             final_clip = concatenate_videoclips(processing_scenes, method="compose")
-            
+
             output_path = os.path.join(self.output_dir, output_name)
             final_clip.write_videofile(output_path, codec=self.codec, audio_codec="aac")
-            
+
             return output_path
         except Exception as e:
             logging.error(f"[VideoProcessor] Error assembling clips: {e}")
@@ -637,51 +840,62 @@ class VideoProcessor:
         finally:
             for f in temp_files:
                 if os.path.exists(f):
-                    try: os.remove(f)
-                    except: pass
+                    try:
+                        os.remove(f)
+                    except:
+                        pass
 
     async def process_full_pipeline(
-        self, 
-        input_path: str, 
-        output_name: str, 
-        enabled_filters: Optional[List[str]] = None, 
-        strategy: Optional[Dict] = None
+        self,
+        input_path: str,
+        output_name: str,
+        enabled_filters: Optional[List[str]] = None,
+        strategy: Optional[Dict] = None,
     ) -> str:
         """
         High-fidelity video transformation using Remotion.
         Delegates the visual layout and captions to React for professional quality.
         """
-        logging.info(f"[VideoProcessor] Starting Remotion transformation for {output_name}")
-        
+        logging.info(
+            f"[VideoProcessor] Starting Remotion transformation for {output_name}"
+        )
+
         try:
             from services.video_engine.remotion_service import remotion_service
-            
+
             # Prepare props for the Remotion ViralClip composition
             props = {
-                "title": strategy.get("vibe", "Viral Moment") if strategy else "Viral Clip",
-                "subtitle": strategy.get("visual_mood", "Created by OpenClaw") if strategy else "Cinematic Studio",
-                "videoUrl": input_path
+                "title": strategy.get("vibe", "Viral Moment")
+                if strategy
+                else "Viral Clip",
+                "subtitle": strategy.get("visual_mood", "Created by OpenClaw")
+                if strategy
+                else "Cinematic Studio",
+                "videoUrl": input_path,
             }
-            
+
             # We'll also pass any voiceover from the strategy if available
             if strategy and strategy.get("voiceover_url"):
                 props["audioUrl"] = strategy["voiceover_url"]
-            
+
             rendered_path = await remotion_service.render_video(
-                composition_id="ViralClip",
-                props=props,
-                output_name=output_name
+                composition_id="ViralClip", props=props, output_name=output_name
             )
-            
+
             if rendered_path:
-                logging.info(f"[VideoProcessor] Remotion transformation complete: {rendered_path}")
+                logging.info(
+                    f"[VideoProcessor] Remotion transformation complete: {rendered_path}"
+                )
                 return rendered_path
-            
+
             raise Exception("Remotion rendering failed to produce an output")
-            
+
         except Exception as e:
-            logging.error(f"[VideoProcessor] Remotion pipeline failed: {e}. Falling back to basic ffmpeg.")
+            logging.error(
+                f"[VideoProcessor] Remotion pipeline failed: {e}. Falling back to basic ffmpeg."
+            )
             # Basic fallback: just return the input or do a simple copy
             return input_path
+
 
 base_video_processor = VideoProcessor()
