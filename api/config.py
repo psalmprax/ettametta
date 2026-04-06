@@ -141,9 +141,17 @@ class Settings(BaseSettings):
     MOTION_GRAPHICS_ENGINE: str = "local"  # local, cloud
 
     # AI Video Generation (Tier 3 Enhancement)
-    AI_VIDEO_PROVIDER: str = "none"  # none, runway, pika
+    AI_VIDEO_PROVIDER: str = (
+        "none"  # none, zsky, kling, pixverse, replicate, runway, pika, stability
+    )
+    AI_VIDEO_FALLBACKS: str = ""  # Comma-separated fallback providers
     RUNWAY_API_KEY: str = ""
     PIKA_API_KEY: str = ""
+    ZSKY_API_KEY: str = ""  # ~50 credits/day
+    KLING_API_KEY: str = ""  # ~100 credits/day
+    PIXVERSE_API_KEY: str = ""  # ~20 credits/day
+    REPLICATE_API_KEY: str = ""  # Free trial credits
+    STABILITY_API_KEY: str = ""  # ~25 credits/day
 
     # Video Quality Tier (default processing level)
     DEFAULT_QUALITY_TIER: str = "standard"  # standard, enhanced, premium

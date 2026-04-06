@@ -29,6 +29,7 @@ class CreditService:
         "video_generation_hunyuan": 15,
         "video_generation_veo3": 25,
         "video_generation_runway": 30,
+        "video_generation_free": 0,  # Free daily providers (ZSky, Kling, PixVerse, Replicate, Stability)
         "video_transformation": 5,
         "voice_clone": 20,
         "face_swap": 15,
