@@ -210,9 +210,9 @@ services:
        - TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
        - API_URL=http://api:8000
        - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
-     depends_on:
-       api:
-         condition: service_healthy
+    depends_on:
+      - api
+      - dashboard
 
   ai-gateway:
     build:
