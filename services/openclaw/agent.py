@@ -18,6 +18,14 @@ from skills.metrics import social_metrics_skill
 from skills.external.paperclip_integration import paperclip_skill
 from skills.external.claw4science_integration import claw4science_skill
 from skills.render_remotion import remotion_skill
+from skills.memory import memory_skill
+from skills.self_improve import self_improve_skill
+from skills.repurpose import repurpose_skill
+from skills.trend_prediction import trend_prediction_skill
+from skills.competitor import competitor_skill
+from skills.notifications import notification_skill
+from skills.workflow import workflow_skill
+from skills.self_healing import self_healing_skill
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -54,6 +62,10 @@ class OpenClawAgent:
         - PAPERCLIP: KPI-driven organic scaling and performance tracking. Params: {"action": "track|scale", "job_id": "string", "platform": "string", "views": int, "likes": int, "niche": "string"}
         - SCIENTIFIC: Transforms technical/academic data into viral "Science-Pop" scripts. Params: {"action": "convert|trends", "raw_data": "string", "topic": "string"}
         - REMOTION: Programmatic React-based video rendering for pixel-perfect overlays. Params: {"composition": "string", "props": dict, "output_name": "string"}
+        - MEMORY: Manage persistent data across sessions. Params: {"action": "store|retrieve|list", "key": "string", "value": "string"}
+        - NOTIFICATIONS: Send alerts via configured channels. Params: {"channel": "telegram|webhook|all", "message": "string", "priority": "normal|high|critical"}
+        - WORKFLOW: Create and execute automated workflows. Params: {"action": "create|execute|status", "name": "string", "steps": [...]}
+        - WATCHDOG: Monitor system health and auto-restart processes. Params: {"action": "status|check|restart", "process": "string"}
         
         PLANNING MODE:
         When a user gives a complex command, you must first output a brief "Plan" explicitly naming which sub-agents (SCOUT, MUSE, etc.) you are delegating to, followed by the actual tool JSON.
@@ -97,7 +109,6 @@ class OpenClawAgent:
             return None
         except Exception as e:
             logger.error(f"Error calling verification API: {e}")
-            return None
             return None
 
     async def process_message(self, identifier: str, message: str) -> str:
@@ -324,23 +335,69 @@ class OpenClawAgent:
                 return paperclip_skill.track_organic_performance(
                     params.get("job_id"),
                     params.get("platform", "TikTok"),
-                    {"views": params.get("views", 0), "likes": params.get("likes", 0)}
+                    {"views": params.get("views", 0), "likes": params.get("likes", 0)},
                 )
             else:
-                return paperclip_skill.scale_organic_reach(params.get("niche", "General"))
+                return paperclip_skill.scale_organic_reach(
+                    params.get("niche", "General")
+                )
 
         elif tool == "SCIENTIFIC":
             action = params.get("action", "convert")
             if action == "convert":
-                return claw4science_skill.convert_technical_to_viral(params.get("raw_data", ""))
+                return claw4science_skill.convert_technical_to_viral(
+                    params.get("raw_data", "")
+                )
             else:
-                return claw4science_skill.fetch_scientific_niche_trends(params.get("topic", "General"))
+                return claw4science_skill.fetch_scientific_niche_trends(
+                    params.get("topic", "General")
+                )
 
         elif tool == "REMOTION":
             return remotion_skill.render_remotion_clip(
                 params.get("composition", "MainText"),
                 params.get("props", {}),
-                params.get("output_name", "remotion_render.mp4")
+                params.get("output_name", "remotion_render.mp4"),
             )
+
+        elif tool == "MEMORY":
+            action = params.get("action", "list")
+            if action == "store":
+                return memory_skill.store(
+                    params.get("key", ""), params.get("value", "")
+                )
+            elif action == "retrieve":
+                return memory_skill.retrieve(params.get("key", ""))
+            else:
+                return memory_skill.list_keys()
+
+        elif tool == "NOTIFICATIONS":
+            channel = params.get("channel", "telegram")
+            message = params.get("message", "Test notification")
+            priority = params.get("priority", "normal")
+            return notification_skill.send_notification(channel, message, priority)
+
+        elif tool == "WORKFLOW":
+            action = params.get("action", "list")
+            name = params.get("name", "")
+            if action == "create":
+                steps = params.get("steps", [])
+                return workflow_skill.create_workflow(name, steps)
+            elif action == "execute":
+                return workflow_skill.execute_workflow(name)
+            elif action == "status":
+                return workflow_skill.get_workflow_status(name)
+            else:
+                return workflow_skill.list_workflows()
+
+        elif tool == "WATCHDOG":
+            action = params.get("action", "status")
+            if action == "check":
+                return self_healing_skill.perform_health_check()
+            elif action == "restart":
+                process = params.get("process", "")
+                return self_healing_skill.restart_process(process)
+            else:
+                return self_healing_skill.get_watchdog_status()
 
         return f"❓ Unknown tool: {tool}"
