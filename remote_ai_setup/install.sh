@@ -111,6 +111,23 @@ curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | sudo -E bash -
 sudo apt-get install -y nodejs
 sudo npm install -g npx
 
+# Install OpenClaw agent skills for remote AI gaps
+echo "🧠 Installing OpenClaw agent skills..."
+mkdir -p "$BEST_DISK/.skills"
+export SKILLS_DIR="$BEST_DISK/.skills"
+
+# Memory persistence (addresses long-term memory gap)
+npx skills add anthropics/skills/memory -g -y || echo "⚠️ Memory skill install failed, continuing..."
+
+# Notification routing (Slack/Discord/email alerting)
+npx skills add openclaw/skills/notification-routing -g -y || echo "⚠️ Notification skill install failed, continuing..."
+
+# Workflow automation (n8n-style chaining)
+npx skills add composiohq/composio/workflow-automation -g -y || echo "⚠️ Workflow automation skill install failed, continuing..."
+
+# Self-healing watchdog (AlphaClaw pattern)
+npx skills add openclaw/skills/self-healing-watchdog -g -y || echo "⚠️ Self-healing skill install failed, continuing..."
+
 # Install Chromium for Remotion (Headless rendering)
 echo "🌐 Installing Chromium for Headless Video Rendering..."
 sudo apt-get install -y chromium-browser libgbm-dev
