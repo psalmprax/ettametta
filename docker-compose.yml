@@ -207,6 +207,18 @@ services:
       - API_URL=http://api:8000
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
 
+  node-skills:
+    image: node:18-alpine
+    volumes:
+      - ./external-skills:/app
+    working_dir: /app
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - api
+
   ai-gateway:
     build:
       context: ./remote_ai_setup
