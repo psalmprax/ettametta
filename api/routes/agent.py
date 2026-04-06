@@ -5,6 +5,8 @@ import asyncio
 import logging
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
+from api.utils.limiter import limiter
+from fastapi import Request
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +84,11 @@ async def chat_with_agent(
 
 
 @router.post("/crew")
+@limiter.limit("5/minute")  # Rate limit crew executions
 async def crew_task(
-    request: AgentRequest, current_user: UserDB = Depends(get_current_user)
+    request: Request,
+    body: AgentRequest,
+    current_user: UserDB = Depends(get_current_user),
 ):
     """
     Execute a task using CrewAI if enabled, otherwise falls back to Groq multi-step execution.

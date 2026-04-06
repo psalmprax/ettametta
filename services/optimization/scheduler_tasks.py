@@ -201,7 +201,7 @@ def retry_failed_posts():
 
         for post in failed_posts:
             retry_count = getattr(post, "retry_count", 0)
-            max_retries = 3
+            max_retries = getattr(post, "max_retries", 3)  # Configurable, default 3
 
             if retry_count < max_retries:
                 post.status = "PENDING"
