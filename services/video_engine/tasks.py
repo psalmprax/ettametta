@@ -264,7 +264,13 @@ def download_and_process_task(
 
 @celery_app.task(name="video.generate", bind=True)
 def generate_video_task(
-    self, prompt: str, engine: str, style: str, aspect_ratio: str, user_id: int
+    self,
+    prompt: str,
+    engine: str,
+    style: str,
+    aspect_ratio: str,
+    user_id: int,
+    custom_image_url: str = None,
 ):
     """
     Background task for AI Video Synthesis (T2V).
@@ -304,7 +310,10 @@ def generate_video_task(
         update_job(status="Synthesizing", progress=10)
         video_url = run_async(
             generative_service.synthesize_video(
-                prompt, engine=engine, aspect_ratio=aspect_ratio
+                prompt,
+                engine=engine,
+                aspect_ratio=aspect_ratio,
+                custom_image_url=custom_image_url,
             )
         )
 
@@ -320,9 +329,23 @@ def generate_video_task(
             # But for our current GenerativeService mocks, we'll just log it
             pass
 
-        # 3. Refine with Transformation Engine (Optional but powerful)
+        # 3. Apply pro workflow refinement for premium quality
         update_job(status="Refining", progress=60)
-        # We can reuse the processor logic here if needed
+
+        # Check if premium quality requested (we can infer from engine or add parameter)
+        # For now, apply to all videos for A+ quality
+        from services.video_engine.processor import video_processor
+
+        if engine in ["veo3", "wan2.2"] or True:  # Apply to all for now
+            update_job(
+                status="Applying Pro Workflow (Upscale + Interpolate)", progress=70
+            )
+            refined_video_path = await video_processor.apply_pro_workflow(
+                video_url, f"refined_{uuid.uuid4()}.mp4", aspect_ratio, 5.0, "premium"
+            )
+            if refined_video_path != video_url:
+                video_url = refined_video_path
+                update_job(status="Pro Refinement Complete", progress=80)
 
         # 4. Storage & Finalization
         from services.storage.service import base_storage_service
