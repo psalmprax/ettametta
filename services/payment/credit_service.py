@@ -30,6 +30,7 @@ class CreditService:
         "video_generation_veo3": 25,
         "video_generation_runway": 30,
         "video_generation_free": 0,  # Free daily providers (ZSky, Kling, PixVerse, Replicate, Stability)
+        "video_generation_replicate": 5,  # Replicate paid models ($0.01-0.72 per video - cheapest!)
         "video_transformation": 5,
         "voice_clone": 20,
         "face_swap": 15,

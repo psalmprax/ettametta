@@ -322,6 +322,10 @@ async def generate_single_video(
             "pixverse": "video_generation_free",
             "replicate": "video_generation_free",
             "stability": "video_generation_free",
+            # Replicate paid models (cheap!)
+            "replicate_wan": "video_generation_replicate",  # $0.01-0.02 per video
+            "replicate_seedance": "video_generation_replicate",  # $0.09-0.72 per video
+            "replicate_hailuo": "video_generation_replicate",  # $0.10-0.15 per video
         }
 
         action = engine_to_action.get(body.engine, "video_generation_ltx")

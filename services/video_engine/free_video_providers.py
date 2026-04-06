@@ -56,6 +56,39 @@ class FreeVideoProviderService:
             "supports_image2video": True,
             "supports_audio": False,
         },
+        "replicate_wan": {
+            "api_url": "https://api.replicate.com/v1",
+            "free_credits": 0,  # Paid only
+            "max_duration": 5,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": False,
+            "model_default": "wan-video/wan-2.2-5b-fast",
+            "cost_per_video": 0.02,  # $0.01-0.02 per 5s video - CHEAPEST!
+            "replicate_model": "wan-video/wan-2.2-5b-fast",
+        },
+        "replicate_seedance": {
+            "api_url": "https://api.replicate.com/v1",
+            "free_credits": 0,  # Paid only
+            "max_duration": 10,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": False,
+            "model_default": "bytedance/seedance-1-lite",
+            "cost_per_video": 0.40,  # $0.09-0.72 - BEST QUALITY/PRICE!
+            "replicate_model": "bytedance/seedance-1-lite",
+        },
+        "replicate_hailuo": {
+            "api_url": "https://api.replicate.com/v1",
+            "free_credits": 0,  # Paid only
+            "max_duration": 10,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": False,
+            "model_default": "minimax/hailuo-02-fast",
+            "cost_per_video": 0.15,  # $0.10-0.15 - Good quality
+            "replicate_model": "minimax/hailuo-02-fast",
+        },
         "replicate": {
             "api_url": "https://api.replicate.com/v1",
             "free_credits": 10,  # One-time trial
@@ -129,6 +162,9 @@ class FreeVideoProviderService:
             "kling": self.kling_key,
             "pixverse": self.pixverse_key,
             "replicate": self.replicate_key,
+            "replicate_wan": self.replicate_key,  # Uses same Replicate API key
+            "replicate_seedance": self.replicate_key,
+            "replicate_hailuo": self.replicate_key,
             "stability": self.stability_key,
             "runway": self.runway_key,
             "pika": self.pika_key,
@@ -217,9 +253,20 @@ class FreeVideoProviderService:
             return await self._generate_pixverse(
                 enhanced_prompt, duration, aspect_ratio, image_url, api_key, config
             )
-        elif provider == "replicate":
+        elif provider in [
+            "replicate",
+            "replicate_wan",
+            "replicate_seedance",
+            "replicate_hailuo",
+        ]:
             return await self._generate_replicate(
-                enhanced_prompt, duration, aspect_ratio, image_url, api_key, config
+                provider,
+                enhanced_prompt,
+                duration,
+                aspect_ratio,
+                image_url,
+                api_key,
+                config,
             )
         elif provider == "stability":
             return await self._generate_stability(
@@ -568,6 +615,7 @@ class FreeVideoProviderService:
 
     async def _generate_replicate(
         self,
+        provider: str,
         prompt: str,
         duration: int,
         aspect_ratio: str,
@@ -583,23 +631,41 @@ class FreeVideoProviderService:
             "Content-Type": "application/json",
         }
 
-        # Use minimax model for fast video generation
-        model = config.get("model_default", "minimax/mimi-alpha-01")
+        # Check if this is a specific model (wan, seedance, hailuo)
+        model = config.get("replicate_model") or config.get(
+            "model_default", "minimax/mimi-alpha-01"
+        )
+
+        # Build input payload based on model type
+        input_data = {
+            "prompt": prompt,
+        }
+
+        # Model-specific parameters
+        if "wan-2.2-5b" in model:
+            input_data["duration"] = min(duration, 5)  # Wan max 5s
+        elif "seedance" in model:
+            input_data["duration"] = min(duration, 10)
+            input_data["resolution"] = "720p"
+        elif "hailuo" in model:
+            input_data["duration"] = min(duration, 6)
+        else:
+            input_data["duration"] = min(duration, config.get("max_duration", 10))
+
+        # Handle image-to-video
+        if image_url and config.get("supports_image2video"):
+            if "wan-2.2" in model:
+                input_data["image"] = image_url
+            else:
+                input_data["image"] = image_url
 
         payload = {
             "version": model,
-            "input": {
-                "prompt": prompt,
-                "duration": min(duration, config["max_duration"]),
-            },
+            "input": input_data,
         }
 
-        if image_url and config.get("supports_image2video"):
-            payload["input"]["image"] = image_url
-
         try:
-            async with httpx.AsyncClient(timeout=60) as client:
-                # Replicate prediction create endpoint
+            async with httpx.AsyncClient(timeout=120) as client:
                 response = await client.post(
                     "https://api.replicate.com/v1/predictions",
                     headers=headers,
@@ -608,23 +674,37 @@ class FreeVideoProviderService:
 
                 if response.status_code not in (200, 201):
                     logger.error(
-                        f"[FreeVideoProvider] Replicate error {response.status_code}: {response.text}"
+                        f"[FreeVideoProvider] Replicate {provider} error {response.status_code}: {response.text}"
                     )
                     return None
 
                 data = response.json()
 
                 if "urls" in data and "get" in data["urls"]:
-                    return await self._poll_replicate_job(data["urls"]["get"], api_key)
+                    result = await self._poll_replicate_job(
+                        data["urls"]["get"], api_key, provider, config
+                    )
+                    if result:
+                        # Add cost info
+                        result["cost"] = config.get("cost_per_video", 0)
+                    return result
 
                 return None
 
         except Exception as e:
-            logger.error(f"[FreeVideoProvider] Replicate request failed: {e}")
+            logger.error(
+                f"[FreeVideoProvider] Replicate {provider} request failed: {e}"
+            )
             return None
 
     async def _poll_replicate_job(
-        self, poll_url: str, api_key: str, max_attempts: int = 60, delay: int = 5
+        self,
+        poll_url: str,
+        api_key: str,
+        provider: str = "replicate",
+        config: Dict = None,
+        max_attempts: int = 60,
+        delay: int = 5,
     ) -> Optional[Dict[str, Any]]:
         """Poll Replicate job until completion"""
         import httpx
@@ -645,27 +725,44 @@ class FreeVideoProviderService:
 
                     if status == "succeeded":
                         output = data.get("output", {})
-                        # Replicate output can be video URL or array
+                        video_url = None
+
+                        # Handle different output formats
                         if isinstance(output, list) and len(output) > 0:
-                            return {
-                                "video_url": output[0],
-                                "metadata": {"model": "replicate"},
-                            }
+                            video_url = output[0]
                         elif isinstance(output, str):
+                            video_url = output
+                        elif isinstance(output, dict):
+                            video_url = (
+                                output.get("video")
+                                or output.get("url")
+                                or output.get("output")
+                            )
+
+                        if video_url:
                             return {
-                                "video_url": output,
-                                "metadata": {"model": "replicate"},
+                                "video_url": video_url,
+                                "metadata": {
+                                    "model": provider,
+                                    "provider": "replicate",
+                                },
                             }
                         return None
                     elif status in ("failed", "canceled"):
+                        logger.error(
+                            f"[FreeVideoProvider] Replicate {provider} job failed: {data.get('error')}"
+                        )
                         return None
 
                     await asyncio.sleep(delay)
 
                 except Exception as e:
-                    logger.warning(f"[FreeVideoProvider] Replicate poll exception: {e}")
+                    logger.warning(
+                        f"[FreeVideoProvider] Replicate {provider} poll exception: {e}"
+                    )
                     await asyncio.sleep(delay)
 
+            logger.error(f"[FreeVideoProvider] Replicate {provider} job timed out")
             return None
 
     async def _generate_stability(
