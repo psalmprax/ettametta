@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     VOICE_ENGINE: str = "fish_speech"  # Options: elevenlabs, fish_speech
     MONETIZATION_MODE: str = "selective"  # Options: selective, all
     PEXELS_API_KEY: str = ""
-    OPENAI_API_KEY: str = ""
     GOOGLE_API_KEY: str = ""
     GOOGLE_SEARCH_CX: str = ""  # Custom Search Engine ID for Google Search
     DEFAULT_VLM_MODEL: str = "gemini-1.5-flash"
@@ -382,8 +381,7 @@ class Settings(BaseSettings):
 
         return validation["errors"]
 
-    # Trading service configuration
-    ENABLE_TRADING: bool = True
+    # Trading service configuration (already defined at line 164)
     ALPHA_VANTAGE_API_KEY: Optional[str] = None
     COINGECKO_API_KEY: Optional[str] = None
 

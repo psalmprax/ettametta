@@ -1,16 +1,36 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import Optional, List
 import httpx
+import re
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
 
 router = APIRouter(prefix="/trading", tags=["Trading"])
 
 
+def validate_symbol(symbol: str) -> str:
+    """
+    Sanitize symbol parameter to prevent injection attacks.
+    Only allows alphanumeric, dots, hyphens, and slashes (e.g., BTC/USD, AAPL).
+    """
+    if not symbol or len(symbol) > 20:
+        raise HTTPException(status_code=400, detail="Invalid symbol length")
+
+    # Only allow valid characters for stock/crypto symbols
+    if not re.match(r"^[A-Za-z0-9./-]+$", symbol):
+        raise HTTPException(status_code=400, detail="Invalid symbol characters")
+
+    return symbol.upper()
+
+
 class MarketDataRequest(BaseModel):
     symbol: str
     interval: str = "1d"
+
+    @validator("symbol")
+    def validate_symbol_field(cls, v):
+        return validate_symbol(v)
 
 
 class CryptoRequest(BaseModel):
@@ -24,6 +44,8 @@ async def get_market_data(
     """
     Get market data for a symbol using Alpha Vantage.
     """
+    # Validate and sanitize symbol
+    symbol = validate_symbol(symbol)
     from api.config import settings
     import httpx
 
@@ -242,6 +264,9 @@ async def get_symbol_analysis(
     """
     Get AI-powered analysis for a symbol.
     """
+    # Validate and sanitize symbol
+    symbol = validate_symbol(symbol)
+
     from api.config import settings
     from groq import AsyncGroq
     import httpx
