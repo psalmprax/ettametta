@@ -4,8 +4,7 @@
   "description": "External agent skills integration for Viral Forge",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "install-skills": "npm install && npx skills add browser-use/browser-use/browser-use && npx skills add n8n/n8n-workflows/n8n && npx skills add anthropics/skills/pdf && npx skills add anthropics/skills/pptx && npx skills add anthropics/skills/docx"
+    "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.18.2",
