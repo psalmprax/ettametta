@@ -81,34 +81,67 @@ async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_
     """
     Triggers a discovery scan. If 'deep' is true, performs an exhaustive AI-powered scan.
     """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
     try:
         if request.deep:
-            # Handle deep scan directly in Python service for better control/AI integration
-            for niche in request.niches:
-                # We run this in the background or just wait if it's a direct UI call
-                # For now, we'll return the results of the first niche as a sample
-                results = await base_discovery_service.find_trending_content(
-                    niche,
-                    horizon="30d",
-                    tier=user.subscription.value
-                    if hasattr(user.subscription, "value")
-                    else "free",
-                    deep_scan=True,
-                )
+            # Run deep scan as background task to avoid blocking
+            from services.discovery.tasks import deep_scan_task
+
+            task = deep_scan_task.delay(
+                niches=request.niches,
+                tier=user.subscription.value
+                if hasattr(user.subscription, "value")
+                else "free",
+            )
+
             return {
-                "status": "Deep Scan Completed",
+                "status": "Deep Scan Queued",
+                "task_id": task.id,
                 "niches": request.niches,
-                "count": len(results),
+                "message": "Deep scan started in background. Poll /analyze/{task_id} for results.",
             }
         else:
             # Proxies regular scan requests to the high-concurrency Go engine
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    f"{DISCOVERY_GO_URL}/scan",
-                    json={"niches": request.niches},
-                    timeout=300.0,
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.post(
+                        f"{DISCOVERY_GO_URL}/scan",
+                        json={"niches": request.niches},
+                        timeout=300.0,
+                    )
+                    resp.raise_for_status()
+                    return resp.json()
+            except (httpx.ConnectError, httpx.TimeoutException) as e:
+                logger.warning(
+                    f"[Discovery] Go engine unavailable: {e}, falling back to Python service"
                 )
-                return resp.json()
+                # Fallback to Python service if Go engine unavailable
+                all_results = []
+                for niche in request.niches:
+                    try:
+                        results = await base_discovery_service.find_trending_content(
+                            niche,
+                            horizon="30d",
+                            tier=user.subscription.value
+                            if hasattr(user.subscription, "value")
+                            else "free",
+                        )
+                        all_results.extend(results)
+                    except Exception as inner_e:
+                        logger.error(
+                            f"[Discovery] Fallback scan failed for {niche}: {inner_e}"
+                        )
+
+                return {
+                    "status": "scan_completed",
+                    "niches": request.niches,
+                    "candidates": all_results[:50],
+                    "count": len(all_results),
+                    "source": "fallback_python",
+                }
     except Exception as e:
         import traceback
 
@@ -358,15 +391,16 @@ async def get_niche_insights(niche: str, user: UserDB = Depends(get_current_user
             chat_completion = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model="llama-3.3-70b-versatile",
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
             )
-            
+
             ai_data = json.loads(chat_completion.choices[0].message.content)
             recommendation = ai_data.get("recommendation", recommendation)
             filters = ai_data.get("filters_suggested", filters)
             confidence = ai_data.get("confidence", confidence)
         except Exception as e:
             import logging
+
             logging.error(f"[Discovery] Groq Insight Failure: {e}")
 
     return InsightResponse(
@@ -375,7 +409,7 @@ async def get_niche_insights(niche: str, user: UserDB = Depends(get_current_user
         confidence=confidence,
         filters_suggested=filters,
         target_regions=["US", "GB", "DE"],
-        alpha_status=False # No longer alpha, it's real
+        alpha_status=False,  # No longer alpha, it's real
     )
 
 
@@ -470,8 +504,7 @@ class InteractionRequest(BaseModel):
 
 @router.post("/interact")
 async def record_interaction(
-    request: InteractionRequest, 
-    user: UserDB = Depends(get_current_user)
+    request: InteractionRequest, user: UserDB = Depends(get_current_user)
 ):
     """
     Records a UI interaction (e.g. handshake, negotiate) with a discovery candidate.
@@ -488,20 +521,22 @@ async def record_interaction(
             user_id=user.id,
             action=request.action,
             status=1,  # Established
-            details={"niche": request.niche, "timestamp": datetime.datetime.utcnow().isoformat()}
+            details={
+                "niche": request.niche,
+                "timestamp": datetime.datetime.utcnow().isoformat(),
+            },
         )
         db.add(new_interaction)
         db.commit()
         db.refresh(new_interaction)
-        
+
         return {
             "status": "Handshake Established",
             "candidate_id": request.candidate_id,
             "interaction_id": new_interaction.id,
             "timestamp": new_interaction.created_at.isoformat(),
             "signals": ["SYNC_LOCKED", "NEGOTIATION_ACTIVE"],
-            "message": f"Successfully established {request.action} protocol with target node."
+            "message": f"Successfully established {request.action} protocol with target node.",
         }
     finally:
         db.close()
-

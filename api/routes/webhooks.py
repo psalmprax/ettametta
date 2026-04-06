@@ -86,7 +86,7 @@ async def youtube_upload_status(
     """
     from api.config import settings
 
-    body = await request.body()
+    body = await request.body()  # raw bytes for HMAC verification
 
     if settings.YOUTUBE_WEBHOOK_SECRET:
         if not _verify_signature(
@@ -196,7 +196,7 @@ async def tiktok_upload_status(
     """
     from api.config import settings
 
-    body = await request.body()
+    body = await request.body()  # raw bytes for HMAC verification
 
     if settings.TIKTOK_WEBHOOK_SECRET:
         if not _verify_signature(
@@ -320,7 +320,7 @@ async def generic_platform_status(
         settings, f"{payload.platform.upper()}_WEBHOOK_SECRET", None
     )
 
-    body = await request.body()
+    body = await request.body()  # raw bytes for HMAC verification
 
     if webhook_secret:
         if not _verify_signature(body, x_platform_signature, webhook_secret):

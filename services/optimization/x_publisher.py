@@ -42,6 +42,15 @@ class XPublisher(SocialPublisher):
             logger.error(f"[XPublisher] No authentication for user {user_id}")
             return None
 
+        # Check file size before loading
+        if os.path.isfile(video_path):
+            file_size_mb = os.path.getsize(video_path) / (1024 * 1024)
+            if file_size_mb > self.max_file_size_bytes / (1024 * 1024):
+                logger.error(
+                    f"[XPublisher] File size {file_size_mb:.2f}MB exceeds limit of {self.max_file_size_bytes / (1024 * 1024):.0f}MB"
+                )
+                return None
+
         file_data, total_bytes = await self._load_video_data(video_path)
         if not file_data or total_bytes == 0:
             logger.error(f"[XPublisher] Could not load video data from {video_path}")
