@@ -408,11 +408,18 @@ class GenerativeService:
             f"[GenerativeService] Triggering 4K Lite Synthesis: {prompt[:50]}..."
         )
 
-        # 1. Generate 4K Static Image (Pollinations.ai)
-        encoded_prompt = urllib.parse.quote(prompt)
-        # We request a large resolution (which translates to high quality for upscale later)
-        width, height = (3840, 2160) if aspect_ratio == "16:9" else (2160, 3840)
-        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&model=flux&seed={uuid.uuid4().int}"
+        # 1. Generate or use custom 4K Static Image
+        if custom_image_url:
+            # Use provided custom image
+            image_url = custom_image_url
+            logging.info(f"[GenerativeService] Using custom image: {image_url}")
+        else:
+            # Generate high-quality image (Pollinations.ai with FLUX model)
+            encoded_prompt = urllib.parse.quote(prompt)
+            # We request a large resolution (which translates to high quality for upscale later)
+            width, height = (3840, 2160) if aspect_ratio == "16:9" else (2160, 3840)
+            image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&model=flux&seed={uuid.uuid4().int}"
+            logging.info(f"[GenerativeService] Generated FLUX image: {image_url}")
 
         # 2. Process into 4K Cinematic Video
         processor = VideoProcessor()
