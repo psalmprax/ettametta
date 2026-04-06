@@ -453,3 +453,313 @@ async def start_story_generation(
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
+
+
+@router.get("/metadata/{task_id}")
+async def get_video_metadata(
+    task_id: str,
+    current_user: UserDB = Depends(get_current_user),
+):
+    """
+    Get comprehensive metadata for a video generation task.
+    Includes model used, provider, cost, and generation details.
+    """
+    db = SessionLocal()
+    try:
+        # Get video job
+        job = (
+            db.query(VideoJobDB)
+            .filter(VideoJobDB.id == task_id, VideoJobDB.user_id == current_user.id)
+            .first()
+        )
+
+        if not job:
+            raise HTTPException(status_code=404, detail="Video job not found")
+
+        # Get audit logs for this task
+        from api.utils.models import AuditLogDB
+
+        audit_logs = (
+            db.query(AuditLogDB)
+            .filter(
+                AuditLogDB.resource_id == task_id, AuditLogDB.resource_type == "VIDEO"
+            )
+            .order_by(AuditLogDB.created_at.desc())
+            .all()
+        )
+
+        # Extract metadata from audit logs
+        metadata = {
+            "task_id": task_id,
+            "title": job.title,
+            "status": job.status,
+            "progress": job.progress,
+            "created_at": job.created_at.isoformat(),
+            "updated_at": job.updated_at.isoformat(),
+            "input_prompt": job.input_url
+            if job.input_url != "Generation Prompt"
+            else None,
+            "output_path": job.output_path,
+            "generation_details": {},
+            "cost_info": {},
+        }
+
+        # Parse audit log details for generation metadata
+        for log in audit_logs:
+            if log.action in ["VIDEO_GENERATE_START", "STORY_GENERATE_START"]:
+                details = log.details or {}
+                metadata["generation_details"] = {
+                    "engine": details.get("engine"),
+                    "style": details.get("style"),
+                    "aspect_ratio": details.get("aspect_ratio"),
+                    "custom_image": details.get("custom_image", False),
+                    "provider": details.get("provider"),
+                    "model": details.get("model"),
+                    "cost_credits": details.get("cost"),
+                }
+                break
+
+        # Calculate cost information
+        engine = metadata["generation_details"].get("engine", "unknown")
+        cost_mapping = {
+            # Free providers
+            "zsky": {"credits": 0, "cost_usd": 0.00, "category": "free"},
+            "kling": {"credits": 0, "cost_usd": 0.00, "category": "free"},
+            "pixverse": {"credits": 0, "cost_usd": 0.00, "category": "free"},
+            "replicate": {"credits": 0, "cost_usd": 0.00, "category": "free"},
+            # Paid Replicate
+            "replicate_wan": {"credits": 5, "cost_usd": 0.10, "category": "cheap"},
+            "replicate_seedance": {
+                "credits": 5,
+                "cost_usd": 2.00,
+                "category": "quality",
+            },
+            "replicate_hailuo": {"credits": 5, "cost_usd": 0.75, "category": "cheap"},
+            # Local GPU
+            "ltx-video": {"credits": 10, "cost_usd": 1.00, "category": "local"},
+            "hunyuan": {"credits": 15, "cost_usd": 1.50, "category": "local"},
+            "mochi": {"credits": 15, "cost_usd": 1.50, "category": "local"},
+            "wan": {"credits": 15, "cost_usd": 1.50, "category": "local"},
+            "wan2.2": {"credits": 15, "cost_usd": 1.50, "category": "local"},
+            "cogvideo": {"credits": 15, "cost_usd": 1.50, "category": "local"},
+            # Cloud premium
+            "veo3": {"credits": 25, "cost_usd": 2.50, "category": "premium"},
+            "runway": {"credits": 30, "cost_usd": 3.00, "category": "premium"},
+            "pika": {"credits": 30, "cost_usd": 3.00, "category": "premium"},
+        }
+
+        cost_info = cost_mapping.get(
+            engine, {"credits": 10, "cost_usd": 1.00, "category": "unknown"}
+        )
+        metadata["cost_info"] = {
+            "credits_used": cost_info["credits"],
+            "estimated_cost_usd": cost_info["cost_usd"],
+            "category": cost_info["category"],
+            "provider_quota": get_provider_quota_info(engine),
+        }
+
+        return metadata
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
+
+def get_provider_quota_info(engine: str) -> dict:
+    """
+    Get quota information for a specific engine/provider.
+    """
+    quota_info = {
+        # Free daily providers
+        "zsky": {
+            "daily_limit": 50,
+            "type": "free",
+            "resolution": "1080p",
+            "max_duration": 10,
+        },
+        "kling": {
+            "daily_limit": 100,
+            "type": "free",
+            "resolution": "1080p",
+            "max_duration": 10,
+        },
+        "pixverse": {
+            "daily_limit": 20,
+            "type": "free",
+            "resolution": "1080p",
+            "max_duration": 8,
+        },
+        "replicate": {
+            "daily_limit": "trial",
+            "type": "free",
+            "resolution": "720p",
+            "max_duration": 10,
+        },
+        # Paid Replicate models
+        "replicate_wan": {
+            "daily_limit": "unlimited",
+            "type": "paid",
+            "cost_per_video": 0.02,
+            "resolution": "720p",
+            "max_duration": 5,
+        },
+        "replicate_seedance": {
+            "daily_limit": "unlimited",
+            "type": "paid",
+            "cost_per_video": 0.40,
+            "resolution": "1080p",
+            "max_duration": 10,
+        },
+        "replicate_hailuo": {
+            "daily_limit": "unlimited",
+            "type": "paid",
+            "cost_per_video": 0.15,
+            "resolution": "720p",
+            "max_duration": 6,
+        },
+        # Local GPU models
+        "ltx-video": {
+            "daily_limit": "unlimited",
+            "type": "local_gpu",
+            "credits_per_video": 10,
+            "resolution": "720p",
+            "max_duration": 10,
+        },
+        "hunyuan": {
+            "daily_limit": "unlimited",
+            "type": "local_gpu",
+            "credits_per_video": 15,
+            "resolution": "1080p",
+            "max_duration": 5,
+        },
+        "mochi": {
+            "daily_limit": "unlimited",
+            "type": "local_gpu",
+            "credits_per_video": 15,
+            "resolution": "1080p",
+            "max_duration": 5,
+        },
+        "wan": {
+            "daily_limit": "unlimited",
+            "type": "local_gpu",
+            "credits_per_video": 15,
+            "resolution": "720p",
+            "max_duration": 5,
+        },
+        "wan2.2": {
+            "daily_limit": "unlimited",
+            "type": "local_gpu",
+            "credits_per_video": 15,
+            "resolution": "720p",
+            "max_duration": 5,
+        },
+        "cogvideo": {
+            "daily_limit": "unlimited",
+            "type": "local_gpu",
+            "credits_per_video": 15,
+            "resolution": "1080p",
+            "max_duration": 5,
+        },
+        # Cloud premium
+        "veo3": {
+            "daily_limit": "unlimited",
+            "type": "cloud_premium",
+            "credits_per_video": 25,
+            "resolution": "1080p",
+            "max_duration": 8,
+        },
+        "runway": {
+            "daily_limit": "unlimited",
+            "type": "cloud_premium",
+            "credits_per_video": 30,
+            "resolution": "720p",
+            "max_duration": 10,
+        },
+        "pika": {
+            "daily_limit": "unlimited",
+            "type": "cloud_premium",
+            "credits_per_video": 30,
+            "resolution": "720p",
+            "max_duration": 8,
+        },
+    }
+
+    return quota_info.get(engine, {"type": "unknown", "daily_limit": "unknown"})
+
+
+@router.get("/quotas")
+async def get_video_quotas(
+    current_user: UserDB = Depends(get_current_user),
+):
+    """
+    Get current user's video generation quotas and usage.
+    """
+    from datetime import datetime, timedelta
+    from api.utils.subscription import get_user_subscription_tier
+
+    db = SessionLocal()
+    try:
+        # Get user's subscription tier
+        tier = await get_user_subscription_tier(current_user, db)
+
+        # Get today's video generation count
+        today = datetime.utcnow().date()
+        today_start = datetime.combine(today, datetime.min.time())
+
+        video_count = (
+            db.query(VideoJobDB)
+            .filter(
+                VideoJobDB.user_id == current_user.id,
+                VideoJobDB.created_at >= today_start,
+                VideoJobDB.status.in_(
+                    ["Completed", "Synthesizing", "Rendering"]
+                ),  # Count active generations
+            )
+            .count()
+        )
+
+        # Tier-based limits
+        tier_limits = {
+            "free": {"daily_videos": 5, "monthly_credits": 0},
+            "creator": {"daily_videos": 20, "monthly_credits": 50},
+            "empire": {
+                "daily_videos": 1000,
+                "monthly_credits": 200,
+            },  # Effectively unlimited
+            "sovereign": {"daily_videos": 1000, "monthly_credits": 500},
+            "studio": {"daily_videos": 1000, "monthly_credits": 1000},
+        }
+
+        limits = tier_limits.get(tier, tier_limits["free"])
+
+        # Get credit balance
+        credit_balance = credit_service.get_user_credits(current_user.id)
+
+        return {
+            "subscription_tier": tier,
+            "daily_limit": limits["daily_videos"],
+            "daily_used": video_count,
+            "daily_remaining": max(0, limits["daily_videos"] - video_count),
+            "monthly_credits_limit": limits["monthly_credits"],
+            "current_credit_balance": credit_balance.balance if credit_balance else 0,
+            "reset_time": (today_start + timedelta(days=1)).isoformat(),
+            "provider_quotas": {
+                "free_providers": {
+                    "zsky": {"remaining": 50 - video_count, "reset_daily": True},
+                    "kling": {"remaining": 100 - video_count, "reset_daily": True},
+                    "pixverse": {"remaining": 20 - video_count, "reset_daily": True},
+                },
+                "paid_providers": {
+                    "replicate_wan": {"cost_per_video": 5, "unlimited": True},
+                    "replicate_seedance": {"cost_per_video": 5, "unlimited": True},
+                    "local_gpu": {"cost_per_video": "10-15", "unlimited": True},
+                    "cloud_premium": {"cost_per_video": "25-30", "unlimited": True},
+                },
+            },
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
