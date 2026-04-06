@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
+import httpx
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
 
@@ -243,6 +244,7 @@ async def get_symbol_analysis(
     """
     from api.config import settings
     from groq import AsyncGroq
+    import httpx
 
     if not settings.GROQ_API_KEY:
         raise HTTPException(status_code=503, detail="GROQ API not configured")
@@ -250,8 +252,11 @@ async def get_symbol_analysis(
     client = AsyncGroq(api_key=settings.GROQ_API_KEY)
 
     try:
-        # Get market data first
-        market_data = await get_market_data(symbol, current_user=current_user)
+        # Fetch market data directly instead of calling the endpoint
+        # (which would cause duplicate API calls and unnecessary auth overhead)
+        market_data = await _fetch_market_data(symbol, "1d", settings)
+        if not market_data:
+            raise HTTPException(status_code=500, detail="Failed to fetch market data")
 
         # Generate analysis using LLM
         response = await client.chat.completions.create(
@@ -273,8 +278,54 @@ async def get_symbol_analysis(
         analysis = response.choices[0].message.content
 
         return {"symbol": symbol, "market_data": market_data, "analysis": analysis}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _fetch_market_data(symbol: str, interval: str, settings) -> Optional[dict]:
+    """Fetch market data without external API dependencies."""
+    import httpx
+
+    if not settings.ALPHA_VANTAGE_API_KEY:
+        return None
+
+    function_map = {
+        "1min": "TIME_SERIES_INTRADAY",
+        "5min": "TIME_SERIES_INTRADAY",
+        "15min": "TIME_SERIES_INTRADAY",
+        "30min": "TIME_SERIES_INTRADAY",
+        "60min": "TIME_SERIES_INTRADAY",
+        "1d": "TIME_SERIES_DAILY",
+        "1wk": "TIME_SERIES_WEEKLY",
+        "1mo": "TIME_SERIES_MONTHLY",
+    }
+
+    av_function = function_map.get(interval, "TIME_SERIES_DAILY")
+
+    try:
+        async with httpx.AsyncClient() as client:
+            url = "https://www.alphavantage.co/query"
+            params = {
+                "function": av_function,
+                "symbol": symbol,
+                "apikey": settings.ALPHA_VANTAGE_API_KEY,
+            }
+            if av_function == "TIME_SERIES_INTRADAY":
+                params["interval"] = interval
+
+            response = await client.get(url, params=params)
+            data = response.json()
+
+            if "Error Message" in data:
+                return None
+            if "Note" in data and "rate limit" in data.get("Note", "").lower():
+                return None
+
+            return data
+    except Exception:
+        return None
 
 
 class PortfolioPosition(BaseModel):

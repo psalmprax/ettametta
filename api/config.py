@@ -374,6 +374,11 @@ class Settings(BaseSettings):
 
         return validation["errors"]
 
+    # Trading service configuration
+    ENABLE_TRADING: bool = True
+    ALPHA_VANTAGE_API_KEY: Optional[str] = None
+    COINGECKO_API_KEY: Optional[str] = None
+
     class Config:
         env_file = ".env"
         extra = "ignore"
