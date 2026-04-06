@@ -19,7 +19,11 @@ class Settings(BaseSettings):
     XAI_API_KEY: str = ""  # xAI (Grok)
     DEEPSEEK_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""  # Claude
-    DEFAULT_LLM_PROVIDER: str = "groq"  # groq, openai, xai, deepseek, anthropic, gemini
+    OLLAMA_URL: str = "http://localhost:11434"  # Local Ollama server
+    LM_STUDIO_URL: str = "http://localhost:1234"  # Local LM Studio server
+    DEFAULT_LLM_PROVIDER: str = (
+        "groq"  # groq, openai, xai, deepseek, anthropic, gemini, ollama, lm_studio
+    )
 
     USE_OS_MODELS: bool = True
 

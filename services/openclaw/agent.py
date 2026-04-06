@@ -4,7 +4,8 @@ import requests
 import asyncio
 from groq import Groq
 from config import settings
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+import httpx
 from skills.discovery import discovery_skill
 from skills.system import system_skill
 from skills.analytics import analytics_skill
@@ -33,8 +34,355 @@ logger = logging.getLogger(__name__)
 
 class OpenClawAgent:
     def __init__(self):
-        self.groq_client = Groq(api_key=settings.GROQ_API_KEY)
-        self.model = settings.MODEL
+        self.llm_provider = getattr(settings, "DEFAULT_LLM_PROVIDER", "groq")
+        self.clients = {}
+        self._init_llm_clients()
+        self.model = self._get_model_name()
+
+    def _init_llm_clients(self):
+        """Initialize multiple LLM clients with fallback support"""
+        providers = {
+            "groq": self._init_groq,
+            "openai": self._init_openai,
+            "anthropic": self._init_anthropic,
+            "xai": self._init_xai,
+            "deepseek": self._init_deepseek,
+            "gemini": self._init_gemini,
+            "ollama": self._init_ollama,
+            "lm_studio": self._init_lm_studio,
+        }
+
+        # Try primary provider first
+        if self.llm_provider in providers:
+            try:
+                providers[self.llm_provider]()
+                logger.info(
+                    f"[OpenClaw] Initialized {self.llm_provider} as primary LLM"
+                )
+                return
+            except Exception as e:
+                logger.warning(
+                    f"[OpenClaw] Failed to initialize {self.llm_provider}: {e}"
+                )
+
+        # Fallback to other providers
+        for provider_name, init_func in providers.items():
+            if provider_name != self.llm_provider:
+                try:
+                    init_func()
+                    logger.info(f"[OpenClaw] Using {provider_name} as fallback LLM")
+                    self.llm_provider = provider_name
+                    return
+                except Exception as e:
+                    logger.debug(f"[OpenClaw] {provider_name} not available: {e}")
+
+        # If no providers work, use a dummy fallback
+        logger.error("[OpenClaw] No LLM providers available - using dummy fallback")
+        self.clients["dummy"] = True
+
+    def _init_groq(self):
+        if settings.GROQ_API_KEY:
+            self.clients["groq"] = Groq(api_key=settings.GROQ_API_KEY)
+
+    def _init_openai(self):
+        if hasattr(settings, "OPENAI_API_KEY") and settings.OPENAI_API_KEY:
+            try:
+                from openai import OpenAI
+
+                self.clients["openai"] = OpenAI(api_key=settings.OPENAI_API_KEY)
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed")
+
+    def _init_anthropic(self):
+        if hasattr(settings, "ANTHROPIC_API_KEY") and settings.ANTHROPIC_API_KEY:
+            try:
+                import anthropic
+
+                self.clients["anthropic"] = anthropic.Anthropic(
+                    api_key=settings.ANTHROPIC_API_KEY
+                )
+            except ImportError:
+                logger.warning("[OpenClaw] Anthropic package not installed")
+
+    def _init_xai(self):
+        if hasattr(settings, "XAI_API_KEY") and settings.XAI_API_KEY:
+            try:
+                from openai import OpenAI
+
+                self.clients["xai"] = OpenAI(
+                    api_key=settings.XAI_API_KEY, base_url="https://api.x.ai/v1"
+                )
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for XAI")
+
+    def _init_deepseek(self):
+        if hasattr(settings, "DEEPSEEK_API_KEY") and settings.DEEPSEEK_API_KEY:
+            try:
+                from openai import OpenAI
+
+                self.clients["deepseek"] = OpenAI(
+                    api_key=settings.DEEPSEEK_API_KEY,
+                    base_url="https://api.deepseek.com/v1",
+                )
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for DeepSeek")
+
+    def _init_gemini(self):
+        if hasattr(settings, "GOOGLE_API_KEY") and settings.GOOGLE_API_KEY:
+            try:
+                import google.generativeai as genai
+
+                genai.configure(api_key=settings.GOOGLE_API_KEY)
+                self.clients["gemini"] = genai.GenerativeModel("gemini-pro")
+            except ImportError:
+                logger.warning("[OpenClaw] Google Generative AI package not installed")
+
+    def _init_ollama(self):
+        """Initialize Ollama for local LLM support"""
+        try:
+            # Try to connect to Ollama
+            ollama_url = getattr(settings, "OLLAMA_URL", "http://localhost:11434")
+            # Test connection
+            response = requests.get(f"{ollama_url}/api/tags", timeout=5)
+            if response.status_code == 200:
+                self.clients["ollama"] = {"base_url": ollama_url}
+                logger.info("[OpenClaw] Ollama connected successfully")
+            else:
+                raise Exception("Ollama not responding")
+        except Exception as e:
+            logger.warning(f"[OpenClaw] Ollama not available: {e}")
+
+    def _init_lm_studio(self):
+        """Initialize LM Studio for local LLM support"""
+        try:
+            lm_studio_url = getattr(settings, "LM_STUDIO_URL", "http://localhost:1234")
+            # Test connection
+            response = requests.get(f"{lm_studio_url}/v1/models", timeout=5)
+            if response.status_code == 200:
+                self.clients["lm_studio"] = {"base_url": lm_studio_url}
+                logger.info("[OpenClaw] LM Studio connected successfully")
+            else:
+                raise Exception("LM Studio not responding")
+        except Exception as e:
+            logger.warning(f"[OpenClaw] LM Studio not available: {e}")
+
+    def _get_model_name(self) -> str:
+        """Get the appropriate model name for the current provider"""
+        model_map = {
+            "groq": "llama-3.3-70b-versatile",
+            "openai": "gpt-4",
+            "anthropic": "claude-3-sonnet-20240229",
+            "xai": "grok-1",
+            "deepseek": "deepseek-chat",
+            "gemini": "gemini-pro",
+            "ollama": "llama3",
+            "lm_studio": "local-model",
+        }
+        return model_map.get(self.llm_provider, "llama3")
+
+    async def _call_llm(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """
+        Unified LLM calling method that supports multiple providers
+        """
+        if self.llm_provider == "dummy":
+            return {"content": "LLM not configured - using dummy response"}
+
+        try:
+            if self.llm_provider == "groq":
+                return await self._call_groq(messages, **kwargs)
+            elif self.llm_provider == "openai":
+                return await self._call_openai(messages, **kwargs)
+            elif self.llm_provider == "anthropic":
+                return await self._call_anthropic(messages, **kwargs)
+            elif self.llm_provider == "xai":
+                return await self._call_xai(messages, **kwargs)
+            elif self.llm_provider == "deepseek":
+                return await self._call_deepseek(messages, **kwargs)
+            elif self.llm_provider == "gemini":
+                return await self._call_gemini(messages, **kwargs)
+            elif self.llm_provider == "ollama":
+                return await self._call_ollama(messages, **kwargs)
+            elif self.llm_provider == "lm_studio":
+                return await self._call_lm_studio(messages, **kwargs)
+            else:
+                raise Exception(f"Unsupported LLM provider: {self.llm_provider}")
+        except Exception as e:
+            logger.error(f"[OpenClaw] LLM call failed for {self.llm_provider}: {e}")
+            # Try fallback providers
+            return await self._try_fallback_llm(messages, **kwargs)
+
+    async def _try_fallback_llm(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Try fallback LLM providers if primary fails"""
+        fallback_providers = [
+            "groq",
+            "openai",
+            "xai",
+            "deepseek",
+            "ollama",
+            "lm_studio",
+        ]
+        original_provider = self.llm_provider
+
+        for provider in fallback_providers:
+            if provider != original_provider and provider in self.clients:
+                try:
+                    logger.info(f"[OpenClaw] Trying fallback provider: {provider}")
+                    self.llm_provider = provider
+                    result = await self._call_llm(messages, **kwargs)
+                    return result
+                except Exception as e:
+                    logger.warning(f"[OpenClaw] Fallback {provider} failed: {e}")
+                    continue
+
+        return {"content": "All LLM providers failed - please check configuration"}
+
+    async def _call_groq(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call Groq API"""
+        client = self.clients.get("groq")
+        if not client:
+            raise Exception("Groq client not initialized")
+
+        response = client.chat.completions.create(
+            messages=messages,
+            model=self._get_model_name(),
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1024),
+        )
+        return {"content": response.choices[0].message.content}
+
+    async def _call_openai(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call OpenAI API"""
+        client = self.clients.get("openai")
+        if not client:
+            raise Exception("OpenAI client not initialized")
+
+        response = client.chat.completions.create(
+            messages=messages,
+            model=self._get_model_name(),
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1024),
+        )
+        return {"content": response.choices[0].message.content}
+
+    async def _call_anthropic(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call Anthropic API"""
+        client = self.clients.get("anthropic")
+        if not client:
+            raise Exception("Anthropic client not initialized")
+
+        # Convert messages to Anthropic format
+        system_message = ""
+        anthropic_messages = []
+
+        for msg in messages:
+            if msg["role"] == "system":
+                system_message = msg["content"]
+            else:
+                anthropic_messages.append(msg)
+
+        response = client.messages.create(
+            model=self._get_model_name(),
+            max_tokens=kwargs.get("max_tokens", 1024),
+            temperature=kwargs.get("temperature", 0.7),
+            system=system_message,
+            messages=anthropic_messages,
+        )
+        return {"content": response.content[0].text}
+
+    async def _call_xai(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call xAI API"""
+        client = self.clients.get("xai")
+        if not client:
+            raise Exception("xAI client not initialized")
+
+        response = client.chat.completions.create(
+            messages=messages,
+            model=self._get_model_name(),
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1024),
+        )
+        return {"content": response.choices[0].message.content}
+
+    async def _call_deepseek(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call DeepSeek API"""
+        client = self.clients.get("deepseek")
+        if not client:
+            raise Exception("DeepSeek client not initialized")
+
+        response = client.chat.completions.create(
+            messages=messages,
+            model=self._get_model_name(),
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1024),
+        )
+        return {"content": response.choices[0].message.content}
+
+    async def _call_gemini(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call Google Gemini API"""
+        model = self.clients.get("gemini")
+        if not model:
+            raise Exception("Gemini model not initialized")
+
+        # Convert messages to Gemini format
+        gemini_messages = []
+        for msg in messages:
+            role = "user" if msg["role"] == "user" else "model"
+            gemini_messages.append({"role": role, "parts": [msg["content"]]})
+
+        response = model.generate_content(gemini_messages)
+        return {"content": response.text}
+
+    async def _call_ollama(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call Ollama (local LLM)"""
+        config = self.clients.get("ollama")
+        if not config:
+            raise Exception("Ollama not configured")
+
+        base_url = config["base_url"]
+
+        payload = {
+            "model": self._get_model_name(),
+            "messages": messages,
+            "stream": False,
+            "options": {
+                "temperature": kwargs.get("temperature", 0.7),
+                "num_predict": kwargs.get("max_tokens", 1024),
+            },
+        }
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(f"{base_url}/api/chat", json=payload)
+            if response.status_code == 200:
+                data = response.json()
+                return {"content": data.get("message", {}).get("content", "")}
+            else:
+                raise Exception(f"Ollama API error: {response.status_code}")
+
+    async def _call_lm_studio(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call LM Studio (local LLM)"""
+        config = self.clients.get("lm_studio")
+        if not config:
+            raise Exception("LM Studio not configured")
+
+        base_url = config["base_url"]
+
+        payload = {
+            "messages": messages,
+            "temperature": kwargs.get("temperature", 0.7),
+            "max_tokens": kwargs.get("max_tokens", 1024),
+            "stream": False,
+        }
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                f"{base_url}/v1/chat/completions", json=payload
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return {"content": data["choices"][0]["message"]["content"]}
+            else:
+                raise Exception(f"LM Studio API error: {response.status_code}")
+
         self.system_prompt = """You are OpenClaw, the autonomous Master Controller for the ettametta multi-agent empire.
         Your goal is to assist the user by orchestrating a team of specialized agents:
         - SCOUT (Discovery): Advanced trend discovery, competitor analysis, content ideation, and market research.
@@ -134,16 +482,14 @@ class OpenClawAgent:
 
         try:
             # 1. Ask LLM for intent
-            completion = self.groq_client.chat.completions.create(
-                messages=[
+            completion = await self._call_llm(
+                [
                     {"role": "system", "content": self.system_prompt},
                     {"role": "user", "content": message},
-                ],
-                model=self.model,
-                temperature=0.1,
+                ]
             )
 
-            response_text = completion.choices[0].message.content
+            response_text = completion.get("content", "No response from LLM")
             logger.info(f"LLM Raw Response: {response_text}")  # Debug log
 
             # 2. Check if response is a tool call (JSON)
