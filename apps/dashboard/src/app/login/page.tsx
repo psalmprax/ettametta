@@ -6,18 +6,57 @@ import { Zap, Loader2, Mail, Lock } from "lucide-react";
 import Link from "next/link";
 
 import { API_BASE } from "@/lib/config";
+import { useAuth } from "@/context/AuthContext";
+
+// Input validation utilities
+const validateUsername = (username: string): string | null => {
+    if (!username || username.length < 3) {
+        return "Username must be at least 3 characters";
+    }
+    if (username.length > 50) {
+        return "Username must be less than 50 characters";
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+        return "Username can only contain letters, numbers, hyphens, and underscores";
+    }
+    return null;
+};
+
+const validatePassword = (password: string): string | null => {
+    if (!password || password.length < 6) {
+        return "Password must be at least 6 characters";
+    }
+    return null;
+};
 
 export default function LoginPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [remember, setRemember] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState<{username?: string; password?: string}>({});
     const router = useRouter();
+    const { login } = useAuth();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError("");
+        setFieldErrors({});
+
+        // Validate inputs
+        const usernameError = validateUsername(username);
+        const passwordError = validatePassword(password);
+
+        if (usernameError || passwordError) {
+            setFieldErrors({
+                username: usernameError || undefined,
+                password: passwordError || undefined,
+            });
+            setIsLoading(false);
+            return;
+        }
 
         try {
             const formData = new FormData();
@@ -31,7 +70,8 @@ export default function LoginPage() {
 
             if (response.ok) {
                 const data = await response.json();
-                localStorage.setItem("et_token", data.access_token);
+                // Use secure login method with remember preference
+                login(data.access_token, remember);
                 router.push("/");
             } else {
                 const data = await response.json();
@@ -66,11 +106,24 @@ export default function LoginPage() {
                                 type="text"
                                 required
                                 value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-white font-medium"
+                                onChange={(e) => {
+                                    setUsername(e.target.value);
+                                    // Clear field error when user starts typing
+                                    if (fieldErrors.username) {
+                                        setFieldErrors(prev => ({...prev, username: undefined}));
+                                    }
+                                }}
+                                className={`w-full bg-zinc-900 border rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 transition-all text-white font-medium ${
+                                    fieldErrors.username
+                                        ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500'
+                                        : 'border-zinc-800 focus:ring-primary/50 focus:border-primary'
+                                }`}
                                 placeholder="commander"
                             />
                         </div>
+                        {fieldErrors.username && (
+                            <p className="text-red-500 text-xs font-medium ml-1">{fieldErrors.username}</p>
+                        )}
                     </div>
 
                     <div className="space-y-2">
@@ -83,11 +136,36 @@ export default function LoginPage() {
                                 type="password"
                                 required
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-white font-medium"
+                                onChange={(e) => {
+                                    setPassword(e.target.value);
+                                    // Clear field error when user starts typing
+                                    if (fieldErrors.password) {
+                                        setFieldErrors(prev => ({...prev, password: undefined}));
+                                    }
+                                }}
+                                className={`w-full bg-zinc-900 border rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 transition-all text-white font-medium ${
+                                    fieldErrors.password
+                                        ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500'
+                                        : 'border-zinc-800 focus:ring-primary/50 focus:border-primary'
+                                }`}
                                 placeholder="••••••••"
                             />
                         </div>
+                        {fieldErrors.password && (
+                            <p className="text-red-500 text-xs font-medium ml-1">{fieldErrors.password}</p>
+                        )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={remember}
+                                onChange={(e) => setRemember(e.target.checked)}
+                                className="w-4 h-4 bg-zinc-900 border border-zinc-800 rounded focus:ring-primary focus:ring-2"
+                            />
+                            <span className="text-zinc-400 text-sm font-medium">Remember me</span>
+                        </label>
                     </div>
 
                     {error && (

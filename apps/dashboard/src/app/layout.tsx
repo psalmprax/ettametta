@@ -17,12 +17,29 @@ export const metadata: Metadata = {
   description: "Next-generation generative social distribution network.",
 };
 
-import { AuthProvider } from "@/context/AuthContext";
-import { UIProvider } from "@/context/UIContext";
-import { UIThemeProvider } from "@/context/UIThemeContext";
-import QueryProvider from "@/components/providers/QueryProvider";
-import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
-import { Toaster } from "sonner";
+import dynamic from "next/dynamic";
+
+// Lazy load heavy components for better performance
+const AuthProvider = dynamic(() => import("@/context/AuthContext").then(mod => ({ default: mod.AuthProvider })), {
+  ssr: false, // Client-side only for auth
+});
+
+const UIProvider = dynamic(() => import("@/context/UIContext").then(mod => ({ default: mod.UIProvider })), {
+  ssr: false,
+});
+
+const UIThemeProvider = dynamic(() => import("@/context/UIThemeContext").then(mod => ({ default: mod.UIThemeProvider })), {
+  ssr: false,
+});
+
+const QueryProvider = dynamic(() => import("@/components/providers/QueryProvider"), {
+  ssr: false, // QueryClient needs client-side
+});
+
+const GlobalErrorBoundary = dynamic(() => import("@/components/GlobalErrorBoundary"));
+const Toaster = dynamic(() => import("sonner").then(mod => ({ default: mod.Toaster })), {
+  ssr: false,
+});
 
 export default function RootLayout({
   children,

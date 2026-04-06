@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import asyncio
 import logging
+import uuid
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
 from api.utils.limiter import limiter
@@ -11,6 +12,22 @@ from fastapi import Request
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agent", tags=["AI Agents"])
+
+# Global Groq client to avoid duplicate initialization
+_groq_client = None
+
+
+def get_groq_client():
+    """Get or create Groq client singleton"""
+    global _groq_client
+    if _groq_client is None:
+        from api.config import settings
+
+        if settings.GROQ_API_KEY:
+            from groq import AsyncGroq
+
+            _groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+    return _groq_client
 
 
 class ChatMessage(BaseModel):
@@ -31,45 +48,31 @@ class CodeRequest(BaseModel):
 
 @router.post("/chat")
 async def chat_with_agent(
-    request: ChatMessage, current_user: UserDB = Depends(get_current_user)
+    request: Request,
+    body: ChatMessage,
+    current_user: UserDB = Depends(get_current_user),
 ):
     """
-    Chat with AI agent. Uses LangChain if enabled, otherwise falls back to Groq LLM directly.
+    Chat with AI agent using Groq.
     """
-    from api.config import settings
+    # Add correlation ID for tracing
+    correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
+    request.state.correlation_id = correlation_id
 
-    if settings.ENABLE_LANGCHAIN:
-        try:
-            from services.langchain.service import langchain_service
-
-            response = await langchain_service.chat(
-                request.message, request.context or {}
-            )
-            return {"response": response, "status": "success", "agent": "langchain"}
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    # Fallback: Direct Groq API
-    if not settings.GROQ_API_KEY:
-        raise HTTPException(
-            status_code=503,
-            detail="No AI backend configured. Set GROQ_API_KEY or enable LangChain.",
-        )
+    client = get_groq_client()
+    if not client:
+        raise HTTPException(status_code=503, detail="GROQ API not configured")
 
     try:
-        from groq import AsyncGroq
-
-        client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-
         system_prompt = "You are a helpful AI assistant for a viral content creation platform. Be concise and actionable."
-        if request.context:
-            system_prompt += f"\n\nContext: {request.context}"
+        if body.context:
+            system_prompt += f"\n\nContext: {body.context}"
 
         response = await client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": request.message},
+                {"role": "user", "content": body.message},
             ],
             temperature=0.7,
             max_tokens=1024,
@@ -78,6 +81,7 @@ async def chat_with_agent(
             "response": response.choices[0].message.content,
             "status": "success",
             "agent": "groq-direct",
+            "correlation_id": correlation_id,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -95,16 +99,25 @@ async def crew_task(
     """
     from api.config import settings
 
+    # Add correlation ID for tracing
+    correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
+    request.state.correlation_id = correlation_id
+
     if settings.ENABLE_CREWAI:
         try:
             from services.crewai.service import crewai_service
 
             result = await crewai_service.execute_task(
-                task=request.task,
-                agents=request.agents or ["researcher", "writer"],
-                context=request.context or {},
+                task=body.task,
+                agents=body.agents or ["researcher", "writer"],
+                context=body.context or {},
             )
-            return {"result": result, "status": "success", "agent": "crewai"}
+            return {
+                "result": result,
+                "status": "success",
+                "agent": "crewai",
+                "correlation_id": correlation_id,
+            }
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -116,12 +129,12 @@ async def crew_task(
         )
 
     try:
-        from groq import AsyncGroq
+        client = get_groq_client()
+        if not client:
+            raise HTTPException(status_code=503, detail="GROQ API not configured")
 
-        client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-
-        agents = request.agents or ["researcher", "writer"]
-        context = request.context or {}
+        agents = body.agents or ["researcher", "writer"]
+        context = body.context or {}
 
         agent_prompts = {
             "researcher": "You are a research analyst. Gather key facts and insights about the topic.",
@@ -131,7 +144,7 @@ async def crew_task(
             "editor": "You are a senior editor. Refine and polish content for maximum impact.",
         }
 
-        accumulated_context = f"Task: {request.task}\nContext: {context}"
+        accumulated_context = f"Task: {body.task}\nContext: {context}"
 
         # Run agents in parallel using asyncio.gather
         async def run_agent(agent_name: str) -> tuple[str, str]:
