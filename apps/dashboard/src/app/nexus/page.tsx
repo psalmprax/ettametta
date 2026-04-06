@@ -129,7 +129,21 @@ export default function NexusPage() {
                 });
                 if (capRes.ok) {
                     const capData = await capRes.json();
-                    setAgentCapabilities(capData.capabilities || capData || []);
+                    // Flatten capabilities object into displayable strings
+                    const capabilities = capData.capabilities || capData || {};
+                    const flattenedCaps = Object.entries(capabilities).map(([key, value]: [string, any]) => {
+                        if (key === 'discovery') {
+                            return `🔍 Advanced Discovery: Trend analysis, competitor research, content ideation`;
+                        }
+                        if (key === 'competitor') {
+                            return `🎯 Competitor Analysis: Strategy breakdown and market intelligence`;
+                        }
+                        if (typeof value === 'object' && value.description) {
+                            return `${value.enabled ? '✅' : '❌'} ${key}: ${value.description}`;
+                        }
+                        return `${key}: ${String(value)}`;
+                    });
+                    setAgentCapabilities(flattenedCaps);
                 }
             } catch (err) {
                 console.error("Failed to fetch Nexus data:", err);
@@ -905,7 +919,7 @@ export default function NexusPage() {
                                         value={chatInput}
                                         onChange={(e) => setChatInput(e.target.value)}
                                         onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
-                                        placeholder="Ask the AI agent anything..."
+                                        placeholder="Try: 'Find trending topics in fitness' or 'Analyze competitor strategy at example.com'"
                                         data-testid="agent-chat-input"
                                         className="flex-1 bg-white/3 border border-white/5 rounded-2xl px-5 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/30 transition-colors"
                                     />
