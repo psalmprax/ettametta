@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, memo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -39,9 +39,17 @@ const navItems = [
     { name: "Trading", href: "/trading", icon: TrendingUp },
 ];
 
-export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; onToggle?: () => void }) {
+interface SidebarProps {
+    collapsed?: boolean;
+    onToggle?: () => void;
+}
+
+export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, onToggle }) {
     const pathname = usePathname();
     const { logout, user } = useAuth();
+
+    // Memoize nav items to avoid recreation on every render
+    const memoizedNavItems = useMemo(() => navItems, []);
 
     return (
         <motion.div
