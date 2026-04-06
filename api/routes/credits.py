@@ -1,5 +1,4 @@
-"""
-Credit System API Routes for Viral Forge
+"""Credit System API Routes for Viral Forge
 Provides credit management, packages, purchases, and referral system
 """
 
@@ -9,6 +8,7 @@ from typing import Optional, List
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
 from services.payment.credit_service import credit_service
+import stripe
 import logging
 
 logger = logging.getLogger(__name__)
@@ -175,7 +175,6 @@ async def purchase_credits(
         f"{settings.PRODUCTION_DOMAIN}/settings?tab=billing&credits_cancelled=true"
     )
 
-    import stripe
     from api.config import settings
 
     try:

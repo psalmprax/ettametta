@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+import asyncio
+import logging
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agent", tags=["AI Agents"])
 
@@ -112,35 +116,59 @@ async def crew_task(
         client = AsyncGroq(api_key=settings.GROQ_API_KEY)
 
         agents = request.agents or ["researcher", "writer"]
-        results = {}
         context = request.context or {}
 
         agent_prompts = {
             "researcher": "You are a research analyst. Gather key facts and insights about the topic.",
             "writer": "You are a professional content writer. Create engaging, viral-ready content.",
             "analyst": "You are a data analyst. Identify patterns, metrics, and optimization opportunities.",
-            "strategist": "You are a content strategist. Plan content distribution and growth tactics.",
+            "strategist": "You are a content strategy. Plan content distribution and growth tactics.",
             "editor": "You are a senior editor. Refine and polish content for maximum impact.",
         }
 
         accumulated_context = f"Task: {request.task}\nContext: {context}"
-        for agent_name in agents:
+
+        # Run agents in parallel using asyncio.gather
+        async def run_agent(agent_name: str) -> tuple[str, str]:
             agent_prompt = agent_prompts.get(
                 agent_name,
                 f"You are a {agent_name} agent. Complete your part of the task.",
             )
-            response = await client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": agent_prompt},
-                    {"role": "user", "content": accumulated_context},
-                ],
-                temperature=0.7,
-                max_tokens=1024,
-            )
-            agent_result = response.choices[0].message.content
-            results[agent_name] = agent_result
-            accumulated_context += f"\n\n{agent_name.upper()} output: {agent_result}"
+            try:
+                response = await client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": agent_prompt},
+                        {"role": "user", "content": accumulated_context},
+                    ],
+                    temperature=0.7,
+                    max_tokens=1024,
+                    timeout=30.0,
+                )
+                return agent_name, response.choices[0].message.content
+            except Exception as e:
+                logger.warning(f"[Agent] Agent {agent_name} failed: {e}")
+                return agent_name, f"Agent failed: {str(e)}"
+
+        # Execute all agents concurrently
+        agent_tasks = [run_agent(agent) for agent in agents]
+        agent_results = await asyncio.gather(*agent_tasks, return_exceptions=True)
+
+        results = {}
+        for result in agent_results:
+            if isinstance(result, Exception):
+                logger.error(f"[Agent] Task exception: {result}")
+                continue
+            agent_name, agent_output = result
+            results[agent_name] = agent_output
+
+        if not results:
+            raise HTTPException(status_code=500, detail="All agents failed")
+
+        # Build context for synthesis from all outputs
+        synthesis_context = accumulated_context
+        for agent_name, agent_output in results.items():
+            synthesis_context += f"\n\n{agent_name.upper()} output: {agent_output}"
 
         # Final synthesis
         synthesis_response = await client.chat.completions.create(
@@ -150,10 +178,11 @@ async def crew_task(
                     "role": "system",
                     "content": "You are a synthesizer. Combine all agent outputs into a cohesive final result.",
                 },
-                {"role": "user", "content": accumulated_context},
+                {"role": "user", "content": synthesis_context},
             ],
             temperature=0.5,
             max_tokens=2048,
+            timeout=30.0,
         )
 
         return {

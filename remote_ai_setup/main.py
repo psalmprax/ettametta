@@ -834,19 +834,25 @@ def push_heartbeat_loop():
 
 
 @app.get("/health")
-async def health():
-    """Public health endpoint (Softened to avoid Cloud Orchestrator 401 restarts)"""
-    total, used, free = shutil.disk_usage("/")
-    telemetry = hardware_manager.get_telemetry()
+async def health_check():
+    """Basic health check with model status"""
+    busy = False
+    current_model = None
+
+    # Check if any models are currently loaded
+    try:
+        # This is a lightweight check - don't load models just for health
+        current_model = getattr(model_manager, "current_model", None) or "none"
+        busy = getattr(orchestrator, "busy", False)
+    except:
+        current_model = "initializing"
+        busy = False
+
     return {
-        "status": "healthy",
-        "busy": model_manager.is_busy,
-        "current_model": model_manager.current_model_key
-        or (list(model_manager.utils.keys())[0] if model_manager.utils else None),
-        "hardware": telemetry,
-        "encoder": model_manager.encoder,
-        "disk_free": f"{free / 1024**3:.2f}GB",
-        "disk_used_percent": f"{(used / total) * 100:.1f}%",
+        "status": "healthy" if not busy else "busy",
+        "busy": busy,
+        "current_model": current_model,
+        "hardware": hardware_manager.get_hardware_info(),
     }
 
 
@@ -1083,9 +1089,10 @@ if __name__ == "__main__":
     import uvicorn
     import time
 
+    port = int(os.environ.get("PORT", 8122))
     time.sleep(2)
-    print("🚀 AI Engine binding to Port 8080 (Mapped to Public 19675)...", flush=True)
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    print(f"🚀 AI Engine binding to Port {port}...", flush=True)
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 # =====================================================
 # END

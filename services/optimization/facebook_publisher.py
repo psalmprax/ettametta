@@ -49,25 +49,100 @@ class FacebookPublisher(SocialPublisher):
             return None
 
         async with httpx.AsyncClient(timeout=300.0) as client:
-            upload_url = "https://graph.facebook.com/v18.0/me/videos"
-            video_data = {
-                "file_url": video_url,
-                "title": metadata.title[:60],
-                "description": metadata.description[:500],
+            # Step 1: Create video container (similar to Instagram approach)
+            container_url = "https://graph.facebook.com/v20.0/me/videos"
+            container_data = {
+                "upload_phase": "start",
                 "access_token": access_token or headers.get("Cookie"),
             }
 
-            response = await client.post(upload_url, data=video_data)
-            result = response.json()
+            container_response = await client.post(container_url, data=container_data)
+            container_result = container_response.json()
 
-            if "id" in result:
-                video_id = result["id"]
-                logger.info(f"[FacebookPublisher] Published successfully: {video_id}")
-                return f"https://www.facebook.com/watch/?v={video_id}"
+            if "upload_session_id" not in container_result:
+                error_msg = container_result.get("error", {}).get(
+                    "message", str(container_result)
+                )
+                logger.error(
+                    f"[FacebookPublisher] Container creation failed: {error_msg}"
+                )
+                return None
 
-            error_msg = result.get("error", {}).get("message", str(result))
-            logger.error(f"[FacebookPublisher] Upload failed: {error_msg}")
-            return None
+            upload_session_id = container_result["upload_session_id"]
+            logger.info(
+                f"[FacebookPublisher] Upload session created: {upload_session_id}"
+            )
+
+            # Step 2: Upload video content
+            upload_url = f"https://graph.facebook.com/v20.0/{upload_session_id}"
+            upload_data = {
+                "upload_phase": "transfer",
+                "access_token": access_token or headers.get("Cookie"),
+                "file_url": video_url,
+            }
+
+            upload_response = await client.post(upload_url, data=upload_data)
+            upload_result = upload_response.json()
+
+            if "success" not in upload_result or not upload_result.get("success"):
+                error_msg = upload_result.get("error", {}).get(
+                    "message", str(upload_result)
+                )
+                logger.error(f"[FacebookPublisher] Upload failed: {error_msg}")
+                return None
+
+            logger.info(f"[FacebookPublisher] Video uploaded successfully")
+
+            # Step 3: Finalize upload
+            finalize_url = f"https://graph.facebook.com/v20.0/{upload_session_id}"
+            finalize_data = {
+                "upload_phase": "finish",
+                "access_token": access_token or headers.get("Cookie"),
+                "title": metadata.title[:60],
+                "description": metadata.description[:500],
+            }
+
+            finalize_response = await client.post(finalize_url, data=finalize_data)
+            finalize_result = finalize_response.json()
+
+            if "success" not in finalize_result or not finalize_result.get("success"):
+                error_msg = finalize_result.get("error", {}).get(
+                    "message", str(finalize_result)
+                )
+                logger.error(f"[FacebookPublisher] Finalize failed: {error_msg}")
+                return None
+
+            # Step 4: Poll for processing completion (like Instagram)
+            video_id = finalize_result.get("video_id")
+            if not video_id:
+                logger.error("[FacebookPublisher] No video_id in finalize response")
+                return None
+
+            max_polls = 60
+            poll_interval = 5
+            for _ in range(max_polls):
+                await asyncio.sleep(poll_interval)
+                status_url = f"https://graph.facebook.com/v20.0/{video_id}"
+                status_params = {
+                    "fields": "status",
+                    "access_token": access_token or headers.get("Cookie"),
+                }
+                status_resp = await client.get(status_url, params=status_params)
+                status_data = status_resp.json()
+
+                if status_data.get("status", {}).get("video_status") == "ready":
+                    break
+                if "error" in status_data:
+                    logger.error(
+                        f"[FacebookPublisher] Status check error: {status_data}"
+                    )
+                    return None
+            else:
+                logger.error("[FacebookPublisher] Video processing timeout")
+                return None
+
+            logger.info(f"[FacebookPublisher] Published successfully: {video_id}")
+            return f"https://www.facebook.com/watch/?v={video_id}"
 
     async def _resolve_video_url(self, video_path: str) -> Optional[str]:
         """Resolve video path to URL"""
@@ -99,9 +174,9 @@ class FacebookPublisher(SocialPublisher):
         )
 
         async with httpx.AsyncClient() as client:
-            url = f"https://graph.facebook.com/v18.0/{platform_id}/insights"
+            url = f"https://graph.facebook.com/v20.0/{platform_id}/insights"
             params = {
-                "metric": "total_views,total_reactions,total_comments,total_shares",
+                "metric": "total_video_views,total_video_reactions,total_video_comments,total_video_shares",
                 "access_token": access_token or headers.get("Cookie"),
             }
 
