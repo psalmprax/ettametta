@@ -39,7 +39,7 @@ class TransformationRequest(BaseModel):
 
 class GenerationRequest(BaseModel):
     prompt: str
-    engine: str = "veo3"  # veo3, wan2.2, custom_image
+    engine: str = "veo3"  # veo3, wan2.2, custom_image, zsky, kling, pixverse, replicate, stability, runway, pika, ltx-video, hunyuan, mochi, cogvideo
     style: str = "Cinematic"
     aspect_ratio: str = "9:16"
     custom_image_url: Optional[str] = None  # For custom image input
@@ -316,6 +316,12 @@ async def generate_single_video(
             "cogvideo": "video_generation_hunyuan",
             "wan": "video_generation_hunyuan",
             "wan2.2": "video_generation_hunyuan",
+            # Free daily providers
+            "zsky": "video_generation_free",
+            "kling": "video_generation_free",
+            "pixverse": "video_generation_free",
+            "replicate": "video_generation_free",
+            "stability": "video_generation_free",
         }
 
         action = engine_to_action.get(body.engine, "video_generation_ltx")
