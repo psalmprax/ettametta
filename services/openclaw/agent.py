@@ -37,17 +37,18 @@ class OpenClawAgent:
         self.model = settings.MODEL
         self.system_prompt = """You are OpenClaw, the autonomous Master Controller for the ettametta multi-agent empire.
         Your goal is to assist the user by orchestrating a team of specialized agents:
-        - SCOUT (Discovery): Finds winning trends and products.
+        - SCOUT (Discovery): Advanced trend discovery, competitor analysis, and content ideation.
         - MUSE (Creative): Writes viral scripts and hook strategies.
         - EYE (Visual): Analyzes video vibes and optimizes aesthetic positioning.
         - HERALD (Distribution): Handles publishing and monetization arbitrage.
         
         You have access to the following tools:
-        - DISCOVERY: Search for new trends (/api/discovery/search). Params: {"topic": "string"}
+        - DISCOVERY: Advanced trend discovery and analysis. Params: {"action": "search|trends|scan|predict|ideas|analyze", "topic": "string", "niche": "string", "deep": true|false}
         - NOFACE: Generate viral scripts or assess hooks purely in text. Params: {"action": "script|hook", "topic": "string"}
         - ANALYTICS: Get dashboard summary, revenue, or recent posts. Params: {"action": "summary|revenue|posts"}
         - SYSTEM: Check platform health/uptime. No params needed.
         - CONTENT: Create new video content. Params: {"action": "transform|generate|story", "niche": "string", "platform": "YouTube Shorts|TikTok", "input_url": "string", "prompt": "string", "engine": "string"}
+        - COMPETITOR: Analyze competitor strategies. Params: {"url": "competitor_url"}
         - PUBLISH: Publish a completed job. Params: {"job_id": "string", "platform": "YouTube Shorts|TikTok", "niche": "string"}
         - NICHE: Manage niches. Params: {"action": "add|trends|auto_merch", "niche": "string"}
         - OUTREACH: Blast a message to a specific user via their connected channels. Params: {"user_id": "string", "message": "string"}
@@ -179,8 +180,32 @@ class OpenClawAgent:
             return system_skill.check_health()
 
         elif tool == "DISCOVERY":
-            topic = params.get("topic", "general")
-            return discovery_skill.search_trends(topic)
+            action = params.get("action", "search")
+            topic = params.get("topic", params.get("niche", "general"))
+
+            if action == "search":
+                analyze = params.get("analyze", False)
+                return discovery_skill.search_trends(topic, analyze=analyze)
+            elif action == "trends":
+                min_score = params.get("min_viral_score", 75)
+                return discovery_skill.get_trending_content(topic, min_score)
+            elif action == "scan":
+                deep = params.get("deep", False)
+                return discovery_skill.scan_for_opportunities(topic, deep)
+            elif action == "predict":
+                timeframe = params.get("timeframe", "1week")
+                return discovery_skill.predict_trends(topic, timeframe)
+            elif action == "ideas":
+                num_ideas = params.get("num_ideas", 5)
+                return discovery_skill.generate_content_ideas(topic, num_ideas)
+            elif action == "analyze":
+                competitor_url = params.get("url", "")
+                if competitor_url:
+                    return discovery_skill.analyze_competitor_strategy(competitor_url)
+                else:
+                    return "⚠️ Missing competitor URL for analysis"
+            else:
+                return discovery_skill.search_trends(topic)
 
         elif tool == "ANALYTICS":
             action = params.get("action", "summary")
@@ -415,6 +440,13 @@ class OpenClawAgent:
                     return f"❌ Document processing error: {response.status_code}"
             except Exception as e:
                 return f"❌ Document service unavailable: {str(e)}"
+
+        elif tool == "COMPETITOR":
+            competitor_url = params.get("url", "")
+            if competitor_url:
+                return discovery_skill.analyze_competitor_strategy(competitor_url)
+            else:
+                return "⚠️ Missing competitor URL for analysis"
 
         elif tool == "WATCHDOG":
             action = params.get("action", "status")
