@@ -193,9 +193,6 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
-    depends_on:
-    - api
-    - dashboard
 
   ai-gateway:
     build:
