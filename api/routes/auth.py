@@ -208,9 +208,7 @@ async def google_auth_callback(
             db.refresh(user)
 
         # Create access token
-        access_token = create_access_token(
-            data={"sub": user.username, "role": user.role}
-        )
+        access_token = create_access_token(data={"sub": user.email})
 
         # Redirect to frontend with token
         dashboard_url = (
