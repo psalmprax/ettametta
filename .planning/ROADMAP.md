@@ -23,9 +23,11 @@
   3. User can log out from any page
   4. User can configure Telegram and WhatsApp notifications via bots
   5. User can manage system settings and API integrations
-**Plans**: 2 plans
+**Plans**: 4 plans
 - [x] 01-01-PLAN.md — Implement core user authentication system
 - [ ] 01-02-PLAN.md — Implement user settings and notifications
+- [ ] 01-03-PLAN.md — Fix authentication gaps (logout and OAuth)
+- [ ] 01-04-PLAN.md — Implement bot integration for notifications
 
 ### Phase 2: Content Discovery
 **Goal**: Users can discover and analyze trending content
@@ -92,7 +94,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. User Authentication and Settings | 0/2 | Planned | - |
+| 1. User Authentication and Settings | 1/4 | Verifying | - |
 | 2. Content Discovery | 0/0 | Not started | - |
 | 3. Basic Video Generation | 0/0 | Not started | - |
 | 4. Advanced Video Generation | 0/0 | Not started | - |
