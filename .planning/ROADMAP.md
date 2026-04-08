@@ -25,8 +25,8 @@
   5. User can manage system settings and API integrations
 **Plans**: 4 plans
 - [x] 01-01-PLAN.md — Implement core user authentication system
-- [ ] 01-02-PLAN.md — Implement user settings and notifications
-- [ ] 01-03-PLAN.md — Fix authentication gaps (logout and OAuth)
+- [x] 01-02-PLAN.md — Implement user settings and notifications
+- [x] 01-03-PLAN.md — Fix authentication gaps (logout and OAuth)
 - [ ] 01-04-PLAN.md — Implement bot integration for notifications
 
 ### Phase 2: Content Discovery
