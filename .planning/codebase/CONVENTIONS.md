@@ -1,154 +1,85 @@
-# Testing Patterns
+# Coding Conventions
 
-**Analysis Date:** 2026-04-08
+**Analysis Date:** 2024-04-08
 
-## Test Framework
+## Naming Patterns
 
-**Runner:**
-- pytest with pytest-asyncio and pytest-mock
-- Config: No dedicated pytest.ini, uses default settings
-- Command: `pytest tests/ -v --tb=short`
+**Files:**
+- Python: snake_case (e.g., `config.py`, `database.py`)
+- TypeScript/React: PascalCase for components (e.g., `Sidebar.tsx`, `AuthContext.tsx`), camelCase for utilities (e.g., `utils.ts`)
 
-**Assertion Library:**
-- Built-in pytest assertions
+**Functions:**
+- Python: snake_case (e.g., `get_current_user`, `create_access_token`)
+- TypeScript: camelCase (e.g., `handleSubmit`, `useAuth`)
 
-**Run Commands:**
-```bash
-pytest tests/ -v --tb=short              # Run all tests with verbose output
-pytest tests/test_services.py -v         # Run specific test file
-pytest tests/ -k "test_langchain"         # Run tests matching pattern
-```
+**Variables:**
+- Python: snake_case (e.g., `hashed_pwd`, `access_token`)
+- TypeScript: camelCase (e.g., `navItems`, `collapsed`)
 
-## Test File Organization
+**Types:**
+- Python: PascalCase for classes (e.g., `TestConfigSettings`, `UserCreate`)
+- TypeScript: PascalCase for interfaces and types (e.g., `SidebarProps`, `UserResponse`)
 
-**Location:**
-- `api/tests/` directory for API-related tests
-- Co-located with source code (tests/ subdirectory)
+## Code Style
 
-**Naming:**
-- `test_*.py` for test files
-- `Test*` class prefix for test classes
-- `test_*` function prefix for test methods
+**Formatting:**
+- Python: No explicit formatter detected (no black, autopep8 config)
+- TypeScript: ESLint with Next.js config, no Prettier config detected
 
-**Structure:**
-```
-api/
-├── tests/
-│   ├── conftest.py          # Shared fixtures
-│   ├── test_services.py     # Service layer tests
-│   ├── test_routes/         # Route-specific tests
-│   └── test_*.py           # Other test files
-```
+**Linting:**
+- Python: No dedicated linter config (no .flake8, pylint.ini)
+- TypeScript: ESLint with `eslint-config-next` (core-web-vitals and typescript rules)
 
-## Test Structure
+## Import Organization
 
-**Suite Organization:**
-```python
-class TestServiceName:
-    """Test suite description"""
+**Order:**
+1. Standard library imports (e.g., `import os`, `import secrets`)
+2. Third-party imports (e.g., `from fastapi import FastAPI`, `import React from "react"`)
+3. Local imports (e.g., `from api.config import settings`, `import { cn } from "@/lib/utils"`)
 
-    @pytest.mark.asyncio
-    async def test_feature_name(self):
-        """Test specific functionality"""
-        # Arrange
-        # Act
-        # Assert
-```
+**Path Aliases:**
+- TypeScript: `@/` for `src/` (e.g., `@/lib/utils`)
+
+## Error Handling
 
 **Patterns:**
-- Class-based organization
-- Async test methods with @pytest.mark.asyncio
-- Descriptive docstrings for classes and methods
+- Python: HTTPException for API errors, global exception handlers in main.py
+- TypeScript: Error boundaries (e.g., `GlobalErrorBoundary.tsx`), try-catch in async functions
 
-## Mocking
+## Logging
 
-**Framework:** unittest.mock (patch, MagicMock, AsyncMock)
+**Framework:** Python logging module, configured in main.py
 
 **Patterns:**
-```python
-# Environment mocking
-with patch.dict(os.environ, {"KEY": "value"}):
-    # Test code
+- Logger instances with `__name__` (e.g., `logger = logging.getLogger(__name__)`)
+- Info for requests, error for exceptions
+- Structured error responses with error codes
 
-# Module mocking
-with patch("module.path.Class") as mock:
-    mock.return_value = expected_value
+## Comments
 
-# Async mocking
-mock_instance = AsyncMock(return_value=expected)
-```
+**When to Comment:**
+- Module-level docstrings for test files and complex functions
+- Inline comments for complex logic
+- JSDoc not observed in TypeScript files
 
-**What to Mock:**
-- External API calls
-- Database operations
-- Heavy ML/AI dependencies
-- File system operations
+**JSDoc/TSDoc:**
+- Not used
 
-**What NOT to Mock:**
-- Core business logic under test
-- Simple utility functions
+## Function Design
 
-## Fixtures and Factories
+**Size:** Variable, some functions span multiple screens (e.g., main.py startup)
 
-**Test Data:**
-```python
-@pytest.fixture
-def test_user_data():
-    """Test user registration data."""
-    return {
-        "email": "test@example.com",
-        "username": "testuser",
-        "password": "testpassword123",
-        "full_name": "Test User"
-    }
-```
+**Parameters:** Dependency injection with FastAPI Depends, optional parameters with defaults
 
-**Location:**
-- `conftest.py` for shared fixtures
-- Session and function scope fixtures
-- Test-specific fixtures in test files
+**Return Values:** Consistent types (e.g., Pydantic models for API responses)
 
-## Coverage
+## Module Design
 
-**Requirements:** Not enforced (no coverage thresholds)
+**Exports:** Default exports for React components, named exports for utilities
 
-**View Coverage:**
-```bash
-pytest --cov=api tests/
-pytest --cov-report=html tests/
-```
+**Barrel Files:** Not observed
 
-## Test Types
+---
 
-**Unit Tests:**
-- Service layer testing with mocked dependencies
-- Individual function/method testing
-
-**Integration Tests:**
-- API route testing with TestClient
-- Database integration tests
-
-**E2E Tests:**
-- Playwright for frontend testing
-- Docker Compose stack testing
-
-## Common Patterns
-
-**Async Testing:**
-```python
-@pytest.mark.asyncio
-async def test_async_function(self):
-    result = await service.method()
-    assert result == expected
-```
-
-**Error Testing:**
-```python
-with pytest.raises(ExpectedException):
-    service.method(invalid_input)
-```
-
-**Database Testing:**
-- Session-scoped fixtures for test DB setup
-- Clean teardown after each test</content>
-<parameter name="filePath">.planning/codebase/TESTING.md
+*Convention analysis: 2024-04-08*</content>
+<parameter name="filePath">.planning/codebase/CONVENTIONS.md

@@ -4,79 +4,75 @@
 
 ## APIs & External Services
 
-**AI/ML Providers:**
-- Groq API - Primary LLM provider (`GROQ_API_KEY`)
+**[AI/ML Providers]:**
+- Groq - Primary LLM provider
   - SDK/Client: groq Python library
-  - Auth: API key via environment
-- OpenAI API - Fallback LLM (`OPENAI_API_KEY`)
-  - SDK/Client: openai library
-  - Auth: API key
-- Anthropic Claude - LLM provider (`ANTHROPIC_API_KEY`)
-  - SDK/Client: anthropic library
-  - Auth: API key
-- Google Gemini - Vision and text (`GOOGLE_API_KEY`)
+  - Auth: GROQ_API_KEY environment variable
+- OpenAI - LLM and image generation
+  - SDK/Client: openai Python library
+  - Auth: OPENAI_API_KEY
+- Google Generative AI - Vision and text
   - SDK/Client: google-generativeai
-  - Auth: API key
-- Multiple other LLM providers (DeepSeek, Cohere, Mistral, etc.)
-
-**Video Generation:**
-- Runway ML - Video generation (`RUNWAY_API_KEY`)
-- Pika Labs - Video creation (`PIKA_API_KEY`)
-- Stability AI - Video models (`STABILITY_API_KEY`)
-- ZSky AI - Video generation (`ZSKY_API_KEY`)
-
-**Social Media Platforms:**
-- YouTube API - Publishing and analytics (`YOUTUBE_API_KEY`)
+  - Auth: GOOGLE_API_KEY (inferred)
+- YouTube API - Publishing and analytics
   - SDK/Client: google-api-python-client
-  - Auth: OAuth 2.0 + API key
-- TikTok API - Publishing (`TIKTOK_API_KEY`)
+  - Auth: YOUTUBE_API_KEY, OAuth with GOOGLE_CLIENT_ID/SECRET
+
+**[Social Media Platforms]:**
+- TikTok API - Publishing
   - SDK/Client: Custom HTTP client
-  - Auth: OAuth 2.0
+  - Auth: TIKTOK_API_KEY, OAuth with TIKTOK_CLIENT_KEY/SECRET
 
-**Voice & Audio:**
-- ElevenLabs - Text-to-speech (`ELEVENLABS_API_KEY`)
-- Fish Speech - Local voice synthesis (endpoint: `FISH_SPEECH_ENDPOINT`)
+**[Voice & Audio]:**
+- ElevenLabs - Text-to-speech
+  - SDK/Client: Not detected in code
+  - Auth: ELEVENLABS_API_KEY
 
-**Media & Content:**
-- Pexels API - Stock images/videos (`PEXELS_API_KEY`)
-- Google Search API - Content discovery (`GOOGLE_API_KEY`, `GOOGLE_SEARCH_CX`)
+**[Media & Content]:**
+- Pexels API - Stock images/videos
+  - SDK/Client: Not detected in code
+  - Auth: PEXELS_API_KEY
 
-**Authentication:**
-- Google OAuth - YouTube integration (`GOOGLE_CLIENT_ID/SECRET`)
-- TikTok OAuth - TikTok integration (`TIKTOK_CLIENT_KEY/SECRET`)
+**[Payment Processing]:**
+- Stripe - Subscription and payment handling
+  - SDK/Client: stripe Python library
+  - Auth: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+
+**[Cloud Storage]:**
+- AWS S3 - File storage
+  - SDK/Client: boto3
+  - Auth: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_STORAGE_BUCKET_NAME
 
 ## Data Storage
 
 **Databases:**
-- PostgreSQL 15 - Primary relational database
-  - Connection: `DATABASE_URL` environment variable
+- PostgreSQL 15-alpine
+  - Connection: DATABASE_URL environment variable
   - Client: SQLAlchemy ORM
 
 **File Storage:**
-- Multi-cloud storage with provider abstraction
-  - AWS S3 (`STORAGE_PROVIDER=AWS`)
-  - OCI, GCP, Azure support configured
-  - Local filesystem fallback
+- AWS S3
+  - Connection: boto3 client with AWS credentials
+  - Client: Custom storage service
 
 **Caching:**
 - Redis - In-memory caching and session storage
-  - Connection: `REDIS_URL`
+  - Connection: REDIS_URL
   - Client: redis-py library
 
 ## Authentication & Identity
 
 **Auth Provider:**
 - JWT-based custom authentication
-  - Implementation: FastAPI security with PyJWT
-- OAuth 2.0 for social platforms (Google, TikTok)
-  - Google OAuth: `GOOGLE_CLIENT_ID/SECRET`
-  - TikTok OAuth: `TIKTOK_CLIENT_KEY/SECRET`
+  - Implementation: python-jose[cryptography]
+- OAuth 2.0 for social platforms
+  - Google OAuth: GOOGLE_CLIENT_ID/SECRET
+  - TikTok OAuth: TIKTOK_CLIENT_KEY/SECRET
 
 ## Monitoring & Observability
 
 **Error Tracking:**
 - Custom logging with structured error reporting
-- Frontend error reporting endpoint (`/api/v1/errors`)
 
 **Logs:**
 - Python logging with multiple handlers
@@ -87,37 +83,37 @@
 
 **Hosting:**
 - Docker containerized deployment
-- Traefik for load balancing and SSL termination
-- Nginx for static file serving
+- Traefik v3.0 for load balancing and SSL termination
+- Nginx alpine for static file serving
 
 **CI Pipeline:**
-- Jenkins (Jenkinsfile detected)
+- Jenkins (jenkins-docker-compose.yml detected)
 - Docker-based builds
 
 ## Environment Configuration
 
 **Required env vars:**
-- Database: `DATABASE_URL`
-- Redis: `REDIS_URL`
-- Secrets: `SECRET_KEY`, `INTERNAL_API_TOKEN`
-- AI APIs: Various provider keys
-- OAuth: Social platform credentials
+- Database: DATABASE_URL
+- Redis: REDIS_URL
+- Secrets: SECRET_KEY, INTERNAL_API_TOKEN
+- AI APIs: GROQ_API_KEY, OPENAI_API_KEY, etc.
+- OAuth: GOOGLE_CLIENT_ID/SECRET, TIKTOK_CLIENT_KEY/SECRET
+- Payment: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+- Cloud: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_STORAGE_BUCKET_NAME
 
 **Secrets location:**
 - Environment variables (from .env file)
 - Docker secrets for production
-- Vault integration for sensitive data
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- Stripe webhooks: Payment events (`STRIPE_WEBHOOK_SECRET`)
-- YouTube webhooks: Content updates (`YOUTUBE_WEBHOOK_SECRET`)
-- TikTok webhooks: Publishing notifications (`TIKTOK_WEBHOOK_SECRET`)
-- Social media webhooks for engagement tracking
+- Stripe webhooks: Payment events
+  - Endpoint: /webhooks/monetization/stripe
+  - Auth: STRIPE_WEBHOOK_SECRET
 
 **Outgoing:**
-- Not explicitly detected in codebase
+- Not detected
 
 ---
 

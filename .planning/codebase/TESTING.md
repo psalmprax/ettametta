@@ -1,93 +1,174 @@
-# Coding Conventions
+# Testing Patterns
 
-**Analysis Date:** 2026-04-08
+**Analysis Date:** 2024-04-08
 
-## Naming Patterns
+## Test Framework
 
-**Files:**
-- `snake_case.py` - Python files use lowercase with underscores
-- `test_*.py` - Test files prefixed with 'test_'
-- `conftest.py` - Pytest configuration file
+**Runner:**
+- pytest with pytest-asyncio and pytest-mock
+- Config: `api/pytest.ini`
+- Command: `pytest tests/ -v --tb=short`
 
-**Functions:**
-- `snake_case` - Functions use lowercase with underscores
-- `async def` - Async functions follow same naming
+**Assertion Library:**
+- Built-in pytest assertions
 
-**Variables:**
-- `snake_case` - Variables use lowercase with underscores
-- `UPPER_CASE` - Constants use uppercase with underscores
+**Run Commands:**
+```bash
+pytest tests/ -v --tb=short              # Run all tests
+pytest tests/test_config.py -v           # Run specific test file
+pytest tests/ -k "auth"                  # Run tests matching pattern
+pytest --cov=api tests/                  # With coverage
+```
 
-**Classes:**
-- `PascalCase` - Classes use PascalCase (e.g., `TestLangchainService`, `AffiliateStrategy`)
+## Test File Organization
 
-**Types:**
-- `PascalCase` - Type hints use PascalCase for custom types
+**Location:**
+- `api/tests/` directory for API-related tests
+- `e2e/tests/` for end-to-end tests
+- Co-located with source code (tests/ subdirectory)
 
-## Code Style
+**Naming:**
+- `test_*.py` for Python unit/integration tests
+- `*Test` class prefix for test classes
+- `test_*` function prefix for test methods
+- `*.spec.ts` for Playwright e2e tests
 
-**Formatting:**
-- Ruff linter used for style enforcement
-- No explicit formatter configured (black/isort not detected)
-- 4-space indentation standard
+**Structure:**
+```
+api/tests/
+├── conftest.py          # Shared fixtures
+├── test_config.py       # Config tests
+├── test_routes/         # Route-specific tests
+└── test_*.py           # Other test files
 
-**Linting:**
-- Ruff for Python linting
-- Bandit for security scanning
-- Safety for dependency vulnerability checks
+e2e/tests/
+├── auth/
+│   ├── login.spec.ts
+│   └── oauth.spec.ts
+└── creation/
+    └── video_creation.spec.ts
+```
 
-## Import Organization
+## Test Structure
 
-**Order:**
-1. Standard library imports
-2. Third-party imports (FastAPI, SQLAlchemy, etc.)
-3. Local imports (api.*, services.*)
+**Suite Organization:**
+```python
+class TestConfigSettings:
+    """Test configuration settings"""
 
-**Path Aliases:**
-- Relative imports with `from .` or `from ..`
-- Absolute imports from project root
+    def test_default_settings_exist(self):
+        """Test that default settings are defined"""
+        # Arrange
+        from api.config import settings
 
-## Error Handling
+        # Act & Assert
+        assert settings.APP_NAME == "ettametta API"
+```
 
 **Patterns:**
-- Try-except blocks with specific exception types
-- Global exception handlers in FastAPI app
-- Validation errors with custom JSON responses
+- Class-based organization for unit tests
+- Async test methods with @pytest.mark.asyncio
+- Descriptive docstrings for classes and methods
+- beforeEach for e2e setup
 
-## Logging
+## Mocking
 
-**Framework:** Standard library logging
+**Framework:** unittest.mock (patch, MagicMock)
 
 **Patterns:**
-- Logger instances per module: `logger = logging.getLogger(__name__)`
-- Info level for requests: process time, method, status
-- Error level for exceptions and failures
-- Structured logging with context
+```python
+# Environment mocking
+with patch.dict(os.environ, {"ENV": "test"}):
+    settings = Settings()
 
-## Comments
+# Module mocking
+with patch("services.optimization.llm.get_groq_client") as mock:
+    mock_client = MagicMock()
+    mock.return_value = mock_client
 
-**When to Comment:**
-- Module-level docstrings explaining purpose
-- Class docstrings describing functionality
-- Complex business logic explanations
+# Heavy dependencies mocked at module level in conftest.py
+```
 
-**JSDoc/TSDoc:**
-- Not used (Python project)
+**What to Mock:**
+- External API calls (Groq, Redis)
+- Database operations
+- Heavy ML/AI dependencies (faster_whisper, diffusers, etc.)
+- File system operations
 
-## Function Design
+**What NOT to Mock:**
+- Core business logic under test
+- Simple utility functions
 
-**Size:** Variable, some functions span 100+ lines (main.py)
+## Fixtures and Factories
 
-**Parameters:** 
-- Type hints used inconsistently
-- Optional parameters with defaults
+**Test Data:**
+```python
+@pytest.fixture
+def test_user_data():
+    """Test user registration data."""
+    return {
+        "email": "test@example.com",
+        "username": "testuser",
+        "password": "testpassword123"
+    }
+```
 
-**Return Values:** 
-- JSON responses for API endpoints
-- Objects or None for internal functions
+**Location:**
+- `api/tests/conftest.py` for shared fixtures
+- Session and function scope fixtures
+- Test-specific fixtures in test files
 
-## Module Design
+## Coverage
 
-**Exports:** Explicit imports, no wildcard exports
+**Requirements:** Not enforced (no coverage thresholds)
 
-**Barrel Files:** Not used</content>
-<parameter name="filePath">.planning/codebase/CONVENTIONS.md
+**View Coverage:**
+```bash
+pytest --cov=api tests/
+pytest --cov-report=html tests/
+```
+
+## Test Types
+
+**Unit Tests:**
+- Service layer testing with mocked dependencies
+- Individual function/method testing
+- Configuration validation
+
+**Integration Tests:**
+- API route testing with TestClient
+- Database integration tests
+
+**E2E Tests:**
+- Playwright for frontend testing
+- Multi-browser support (Chrome, Firefox, Safari)
+- Mobile testing (Pixel 5, iPhone 12)
+- Visual regression testing
+
+## Common Patterns
+
+**Async Testing:**
+```python
+@pytest.mark.asyncio
+async def test_async_function(self):
+    result = await service.method()
+    assert result == expected
+```
+
+**Error Testing:**
+```python
+with pytest.raises(HTTPException):
+    await register(invalid_user, db)
+```
+
+**API Testing:**
+```python
+def test_route(self, client):
+    response = client.post("/api/v1/auth/register", json=user_data)
+    assert response.status_code == 200
+```
+
+---
+
+*Testing analysis: 2024-04-08*</content>
+<parameter name="filePath">.planning/codebase/TESTING.md

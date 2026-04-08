@@ -6,109 +6,129 @@
 
 ```
 viral_forge/
-├── api/                    # FastAPI application
+├── api/                    # FastAPI backend application
 ├── services/               # Business logic services
-├── apps/                   # Additional applications
-├── remote_ai_setup/        # AI worker setup
+├── apps/                   # Frontend applications
+├── remote_ai_setup/        # AI processing workers
 ├── alembic/                # Database migrations
 ├── external-skills/        # Node.js skill modules
 ├── e2e/                    # End-to-end tests
 ├── monitoring/             # Observability stack
-├── .planning/              # Planning documentation
 ├── scripts/                # Utility scripts
+├── terraform/              # Infrastructure as code
 ├── docker-compose.yml      # Service orchestration
-└── requirements.txt        # Python dependencies
+├── requirements.txt        # Python dependencies
+├── .env*                   # Environment configurations
+└── .planning/              # Planning artifacts
 ```
 
 ## Directory Purposes
 
 **api/:**
-- Purpose: Main FastAPI application with routes and utilities
-- Contains: Route handlers, database models, authentication, middleware
-- Key files: `main.py` (entry point), `config.py` (settings), `routes/*.py`
+- Purpose: REST API layer with FastAPI, routing, and utilities
+- Contains: Route handlers, middleware, database models, authentication
+- Key files: `main.py`, `routes/*.py`, `utils/models.py`
 
 **services/:**
-- Purpose: Modular business services for video generation, analytics, etc.
-- Contains: Service classes, workflows, external API integrations
-- Key files: `video_engine/`, `nexus_engine/`, `optimization/`
+- Purpose: Modular services for business logic and external integrations
+- Contains: Video engine, nexus agent, optimization, discovery services
+- Key files: `video_engine/synthesis_service.py`, `nexus_engine/orchestrator.py`
 
 **apps/:**
-- Purpose: Separate frontend/web applications
-- Contains: Next.js dashboard, Remotion video editor
-- Key files: `dashboard/package.json`, `remotion-studio/`
+- Purpose: User-facing applications built with Next.js and Remotion
+- Contains: Dashboard UI, video editing studio
+- Key files: `dashboard/src/app/page.tsx`, `remotion-studio/src/index.ts`
 
 **remote_ai_setup/:**
-- Purpose: AI worker processes and GPU management
-- Contains: Worker scripts, model management, hardware detection
-- Key files: `main.py`, `ai_actions.py`, `hardware_manager.py`
+- Purpose: Asynchronous AI processing and GPU management
+- Contains: Worker processes, model downloading, hardware detection
+- Key files: `main.py`, `ai_actions.py`
 
 **alembic/:**
-- Purpose: Database schema migrations
-- Contains: Migration scripts and configuration
-- Key files: `alembic.ini`, `versions/*.py`
+- Purpose: Database schema versioning and migrations
+- Contains: Migration scripts for PostgreSQL schema changes
+- Key files: `versions/*.py`
 
 ## Key File Locations
 
 **Entry Points:**
-- `api/main.py`: FastAPI application server
-- `remote_ai_setup/main.py`: AI processing workers
+- `api/main.py`: Main FastAPI server
+- `apps/dashboard/src/app/page.tsx`: Dashboard homepage
+- `remote_ai_setup/main.py`: AI worker process
+- `services/discovery-go/main.go`: Go-based discovery service
 
 **Configuration:**
-- `api/config.py`: Application settings and environment variables
-- `docker-compose.yml`: Service definitions and networking
+- `api/config.py`: Pydantic settings with environment variables
+- `docker-compose.yml`: Multi-service container orchestration
+- `.env`: Environment variables (secrets, API keys)
 
 **Core Logic:**
-- `services/video_engine/`: Video generation and processing
+- `services/video_engine/`: AI video generation services
 - `services/nexus_engine/`: AI agent orchestration
-- `services/optimization/`: Social media publishing
+- `services/optimization/`: Social media publishing optimization
 
 **Testing:**
-- `api/tests/`: API and integration tests
-- `e2e/`: End-to-end test suites
+- `api/tests/`: pytest-based API tests
+- `e2e/`: Playwright end-to-end tests
 
 ## Naming Conventions
 
 **Files:**
-- snake_case.py for Python files
-- camelCase.ts/.tsx for TypeScript/React files
-- kebab-case for configuration files
+- snake_case.py for Python modules and files
+- camelCase.ts/.tsx for TypeScript and React components
+- kebab-case for config files (docker-compose.yml)
 
 **Directories:**
-- snake_case for Python packages
-- camelCase for apps and components
-- kebab-case for external tools
+- snake_case for Python packages (api/, services/)
+- camelCase for apps (dashboard/, remotion-studio/)
+- kebab-case for tools and configs
 
 ## Where to Add New Code
 
-**New Feature:**
-- API endpoints: `api/routes/new_feature.py`
-- Business logic: `services/new_service/`
-- Database models: `api/utils/models.py`
+**New API Endpoint:**
+- Implementation: `api/routes/new_endpoint.py`
+- Tests: `api/tests/test_new_endpoint.py`
 
-**New Component/Module:**
-- Service module: `services/new_module/`
-- API utility: `api/utils/new_utility.py`
+**New Business Service:**
+- Implementation: `services/new_service/`
+- Base class: `services/new_service/service.py`
+
+**New Frontend Page:**
+- Implementation: `apps/dashboard/src/app/new-page/page.tsx`
+- Components: `apps/dashboard/src/components/new-page/`
+
+**New Database Model:**
+- Implementation: `api/utils/models.py`
+- Migration: `alembic/versions/`
 
 **Utilities:**
-- Shared helpers: `api/utils/` for API-related, `services/shared/` for service utilities
+- API-related: `api/utils/`
+- Service-related: `services/shared/`
+- Frontend: `apps/dashboard/src/lib/`
 
 ## Special Directories
 
 **external-skills/:**
-- Purpose: Node.js modules for specialized AI skills
-- Generated: No, manually maintained
+- Purpose: Node.js modules for AI skills and integrations
+- Generated: No
 - Committed: Yes
 
 **.planning/:**
-- Purpose: Documentation and planning artifacts
-- Generated: Yes, by tools
+- Purpose: GSD planning documents and codebase analysis
+- Generated: Yes, by GSD commands
 - Committed: Yes
 
 **monitoring/:**
-- Purpose: Prometheus/Grafana configuration files
-- Generated: No, configuration files
+- Purpose: Prometheus and Grafana configuration
+- Generated: No
+- Committed: Yes
+
+**terraform/:**
+- Purpose: Infrastructure provisioning scripts
+- Generated: No
 - Committed: Yes
 
 ---
 
-*Structure analysis: 2026-04-08*
+*Structure analysis: 2026-04-08*</content>
+<parameter name="filePath">.planning/codebase/STRUCTURE.md
