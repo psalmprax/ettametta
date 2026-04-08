@@ -5,6 +5,7 @@ from passlib.context import CryptContext
 from api.config import settings
 from authlib.integrations.base_client import OAuthError
 from authlib.integrations.httpx_client import AsyncOAuth2Client
+import redis
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -34,6 +35,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 def decode_access_token(token: str):
+    redis_client = redis.Redis(host="localhost", port=6379, db=0)
+    if redis_client.sismember("token_blacklist", token):
+        return None
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload

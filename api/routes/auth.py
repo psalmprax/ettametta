@@ -15,6 +15,8 @@ from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
 from google.auth.transport import requests
 import secrets
+import redis
+from api.utils.models import UserDB
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -137,7 +139,9 @@ async def google_auth():
 
 
 @router.post("/logout")
-async def logout():
+async def logout(token: str = Depends(oauth2_scheme)):
+    redis_client = redis.Redis(host="localhost", port=6379, db=0)
+    redis_client.sadd("token_blacklist", token)
     return {"message": "Logged out"}
 
 
