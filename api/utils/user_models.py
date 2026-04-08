@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Enum, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Enum, Boolean, JSON
 from .database import Base
 from datetime import datetime
 import enum
@@ -34,4 +34,8 @@ class UserDB(Base):
     stripe_customer_id = Column(String, unique=True, index=True, nullable=True)
     stripe_subscription_id = Column(String, unique=True, index=True, nullable=True)
     is_google_oauth = Column(Boolean, default=False)
+    google_id = Column(String, nullable=True)
+    api_keys = Column(JSON, nullable=True)
+    system_settings = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
