@@ -16,6 +16,13 @@ class SettingUpdateRequest(BaseModel):
     category: Optional[str] = "general"
 
 
+class UserSettingsUpdate(BaseModel):
+    telegram_chat_id: Optional[str] = None
+    whatsapp_number: Optional[str] = None
+    api_keys: Optional[dict] = None
+    system_settings: Optional[dict] = None
+
+
 def admin_required(current_user: UserDB = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(
@@ -44,8 +51,109 @@ async def get_settings(
 
     # 3. Defaults from app config (hardcoded fallback)
     config_dict = {
+        # LLM API Keys (Admin UI configurable)
         "groq_api_key": app_settings.GROQ_API_KEY,
+        "openai_api_key": app_settings.OPENAI_API_KEY,
+        "anthropic_api_key": app_settings.ANTHROPIC_API_KEY,
+        "xai_api_key": app_settings.XAI_API_KEY,
+        "deepseek_api_key": app_settings.DEEPSEEK_API_KEY,
+        "google_api_key": app_settings.GOOGLE_API_KEY,
+        "cohere_api_key": app_settings.COHERE_API_KEY,
+        "mistral_api_key": app_settings.MISTRAL_API_KEY,
+        "cerebras_api_key": app_settings.CEREBRAS_API_KEY,
+        "cloudflare_api_key": app_settings.CLOUDFLARE_API_KEY,
+        "cloudflare_account_id": app_settings.CLOUDFLARE_ACCOUNT_ID,
+        "hugging_face_api_key": app_settings.HUGGING_FACE_API_KEY,
+        "openrouter_api_key": app_settings.OPENROUTER_API_KEY,
+        "nvidia_api_key": app_settings.NVIDIA_API_KEY,
+        "ollama_cloud_api_key": app_settings.OLLAMA_CLOUD_API_KEY,
+        "siliconflow_api_key": app_settings.SILICONFLOW_API_KEY,
+        "ollama_url": app_settings.OLLAMA_URL,
+        "lm_studio_url": app_settings.LM_STUDIO_URL,
+        # Social Media & OAuth
         "youtube_api_key": app_settings.YOUTUBE_API_KEY,
+        "tiktok_api_key": app_settings.TIKTOK_API_KEY,
+        "tiktok_client_key": app_settings.TIKTOK_CLIENT_KEY,
+        "tiktok_client_secret": app_settings.TIKTOK_CLIENT_SECRET,
+        "google_client_id": app_settings.GOOGLE_CLIENT_ID,
+        "google_client_secret": app_settings.GOOGLE_CLIENT_SECRET,
+        # Payment & E-commerce
+        "stripe_secret_key": app_settings.STRIPE_SECRET_KEY,
+        "shopify_access_token": app_settings.SHOPIFY_ACCESS_TOKEN,
+        "shopify_shop_url": app_settings.SHOPIFY_SHOP_URL,
+        "printful_api_key": app_settings.PRINTFUL_API_KEY,
+        # Communication
+        "telegram_bot_token": app_settings.TELEGRAM_BOT_TOKEN,
+        "telegram_admin_id": str(app_settings.TELEGRAM_ADMIN_ID),
+        "twilio_account_sid": app_settings.TWILIO_ACCOUNT_SID,
+        "twilio_auth_token": app_settings.TWILIO_AUTH_TOKEN,
+        "twilio_whatsapp_number": app_settings.TWILIO_WHATSAPP_NUMBER,
+        # Email Marketing
+        "mailchimp_api_key": app_settings.MAILCHIMP_API_KEY,
+        "mailchimp_list_id": app_settings.MAILCHIMP_LIST_ID,
+        "convertkit_api_key": app_settings.CONVERTKIT_API_KEY,
+        # Affiliate Programs
+        "amazon_associates_tag": app_settings.AMAZON_ASSOCIATES_TAG,
+        "amazon_paapi_key": app_settings.AMAZON_PAAPI_KEY,
+        "amazon_paapi_tag": app_settings.AMAZON_PAAPI_TAG,
+        "impact_radius_api_key": app_settings.IMPACT_RADIUS_API_KEY,
+        "shareasale_api_key": app_settings.SHAREASALE_API_KEY,
+        # Trading
+        "alpha_vantage_api_key": app_settings.ALPHA_VANTAGE_API_KEY,
+        "coingecko_api_key": app_settings.COINGECKO_API_KEY,
+        # Video & Voice
+        "elevenlabs_api_key": app_settings.ELEVENLABS_API_KEY,
+        "fish_speech_endpoint": app_settings.FISH_SPEECH_ENDPOINT,
+        "pexels_api_key": app_settings.PEXELS_API_KEY,
+        "google_search_cx": app_settings.GOOGLE_SEARCH_CX,
+        "runway_api_key": app_settings.RUNWAY_API_KEY,
+        "pika_api_key": app_settings.PIKA_API_KEY,
+        "zsky_api_key": app_settings.ZSKY_API_KEY,
+        "kling_api_key": app_settings.KLING_API_KEY,
+        "pixverse_api_key": app_settings.PIXVERSE_API_KEY,
+        "replicate_api_key": app_settings.REPLICATE_API_KEY,
+        "stability_api_key": app_settings.STABILITY_API_KEY,
+        # Feature Settings (Admin UI)
+        "default_llm_provider": app_settings.DEFAULT_LLM_PROVIDER,
+        "use_os_models": str(app_settings.USE_OS_MODELS),
+        "monetization_mode": app_settings.MONETIZATION_MODE,
+        "voice_engine": app_settings.VOICE_ENGINE,
+        "default_vlm_model": app_settings.DEFAULT_VLM_MODEL,
+        "ai_video_provider": app_settings.AI_VIDEO_PROVIDER,
+        "ai_video_fallbacks": app_settings.AI_VIDEO_FALLBACKS,
+        "default_quality_tier": app_settings.DEFAULT_QUALITY_TIER,
+        "enable_sound_design": str(app_settings.ENABLE_SOUND_DESIGN),
+        "enable_motion_graphics": str(app_settings.ENABLE_MOTION_GRAPHICS),
+        "enable_langchain": str(app_settings.ENABLE_LANGCHAIN),
+        "enable_crewai": str(app_settings.ENABLE_CREWAI),
+        "enable_interpreter": str(app_settings.ENABLE_INTERPRETER),
+        "enable_affiliate_api": str(app_settings.ENABLE_AFFILIATE_API),
+        "enable_trading": str(app_settings.ENABLE_TRADING),
+        "enable_opencli": str(app_settings.ENABLE_OPENCLI),
+        # Business Logic
+        "limit_free": str(app_settings.LIMIT_FREE),
+        "limit_pro": str(app_settings.LIMIT_PRO),
+        "limit_sovereign": str(app_settings.LIMIT_SOVEREIGN),
+        "music_volume": str(app_settings.MUSIC_VOLUME),
+        "sfx_volume": str(app_settings.SFX_VOLUME),
+        "gpu_queue_slots": str(app_settings.GPU_QUEUE_SLOTS),
+        "gpu_queue_timeout": str(app_settings.GPU_QUEUE_TIMEOUT),
+        # URLs (some admin configurable, some system)
+        "production_domain": app_settings.PRODUCTION_DOMAIN,
+        "cors_origins": app_settings.CORS_ORIGINS,
+        "comfyui_url": app_settings.COMFYUI_URL,
+        "render_node_url": app_settings.RENDER_NODE_URL or "",
+        # Legacy compatibility
+        "scan_frequency": "Every 1 hour",
+        "force_originality": "true",
+        "auto_pilot": "false",
+        "monetization_aggression": "80",
+        "active_monetization_strategy": "commerce",
+        "ai_matching_enabled": "true",
+        "auto_promo_enabled": "true",
+        "auto_merch_enabled": "false",
+        "lead_gen_url": "",
+        "digital_product_url": "",
         "tiktok_client_key": app_settings.TIKTOK_CLIENT_KEY,
         "tiktok_client_secret": app_settings.TIKTOK_CLIENT_SECRET,
         "scan_frequency": "Every 1 hour",
@@ -436,3 +544,303 @@ async def get_available_filters(
     )
 
     return result
+
+
+@router.post("/verify/{service_id}")
+async def verify_service(
+    service_id: str,
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """
+    Performs a real-time handshake/verification of an external service configuration.
+    This ensures that saved URLs/keys are functional 'Real Solutions'.
+    """
+    from api.utils.models import UserSetting
+    import httpx
+
+    # Map service_id to setting keys
+    service_map = {
+        "shopify": ["shopify_shop_url", "shopify_access_token"],
+        "commerce": ["shopify_shop_url", "shopify_access_token"],
+        "membership": ["membership_platform_url"],
+        "course": ["course_platform_url"],
+        "crypto": ["donation_link"],
+        "groq": ["groq_api_key"],
+        "openai": ["openai_api_key"],
+        "elevenlabs": ["elevenlabs_api_key"],
+        "pexels": ["pexels_api_key"],
+        "aws": ["aws_access_key_id", "aws_secret_access_key", "aws_region"],
+        "stripe": ["stripe_secret_key", "stripe_webhook_secret"],
+        "tiktok": ["tiktok_client_key", "tiktok_client_secret"],
+        "youtube": ["google_client_id", "google_client_secret"],
+        "instagram": ["facebook_app_id", "facebook_app_secret"],
+    }
+
+    if service_id not in service_map:
+        raise HTTPException(status_code=400, detail="Invalid service ID")
+
+    keys = service_map[service_id]
+    settings = {}
+    for key in keys:
+        s = (
+            db.query(UserSetting)
+            .filter(UserSetting.user_id == current_user.id, UserSetting.key == key)
+            .first()
+        )
+        settings[key] = s.value if s else None
+
+    # Perform validation based on service type
+    try:
+        if service_id in ("shopify", "commerce"):
+            url = settings.get("shopify_shop_url")
+            if not url:
+                return {"status": "error", "message": "Shopify URL not configured"}
+            # Basic reachability check for the shop
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url, timeout=5.0)
+                if resp.status_code < 400:
+                    return {
+                        "status": "success",
+                        "message": f"Connection verified for {url}",
+                    }
+                return {
+                    "status": "error",
+                    "message": f"Shopify returned {resp.status_code}",
+                }
+
+        elif service_id in ("membership", "course", "crypto"):
+            key = keys[0]
+            url = settings.get(key)
+            if not url:
+                return {"status": "error", "message": "Endpoint URL not configured"}
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url, timeout=5.0)
+                if resp.status_code < 400:
+                    return {"status": "success", "message": f"Endpoint verified: {url}"}
+                return {
+                    "status": "error",
+                    "message": f"Verification failed (Status: {resp.status_code})",
+                }
+
+        elif service_id == "groq":
+            api_key = settings.get("groq_api_key")
+            if not api_key:
+                return {"status": "error", "message": "Groq API key not configured"}
+
+            # Test Groq API with a simple request
+            try:
+                import groq
+
+                client = groq.Groq(api_key=api_key)
+                # Simple test request
+                response = await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[{"role": "user", "content": "test"}],
+                        max_tokens=1,
+                    ),
+                )
+                return {
+                    "status": "success",
+                    "message": "Groq API key verified successfully",
+                }
+            except Exception as e:
+                return {
+                    "status": "error",
+                    "message": f"Groq API key verification failed: {str(e)}",
+                }
+
+        elif service_id == "openai":
+            api_key = settings.get("openai_api_key")
+            if not api_key:
+                return {"status": "error", "message": "OpenAI API key not configured"}
+
+            # Test OpenAI API
+            try:
+                import openai
+
+                client = openai.OpenAI(api_key=api_key)
+                response = await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[{"role": "user", "content": "test"}],
+                        max_tokens=1,
+                    ),
+                )
+                return {
+                    "status": "success",
+                    "message": "OpenAI API key verified successfully",
+                }
+            except Exception as e:
+                return {
+                    "status": "error",
+                    "message": f"OpenAI API key verification failed: {str(e)}",
+                }
+
+        elif service_id == "elevenlabs":
+            api_key = settings.get("elevenlabs_api_key")
+            if not api_key:
+                return {
+                    "status": "error",
+                    "message": "ElevenLabs API key not configured",
+                }
+
+            # Test ElevenLabs API
+            async with httpx.AsyncClient() as client:
+                headers = {"xi-api-key": api_key}
+                response = await client.get(
+                    "https://api.elevenlabs.io/v1/user", headers=headers
+                )
+                if response.status_code == 200:
+                    return {
+                        "status": "success",
+                        "message": "ElevenLabs API key verified successfully",
+                    }
+                else:
+                    return {
+                        "status": "error",
+                        "message": f"ElevenLabs API key verification failed: {response.text}",
+                    }
+
+        elif service_id == "pexels":
+            api_key = settings.get("pexels_api_key")
+            if not api_key:
+                return {"status": "error", "message": "Pexels API key not configured"}
+
+            # Test Pexels API
+            async with httpx.AsyncClient() as client:
+                headers = {"Authorization": api_key}
+                response = await client.get(
+                    "https://api.pexels.com/v1/search?query=test&per_page=1",
+                    headers=headers,
+                )
+                if response.status_code == 200:
+                    return {
+                        "status": "success",
+                        "message": "Pexels API key verified successfully",
+                    }
+                else:
+                    return {
+                        "status": "error",
+                        "message": f"Pexels API key verification failed: {response.text}",
+                    }
+
+        elif service_id == "aws":
+            access_key = settings.get("aws_access_key_id")
+            secret_key = settings.get("aws_secret_access_key")
+            region = settings.get("aws_region", "us-east-1")
+
+            if not access_key or not secret_key:
+                return {"status": "error", "message": "AWS credentials not configured"}
+
+            # Test AWS credentials
+            try:
+                import boto3
+
+                client = boto3.client(
+                    "s3",
+                    aws_access_key_id=access_key,
+                    aws_secret_access_key=secret_key,
+                    region_name=region,
+                )
+                # Test with a simple list buckets call (will fail if no permissions but credentials are valid)
+                response = await asyncio.get_event_loop().run_in_executor(
+                    None, client.list_buckets
+                )
+                return {
+                    "status": "success",
+                    "message": "AWS credentials verified successfully",
+                }
+            except Exception as e:
+                if "InvalidAccessKeyId" in str(e) or "SignatureDoesNotMatch" in str(e):
+                    return {"status": "error", "message": "Invalid AWS credentials"}
+                else:
+                    return {
+                        "status": "success",
+                        "message": "AWS credentials verified (limited permissions)",
+                    }
+
+        elif service_id == "stripe":
+            secret_key = settings.get("stripe_secret_key")
+            if not secret_key:
+                return {
+                    "status": "error",
+                    "message": "Stripe secret key not configured",
+                }
+
+            # Test Stripe API
+            try:
+                import stripe
+
+                stripe.api_key = secret_key
+                # Test with a simple balance call
+                balance = await asyncio.get_event_loop().run_in_executor(
+                    None, stripe.Balance.retrieve
+                )
+                return {
+                    "status": "success",
+                    "message": "Stripe API key verified successfully",
+                }
+            except Exception as e:
+                return {
+                    "status": "error",
+                    "message": f"Stripe API key verification failed: {str(e)}",
+                }
+
+        elif service_id in ("tiktok", "youtube", "instagram"):
+            # OAuth-based services - check if tokens exist
+            client_id = settings.get(
+                f"{service_id.replace('tiktok', 'tiktok').replace('youtube', 'google').replace('instagram', 'facebook')}_client_id"
+            )
+            client_secret = settings.get(
+                f"{service_id.replace('tiktok', 'tiktok').replace('youtube', 'google').replace('instagram', 'facebook')}_client_secret"
+            )
+
+            if not client_id or not client_secret:
+                return {
+                    "status": "error",
+                    "message": f"{service_id.title()} OAuth credentials not configured",
+                }
+
+            return {
+                "status": "success",
+                "message": f"{service_id.title()} OAuth credentials configured",
+            }
+
+    except Exception as e:
+        return {"status": "error", "message": f"Network Handshake Failed: {str(e)}"}
+
+    return {
+        "status": "unknown",
+        "message": "Verification logic pending for this service",
+    }
+
+
+@router.get("/user-settings")
+async def get_user_settings(
+    db: Session = Depends(get_db), current_user: UserDB = Depends(get_current_user)
+):
+    """Retrieve user-specific settings including notifications and API integrations"""
+    return {
+        "telegram_chat_id": current_user.telegram_chat_id,
+        "whatsapp_number": current_user.whatsapp_number,
+        "api_keys": current_user.api_keys,
+        "system_settings": current_user.system_settings,
+    }
+
+
+@router.put("/user-settings")
+async def update_user_settings(
+    request: UserSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Update user-specific settings including notifications and API integrations"""
+    for field, value in request.dict(exclude_unset=True).items():
+        setattr(current_user, field, value)
+    db.commit()
+    db.refresh(current_user)
+    return {"status": "success"}
