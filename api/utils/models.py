@@ -9,11 +9,21 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from .database import Base
 from datetime import datetime
+import uuid
 
-# Import UserDB to ensure 'users' table is registered in metadata for foreign keys
-from .user_models import UserDB
+
+class UserDB(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, unique=True, index=True)
+    password_hash = Column(String)
+    google_id = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class SystemSettings(Base):
@@ -209,6 +219,16 @@ class NexusJobDB(Base):
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
 
 
+class BlueprintDB(Base):
+    __tablename__ = "nexus_blueprints"
+
+    id = Column(String, primary_key=True, index=True)
+    name = Column(String)
+    description = Column(String)
+    nodes = Column(JSON)  # List of node dictionaries
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class ABTestDB(Base):
     __tablename__ = "ab_tests"
 
@@ -324,3 +344,47 @@ class WebhookEventDB(Base):
     payload_json = Column(JSON, nullable=True)
     processed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class TradingPortfolioDB(Base):
+    __tablename__ = "trading_portfolios"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    cash_balance = Column(Float, default=10000.0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class TradingPositionDB(Base):
+    __tablename__ = "trading_positions"
+    id = Column(Integer, primary_key=True, index=True)
+    portfolio_id = Column(Integer, ForeignKey("trading_portfolios.id"), index=True)
+    symbol = Column(String, index=True)
+    quantity = Column(Float)
+    avg_price = Column(Float)
+    position_type = Column(String, default="buy")  # buy, short
+    opened_at = Column(DateTime, default=datetime.utcnow)
+
+
+class TradingAlertDB(Base):
+    __tablename__ = "trading_alerts"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    symbol = Column(String, index=True)
+    target_price = Column(Float)
+    condition = Column(String, default="above")  # above, below
+    triggered = Column(Boolean, default=False)
+    triggered_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class TradingTransactionDB(Base):
+    __tablename__ = "trading_transactions"
+    id = Column(Integer, primary_key=True, index=True)
+    portfolio_id = Column(Integer, ForeignKey("trading_portfolios.id"), index=True)
+    symbol = Column(String)
+    quantity = Column(Float)
+    price = Column(Float)
+    transaction_type = Column(String)  # buy, sell
+    total_value = Column(Float)
+    executed_at = Column(DateTime, default=datetime.utcnow)
