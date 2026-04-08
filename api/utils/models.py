@@ -8,22 +8,44 @@ from sqlalchemy import (
     Boolean,
     ForeignKey,
     UniqueConstraint,
+    Enum,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from .database import Base
 from datetime import datetime
-import uuid
+import enum
+
+
+class UserRole(str, enum.Enum):
+    ADMIN = "admin"
+    SUPER_ADMIN = "super_admin"
+    USER = "user"
+
+
+class SubscriptionTier(str, enum.Enum):
+    FREE = "free"
+    BASIC = "basic"
+    PREMIUM = "premium"
+    SOVEREIGN = "sovereign"  # Access to LTX-Video
+    STUDIO = "studio"  # Access to Runway/Pika
 
 
 class UserDB(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=True)
     email = Column(String, unique=True, index=True)
-    password_hash = Column(String)
+    hashed_password = Column(String)
+    role = Column(Enum(UserRole), default=UserRole.USER)
+    subscription = Column(Enum(SubscriptionTier), default=SubscriptionTier.FREE)
+    is_active = Column(Boolean, default=True)
+    telegram_chat_id = Column(String, unique=True, index=True, nullable=True)
+    telegram_token = Column(String, unique=True, index=True, nullable=True)
+    whatsapp_number = Column(String, unique=True, index=True, nullable=True)
+    stripe_customer_id = Column(String, unique=True, index=True, nullable=True)
+    stripe_subscription_id = Column(String, unique=True, index=True, nullable=True)
+    is_google_oauth = Column(Boolean, default=False)
     google_id = Column(String, nullable=True)
-    telegram_chat_id = Column(String, nullable=True)
-    whatsapp_number = Column(String, nullable=True)
     api_keys = Column(JSON, nullable=True)
     system_settings = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
