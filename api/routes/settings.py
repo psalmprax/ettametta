@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlalchemy.orm import Session
 from api.utils.database import get_db
-from api.utils.models import SystemSettings
+from api.utils.models import SystemSettings, BotCodeDB
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
+from api.utils.notifications import configure_telegram_bot, configure_whatsapp_bot
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -819,6 +820,60 @@ async def verify_service(
     }
 
 
+@router.post("/webhooks/telegram")
+async def telegram_webhook(update: dict, db: Session = Depends(get_db)):
+    """Handle Telegram bot webhook for configuration"""
+    if "message" in update:
+        chat_id = str(update["message"]["chat"]["id"])
+        text = update["message"].get("text", "").strip()
+        if text:
+            bot_code = (
+                db.query(BotCodeDB)
+                .filter(
+                    BotCodeDB.code == text,
+                    BotCodeDB.platform == "telegram",
+                    BotCodeDB.used == False,
+                )
+                .first()
+            )
+            if bot_code:
+                user = db.query(UserDB).filter(UserDB.id == bot_code.user_id).first()
+                if user:
+                    user.telegram_chat_id = chat_id
+                    bot_code.used = True
+                    db.commit()
+                    await configure_telegram_bot(user.id, chat_id)
+                    return {"status": "configured"}
+    return {"status": "ignored"}
+
+
+@router.post("/webhooks/whatsapp")
+async def whatsapp_webhook(
+    Body: str = Form(...), From: str = Form(...), db: Session = Depends(get_db)
+):
+    """Handle WhatsApp webhook for configuration"""
+    body = Body.strip()
+    from_number = From
+    bot_code = (
+        db.query(BotCodeDB)
+        .filter(
+            BotCodeDB.code == body,
+            BotCodeDB.platform == "whatsapp",
+            BotCodeDB.used == False,
+        )
+        .first()
+    )
+    if bot_code:
+        user = db.query(UserDB).filter(UserDB.id == bot_code.user_id).first()
+        if user:
+            user.whatsapp_number = from_number
+            bot_code.used = True
+            db.commit()
+            await configure_whatsapp_bot(user.id, from_number)
+            return {"status": "configured"}
+    return {"status": "ignored"}
+
+
 @router.get("/user-settings")
 async def get_user_settings(
     db: Session = Depends(get_db), current_user: UserDB = Depends(get_current_user)
@@ -843,4 +898,31 @@ async def update_user_settings(
         setattr(current_user, field, value)
     db.commit()
     db.refresh(current_user)
+
+    # Trigger bot flows
+    if request.telegram_chat_id:
+        await configure_telegram_bot(current_user.id, request.telegram_chat_id)
+    if request.whatsapp_number:
+        await configure_whatsapp_bot(current_user.id, request.whatsapp_number)
+
     return {"status": "success"}
+
+
+@router.post("/generate-bot-code")
+async def generate_bot_code(
+    platform: str,
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Generate a code for bot configuration"""
+    import secrets
+
+    code = secrets.token_hex(8)
+    bot_code = BotCodeDB(user_id=current_user.id, platform=platform, code=code)
+    db.add(bot_code)
+    db.commit()
+    return {
+        "code": code,
+        "platform": platform,
+        "message": "Send this code to the OpenClaw bot to configure your notifications.",
+    }
