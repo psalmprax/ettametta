@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from api.utils.database import get_db
@@ -9,6 +9,7 @@ from api.utils.auth import (
     decode_access_token,
 )
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 from api.config import settings
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
@@ -16,7 +17,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 import secrets
 import redis
-from api.utils.models import UserDB
+from api.utils.user_models import UserDB
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -41,7 +42,7 @@ class PasswordChange(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: str
+    id: int
     email: str
 
     class Config:
@@ -63,7 +64,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 
     new_user = UserDB(
         email=user.email,
-        password_hash=hashed_pwd,
+        hashed_password=hashed_pwd,
     )
     db.add(new_user)
     db.commit()
@@ -78,7 +79,7 @@ async def login(
     db: Session = Depends(get_db),
 ):
     user = db.query(UserDB).filter(UserDB.email == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.password_hash):
+    if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -198,7 +199,7 @@ async def google_auth_callback(
             # Create new user
             user = UserDB(
                 email=email,
-                password_hash=get_password_hash(
+                hashed_password=get_password_hash(
                     secrets.token_urlsafe(32)
                 ),  # Random password for OAuth users
                 google_id=id_info.get("sub"),
