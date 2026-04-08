@@ -392,3 +392,14 @@ class TradingTransactionDB(Base):
     transaction_type = Column(String)  # buy, sell
     total_value = Column(Float)
     executed_at = Column(DateTime, default=datetime.utcnow)
+
+
+class BotCodeDB(Base):
+    __tablename__ = "bot_codes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    platform = Column(String)  # telegram, whatsapp
+    code = Column(String, unique=True)
+    used = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
