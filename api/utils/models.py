@@ -22,6 +22,10 @@ class UserDB(Base):
     email = Column(String, unique=True, index=True)
     password_hash = Column(String)
     google_id = Column(String, nullable=True)
+    telegram_chat_id = Column(String, nullable=True)
+    whatsapp_number = Column(String, nullable=True)
+    api_keys = Column(JSON, nullable=True)
+    system_settings = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
