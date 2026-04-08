@@ -33,7 +33,7 @@ import { API_BASE, WS_BASE } from "@/lib/config";
 import dynamic from "next/dynamic";
 import * as d3 from "d3";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { VideoPreviewModal } from "@/components/ui/VideoPreviewModal";
 import { toast } from "sonner";
 
@@ -71,9 +71,10 @@ interface NicheTrend {
 
 export default function DiscoveryPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [candidates, setCandidates] = useState<ContentCandidate[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeNiche, setActiveNiche] = useState("Motivation");
+    const [activeNiche, setActiveNiche] = useState(searchParams.get("q") || "");
     const [filter, setFilter] = useState("all"); // all, youtube, tiktok, instagram, facebook, x, twitch, etc.
     const [activeCategory, setActiveCategory] = useState("all"); // all, video, blog, social, news
     const [showConfig, setShowConfig] = useState(false);
@@ -231,6 +232,11 @@ export default function DiscoveryPage() {
 
     const handleAddToQueue = useCallback(async (candidate: ContentCandidate) => {
         const token = localStorage.getItem("et_token");
+
+        // Check if we have analysis data for this candidate
+        const analysisResult = analysisResults[candidate.id];
+        const analysisData = analysisResult?.status === "completed" ? analysisResult.result : null;
+
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/video/transform`, {
                 method: "POST",
@@ -242,16 +248,26 @@ export default function DiscoveryPage() {
                     input_url: candidate.url,
                     niche: activeNiche,
                     platform: "YouTube Shorts",
-                    style: selectedStyle
+                    style: selectedStyle,
+                    analysis_data: analysisData  // Pass analysis data if available
                 })
             }),
             {
                 fallback: null,
-                onSuccess: () => router.push("/transformation"),
+                onSuccess: (data) => {
+                    // Show preview modal with the job details
+                    setPreviewUrl(null); // Clear previous preview
+                    setPreviewTitle(`Transforming: ${candidate.title}`);
+                    setShowPreview(true);
+                    setTestJobId(data.task_id || data.id); // Track the job for updates
+                    toast.success("Transformation Started", {
+                        description: "Preview will be available shortly. Neural processing in progress..."
+                    });
+                },
                 errorMessage: "Transformation queue full. Try again shortly."
             }
         );
-    }, [activeNiche, router, selectedStyle]);
+    }, [activeNiche, selectedStyle, analysisResults]);
 
     const handleAnalyze = useCallback(async (candidate: ContentCandidate) => {
         const token = localStorage.getItem("et_token");
@@ -279,23 +295,29 @@ export default function DiscoveryPage() {
                         while (attempts < maxAttempts) {
                             await new Promise(resolve => setTimeout(resolve, 2000));
                             try {
-                                const statusRes = await fetch(`${API_BASE}/discovery/analyze/${taskId}`, {
-                                    headers: { Authorization: `Bearer ${token}` }
-                                });
-                                if (statusRes.ok) {
-                                    const statusData = await statusRes.json();
-                                    if (statusData.status === "completed") {
-                                        setAnalysisResults(prev => ({ ...prev, [candidate.id]: { status: "completed", result: statusData.result } }));
-                                        toast.success("Analysis Complete", {
-                                            description: "Click 'Transform' to create a video from this analysis.",
-                                            action: { label: "Transform", onClick: () => handleAddToQueue(candidate) }
-                                        });
-                                        return;
-                                    } else if (statusData.status === "failed") {
-                                        setAnalysisResults(prev => ({ ...prev, [candidate.id]: { status: "failed", result: statusData.error } }));
-                                        return;
+                            try {
+                                const statusData = await withRealFallback<any>(
+                                    () => fetch(`${API_BASE}/discovery/analyze/${taskId}`, {
+                                        headers: { Authorization: `Bearer ${token}` }
+                                    }),
+                                    {
+                                        fallback: { status: "pending" },
+                                        silent: true
                                     }
+                                );
+
+                                if (statusData?.status === "completed") {
+                                    setAnalysisResults(prev => ({ ...prev, [candidate.id]: { status: "completed", result: statusData.result } }));
+                                    toast.success("Analysis Complete", {
+                                        description: "Click 'Create Video' to transform this content with analysis insights.",
+                                        action: { label: "Create Video", onClick: () => handleCreateVideoFromAnalysis(taskId, candidate) }
+                                    });
+                                    return;
+                                } else if (statusData?.status === "failed") {
+                                    setAnalysisResults(prev => ({ ...prev, [candidate.id]: { status: "failed", result: statusData.error } }));
+                                    return;
                                 }
+                            } catch (e) {}
                             } catch (e) {}
                             attempts++;
                         }
@@ -331,40 +353,45 @@ export default function DiscoveryPage() {
                     })
                 }),
                 {
-                    fallback: { status: "Fallback Handshake", message: "Using local sync protocol." }
+                    fallback: null
                 }
             );
-            
-            if (data.status === "Handshake Established") {
+
+            if (data?.status === "Handshake Established") {
                 toast.success(`${action.charAt(0).toUpperCase() + action.slice(1)} Handshake Verified`, {
                     description: data.message,
                     icon: action === 'like' ? <Heart className="h-4 w-4 text-primary fill-primary" /> : <UserPlus className="h-4 w-4 text-primary" />
                 });
             } else {
                 // Secondary Fallback Attempt (OpenCLI)
-                const res = await fetch(`${API_BASE}/opencli/interact`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        platform: candidate.platform.toLowerCase().includes('youtube') ? 'youtube' : 
-                                 candidate.platform.toLowerCase().includes('tiktok') ? 'tiktok' : 
-                                 candidate.platform.toLowerCase().includes('x') ? 'x' : 
-                                 candidate.platform.toLowerCase().includes('twitter') ? 'x' :
-                                 candidate.platform.toLowerCase().includes('instagram') ? 'instagram' :
-                                 candidate.platform.toLowerCase().split(' ')[0],
-                        action: action,
-                        content_url: candidate.url
-                    })
-                });
-                
-                if (res.ok) {
-                    toast.success("Secondary Handshake Verified", {
-                        description: `Successfully synchronized ${action} via OpenCLI.`
-                    });
-                }
+                // Secondary Fallback Attempt (OpenCLI)
+                await withRealFallback<any>(
+                    () => fetch(`${API_BASE}/opencli/interact`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            platform: candidate.platform.toLowerCase().includes('youtube') ? 'youtube' : 
+                                     candidate.platform.toLowerCase().includes('tiktok') ? 'tiktok' : 
+                                     candidate.platform.toLowerCase().includes('x') ? 'x' : 
+                                     candidate.platform.toLowerCase().includes('twitter') ? 'x' :
+                                     candidate.platform.toLowerCase().includes('instagram') ? 'instagram' :
+                                     candidate.platform.toLowerCase().split(' ')[0],
+                            action: action,
+                            content_url: candidate.url
+                        })
+                    }),
+                    {
+                        fallback: null,
+                        onSuccess: () => {
+                            toast.success("Secondary Handshake Verified", {
+                                description: `Successfully synchronized ${action} via OpenCLI.`
+                            });
+                        }
+                    }
+                );
             }
         } catch (err) {
             console.error(err);
@@ -401,7 +428,7 @@ export default function DiscoveryPage() {
                 body: JSON.stringify({ niche: activeNiche, style: selectedStyle })
             }),
             {
-                fallback: { task_id: "test-drive-offline" },
+                fallback: null,
                 onSuccess: (data) => {
                     setTestJobId(data.task_id);
                     setPreviewTitle(`Test Drive Outcome: ${activeNiche}`);
@@ -411,6 +438,37 @@ export default function DiscoveryPage() {
             }
         );
         setIsTestDriving(false);
+    }, [activeNiche, selectedStyle]);
+
+    const handleCreateVideoFromAnalysis = useCallback(async (analysisTaskId: string, candidate: ContentCandidate) => {
+        const token = localStorage.getItem("et_token");
+
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/discovery/analyze/${analysisTaskId}/create-video`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    niche: activeNiche,
+                    platform: "YouTube Shorts",
+                    style: selectedStyle,
+                    quality_tier: "standard"
+                })
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    setTestJobId(data.task_id);
+                    setPreviewTitle(`Analysis-Based Transform: ${candidate.title}`);
+                    toast.success("Analysis-Driven Transformation Started", {
+                        description: "Using neural insights to optimize video creation..."
+                    });
+                },
+                errorMessage: "Analysis-based transformation failed. Using standard transform."
+            }
+        );
     }, [activeNiche, selectedStyle]);
 
     const handleGenerate = useCallback(async () => {
@@ -431,13 +489,13 @@ export default function DiscoveryPage() {
                     engine: genEngine,
                     style: selectedStyle,
                     aspect_ratio: "9:16",
-                    tier: ["veo3", "wan2.2", "luma"].includes(genEngine) ? 'studio' : 
-                          ["hunyuan", "mochi", "cogvideo", "wan", "ltx-video"].includes(genEngine) ? 'sovereign' : 
+                    tier: ["veo3", "wan2.2"].includes(genEngine) ? 'studio' :
+                          ["hunyuan", "mochi", "cogvideo", "wan", "ltx-video"].includes(genEngine) ? 'sovereign' :
                           'premium'
                 })
             }),
             {
-                fallback: { task_id: "generate-offline" },
+                fallback: null,
                 onSuccess: (data) => {
                     setTestJobId(data.task_id);
                     setPreviewTitle(isStoryMode ? `Story: ${genPrompt.substring(0, 20)}...` : `Generative: ${genPrompt.substring(0, 20)}...`);
@@ -476,6 +534,27 @@ export default function DiscoveryPage() {
 
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearching, setIsSearching] = useState(false);
+
+    const handleRemoveNiche = useCallback(async (nicheToRemove: string) => {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback(
+            () => fetch(`${API_BASE}/discovery/niches/${encodeURIComponent(nicheToRemove)}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setNiches(prev => prev.filter(n => n !== nicheToRemove));
+                    if (activeNiche === nicheToRemove) {
+                        const remaining = niches.filter(n => n !== nicheToRemove);
+                        setActiveNiche(remaining[0] || "");
+                    }
+                    toast.success("Niche Purged", { description: `"${nicheToRemove}" has been removed from your discovery clusters.` });
+                }
+            }
+        );
+    }, [activeNiche, niches]);
 
     const handleSearch = useCallback(async (e?: React.FormEvent, customQuery?: string) => {
         if (e) e.preventDefault();
@@ -613,12 +692,17 @@ export default function DiscoveryPage() {
                                     onClick={async () => {
                                         const token = localStorage.getItem("et_token");
                                         setIsLoading(true);
-                                        await fetch(`${API_BASE}/discovery/scan`, {
-                                            method: "POST",
-                                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                                            body: JSON.stringify({ niches: [searchQuery], deep: true })
-                                        });
-                                        fetchTrends();
+                                        await withRealFallback<any>(
+                                            () => fetch(`${API_BASE}/discovery/scan`, {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                                                body: JSON.stringify({ niches: [searchQuery], deep: true })
+                                            }),
+                                            {
+                                                fallback: null,
+                                                onSuccess: () => fetchTrends()
+                                            }
+                                        );
                                     }}
                                     className="px-4 py-3 rounded-2xl bg-primary/20 border border-primary/30 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-black transition-all"
                                 >
@@ -762,18 +846,25 @@ export default function DiscoveryPage() {
                 {/* Niche Selector & Neural Config */}
                 <div className="flex flex-wrap items-center gap-3">
                     {niches.map((n) => (
-                        <button
-                            key={n}
-                            onClick={() => { setActiveNiche(n); setSearchQuery(""); }}
-                            className={cn(
-                                "px-6 py-3 rounded-xl border text-xs font-black uppercase tracking-widest transition-all",
-                                activeNiche === n && !searchQuery
-                                    ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105"
-                                    : "bg-black/40 border-white/10 text-zinc-500 hover:border-white/30 hover:text-zinc-300"
-                            )}
-                        >
-                            {n}
-                        </button>
+                        <div key={n} className="group relative">
+                            <button
+                                onClick={() => { setActiveNiche(n); setSearchQuery(""); }}
+                                className={cn(
+                                    "px-6 py-3 rounded-xl border text-xs font-black uppercase tracking-widest transition-all",
+                                    activeNiche === n && !searchQuery
+                                        ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105"
+                                        : "bg-black/40 border-white/10 text-zinc-500 hover:border-white/30 hover:text-zinc-300"
+                                )}
+                            >
+                                {n}
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleRemoveNiche(n); }}
+                                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-lg z-10"
+                            >
+                                <X className="h-3 w-3" />
+                            </button>
+                        </div>
                     ))}
                     <button
                         onClick={() => setShowConfig(!showConfig)}
@@ -1291,56 +1382,15 @@ export default function DiscoveryPage() {
                                         <div className="grid grid-cols-2 gap-4">
                                             {genStack === "cloud" ? (
                                                 <>
-                                                    <button
-                                                        onClick={() => {
-                                                            if (userTier !== 'studio') {
-                                                                alert("Studio Tier required for Google Veo 3 high-fidelity synthesis.");
-                                                                return;
-                                                            }
-                                                            setGenEngine("veo3");
-                                                        }}
-                                                        className={cn(
-                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
-                                                            genEngine === "veo3" ? "bg-white/5 border-emerald-500/50 shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600",
-                                                            userTier !== 'studio' && "opacity-40"
-                                                        )}
-                                                    >
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">{userTier === 'studio' ? 'UNLOCKED' : 'Studio Tier Req'}</span>
-                                                            {genEngine === "veo3" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
-                                                        </div>
-                                                        <h4 className="text-xl font-black text-white uppercase">Google Veo 3</h4>
-                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Native 4K + Synchronized Audio</p>
-                                                        <div className="mt-6 flex gap-2">
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Fast</span>
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Premium</span>
-                                                        </div>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            if (userTier !== 'studio') {
-                                                                alert("Studio Tier required for Luma Dream Machine integration.");
-                                                                return;
-                                                            }
-                                                            setGenEngine("luma");
-                                                        }}
-                                                        className={cn(
-                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
-                                                            genEngine === "luma" ? "bg-white/5 border-emerald-500/50 shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600",
-                                                            userTier !== 'studio' && "opacity-40"
-                                                        )}
-                                                    >
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">{userTier === 'studio' ? 'UNLOCKED' : 'Studio Tier Req'}</span>
-                                                            {genEngine === "luma" && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
-                                                        </div>
-                                                        <h4 className="text-xl font-black text-white uppercase">Luma Dream Machine</h4>
-                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Cinematic 1080p + 3:4/16:9</p>
-                                                        <div className="mt-6 flex gap-2">
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Cinematic</span>
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Platform API</span>
-                                                        </div>
-                                                    </button>
+                                                     {/* Removed Veo3 and Luma - No real API implementations available */}
+                                                     <div className="p-8 rounded-4xl border border-dashed border-zinc-700 bg-zinc-950/30 text-center">
+                                                         <div className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-4">COMING SOON</div>
+                                                         <h4 className="text-lg font-black text-zinc-700 uppercase">Premium Cloud Engines</h4>
+                                                         <p className="text-[10px] font-medium text-zinc-600 mt-2 uppercase">Veo3, Luma, Runway, Pika</p>
+                                                         <div className="mt-6 flex gap-2 justify-center">
+                                                             <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-[8px] font-black uppercase text-zinc-600">Coming Soon</span>
+                                                         </div>
+                                                     </div>
                                                 </>
                                             ) : (
                                                 <>
@@ -1526,6 +1576,10 @@ export default function DiscoveryPage() {
                 onClose={() => setShowPreview(false)}
                 videoUrl={previewUrl}
                 title={previewTitle}
+                onProceedToTransformation={() => {
+                    setShowPreview(false);
+                    router.push("/transformation");
+                }}
             />
         </DashboardLayout>
     );
