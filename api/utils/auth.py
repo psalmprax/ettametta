@@ -35,7 +35,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 def decode_access_token(token: str):
-    redis_client = redis.Redis(host="localhost", port=6379, db=0)
+    redis_client = redis.Redis(
+        host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
+    )
     if redis_client.sismember("token_blacklist", token):
         return None
     try:
