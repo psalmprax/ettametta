@@ -137,14 +137,18 @@ async def google_auth():
         redirect_uri=settings.GOOGLE_AUTH_REDIRECT_URI,
     )
     authorization_url, state = flow.authorization_url()
-    redis_client = redis.Redis(host="localhost", port=6379, db=0)
+    redis_client = redis.Redis(
+        host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
+    )
     redis_client.set(f"oauth_state:{state}", "1", ex=600)
     return RedirectResponse(url=authorization_url)
 
 
 @router.post("/logout")
 async def logout(token: str = Depends(oauth2_scheme)):
-    redis_client = redis.Redis(host="localhost", port=6379, db=0)
+    redis_client = redis.Redis(
+        host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
+    )
     redis_client.sadd("token_blacklist", token)
     return {"message": "Logged out"}
 
@@ -163,7 +167,9 @@ async def google_auth_callback(
     if not state:
         raise HTTPException(status_code=400, detail="State parameter missing")
 
-    redis_client = redis.Redis(host="localhost", port=6379, db=0)
+    redis_client = redis.Redis(
+        host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
+    )
     if not redis_client.exists(f"oauth_state:{state}"):
         raise HTTPException(
             status_code=400, detail="Invalid or expired state parameter"
