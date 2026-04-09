@@ -55,21 +55,32 @@ class Token(BaseModel):
     token_type: str
 
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from api.utils.database import get_db
+
+
 @router.post("/register", response_model=UserResponse)
-async def register(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(UserDB).filter(UserDB.email == user.email).first()
+async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
+    stmt = select(UserDB).where(UserDB.email == user.email)
+    result = await db.execute(stmt)
+    db_user = result.scalar_one_or_none()
+
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_pwd = get_password_hash(user.password)
+    username = user.email.split("@")[0]
 
     new_user = UserDB(
+        username=username,
         email=user.email,
         hashed_password=hashed_pwd,
     )
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    # db.commit() and refresh are handled by get_db dependency or can be explicit
+    await db.flush()
+    await db.refresh(new_user)
 
     return new_user
 
@@ -77,9 +88,12 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    user = db.query(UserDB).filter(UserDB.email == form_data.username).first()
+    stmt = select(UserDB).where(UserDB.email == form_data.username)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -93,20 +107,24 @@ async def login(
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    payload = decode_access_token(token)
+    payload = await decode_access_token(token)
     if payload is None:
         raise credentials_exception
     email: str = payload.get("sub")
     if email is None:
         raise credentials_exception
-    user = db.query(UserDB).filter(UserDB.email == email).first()
+
+    stmt = select(UserDB).where(UserDB.email == email)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
     if user is None:
         raise credentials_exception
     return user
@@ -137,25 +155,30 @@ async def google_auth():
         redirect_uri=settings.GOOGLE_AUTH_REDIRECT_URI,
     )
     authorization_url, state = flow.authorization_url()
-    redis_client = redis.Redis(
-        host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
-    )
-    redis_client.set(f"oauth_state:{state}", "1", ex=600)
+
+    import redis.asyncio as redis_async
+
+    redis_client = redis_async.from_url(settings.REDIS_URL, decode_responses=True)
+    await redis_client.set(f"oauth_state:{state}", "1", ex=600)
+
     return RedirectResponse(url=authorization_url)
 
 
 @router.post("/logout")
 async def logout(token: str = Depends(oauth2_scheme)):
-    redis_client = redis.Redis(
-        host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
-    )
-    redis_client.sadd("token_blacklist", token)
+    import redis.asyncio as redis_async
+
+    redis_client = redis_async.from_url(settings.REDIS_URL, decode_responses=True)
+    await redis_client.sadd("token_blacklist", token)
     return {"message": "Logged out"}
 
 
 @router.get("/callback/google")
 async def google_auth_callback(
-    request: Request, code: str = None, state: str = None, db: Session = Depends(get_db)
+    request: Request,
+    code: str = None,
+    state: str = None,
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Google OAuth callback endpoint.
@@ -167,14 +190,14 @@ async def google_auth_callback(
     if not state:
         raise HTTPException(status_code=400, detail="State parameter missing")
 
-    redis_client = redis.Redis(
+    redis_client = redis.asyncio.Redis(
         host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
     )
-    if not redis_client.exists(f"oauth_state:{state}"):
+    if not await redis_client.exists(f"oauth_state:{state}"):
         raise HTTPException(
             status_code=400, detail="Invalid or expired state parameter"
         )
-    redis_client.delete(f"oauth_state:{state}")
+    await redis_client.delete(f"oauth_state:{state}")
 
     try:
         # Exchange authorization code for tokens
@@ -212,11 +235,14 @@ async def google_auth_callback(
             raise HTTPException(status_code=400, detail="Email not provided by Google")
 
         # Check if user already exists
-        user = db.query(UserDB).filter(UserDB.email == email).first()
+        stmt = select(UserDB).where(UserDB.email == email)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
 
         if not user:
             # Create new user
             user = UserDB(
+                username=username,
                 email=email,
                 hashed_password=get_password_hash(
                     secrets.token_urlsafe(32)
@@ -224,8 +250,8 @@ async def google_auth_callback(
                 google_id=id_info.get("sub"),
             )
             db.add(user)
-            db.commit()
-            db.refresh(user)
+            await db.flush()
+            await db.refresh(user)
 
         # Create access token
         access_token = create_access_token(data={"sub": user.email})
