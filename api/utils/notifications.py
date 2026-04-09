@@ -19,9 +19,12 @@ async def send_telegram_message(bot_token: str, chat_id: str, message: str) -> d
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     data = {"chat_id": chat_id, "text": message}
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, data=data)
-        return response.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=data)
+            return response.json()
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 async def send_whatsapp_message(
@@ -47,10 +50,13 @@ async def send_whatsapp_message(
         "Body": message,
     }
 
-    auth = (account_sid, auth_token)
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, data=data, auth=auth)
-        return response.json()
+    try:
+        auth = (account_sid, auth_token)
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=data, auth=auth)
+            return response.json()
+    except Exception as e:
+        return {"error": str(e)}
 
 
 async def configure_telegram_bot(user_id: int, chat_id: str) -> dict:
@@ -88,4 +94,6 @@ async def configure_whatsapp_bot(user_id: int, number: str) -> dict:
     auth_token = app_settings.TWILIO_AUTH_TOKEN
     from_number = app_settings.TWILIO_WHATSAPP_NUMBER
     message = "Your WhatsApp notifications are configured."
-    return await send_whatsapp_message(account_sid, auth_token, from_number, number, message)
+    return await send_whatsapp_message(
+        account_sid, auth_token, from_number, number, message
+    )
