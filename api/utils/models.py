@@ -39,7 +39,7 @@ class UserDB(Base):
     role = Column(Enum(UserRole), default=UserRole.USER)
     subscription = Column(Enum(SubscriptionTier), default=SubscriptionTier.FREE)
     is_active = Column(Boolean, default=True)
-    telegram_chat_id = Column(String, unique=True, index=True, nullable=True)
+    telegram_chat_id = Column(String, index=True, nullable=True)
     telegram_token = Column(String, unique=True, index=True, nullable=True)
     whatsapp_number = Column(String, unique=True, index=True, nullable=True)
     stripe_customer_id = Column(String, unique=True, index=True, nullable=True)
