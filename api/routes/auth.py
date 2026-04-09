@@ -137,6 +137,8 @@ async def google_auth():
         redirect_uri=settings.GOOGLE_AUTH_REDIRECT_URI,
     )
     authorization_url, state = flow.authorization_url()
+    redis_client = redis.Redis(host="localhost", port=6379, db=0)
+    redis_client.set(f"oauth_state:{state}", "1", ex=600)
     return RedirectResponse(url=authorization_url)
 
 
@@ -157,6 +159,16 @@ async def google_auth_callback(
     """
     if not code:
         raise HTTPException(status_code=400, detail="Authorization code not provided")
+
+    if not state:
+        raise HTTPException(status_code=400, detail="State parameter missing")
+
+    redis_client = redis.Redis(host="localhost", port=6379, db=0)
+    if not redis_client.exists(f"oauth_state:{state}"):
+        raise HTTPException(
+            status_code=400, detail="Invalid or expired state parameter"
+        )
+    redis_client.delete(f"oauth_state:{state}")
 
     try:
         # Exchange authorization code for tokens
