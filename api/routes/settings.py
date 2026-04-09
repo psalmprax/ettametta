@@ -826,28 +826,33 @@ async def verify_service(
 @router.post("/webhooks/telegram")
 async def telegram_webhook(update: dict, db: Session = Depends(get_db)):
     """Handle Telegram bot webhook for configuration"""
-    if "message" in update:
-        chat_id = str(update["message"]["chat"]["id"])
-        text = update["message"].get("text", "").strip()
-        if text:
-            bot_code = (
-                db.query(BotCodeDB)
-                .filter(
-                    BotCodeDB.code == text,
-                    BotCodeDB.platform == "telegram",
-                    BotCodeDB.used == False,
+    try:
+        if "message" in update:
+            chat_id = str(update["message"]["chat"]["id"])
+            text = update["message"].get("text", "").strip()
+            if text:
+                bot_code = (
+                    db.query(BotCodeDB)
+                    .filter(
+                        BotCodeDB.code == text,
+                        BotCodeDB.platform == "telegram",
+                        BotCodeDB.used == False,
+                    )
+                    .first()
                 )
-                .first()
-            )
-            if bot_code:
-                user = db.query(UserDB).filter(UserDB.id == bot_code.user_id).first()
-                if user:
-                    user.telegram_chat_id = chat_id
-                    bot_code.used = True
-                    db.commit()
-                    await configure_telegram_bot(user.id, chat_id)
-                    return {"status": "configured"}
-    return {"status": "ignored"}
+                if bot_code:
+                    user = (
+                        db.query(UserDB).filter(UserDB.id == bot_code.user_id).first()
+                    )
+                    if user:
+                        user.telegram_chat_id = chat_id
+                        bot_code.used = True
+                        db.commit()
+                        await configure_telegram_bot(user.id, chat_id)
+                        return {"status": "configured"}
+        return {"status": "ignored"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @router.post("/webhooks/whatsapp")
@@ -855,26 +860,29 @@ async def whatsapp_webhook(
     Body: str = Form(...), From: str = Form(...), db: Session = Depends(get_db)
 ):
     """Handle WhatsApp webhook for configuration"""
-    body = Body.strip()
-    from_number = From
-    bot_code = (
-        db.query(BotCodeDB)
-        .filter(
-            BotCodeDB.code == body,
-            BotCodeDB.platform == "whatsapp",
-            BotCodeDB.used == False,
+    try:
+        body = Body.strip()
+        from_number = From
+        bot_code = (
+            db.query(BotCodeDB)
+            .filter(
+                BotCodeDB.code == body,
+                BotCodeDB.platform == "whatsapp",
+                BotCodeDB.used == False,
+            )
+            .first()
         )
-        .first()
-    )
-    if bot_code:
-        user = db.query(UserDB).filter(UserDB.id == bot_code.user_id).first()
-        if user:
-            user.whatsapp_number = from_number
-            bot_code.used = True
-            db.commit()
-            await configure_whatsapp_bot(user.id, from_number)
-            return {"status": "configured"}
-    return {"status": "ignored"}
+        if bot_code:
+            user = db.query(UserDB).filter(UserDB.id == bot_code.user_id).first()
+            if user:
+                user.whatsapp_number = from_number
+                bot_code.used = True
+                db.commit()
+                await configure_whatsapp_bot(user.id, from_number)
+                return {"status": "configured"}
+        return {"status": "ignored"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @router.get("/user-settings")
