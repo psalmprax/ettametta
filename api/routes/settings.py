@@ -506,11 +506,14 @@ async def get_available_filters(
         filters = db.query(VideoFilterDB).all()
 
     # Include Sound Design and Motion Graphics as virtual system filters
-    import os
+    db_items = db.query(SystemSettings).all()
+    system_dict = {s.key: s.value for s in db_items}
 
-    sound_design_enabled = os.getenv("ENABLE_SOUND_DESIGN", "false").lower() == "true"
+    sound_design_enabled = (
+        system_dict.get("ENABLE_SOUND_DESIGN", "false").lower() == "true"
+    )
     motion_graphics_enabled = (
-        os.getenv("ENABLE_MOTION_GRAPHICS", "false").lower() == "true"
+        system_dict.get("ENABLE_MOTION_GRAPHICS", "false").lower() == "true"
     )
 
     result = []
