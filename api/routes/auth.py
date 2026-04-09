@@ -15,6 +15,7 @@ from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from authlib.integrations.base_client import OAuthError
 import secrets
 import redis
 from api.utils.user_models import UserDB
@@ -221,7 +222,7 @@ async def google_auth_callback(
             status_code=302,
         )
 
-    except Exception as e:
+    except (ValueError, HTTPException, OAuthError) as e:
         raise HTTPException(
             status_code=400, detail=f"Google authentication failed: {str(e)}"
         )
