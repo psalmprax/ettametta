@@ -37,7 +37,10 @@
   1. User can view trending content from YouTube, TikTok, and other platforms via automated scanners
   2. User can search for content with filters and sort by viral score
   3. User can analyze content for viral patterns and insights
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 02-01-PLAN.md — Implement automated trending content collection from YouTube
+- [ ] 02-02-PLAN.md — Implement content search API with filters and viral score sorting
+- [ ] 02-03-PLAN.md — Implement AI-powered content analysis for viral patterns and insights
 
 ### Phase 3: Basic Video Generation
 **Goal**: Users can generate and enhance videos using AI
