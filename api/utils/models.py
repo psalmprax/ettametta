@@ -11,7 +11,7 @@ from sqlalchemy import (
     Enum,
 )
 from .database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 
 
@@ -48,8 +48,12 @@ class UserDB(Base):
     google_id = Column(String, nullable=True)
     api_keys = Column(JSON, nullable=True)
     system_settings = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
 
 
 class SystemSettings(Base):
@@ -60,7 +64,11 @@ class SystemSettings(Base):
     value = Column(String)  # Encrypted or plain for non-sensitive
     category = Column(String, default="general")  # api_key, engine, etc.
     description = Column(String, nullable=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
 
 
 class UserSetting(Base):
@@ -71,7 +79,11 @@ class UserSetting(Base):
     key = Column(String, index=True)
     value = Column(String)
     category = Column(String, default="general")
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
 
 
 class VideoFilterDB(Base):
@@ -98,7 +110,7 @@ class ContentCandidateDB(Base):
     engagement_score = Column(Float, default=0.0)
     viral_score = Column(Integer, default=0)
     duration_seconds = Column(Float, default=0.0)
-    discovery_date = Column(DateTime, default=datetime.utcnow)
+    discovery_date = Column(DateTime, default=datetime.now(timezone.utc))
     category = Column(String, default="video")  # video, blog, social, news, other
     tags = Column(JSON, nullable=True)
     thumbnail_url = Column(String, nullable=True)
@@ -116,7 +128,7 @@ class ViralPatternDB(Base):
     pacing_bpm = Column(Integer, nullable=True)
     style_keywords = Column(JSON)
     emotional_triggers = Column(JSON)
-    analyzed_at = Column(DateTime, default=datetime.utcnow)
+    analyzed_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class SocialAccount(Base):
@@ -131,7 +143,11 @@ class SocialAccount(Base):
     token_type = Column(String, nullable=True)
     scope = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
 
 
 class NicheTrendDB(Base):
@@ -143,7 +159,11 @@ class NicheTrendDB(Base):
     top_keywords = Column(JSON)  # ["keyword1", "keyword2"]
     avg_engagement = Column(Float)
     viral_pattern_ids = Column(JSON)  # Reference to ViralPatternDB IDs
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_updated = Column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
 
 
 class PublishedContentDB(Base):
@@ -154,7 +174,7 @@ class PublishedContentDB(Base):
     platform = Column(String)
     status = Column(String)  # Published, Failed
     url = Column(String, nullable=True)
-    published_at = Column(DateTime, default=datetime.utcnow)
+    published_at = Column(DateTime, default=datetime.now(timezone.utc))
     account_id = Column(Integer, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     niche = Column(String, index=True, nullable=True)
@@ -178,8 +198,12 @@ class VideoJobDB(Base):
     input_url = Column(String)
     output_path = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
 
 
 class MonitoredNiche(Base):
@@ -190,7 +214,7 @@ class MonitoredNiche(Base):
     niche = Column(String, index=True)
     is_active = Column(Boolean, default=True)
     last_scanned_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     __table_args__ = (UniqueConstraint("user_id", "niche", name="uix_user_niche"),)
 
 
@@ -203,7 +227,7 @@ class AffiliateLinkDB(Base):
     niche = Column(String, index=True)
     link = Column(String)
     cta_text = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class RevenueLogDB(Base):
@@ -214,7 +238,7 @@ class RevenueLogDB(Base):
     niche = Column(String, index=True)
     amount = Column(Float, default=0.0)
     views = Column(Integer, default=0)
-    date = Column(DateTime, default=datetime.utcnow)
+    date = Column(DateTime, default=datetime.now(timezone.utc))
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
 
 
@@ -227,7 +251,7 @@ class PersonaDB(Base):
     reference_video_url = Column(String, nullable=True)
     voice_clone_id = Column(String, nullable=True)  # Reference to XTTS or ElevenLabs ID
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class NexusJobDB(Base):
@@ -241,7 +265,7 @@ class NexusJobDB(Base):
     output_path = Column(String, nullable=True)
     progress = Column(Integer, default=0)
     error_log = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
 
 
@@ -252,7 +276,7 @@ class BlueprintDB(Base):
     name = Column(String)
     description = Column(String)
     nodes = Column(JSON)  # List of node dictionaries
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class ABTestDB(Base):
@@ -276,7 +300,7 @@ class ABTestDB(Base):
     winner_variant = Column(String, nullable=True)  # 'A' or 'B'
     confidence_level = Column(Float, nullable=True)
     p_value = Column(Float, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     completed_at = Column(DateTime, nullable=True)
 
 
@@ -294,7 +318,7 @@ class ScheduledPostDB(Base):
     retry_count = Column(Integer, default=0)  # Number of retry attempts
     error_message = Column(String, nullable=True)  # Last error message
     published_at = Column(DateTime, nullable=True)  # When actually published
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class AuditLogDB(Base):
@@ -310,7 +334,7 @@ class AuditLogDB(Base):
     details = Column(JSON, nullable=True)  # Additional context
     ip_address = Column(String, nullable=True)
     user_agent = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class SystemActivityDB(Base):
@@ -320,7 +344,7 @@ class SystemActivityDB(Base):
     level = Column(String, default="INFO")  # INFO, WARNING, ERROR, SYSTEM, SUCCESS
     module = Column(String, index=True)  # AGENT_ZERO, DISCOVERY, NEXUS, etc.
     message = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class OpenCLISessionDB(Base):
@@ -346,8 +370,12 @@ class OpenCLISessionDB(Base):
         JSON, default=list
     )  # ["search", "feed", "post", "comment", "like"]
     error_message = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
 
 
 class DiscoveryInteractionDB(Base):
@@ -358,7 +386,7 @@ class DiscoveryInteractionDB(Base):
     action = Column(String)  # handshake, negotiate, bookmark, ignore
     status = Column(Integer, default=0)  # 0: pending, 1: established, 2: failed
     details = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class WebhookEventDB(Base):
@@ -369,7 +397,7 @@ class WebhookEventDB(Base):
     external_id = Column(String, index=True)
     payload_json = Column(JSON, nullable=True)
     processed_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class TradingPortfolioDB(Base):
@@ -377,8 +405,12 @@ class TradingPortfolioDB(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     cash_balance = Column(Float, default=10000.0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
+    )
 
 
 class TradingPositionDB(Base):
@@ -389,7 +421,7 @@ class TradingPositionDB(Base):
     quantity = Column(Float)
     avg_price = Column(Float)
     position_type = Column(String, default="buy")  # buy, short
-    opened_at = Column(DateTime, default=datetime.utcnow)
+    opened_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class TradingAlertDB(Base):
@@ -401,7 +433,7 @@ class TradingAlertDB(Base):
     condition = Column(String, default="above")  # above, below
     triggered = Column(Boolean, default=False)
     triggered_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class TradingTransactionDB(Base):
@@ -413,7 +445,7 @@ class TradingTransactionDB(Base):
     price = Column(Float)
     transaction_type = Column(String)  # buy, sell
     total_value = Column(Float)
-    executed_at = Column(DateTime, default=datetime.utcnow)
+    executed_at = Column(DateTime, default=datetime.now(timezone.utc))
 
 
 class BotCodeDB(Base):
@@ -424,4 +456,4 @@ class BotCodeDB(Base):
     platform = Column(String)  # telegram, whatsapp
     code = Column(String, unique=True)
     used = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
