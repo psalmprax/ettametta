@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Optional, Dict, Any
 import os
+from .utils.hardware_detector import hardware_detector
 
 
 class Settings(BaseSettings):
@@ -10,68 +11,78 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     SECRET_KEY: Optional[str] = None  # Must be set via environment variable
     ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     INTERNAL_API_TOKEN: Optional[str] = None  # Master token for internal services
+    AI_CLUSTER_SECRET: Optional[str] = "psalm_cluster_v1"  # Secret for remote GPU nodes
     PORT: int = 8000  # API port
 
     # AI Settings - Multi-Provider LLM Support
-    GROQ_API_KEY: str = ""
-    OPENAI_API_KEY: str = ""
-    XAI_API_KEY: str = ""  # xAI (Grok)
-    DEEPSEEK_API_KEY: str = ""
-    ANTHROPIC_API_KEY: str = ""  # Claude
+    GROQ_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = None
+    XAI_API_KEY: Optional[str] = None  # xAI (Grok)
+    DEEPSEEK_API_KEY: Optional[str] = None
+    ANTHROPIC_API_KEY: Optional[str] = None  # Claude
+    COHERE_API_KEY: Optional[str] = None  # Cohere - 20 RPM, 1K tokens/mo free
+    MISTRAL_API_KEY: Optional[str] = None  # Mistral AI - 1 req/s, 1B tokens/mo free
+    CEREBRAS_API_KEY: Optional[str] = None  # Cerebras - 30 RPM, 14,400 RPD free
+    CLOUDFLARE_API_KEY: Optional[str] = None  # Cloudflare Workers AI
+    CLOUDFLARE_ACCOUNT_ID: Optional[str] = None  # Cloudflare Account ID
+    HUGGING_FACE_API_KEY: Optional[str] = None  # Hugging Face - $0.10/mo free credits
+    OPENROUTER_API_KEY: Optional[str] = None  # OpenRouter - 50 RPD free, 1K with $10
+    NVIDIA_API_KEY: Optional[str] = None  # NVIDIA NIM - 40 RPM free
+    OLLAMA_CLOUD_API_KEY: Optional[str] = None  # Ollama Cloud
+    SILICONFLOW_API_KEY: Optional[str] = None  # SiliconFlow - 1K RPM, 50K TPM free
     OLLAMA_URL: str = "http://localhost:11434"  # Local Ollama server
     LM_STUDIO_URL: str = "http://localhost:1234"  # Local LM Studio server
-    DEFAULT_LLM_PROVIDER: str = (
-        "groq"  # groq, openai, xai, deepseek, anthropic, gemini, ollama, lm_studio
-    )
+    DEFAULT_LLM_PROVIDER: str = "groq"  # groq, openai, xai, deepseek, anthropic, cohere, mistral, cerebras, cloudflare, huggingface, openrouter, nvidia, ollama_cloud, siliconflow, ollama, lm_studio
 
     USE_OS_MODELS: bool = True
 
     # Neural Asset Keys
-    ELEVENLABS_API_KEY: str = ""
+    ELEVENLABS_API_KEY: Optional[str] = None
     FISH_SPEECH_ENDPOINT: str = "http://voiceover:8080"
     VOICE_ENGINE: str = "fish_speech"  # Options: elevenlabs, fish_speech
     MONETIZATION_MODE: str = "selective"  # Options: selective, all
-    PEXELS_API_KEY: str = ""
-    GOOGLE_API_KEY: str = ""
-    GOOGLE_SEARCH_CX: str = ""  # Custom Search Engine ID for Google Search
+    PEXELS_API_KEY: Optional[str] = None
+    GOOGLE_API_KEY: Optional[str] = None
+    GOOGLE_SEARCH_CX: Optional[str] = None  # Custom Search Engine ID for Google Search
     DEFAULT_VLM_MODEL: str = "gemini-1.5-flash"
 
     # Video Generation
     FONT_PATH: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
     # Social API Keys
-    YOUTUBE_API_KEY: str = ""
-    TIKTOK_API_KEY: str = ""
+    YOUTUBE_API_KEY: Optional[str] = None
+    TIKTOK_API_KEY: Optional[str] = None
 
     # Payment Processing
-    STRIPE_SECRET_KEY: str = ""
-    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_SECRET_KEY: Optional[str] = None
+    STRIPE_WEBHOOK_SECRET: Optional[str] = None
 
     # OAuth Credentials
-    GOOGLE_CLIENT_ID: str = ""
-    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
 
     # TikTok keys might be loaded from env with slightly different names in some setups,
     # but we standardize here.
-    TIKTOK_CLIENT_KEY: str = ""
-    TIKTOK_CLIENT_SECRET: str = ""
+    TIKTOK_CLIENT_KEY: Optional[str] = None
+    TIKTOK_CLIENT_SECRET: Optional[str] = None
 
     # Webhook Signatures
-    YOUTUBE_WEBHOOK_SECRET: str = ""
-    TIKTOK_WEBHOOK_SECRET: str = ""
-    INSTAGRAM_WEBHOOK_SECRET: str = ""
-    FACEBOOK_WEBHOOK_SECRET: str = ""
-    LINKEDIN_WEBHOOK_SECRET: str = ""
-    X_WEBHOOK_SECRET: str = ""
+    YOUTUBE_WEBHOOK_SECRET: Optional[str] = None
+    TIKTOK_WEBHOOK_SECRET: Optional[str] = None
+    INSTAGRAM_WEBHOOK_SECRET: Optional[str] = None
+    FACEBOOK_WEBHOOK_SECRET: Optional[str] = None
+    LINKEDIN_WEBHOOK_SECRET: Optional[str] = None
+    X_WEBHOOK_SECRET: Optional[str] = None
 
     # Telegram Configuration
-    TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_BOT_TOKEN: Optional[str] = None
     TELEGRAM_ADMIN_ID: int = 0
 
     # Shopify Configuration
-    SHOPIFY_SHOP_URL: str = ""
-    SHOPIFY_ACCESS_TOKEN: str = ""
+    SHOPIFY_SHOP_URL: Optional[str] = None
+    SHOPIFY_ACCESS_TOKEN: Optional[str] = None
 
     # Scraper Cookies (Bypass Bot Detection)
     YOUTUBE_COOKIES_PATH: Optional[str] = "cookies/youtube_cookies.txt"
@@ -93,13 +104,49 @@ class Settings(BaseSettings):
     COMFYUI_WORKFLOWS_DIR: str = "services/video_engine/workflows"
     COMFYUI_MODELS_DIR: str = "services/video_engine/models"
     CLEANUP_TRANSIENT_MODELS: bool = True
-    GPU_QUEUE_SLOTS: int = 1  # Concurrent generations allowed on the VPS
+    GPU_QUEUE_SLOTS: int = (
+        1  # Concurrent generations allowed (auto-detected from hardware)
+    )
     GPU_QUEUE_TIMEOUT: int = 300  # Seconds to wait for a slot
+    GPU_OPTIMIZATION_LEVEL: str = "safe"  # safe, medium, extreme - affects VRAM usage
+    GPU_FORCE_VRAM_GB: Optional[int] = (
+        None  # Override auto-detected VRAM (for testing or manual config)
+    )
+
+    # Hardware detection (auto-populated)
+    _detected_gpu_info: Dict[str, Any] = hardware_detector.get_gpu_info()
 
     # Rate Limiting (Requests per hour)
     LIMIT_FREE: int = 5
     LIMIT_PRO: int = 50
     LIMIT_SOVEREIGN: int = 500
+
+    @property
+    def DETECTED_GPU_VRAM_GB(self) -> Optional[int]:
+        """Returns GPU VRAM (forced override or auto-detected)."""
+        return self.GPU_FORCE_VRAM_GB or hardware_detector.vram_gb
+
+    @property
+    def EFFECTIVE_GPU_QUEUE_SLOTS(self) -> int:
+        """
+        Auto-calculate optimal concurrent jobs based on detected hardware and optimization level.
+        Uses VRAM optimization guide recommendations and hardware-specific tuning.
+        """
+        # Use environment override if set
+        env_slots = os.getenv("GPU_QUEUE_SLOTS")
+        if env_slots:
+            try:
+                return max(1, int(env_slots))
+            except ValueError:
+                pass
+
+        # Use hardware detector for optimal calculation
+        return hardware_detector.calculate_optimal_slots(self.GPU_OPTIMIZATION_LEVEL)
+
+    @property
+    def GPU_HARDWARE_INFO(self) -> dict:
+        """Returns detected GPU hardware information."""
+        return self._detected_gpu_info
 
     @property
     def GOOGLE_AUTH_REDIRECT_URI(self) -> str:
@@ -147,14 +194,14 @@ class Settings(BaseSettings):
     AI_VIDEO_PROVIDER: str = (
         "none"  # none, zsky, kling, pixverse, replicate, runway, pika, stability
     )
-    AI_VIDEO_FALLBACKS: str = ""  # Comma-separated fallback providers
-    RUNWAY_API_KEY: str = ""
-    PIKA_API_KEY: str = ""
-    ZSKY_API_KEY: str = ""  # ~50 credits/day
-    KLING_API_KEY: str = ""  # ~100 credits/day
-    PIXVERSE_API_KEY: str = ""  # ~20 credits/day
-    REPLICATE_API_KEY: str = ""  # Free trial credits
-    STABILITY_API_KEY: str = ""  # ~25 credits/day
+    AI_VIDEO_FALLBACKS: str = ""
+    RUNWAY_API_KEY: Optional[str] = None
+    PIKA_API_KEY: Optional[str] = None
+    ZSKY_API_KEY: Optional[str] = None  # ~50 credits/day
+    KLING_API_KEY: Optional[str] = None  # ~100 credits/day
+    PIXVERSE_API_KEY: Optional[str] = None  # ~20 credits/day
+    REPLICATE_API_KEY: Optional[str] = None  # Free trial credits
+    STABILITY_API_KEY: Optional[str] = None  # ~25 credits/day
 
     # Video Quality Tier (default processing level)
     DEFAULT_QUALITY_TIER: str = "standard"  # standard, enhanced, premium
@@ -164,7 +211,7 @@ class Settings(BaseSettings):
     ENABLE_CREWAI: bool = False
     ENABLE_INTERPRETER: bool = False
     ENABLE_AFFILIATE_API: bool = False
-    ENABLE_TRADING: bool = False
+    ENABLE_TRADING: bool = True
 
     # opencli-rs Integration (per-user Chrome session bridge)
     ENABLE_OPENCLI: bool = False
@@ -172,28 +219,28 @@ class Settings(BaseSettings):
     OPENCLI_SESSIONS_DIR: str = "/tmp/opencli_sessions"  # Per-user session storage
 
     # Affiliate API Keys
-    AMAZON_ASSOCIATES_TAG: str = ""
-    AMAZON_PAAPI_KEY: str = ""
-    AMAZON_PAAPI_TAG: str = ""
-    IMPACT_RADIUS_API_KEY: str = ""
-    SHAREASALE_API_KEY: str = ""
+    AMAZON_ASSOCIATES_TAG: Optional[str] = None
+    AMAZON_PAAPI_KEY: Optional[str] = None
+    AMAZON_PAAPI_TAG: Optional[str] = None
+    IMPACT_RADIUS_API_KEY: Optional[str] = None
+    SHAREASALE_API_KEY: Optional[str] = None
 
     # Trading API Keys
-    ALPHA_VANTAGE_API_KEY: str = ""
-    COINGECKO_API_KEY: str = ""
+    ALPHA_VANTAGE_API_KEY: Optional[str] = None
+    COINGECKO_API_KEY: Optional[str] = None
 
     # Twilio/WhatsApp Configuration
-    TWILIO_ACCOUNT_SID: str = ""
-    TWILIO_AUTH_TOKEN: str = ""
-    TWILIO_WHATSAPP_NUMBER: str = ""
+    TWILIO_ACCOUNT_SID: Optional[str] = None
+    TWILIO_AUTH_TOKEN: Optional[str] = None
+    TWILIO_WHATSAPP_NUMBER: Optional[str] = None
 
     # Print-on-Demand
-    PRINTFUL_API_KEY: str = ""
+    PRINTFUL_API_KEY: Optional[str] = None
 
     # Email Marketing
-    MAILCHIMP_API_KEY: str = ""
-    MAILCHIMP_LIST_ID: str = ""
-    CONVERTKIT_API_KEY: str = ""
+    MAILCHIMP_API_KEY: Optional[str] = None
+    MAILCHIMP_LIST_ID: Optional[str] = None
+    CONVERTKIT_API_KEY: Optional[str] = None
 
     # LangChain Settings
     LANGCHAIN_MODEL: str = "llama-3.3-70b-versatile"
@@ -203,10 +250,10 @@ class Settings(BaseSettings):
     CREWAI_AGENTS: str = "researcher,writer,editor"
 
     # Deprecated (Keeping for backward sync during migration)
-    AWS_ACCESS_KEY_ID: str = ""
-    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_ACCESS_KEY_ID: Optional[str] = None
+    AWS_SECRET_ACCESS_KEY: Optional[str] = None
     AWS_REGION: str = "us-east-1"
-    AWS_STORAGE_BUCKET_NAME: str = ""
+    AWS_STORAGE_BUCKET_NAME: Optional[str] = None
 
     # Database & Redis
     DATABASE_URL: str = "sqlite:///./ettametta.db"
@@ -347,6 +394,20 @@ class Settings(BaseSettings):
         if not self.DATABASE_URL:
             result["errors"].append("DATABASE_URL is required")
 
+        # GPU Hardware Validation
+        gpu_info = self.GPU_HARDWARE_INFO
+        if gpu_info.get("device") != "cpu":
+            if not gpu_info.get("detected"):
+                result["warnings"].append(
+                    "GPU VRAM auto-detection failed - using conservative defaults. Set GPU_QUEUE_SLOTS env var to override."
+                )
+            else:
+                vram_gb = gpu_info.get("vram_gb")
+                effective_slots = self.EFFECTIVE_GPU_QUEUE_SLOTS
+                result["info"].append(
+                    f"GPU detected: {gpu_info.get('gpu_name', 'Unknown')} ({vram_gb}GB VRAM) - allowing {effective_slots} concurrent video jobs"
+                )
+
         return result
 
     def print_validation_report(self):
@@ -385,10 +446,6 @@ class Settings(BaseSettings):
 
         return validation["errors"]
 
-    # Trading service configuration (already defined at line 164)
-    ALPHA_VANTAGE_API_KEY: Optional[str] = None
-    COINGECKO_API_KEY: Optional[str] = None
-
     class Config:
         env_file = ".env"
         extra = "ignore"
@@ -396,6 +453,10 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Apply VRAM override if specified
+if settings.GPU_FORCE_VRAM_GB is not None:
+    hardware_detector.set_vram_override(settings.GPU_FORCE_VRAM_GB)
 
 # Immediate startup validation
 validation = settings.validate_critical_config()
