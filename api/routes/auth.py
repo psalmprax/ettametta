@@ -7,8 +7,10 @@ from api.utils.auth import (
     get_password_hash,
     create_access_token,
     decode_access_token,
+    sign_oauth_state,
+    verify_oauth_state,
 )
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from api.config import settings
 from fastapi.responses import RedirectResponse
@@ -18,6 +20,7 @@ from google.auth.transport import requests
 from authlib.integrations.base_client import OAuthError
 import secrets
 import redis
+import redis.asyncio as redis_async
 from api.utils.user_models import UserDB
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -25,9 +28,43 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
+def create_google_flow():
+    """Create a configured Google OAuth flow instance."""
+    return Flow.from_client_config(
+        client_config={
+            "web": {
+                "client_id": settings.GOOGLE_CLIENT_ID,
+                "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": [settings.GOOGLE_AUTH_REDIRECT_URI],
+            }
+        },
+        scopes=[
+            "openid",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile",
+        ],
+        redirect_uri=settings.GOOGLE_AUTH_REDIRECT_URI,
+    )
+
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        return v
 
 
 class UserUpdate(BaseModel):
@@ -43,7 +80,7 @@ class PasswordChange(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: int
+    id: str
     email: str
 
     class Config:
@@ -137,31 +174,17 @@ async def get_me(current_user: UserDB = Depends(get_current_user)):
 
 @router.get("/google")
 async def google_auth():
-    flow = Flow.from_client_config(
-        client_config={
-            "web": {
-                "client_id": settings.GOOGLE_CLIENT_ID,
-                "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [settings.GOOGLE_AUTH_REDIRECT_URI],
-            }
-        },
-        scopes=[
-            "openid",
-            "https://www.googleapis.com/auth/userinfo.email",
-            "https://www.googleapis.com/auth/userinfo.profile",
-        ],
-        redirect_uri=settings.GOOGLE_AUTH_REDIRECT_URI,
-    )
+    flow = create_google_flow()
     authorization_url, state = flow.authorization_url()
 
-    import redis.asyncio as redis_async
+    # Sign the state parameter for CSRF protection
+    signed_state = sign_oauth_state(state)
 
-    redis_client = redis_async.from_url(settings.REDIS_URL, decode_responses=True)
-    await redis_client.set(f"oauth_state:{state}", "1", ex=600)
+    # Append signed state to the authorization URL
+    separator = "&" if "?" in authorization_url else "?"
+    auth_url_with_state = f"{authorization_url}{separator}state={signed_state}"
 
-    return RedirectResponse(url=authorization_url)
+    return RedirectResponse(url=auth_url_with_state)
 
 
 @router.post("/logout")
@@ -169,15 +192,18 @@ async def logout(token: str = Depends(oauth2_scheme)):
     import redis.asyncio as redis_async
 
     redis_client = redis_async.from_url(settings.REDIS_URL, decode_responses=True)
-    await redis_client.sadd("token_blacklist", token)
+    try:
+        await redis_client.sadd("token_blacklist", token)
+    finally:
+        await redis_client.aclose()
     return {"message": "Logged out"}
 
 
 @router.get("/callback/google")
 async def google_auth_callback(
     request: Request,
-    code: str = None,
-    state: str = None,
+    code: Optional[str] = None,
+    state: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -190,36 +216,18 @@ async def google_auth_callback(
     if not state:
         raise HTTPException(status_code=400, detail="State parameter missing")
 
-    redis_client = redis.asyncio.Redis(
-        host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
-    )
-    if not await redis_client.exists(f"oauth_state:{state}"):
+    # Verify the signed state parameter
+    original_state = verify_oauth_state(state)
+    if not original_state:
         raise HTTPException(
             status_code=400, detail="Invalid or expired state parameter"
         )
-    await redis_client.delete(f"oauth_state:{state}")
 
     try:
         # Exchange authorization code for tokens
-        flow = Flow.from_client_config(
-            client_config={
-                "web": {
-                    "client_id": settings.GOOGLE_CLIENT_ID,
-                    "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [settings.GOOGLE_AUTH_REDIRECT_URI],
-                }
-            },
-            scopes=[
-                "openid",
-                "https://www.googleapis.com/auth/userinfo.email",
-                "https://www.googleapis.com/auth/userinfo.profile",
-            ],
-            redirect_uri=settings.GOOGLE_AUTH_REDIRECT_URI,
-        )
+        flow = create_google_flow()
 
-        flow.fetch_token(code=code)
+        await flow.fetch_token(code=code)
         credentials = flow.credentials
 
         # Verify ID token
