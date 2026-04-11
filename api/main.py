@@ -138,7 +138,7 @@ from api.routes import (
     monetization,
     ws,
     ab_testing,
-    routes_settings,
+    settings,
 )
 
 from fastapi.staticfiles import StaticFiles
@@ -296,7 +296,7 @@ v1_router.include_router(publish.router, tags=["Publishing"])
 v1_router.include_router(analytics.router, tags=["Analytics"])
 v1_router.include_router(monetization.router, tags=["Monetization"])
 v1_router.include_router(billing.router, tags=["Billing"])
-v1_router.include_router(routes_settings.router, tags=["Settings"])
+v1_router.include_router(settings.router, tags=["Settings"])
 v1_router.include_router(nexus.router, tags=["Nexus Agent"])
 v1_router.include_router(security.router, tags=["Security"])
 v1_router.include_router(persona.router, tags=["Persona"])
