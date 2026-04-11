@@ -4,7 +4,9 @@ import base64
 import logging
 from typing import Dict, Optional
 from cryptography.fernet import Fernet
-from api.utils.database import SessionLocal
+from api.utils.database import get_db, async_session_factory
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from api.utils.models import SocialAccount
 from api.config import settings
 from .cookie_manager import cookie_manager
@@ -35,31 +37,28 @@ class TokenManager:
             logger.error(f"[TokenManager] Decryption failed: {e}")
             return None
 
-    def get_token(
-        self, platform: str, user_id: int, account_id: Optional[int] = None
+    async def get_token(
+        self, platform: str, user_id: str, account_id: Optional[str] = None
     ) -> Optional[str]:
         """Returns the decrypted access token for a platform/user."""
-        db = SessionLocal()
-        try:
-            query = db.query(SocialAccount).filter(
+        async with async_session_factory() as db:
+            stmt = select(SocialAccount).where(
                 SocialAccount.platform == platform, SocialAccount.user_id == user_id
             )
             if account_id:
-                account = query.filter(SocialAccount.id == account_id).first()
-            else:
-                account = query.first()
-
+                stmt = stmt.where(SocialAccount.id == account_id)
+            
+            result = await db.execute(stmt)
+            account = result.scalar_one_or_none()
             return self._decrypt(account.access_token) if account else None
-        finally:
-            db.close()
 
-    def get_auth_headers(self, platform: str, user_id: int, account_id: Optional[int] = None) -> Dict[str, str]:
+    async def get_auth_headers(self, platform: str, user_id: str, account_id: Optional[str] = None) -> Dict[str, str]:
         """
         Unified helper to get authentication headers.
         Returns either Authorization: Bearer ... or Cookie: ...
         """
         # 1. Try OAuth Token first
-        token = self.get_token(platform, user_id, account_id)
+        token = await self.get_token(platform, user_id, account_id)
         if token:
             return {"Authorization": f"Bearer {token}"}
 
@@ -72,19 +71,19 @@ class TokenManager:
 
         return {}
 
-    def get_token_data(
-        self, platform: str, user_id: int, account_id: Optional[int] = None
+    async def get_token_data(
+        self, platform: str, user_id: str, account_id: Optional[str] = None
     ) -> Optional[Dict]:
         """Returns the full decrypted token data dict."""
-        db = SessionLocal()
-        try:
-            query = db.query(SocialAccount).filter(
+        async with async_session_factory() as db:
+            stmt = select(SocialAccount).where(
                 SocialAccount.platform == platform, SocialAccount.user_id == user_id
             )
             if account_id:
-                account = query.filter(SocialAccount.id == account_id).first()
-            else:
-                account = query.first()
+                stmt = stmt.where(SocialAccount.id == account_id)
+            
+            result = await db.execute(stmt)
+            account = result.scalar_one_or_none()
 
             if not account:
                 return None
@@ -95,25 +94,20 @@ class TokenManager:
                 "username": account.username,
                 "expiry": account.expiry,
             }
-        finally:
-            db.close()
 
-    def store_token(self, platform: str, user_id: int, token_data: Dict):
+    async def store_token(self, platform: str, user_id: str, token_data: Dict):
         """Stores encrypted token data in the DB with user association."""
-        db = SessionLocal()
-        try:
+        async with async_session_factory() as db:
             username = token_data.get("username")
             account = None
             if username:
-                account = (
-                    db.query(SocialAccount)
-                    .filter(
-                        SocialAccount.platform == platform,
-                        SocialAccount.username == username,
-                        SocialAccount.user_id == user_id,
-                    )
-                    .first()
+                stmt = select(SocialAccount).where(
+                    SocialAccount.platform == platform,
+                    SocialAccount.username == username,
+                    SocialAccount.user_id == user_id,
                 )
+                result = await db.execute(stmt)
+                account = result.scalar_one_or_none()
 
             if not account:
                 account = SocialAccount(
@@ -134,37 +128,35 @@ class TokenManager:
             ) + datetime.timedelta(seconds=expires_in)
             account.updated_at = datetime.datetime.now(datetime.timezone.utc)
 
-            db.merge(account)
-            db.commit()
+            await db.merge(account)
+            await db.commit()
             logger.info(
                 f"[TokenManager] Encrypted and persisted token for {platform} (User: {user_id})"
             )
-        finally:
-            db.close()
 
-    def has_auth(self, platform: str, user_id: int, account_id: Optional[int] = None) -> bool:
+    async def has_auth(self, platform: str, user_id: str, account_id: Optional[str] = None) -> bool:
         """Checks if either a token or cookies exist for the platform."""
-        if self.get_token(platform, user_id, account_id):
+        if await self.get_token(platform, user_id, account_id):
             return True
         return cookie_manager.has_cookies(platform)
 
     async def ensure_valid_token(
-        self, platform: str, user_id: int, account_id: Optional[int] = None
+        self, platform: str, user_id: str, account_id: Optional[str] = None
     ) -> bool:
         """
         Public helper to ensure a token is valid, triggering refresh if needed.
         """
-        if self.is_token_expired(platform, user_id, account_id):
+        if await self.is_token_expired(platform, user_id, account_id):
             return await self.refresh_token(platform, user_id, account_id)
         return True
 
     async def refresh_token(
-        self, platform: str, user_id: int, account_id: Optional[int] = None
+        self, platform: str, user_id: str, account_id: Optional[str] = None
     ) -> bool:
         """
         Triggers a refresh flow for a specific platform/user.
         """
-        token_data = self.get_token_data(platform, user_id, account_id)
+        token_data = await self.get_token_data(platform, user_id, account_id)
         if not token_data or not token_data.get("refresh_token"):
             logger.error(
                 f"[TokenManager] No refresh token available for {platform} (User: {user_id})"
@@ -228,7 +220,7 @@ class TokenManager:
                     return False
 
                 # Persistence
-                self.store_token(
+                await self.store_token(
                     platform,
                     user_id,
                     {
@@ -245,18 +237,18 @@ class TokenManager:
             logger.error(f"[TokenManager] Exception during {platform} refresh: {e}")
             return False
 
-    def is_token_expired(
-        self, platform: str, user_id: int, account_id: Optional[int] = None
+    async def is_token_expired(
+        self, platform: str, user_id: str, account_id: Optional[str] = None
     ) -> bool:
-        db = SessionLocal()
-        try:
-            query = db.query(SocialAccount).filter(
+        async with async_session_factory() as db:
+            stmt = select(SocialAccount).where(
                 SocialAccount.platform == platform, SocialAccount.user_id == user_id
             )
             if account_id:
-                account = query.filter(SocialAccount.id == account_id).first()
-            else:
-                account = query.first()
+                stmt = stmt.where(SocialAccount.id == account_id)
+            
+            result = await db.execute(stmt)
+            account = result.scalar_one_or_none()
 
             if not account or not account.expiry:
                 return True
@@ -269,8 +261,6 @@ class TokenManager:
             return datetime.datetime.now(datetime.timezone.utc) > (
                 expiry - datetime.timedelta(minutes=5)
             )
-        finally:
-            db.close()
 
 
 token_manager = TokenManager()

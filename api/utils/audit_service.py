@@ -1,13 +1,13 @@
-from sqlalchemy.orm import Session
-from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime, timezone
 from typing import Optional, Any
-from .models import AuditLogDB
-from .database import SessionLocal
+from api.utils.models import AuditLogDB
+from api.utils.database import async_session_factory
 import json
 
 class AuditService:
     @staticmethod
-    def log(
+    async def log(
         action: str,
         user_id: Optional[int] = None,
         resource_type: Optional[str] = None,
@@ -15,11 +15,11 @@ class AuditService:
         details: Optional[dict] = None,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
-        db: Optional[Session] = None
+        db: Optional[AsyncSession] = None
     ):
         """
         Record an audit log entry.
-        Can be used with an existing DB session or it will create a temporary one.
+        Can be used with an existing Async DB session or it will create a temporary one.
         """
         log_entry = AuditLogDB(
             user_id=user_id,
@@ -29,15 +29,26 @@ class AuditService:
             details=details,
             ip_address=ip_address,
             user_agent=user_agent,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
 
         if db:
             db.add(log_entry)
-            db.commit()
+            await db.commit()
         else:
-            with SessionLocal() as session:
+            async with async_session_factory() as session:
                 session.add(log_entry)
-                session.commit()
+                await session.commit()
+
+    @staticmethod
+    async def log_provider_success(provider: str, metadata: dict, db: Optional[AsyncSession] = None):
+        """Log successful provider metadata fetch"""
+        await AuditService.log(
+            action="PROVIDER_FETCH_SUCCESS",
+            resource_type="AI_PROVIDER",
+            resource_id=provider,
+            details=metadata,
+            db=db
+        )
 
 audit_service = AuditService()

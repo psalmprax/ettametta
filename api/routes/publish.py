@@ -10,11 +10,13 @@ from pydantic import BaseModel
 from google_auth_oauthlib.flow import Flow
 from api.config import settings
 from api.routes.auth import get_current_user
-from api.utils.vault import get_secret
+from api.utils.vault import get_secret, get_secret_async
 from api.utils.user_models import UserDB
 
 # from api.utils.user_models import UserDB # Deprecated import
-from api.utils.database import SessionLocal
+from api.utils.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from api.utils.models import SocialAccount, PublishedContentDB
 from api.utils.subscription import credits_required
 from services.payment.credit_service import credit_service
@@ -114,8 +116,8 @@ async def auth_youtube(current_user: UserDB = Depends(get_current_user)):
     """
     Starts the YouTube OAuth flow with user_id state isolation.
     """
-    client_id = get_secret("google_client_id")
-    client_secret = get_secret("google_client_secret")
+    client_id = await get_secret_async("google_client_id")
+    client_secret = await get_secret_async("google_client_secret")
 
     if not client_id or not client_secret:
         raise HTTPException(
@@ -197,8 +199,8 @@ async def auth_youtube_callback(
     flow = Flow.from_client_config(
         {
             "web": {
-                "client_id": get_secret("google_client_id"),
-                "client_secret": get_secret("google_client_secret"),
+                "client_id": await get_secret_async("google_client_id"),
+                "client_secret": await get_secret_async("google_client_secret"),
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token",
             }
@@ -213,7 +215,7 @@ async def auth_youtube_callback(
         flow.code_verifier = code_verifier
 
     try:
-        flow.fetch_token(code=code)
+        await asyncio.to_thread(flow.fetch_token, code=code)
     except Exception as e:
         logger.error(f"YouTube Token Exchange Failed: {str(e)}", exc_info=True)
         # Check for specific redirect_uri mismatch in error message
@@ -226,7 +228,7 @@ async def auth_youtube_callback(
         )
 
     credentials = flow.credentials
-    token_manager.store_token(
+    await token_manager.store_token(
         "youtube",
         user_id,
         {
@@ -255,13 +257,16 @@ async def auth_youtube_callback(
 
 
 @router.get("/accounts")
-async def list_accounts(current_user: UserDB = Depends(get_current_user)):
-    db = SessionLocal()
+async def list_accounts(
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     try:
-        query = db.query(SocialAccount)
+        stmt = select(SocialAccount)
         if current_user.role != "admin":
-            query = query.filter(SocialAccount.user_id == current_user.id)
-        accounts = query.all()
+            stmt = stmt.where(SocialAccount.user_id == current_user.id)
+        result = await db.execute(stmt)
+        accounts = result.scalars().all()
         return [
             {
                 "id": a.id,
@@ -272,16 +277,20 @@ async def list_accounts(current_user: UserDB = Depends(get_current_user)):
             for a in accounts
         ]
     finally:
-        db.close()
+        pass
 
 
 @router.delete("/account/{account_id}")
 async def delete_account(
-    account_id: int, current_user: UserDB = Depends(get_current_user)
+    account_id: str, 
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
-    db = SessionLocal()
     try:
-        account = db.query(SocialAccount).filter(SocialAccount.id == account_id).first()
+        stmt = select(SocialAccount).where(SocialAccount.id == account_id)
+        result = await db.execute(stmt)
+        account = result.scalar_one_or_none()
+
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
 
@@ -291,16 +300,18 @@ async def delete_account(
                 status_code=403, detail="Not authorized to delete this account"
             )
 
-        db.delete(account)
-        db.commit()
+        await db.delete(account)
+        await db.commit()
         return {"status": "success", "message": "Account unlinked"}
     finally:
-        db.close()
+        pass
 
 
 @router.post("/retry/{content_id}")
 async def retry_publish(
-    content_id: int, current_user: UserDB = Depends(get_current_user)
+    content_id: str, 
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Retry publishing a video that was pending authentication.
@@ -309,17 +320,14 @@ async def retry_publish(
     from api.utils.models import PublishedContentDB
     from services.optimization.service import base_optimization_service
 
-    db = SessionLocal()
     try:
         # Get the pending content
-        content = (
-            db.query(PublishedContentDB)
-            .filter(
-                PublishedContentDB.id == content_id,
-                PublishedContentDB.user_id == current_user.id,
-            )
-            .first()
+        stmt = select(PublishedContentDB).where(
+            PublishedContentDB.id == content_id,
+            PublishedContentDB.user_id == current_user.id,
         )
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
 
         if not content:
             raise HTTPException(status_code=404, detail="Content not found")
@@ -344,7 +352,7 @@ async def retry_publish(
         from services.optimization.auth import token_manager
 
         has_auth = (
-            token_manager.get_token(platform_key, user_id=current_user.id) is not None
+            await token_manager.get_token(platform_key, user_id=current_user.id) is not None
         )
 
         if not has_auth:
@@ -408,7 +416,7 @@ async def retry_publish(
         metadata_dict.pop("requires_auth", None)
         content.metadata = metadata_dict
 
-        db.commit()
+        await db.commit()
 
         return {
             "status": "success" if url else "failed",
@@ -423,7 +431,7 @@ async def retry_publish(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        db.close()
+        pass
 
 
 # TikTok OAuth
@@ -432,7 +440,7 @@ async def auth_tiktok(current_user: UserDB = Depends(get_current_user)):
     """
     Starts the TikTok OAuth flow with user_id state isolation.
     """
-    client_key = get_secret("tiktok_client_key")
+    client_key = await get_secret_async("tiktok_client_key")
     redirect_uri = settings.TIKTOK_REDIRECT_URI
 
     if not client_key:
@@ -480,8 +488,8 @@ async def auth_tiktok_callback(code: str, state: str):
     url = "https://open.tiktokapis.com/v2/oauth/token/"
 
     data = {
-        "client_key": get_secret("tiktok_client_key"),
-        "client_secret": get_secret("tiktok_client_secret"),
+        "client_key": await get_secret_async("tiktok_client_key"),
+        "client_secret": await get_secret_async("tiktok_client_secret"),
         "code": code,
         "grant_type": "authorization_code",
         "redirect_uri": settings.TIKTOK_REDIRECT_URI,
@@ -503,7 +511,7 @@ async def auth_tiktok_callback(code: str, state: str):
                     detail=f"TikTok Auth Failed: {token_data.get('error_description', 'Unknown error')}",
                 )
 
-            token_manager.store_token(
+            await token_manager.store_token(
                 "tiktok",
                 user_id,
                 {
@@ -531,7 +539,7 @@ async def auth_instagram(current_user: UserDB = Depends(get_current_user)):
     """
     Starts the Instagram/Facebook OAuth flow with user_id state isolation.
     """
-    app_id = get_secret("meta_app_id")
+    app_id = await get_secret_async("meta_app_id")
     redirect_uri = settings.META_REDIRECT_URI
 
     if not app_id:
@@ -576,8 +584,8 @@ async def auth_instagram_callback(code: str, state: str):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
 
-    app_id = get_secret("meta_app_id")
-    app_secret = get_secret("meta_app_secret")
+    app_id = await get_secret_async("meta_app_id")
+    app_secret = await get_secret_async("meta_app_secret")
     redirect_uri = settings.META_REDIRECT_URI
 
     url = "https://api.instagram.com/oauth/access_token"
@@ -600,7 +608,7 @@ async def auth_instagram_callback(code: str, state: str):
                     detail=f"Instagram Auth Failed: {token_data.get('error_message', 'Unknown error')}",
                 )
 
-            token_manager.store_token(
+            await token_manager.store_token(
                 "instagram",
                 user_id,
                 {
@@ -625,7 +633,7 @@ async def auth_x(current_user: UserDB = Depends(get_current_user)):
     """
     Starts the X (Twitter) OAuth flow with user_id state isolation.
     """
-    client_id = get_secret("twitter_client_id")
+    client_id = await get_secret_async("twitter_client_id")
     redirect_uri = settings.TWITTER_REDIRECT_URI
 
     if not client_id:
@@ -669,8 +677,8 @@ async def auth_x_callback(code: str, state: str):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
 
-    client_id = get_secret("twitter_client_id")
-    client_secret = get_secret("twitter_client_secret")
+    client_id = await get_secret_async("twitter_client_id")
+    client_secret = await get_secret_async("twitter_client_secret")
     redirect_uri = settings.TWITTER_REDIRECT_URI
 
     url = "https://api.twitter.com/2/oauth2/token"
@@ -694,7 +702,7 @@ async def auth_x_callback(code: str, state: str):
                     detail=f"X Auth Failed: {token_data.get('error_description', 'Unknown error')}",
                 )
 
-            token_manager.store_token(
+            await token_manager.store_token(
                 "x",
                 user_id,
                 {
@@ -719,7 +727,7 @@ async def auth_linkedin(current_user: UserDB = Depends(get_current_user)):
     """
     Starts the LinkedIn OAuth flow with user_id state isolation.
     """
-    client_id = get_secret("linkedin_client_id")
+    client_id = await get_secret_async("linkedin_client_id")
     redirect_uri = settings.LINKEDIN_REDIRECT_URI
 
     if not client_id:
@@ -788,7 +796,7 @@ async def auth_linkedin_callback(code: str, state: str):
                     detail=f"LinkedIn Auth Failed: {token_data.get('error_description', 'Unknown error')}",
                 )
 
-            token_manager.store_token(
+            await token_manager.store_token(
                 "linkedin",
                 user_id,
                 {
@@ -846,23 +854,118 @@ async def generate_package(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/comments/{content_id}")
+async def get_content_comments(
+    content_id: str,
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    limit: int = 10,
+):
+    """
+    Fetch comments for a published post.
+    """
+    try:
+        stmt = select(PublishedContentDB).where(
+            PublishedContentDB.id == content_id,
+            PublishedContentDB.user_id == current_user.id,
+        )
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
+
+        if not content:
+            raise HTTPException(status_code=404, detail="Post not found")
+
+        if not content.url:
+            raise HTTPException(
+                status_code=400, detail="Post has no URL (not published yet)"
+            )
+
+        # Extract Platform ID from URL
+        platform_id = None
+        platform_key = content.platform.lower()
+
+        # YouTube Extraction
+        if "youtube.com" in content.url or "youtu.be" in content.url:
+            if "youtu.be" in content.url:
+                platform_id = content.url.split("/")[-1].split("?")[0]
+            else:
+                # Handle various YouTube URL formats
+                url_parts = content.url.split("/")
+                for i, part in enumerate(url_parts):
+                    if part == "watch" and i + 1 < len(url_parts):
+                        platform_id = url_parts[i + 1].split("&")[0].split("?")[0]
+                        break
+                    elif (
+                        part.startswith("UC") or len(part) == 11
+                    ):  # Channel or video ID
+                        platform_id = part.split("?")[0]
+                        break
+            platform_key = "youtube"
+
+        # TikTok Extraction - handle multiple URL formats
+        elif "tiktok.com" in content.url:
+            url_clean = content.url.split("?")[0]  # Remove query params
+            url_parts = url_clean.split("/")
+
+            # Handle different TikTok URL patterns:
+            # https://www.tiktok.com/@username/video/1234567890123456789
+            # https://vm.tiktok.com/ZTR123abc/
+            # https://www.tiktok.com/t/ZTR123abc/
+            for part in reversed(url_parts):
+                # TikTok video IDs are typically 19 digits long
+                if part.isdigit() and len(part) >= 15:
+                    platform_id = part
+                    break
+                # Handle share links like ZTR123abc
+                elif len(part) >= 8 and any(c.isalnum() for c in part):
+                    platform_id = part
+                    break
+
+            platform_key = "tiktok"
+
+        if not platform_id:
+            raise HTTPException(
+                status_code=400, detail="Could not extract platform ID from URL"
+            )
+
+        # Fetch comments from platform
+        comments = []
+
+        if platform_key == "tiktok":
+            comments = await base_tiktok_publisher.get_comments(
+                platform_id, user_id=current_user.id, limit=limit
+            )
+        elif platform_key == "youtube":
+            # YouTube comments would need separate implementation
+            comments = []
+
+        return {
+            "platform": platform_key,
+            "video_id": platform_id,
+            "comments": comments,
+            "total_count": len(comments),
+        }
+
+    finally:
+        pass
+
+
 @router.post("/sync/{content_id}")
 async def sync_content_metrics(
-    content_id: int, current_user: UserDB = Depends(get_current_user)
+    content_id: str, 
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Syncs live metrics from the social platform to the database for a specific post.
     """
-    db = SessionLocal()
     try:
-        content = (
-            db.query(PublishedContentDB)
-            .filter(
-                PublishedContentDB.id == content_id,
-                PublishedContentDB.user_id == current_user.id,
-            )
-            .first()
+        stmt = select(PublishedContentDB).where(
+            PublishedContentDB.id == content_id,
+            PublishedContentDB.user_id == current_user.id,
         )
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
 
         if not content:
             raise HTTPException(status_code=404, detail="Post not found")
@@ -942,9 +1045,9 @@ async def sync_content_metrics(
         # Record A/B test events if this post is part of an A/B test
         from api.utils.models import ABTestDB
 
-        ab_test = (
-            db.query(ABTestDB).filter(ABTestDB.content_id == str(content.id)).first()
-        )
+        stmt_ab = select(ABTestDB).where(ABTestDB.content_id == str(content.id))
+        result_ab = await db.execute(stmt_ab)
+        ab_test = result_ab.scalar_one_or_none()
         if ab_test and not ab_test.completed_at:
             new_views = max(0, (content.view_count or 0) - old_views)
             if new_views > 0:
@@ -977,27 +1080,31 @@ async def sync_content_metrics(
                         ab_test.variant_b_conversions or 0
                     ) + conversions_b
 
-        db.commit()
+        await db.commit()
         return {"status": "success", "metrics": metrics}
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        db.close()
+        pass
 
 
 @router.get("/history")
-async def get_publish_history(current_user: UserDB = Depends(get_current_user)):
-    db = SessionLocal()
+async def get_publish_history(
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     try:
-        query = db.query(PublishedContentDB)
+        stmt = select(PublishedContentDB)
         if current_user.role != "admin":
-            query = query.filter(PublishedContentDB.user_id == current_user.id)
+            stmt = stmt.where(PublishedContentDB.user_id == current_user.id)
 
-        history = query.order_by(PublishedContentDB.published_at.desc()).all()
+        stmt = stmt.order_by(PublishedContentDB.published_at.desc())
+        result = await db.execute(stmt)
+        history = result.scalars().all()
         return history
     finally:
-        db.close()
+        pass
 
 
 @router.post("/schedule")
@@ -1005,21 +1112,21 @@ async def schedule_post(
     request: PublishRequest,
     scheduled_time: datetime.datetime,
     current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
     credits_cost: int = Depends(credits_required("social_publish")),
 ):
     """
     Schedules a video for later publishing.
     """
-    from api.utils.database import SessionLocal
     from api.utils.models import ScheduledPostDB
 
-    db = SessionLocal()
     try:
         # Consume credits
-        credit_service.consume_credits(
+        await credit_service.consume_credits(
             user_id=current_user.id,
             amount=credits_cost,
             action="social_publish",
+            db=db,
             description=f"Scheduled post for {request.platform}",
         )
         # Generate metadata for the scheduled post
@@ -1038,30 +1145,31 @@ async def schedule_post(
             user_id=current_user.id,
         )
         db.add(new_schedule)
-        db.commit()
+        await db.commit()
         return {"status": "success", "message": f"Scheduled for {scheduled_time}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
     finally:
-        db.close()
+        pass
 
 
 @router.post("/post")
 async def publish_video(
     request: PublishRequest,
     current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
     credits_cost: int = Depends(credits_required("social_publish")),
 ):
-    from api.utils.database import SessionLocal
     from api.utils.models import PublishedContentDB, ABTestDB
 
-    db = SessionLocal()
     try:
         # Consume credits
-        credit_service.consume_credits(
+        await credit_service.consume_credits(
             user_id=current_user.id,
             amount=credits_cost,
             action="social_publish",
+            db=db,
             description=f"Direct post to {request.platform}",
         )
 
@@ -1088,34 +1196,38 @@ async def publish_video(
                     top_rec = recommendations[0]
                     injection_text = f"\n\n🔥 {top_rec.get('cta_text', 'Check this out')}: {top_rec.get('link', '')}"
                     metadata.description += injection_text
-                    print(
+                    logger.info(
                         f"[Monetization] AI Recommended: {top_rec.get('name', 'Product')}"
                     )
                 else:
                     # Fallback to database
-                    aff_link = (
-                        db.query(AffiliateLinkDB)
-                        .filter(AffiliateLinkDB.niche == request.niche)
+                    stmt_aff = (
+                        select(AffiliateLinkDB)
+                        .where(AffiliateLinkDB.niche == request.niche)
                         .order_by(AffiliateLinkDB.created_at.desc())
-                        .first()
+                        .limit(1)
                     )
+                    res_aff = await db.execute(stmt_aff)
+                    aff_link = res_aff.scalar_one_or_none()
                     if aff_link:
                         injection_text = f"\n\n🔥 {aff_link.cta_text or 'Check this out'}: {aff_link.link}"
                         metadata.description += injection_text
-                        print(f"[Monetization] Injected link: {aff_link.product_name}")
+                        logger.info(f"[Monetization] Injected link: {aff_link.product_name}")
             except Exception as e:
                 # Fallback to database on any error
-                print(f"[Monetization] AI recommendation failed: {e}")
-                aff_link = (
-                    db.query(AffiliateLinkDB)
-                    .filter(AffiliateLinkDB.niche == request.niche)
+                logger.warning(f"[Monetization] AI recommendation failed: {e}")
+                stmt_aff = (
+                    select(AffiliateLinkDB)
+                    .where(AffiliateLinkDB.niche == request.niche)
                     .order_by(AffiliateLinkDB.created_at.desc())
-                    .first()
+                    .limit(1)
                 )
+                res_aff = await db.execute(stmt_aff)
+                aff_link = res_aff.scalar_one_or_none()
                 if aff_link:
                     injection_text = f"\n\n🔥 {aff_link.cta_text or 'Check this out'}: {aff_link.link}"
                     metadata.description += injection_text
-                    print(f"[Monetization] Injected link: {aff_link.product_name}")
+                    logger.info(f"[Monetization] Injected link: {aff_link.product_name}")
 
         # 3. Upload (Using Variant A Title as default)
         url = None
@@ -1169,7 +1281,7 @@ async def publish_video(
         from services.optimization.auth import token_manager
 
         has_auth = (
-            token_manager.get_token(
+            await token_manager.get_token(
                 platform_key, user_id=current_user.id, account_id=request.account_id
             )
             is not None
@@ -1204,7 +1316,7 @@ async def publish_video(
                     },
                 )
                 db.add(new_post)
-                db.commit()
+                await db.commit()
 
                 return {
                     "status": "pending_auth",
@@ -1296,8 +1408,8 @@ async def publish_video(
             niche=request.niche,
         )
         db.add(new_post)
-        db.commit()
-        db.refresh(new_post)
+        await db.commit()
+        await db.refresh(new_post)
 
         # 5. Initialize A/B Test if requested
         if request.variant_b_title:
@@ -1312,8 +1424,8 @@ async def publish_video(
                 status="active",
             )
             db.add(new_test)
-            db.commit()
-            print(f"[A/B Testing] Initialized test for post {new_post.id}")
+            await db.commit()
+            logger.info(f"[A/B Testing] Initialized test for post {new_post.id}")
 
             # Record initial view event for variant A (assuming it gets shown first)
             from api.routes.ab_testing import router as ab_router
@@ -1323,25 +1435,26 @@ async def publish_video(
         return {"status": "success", "url": url, "metadata": metadata}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
     finally:
-        db.close()
+        pass
 
 
 @router.post("/post-multi")
 async def publish_multi_platform(
     request: MultiPlatformPublishRequest,
     current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Publish video to multiple platforms at once.
-    - Authenticates platforms will be published immediately
+    - Authenticated platforms will be published immediately
     - Unauthenticated platforms will be stored as PENDING_AUTH (deleted after 3 hours)
     """
     from api.utils.models import PublishedContentDB
     from services.optimization.service import base_optimization_service
     from services.optimization.auth import token_manager
 
-    db = SessionLocal()
     try:
         results = {"published": [], "pending_auth": [], "failed": []}
 
@@ -1385,7 +1498,7 @@ async def publish_multi_platform(
 
                 # Check authentication
                 has_auth = (
-                    token_manager.get_token(platform_key, user_id=current_user.id)
+                    await token_manager.get_token(platform_key, user_id=current_user.id)
                     is not None
                 )
 
@@ -1459,7 +1572,7 @@ async def publish_multi_platform(
                             niche=request.niche,
                         )
                         db.add(new_post)
-                        db.commit()
+                        await db.commit()
 
                         results["published"].append(
                             {
@@ -1507,7 +1620,7 @@ async def publish_multi_platform(
                         },
                     )
                     db.add(new_post)
-                    db.commit()
+                    await db.commit()
 
                     results["pending_auth"].append(
                         {
@@ -1533,7 +1646,7 @@ async def publish_multi_platform(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        db.close()
+        pass
 
 
 # ─── opencli-rs Enhanced Publishing ────────────────────────────────────
@@ -1570,20 +1683,21 @@ async def opencli_post(
 
     if result.get("success"):
         # Record in DB
-        db = SessionLocal()
-        try:
-            post = PublishedContentDB(
-                title=request.content[:100],
-                platform=platform,
-                status="Published",
-                url=result.get("url", ""),
-                account_id=0,  # opencli posts don't use OAuth accounts
-                user_id=current_user.id,
-            )
-            db.add(post)
-            db.commit()
-        finally:
-            db.close()
+        from api.utils.database import async_session_factory
+        async with async_session_factory() as db:
+            try:
+                post = PublishedContentDB(
+                    title=request.content[:100],
+                    platform=platform,
+                    status="Published",
+                    url=result.get("url", ""),
+                    account_id=0,  # opencli posts don't use OAuth accounts
+                    user_id=current_user.id,
+                )
+                db.add(post)
+                await db.commit()
+            finally:
+                pass
 
     return result
 

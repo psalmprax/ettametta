@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout";
+import { withRealFallback } from "@/lib/real_first_utils";
 import Link from "next/link";
 import {
   Zap,
@@ -78,39 +79,34 @@ export default function Home() {
   }, [wsData]);
 
   const fetchStats = async () => {
-    try {
-      const token = localStorage.getItem("et_token");
-      const response = await fetch(`${API_BASE}/analytics/stats/summary`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
+    const token = localStorage.getItem("et_token");
+    const headers = { Authorization: `Bearer ${token}` };
 
-        // Fetch storage stats
-        const storageResponse = await fetch(`${API_BASE}/analytics/stats/storage`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (storageResponse.ok) {
-          data.storage = await storageResponse.json();
+    // Parallel fetches for efficiency
+    await Promise.all([
+      withRealFallback<any>(
+        () => fetch(`${API_BASE}/analytics/stats/summary`, { headers }),
+        {
+          fallback: null,
+          onSuccess: (data: DashboardStats) => data && setStats(prev => ({ ...prev, ...data }))
         }
-
-        setStats(data);
-
-        // Fetch Egress history for activity feed
-        const historyRes = await fetch(`${API_BASE}/publish/history`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (historyRes.ok) {
-          const history = await historyRes.json();
-          setActivityFeed(history.slice(0, 6));
+      ),
+      withRealFallback<any>(
+        () => fetch(`${API_BASE}/analytics/stats/storage`, { headers }),
+        {
+          fallback: null,
+          onSuccess: (data: any) => data && setStats(prev => ({ ...prev, storage: data }))
         }
-      }
-    } catch (error) {
-      console.error("Failed to fetch stats:", error);
-      toast.error("Failed to load dashboard stats");
-    } finally {
-      setIsLoading(false);
-    }
+      ),
+      withRealFallback<any[]>(
+        () => fetch(`${API_BASE}/publish/history`, { headers }),
+        {
+          fallback: [],
+          onSuccess: (data: any[]) => data && setActivityFeed(data.slice(0, 6))
+        }
+      )
+    ]);
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -119,34 +115,30 @@ export default function Home() {
 
   const handleTriggerScan = async () => {
     setIsScanning(true);
-    try {
-      const token = localStorage.getItem("et_token");
-      // Use top 3 niches from our real backend niches list
-      const scanNiches = niches.slice(0, 3);
-      
-      const response = await fetch(`${API_BASE}/discovery/scan`, {
+    const token = localStorage.getItem("et_token");
+    const scanNiches = niches.slice(0, 3);
+
+    await withRealFallback<any>(
+      () => fetch(`${API_BASE}/discovery/scan`, {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ niches: scanNiches })
-      });
-      
-      if (response.ok) {
-        toast.info("Discovery Cycle Initiated", {
-          description: `Scanning clusters for ${scanNiches.join(", ")}...`
-        });
-        
-        // Immediate refresh to update UI state
-        fetchStats();
+      }),
+      {
+        fallback: null,
+        onSuccess: () => {
+          toast.info("Discovery Cycle Initiated", {
+            description: `Scanning clusters for ${scanNiches.join(", ")}...`
+          });
+          fetchStats();
+        },
+        errorMessage: "Failed to trigger scan"
       }
-    } catch (error) {
-      console.error("Scan trigger failed:", error);
-      toast.error("Failed to trigger scan");
-    } finally {
-      setIsScanning(false);
-    }
+    );
+    setIsScanning(false);
   };
 
   return (

@@ -236,7 +236,7 @@ class SocialPublisher(ABC):
             return None
 
         # Get authentication
-        headers = token_manager.get_auth_headers(
+        headers = await token_manager.get_auth_headers(
             self.platform_name, user_id, account_id
         )
         if not headers:
@@ -260,7 +260,7 @@ class SocialPublisher(ABC):
         account_id: Optional[int] = None,
     ) -> dict:
         """Fetches live engagement metrics for a post"""
-        headers = token_manager.get_auth_headers(
+        headers = await token_manager.get_auth_headers(
             self.platform_name, user_id, account_id
         )
         if not headers:
@@ -276,7 +276,7 @@ class SocialPublisher(ABC):
             return {"error": str(e)}
 
     @abstractmethod
-    def health_check(self, user_id: int) -> bool:
+    async def health_check(self, user_id: int) -> bool:
         """Verifies API credentials and connectivity"""
         pass
 

@@ -44,23 +44,24 @@ class PromoGenerator:
         {product_context}
         
         STRUCTURE:
-        1. PROBLEM HOOK: Address a specific pain point in the niche.
-        2. THE SOLUTION: Introduce {target_product} as the ultimate fix.
-        3. SCARCITY/CTA: High-pressure call to action. Include the price if mentioned in context.
+        1. PROBLEM HOOK: Address a specific pain point in the niche. Stop them cold.
+        2. THE SOLUTION: Introduce {target_product} as the only logical fix.
+        3. SCARCITY & URGENCY: Force a decision. Mention limited stock, time-sensitive discounts, or "last chance" triggers.
+        4. AGGRESSIVE CTA: Tell them exactly what to do. "Click the link NOW," "Don't miss out," "Check the bio immediately."
         
         OUTPUT FORMAT (JSON ONLY):
         {{
             "title": "Promo: {target_product}",
             "segments": [
                 {{
-                    "type": "hook",
+                    "type": "hook | solution | urgency | cta",
                     "text": "The script text",
-                    "visual_cue": "Aggressive, fast-paced stock footage",
+                    "visual_cue": "Aggressive, fast-paced cinematic effects",
                     "duration": 5
                 }},
                 ...
             ],
-            "hashtags": ["#affiliate", "#{niche.lower().replace(' ', '')}", "#result"]
+            "hashtags": ["#affiliate", "#{niche.lower().replace(' ', '')}", "#limitedoffer"]
         }}
         """
         

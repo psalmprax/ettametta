@@ -22,7 +22,7 @@ from .bilibili_scanner import base_bilibili_scanner
 from .skool_scanner import base_skool_scanner
 from .duckduckgo_scanner import base_duckduckgo_scanner
 from .deconstructor import pattern_deconstructor
-from api.utils.database import SessionLocal
+from api.utils.database import async_session_factory
 from api.utils.models import (
     ContentCandidateDB,
     SystemSettings,
@@ -187,15 +187,10 @@ class DiscoveryService:
             print(
                 f"[Discovery] No scan results for {niche}, falling back to database..."
             )
-            db = SessionLocal()
-            try:
-                db_results = (
-                    db.query(ContentCandidateDB)
-                    .filter(ContentCandidateDB.niche == niche)
-                    .order_by(ContentCandidateDB.views.desc())
-                    .limit(50)
-                    .all()
-                )
+            async with async_session_factory() as db:
+                stmt = select(ContentCandidateDB).where(ContentCandidateDB.niche == niche).order_by(ContentCandidateDB.views.desc()).limit(50)
+                result = await db.execute(stmt)
+                db_results = result.scalars().all()
 
                 for r in db_results:
                     all_candidates.append(
@@ -221,17 +216,12 @@ class DiscoveryService:
                             metadata=r.metadata_json or {},
                         )
                     )
-            finally:
-                db.close()
 
         # Enforcement: Selective Monetization Mode (Viral Score > 85)
-        db = SessionLocal()
-        try:
-            mode_setting = (
-                db.query(SystemSettings)
-                .filter(SystemSettings.key == "monetization_mode")
-                .first()
-            )
+        async with async_session_factory() as db:
+            stmt = select(SystemSettings).where(SystemSettings.key == "monetization_mode")
+            result = await db.execute(stmt)
+            mode_setting = result.scalar_one_or_none()
             monetization_mode = mode_setting.value if mode_setting else "all"
 
             if monetization_mode == "selective":
@@ -266,16 +256,12 @@ class DiscoveryService:
                 print(
                     f"[Discovery] Exclude Shorts: Filtered {original_count} -> {len(all_candidates)}"
                 )
-        finally:
-            db.close()
 
         # 3. Persistence Logic (Efficient Batch Integration)
-        db = SessionLocal()
-        try:
-            db_candidates = []
-            for c in all_candidates:
-                db_candidates.append(
-                    ContentCandidateDB(
+        async with async_session_factory() as db:
+            try:
+                for c in all_candidates:
+                    db_c = ContentCandidateDB(
                         id=c.id,
                         platform=c.platform,
                         url=c.url,
@@ -293,20 +279,15 @@ class DiscoveryService:
                         metadata_json=c.metadata,
                         niche=niche,
                     )
+                    await db.merge(db_c)
+
+                await db.commit()
+                print(
+                    f"[Discovery] Successfully persisted {len(all_candidates)} candidates for {niche}."
                 )
-
-            for db_c in db_candidates:
-                db.merge(db_c)
-
-            db.commit()
-            print(
-                f"[Discovery] Successfully persisted {len(db_candidates)} candidates for {niche}."
-            )
-        except Exception as e:
-            print(f"[Discovery] Persistence Error: {e}")
-            db.rollback()
-        finally:
-            db.close()
+            except Exception as e:
+                print(f"[Discovery] Persistence Error: {e}")
+                await db.rollback()
 
         # 5. Recursive Discovery Expansion (Autonomous Scaling)
         if len(all_candidates) > 0:
@@ -474,14 +455,13 @@ class DiscoveryService:
         from api.utils.models import NicheTrendDB
         from collections import Counter
         import re
+        from sqlalchemy import select
 
-        db = SessionLocal()
-        try:
-            candidates = (
-                db.query(ContentCandidateDB)
-                .filter(ContentCandidateDB.niche == niche)
-                .all()
-            )
+        async with async_session_factory() as db:
+            stmt = select(ContentCandidateDB).where(ContentCandidateDB.niche == niche)
+            result = await db.execute(stmt)
+            candidates = result.scalars().all()
+            
             if not candidates:
                 return None
 
@@ -489,24 +469,13 @@ class DiscoveryService:
             # Simple keyword extraction
             words = re.findall(r"\w+", all_text.lower())
             stop_words = {
-                "the",
-                "a",
-                "to",
-                "in",
-                "and",
-                "for",
-                "of",
-                "on",
-                "with",
-                "at",
-                "by",
-                "is",
-                "it",
+                "the", "a", "to", "in", "and", "for", "of", "on", "with", "at", 
+                "by", "is", "it", "from", "as", "be", "are", "this", "that"
             }
             keywords = [w for w in words if len(w) > 3 and w not in stop_words]
             top_keywords = [k for k, _ in Counter(keywords).most_common(10)]
 
-            avg_engagement = sum([c.engagement_score for c in candidates]) / len(
+            avg_engagement = sum([c.engagement_score or 0 for c in candidates]) / len(
                 candidates
             )
 
@@ -518,20 +487,19 @@ class DiscoveryService:
                 viral_pattern_ids=[],  # Future link to analyzed patterns
             )
 
-            # Upsert logic (simplified)
-            existing = (
-                db.query(NicheTrendDB).filter(NicheTrendDB.niche == niche).first()
-            )
+            # Upsert logic
+            stmt = select(NicheTrendDB).where(NicheTrendDB.niche == niche)
+            result = await db.execute(stmt)
+            existing = result.scalar_one_or_none()
+            
             if existing:
                 existing.top_keywords = top_keywords
                 existing.avg_engagement = avg_engagement
             else:
                 db.add(trend)
 
-            db.commit()
+            await db.commit()
             return trend
-        finally:
-            db.close()
 
     async def search_content(
         self,
@@ -544,93 +512,80 @@ class DiscoveryService:
         Searches specific viral candidates by keyword (Title or Description).
         Triggers a live scan if local results are insufficient.
         """
-        from api.utils.models import ContentCandidateDB
-        from sqlalchemy import or_
+        from sqlalchemy import or_, select
 
-        db = SessionLocal()
-        try:
-            # 1. Local Database Search
-            search_query = f"%{query}%"
-            results = (
-                db.query(ContentCandidateDB)
-                .filter(
+        async with async_session_factory() as db:
+            try:
+                # 1. Local Database Search
+                search_query = f"%{query}%"
+                stmt = select(ContentCandidateDB).where(
                     or_(
                         ContentCandidateDB.title.ilike(search_query),
                         ContentCandidateDB.description.ilike(search_query),
                         ContentCandidateDB.niche.ilike(search_query),
                     )
-                )
-                .order_by(ContentCandidateDB.views.desc())
-                .limit(limit)
-                .all()
-            )
+                ).order_by(ContentCandidateDB.views.desc()).limit(limit)
+                
+                result = await db.execute(stmt)
+                results = result.scalars().all()
 
-            # 2. Live Scan Trigger (Intelligence Layer)
-            # If we have few results, proactively scan for the query term as a "Niche"
-            if len(results) < 10:
-                print(
-                    f"[Discovery] Insufficient results for '{query}' ({len(results)}), triggering live Fast Scan..."
-                )
-
-                # PERSISTENCE: Save this as a monitored niche for future autonomous scans
-                from api.utils.models import MonitoredNiche
-
-                existing_niche = (
-                    db.query(MonitoredNiche)
-                    .filter(MonitoredNiche.niche == query)
-                    .first()
-                )
-                if not existing_niche:
-                    new_niche = MonitoredNiche(
-                        niche=query, is_active=True, user_id=None
+                # 2. Live Scan Trigger
+                if len(results) < 10:
+                    print(
+                        f"[Discovery] Insufficient results for '{query}' ({len(results)}), triggering live Fast Scan..."
                     )
-                    db.add(new_niche)
-                    db.commit()
-                    print(f"[Discovery] Registered new custom niche: {query}")
 
-                # We reuse find_trending_content but use the query as the niche
-                # This will populate the DB and return the fresh candidates
-                live_results = await self.find_trending_content(
-                    query,
-                    horizon="30d",
-                    min_viral_score=min_viral_score,
-                    exclude_shorts=exclude_shorts,
-                )
-                if live_results:
-                    return live_results
+                    stmt_niche = select(MonitoredNiche).where(MonitoredNiche.niche == query)
+                    result_niche = await db.execute(stmt_niche)
+                    existing_niche = result_niche.scalar_one_or_none()
+                    
+                    if not existing_niche:
+                        new_niche = MonitoredNiche(
+                            niche=query, is_active=True, user_id=None
+                        )
+                        db.add(new_niche)
+                        await db.commit()
+                        print(f"[Discovery] Registered new custom niche: {query}")
 
-            # Convert back to Pydantic models
-            candidates = []
-            for r in results:
-                candidates.append(
-                    ContentCandidate(
-                        id=r.id,
-                        platform=r.platform,
-                        url=r.url,
-                        author=r.author,
-                        title=r.title,
-                        description=r.description,
-                        thumbnail_url=r.thumbnail_url,
-                        view_count=r.views,
-                        engagement_rate=r.engagement_score,
-                        views=r.views,
-                        engagement_score=r.engagement_score,
-                        viral_score=r.viral_score,
-                        duration_seconds=r.duration_seconds,
-                        category=r.category or "video",
-                        published_at=r.discovery_date.isoformat()
-                        if r.discovery_date
-                        else None,
-                        niche=r.niche,
-                        metadata=r.metadata_json or {},
+                    live_results = await self.find_trending_content(
+                        query,
+                        horizon="30d",
+                        min_viral_score=min_viral_score,
+                        exclude_shorts=exclude_shorts,
                     )
-                )
-            return candidates
-        except Exception as e:
-            print(f"[Discovery] Search failed: {e}")
-            return []
-        finally:
-            db.close()
+                    if live_results:
+                        return live_results
+
+                # Convert back to Pydantic models
+                candidates = []
+                for r in results:
+                    candidates.append(
+                        ContentCandidate(
+                            id=r.id,
+                            platform=r.platform,
+                            url=r.url,
+                            author=r.author,
+                            title=r.title,
+                            description=r.description,
+                            thumbnail_url=r.thumbnail_url,
+                            view_count=r.views,
+                            engagement_rate=r.engagement_score,
+                            views=r.views,
+                            engagement_score=r.engagement_score,
+                            viral_score=r.viral_score,
+                            duration_seconds=r.duration_seconds,
+                            category=r.category or "video",
+                            published_at=r.discovery_date.isoformat()
+                            if r.discovery_date
+                            else None,
+                            niche=r.niche,
+                            metadata=r.metadata_json or {},
+                        )
+                    )
+                return candidates
+            except Exception as e:
+                print(f"[Discovery] Search failed: {e}")
+                return []
 
 
 base_discovery_service = DiscoveryService()

@@ -43,7 +43,7 @@ class TikTokPublisher(SocialPublisher):
 
         headers["Content-Type"] = "application/json; charset=UTF-8"
 
-        token_data = token_manager.get_token_data(
+        token_data = await token_manager.get_token_data(
             "tiktok", user_id=user_id, account_id=account_id
         )
         open_id = token_data.get("username") if token_data else "me"
@@ -137,39 +137,92 @@ class TikTokPublisher(SocialPublisher):
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             try:
+                # Use the correct TikTok API endpoint to get video metrics by video ID
+                # Note: TikTok API may require specific video ID format and proper authorization
                 video_response = await client.get(
-                    "https://open.tiktokapis.com/v2/video/list/?fields=id,like_count,comment_count,share_count,view_count",
+                    f"https://open.tiktokapis.com/v2/video/query/?video_id={platform_id}&fields=id,like_count,comment_count,share_count,view_count",
                     headers=headers,
                 )
 
                 if video_response.status_code != 200:
                     logger.error(
-                        f"[TikTokPublisher] Failed to fetch metrics: {video_response.status_code}"
+                        f"[TikTokPublisher] Failed to fetch metrics: {video_response.status_code} - {video_response.text}"
                     )
                     return {"views": 0, "likes": 0, "comments": 0, "shares": 0}
 
                 data = video_response.json()
-                videos = data.get("data", {}).get("videos", [])
+                video = data.get("data", {})
 
-                for video in videos:
-                    if str(video.get("id")) == str(platform_id):
-                        return {
-                            "views": video.get("view_count", 0),
-                            "likes": video.get("like_count", 0),
-                            "comments": video.get("comment_count", 0),
-                            "shares": video.get("share_count", 0),
-                        }
+                if video and str(video.get("id")) == str(platform_id):
+                    return {
+                        "views": video.get("view_count", 0),
+                        "likes": video.get("like_count", 0),
+                        "comments": video.get("comment_count", 0),
+                        "shares": video.get("share_count", 0),
+                    }
 
-                logger.warning(f"[TikTokPublisher] Video {platform_id} not found")
+                logger.warning(
+                    f"[TikTokPublisher] Video {platform_id} not found or API returned no data"
+                )
                 return {"views": 0, "likes": 0, "comments": 0, "shares": 0}
 
             except Exception as e:
                 logger.error(f"[TikTokPublisher] Metrics fetch error: {e}")
                 return {"error": str(e)}
 
-    def health_check(self, user_id: int) -> bool:
+    async def _get_comments_impl(
+        self,
+        platform_id: str,
+        user_id: int,
+        account_id: Optional[int],
+        headers: dict,
+        limit: int = 10,
+    ) -> list:
+        """Fetch TikTok video comments"""
+        headers["Content-Type"] = "application/json"
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            try:
+                # TikTok API for fetching video comments
+                comments_response = await client.get(
+                    f"https://open.tiktokapis.com/v2/video/comment/list/?video_id={platform_id}&cursor=0&max_count={limit}",
+                    headers=headers,
+                )
+
+                if comments_response.status_code != 200:
+                    logger.error(
+                        f"[TikTokPublisher] Failed to fetch comments: {comments_response.status_code} - {comments_response.text}"
+                    )
+                    return []
+
+                data = comments_response.json()
+                comments = data.get("data", {}).get("comments", [])
+
+                # Format comments for consistent API response
+                formatted_comments = []
+                for comment in comments:
+                    formatted_comments.append(
+                        {
+                            "id": comment.get("id"),
+                            "text": comment.get("text"),
+                            "author": comment.get("user", {}).get(
+                                "nickname", "Unknown"
+                            ),
+                            "likes": comment.get("like_count", 0),
+                            "replies": comment.get("reply_count", 0),
+                            "created_at": comment.get("create_time"),
+                        }
+                    )
+
+                return formatted_comments
+
+            except Exception as e:
+                logger.error(f"[TikTokPublisher] Comments fetch error: {e}")
+                return []
+
+    async def health_check(self, user_id: int) -> bool:
         """Verify TikTok credentials"""
-        return token_manager.get_token("tiktok", user_id=user_id) is not None
+        return await token_manager.get_token("tiktok", user_id=user_id) is not None
 
 
 base_tiktok_publisher = TikTokPublisher()

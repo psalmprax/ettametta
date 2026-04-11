@@ -73,7 +73,7 @@ export default function CreationPage() {
         setHookAnalysis(null);
         const token = localStorage.getItem("et_token");
 
-        await withRealFallback<ScriptOutput>(
+        await withRealFallback<ScriptOutput | null>(
             () => fetch(`${API_BASE}/no-face/generate-script`, {
                 method: "POST",
                 headers: {
@@ -83,16 +83,9 @@ export default function CreationPage() {
                 body: JSON.stringify({ topic, niche, style, duration })
             }),
             {
-                fallback: {
-                    title: `Viral Theory: ${topic}`,
-                    segments: [
-                        { type: "hook", text: `What if I told you ${topic} is changing everything?`, visual_cue: "Fast-paced digital abstract", duration: 5 },
-                        { type: "bridge", text: "The data shows a massive shift in neural processing.", visual_cue: "AI brain visualization", duration: 10 }
-                    ],
-                    hashtags: ["#viral", "#ai", "#forge"]
-                },
+                fallback: null,
                 onSuccess: (data) => setScript(data),
-                errorMessage: "Neural script engine desynced. Generated local blueprint."
+                errorMessage: "Neural script engine desynced. Market link unstable."
             }
         );
         setIsGenerating(false);
@@ -116,12 +109,7 @@ export default function CreationPage() {
                 body: JSON.stringify({ hook: hookSegment.text })
             }),
             {
-                fallback: {
-                    status: "PASS",
-                    score: 85,
-                    analysis: "Hook shows strong behavioral resonance indicators.",
-                    alternatives: []
-                },
+                fallback: null,
                 onSuccess: (data) => setHookAnalysis(data)
             }
         );
@@ -142,7 +130,7 @@ export default function CreationPage() {
                 body: JSON.stringify({ text })
             }),
             {
-                fallback: { audio_url: "local_synthesis.wav" },
+                fallback: null,
                 onSuccess: (data) => {
                     setSegmentAssets(prev => ({
                         ...prev,
@@ -168,7 +156,7 @@ export default function CreationPage() {
                 body: JSON.stringify({ prompt })
             }),
             {
-                fallback: { image_url: "local_placeholder.png" },
+                fallback: null,
                 onSuccess: (data) => {
                     setSegmentAssets(prev => ({
                         ...prev,
@@ -283,7 +271,7 @@ export default function CreationPage() {
                 })
             }),
             {
-                fallback: { status: "queued" },
+                fallback: null,
                 onSuccess: () => {
                     toast.success("Production pipeline activated.");
                     window.location.href = "/transformation";
@@ -312,7 +300,7 @@ export default function CreationPage() {
                 })
             }),
             {
-                fallback: { status: "queued" },
+                fallback: null,
                 onSuccess: () => {
                     toast.success("Cinema Mode: Autonomous production launched.");
                     window.location.href = "/transformation";
@@ -331,7 +319,7 @@ export default function CreationPage() {
                             <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Intelligence Hub</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">Creation <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-fuchsia-500 text-hollow">Suite</span></h1>
+                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">Creation <span className="text-transparent bg-clip-text bg-linear-to-r from-violet-500 to-fuchsia-500 text-hollow">Suite</span></h1>
                         <p className="text-zinc-500 font-medium">Engineer high-velocity <span className="text-zinc-300 font-bold">faceless content</span> with neural script generation.</p>
                     </div>
                 </div>
@@ -340,7 +328,7 @@ export default function CreationPage() {
                     {/* Input Controls */}
                     <div className="space-y-8">
                         <div className="glass-card space-y-8 relative overflow-hidden">
-                            <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
+                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity) pointer-events-none" />
                             <div className="space-y-6">
                                 <div className="space-y-2">
                                     <label htmlFor="topic" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Objective / Topic</label>
@@ -438,7 +426,7 @@ export default function CreationPage() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className={cn(
-                                        "glass-card p-8 rounded-[2rem] space-y-6 relative overflow-hidden border",
+                                        "glass-card p-8 rounded-4xl space-y-6 relative overflow-hidden border",
                                         hookAnalysis.status === "KILL" ? "border-red-500/20 bg-red-500/5" : "border-emerald-500/20 bg-emerald-500/5"
                                     )}
                                 >
@@ -484,8 +472,8 @@ export default function CreationPage() {
                     {/* Script Workspace */}
                     <div className="lg:col-span-2 space-y-8">
                         <div className="glass-card overflow-hidden min-h-[600px] flex flex-col shadow-2xl relative">
-                            <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
-                            <div className="p-8 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity) pointer-events-none" />
+                            <div className="p-8 border-b border-white/5 bg-white/2 flex items-center justify-between">
                                 <div className="flex items-center gap-4">
                                     <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                                         <Edit3 className="h-5 w-5 text-primary neon-glow" />
@@ -548,7 +536,7 @@ export default function CreationPage() {
                                                     }}
                                                     className="relative pl-12 group"
                                                 >
-                                                    <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-white/5 group-hover:bg-primary/40 transition-all" />
+                                                    <div className="absolute left-0 top-0 bottom-0 w-px bg-white/5 group-hover:bg-primary/40 transition-all" />
                                                     <div className="absolute left-[-4px] top-0 h-2 w-2 rounded-full bg-zinc-800 group-hover:bg-primary transition-all" />
 
                                                     <div className="space-y-4">

@@ -11,7 +11,9 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
-from api.utils.database import SessionLocal
+from api.utils.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from api.utils.models import OpenCLISessionDB
 from api.config import settings
 from services.opencli.service import opencli_service
@@ -64,7 +66,10 @@ async def list_supported_platforms():
 
 
 @router.get("/sessions")
-async def get_my_sessions(current_user: UserDB = Depends(get_current_user)):
+async def get_my_sessions(
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """Get all platform session statuses for the current user."""
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
@@ -72,23 +77,16 @@ async def get_my_sessions(current_user: UserDB = Depends(get_current_user)):
     status_data = await opencli_service.get_user_platforms_status(current_user.id)
 
     # Sync with DB
-    db = SessionLocal()
     try:
         for session_info in status_data["sessions"]:
-            db_session = (
-                db.query(OpenCLISessionDB)
-                .filter(
-                    OpenCLISessionDB.user_id == current_user.id,
-                    OpenCLISessionDB.platform == session_info["platform"],
-                )
-                .first()
+            stmt = select(OpenCLISessionDB).where(
+                OpenCLISessionDB.user_id == current_user.id,
+                OpenCLISessionDB.platform == session_info["platform"],
             )
-            if db_session:
-                session_info["last_used"] = (
-                    db_session.last_used.isoformat() if db_session.last_used else None
-                )
+            result = await db.execute(stmt)
+            db_session = result.scalar_one_or_none()
     finally:
-        db.close()
+        pass
 
     return status_data
 
@@ -97,6 +95,7 @@ async def get_my_sessions(current_user: UserDB = Depends(get_current_user)):
 async def connect_platform(
     data: CookieUpload,
     current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """Upload Chrome session cookies for a platform.
 
@@ -127,16 +126,13 @@ async def connect_platform(
     verification = await opencli_service.verify_user_session(current_user.id, platform)
 
     # Upsert DB record
-    db = SessionLocal()
     try:
-        db_session = (
-            db.query(OpenCLISessionDB)
-            .filter(
-                OpenCLISessionDB.user_id == current_user.id,
-                OpenCLISessionDB.platform == platform,
-            )
-            .first()
+        stmt = select(OpenCLISessionDB).where(
+            OpenCLISessionDB.user_id == current_user.id,
+            OpenCLISessionDB.platform == platform,
         )
+        result = await db.execute(stmt)
+        db_session = result.scalar_one_or_none()
         if not db_session:
             db_session = OpenCLISessionDB(
                 user_id=current_user.id,
@@ -149,9 +145,9 @@ async def connect_platform(
         db_session.error_message = verification.get("message")
         db_session.last_verified = datetime.utcnow()
         db_session.updated_at = datetime.utcnow()
-        db.commit()
+        await db.commit()
     finally:
-        db.close()
+        pass
 
     return {
         "status": verification["status"],
@@ -165,6 +161,7 @@ async def connect_platform(
 async def disconnect_platform(
     platform: str,
     current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """Remove session cookies for a platform."""
     if not settings.ENABLE_OPENCLI:
@@ -174,22 +171,19 @@ async def disconnect_platform(
     await opencli_service.disconnect_platform(current_user.id, platform)
 
     # Update DB
-    db = SessionLocal()
     try:
-        db_session = (
-            db.query(OpenCLISessionDB)
-            .filter(
-                OpenCLISessionDB.user_id == current_user.id,
-                OpenCLISessionDB.platform == platform,
-            )
-            .first()
+        stmt = select(OpenCLISessionDB).where(
+            OpenCLISessionDB.user_id == current_user.id,
+            OpenCLISessionDB.platform == platform,
         )
+        result = await db.execute(stmt)
+        db_session = result.scalar_one_or_none()
         if db_session:
             db_session.status = "disconnected"
             db_session.updated_at = datetime.utcnow()
-            db.commit()
+            await db.commit()
     finally:
-        db.close()
+        pass
 
     return {"status": "disconnected", "platform": platform}
 
@@ -198,6 +192,7 @@ async def disconnect_platform(
 async def verify_platform_session(
     platform: str,
     current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """Verify if a platform session is still valid."""
     if not settings.ENABLE_OPENCLI:
@@ -207,24 +202,21 @@ async def verify_platform_session(
     verification = await opencli_service.verify_user_session(current_user.id, platform)
 
     # Update DB
-    db = SessionLocal()
     try:
-        db_session = (
-            db.query(OpenCLISessionDB)
-            .filter(
-                OpenCLISessionDB.user_id == current_user.id,
-                OpenCLISessionDB.platform == platform,
-            )
-            .first()
+        stmt = select(OpenCLISessionDB).where(
+            OpenCLISessionDB.user_id == current_user.id,
+            OpenCLISessionDB.platform == platform,
         )
+        result = await db.execute(stmt)
+        db_session = result.scalar_one_or_none()
         if db_session:
             db_session.status = verification["status"]
             db_session.last_verified = datetime.utcnow()
             db_session.error_message = verification.get("message")
             db_session.updated_at = datetime.utcnow()
-            db.commit()
+            await db.commit()
     finally:
-        db.close()
+        pass
 
     return verification
 
@@ -236,11 +228,9 @@ async def verify_platform_session(
 async def search_platform(
     data: SearchRequest,
     current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """Search a platform using the user's Chrome session.
-
-    Returns results in ContentCandidate format compatible with the
-    discovery pipeline.
     """
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
@@ -251,21 +241,18 @@ async def search_platform(
     )
 
     # Update last_used
-    db = SessionLocal()
     try:
-        db_session = (
-            db.query(OpenCLISessionDB)
-            .filter(
-                OpenCLISessionDB.user_id == current_user.id,
-                OpenCLISessionDB.platform == platform,
-            )
-            .first()
+        stmt = select(OpenCLISessionDB).where(
+            OpenCLISessionDB.user_id == current_user.id,
+            OpenCLISessionDB.platform == platform,
         )
+        result = await db.execute(stmt)
+        db_session = result.scalar_one_or_none()
         if db_session:
             db_session.last_used = datetime.utcnow()
-            db.commit()
+            await db.commit()
     finally:
-        db.close()
+        pass
 
     return {"results": results, "platform": platform, "count": len(results)}
 
@@ -276,6 +263,7 @@ async def get_platform_feed(
     feed_type: str = "feed",
     limit: int = 20,
     current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """Get feed/trending content from a platform using the user's session.
 
@@ -290,21 +278,18 @@ async def get_platform_feed(
     )
 
     # Update last_used
-    db = SessionLocal()
     try:
-        db_session = (
-            db.query(OpenCLISessionDB)
-            .filter(
-                OpenCLISessionDB.user_id == current_user.id,
-                OpenCLISessionDB.platform == platform,
-            )
-            .first()
+        stmt = select(OpenCLISessionDB).where(
+            OpenCLISessionDB.user_id == current_user.id,
+            OpenCLISessionDB.platform == platform,
         )
+        result = await db.execute(stmt)
+        db_session = result.scalar_one_or_none()
         if db_session:
             db_session.last_used = datetime.utcnow()
-            db.commit()
+            await db.commit()
     finally:
-        db.close()
+        pass
 
     return {"results": results, "platform": platform, "count": len(results)}
 
@@ -313,10 +298,9 @@ async def get_platform_feed(
 async def post_to_platform(
     data: PostRequest,
     current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """Post content to a platform using the user's Chrome session.
-
-    Requires the user to have a connected and verified session for the platform.
     """
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
@@ -324,45 +308,39 @@ async def post_to_platform(
     platform = data.platform.lower()
 
     # Verify session exists
-    db = SessionLocal()
     try:
-        db_session = (
-            db.query(OpenCLISessionDB)
-            .filter(
-                OpenCLISessionDB.user_id == current_user.id,
-                OpenCLISessionDB.platform == platform,
-                OpenCLISessionDB.status == "connected",
-            )
-            .first()
+        stmt = select(OpenCLISessionDB).where(
+            OpenCLISessionDB.user_id == current_user.id,
+            OpenCLISessionDB.platform == platform,
+            OpenCLISessionDB.status == "connected",
         )
+        result = await db.execute(stmt)
+        db_session = result.scalar_one_or_none()
         if not db_session:
             raise HTTPException(
                 status_code=400,
                 detail=f"No active session for {platform}. Connect first via /opencli/sessions/connect",
             )
     finally:
-        db.close()
+        pass
 
     result = await opencli_service.post_to_platform(
         current_user.id, platform, data.content, data.media_url
     )
 
     # Update last_used
-    db = SessionLocal()
     try:
-        db_session = (
-            db.query(OpenCLISessionDB)
-            .filter(
-                OpenCLISessionDB.user_id == current_user.id,
-                OpenCLISessionDB.platform == platform,
-            )
-            .first()
+        stmt = select(OpenCLISessionDB).where(
+            OpenCLISessionDB.user_id == current_user.id,
+            OpenCLISessionDB.platform == platform,
         )
+        result = await db.execute(stmt)
+        db_session = result.scalar_one_or_none()
         if db_session:
             db_session.last_used = datetime.utcnow()
-            db.commit()
+            await db.commit()
     finally:
-        db.close()
+        pass
 
     return result
 

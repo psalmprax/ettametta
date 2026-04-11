@@ -10,6 +10,8 @@ email-validator
 SQLAlchemy>=2.0.0
 psycopg2-binary
 redis
+asyncpg
+aiosqlite
 httpx
 moviepy
 ffmpeg-python
@@ -19,6 +21,7 @@ python-multipart
 jinja2
 google-api-python-client
 google-auth-oauthlib
+authlib
 stripe
 google-auth-httplib2
 celery

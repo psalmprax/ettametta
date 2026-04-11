@@ -1,29 +1,30 @@
 import logging
 import random
 from typing import List, Dict, Any
+from sqlalchemy import select
 from .base import BaseMonetizationStrategy
-from api.utils.database import SessionLocal
+from api.utils.database import async_session_factory
 from api.utils.models import AffiliateLinkDB
 
 class AffiliateStrategy(BaseMonetizationStrategy):
     async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
-        db = SessionLocal()
-        try:
-            links = db.query(AffiliateLinkDB).filter(AffiliateLinkDB.niche == niche).all()
+        async with async_session_factory() as db:
+            stmt = select(AffiliateLinkDB).where(AffiliateLinkDB.niche == niche)
+            result = await db.execute(stmt)
+            links = result.scalars().all()
+            
             if not links:
                 # Return empty list instead of mock data when no affiliate links configured
                 logging.warning(f"[AffiliateStrategy] No affiliate links found for niche: {niche}. Configure links in the database.")
                 return []
             
             return [{
-                "id": str(l.id),
-                "name": l.product_name,
-                "url": l.link,
+                "id": str(link.id),
+                "name": link.product_name,
+                "url": link.link,
                 "price": "N/A",
-                "source": "affiliate_db"
-            } for l in links]
-        finally:
-            db.close()
+                "source": "affiliate"
+            } for link in links]
 
     async def generate_cta(self, niche: str, context: str) -> str:
         # Fetch the links so we can grab one

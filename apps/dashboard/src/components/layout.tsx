@@ -4,17 +4,18 @@ import React, { useState, useEffect } from "react";
 import { Sidebar, MobileNav, MobileHeader } from "@/components/sidebar";
 import { SearchBar } from "@/components/search-bar";
 import { useUITheme } from "@/context/UIThemeContext";
+import { useAuth } from "@/context/AuthContext";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Coins, Sun, Moon, HelpCircle, Bell } from "lucide-react";
+import { Coins, Sun, Moon, HelpCircle, Bell, User } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 function LegacyLayout({ children }: { children: React.ReactNode }) {
+    const { user, credits } = useAuth();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
-    const [credits] = useState(250);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -85,11 +86,17 @@ function LegacyLayout({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center gap-4">
                         <Link href="/credits" className="flex items-center gap-2 px-3 py-1.5 bg-violet-500/10 border border-violet-500/20 rounded-lg hover:bg-violet-500/20 transition-colors">
                             <Coins className="h-4 w-4 text-violet-400" />
-                            <span className="text-sm font-medium text-violet-300">{credits} credits</span>
+                            <span className="text-sm font-black text-violet-300 tabular-nums">{credits?.toLocaleString()} credits</span>
                         </Link>
-                        <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center">
-                            <span className="text-xs font-bold text-white">U</span>
-                        </div>
+                        <Link href="/settings" className="flex items-center gap-3 group">
+                            <div className="text-right hidden sm:block">
+                                <p className="text-[10px] font-black text-white uppercase tracking-tighter leading-none">{user?.role || "USER"}</p>
+                                <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">{user?.subscription || "Free"}</p>
+                            </div>
+                            <div className="h-9 w-9 rounded-xl bg-linear-to-br from-violet-600 to-indigo-600 flex items-center justify-center border border-white/10 shadow-lg group-hover:scale-105 transition-transform">
+                                <span className="text-sm font-black text-white">{user?.telegram_chat_id ? "A" : "U"}</span>
+                            </div>
+                        </Link>
                     </div>
                 </header>
 
@@ -112,10 +119,10 @@ function LegacyLayout({ children }: { children: React.ReactNode }) {
 }
 
 function ModernLayout({ children }: { children: React.ReactNode }) {
+    const { user, credits } = useAuth();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
-    const [credits] = useState(250);
     const { toggleTheme } = useUITheme();
 
     useEffect(() => {
@@ -181,9 +188,9 @@ function ModernLayout({ children }: { children: React.ReactNode }) {
                 </nav>
 
                 {/* Settings */}
-                <button className="h-12 flex items-center justify-center hover:bg-zinc-900 transition-colors">
+                <Link href="/settings" className="h-12 flex items-center justify-center hover:bg-zinc-900 transition-colors">
                     <span className="text-lg">⚙️</span>
-                </button>
+                </Link>
             </aside>
 
             {/* Main Content */}
@@ -192,8 +199,7 @@ function ModernLayout({ children }: { children: React.ReactNode }) {
                 <header className="h-14 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between px-6">
                     {/* Search */}
                     <div className="w-96 h-9 bg-zinc-900 rounded-lg flex items-center px-3 gap-2">
-                        <span className="text-zinc-500">🔍</span>
-                        <span className="text-zinc-500 text-sm">Search (⌘K)</span>
+                        <SearchBar />
                     </div>
 
                     {/* Actions */}
@@ -210,19 +216,24 @@ function ModernLayout({ children }: { children: React.ReactNode }) {
                             <Moon className="w-3 h-3 text-zinc-400" />
                         </button>
 
-                        <button className="h-7 px-3 bg-indigo-950 border border-indigo-500/30 rounded-lg flex items-center gap-2">
+                        <Link href="/credits" className="h-7 px-3 bg-indigo-950 border border-indigo-500/30 rounded-lg flex items-center gap-2">
                             <Coins className="w-3 h-3 text-indigo-400" />
-                            <span className="text-xs font-semibold text-indigo-400">{credits} cr</span>
-                        </button>
+                            <span className="text-xs font-semibold text-indigo-400 tabular-nums">{credits?.toLocaleString()} cr</span>
+                        </Link>
 
                         <button className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center relative">
                             <Bell className="w-4 h-4 text-zinc-400" />
                             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
                         </button>
 
-                        <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center">
-                            <span className="text-xs font-bold">U</span>
-                        </div>
+                        <Link href="/settings" className="flex items-center gap-2 ml-2">
+                            <div className="text-right hidden lg:block">
+                                <p className="text-[9px] font-black text-white uppercase tracking-tighter leading-none">{user?.role || "USER"}</p>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-linear-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                                <span className="text-xs font-bold text-white uppercase">{user?.role?.[0] || "U"}</span>
+                            </div>
+                        </Link>
                     </div>
                 </header>
 

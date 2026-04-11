@@ -4,8 +4,11 @@ Stripe Payment Service for ettametta Subscriptions
 
 import stripe
 import logging
+import asyncio
 from typing import Optional, Dict, Any
 from datetime import datetime
+from sqlalchemy import select
+from api.utils.database import async_session_factory
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +70,8 @@ class PaymentService:
             if idempotency_key:
                 create_params["idempotency_key"] = idempotency_key
 
-            customer = stripe.Customer.create(**create_params)
+            # Stripe Python < 3.0.0 is blocking, use to_thread to keep event loop free
+            customer = await asyncio.to_thread(stripe.Customer.create, **create_params)
             logger.info(
                 f"[PaymentService] Created Stripe customer {customer.id} for user {user_id}"
             )
@@ -121,7 +125,7 @@ class PaymentService:
             if idempotency_key:
                 session_params["idempotency_key"] = idempotency_key
 
-            session = stripe.checkout.Session.create(**session_params)
+            session = await asyncio.to_thread(stripe.checkout.Session.create, **session_params)
             logger.info(
                 f"[PaymentService] Created checkout session {session.id} for tier {tier}"
             )
@@ -166,6 +170,7 @@ class PaymentService:
     ) -> Dict[str, Any]:
         """Handle Stripe webhook events"""
         try:
+            # construct_event is relatively fast but handles signature verification
             event = stripe.Webhook.construct_event(payload, signature, webhook_secret)
         except ValueError as e:
             logger.error(f"[PaymentService] Invalid payload: {e}")
@@ -174,7 +179,6 @@ class PaymentService:
             logger.error(f"[PaymentService] Invalid signature: {e}")
             raise
 
-        from api.utils.database import SessionLocal
         from api.utils.user_models import UserDB, SubscriptionTier
 
         # Handle events
@@ -191,8 +195,8 @@ class PaymentService:
                 credits = int(metadata.get("credits", 0))
                 if user_id and credits > 0:
                     from services.payment.credit_service import credit_service
-
-                    credit_service.add_credits(
+                    # Assuming add_credits is now async or we wrap it
+                    await credit_service.add_credits(
                         user_id=int(user_id),
                         amount=credits,
                         transaction_type="purchase",
@@ -211,24 +215,20 @@ class PaymentService:
             tier = metadata.get("tier", "free").upper()
             subscription_id = session.get("subscription")
 
-            db = SessionLocal()
-            try:
-                user = (
-                    db.query(UserDB)
-                    .filter(UserDB.stripe_customer_id == customer_id)
-                    .first()
-                )
+            async with async_session_factory() as db:
+                stmt = select(UserDB).where(UserDB.stripe_customer_id == customer_id)
+                result = await db.execute(stmt)
+                user = result.scalar_one_or_none()
+                
                 if user:
                     user.subscription = getattr(
                         SubscriptionTier, tier, SubscriptionTier.FREE
                     )
                     user.stripe_subscription_id = subscription_id
-                    db.commit()
+                    await db.commit()
                     logger.info(
                         f"[PaymentService] Updated user {user.id} to tier {tier}"
                     )
-            finally:
-                db.close()
 
             return {"status": "processed", "event": "checkout.session.completed"}
 
@@ -236,20 +236,16 @@ class PaymentService:
             subscription = event["data"]["object"]
             logger.info(f"[PaymentService] Subscription cancelled: {subscription.id}")
 
-            db = SessionLocal()
-            try:
-                user = (
-                    db.query(UserDB)
-                    .filter(UserDB.stripe_subscription_id == subscription.id)
-                    .first()
-                )
+            async with async_session_factory() as db:
+                stmt = select(UserDB).where(UserDB.stripe_subscription_id == subscription.id)
+                result = await db.execute(stmt)
+                user = result.scalar_one_or_none()
+                
                 if user:
                     user.subscription = SubscriptionTier.FREE
                     user.stripe_subscription_id = None
-                    db.commit()
+                    await db.commit()
                     logger.info(f"[PaymentService] Reset user {user.id} to FREE tier")
-            finally:
-                db.close()
 
             return {"status": "processed", "event": "customer.subscription.deleted"}
 
@@ -258,13 +254,11 @@ class PaymentService:
             subscription = event["data"]["object"]
             logger.info(f"[PaymentService] Subscription updated: {subscription.id}")
 
-            db = SessionLocal()
-            try:
-                user = (
-                    db.query(UserDB)
-                    .filter(UserDB.stripe_subscription_id == subscription.id)
-                    .first()
-                )
+            async with async_session_factory() as db:
+                stmt = select(UserDB).where(UserDB.stripe_subscription_id == subscription.id)
+                result = await db.execute(stmt)
+                user = result.scalar_one_or_none()
+                
                 if user:
                     # Check if subscription is still active
                     if subscription.status == "active":
@@ -274,7 +268,7 @@ class PaymentService:
                             user.subscription = getattr(
                                 SubscriptionTier, new_tier, SubscriptionTier.FREE
                             )
-                            db.commit()
+                            await db.commit()
                             logger.info(
                                 f"[PaymentService] Updated user {user.id} to tier {new_tier}"
                             )
@@ -286,12 +280,10 @@ class PaymentService:
                         # Downgrade to free
                         user.subscription = SubscriptionTier.FREE
                         user.stripe_subscription_id = None
-                        db.commit()
+                        await db.commit()
                         logger.info(
                             f"[PaymentService] Downgraded user {user.id} to FREE due to {subscription.status}"
                         )
-            finally:
-                db.close()
 
             return {"status": "processed", "event": "customer.subscription.updated"}
 
@@ -300,23 +292,23 @@ class PaymentService:
             invoice = event["data"]["object"]
             logger.warning(f"[PaymentService] Payment failed for invoice: {invoice.id}")
 
-            db = SessionLocal()
-            try:
+            async with async_session_factory() as db:
                 customer_id = invoice.get("customer")
-                user = (
-                    db.query(UserDB)
-                    .filter(UserDB.stripe_customer_id == customer_id)
-                    .first()
-                )
+                stmt = select(UserDB).where(UserDB.stripe_customer_id == customer_id)
+                result = await db.execute(stmt)
+                user = result.scalar_one_or_none()
+                
                 if user:
                     # Could add notification logic here
                     logger.warning(
                         f"[PaymentService] User {user.id} has failed payment"
                     )
-            finally:
-                db.close()
 
             return {"status": "processed", "event": "invoice.payment_failed"}
+
+        else:
+            logger.warning(f"[PaymentService] Unhandled event type: {event['type']}")
+            return {"status": "ignored", "event": event["type"]}
 
         else:
             logger.warning(f"[PaymentService] Unhandled event type: {event['type']}")

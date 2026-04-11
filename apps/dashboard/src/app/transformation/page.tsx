@@ -74,10 +74,10 @@ function TransformationPageContent() {
         if (e) e.preventDefault();
         if (!newJobUrl) return;
 
+        const token = localStorage.getItem("et_token");
         setIsSubmitting(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
                 return fetch(`${API_BASE}/video/transform`, {
                     method: "POST",
                     headers: {
@@ -103,11 +103,15 @@ function TransformationPageContent() {
                     });
                     setNewJobUrl("");
                     setIsJobModalOpen(false);
-                    const token = localStorage.getItem("et_token");
-                    const jobsRes = await fetch(`${API_BASE}/video/jobs`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }).then(r => r.json());
-                    setProcessingJobs(jobsRes);
+                    await withRealFallback<any>(
+                        () => fetch(`${API_BASE}/video/jobs`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        }),
+                        {
+                            fallback: [],
+                            onSuccess: (data) => setProcessingJobs(data)
+                        }
+                    );
                 },
                 onFallback: (err: any) => {
                     toast.error("Dispatch Failed", {
@@ -209,26 +213,34 @@ function TransformationPageContent() {
 
     React.useEffect(() => {
         const fetchData = async () => {
-            try {
-                const token = localStorage.getItem("et_token");
-                if (!token) return;
-                const headers = { Authorization: `Bearer ${token}` };
+            const token = localStorage.getItem("et_token");
+            if (!token) return;
+            const headers = { Authorization: `Bearer ${token}` };
 
-                const [jobsRes, filtersRes] = await Promise.all([
-                    fetch(`${API_BASE}/video/jobs`, { headers }).then(r => r.json()),
-                    fetch(`${API_BASE}/settings/filters`, { headers }).then(r => r.json())
-                ]);
-                setProcessingJobs(jobsRes);
-                setActiveFilters(filtersRes);
-                if (jobsRes.length > 0 && !selectedJob) {
-                    setSelectedJob(jobsRes[0]);
-                } else if (selectedJob) {
-                    const updated = jobsRes.find((j: any) => j.id === selectedJob.id);
-                    if (updated) setSelectedJob(updated);
-                }
-            } catch (error) {
-                console.error("Failed to fetch initial data:", error);
-            }
+            await Promise.all([
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/video/jobs`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (jobsRes) => {
+                            setProcessingJobs(jobsRes);
+                            if (jobsRes.length > 0 && !selectedJob) {
+                                setSelectedJob(jobsRes[0]);
+                            } else if (selectedJob) {
+                                const updated = jobsRes.find((j: any) => j.id === selectedJob.id);
+                                if (updated) setSelectedJob(updated);
+                            }
+                        }
+                    }
+                ),
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/settings/filters`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (filtersRes) => setActiveFilters(filtersRes)
+                    }
+                )
+            ]);
         };
 
         fetchData();
@@ -239,12 +251,15 @@ function TransformationPageContent() {
         const fetchInsight = async () => {
             const token = localStorage.getItem("et_token");
             if (!token) return;
-            try {
-                const res = await fetch(`${API_BASE}/discovery/insights/${currentNiche}`, {
+            await withRealFallback<any>(
+                () => fetch(`${API_BASE}/discovery/insights/${currentNiche}`, {
                     headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.ok) setAiInsight(await res.json());
-            } catch (e) { console.error("Insight fetch error:", e); }
+                }),
+                {
+                    fallback: null,
+                    onSuccess: (data) => data && setAiInsight(data)
+                }
+            );
         };
         fetchInsight();
     }, [currentNiche]);

@@ -376,7 +376,7 @@ async def get_portfolio(current_user: UserDB = Depends(get_current_user)):
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
 
-    return trading_service.get_portfolio_value(current_user.id)
+    return await trading_service.get_portfolio_value(current_user.id)
 
 
 @router.post("/portfolio/position")
@@ -391,7 +391,7 @@ async def add_portfolio_position(
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
 
-    return trading_service.add_position(
+    return await trading_service.add_position(
         current_user.id,
         position.symbol.upper(),
         position.quantity,
@@ -410,7 +410,7 @@ async def get_price_alerts(current_user: UserDB = Depends(get_current_user)):
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
 
-    return {"alerts": trading_service.get_price_alerts(current_user.id)}
+    return {"alerts": await trading_service.get_price_alerts(current_user.id)}
 
 
 @router.post("/alerts")
@@ -425,7 +425,7 @@ async def add_price_alert(
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
 
-    return trading_service.add_price_alert(
+    return await trading_service.add_price_alert(
         current_user.id, alert.symbol.upper(), alert.target_price, alert.condition
     )
 
@@ -440,7 +440,7 @@ async def check_price_alerts(current_user: UserDB = Depends(get_current_user)):
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
 
-    triggered = trading_service.check_price_alerts(current_user.id)
+    triggered = await trading_service.check_price_alerts(current_user.id)
     return {"triggered": triggered, "count": len(triggered)}
 
 

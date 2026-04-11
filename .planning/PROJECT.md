@@ -49,6 +49,7 @@ ettametta is an autonomous multi-platform viral content discovery, transformatio
 | Credit-Based Monetization | Freemium model with paid AI features | Sustainable revenue model |
 | OpenClaw Integration | AI agent for notifications and user interaction | Enhanced user experience |
 | FastAPI + Next.js Stack | Modern, scalable full-stack architecture | Development velocity and performance |
+| UUID-v4 Identifiers | Migrate from integer IDs to UUID strings for all entities | Production-grade security, scalability and cross-service ID consistency |
 
 ## Context
 

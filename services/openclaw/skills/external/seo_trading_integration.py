@@ -41,7 +41,7 @@ class BlogSEOService:
         meta_description = self._generate_meta_description(topic, word_count)
 
         # Use Groq for real content generation if available
-        if settings.GROQ_API_KEY and settings.GROQ_API_KEY != "your_key_here":
+        if settings.GROQ_API_KEY:
             try:
                 from groq import AsyncGroq
 

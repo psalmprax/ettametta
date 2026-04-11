@@ -1,12 +1,13 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Optional
-from datetime import datetime
-from services.security.service import base_security_sentinel
+from typing import Optional, List
+import logging
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
+from services.security.service import base_security_sentinel
 
 router = APIRouter(prefix="/security", tags=["Security"])
+logger = logging.getLogger(__name__)
 
 
 def admin_required(current_user: UserDB = Depends(get_current_user)):
@@ -32,24 +33,16 @@ async def report_error(
     Accessible to all authenticated users.
     """
     try:
-        # Log to console/file (expandable to DB in future)
-        print(f"🚨 Frontend Error Report:")
-        print(f"   Message: {error.message}")
-        print(f"   Timestamp: {error.timestamp}")
+        # Log to structured logger
+        logger.info(f"🚨 Frontend Error Report: {error.message}")
         if error.stack:
-            print(f"   Stack: {error.stack[:200]}...")
+            logger.debug(f"   Stack: {error.stack[:200]}...")
         if error.componentStack:
-            print(f"   Component Stack: {error.componentStack[:200]}...")
+            logger.debug(f"   Component Stack: {error.componentStack[:200]}...")
 
         return {"status": "error_logged"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to log error: {str(e)}")
-
-
-def admin_required(current_user: UserDB = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
-    return current_user
 
 
 @router.get("/status")
@@ -65,7 +58,7 @@ async def get_security_status(current_user=Depends(get_current_user)):
 
 
 @router.post("/scan")
-async def trigger_security_audit(current_user=Depends(get_current_user)):
+async def trigger_security_audit(current_user=Depends(admin_required)):
     """
     Manually triggers a full system integrity audit.
     Requires authentication (admin recommended).
@@ -78,7 +71,7 @@ async def trigger_security_audit(current_user=Depends(get_current_user)):
 
 
 @router.get("/events")
-async def get_security_events(current_user=Depends(get_current_user)):
+async def get_security_events(current_user=Depends(admin_required)):
     """
     Returns the raw list of security events from the sentinel.
     Requires authentication.

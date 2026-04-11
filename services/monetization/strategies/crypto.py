@@ -1,8 +1,9 @@
 import logging
 import random
 from typing import List, Dict, Any, Optional
+from sqlalchemy import select
 from .base import BaseMonetizationStrategy
-from api.utils.database import SessionLocal
+from api.utils.database import async_session_factory
 from api.utils.models import SystemSettings
 
 class CryptoStrategy(BaseMonetizationStrategy):
@@ -15,12 +16,11 @@ class CryptoStrategy(BaseMonetizationStrategy):
         Fetches crypto wallet addresses from database configuration.
         Returns available crypto wallets for donations/tips.
         """
-        db = SessionLocal()
-        try:
+        async with async_session_factory() as db:
             # Check for configured crypto wallets
-            wallets_setting = db.query(SystemSettings).filter(
-                SystemSettings.key == "crypto_wallets"
-            ).first()
+            stmt = select(SystemSettings).filter(SystemSettings.key == "crypto_wallets")
+            result = await db.execute(stmt)
+            wallets_setting = result.scalar_one_or_none()
             
             if not wallets_setting or not wallets_setting.value:
                 logging.warning(f"[CryptoStrategy] No crypto wallets configured. Set 'crypto_wallets' in settings (format: BTC:addr,ETH:addr).")
@@ -64,9 +64,9 @@ class CryptoStrategy(BaseMonetizationStrategy):
                     })
             
             # Add generic donation link if configured
-            donation_setting = db.query(SystemSettings).filter(
-                SystemSettings.key == "donation_link"
-            ).first()
+            stmt_donation = select(SystemSettings).filter(SystemSettings.key == "donation_link")
+            result_donation = await db.execute(stmt_donation)
+            donation_setting = result_donation.scalar_one_or_none()
             
             if donation_setting and donation_setting.value:
                 assets.append({
@@ -81,8 +81,6 @@ class CryptoStrategy(BaseMonetizationStrategy):
                 return []
             
             return assets
-        finally:
-            db.close()
     
     async def validate_address(self, address: str, symbol: str) -> bool:
         """

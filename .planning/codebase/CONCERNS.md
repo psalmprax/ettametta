@@ -1,220 +1,142 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-04-08
+**Analysis Date:** 2026-04-10
 
 ## Tech Debt
 
-**[Area/Component]:**
-- Issue: [What's the shortcut/workaround]
-- Files: `[file paths]`
-- Impact: [What breaks or degrades]
-- Fix approach: [How to address it]
+**[Large Files]:**
+- Issue: Several source files exceed recommended size limits, indicating potential complexity and maintenance issues
+- Files: `api/routes/publish.py` (1741 lines), `services/video_engine/synthesis_service.py` (1140 lines), `api/routes/settings.py` (939 lines), `services/video_engine/processor.py` (901 lines)
+- Impact: Difficult to maintain, test, and understand; increased risk of bugs
+- Fix approach: Refactor into smaller, focused modules with single responsibilities
 
-**Large Monolithic Files:**
-- Issue: Files exceeding 1000 lines, violating single responsibility principle
-- Files: `api/routes/publish.py` (1722 lines)
-- Impact: Difficult maintenance, testing, and understanding
-- Fix approach: Refactor into smaller modules with clear responsibilities
+**[Stub Implementations]:**
+- Issue: Multiple functions return None or empty collections, indicating incomplete implementations
+- Files: `services/video_engine/stock_service.py` (multiple return None), `services/video_engine/ai_generator.py` (multiple return None), `services/video_engine/motion_graphics.py` (multiple return None)
+- Impact: Silent failures, unpredictable behavior in production
+- Fix approach: Implement proper error handling or complete the functionality
 
-**Empty Return Stubs:**
-- Issue: Numerous functions return None or empty collections without implementation
-- Files: `services/optimization/tiktok_publisher.py`, `services/optimization/twitch_publisher.py`, `services/optimization/snapchat_publisher.py`, `services/video_engine/free_video_providers.py`, `services/video_engine/synthesis_service.py`
-- Impact: Incomplete functionality, runtime errors when features are called
-- Fix approach: Implement missing logic or remove unused functions
-
-**Hardcoded Configuration:**
-- Issue: Environment variables referenced directly without validation
-- Files: `api/main.py` (CORS_ORIGINS), `services/video_engine/synthesis_service.py` (RENDER_NODE_URL)
-- Impact: Configuration errors not handled gracefully
-- Fix approach: Use Pydantic settings with validation
+**[TODO Comments]:**
+- Issue: Unfinished API integrations marked with TODO
+- Files: `services/video_engine/synthesis_service.py` (lines 353, 365)
+- Impact: Features not working as expected
+- Fix approach: Complete the API integrations or remove dead code
 
 ## Known Bugs
 
-**[Bug description]:**
-- Symptoms: [What happens]
-- Files: `[file paths]`
-- Trigger: [How to reproduce]
-- Workaround: [If any]
-
-**Potential Null Pointer Exceptions:**
-- Symptoms: Application crashes when None is returned unexpectedly
-- Files: `services/optimization/scheduler_tasks.py` (lines with return None)
-- Trigger: Calling methods that return None in error paths
-- Workaround: Add null checks before using return values
-
-**Frontend Error Handling:**
-- Symptoms: React components return null without fallback UI
-- Files: `apps/dashboard/src/components/ui/VideoPreviewModal.tsx`, `apps/dashboard/src/app/analytics/page.tsx`
-- Trigger: Loading states or API failures
-- Workaround: Implement error boundaries and loading states
+**[Configuration Validation]:**
+- Issue: Config validation runs on startup but errors are not fatal in development
+- Files: `api/config.py` (validation method prints but doesn't exit)
+- Impact: Invalid config may cause runtime failures
+- Workaround: Manually check logs on startup
 
 ## Security Considerations
 
-**[Area]:**
-- Risk: [What could go wrong]
-- Files: `[file paths]`
-- Current mitigation: [What's in place]
-- Recommendations: [What should be added]
+**[Secret Management]:**
+- Issue: API keys stored in environment variables without rotation policies
+- Files: `api/config.py` (multiple *_API_KEY fields)
+- Current mitigation: Validation checks for production secrets
+- Recommendations: Implement secret rotation, consider using secret management services
 
-**Sensitive Environment Variables:**
-- Risk: API keys and secrets stored in environment files
-- Files: `.env.example`, `.env`, `.env.production.template`, `.env.production.example`
-- Current mitigation: Files exist but contents not accessible for audit
-- Recommendations: Use secret management service, validate environment loading
+**[JWT Token Handling]:**
+- Issue: Long token expiry (24 hours) without refresh mechanism
+- Files: `api/utils/security.py`, `api/utils/auth.py`
+- Current mitigation: Token blacklist in Redis
+- Recommendations: Implement token refresh, shorter expiry times
 
-**Stripe Integration:**
-- Risk: Payment processing without proper validation
-- Files: `api/routes/settings.py`, `api/routes/credits.py`
-- Current mitigation: Import present but implementation not reviewed
-- Recommendations: Implement webhook signature verification, PCI compliance checks
-
-**Authentication Bypass:**
-- Risk: JWT validation may be incomplete
-- Files: `api/utils/auth.py` (functions returning None)
-- Current mitigation: Unknown, functions appear incomplete
-- Recommendations: Comprehensive JWT validation with refresh token handling
+**[CORS Configuration]:**
+- Issue: CORS allows all origins in development
+- Files: `api/main.py` (CORS middleware)
+- Current mitigation: Production-only security headers
+- Recommendations: Restrict CORS origins even in development
 
 ## Performance Bottlenecks
 
-**[Slow operation]:**
-- Problem: [What's slow]
-- Files: `[file paths]`
-- Cause: [Why it's slow]
-- Improvement path: [How to speed up]
+**[Synchronous Operations]:**
+- Issue: Some routes may perform synchronous I/O operations
+- Files: Various route files without explicit async/await patterns
+- Cause: Blocking operations in async context
+- Improvement path: Audit all routes for synchronous calls, convert to async
 
-**Large Route Handlers:**
-- Problem: publish.py with 1722 lines likely contains complex logic
-- Files: `api/routes/publish.py`
-- Cause: Monolithic design without decomposition
-- Improvement path: Break into service layer calls with async processing
-
-**Redis Queue Contention:**
-- Problem: GPU queue management with polling
-- Files: `services/video_engine/synthesis_service.py` (GpuQueueManager)
-- Cause: Polling-based semaphore instead of Redis pub/sub
-- Improvement path: Implement Redis-based blocking queues
-
-**Model Management Overhead:**
-- Problem: HuggingFace model downloads on demand
-- Files: `services/video_engine/synthesis_service.py` (ModelManager)
-- Cause: Large model files downloaded repeatedly
-- Improvement path: Pre-download models, implement LRU cache
+**[GPU Queue Management]:**
+- Issue: GPU slot calculation depends on hardware detection
+- Files: `api/config.py` (EFFECTIVE_GPU_QUEUE_SLOTS property)
+- Cause: Hardware detection may fail or be inaccurate
+- Improvement path: Add fallback mechanisms, better error handling for GPU operations
 
 ## Fragile Areas
 
-**[Component/Module]:**
-- Files: `[file paths]`
-- Why fragile: [What makes it break easily]
-- Safe modification: [How to change safely]
-- Test coverage: [Gaps]
+**[External API Dependencies]:**
+- Issue: Heavy reliance on external AI/video APIs without circuit breakers
+- Files: `services/video_engine/synthesis_service.py`, `services/video_engine/processor.py`
+- Why fragile: API rate limits, downtime, or changes break functionality
+- Safe modification: Implement retry logic, fallback providers, caching
 
-**Video Synthesis Service:**
-- Files: `services/video_engine/synthesis_service.py`
-- Why fragile: Multiple fallback paths, complex engine switching, external API dependencies
-- Safe modification: Add comprehensive error handling, circuit breakers
-- Test coverage: Low - many paths untested
-
-**Free Video Providers:**
-- Files: `services/video_engine/free_video_providers.py`
-- Why fragile: Many functions return None, external API rate limits
-- Safe modification: Implement retry logic, provider health checks
-- Test coverage: None apparent
-
-**Social Media Publishers:**
-- Files: `services/optimization/tiktok_publisher.py`, `services/optimization/twitch_publisher.py`, `services/optimization/snapchat_publisher.py`
-- Why fragile: Platform API changes, authentication failures
-- Safe modification: Abstract platform APIs, implement credential rotation
-- Test coverage: Mock external APIs
+**[Database Migrations]:**
+- Issue: Alembic migrations may fail if schema changes are not backward compatible
+- Files: `alembic/versions/` (migration scripts)
+- Why fragile: Production data integrity at risk
+- Test coverage: Add migration tests
 
 ## Scaling Limits
 
-**[Resource/System]:**
-- Current capacity: [Numbers]
-- Limit: [Where it breaks]
-- Scaling path: [How to increase]
+**[Redis Dependency]:**
+- Issue: Single Redis instance used for cache, broker, and session storage
+- Files: `api/config.py` (REDIS_URL), `api/main.py` (cache setup)
+- Current capacity: Single instance configuration
+- Limit: Redis becomes bottleneck under high load
+- Scaling path: Implement Redis cluster, separate instances for different purposes
 
-**GPU Resource Management:**
-- Current capacity: Single RTX 8000 (48GB VRAM)
-- Limit: Concurrent video generation slots limited by polling semaphore
-- Scaling path: Implement distributed GPU cluster with Kubernetes
-
-**Database Connections:**
-- Current capacity: Single PostgreSQL instance
-- Limit: No connection pooling visible in code
-- Scaling path: Add SQLAlchemy connection pooling, read replicas
-
-**Redis Caching:**
-- Current capacity: Single Redis instance for cache and queues
-- Limit: No clustering or persistence configuration visible
-- Scaling path: Redis cluster with sentinel, persistent storage
+**[GPU Resource Management]:**
+- Issue: GPU queue slots calculated per server, not distributed
+- Files: `api/utils/hardware_detector.py`, `api/config.py`
+- Current capacity: Local GPU only
+- Limit: Cannot scale video generation across multiple machines
+- Scaling path: Distributed GPU orchestration, cloud GPU integration
 
 ## Dependencies at Risk
 
-**[Package]:**
-- Risk: [What's wrong]
-- Impact: [What breaks]
-- Migration plan: [Alternative]
+**[Third-party AI APIs]:**
+- Issue: No fallback when primary AI providers are unavailable
+- Files: `api/config.py` (multiple AI provider keys), `services/video_engine/synthesis_service.py`
+- Impact: Core video generation features fail
+- Migration plan: Implement provider failover, circuit breaker pattern
 
-**Python Virtual Environment:**
-- Risk: No lockfile (requirements.txt without hashes)
-- Impact: Reproducible builds fail, security vulnerabilities unpatched
-- Migration plan: Generate requirements.txt with pip-tools or poetry
-
-**External Video APIs:**
-- Risk: Free providers may change terms or API
-- Impact: Video generation failures
-- Migration plan: Paid API fallbacks, local model hosting
-
-**MoviePy Video Processing:**
-- Risk: Heavy computation in Python process
-- Impact: CPU blocking, memory leaks
-- Migration plan: Replace with FFmpeg-based async processing
+**[Font Dependencies]:**
+- Issue: Hardcoded font path may not exist on all systems
+- Files: `api/config.py` (FONT_PATH)
+- Impact: Video rendering fails
+- Migration plan: Fallback font detection, embed fonts
 
 ## Missing Critical Features
 
-**[Feature gap]:**
-- Problem: [What's missing]
-- Blocks: [What can't be done]
+**[Error Monitoring]:**
+- Issue: No centralized error tracking beyond logging
+- Files: `api/main.py` (exception handlers)
+- Problem: Hard to monitor production errors
+- Blocks: Proactive issue resolution
 
-**Error Recovery Mechanisms:**
-- Problem: No circuit breakers for external API calls
-- Blocks: System stability during API outages
-
-**Comprehensive Logging:**
-- Problem: Inconsistent logging across services
-- Blocks: Debugging production issues
-
-**Configuration Validation:**
-- Problem: Environment variables not validated on startup
-- Blocks: Silent configuration failures
+**[API Rate Limiting]:**
+- Issue: Rate limiting implemented but may not handle distributed attacks
+- Files: `api/utils/limiter.py`, `api/main.py`
+- Problem: Single-instance rate limiting doesn't scale
+- Blocks: Protection against abuse in multi-instance deployments
 
 ## Test Coverage Gaps
 
-**[Untested area]:**
-- What's not tested: [Specific functionality]
-- Files: `[file paths]`
-- Risk: [What could break unnoticed]
-- Priority: [High/Medium/Low]
+**[Integration Tests]:**
+- Issue: Limited end-to-end testing for critical paths
+- Files: `api/tests/` (mostly unit tests)
+- Risk: Integration issues in production
+- Priority: High - implement comprehensive E2E tests
 
-**Service Layer Integration:**
-- What's not tested: End-to-end service workflows
-- Files: `services/` directory extensively
-- Risk: Integration bugs in production
-- Priority: High
-
-**Error Path Testing:**
-- What's not tested: Exception handling, API failures
-- Files: All routes and services with return None
-- Risk: Unhandled exceptions crash system
-- Priority: High
-
-**Frontend Component Testing:**
-- What's not tested: React component error states
-- Files: `apps/dashboard/src/` components
-- Risk: UI breaks on API errors
-- Priority: Medium
+**[Error Scenario Testing]:**
+- Issue: Exception handlers tested but edge cases not covered
+- Files: `api/main.py` (exception handlers), `api/tests/test_routes/`
+- Risk: Unhandled exceptions cause 500 errors
+- Priority: Medium - add chaos testing
 
 ---
 
-*Concerns audit: 2026-04-08*</content>
+*Concerns audit: 2026-04-10*</content>
 <parameter name="filePath">.planning/codebase/CONCERNS.md

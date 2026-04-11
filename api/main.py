@@ -5,13 +5,14 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi.exceptions import RequestValidationError
-from api.utils.database import engine, Base, SessionLocal
+from api.utils.database import engine, Base, AsyncSessionLocal
 from api.utils.models import SystemSettings, ContentCandidateDB, MonitoredNiche
 from api.utils.user_models import UserDB
 from api.utils import credit_models  # Import to register credit models with SQLAlchemy
+from sqlalchemy import select, func
 
-# Ensure tables are created before importing routes/services that might query them at module level
-Base.metadata.create_all(bind=engine)
+# Tables should be managed via Alembic in production.
+# Removed: Base.metadata.create_all(bind=engine)
 
 from services.security.service import base_security_sentinel
 from api.config import settings
@@ -111,7 +112,6 @@ app.add_middleware(RequestLoggingMiddleware)
 
 from api.routes import (
     discovery,
-    video,
     publish,
     analytics,
     auth,
@@ -134,6 +134,9 @@ from api.routes import (
     opencli,
     tools,
     llm,
+    video_jobs,
+    video_transform,
+    video_generate,
 )
 
 from fastapi.staticfiles import StaticFiles
@@ -160,12 +163,17 @@ async def custom_rate_limit_exceeded_handler(request: Request, exc: RateLimitExc
 
 @app.exception_handler(SQLAlchemyError)
 async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
-    logger.error(f"Database error: {exc}")
+    logger.error(f"Database error: {str(exc)}")
+    # Masking details in production for security
+    message = "An internal database error occurred."
+    if settings.DEBUG:
+        message = f"Database Error: {str(exc)}"
+    
     return JSONResponse(
         status_code=500,
         content={
             "error": "Database Error",
-            "message": "An internal database error occurred. Please try again later.",
+            "message": message,
             "code": "DB_ERROR",
         },
     )
@@ -213,24 +221,26 @@ app.add_middleware(
 
 
 async def seed_monitored_niches():
-    db = SessionLocal()
-    try:
-        count = db.query(MonitoredNiche).count()
-        if count == 0:
-            print("[Startup] Seeding default monitored niches...")
-            default_niches = [
-                "Motivation",
-                "AI Technology",
-                "Stoic Wisdom",
-                "Market Trends",
-            ]
-            for n in default_niches:
-                db.add(MonitoredNiche(niche=n, is_active=True))
-            db.commit()
-    except Exception as e:
-        print(f"[Startup] Error seeding niches: {e}")
-    finally:
-        db.close()
+    async with AsyncSessionLocal() as db:
+        try:
+            # Async-compatible count check
+            result = await db.execute(select(func.count()).select_from(MonitoredNiche))
+            count = result.scalar()
+            
+            if count == 0:
+                logger.info("[Startup] Seeding default monitored niches...")
+                default_niches = [
+                    "Motivation",
+                    "AI Technology",
+                    "Stoic Wisdom",
+                    "Market Trends",
+                ]
+                for n in default_niches:
+                    db.add(MonitoredNiche(niche=n, is_active=True))
+                await db.commit()
+        except Exception as e:
+            logger.error(f"[Startup] Error seeding niches: {e}")
+            await db.rollback()
 
 
 @app.on_event("startup")
@@ -249,7 +259,9 @@ v1_router = APIRouter(prefix="/v1")
 # Each router defines its own prefix - do NOT add duplicate prefixes here
 v1_router.include_router(auth.router, tags=["Authentication"])
 v1_router.include_router(discovery.router, tags=["Discovery"])
-v1_router.include_router(video.router, tags=["Video Engine"])
+v1_router.include_router(video_transform.router, tags=["Video Engine"])
+v1_router.include_router(video_generate.router, tags=["Video Engine"])
+v1_router.include_router(video_jobs.router, tags=["Video Engine"])
 v1_router.include_router(publish.router, tags=["Publishing"])
 v1_router.include_router(analytics.router, tags=["Analytics"])
 v1_router.include_router(monetization.router, tags=["Monetization"])

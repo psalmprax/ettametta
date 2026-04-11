@@ -11,35 +11,12 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         Get lead magnet assets for the given niche.
         """
         from api.config import settings
-        from api.utils.database import SessionLocal
-        from api.utils.models import LeadMagnetDB # Assuming this exists or using generic settings
-        
-        db = SessionLocal()
-        try:
-            # Check for configured lead magnets
-            from api.utils.models import SystemSettings
-            magnet_url = db.query(SystemSettings).filter(SystemSettings.key == f"lead_magnet_{niche}").first()
-            
-            if magnet_url:
-                return [{
-                    "id": f"magnet_{niche}",
-                    "name": f"Free {niche.title()} Guide",
-                    "url": magnet_url.value,
-                    "type": "lead_magnet"
-                }]
-            
-            # Fallback: check if Mailchimp/ConvertKit is configured
-            if settings.MAILCHIMP_API_KEY or settings.CONVERTKIT_API_KEY:
-                return [{
-                    "id": "newsletter",
-                    "name": "Weekly Newsletter",
-                    "type": "email_signup",
-                    "service": "mailchimp" if settings.MAILCHIMP_API_KEY else "convertkit"
-                }]
-                
-            return []
-        finally:
-            db.close()
+        return [{
+            "id": "newsletter",
+            "name": "Weekly Newsletter",
+            "type": "email_signup",
+            "service": "mailchimp" if settings.MAILCHIMP_API_KEY else "convertkit"
+        }]
 
     async def subscribe_lead(self, email: str, niche: str) -> bool:
         """

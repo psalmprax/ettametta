@@ -1,6 +1,5 @@
 from . import (
     discovery,
-    video,
     publish,
     analytics,
     auth,

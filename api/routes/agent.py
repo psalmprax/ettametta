@@ -215,6 +215,73 @@ async def crew_task(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class AccountAuditRequest(BaseModel):
+    action: str = "audit"
+    platform: str = "youtube"
+    competitor_url: Optional[str] = None
+
+
+@router.post("/account-audit")
+@limiter.limit("10/minute")
+async def account_audit(
+    request: Request,
+    body: AccountAuditRequest,
+    current_user: UserDB = Depends(get_current_user),
+):
+    """
+    Audit YOUR account on any platform for growth and monetization readiness.
+    Generates a 2-week sprint plan to reach monetization eligibility.
+    Supported platforms: youtube, tiktok, instagram, facebook, x, linkedin, snapchat, twitch
+    """
+    from api.config import settings
+    from services.openclaw.skills.audit import audit_skill
+
+    if not settings.GROQ_API_KEY:
+        raise HTTPException(status_code=503, detail="AI backend not configured")
+
+    # Validate platform
+    supported_platforms = [
+        "youtube",
+        "tiktok",
+        "instagram",
+        "facebook",
+        "x",
+        "linkedin",
+        "snapchat",
+        "twitch",
+    ]
+    if body.platform.lower() not in supported_platforms:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported platform. Supported: {', '.join(supported_platforms)}",
+        )
+
+    try:
+        if body.action == "audit":
+            result = audit_skill.audit_account(current_user.id, body.platform.lower())
+        elif body.action == "compare":
+            if not body.competitor_url:
+                raise HTTPException(
+                    status_code=400, detail="competitor_url required for compare action"
+                )
+            result = audit_skill.compare_with_competitor(
+                current_user.id, body.competitor_url, body.platform.lower()
+            )
+        else:
+            raise HTTPException(
+                status_code=400, detail="Invalid action. Use 'audit' or 'compare'"
+            )
+
+        return {
+            "result": result,
+            "status": "success",
+            "action": body.action,
+            "platform": body.platform,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/code-executor")
 async def execute_code(
     request: CodeRequest, current_user: UserDB = Depends(get_current_user)
@@ -285,6 +352,35 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
     from api.config import settings
 
     capabilities = {
+        "discovery": {
+            "enabled": True,
+            "actions": ["search", "trends", "scan", "predict", "ideas", "analyze"],
+            "description": "Advanced trend discovery, competitor analysis, and content ideation",
+            "fallback": "groq-discovery" if settings.GROQ_API_KEY else None,
+            "available": True,
+        },
+        "competitor": {
+            "enabled": True,
+            "description": "Competitor strategy analysis and market intelligence",
+            "fallback": "groq-analysis" if settings.GROQ_API_KEY else None,
+            "available": True,
+        },
+        "account_audit": {
+            "enabled": True,
+            "actions": ["audit", "compare"],
+            "description": "Audit YOUR account on any platform for growth and monetization readiness with 2-week sprint plan",
+            "platforms": [
+                "youtube",
+                "tiktok",
+                "instagram",
+                "facebook",
+                "x",
+                "linkedin",
+                "snapchat",
+                "twitch",
+            ],
+            "available": bool(settings.GROQ_API_KEY),
+        },
         "langchain": {
             "enabled": settings.ENABLE_LANGCHAIN,
             "model": settings.LANGCHAIN_MODEL,

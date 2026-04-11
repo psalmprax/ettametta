@@ -167,6 +167,16 @@ async def get_current_user(
     return user
 
 
+def admin_required(current_user: UserDB = Depends(get_current_user)):
+    from api.utils.user_models import UserRole
+    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrative privileges required for this operation."
+        )
+    return current_user
+
+
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: UserDB = Depends(get_current_user)):
     return current_user
