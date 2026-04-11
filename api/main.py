@@ -12,7 +12,6 @@ from api.utils import credit_models  # Import to register credit models with SQL
 from sqlalchemy import select, func
 
 
-
 # Tables should be managed via Alembic in production.
 
 from services.security.service import base_security_sentinel
@@ -112,16 +111,6 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 app.add_middleware(RequestLoggingMiddleware)
 
 from api.routes import (
-    discovery,
-    publish,
-    analytics,
-    auth,
-    settings as routes_settings,
-    ws,
-    no_face,
-    monetization,
-    nexus,
-    ab_testing,
     security,
     billing,
     remotion,
@@ -138,6 +127,7 @@ from api.routes import (
     video_jobs,
     video_transform,
     video_generate,
+    content_editor,
 )
 
 from fastapi.staticfiles import StaticFiles
@@ -289,6 +279,7 @@ v1_router.include_router(auth.router, tags=["Authentication"])
 v1_router.include_router(discovery.router, tags=["Discovery"])
 v1_router.include_router(video_transform.router, tags=["Video Engine"])
 v1_router.include_router(video_generate.router, tags=["Video Engine"])
+v1_router.include_router(content_editor.router, tags=["Content Editor"])
 v1_router.include_router(video_jobs.router, tags=["Video Engine"])
 v1_router.include_router(publish.router, tags=["Publishing"])
 v1_router.include_router(analytics.router, tags=["Analytics"])
