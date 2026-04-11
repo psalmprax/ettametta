@@ -3,9 +3,9 @@ const getApiBase = () => {
     if (typeof window !== "undefined") {
         // If we are on port 7202 (direct dashboard), we likely need port 7200 for API (Nginx)
         const host = window.location.host.includes(":7202") ? window.location.host.replace(":7202", ":7200") : window.location.host;
-        return `${window.location.protocol}//${host}/api/v1`;
+        return `${window.location.protocol}//${host}`;
     }
-    return "http://api:8000/api/v1";
+    return "http://api:8000";
 };
 
 export const API_BASE = getApiBase();
@@ -16,9 +16,8 @@ const getWsBase = () => {
     }
     if (typeof window !== "undefined") {
         const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const apiHost = process.env.NEXT_PUBLIC_API_HOST || window.location.hostname;
-        const apiPort = process.env.NEXT_PUBLIC_API_PORT || "7201";
-        return `${proto}//${apiHost}:${apiPort}/ws`;
+        const host = window.location.host; // Use the current host and port (e.g. 149...:7200)
+        return `${proto}//${host}/ws`;
     }
     return "ws://localhost:8000/ws";
 };
