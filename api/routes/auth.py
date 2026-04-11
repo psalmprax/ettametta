@@ -115,8 +115,7 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
         hashed_password=hashed_pwd,
     )
     db.add(new_user)
-    # db.commit() and refresh are handled by get_db dependency or can be explicit
-    await db.flush()
+    await db.commit()
     await db.refresh(new_user)
 
     return new_user
@@ -169,10 +168,11 @@ async def get_current_user(
 
 def admin_required(current_user: UserDB = Depends(get_current_user)):
     from api.utils.user_models import UserRole
+
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Administrative privileges required for this operation."
+            detail="Administrative privileges required for this operation.",
         )
     return current_user
 
@@ -205,7 +205,7 @@ async def logout(token: str = Depends(oauth2_scheme)):
     try:
         await redis_client.sadd("token_blacklist", token)
     finally:
-        await redis_client.aclose()
+        await redis_client.close()
     return {"message": "Logged out"}
 
 
@@ -268,7 +268,7 @@ async def google_auth_callback(
                 google_id=id_info.get("sub"),
             )
             db.add(user)
-            await db.flush()
+            await db.commit()
             await db.refresh(user)
 
         # Create access token

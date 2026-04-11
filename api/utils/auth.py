@@ -43,7 +43,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 async def decode_access_token(token: str):
     import redis.asyncio as redis
 
-    redis_client = redis.from_url(settings.REDIS_URL)
+    redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
 
     try:
         if await redis_client.sismember("token_blacklist", token):
@@ -54,7 +54,7 @@ async def decode_access_token(token: str):
         except JWTError:
             return None
     finally:
-        await redis_client.aclose()
+        await redis_client.close()
 
 
 # Google OAuth setup
