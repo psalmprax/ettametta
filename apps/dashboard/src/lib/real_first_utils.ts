@@ -32,6 +32,11 @@ export async function withRealFallback<T>(
             const result = await operation();
             
             if (result instanceof Response) {
+                // Special handling for authentication errors - they are expected when unauthenticated
+                if (result.status === 401) {
+                    options.onFallback?.(new Error("Unauthorized"));
+                    return options.fallback;
+                }
                 if (!result.ok) {
                     throw new Error(`API Signal Failure: ${result.status} (${result.statusText})`);
                 }
@@ -51,7 +56,7 @@ export async function withRealFallback<T>(
         }
     }
 
-    if (!options.silent) {
+    if (!options.silent && !(lastError?.message?.includes("401") || lastError?.message === "Unauthorized")) {
         console.error("Real-First Fatal Signal Break:", lastError);
         if (options.errorMessage) {
             toast.error(options.errorMessage);

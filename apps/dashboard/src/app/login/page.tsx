@@ -13,11 +13,11 @@ const validateUsername = (username: string): string | null => {
     if (!username || username.length < 3) {
         return "Username must be at least 3 characters";
     }
-    if (username.length > 50) {
-        return "Username must be less than 50 characters";
+    if (username.length > 100) {
+        return "Username must be less than 100 characters";
     }
-    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-        return "Username can only contain letters, numbers, hyphens, and underscores";
+    if (!/^[a-zA-Z0-9_@.-]+$/.test(username)) {
+        return "Username can only contain letters, numbers, @, ., and -";
     }
     return null;
 };
@@ -70,9 +70,14 @@ export default function LoginPage() {
 
             if (response.ok) {
                 const data = await response.json();
-                // Use secure login method with remember preference
-                login(data.access_token, remember);
-                router.push("/");
+                try {
+                    // Only proceed if login actually succeeds and user is verified
+                    await login(data.access_token, remember);
+                    // User is definitely loaded at this point, safe to redirect
+                    router.push("/");
+                } catch (loginErr) {
+                    setError("Session verification failed. Please try again.");
+                }
             } else {
                 const data = await response.json();
                 setError(data.detail || "Invalid credentials");
