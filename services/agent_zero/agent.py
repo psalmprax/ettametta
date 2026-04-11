@@ -11,6 +11,7 @@ from .tools.affiliate import affiliate_tool
 from .tools.market_screener import market_screener_tool
 from .tools.paperclip_kpi import paperclip_kpi
 from .tools.remotion_render import remotion_tool
+from services.optimization.ab_testing_automation import ab_testing_automation
 from api.routes.ws import notify_system_log_async
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class AgentZero:
             "screener": market_screener_tool,
             "paperclip": paperclip_kpi,
             "remotion": remotion_tool,
+            "ab_testing": ab_testing_automation,
         }
 
     async def _log(self, message: str, level: str = "INFO"):
@@ -52,6 +54,9 @@ class AgentZero:
         self.is_running = True
         self.current_step = "IDLE"
         await self._log("Autonomous Loop Ignition Sequence Initiated.", "SYSTEM")
+
+        # Start A/B testing automation in background
+        asyncio.create_task(ab_testing_automation.start())
 
         while self.is_running:
             try:

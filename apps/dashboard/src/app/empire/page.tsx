@@ -18,7 +18,9 @@ import {
     MessageSquareQuote,
     ShoppingBag,
     LinkIcon,
-    Package
+    Package,
+    Trash2,
+    Share2
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -51,24 +53,22 @@ export default function EmpirePage() {
     const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
     const [availableNiches, setAvailableNiches] = useState<string[]>([]);
+    const [autoPublishAfterClone, setAutoPublishAfterClone] = useState(false);
 
     const fetchSentinel = async () => {
         setIsRefreshing(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/no-face/sentinel/status`, {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/no-face/sentinel/status`, {
                 headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setSentinelStatus(data);
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => setSentinelStatus(data),
+                errorMessage: "Failed to load sentinel status"
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to load sentinel status");
-        } finally {
-            setIsRefreshing(false);
-        }
+        );
+        setIsRefreshing(false);
     };
 
     useEffect(() => {
@@ -79,6 +79,10 @@ export default function EmpirePage() {
     const [blueprints, setBlueprints] = useState<any[]>([]);
 
     const handleClone = async () => {
+        if (!cloningNiche) {
+            toast.error("Validation Error", { description: "Target niche is required for cloning." });
+            return;
+        }
         await withRealFallback(
             async () => {
                 const token = localStorage.getItem("et_token");
@@ -89,8 +93,9 @@ export default function EmpirePage() {
                         Authorization: `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        source_niche: selectedStrategy?.niche || availableNiches[0] || "Stoic Wisdom",
-                        target_niche: cloningNiche
+                        source_niche: selectedStrategy?.niche || availableNiches[0] || "",
+                        target_niche: cloningNiche,
+                        auto_publish: autoPublishAfterClone
                     })
                 });
             },
@@ -98,7 +103,7 @@ export default function EmpirePage() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("Strategy Cloned Successfully", {
-                        description: `Neural weights for ${selectedStrategy?.niche || "Original"} have been successfully mapped to the ${cloningNiche} niche.`
+                        description: `Neural weights for ${selectedStrategy?.niche || "Source"} have been successfully mapped to the ${cloningNiche} niche.`
                     });
                 },
                 onFallback: () => {
@@ -110,121 +115,124 @@ export default function EmpirePage() {
         );
     };
 
-    const fetchEmpireMetrics = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/empire/metrics`, {
+    const handleDeleteAffiliateLink = async (linkId: string) => {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback(
+            () => fetch(`${API_BASE}/monetization/links/${linkId}`, {
+                method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setEmpireMetrics(data);
+            }),
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setAffiliateLinks(prev => prev.filter(l => (l.id || l._id) !== linkId));
+                    toast.success("Link Purged", { description: "The affiliate link has been removed from the catalog." });
+                }
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to load empire metrics");
-        }
+        );
+    };
+
+    const fetchEmpireMetrics = async () => {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/monetization/empire/metrics`, {
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => setEmpireMetrics(data),
+                errorMessage: "Failed to load empire metrics"
+            }
+        );
     };
 
     const fetchBlueprints = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/empire/blueprints`, {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any[]>(
+            () => fetch(`${API_BASE}/monetization/empire/blueprints`, {
                 headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setBlueprints(data);
+            }),
+            {
+                fallback: [],
+                onSuccess: (data) => setBlueprints(data),
+                errorMessage: "Failed to load blueprints"
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to load blueprints");
-        }
+        );
     };
 
     const fetchAvailableNiches = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/discovery/niches`, {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<string[]>(
+            () => fetch(`${API_BASE}/discovery/niches`, {
                 headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setAvailableNiches(data);
-                if (data.length > 0 && !cloningNiche) {
-                    setCloningNiche(data[0]);
+            }),
+            {
+                fallback: [],
+                onSuccess: (data) => {
+                    setAvailableNiches(data);
+                    if (data.length > 0 && !cloningNiche) {
+                        setCloningNiche(data[0]);
+                    }
                 }
             }
-        } catch (err) {
-            console.error(err);
-        }
+        );
     };
 
     const fetchAffiliateLinks = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/links`, {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/monetization/links`, {
                 method: "GET",
                 headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setAffiliateLinks(data.links || data || []);
+            }),
+            {
+                fallback: [],
+                onSuccess: (data) => setAffiliateLinks(data.links || data || []),
+                errorMessage: "Failed to load affiliate links"
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to load affiliate links");
-        }
+        );
     };
 
     const handleAddAffiliateLink = async () => {
         if (!newLink.product_name || !newLink.link) return;
         setIsAddingLink(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/links`, {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/monetization/links`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify(newLink)
-            });
-            if (res.ok) {
-                toast.success("Affiliate Link Added", {
-                    description: `"${newLink.product_name}" is now available in the viral injection catalog.`
-                });
-                setNewLink({ product_name: "", niche: "", link: "", cta_text: "" });
-                fetchAffiliateLinks();
-            } else {
-                toast.error("Processing Error", {
-                    description: "Failed to register the link in the affiliate database."
-                });
+            }),
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("Affiliate Link Added", {
+                        description: `"${newLink.product_name}" is now available in the viral injection catalog.`
+                    });
+                    setNewLink({ product_name: "", niche: "", link: "", cta_text: "" });
+                    fetchAffiliateLinks();
+                },
+                errorMessage: "Failed to register affiliate link"
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Nexus Disconnect", {
-                description: "Failed to persist the affiliate link."
-            });
-        } finally {
-            setIsAddingLink(false);
-        }
+        );
+        setIsAddingLink(false);
     };
 
     const fetchRevenueReport = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/report`, {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/monetization/report`, {
                 headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setRevenueReport(data);
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => setRevenueReport(data),
+                errorMessage: "Failed to load revenue report"
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to load revenue report");
-        }
+        );
     };
 
     useEffect(() => {
@@ -263,29 +271,26 @@ export default function EmpirePage() {
     const handleAutoMerch = async () => {
         if (!autoMerchTopic) return;
         setIsGeneratingMerch(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/auto-merch`, {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/monetization/auto-merch`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({ trend_topic: autoMerchTopic })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                toast.success("Auto-Merch Generated", { description: data.message || `Merch created for "${autoMerchTopic}"` });
-                setAutoMerchTopic("");
-            } else {
-                toast.error("Auto-Merch Failed", { description: "Could not generate auto-merch." });
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    toast.success("Auto-Merch Generated", { description: data.message || `Merch created for "${autoMerchTopic}"` });
+                    setAutoMerchTopic("");
+                },
+                errorMessage: "Auto-Merch Failed"
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Network Error", { description: "Failed to reach server." });
-        } finally {
-            setIsGeneratingMerch(false);
-        }
+        );
+        setIsGeneratingMerch(false);
     };
 
     const handleRecommendLinks = async () => {
@@ -318,61 +323,54 @@ export default function EmpirePage() {
 
     const handleShopifySync = async () => {
         setIsSyncingShopify(true);
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/commerce/sync`, {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/monetization/commerce/sync`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
                 }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                toast.success("Shopify Synced", { description: data.message || "Commerce data synchronized." });
-            } else {
-                toast.error("Sync Failed", { description: "Could not sync Shopify data." });
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    toast.success("Shopify Synced", { description: data.message || "Commerce data synchronized." });
+                },
+                errorMessage: "Sync Failed"
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Network Error", { description: "Failed to reach server." });
-        } finally {
-            setIsSyncingShopify(false);
-        }
+        );
+        setIsSyncingShopify(false);
     };
 
     const [networkData, setNetworkData] = useState<any>({ nodes: [], links: [] });
     const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
 
     const fetchNetwork = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/empire/network`, {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/monetization/empire/network`, {
                 headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setNetworkData(data);
+            }),
+            {
+                fallback: { nodes: [], links: [] },
+                onSuccess: (data) => setNetworkData(data),
+                errorMessage: "Failed to load network data"
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to load network data");
-        }
+        );
     };
 
     const fetchTimelineEvents = async () => {
-        try {
-            const token = localStorage.getItem("et_token");
-            const res = await fetch(`${API_BASE}/monetization/empire/activity`, {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback<any[]>(
+            () => fetch(`${API_BASE}/monetization/empire/activity`, {
                 headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setTimelineEvents(data);
+            }),
+            {
+                fallback: [],
+                onSuccess: (data) => setTimelineEvents(data)
             }
-        } catch (err) {
-            console.error("Failed to fetch empire activity:", err);
-        }
+        );
     };
 
     useEffect(() => {
@@ -662,10 +660,16 @@ export default function EmpirePage() {
                                     {affiliateLinks.length > 0 ? (
                                         <div className="space-y-3">
                                             {affiliateLinks.map((link: any, i: number) => (
-                                                <div key={link.id || i} className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+                                                <div key={link.id || link._id || i} className="group p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1 relative">
                                                     <p className="text-[10px] font-black text-white uppercase tracking-wider">{link.product_name}</p>
                                                     <p className="text-[9px] text-zinc-500 truncate">{link.link}</p>
                                                     {link.cta_text && <p className="text-[9px] text-amber-500 font-bold">{link.cta_text}</p>}
+                                                    <button 
+                                                        onClick={() => handleDeleteAffiliateLink(link.id || link._id)}
+                                                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                                                     >
+                                                        <Trash2 className="h-3 w-3" />
+                                                     </button>
                                                 </div>
                                             ))}
                                         </div>
@@ -774,7 +778,7 @@ export default function EmpirePage() {
                                     {recommendations.length > 0 ? (
                                         <div className="space-y-3">
                                             {recommendations.map((rec: any, i: number) => (
-                                                <div className="p-1 rounded-lg hover:bg-white/2 transition-colors cursor-pointer" onClick={fetchSentinel}>
+                                                <div key={i} className="p-1 rounded-lg hover:bg-white/2 transition-colors">
                                                     <p className="text-[10px] font-black text-white uppercase tracking-wider">{rec.product_name || rec.name || `Link ${i + 1}`}</p>
                                                     <p className="text-[9px] text-zinc-500 truncate">{rec.link || rec.url}</p>
                                                     {rec.reason && <p className="text-[9px] text-sky-500 font-bold">{rec.reason}</p>}
@@ -885,19 +889,83 @@ export default function EmpirePage() {
                 </div>
             </div>
             
-            {/* Confirmation Modals */}
-            <ConfirmModal
-                isOpen={isCloneModalOpen}
-                onClose={() => setIsCloneModalOpen(false)}
-                onConfirm={() => {
-                    handleClone();
-                    setIsCloneModalOpen(false);
-                }}
-                title="Initialize Empire Mode?"
-                description={`This will replicate the neural weights and monetization strategies from ${selectedStrategy?.niche || "Original"} to ${cloningNiche}. This is a non-reversible strategic expansion.`}
-                confirmText="Execute Expansion"
-                variant="primary"
-            />
+            {/* Clone Modal */}
+            <AnimatePresence>
+                {isCloneModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="glass-card w-full max-w-lg rounded-[3rem] p-10 shadow-[0_32px_128px_rgba(0,0,0,0.5)] space-y-8 relative overflow-hidden"
+                        >
+                            <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
+                            <div className="flex items-center gap-6">
+                                <div className="h-16 w-16 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(var(--primary-rgb),0.15)]">
+                                    <Copy className="h-8 w-8 text-primary" />
+                                </div>
+                                <div className="space-y-1">
+                                    <h3 className="text-3xl font-black text-white uppercase tracking-tighter">
+                                        Empire Expansion
+                                    </h3>
+                                    <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">
+                                        Neural Strategy Replication
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                <p className="text-zinc-400 text-sm leading-relaxed font-medium">
+                                    Replicate monetization strategies and neural weights from <span className="text-primary font-bold">{selectedStrategy?.niche || "Original"}</span> to <span className="text-primary font-bold">{cloningNiche}</span>. This strategic expansion is non-reversible.
+                                </p>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-950/50 border border-white/5 group hover:border-emerald-500/30 transition-all cursor-pointer" onClick={() => setAutoPublishAfterClone(!autoPublishAfterClone)}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center transition-all", autoPublishAfterClone ? "bg-emerald-500/20 text-emerald-500" : "bg-zinc-900 text-zinc-700")}>
+                                                <Share2 className="h-4 w-4" />
+                                            </div>
+                                            <div className="space-y-0.5">
+                                                <p className="text-[10px] font-black uppercase tracking-tight text-white group-hover:text-emerald-400 transition-colors">Auto-Publish After Clone</p>
+                                                <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Automatically publish content using the new strategy</p>
+                                            </div>
+                                        </div>
+                                        <div className={cn("w-10 h-5 rounded-full relative transition-all duration-500", autoPublishAfterClone ? "bg-emerald-600" : "bg-zinc-800")}>
+                                            <motion.div
+                                                animate={{ x: autoPublishAfterClone ? 20 : 2 }}
+                                                className="absolute top-1 left-0 h-3 w-3 rounded-full bg-white shadow-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setIsCloneModalOpen(false)}
+                                    className="flex-1 h-16 rounded-2xl border border-white/5 text-zinc-500 font-black uppercase text-[10px] tracking-widest hover:bg-white/5 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleClone();
+                                        setIsCloneModalOpen(false);
+                                    }}
+                                    className="flex-1 h-16 rounded-2xl bg-primary text-black font-black uppercase text-[10px] tracking-widest shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                >
+                                    Execute Expansion
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <ConfirmModal
                 isOpen={isSyncModalOpen}

@@ -37,7 +37,7 @@ class InstagramPublisher(SocialPublisher):
         headers: dict,
     ) -> Optional[str]:
         """Instagram-specific upload implementation"""
-        access_token = token_manager.get_token(
+        access_token = await token_manager.get_token(
             "instagram", user_id=user_id, account_id=account_id
         )
 
@@ -156,7 +156,7 @@ class InstagramPublisher(SocialPublisher):
         headers: dict,
     ) -> dict:
         """Fetch Instagram media insights"""
-        access_token = token_manager.get_token(
+        access_token = await token_manager.get_token(
             "instagram", user_id=user_id, account_id=account_id
         )
 
@@ -184,9 +184,9 @@ class InstagramPublisher(SocialPublisher):
 
             return {"error": data.get("error", {}).get("message", "Unknown error")}
 
-    def health_check(self, user_id: int) -> bool:
+    async def health_check(self, user_id: int) -> bool:
         """Verify Instagram credentials"""
-        return token_manager.get_token("instagram", user_id=user_id) is not None
+        return await token_manager.get_token("instagram", user_id=user_id) is not None
 
 
 base_instagram_publisher = InstagramPublisher()

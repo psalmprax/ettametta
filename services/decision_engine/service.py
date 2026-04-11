@@ -6,15 +6,17 @@ from api.config import settings
 from api.utils.vault import get_secret
 from pydantic import BaseModel
 
+
 class VideoStrategy(BaseModel):
     speed_range: List[float] = [0.98, 1.02]
     jitter_intensity: float = 1.0
     recommended_filters: List[str] = []
-    hook_points: List[List[float]] = [] # [ [start, end], [start, end] ]
+    hook_points: List[List[float]] = []  # [ [start, end], [start, end] ]
     b_roll_keywords: List[str] = []
     vibe: str = "Neutral"
     explanation: str = ""
     visual_insights: Optional[Dict] = None
+
 
 class StoryScene(BaseModel):
     scene_id: int
@@ -23,11 +25,13 @@ class StoryScene(BaseModel):
     duration_hint: float = 5.0
     vibe: str = "Cinematic"
 
+
 class StoryScript(BaseModel):
     title: str
     scenes: List[StoryScene]
     vibe_summary: str
     target_duration: float
+
 
 class StrategyService:
     def __init__(self):
@@ -35,7 +39,9 @@ class StrategyService:
         self.client = AsyncGroq(api_key=self.api_key)
         self.model = "llama-3.3-70b-versatile"
 
-    async def generate_screenplay(self, prompt: str, style: str = "Cinematic") -> StoryScript:
+    async def generate_screenplay(
+        self, prompt: str, style: str = "Cinematic"
+    ) -> StoryScript:
         """
         Converts a narrative idea into a structured screenplay for multi-scene synthesis.
         """
@@ -79,27 +85,50 @@ class StrategyService:
                     vibe_summary="Cinematic Tech",
                     target_duration=15.0,
                     scenes=[
-                        StoryScene(scene_id=1, visual_prompt="A glowing AI core", narration_text="The heart of the system pulsed.", duration_hint=5.0),
-                        StoryScene(scene_id=2, visual_prompt="A digital city", narration_text="Expanding across the network.", duration_hint=5.0),
-                        StoryScene(scene_id=3, visual_prompt="Human hand touching light", narration_text="Connecting with the future.", duration_hint=5.0)
-                    ]
+                        StoryScene(
+                            scene_id=1,
+                            visual_prompt="A glowing AI core",
+                            narration_text="The heart of the system pulsed.",
+                            duration_hint=5.0,
+                        ),
+                        StoryScene(
+                            scene_id=2,
+                            visual_prompt="A digital city",
+                            narration_text="Expanding across the network.",
+                            duration_hint=5.0,
+                        ),
+                        StoryScene(
+                            scene_id=3,
+                            visual_prompt="Human hand touching light",
+                            narration_text="Connecting with the future.",
+                            duration_hint=5.0,
+                        ),
+                    ],
                 )
 
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
+                    {"role": "user", "content": user_prompt},
                 ],
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
             )
-            
+
             data = json.loads(response.choices[0].message.content)
             return StoryScript(**data)
         except Exception as e:
             logging.error(f"[StrategyService] Screenplay Error: {e}")
             raise
-    async def generate_visual_strategy(self, transcript: List[Dict], niche: str, style: str = "Default", visual_insights: Optional[Dict] = None) -> VideoStrategy:
+
+    async def generate_visual_strategy(
+        self,
+        transcript: List[Dict],
+        niche: str,
+        style: str = "Default",
+        visual_insights: Optional[Dict] = None,
+        analysis_data: Optional[Dict] = None,
+    ) -> VideoStrategy:
         """
         Analyzes transcript content, user-selected style, and VLM visual insights to decide on video editing parameters.
         """
@@ -107,19 +136,36 @@ class StrategyService:
             full_text = transcript
         else:
             full_text = " ".join([s.get("text", "") for s in transcript])
-        
+
         # Prepare Visual Context if available
         visual_context = ""
         if visual_insights:
-            visual_context = f"\nVISUAL INSIGHTS (VLM):\n{json.dumps(visual_insights, indent=2)}\n"
+            visual_context = (
+                f"\nVISUAL INSIGHTS (VLM):\n{json.dumps(visual_insights, indent=2)}\n"
+            )
+
+        # Include viral pattern analysis if available
+        analysis_context = ""
+        if analysis_data and isinstance(analysis_data, dict):
+            pattern = analysis_data.get("pattern", {})
+            if pattern:
+                analysis_context = f"""
+VIRAL PATTERN ANALYSIS:
+- Hook Score: {pattern.get("hook_score", "N/A")}
+- Retention Estimate: {pattern.get("retention_estimate", "N/A")}%
+- Pacing BPM: {pattern.get("pacing_bpm", "N/A")}
+- Style Keywords: {", ".join(pattern.get("style_keywords", []))}
+- Emotional Triggers: {", ".join(pattern.get("emotional_triggers", []))}
+"""
 
         prompt = f"""
-        You are an elite AI Video Editor. Analyze the following video transcript, niche, user-selected STYLE, and VISUAL INSIGHTS to decide the visual strategy.
-        
+        You are an elite AI Video Editor. Analyze the following video transcript, niche, user-selected STYLE, VISUAL INSIGHTS, and VIRAL PATTERN ANALYSIS to decide the visual strategy.
+
         NICHE: {niche}
         SELECTED STYLE: {style}
         TRANSCRIPT: "{full_text[:2000]}"
         {visual_context}
+        {analysis_context}
         
         DECISION CRITERIA:
         1. STYLE OVERRIDE: 
@@ -152,16 +198,20 @@ class StrategyService:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": f"You are a professional social media editor. The user wants a '{style}' aesthetic. Output JSON."},
-                    {"role": "user", "content": prompt}
+                    {
+                        "role": "system",
+                        "content": f"You are a professional social media editor. The user wants a '{style}' aesthetic. Output JSON.",
+                    },
+                    {"role": "user", "content": prompt},
                 ],
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
             )
-            
+
             data = json.loads(response.choices[0].message.content)
             return VideoStrategy(**data)
         except Exception as e:
             logging.error(f"[StrategyService] Error: {e}")
             return VideoStrategy()
+
 
 base_strategy_service = StrategyService()

@@ -69,14 +69,14 @@ else
     PIP_FLAGS="--break-system-packages"
 fi
 
-$PIP_CMD install $PIP_FLAGS --upgrade pip "setuptools<82" wheel cython numpy
+$PIP_CMD install $PIP_FLAGS --no-cache-dir --upgrade pip "setuptools<82" wheel cython numpy
 
 # 3. Hardware-Specific PyTorch Installation
 echo "🔍 [Hardware] Detecting optimal compute backend..."
 RAW_TORCH_CMD=$("$PYTHON_BIN" "$SCRIPT_DIR/check_hardware.py" --pip || python3 "$SCRIPT_DIR/check_hardware.py" --pip)
 if [[ $RAW_TORCH_CMD == pip* ]]; then
     # Inject flags into the command
-    TORCH_CMD="${RAW_TORCH_CMD/pip install/ $PIP_CMD install $PIP_FLAGS }"
+    TORCH_CMD="${RAW_TORCH_CMD/pip install/ $PIP_CMD install $PIP_FLAGS --no-cache-dir }"
 else
     TORCH_CMD="$RAW_TORCH_CMD"
 fi
@@ -87,17 +87,17 @@ eval "$TORCH_CMD"
 # 4. Manual Stable Installations (Problematic Packages)
 echo "🛠️  [Build] Installing stable fairseq from source..."
 if [ ! -d "fairseq" ]; then
-    git clone https://github.com/facebookresearch/fairseq.git
-    cd fairseq && "$PIP_CMD" install $PIP_FLAGS -e . && cd ..
+    git clone --depth 1 https://github.com/facebookresearch/fairseq.git
+    cd fairseq && "$PIP_CMD" install $PIP_FLAGS --no-cache-dir -e . && cd ..
 fi
 
 echo "🛠️  [Build] Installing stable basicsr..."
 # Use --no-deps to skip complex resolution loops for aux libraries
-"$PIP_CMD" install $PIP_FLAGS basicsr --no-build-isolation --no-deps
+"$PIP_CMD" install $PIP_FLAGS basicsr --no-cache-dir --no-build-isolation --no-deps
 
 # 5. Global Dependencies
 echo "📚 [Main] Installing remaining requirements..."
-"$PIP_CMD" install $PIP_FLAGS -r "$SCRIPT_DIR/requirements.txt"
+"$PIP_CMD" install $PIP_FLAGS --no-cache-dir -r "$SCRIPT_DIR/requirements.txt"
 
 # 6. Final Validation
 echo "🎨 [Summary]# Global variables

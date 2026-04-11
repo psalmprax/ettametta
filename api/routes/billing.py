@@ -6,7 +6,9 @@ from pydantic import BaseModel
 from typing import Optional
 from api.utils.user_models import UserDB
 from api.routes.auth import get_current_user
-from api.utils.database import SessionLocal
+from api.utils.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from api.config import settings
 
 router = APIRouter(prefix="/billing", tags=["Billing"])
@@ -25,7 +27,8 @@ class SubscriptionResponse(BaseModel):
 @router.post("/create-checkout-session")
 async def create_checkout_session(
     request: CreateCheckoutRequest,
-    current_user: UserDB = Depends(get_current_user)
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """Create a Stripe checkout session for subscription"""
     from services.payment.stripe_service import get_payment_service, SUBSCRIPTION_TIERS
@@ -39,7 +42,6 @@ async def create_checkout_session(
         raise HTTPException(status_code=400, detail="Tier not available for purchase")
     
     # Get or create Stripe customer
-    db = SessionLocal()
     try:
         # Check if user has stripe_customer_id
         stripe_customer_id = getattr(current_user, 'stripe_customer_id', None)
@@ -55,8 +57,7 @@ async def create_checkout_session(
             
             # Save stripe_customer_id to user record
             current_user.stripe_customer_id = stripe_customer_id
-            db.merge(current_user) # Using merge to ensure we're attached to current session
-            db.commit()
+            await db.commit()
         
         # Create checkout session
         payment_service = get_payment_service()
@@ -70,19 +71,20 @@ async def create_checkout_session(
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Payment error: {str(e)}")
-    finally:
-        db.close()
 
 
 @router.get("/subscription")
-async def get_subscription(current_user: UserDB = Depends(get_current_user)):
+async def get_subscription(
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """Get current user's subscription status"""
     from services.payment.stripe_service import get_payment_service, SUBSCRIPTION_TIERS
     
-    # Get user's subscription from database
-    db = SessionLocal()
     try:
-        user = db.query(UserDB).filter(UserDB.id == current_user.id).first()
+        stmt = select(UserDB).where(UserDB.id == current_user.id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
@@ -114,18 +116,20 @@ async def get_subscription(current_user: UserDB = Depends(get_current_user)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching subscription: {str(e)}")
-    finally:
-        db.close()
 
 
 @router.post("/cancel")
-async def cancel_subscription(current_user: UserDB = Depends(get_current_user)):
+async def cancel_subscription(
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """Cancel current subscription"""
     from services.payment.stripe_service import get_payment_service
     
-    db = SessionLocal()
     try:
-        user = db.query(UserDB).filter(UserDB.id == current_user.id).first()
+        stmt = select(UserDB).where(UserDB.id == current_user.id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
@@ -150,8 +154,6 @@ async def cancel_subscription(current_user: UserDB = Depends(get_current_user)):
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error cancelling subscription: {str(e)}")
-    finally:
-        db.close()
 
 
 @router.post("/webhook")

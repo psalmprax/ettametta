@@ -11,9 +11,10 @@ interface VideoPreviewModalProps {
     originalUrl?: string | null;
     title?: string;
     status?: string | null;
+    onProceedToTransformation?: () => void;
 }
 
-export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, onClose, videoUrl, originalUrl, title, status }) => {
+export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, onClose, videoUrl, originalUrl, title, status, onProceedToTransformation }) => {
     const [showOriginal, setShowOriginal] = React.useState(false);
     const [isExporting, setIsExporting] = React.useState(false);
     const [shareStatus, setShareStatus] = React.useState<string | null>(null);
@@ -147,6 +148,15 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                                 <Download className="h-4 w-4" />
                                 {isExporting ? "Exporting..." : "Export"}
                             </button>
+                            {onProceedToTransformation && (
+                                <button
+                                    onClick={onProceedToTransformation}
+                                    className="flex items-center gap-3 bg-primary text-black px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-primary/20 hover:scale-105 transition-all"
+                                >
+                                    <Zap className="h-4 w-4" />
+                                    Proceed to Transformation
+                                </button>
+                            )}
                         </div>
 
                         <div className="hidden md:flex items-center gap-10">

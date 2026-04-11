@@ -69,7 +69,7 @@ interface NicheTrend {
     avg_engagement: number;
 }
 
-export default function DiscoveryPage() {
+function DiscoveryContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [candidates, setCandidates] = useState<ContentCandidate[]>([]);
@@ -1584,3 +1584,12 @@ export default function DiscoveryPage() {
         </DashboardLayout>
     );
 }
+
+export default function DiscoveryPage() {
+    return (
+        <React.Suspense fallback={<DashboardLayout><div className="flex items-center justify-center min-vh-100"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>}>
+            <DiscoveryContent />
+        </React.Suspense>
+    );
+}
+

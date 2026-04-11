@@ -19,7 +19,7 @@ class NexusOrchestrator:
 
     async def assemble_video(
         self,
-        job_id: int,
+        job_id: str,
         niche: str,
         script_segments: List[Any],
         voiceover_paths: List[str],
@@ -33,7 +33,11 @@ class NexusOrchestrator:
         from api.routes.ws import notify_nexus_job_update_sync
         from services.nexus_engine.blueprints import get_blueprint_by_id
 
-        blueprint = get_blueprint_by_id(blueprint_id)
+        # Need to use async session here for get_blueprint_by_id
+        from api.utils.database import async_session_factory
+        async with async_session_factory() as db:
+            blueprint = await get_blueprint_by_id(db, blueprint_id)
+        
         logging.info(f"[Nexus] Starting {blueprint['name']} assembly for Job {job_id}")
 
         def update_node(node_type: str, status: str, progress: int):
@@ -49,7 +53,7 @@ class NexusOrchestrator:
         try:
             # 1. Ingress Node
             update_node("ingress", "ACTIVE", 20)
-            await asyncio.sleep(1) # Simulated network/fetch overhead
+            # HARDENED: Removed simulated network overhead sleep
             update_node("ingress", "COMPLETED", 30)
 
             # 2. Cognition Node
@@ -57,25 +61,49 @@ class NexusOrchestrator:
             from services.video_engine.remotion_service import remotion_service
             import cv2 
 
-            remotion_clips = []
-            for v_path in visual_paths:
-                if not os.path.exists(v_path):
-                    continue
-                cap = cv2.VideoCapture(v_path)
-                frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                cap.release()
-                remotion_clips.append({"url": v_path, "durationInFrames": frame_count})
+            def get_frame_count(path: str) -> Optional[int]:
+                if not os.path.exists(path):
+                    return None
+                try:
+                    cap = cv2.VideoCapture(path)
+                    count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    cap.release()
+                    return count
+                except Exception:
+                    return None
+
+            # Parallelize metadata extraction via threads to avoid blocking the event loop
+            counts = await asyncio.gather(*[
+                asyncio.to_thread(get_frame_count, v_path) for v_path in visual_paths
+            ])
+            
+            remotion_clips = [
+                {"url": v_path, "durationInFrames": count}
+                for v_path, count in zip(visual_paths, counts) if count is not None
+            ]
             
             update_node("cognition", "COMPLETED", 50)
 
             # 3. Synthesis Node
             update_node("synthesis", "ACTIVE", 60)
+            
+            # Detect CTAs for visual overlays
+            cta_segment = next((s for s in script_segments if s.get("type") in ["engagement", "cta"]), None)
+            cta_props = {}
+            if cta_segment:
+                cta_props = {
+                    "showCtaOverlay": True,
+                    "ctaType": cta_segment.get("type"),
+                    "ctaText": cta_segment.get("text", "")[:50] # Keep it short for overlay
+                }
+
             audio_url = voiceover_paths[0] if voiceover_paths else music_path
             props = {
-                "title": f"{niche} Secrets",
-                "subtitle": "Discover the Truth",
+                "title": niche.title(), # Hardened: Use real niche name
+                "subtitle": "Analysis & Insights", # Less of a "template" than "Discover the Truth"
                 "clips": remotion_clips,
                 "audioUrl": audio_url,
+                **cta_props
             }
 
             output_filename = f"nexus_{job_id}_{niche.replace(' ', '_')}.mp4"

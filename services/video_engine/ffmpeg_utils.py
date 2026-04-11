@@ -29,12 +29,12 @@ class FFmpegTransformer:
         # scale=w:h*zoom (zoom) -> crop=w:h (center crop) -> hflip (mirror) -> eq (contrast/brightness)
         
         # 1. Probe original size to maintain output consistent
-        probe_cmd = ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", input_path]
         try:
             size_out = subprocess.check_output(probe_cmd).decode('utf-8').strip()
             w, h = size_out.split('x')
-        except:
-            w, h = "720", "1280" # Fallback
+        except Exception as e:
+            logging.error(f"[FFmpeg] Probe failed for {input_path}: {e}")
+            raise RuntimeError(f"FFmpeg Probe failed. Cannot determine video resolution for {input_path}")
 
         filters = []
         if zoom > 1.0:

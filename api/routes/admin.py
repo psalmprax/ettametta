@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from sqlalchemy.orm import Session
+import logging
 import os
-import shutil
 import re
+import shutil
 import threading
 import time
 from datetime import datetime
+from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException, Depends, Request, status, UploadFile, File
 try:
     from dotenv import load_dotenv
 except ImportError:
@@ -14,10 +16,11 @@ except ImportError:
 from api.utils.database import get_db
 from api.utils.user_models import UserDB, UserRole
 from api.routes.auth import get_current_user
+from sqlalchemy.ext.asyncio import AsyncSession
 from api.utils.audit_service import audit_service
-from fastapi import Request
 
 router = APIRouter(prefix="/admin", tags=["Admin Operations"])
+logger = logging.getLogger(__name__)
 
 def admin_required(current_user: UserDB = Depends(get_current_user)):
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
@@ -52,7 +55,7 @@ async def upload_env_file(
     request: Request,
     file: UploadFile = File(...),
     current_user: UserDB = Depends(admin_required),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Securely uploads and replaces the system .env file.
@@ -98,7 +101,7 @@ async def upload_env_file(
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = f".env.bak_{timestamp}"
         shutil.copy(env_path, backup_path)
-        print(f"📦 Admin: Created environment backup at {backup_path}")
+        logger.info(f"📦 Admin: Created environment backup at {backup_path}")
 
     # 4. Persistence
     with open(env_path, "w") as f:
@@ -107,10 +110,10 @@ async def upload_env_file(
     # 5. Hot-swap (Current Process Only)
     if load_dotenv:
         load_dotenv(env_path, override=True)
-        print("⚡ Admin: Environment hot-swapped for current API process.")
+        logger.info("⚡ Admin: Environment hot-swapped for current API process.")
     
     # 6. Audit Logging
-    audit_service.log(
+    await audit_service.log(
         action="ADMIN_ENV_UPLOAD",
         user_id=current_user.id,
         resource_type="SYSTEM",
@@ -131,13 +134,13 @@ async def upload_env_file(
 async def restart_system(
     request: Request,
     current_user: UserDB = Depends(admin_required),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Triggers a controlled shutdown of the API process. 
     Requires 'restart: always' in docker-compose.yml to effect a reboot.
     """
-    audit_service.log(
+    await audit_service.log(
         action="ADMIN_SYSTEM_RESTART",
         user_id=current_user.id,
         resource_type="SYSTEM",
@@ -150,7 +153,7 @@ async def restart_system(
 
     def kill_process():
         time.sleep(2)
-        print("🛑 Admin Protocol: Terminating process for lifecycle reboot...")
+        logger.warning("🛑 Admin Protocol: Terminating process for lifecycle reboot...")
         os._exit(0)
 
     threading.Thread(target=kill_process, daemon=True).start()

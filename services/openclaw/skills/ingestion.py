@@ -144,10 +144,11 @@ class DataIngestionSkill:
         Get YouTube trending via RSS (no API key).
         """
         try:
-            feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJg1A"
-            # This is a placeholder - YouTube requires API for true trending
-            return "📺 YouTube trending requires API key. Use RSS feeds instead."
-
+            # Hardened: YouTube true trending requires API authentication.
+            # No placeholders allowed.
+            return (
+                "📺 YouTube trending requires a valid GOOGLE_API_KEY. Feature locked."
+            )
         except Exception as e:
             logger.error(f"YouTube Error: {e}")
             return f"⚠️ Error: {str(e)}"

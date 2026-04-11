@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from typing import List, Dict
 from sqlalchemy.orm import Session
 from api.config import settings
-from api.utils.database import SessionLocal
 from api.utils.models import VideoJobDB, NexusJobDB, ScheduledPostDB
+from sqlalchemy.ext.asyncio import AsyncSession
 from .service import base_storage_service
 
 class StorageManager:
@@ -49,8 +49,8 @@ class StorageManager:
             bytes_to_liberate = current_size - (self.threshold_bytes * 0.8)
             bytes_liberated = 0
 
-            db = SessionLocal()
-            try:
+            from api.utils.database import async_session_factory
+            async with async_session_factory() as db:
                 for file_path, _ in files:
                     if bytes_liberated >= bytes_to_liberate:
                         break
@@ -62,12 +62,11 @@ class StorageManager:
                         logging.info(f"[StorageManager] Migrated {file_path}. Liberated {file_size / (1024**2):.2f} MB")
                     else:
                         logging.error(f"[StorageManager] Failed to migrate {file_path}")
-            finally:
-                db.close()
 
-    async def _safe_move_to_cloud(self, local_path: str, db: Session) -> bool:
+    async def _safe_move_to_cloud(self, local_path: str, db: AsyncSession) -> bool:
         """Moves a single file to OCI and updates DB references."""
         filename = os.path.basename(local_path)
+        from sqlalchemy import select
         
         try:
             # 1. Upload to Cloud
@@ -78,24 +77,28 @@ class StorageManager:
                 return False
 
             # 2. Update Database References
-            # We search in multiple tables where this file might be referenced
-            
             # VideoJobDB
-            video_jobs = db.query(VideoJobDB).filter(VideoJobDB.output_path == local_path).all()
+            stmt = select(VideoJobDB).where(VideoJobDB.output_path == local_path)
+            result = await db.execute(stmt)
+            video_jobs = result.scalars().all()
             for job in video_jobs:
                 job.output_path = object_key
             
             # NexusJobDB
-            nexus_jobs = db.query(NexusJobDB).filter(NexusJobDB.output_path == local_path).all()
+            stmt = select(NexusJobDB).where(NexusJobDB.output_path == local_path)
+            result = await db.execute(stmt)
+            nexus_jobs = result.scalars().all()
             for n_job in nexus_jobs:
                 n_job.output_path = object_key
             
             # ScheduledPostDB
-            scheduled_posts = db.query(ScheduledPostDB).filter(ScheduledPostDB.video_path == local_path).all()
+            stmt = select(ScheduledPostDB).where(ScheduledPostDB.video_path == local_path)
+            result = await db.execute(stmt)
+            scheduled_posts = result.scalars().all()
             for post in scheduled_posts:
                 post.video_path = object_key
             
-            db.commit()
+            await db.commit()
 
             # 4. Verify (In a real scenario, we might want a checksum, but exist check is min)
             # 5. Delete Local

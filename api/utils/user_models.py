@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Integer, String, DateTime, Enum, Boolean, JSON
 from .database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
+import uuid
 
 
 class UserRole(str, enum.Enum):
@@ -21,7 +22,7 @@ class SubscriptionTier(str, enum.Enum):
 class UserDB(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
@@ -37,5 +38,5 @@ class UserDB(Base):
     google_id = Column(String, nullable=True)
     api_keys = Column(JSON, nullable=True)
     system_settings = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

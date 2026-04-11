@@ -342,6 +342,35 @@ export default function SettingsPage() {
         setIsVerifying(prev => ({ ...prev, [platform]: false }));
     };
 
+    const [isVerifyingService, setIsVerifyingService] = useState<Record<string, boolean>>({});
+
+    const handleVerifyService = async (serviceId: string) => {
+        setIsVerifyingService(prev => ({ ...prev, [serviceId]: true }));
+        await withRealFallback(
+            async () => {
+                const token = localStorage.getItem("et_token");
+                return fetch(`${API_BASE}/settings/verify/${serviceId}`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    if (data.status === "success") {
+                        toast.success("Handshake Successful", { description: data.message });
+                    } else {
+                        toast.error("Handshake Failed", { description: data.message });
+                    }
+                },
+                onFallback: (err: any) => {
+                    toast.error("Verification Error", { description: err.message });
+                }
+            }
+        );
+        setIsVerifyingService(prev => ({ ...prev, [serviceId]: false }));
+    };
+
     const handleChangePassword = async () => {
         if (passwordFields.new_password !== passwordFields.confirm_password) {
             setPasswordStatus("error");
@@ -868,16 +897,26 @@ export default function SettingsPage() {
                                                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest transition-colors">Membership Platform (Patreon/Substack)</label>
                                                         {errors.membership_platform_url && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter">{errors.membership_platform_url.message}</span>}
                                                     </div>
-                                                    <input
-                                                        type="text"
-                                                        value={settings.membership_platform_url || ""}
-                                                        onChange={(e) => updateSetting("membership_platform_url", e.target.value)}
-                                                        className={cn(
-                                                            "w-full bg-zinc-950/50 border rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 outline-none transition-all",
-                                                            errors.membership_platform_url ? "border-red-500/50 ring-red-500/20" : "border-white/5 ring-primary/50"
-                                                        )}
-                                                        placeholder="https://patreon.com/your-name"
-                                                    />
+                                                    <div className="relative">
+                                                        <input
+                                                            type="text"
+                                                            value={settings.membership_platform_url || ""}
+                                                            onChange={(e) => updateSetting("membership_platform_url", e.target.value)}
+                                                            className={cn(
+                                                                "w-full bg-zinc-950/50 border rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 outline-none transition-all",
+                                                                errors.membership_platform_url ? "border-red-500/50 ring-red-500/20" : "border-white/5 ring-primary/50"
+                                                            )}
+                                                            placeholder="https://patreon.com/your-name"
+                                                        />
+                                                        <button
+                                                            onClick={() => handleVerifyService("membership")}
+                                                            disabled={isVerifyingService["membership"] || !settings.membership_platform_url}
+                                                            className="absolute right-2 top-2 bottom-2 px-4 rounded-xl text-[8px] font-black uppercase tracking-widest bg-white/5 text-zinc-400 hover:bg-white/10 transition-all flex items-center gap-2"
+                                                        >
+                                                            {isVerifyingService["membership"] ? <Loader2 className="h-3 w-3 animate-spin" /> : <Globe className="h-3 w-3" />}
+                                                            Verify Connection
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center px-2">
@@ -906,16 +945,26 @@ export default function SettingsPage() {
                                                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest transition-colors">Online Academy / Course URL</label>
                                                         {errors.course_platform_url && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter">{errors.course_platform_url.message}</span>}
                                                     </div>
-                                                    <input
-                                                        type="text"
-                                                        value={settings.course_platform_url || ""}
-                                                        onChange={(e) => updateSetting("course_platform_url", e.target.value)}
-                                                        className={cn(
-                                                            "w-full bg-zinc-950/50 border rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 outline-none transition-all",
-                                                            errors.course_platform_url ? "border-red-500/50 ring-red-500/20" : "border-white/5 ring-primary/50"
-                                                        )}
-                                                        placeholder="https://your-academy.com/course"
-                                                    />
+                                                    <div className="relative">
+                                                        <input
+                                                            type="text"
+                                                            value={settings.course_platform_url || ""}
+                                                            onChange={(e) => updateSetting("course_platform_url", e.target.value)}
+                                                            className={cn(
+                                                                "w-full bg-zinc-950/50 border rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 outline-none transition-all",
+                                                                errors.course_platform_url ? "border-red-500/50 ring-red-500/20" : "border-white/5 ring-primary/50"
+                                                            )}
+                                                            placeholder="https://your-academy.com/course"
+                                                        />
+                                                        <button
+                                                            onClick={() => handleVerifyService("course")}
+                                                            disabled={isVerifyingService["course"] || !settings.course_platform_url}
+                                                            className="absolute right-2 top-2 bottom-2 px-4 rounded-xl text-[8px] font-black uppercase tracking-widest bg-white/5 text-zinc-400 hover:bg-white/10 transition-all flex items-center gap-2"
+                                                        >
+                                                            {isVerifyingService["course"] ? <Loader2 className="h-3 w-3 animate-spin" /> : <Globe className="h-3 w-3" />}
+                                                            Verify
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center px-2">
@@ -947,16 +996,26 @@ export default function SettingsPage() {
                                                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest transition-colors">Donation/Tip Link</label>
                                                         {errors.donation_link && <span className="text-[9px] font-bold text-red-500 uppercase tracking-tighter">{errors.donation_link.message}</span>}
                                                     </div>
-                                                    <input
-                                                        type="text"
-                                                        value={settings.donation_link || ""}
-                                                        onChange={(e) => updateSetting("donation_link", e.target.value)}
-                                                        className={cn(
-                                                            "w-full bg-zinc-950/50 border rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 outline-none transition-all",
-                                                            errors.donation_link ? "border-red-500/50 ring-red-500/20" : "border-white/5 ring-primary/50"
-                                                        )}
-                                                        placeholder="https://buymeacoffee.com/name"
-                                                    />
+                                                    <div className="relative">
+                                                        <input
+                                                            type="text"
+                                                            value={settings.donation_link || ""}
+                                                            onChange={(e) => updateSetting("donation_link", e.target.value)}
+                                                            className={cn(
+                                                                "w-full bg-zinc-950/50 border rounded-2xl py-4 px-6 text-white text-sm focus:ring-2 outline-none transition-all",
+                                                                errors.donation_link ? "border-red-500/50 ring-red-500/20" : "border-white/5 ring-primary/50"
+                                                            )}
+                                                            placeholder="https://buymeacoffee.com/name"
+                                                        />
+                                                        <button
+                                                            onClick={() => handleVerifyService("crypto")}
+                                                            disabled={isVerifyingService["crypto"] || !settings.donation_link}
+                                                            className="absolute right-2 top-2 bottom-2 px-4 rounded-xl text-[8px] font-black uppercase tracking-widest bg-white/5 text-zinc-400 hover:bg-white/10 transition-all flex items-center gap-2"
+                                                        >\
+                                                            {isVerifyingService["crypto"] ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2 className="h-3 w-3" />}
+                                                            Test Connection
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-2">Crypto Node Addresses</label>

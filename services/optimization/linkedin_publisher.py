@@ -197,9 +197,9 @@ class LinkedInPublisher(SocialPublisher):
 
             return {"error": data.get("message", "Unknown error")}
 
-    def health_check(self, user_id: int) -> bool:
+    async def health_check(self, user_id: int) -> bool:
         """Verify LinkedIn credentials"""
-        return token_manager.get_token("linkedin", user_id=user_id) is not None
+        return await token_manager.get_token("linkedin", user_id=user_id) is not None
 
 
 base_linkedin_publisher = LinkedInPublisher()

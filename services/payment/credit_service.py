@@ -1,9 +1,4 @@
-"""
-Credit Service for Viral Forge
-Handles credit purchases, consumption, and referral rewards
-"""
-
-from api.utils.database import SessionLocal
+from api.utils.database import async_session_factory
 from api.utils.credit_models import (
     UserCreditDB,
     CreditTransactionDB,
@@ -16,6 +11,10 @@ from api.utils.user_models import UserDB, SubscriptionTier
 from datetime import datetime, timedelta, timezone
 import uuid
 import logging
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
+from api.utils.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -59,57 +58,56 @@ class CreditService:
         "studio": 1000,
     }
 
-    def get_user_credits(self, user_id: int) -> UserCreditDB:
+    async def get_user_credits(self, user_id: str, db) -> UserCreditDB:
         """Get or create user's credit balance"""
-        db = SessionLocal()
-        try:
-            user_credits = (
-                db.query(UserCreditDB).filter(UserCreditDB.user_id == user_id).first()
+        from sqlalchemy import select
+        
+        result = await db.execute(
+            select(UserCreditDB).where(UserCreditDB.user_id == user_id)
+        )
+        user_credits = result.scalar_one_or_none()
+
+        if not user_credits:
+            user_credits = UserCreditDB(
+                user_id=user_id,
+                balance=0,
+                lifetime_purchased=0,
+                lifetime_earned=0,
+                lifetime_spent=0,
             )
+            db.add(user_credits)
+            await db.commit()
+            await db.refresh(user_credits)
 
-            if not user_credits:
-                user_credits = UserCreditDB(
-                    user_id=user_id,
-                    balance=0,
-                    lifetime_purchased=0,
-                    lifetime_earned=0,
-                    lifetime_spent=0,
-                )
-                db.add(user_credits)
-                db.commit()
-                db.refresh(user_credits)
+        return user_credits
 
-            return user_credits
-        finally:
-            db.close()
-
-    def get_balance(self, user_id: int) -> int:
+    async def get_balance(self, user_id: str, db) -> int:
         """Get user's credit balance"""
-        user_credits = self.get_user_credits(user_id)
+        user_credits = await self.get_user_credits(user_id, db)
         return user_credits.balance
 
-    def has_sufficient_credits(self, user_id: int, amount: int) -> bool:
+    async def has_sufficient_credits(self, user_id: str, amount: int, db) -> bool:
         """Check if user has enough credits"""
-        return self.get_balance(user_id) >= amount
+        balance = await self.get_balance(user_id, db)
+        return balance >= amount
 
-    def consume_credits(
-        self, user_id: int, amount: int, action: str, reference_id: str = None
+    async def consume_credits(
+        self, user_id: str, amount: int, action: str, db, reference_id: str = None
     ) -> tuple[bool, str]:
         """
         Attempt to consume credits for an action.
         Returns (success, message)
-        Uses SELECT FOR UPDATE to prevent race conditions.
         """
-
-        db = SessionLocal()
+        from sqlalchemy import select
+        
         try:
             # Use SELECT FOR UPDATE to lock the row and prevent race conditions
-            user_credits = (
-                db.query(UserCreditDB)
-                .filter(UserCreditDB.user_id == user_id)
+            result = await db.execute(
+                select(UserCreditDB)
+                .where(UserCreditDB.user_id == user_id)
                 .with_for_update()
-                .first()
             )
+            user_credits = result.scalar_one_or_none()
 
             if not user_credits:
                 return False, "User credits not found"
@@ -123,7 +121,7 @@ class CreditService:
             # Deduct credits
             user_credits.balance -= amount
             user_credits.lifetime_spent += amount
-                user_credits.updated_at = utc_now()
+            user_credits.updated_at = utc_now()
 
             # Record transaction
             transaction = CreditTransactionDB(
@@ -135,7 +133,9 @@ class CreditService:
                 reference_id=reference_id,
             )
             db.add(transaction)
-            db.commit()
+            # Hardened: Let caller commit unless it's a standalone call?
+            # Actually, consume_credits should commit to be atomic for the consumption.
+            await db.commit()
 
             logger.info(
                 f"[CreditService] User {user_id} spent {amount} credits for {action}"
@@ -143,45 +143,30 @@ class CreditService:
             return True, "Credits consumed successfully"
 
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.error(f"[CreditService] Error consuming credits: {e}")
             return False, str(e)
-        finally:
-            db.close()
 
-    def add_credits(
+    async def add_credits(
         self,
-        user_id: int,
+        user_id: str,
         amount: int,
         transaction_type: str,
+        db: AsyncSession,
         description: str = None,
         reference_id: str = None,
     ) -> bool:
         """Add credits to user's balance"""
-        db = SessionLocal()
         try:
-            user_credits = (
-                db.query(UserCreditDB).filter(UserCreditDB.user_id == user_id).first()
-            )
-
-            if not user_credits:
-                user_credits = UserCreditDB(
-                    user_id=user_id,
-                    balance=amount,
-                    lifetime_purchased=amount if transaction_type == "purchase" else 0,
-                    lifetime_earned=amount if transaction_type == "earned" else 0,
-                )
-                db.add(user_credits)
-            else:
-                user_credits.balance += amount
+            user_credits = await self.get_user_credits(user_id, db)
+            user_credits.balance += amount
             user_credits.updated_at = utc_now()
 
-                if transaction_type == "purchase":
-                    user_credits.lifetime_purchased += amount
-                elif transaction_type == "earned":
-                    user_credits.lifetime_earned += amount
+            if transaction_type == "purchase":
+                user_credits.lifetime_purchased += amount
+            elif transaction_type == "earned":
+                user_credits.lifetime_earned += amount
 
-            # Record transaction
             transaction = CreditTransactionDB(
                 user_id=user_id,
                 amount=amount,
@@ -191,81 +176,68 @@ class CreditService:
                 reference_id=reference_id,
             )
             db.add(transaction)
-            db.commit()
-
-            logger.info(f"[CreditService] Added {amount} credits to user {user_id}")
+            await db.commit()
             return True
-
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.error(f"[CreditService] Error adding credits: {e}")
             return False
-        finally:
-            db.close()
 
-    def get_transaction_history(
-        self, user_id: int, limit: int = 50, offset: int = 0
+    async def get_transaction_history(
+        self, user_id: str, db: AsyncSession, limit: int = 50, offset: int = 0
     ) -> list:
         """Get user's credit transaction history"""
-        db = SessionLocal()
-        try:
-            transactions = (
-                db.query(CreditTransactionDB)
-                .filter(CreditTransactionDB.user_id == user_id)
-                .order_by(CreditTransactionDB.created_at.desc())
-                .offset(offset)
-                .limit(limit)
-                .all()
-            )
+        stmt = (
+            select(CreditTransactionDB)
+            .where(CreditTransactionDB.user_id == user_id)
+            .order_by(CreditTransactionDB.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        result = await db.execute(stmt)
+        transactions = result.scalars().all()
+        return [
+            {
+                "id": t.id,
+                "amount": t.amount,
+                "balance_after": t.balance_after,
+                "type": t.transaction_type,
+                "description": t.description,
+                "created_at": t.created_at.isoformat(),
+            }
+            for t in transactions
+        ]
 
-            return [
-                {
-                    "id": t.id,
-                    "amount": t.amount,
-                    "balance_after": t.balance_after,
-                    "type": t.transaction_type,
-                    "description": t.description,
-                    "created_at": t.created_at.isoformat(),
-                }
-                for t in transactions
-            ]
-        finally:
-            db.close()
-
-    def get_credit_packages(self) -> list:
+    async def get_credit_packages(self, db: AsyncSession) -> list:
         """Get available credit packages for purchase"""
-        db = SessionLocal()
-        try:
-            packages = (
-                db.query(CreditPackageDB)
-                .filter(CreditPackageDB.is_active == True)
-                .order_by(CreditPackageDB.price_cents.asc())
-                .all()
-            )
+        stmt = (
+            select(CreditPackageDB)
+            .where(CreditPackageDB.is_active == True)
+            .order_by(CreditPackageDB.price_cents.asc())
+        )
+        result = await db.execute(stmt)
+        packages = result.scalars().all()
 
-            return [
-                {
-                    "id": p.id,
-                    "name": p.name,
-                    "credits": p.credits,
-                    "price_cents": p.price_cents,
-                    "features": p.features,
-                }
-                for p in packages
-            ]
-        finally:
-            db.close()
+        return [
+            {
+                "id": p.id,
+                "name": p.name,
+                "credits": p.credits,
+                "price_cents": p.price_cents,
+                "features": p.features,
+            }
+            for p in packages
+        ]
 
     # === Referral System ===
 
-    def generate_referral_code(self, user_id: int) -> str:
+    async def generate_referral_code(self, user_id: str, db: AsyncSession) -> str:
         """Generate a unique referral code for user"""
-        db = SessionLocal()
         try:
             # Check if user already has a code
-            existing = (
-                db.query(ReferralDB).filter(ReferralDB.referrer_id == user_id).first()
-            )
+            stmt = select(ReferralDB).where(ReferralDB.referrer_id == user_id)
+            result = await db.execute(stmt)
+            existing = result.scalar_one_or_none()
 
             if existing:
                 return existing.referral_code
@@ -276,40 +248,33 @@ class CreditService:
                 referrer_id=user_id, referral_code=code, status="pending"
             )
             db.add(referral)
-            db.commit()
+            await db.commit()
 
             return code
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"[CreditService] Error generating referral code: {e}")
+            raise
 
-        finally:
-            db.close()
-
-    def get_referral_code(self, user_id: int) -> str:
+    async def get_referral_code(self, user_id: str, db: AsyncSession) -> str:
         """Get user's referral code"""
-        db = SessionLocal()
-        try:
-            referral = (
-                db.query(ReferralDB).filter(ReferralDB.referrer_id == user_id).first()
-            )
+        stmt = select(ReferralDB).where(ReferralDB.referrer_id == user_id)
+        result = await db.execute(stmt)
+        referral = result.scalar_one_or_none()
 
-            if referral:
-                return referral.referral_code
+        if referral:
+            return referral.referral_code
 
-            return self.generate_referral_code(user_id)
-        finally:
-            db.close()
+        return await self.generate_referral_code(user_id, db)
 
-    def apply_referral_code(
-        self, referrer_id: int, referral_code: str
+    async def apply_referral_code(
+        self, referrer_id: str, referral_code: str, db: AsyncSession
     ) -> tuple[bool, str]:
         """Apply a referral code (when new user signs up)"""
-        db = SessionLocal()
         try:
-            # Find the referral by code
-            referral = (
-                db.query(ReferralDB)
-                .filter(ReferralDB.referral_code == referral_code.upper())
-                .first()
-            )
+            stmt = select(ReferralDB).where(ReferralDB.referral_code == referral_code.upper())
+            result = await db.execute(stmt)
+            referral = result.scalar_one_or_none()
 
             if not referral:
                 return False, "Invalid referral code"
@@ -320,78 +285,62 @@ class CreditService:
             if referral.referrer_id == referrer_id:
                 return False, "Cannot refer yourself"
 
-            # Update referral status
             referral.referred_id = referrer_id
             referral.status = "completed"
 
-            # Award credits to referrer
             REWARD_CREDITS = 50
             referral.reward_credits = REWARD_CREDITS
 
-            # Add credits to referrer
-            self.add_credits(
-                referrer_id,
+            await self.add_credits(
+                referral.referrer_id,
                 REWARD_CREDITS,
                 "earned",
+                db,
                 f"Referral bonus - {referral_code}",
             )
 
-            db.commit()
-
-            logger.info(
-                f"[CreditService] Referral applied: {referrer_id} used code {referral_code}"
-            )
+            await db.commit()
             return True, f"Referral applied! You earned {REWARD_CREDITS} bonus credits"
 
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.error(f"[CreditService] Error applying referral: {e}")
             return False, str(e)
-        finally:
-            db.close()
 
-    def get_referrals(self, user_id: int) -> list:
+    async def get_referrals(self, user_id: str, db: AsyncSession) -> list:
         """Get user's referrals"""
-        db = SessionLocal()
-        try:
-            referrals = (
-                db.query(ReferralDB).filter(ReferralDB.referrer_id == user_id).all()
-            )
+        stmt = select(ReferralDB).where(ReferralDB.referrer_id == user_id)
+        result = await db.execute(stmt)
+        referrals = result.scalars().all()
 
-            return [
-                {
-                    "id": r.id,
-                    "referred_id": r.referred_id,
-                    "code": r.referral_code,
-                    "status": r.status,
-                    "reward_credits": r.reward_credits,
-                    "created_at": r.created_at.isoformat(),
-                }
-                for r in referrals
-            ]
-        finally:
-            db.close()
-
-    def get_referral_stats(self, user_id: int) -> dict:
-        """Get user's referral statistics"""
-        db = SessionLocal()
-        try:
-            referrals = (
-                db.query(ReferralDB).filter(ReferralDB.referrer_id == user_id).all()
-            )
-
-            total_referrals = len(referrals)
-            completed = sum(1 for r in referrals if r.status == "completed")
-            total_earned = sum(r.reward_credits for r in referrals)
-
-            return {
-                "total_referrals": total_referrals,
-                "completed_referrals": completed,
-                "pending_referrals": total_referrals - completed,
-                "total_credits_earned": total_earned,
+        return [
+            {
+                "id": r.id,
+                "referred_id": r.referred_id,
+                "code": r.referral_code,
+                "status": r.status,
+                "reward_credits": r.reward_credits,
+                "created_at": r.created_at.isoformat(),
             }
-        finally:
-            db.close()
+            for r in referrals
+        ]
+
+    async def get_referral_stats(self, user_id: str, db: AsyncSession) -> dict:
+        """Get user's referral statistics"""
+        stmt = select(ReferralDB).where(ReferralDB.referrer_id == user_id)
+        result = await db.execute(stmt)
+        referrals = result.scalars().all()
+
+        total_referrals = len(referrals)
+        completed = sum(1 for r in referrals if r.status == "completed")
+        total_earned = sum(r.reward_credits for r in referrals)
+
+        return {
+            "total_referrals": total_referrals,
+            "completed_referrals": completed,
+            "pending_referrals": total_referrals - completed,
+            "total_credits_earned": total_earned,
+        }
 
     # === Credit Costs ===
 
@@ -410,27 +359,29 @@ class CreditService:
         discount = tier_discounts.get(tier, 0)
         return max(1, int(base_cost * (1 - discount)))
 
-    def check_and_consume(
-        self, user_id: int, action: str, reference_id: str = None
+    async def check_and_consume(
+        self, user_id: int, action: str, db: AsyncSession, reference_id: str = None
     ) -> tuple[bool, str]:
         """Check if user can afford action and consume credits"""
         # Get user's tier
-        db = SessionLocal()
-        try:
-            user = db.query(UserDB).filter(UserDB.id == user_id).first()
-            tier = user.subscription.value if user.subscription else "free"
-        finally:
-            db.close()
-
+        stmt = select(UserDB).where(UserDB.id == user_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            return False, "User not found"
+            
+        tier = user.subscription.value if user.subscription else "free"
         cost = self.get_action_cost(action, tier)
 
-        if not self.has_sufficient_credits(user_id, cost):
+        if not await self.has_sufficient_credits(user_id, cost, db):
+            balance = await self.get_balance(user_id, db)
             return (
                 False,
-                f"Insufficient credits. Need {cost}, have {self.get_balance(user_id)}",
+                f"Insufficient credits. Need {cost}, have {balance}",
             )
 
-        return self.consume_credits(user_id, cost, action, reference_id)
+        return await self.consume_credits(user_id, cost, action, db, reference_id)
 
 
 # Initialize service

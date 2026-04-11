@@ -145,7 +145,7 @@ async def start_ab_test(
 
 @router.get("/test/{test_id}")
 async def get_test_results(
-    test_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)
+    test_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Get detailed test results with statistical analysis"""
     test = (
@@ -248,7 +248,7 @@ def _interpret_effect_size(effect_size: float) -> str:
 
 @router.post("/record/{test_id}/event")
 async def record_variant_event(
-    test_id: int, event: ABTestVariantEvent, db: Session = Depends(get_db)
+    test_id: str, event: ABTestVariantEvent, db: Session = Depends(get_db)
 ):
     """
     Records a view, click, or conversion event for a specific variant.
@@ -286,7 +286,7 @@ async def record_variant_event(
 
 @router.post("/test/{test_id}/determine-winner")
 async def determine_winner(
-    test_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)
+    test_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """
     Determines and records the winning variant based on proper statistical significance.
@@ -361,7 +361,7 @@ async def determine_winner(
 
 
 @router.get("/test/{test_id}/recommend-variant")
-async def recommend_variant(test_id: int, db: Session = Depends(get_db)):
+async def recommend_variant(test_id: str, db: Session = Depends(get_db)):
     """
     Returns which variant should be shown based on statistical analysis.
     """
@@ -473,7 +473,7 @@ async def get_completed_tests(
 
 @router.delete("/test/{test_id}")
 async def delete_test(
-    test_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)
+    test_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Delete an A/B test (admin only)"""
     if current_user.role != "admin":
