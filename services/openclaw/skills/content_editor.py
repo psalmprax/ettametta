@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 class ContentEditorSkill:
     """
     AI Content Editor & Remixing Engine
-    
+
     Instead of generating content, this finds, cuts, syncs, and enhances
     existing content - which is often better than pure AI generation.
-    
+
     Pipeline:
     1. Content Sourcing (YouTube, TikTok, Reddit)
     2. Clip Selection (AI picks best parts)
@@ -61,41 +61,50 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Step 1: Content Sourcing
-        
+
         Sources:
         - youtube: trending videos, podcasts, clips
         - tiktok: trending videos
         - reddit: viral posts with video
-        
+
         Returns: { videos: [{url, title, duration, views}] }
         """
         try:
             await self.initialize()
 
-            logger.info(f"[ContentEditor] Finding content from {source} for: {query or niche}")
+            logger.info(
+                f"[ContentEditor] Finding content from {source} for: {query or niche}"
+            )
 
             videos = []
 
             if source == "youtube":
-                await self.page.goto("https://www.youtube.com/results?search_query=" + query.replace(" ", "+"))
+                await self.page.goto(
+                    "https://www.youtube.com/results?search_query="
+                    + query.replace(" ", "+")
+                )
                 await self.page.wait_for_load_state("networkidle")
                 await asyncio.sleep(2)
 
-                video_elements = await self.page.query_selector_all("ytd-video-renderer")
-                
+                video_elements = await self.page.query_selector_all(
+                    "ytd-video-renderer"
+                )
+
                 for video in video_elements[:limit]:
                     try:
                         title_elem = await video.query_selector("#title")
                         title = await title_elem.inner_text() if title_elem else ""
-                        
+
                         meta_elem = await video.query_selector("#metadata-line")
                         duration = await meta_elem.inner_text() if meta_elem else ""
-                        
-                        videos.append({
-                            "source": "youtube",
-                            "title": title.strip(),
-                            "duration": duration.strip(),
-                        })
+
+                        videos.append(
+                            {
+                                "source": "youtube",
+                                "title": title.strip(),
+                                "duration": duration.strip(),
+                            }
+                        )
                     except Exception:
                         continue
 
@@ -104,8 +113,10 @@ class ContentEditorSkill:
                 await self.page.wait_for_load_state("networkidle")
                 await asyncio.sleep(2)
 
-                video_elements = await self.page.query_selector_all("[class*='VideoCard']")
-                
+                video_elements = await self.page.query_selector_all(
+                    "[class*='VideoCard']"
+                )
+
                 for video in video_elements[:limit]:
                     try:
                         videos.append({"source": "tiktok", "niche": niche})
@@ -117,17 +128,23 @@ class ContentEditorSkill:
                 await self.page.wait_for_load_state("networkidle")
                 await asyncio.sleep(2)
 
-                post_elements = await self.page.query_selector_all("[data-testid='post-container']")
-                
+                post_elements = await self.page.query_selector_all(
+                    "[data-testid='post-container']"
+                )
+
                 for post in post_elements[:limit]:
                     try:
-                        title_elem = await post.query_selector("[data-testid='post-title']")
+                        title_elem = await post.query_selector(
+                            "[data-testid='post-title']"
+                        )
                         title = await title_elem.inner_text() if title_elem else ""
-                        
-                        videos.append({
-                            "source": "reddit",
-                            "title": title.strip() if title else "",
-                        })
+
+                        videos.append(
+                            {
+                                "source": "reddit",
+                                "title": title.strip() if title else "",
+                            }
+                        )
                     except Exception:
                         continue
 
@@ -153,27 +170,29 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Step 2: Download video using yt-dlp
-        
+
         Returns: { status, file_path, duration }
         """
         try:
             import subprocess
-            
+
             output_file = os.path.join(output_path, "input.%(ext)s")
-            
+
             cmd = [
                 "yt-dlp",
-                "-f", "best[height<=720]",
-                "-o", output_file,
+                "-f",
+                "best[height<=720]",
+                "-o",
+                output_file,
                 "--no-playlist",
-                url
+                url,
             ]
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True)
-            
+
             if result.returncode == 0:
                 file_path = output_file.replace("%(ext)s", "mp4")
-                
+
                 return {
                     "status": "success",
                     "file_path": file_path,
@@ -193,16 +212,18 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Step 3: AI Clip Selection
-        
+
         Methods:
         - auto: detect emotional peaks, loudness changes, scene changes
         - keywords: detect speech keywords
         - manual: use timestamp ranges
-        
+
         Returns: { clips: [{start, end, reason}] }
         """
         try:
-            logger.info(f"[ContentEditor] Selecting {num_clips} best clips from {video_path}")
+            logger.info(
+                f"[ContentEditor] Selecting {num_clips} best clips from {video_path}"
+            )
 
             if method == "auto":
                 clips = self._detect_best_moments_auto(video_path, num_clips)
@@ -223,45 +244,51 @@ class ContentEditorSkill:
     def _detect_best_moments_auto(self, video_path: str, num_clips: int) -> List[Dict]:
         """Detect best moments using AI heuristics"""
         clips = []
-        
+
         for i in range(num_clips):
             start = i * 15 + 5
-            clips.append({
-                "start": start,
-                "end": start + 10,
-                "reason": "emotional_peak",
-            })
-        
+            clips.append(
+                {
+                    "start": start,
+                    "end": start + 10,
+                    "reason": "emotional_peak",
+                }
+            )
+
         return clips
 
     def _detect_keywords(self, video_path: str, num_clips: int) -> List[Dict]:
         """Detect keyword moments"""
         clips = []
-        
+
         keywords = ["success", "money", "motivation", "learn", "truth", "important"]
-        
+
         for i, kw in enumerate(keywords[:num_clips]):
             start = i * 20 + 10
-            clips.append({
-                "start": start,
-                "end": start + 8,
-                "reason": f"keyword:{kw}",
-            })
-        
+            clips.append(
+                {
+                    "start": start,
+                    "end": start + 8,
+                    "reason": f"keyword:{kw}",
+                }
+            )
+
         return clips
 
     def _manual_selection(self, video_path: str, num_clips: int) -> List[Dict]:
         """Manual clip selection template"""
         clips = []
-        
+
         for i in range(num_clips):
             start = i * 20
-            clips.append({
-                "start": start,
-                "end": start + 10,
-                "reason": "manual",
-            })
-        
+            clips.append(
+                {
+                    "start": start,
+                    "end": start + 10,
+                    "reason": "manual",
+                }
+            )
+
         return clips
 
     async def edit_video(
@@ -273,37 +300,40 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Step 4: Video Editing Engine (FFmpeg)
-        
+
         Operations:
         - cut: extract clips
         - merge: combine clips
         - crop: vertical video (9:16)
         - zoom: add zoom effect
         - captions: add subtitles
-        
+
         Returns: { status, output_path }
         """
         try:
             import subprocess
-            
+
             ops = operations or ["cut", "merge", "crop", "captions"]
-            
+
             logger.info(f"[ContentEditor] Editing video with: {ops}")
 
             if "cut" in ops and "merge" in ops:
                 filter_str = self._build_clip_filter(clips)
-                
+
                 cmd = [
                     "ffmpeg",
-                    "-i", video_path,
-                    "-vf", filter_str,
-                    "-c:a", "copy",
+                    "-i",
+                    video_path,
+                    "-vf",
+                    filter_str,
+                    "-c:a",
+                    "copy",
                     "-y",
                     output_path,
                 ]
-                
+
                 result = subprocess.run(cmd, capture_output=True, text=True)
-                
+
                 if result.returncode == 0:
                     return {"status": "success", "output_path": output_path}
                 else:
@@ -326,12 +356,12 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Alternative: Edit using MoviePy (more Pythonic, better for text overlays)
-        
+
         Operations:
         - text_overlay: Add titles, captions
         - composite: Layer multiple clips
         - effects: zoom, fade, colorFX
-        
+
         Uses: moviepy library already in project
         """
         try:
@@ -355,7 +385,9 @@ class ContentEditorSkill:
                     color=ops.get("color", "white"),
                     font=ops.get("font", "DejaVuSans-Bold"),
                 )
-                txt_clip = txt_clip.set_position(("center", "bottom")).set_duration(clip.duration)
+                txt_clip = txt_clip.set_position(("center", "bottom")).set_duration(
+                    clip.duration
+                )
                 final = CompositeVideoClip([clip, txt_clip])
             else:
                 final = clip
@@ -368,7 +400,11 @@ class ContentEditorSkill:
 
             final.write_videofile(output_path, codec="libx264", fps=24)
 
-            return {"status": "success", "output_path": output_path, "engine": "moviepy"}
+            return {
+                "status": "success",
+                "output_path": output_path,
+                "engine": "moviepy",
+            }
 
         except ImportError:
             return {"status": "failed", "error": "moviepy not available"}
@@ -383,13 +419,13 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Alternative: Edit using OpenCV (fast, great for motion detection)
-        
+
         Operations:
         - motion_detect: Detect moving objects
         - speed_up: Fast forward effect
         - stabilize: Video stabilization
         - track: Object tracking
-        
+
         Uses: cv2 (OpenCV) already in project
         """
         try:
@@ -441,29 +477,36 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Step 5: Add Captions
-        
+
         Uses:
         - whisper for transcription
         - subtitle styling (position, color, font)
-        
+
         Returns: { status, output_path }
         """
         try:
             import subprocess
 
-            caption_style = "force_style='Fontsize=24,PrimaryColour=&Hffffff,OutlineColour=&H80000000'" if styled else ""
+            caption_style = (
+                "force_style='Fontsize=24,PrimaryColour=&Hffffff,OutlineColour=&H80000000'"
+                if styled
+                else ""
+            )
 
             cmd = [
                 "ffmpeg",
-                "-i", video_path,
-                "-vf", f"subtitles={video_path}" if caption_style else "",
-                "-c:a", "copy",
+                "-i",
+                video_path,
+                "-vf",
+                f"subtitles={video_path}" if caption_style else "",
+                "-c:a",
+                "copy",
                 "-y",
                 output_path,
             ]
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True)
-            
+
             if result.returncode == 0:
                 return {"status": "success", "output_path": output_path}
             else:
@@ -480,28 +523,28 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Step 6: Add Effects
-        
+
         Effects:
         - zoom: Ken Burns zoom effect
         - crop: vertical (9:16)
         - blur: background blur
         - transitions: cuts sync to beat
-        
+
         Returns: { status, output_path }
         """
         try:
             import subprocess
-            
+
             effects = effects or ["crop"]
-            
+
             filters = []
-            
+
             if "crop" in effects:
                 filters.append("crop=1080:1920:ih*0.3:0")
-            
+
             if "zoom" in effects:
                 filters.append("zoompan=z='min(zoom+0.001,1.5)':d=25")
-            
+
             if filters:
                 filter_str = ",".join(filters)
             else:
@@ -509,15 +552,18 @@ class ContentEditorSkill:
 
             cmd = [
                 "ffmpeg",
-                "-i", video_path,
-                "-vf", filter_str,
-                "-c:a", "copy",
+                "-i",
+                video_path,
+                "-vf",
+                filter_str,
+                "-c:a",
+                "copy",
                 "-y",
                 output_path,
             ]
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True)
-            
+
             return {
                 "status": "success" if result.returncode == 0 else "failed",
                 "output_path": output_path if result.returncode == 0 else None,
@@ -535,34 +581,38 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Step 7: Audio Sync
-        
+
         - beat_sync: match cuts to music beats
         - align: captions to speech
-        
+
         Returns: { status, output_path }
         """
         try:
             import subprocess
-            
+
             cmd = [
                 "ffmpeg",
-                "-i", video_path,
-                "-i", music_path or "",
-                "-c:v", "copy",
-                "-c:a", "aac",
+                "-i",
+                video_path,
+                "-i",
+                music_path or "",
+                "-c:v",
+                "copy",
+                "-c:a",
+                "aac",
                 "-shortest",
                 "-y",
                 output_path,
             ]
-            
+
             if music_path:
                 result = subprocess.run(cmd, capture_output=True, text=True)
-                
+
                 return {
                     "status": "success" if result.returncode == 0 else "failed",
                     "output_path": output_path if result.returncode == 0 else None,
                 }
-            
+
             return {"status": "skipped", "output_path": video_path}
 
         except Exception as e:
@@ -577,32 +627,40 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Step 8: Export for TikTok/Reels
-        
+
         - 9:16 vertical format
         - max 60 seconds
         - high quality
-        
+
         Returns: { status, output_path, specs }
         """
         try:
             import subprocess
-            
+
             cmd = [
                 "ffmpeg",
-                "-i", video_path",
-                "-t", str(duration),
-                "-vf", f"scale=-2:min(ih\,1920),crop=min(iw\\,1080):ih:ow-iw",
-                "-c:v", "libx264",
-                "-preset", "fast",
-                "-crf", "23",
-                "-c:a", "aac",
-                "-b:a", "128k",
+                "-i",
+                video_path,
+                "-t",
+                str(duration),
+                "-vf",
+                f"scale=-2:min(ih\,1920),crop=min(iw\\,1080):ih:ow-iw",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "fast",
+                "-crf",
+                "23",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "128k",
                 "-y",
                 output_path,
             ]
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True)
-            
+
             if result.returncode == 0:
                 return {
                     "status": "success",
@@ -626,23 +684,27 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Full Pipeline: Find → Cut → Sync → Enhance → Export
-        
+
         This is the main entry point for viral content creation.
-        
+
         Args:
             source: youtube, tiktok, reddit
             url_or_query: URL or search query
             niche: content niche
             style: fast, cinematic, story
-        
+
         Returns: { status, output_path, metadata }
         """
         try:
-            logger.info(f"[ContentEditor] Creating viral edit from {source} | niche: {niche} | style: {style}")
+            logger.info(
+                f"[ContentEditor] Creating viral edit from {source} | niche: {niche} | style: {style}"
+            )
 
             if source in ["youtube", "tiktok", "reddit"]:
-                content_result = await self.find_content(source=source, query=url_or_query, niche=niche)
-                
+                content_result = await self.find_content(
+                    source=source, query=url_or_query, niche=niche
+                )
+
                 if content_result["status"] != "success":
                     return content_result
             else:
@@ -687,15 +749,15 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Step 9 (Final): Polish with Remotion
-        
+
         Use Remotion for professional polish:
         - CTAs (Call-to-Action overlays)
         - Text animations
         - Titles
         - Viral overlays
-        
+
         This is the BEST tool for making content look professional.
-        
+
         Returns: { status, output_path }
         """
         try:
@@ -705,11 +767,14 @@ class ContentEditorSkill:
             props = props or {}
 
             cmd = [
-                "npx", "remotion", "render",
+                "npx",
+                "remotion",
+                "render",
                 "src/index.ts",
                 composition,
                 output_path,
-                "--props", str(props).replace("'", '"'),
+                "--props",
+                str(props).replace("'", '"'),
             ]
 
             result = subprocess.run(
@@ -744,19 +809,23 @@ class ContentEditorSkill:
     ) -> Dict[str, Any]:
         """
         Full Pipeline using Remotion for polish:
-        
+
         1. Find content (YouTube/TikTok/Reddit)
         2. Select best clips via OpenCV
         3. Edit with FFmpeg (cut, crop)
         4. Polish with Remotion (CTAs, titles, animations)
-        
+
         This gives you the BEST of all tools.
-        
+
         Returns: { status, output_path, pipeline }
         """
-        logger.info(f"[ContentEditor] Creating viral content with Remotion polish | niche: {niche}")
+        logger.info(
+            f"[ContentEditor] Creating viral content with Remotion polish | niche: {niche}"
+        )
 
-        content_result = await self.find_content(source=source, query=url_or_query, niche=niche)
+        content_result = await self.find_content(
+            source=source, query=url_or_query, niche=niche
+        )
 
         composition = "CinematicMinimal"
 
