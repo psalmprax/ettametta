@@ -36,7 +36,7 @@ class FacebookPublisher(SocialPublisher):
         headers: dict,
     ) -> Optional[str]:
         """Facebook-specific upload implementation"""
-        access_token = token_manager.get_token(
+        access_token = await token_manager.get_token(
             "facebook", user_id=user_id, account_id=account_id
         )
 
@@ -169,7 +169,7 @@ class FacebookPublisher(SocialPublisher):
         headers: dict,
     ) -> dict:
         """Fetch Facebook video insights"""
-        access_token = token_manager.get_token(
+        access_token = await token_manager.get_token(
             "facebook", user_id=user_id, account_id=account_id
         )
 
@@ -196,9 +196,9 @@ class FacebookPublisher(SocialPublisher):
 
             return {"error": data.get("error", {}).get("message", "Unknown error")}
 
-    def health_check(self, user_id: int) -> bool:
+    async def health_check(self, user_id: int) -> bool:
         """Verify Facebook credentials"""
-        return token_manager.get_token("facebook", user_id=user_id) is not None
+        return await token_manager.get_token("facebook", user_id=user_id) is not None
 
 
 base_facebook_publisher = FacebookPublisher()

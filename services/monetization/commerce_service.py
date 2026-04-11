@@ -2,17 +2,24 @@ import logging
 import httpx
 from typing import List, Dict, Any, Optional
 from api.config import settings
-from api.utils.database import SessionLocal
+from api.utils.database import async_session_factory
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from api.utils.models import SystemSettings, AffiliateLinkDB
 
 class CommerceService:
     def __init__(self):
         self.logger = logging.getLogger("CommerceService")
 
-    async def _get_shopify_creds(self, db) -> Dict[str, str]:
+    async def _get_shopify_creds(self, db: AsyncSession) -> Dict[str, str]:
         """Fetches Shopify credentials from DB settings."""
-        shop_url = db.query(SystemSettings).filter(SystemSettings.key == "shopify_shop_url").first()
-        access_token = db.query(SystemSettings).filter(SystemSettings.key == "shopify_access_token").first()
+        stmt = select(SystemSettings).where(SystemSettings.key == "shopify_shop_url")
+        result = await db.execute(stmt)
+        shop_url = result.scalar_one_or_none()
+        
+        stmt = select(SystemSettings).where(SystemSettings.key == "shopify_access_token")
+        result = await db.execute(stmt)
+        access_token = result.scalar_one_or_none()
         
         return {
             "url": shop_url.value if shop_url else None,
@@ -23,8 +30,7 @@ class CommerceService:
         """
         Fetches products from Shopify. Falls back to database affiliate links if store is unavailable.
         """
-        db = SessionLocal()
-        try:
+        async with async_session_factory() as db:
             creds = await self._get_shopify_creds(db)
             
             if creds["url"] and creds["token"] and "shpat_" in creds["token"]:
@@ -35,7 +41,10 @@ class CommerceService:
 
             # Fallback to Affiliate Links
             self.logger.info(f"[Commerce] No active Shopify store. Falling back to affiliate links for {niche}.")
-            affiliates = db.query(AffiliateLinkDB).filter(AffiliateLinkDB.niche == niche).all()
+            stmt = select(AffiliateLinkDB).where(AffiliateLinkDB.niche == niche)
+            result = await db.execute(stmt)
+            affiliates = result.scalars().all()
+            
             return [{
                 "id": f"aff_{a.id}",
                 "name": a.product_name,
@@ -43,9 +52,6 @@ class CommerceService:
                 "price": "N/A",
                 "source": "affiliate"
             } for a in affiliates]
-            
-        finally:
-            db.close()
 
     async def _fetch_from_shopify(self, shop_url: str, token: str, niche: str) -> List[Dict[str, Any]]:
         """Calls Shopify Admin API to get products."""

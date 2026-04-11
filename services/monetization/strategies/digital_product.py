@@ -1,58 +1,34 @@
 import logging
 import random
 from typing import List, Dict, Any
-from sqlalchemy import or_
+from sqlalchemy import select
 from .base import BaseMonetizationStrategy
-from api.utils.database import SessionLocal
-from api.utils.models import AffiliateLinkDB
+from api.utils.database import async_session_factory
+from api.utils.models import DigitalProductDB
 
 logger = logging.getLogger(__name__)
-
-DIGITAL_PRODUCT_KEYWORDS = ["course", "ebook", "template", "guide", "pdf", "download"]
-
 
 class DigitalProductStrategy(BaseMonetizationStrategy):
     async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
         """
-        Get digital product assets for the given niche.
-        Queries AffiliateLinkDB for links matching the niche OR whose
-        product_name contains common digital-product keywords.
+        Get digital product assets for the given niche from DigitalProductDB.
         """
-        db = SessionLocal()
-        try:
-            keyword_filters = [
-                AffiliateLinkDB.product_name.ilike(f"%{kw}%")
-                for kw in DIGITAL_PRODUCT_KEYWORDS
-            ]
-
-            links = (
-                db.query(AffiliateLinkDB)
-                .filter(
-                    AffiliateLinkDB.niche == niche,
-                    or_(*keyword_filters),
-                )
-                .all()
-            )
-
-            if not links:
-                logger.warning(
-                    f"[DigitalProductStrategy] No digital products found for niche: {niche}. "
-                    "Add products with names containing 'course', 'ebook', 'template', 'guide', 'pdf', or 'download'."
-                )
+        async with async_session_factory() as db:
+            try:
+                stmt = select(DigitalProductDB).where(DigitalProductDB.niche == niche)
+                result = await db.execute(stmt)
+                products = result.scalars().all()
+                
+                return [{
+                    "id": str(product.id),
+                    "name": product.name,
+                    "url": product.purchase_url,
+                    "price": str(product.price),
+                    "source": "digital_product"
+                } for product in products]
+            except Exception as e:
+                logger.error(f"[DigitalProductStrategy] Error fetching assets: {e}")
                 return []
-
-            return [
-                {
-                    "id": str(l.id),
-                    "name": l.product_name,
-                    "url": l.link,
-                    "cta_text": l.cta_text or "",
-                    "source": "digital_product_db",
-                }
-                for l in links
-            ]
-        finally:
-            db.close()
 
     async def generate_cta(self, niche: str, context: str) -> str:
         """Generate a call-to-action for digital products found in the database."""

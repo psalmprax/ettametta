@@ -59,7 +59,7 @@ async def send_whatsapp_message(
         return {"error": str(e)}
 
 
-async def configure_telegram_bot(user_id: int, chat_id: str) -> dict:
+async def configure_telegram_bot(user_id: str, chat_id: str) -> dict:
     """
     Configure Telegram bot for user by sending a confirmation message.
 
@@ -77,7 +77,7 @@ async def configure_telegram_bot(user_id: int, chat_id: str) -> dict:
     return await send_telegram_message(bot_token, chat_id, message)
 
 
-async def configure_whatsapp_bot(user_id: int, number: str) -> dict:
+async def configure_whatsapp_bot(user_id: str, number: str) -> dict:
     """
     Configure WhatsApp bot for user by sending a confirmation message.
 

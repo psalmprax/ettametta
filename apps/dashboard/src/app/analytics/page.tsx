@@ -18,7 +18,8 @@ import {
     Clock,
     History,
     Trophy,
-    Medal
+    Medal,
+    Copy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState, useCallback } from "react";
@@ -457,21 +458,33 @@ export default function AnalyticsPage() {
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                                if (!posts.length) return;
-                                const csvHeader = "ID,Title,Platform,Status,Published At,Views,Likes,Shares,Retention\n";
-                                const csvRows = posts.map(p =>
-                                    `${p.id},"${p.title}",${p.platform},${p.status},${p.published_at},${report?.views || 0},${report?.likes || 0},${report?.shares || 0},${report?.retention_rate || 0}`
-                                ).join('\n');
-                                const blob = new Blob([csvHeader + csvRows], { type: 'text/csv' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `viral_forge_analytics_${new Date().toISOString().split('T')[0]}.csv`;
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
+                            onClick={async () => {
+                                const token = localStorage.getItem("et_token");
+                                try {
+                                    const response = await fetch(`${API_BASE}/analytics/export`, {
+                                        headers: { Authorization: `Bearer ${token}` }
+                                    });
+                                    if (response.ok) {
+                                        const blob = await response.blob();
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `viral_forge_analytics_${new Date().toISOString().split('T')[0]}.csv`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        document.body.removeChild(a);
+                                        URL.revokeObjectURL(url);
+                                        toast.success("Export Complete", { 
+                                            description: "Server-side performance report synchronized and downloaded." 
+                                        });
+                                    } else {
+                                        throw new Error("Cluster export failed");
+                                    }
+                                } catch (err) {
+                                    toast.error("Export Failed", { 
+                                        description: "Neural cluster rejected the export request. Verify network status." 
+                                    });
+                                }
                             }}
                             className="bg-primary hover:bg-primary/90 text-white font-black h-16 px-8 rounded-2xl transition-all shadow-[0_0_40px_rgba(var(--primary-rgb),0.2)] flex items-center gap-3 uppercase text-xs tracking-[0.2em]"
                         >
@@ -683,6 +696,31 @@ export default function AnalyticsPage() {
                                         </div>
                                     </div>
                                     <p className="text-zinc-400 text-sm font-medium leading-relaxed">{insights}</p>
+                                    <div className="flex gap-4 pt-4">
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={handleAutoApply}
+                                            className="bg-primary hover:bg-primary/90 text-white font-black py-3 px-6 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest text-[10px] shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)]"
+                                        >
+                                            <Zap className="h-4 w-4" />
+                                            Apply Insights
+                                        </motion.button>
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => {
+                                                if (insights) {
+                                                    navigator.clipboard.writeText(insights);
+                                                    toast.success("Insights copied to clipboard");
+                                                }
+                                            }}
+                                            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-black py-3 px-6 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest text-[10px]"
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                            Copy
+                                        </motion.button>
+                                    </div>
                                 </motion.div>
                             )}
                         </div>

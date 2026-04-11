@@ -14,8 +14,12 @@ logger = logging.getLogger(__name__)
 
 # Bridge to use async code in synchronous Celery worker
 def run_async(coro):
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(coro)
+    try:
+        return asyncio.run(coro)
+    except RuntimeError:
+        # Fallback for nested loops
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(coro)
 
 
 def cleanup_local_files(*paths):
@@ -40,6 +44,7 @@ def download_and_process_task(
     quality_tier: str = "standard",
     sound_design: bool = False,
     motion_graphics: bool = False,
+    analysis_data: dict = None,
 ):
     """
     Main background task to transform and publish content.
@@ -49,38 +54,40 @@ def download_and_process_task(
     - enhanced: Tier 2 + sound design
     - premium: Tier 3 full processing (sound + motion graphics)
     """
-    from api.utils.database import SessionLocal
+    from api.utils.database import async_session_factory
     from api.utils.models import VideoJobDB
+    from sqlalchemy import select
     import uuid
     import asyncio
 
     task_id = self.request.id
-    db = SessionLocal()
 
     def update_job(status=None, progress=None, output_path=None):
-        # Fresh session for each status update to avoid context leaks in prefork
-        with SessionLocal() as local_db:
-            job = local_db.query(VideoJobDB).filter(VideoJobDB.id == task_id).first()
-            if job:
-                if status:
-                    job.status = status
-                if progress is not None:
-                    job.progress = progress
-                if output_path:
-                    job.output_path = output_path
-                local_db.commit()
+        async def _update():
+            async with async_session_factory() as db:
+                stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
+                result = await db.execute(stmt)
+                job = result.scalar_one_or_none()
+                if job:
+                    if status:
+                        job.status = status
+                    if progress is not None:
+                        job.progress = progress
+                    if output_path:
+                        job.output_path = output_path
+                    await db.commit()
 
-                # Real-time WebSocket Notification
-                from api.routes.ws import notify_job_update_sync
-
-                notify_job_update_sync(
-                    {
-                        "id": task_id,
-                        "status": job.status,
-                        "progress": job.progress,
-                        "output_path": job.output_path,
-                    }
-                )
+                    # Real-time WebSocket Notification
+                    from api.routes.ws import notify_job_update_sync
+                    notify_job_update_sync(
+                        {
+                            "id": task_id,
+                            "status": job.status,
+                            "progress": job.progress,
+                            "output_path": job.output_path,
+                        }
+                    )
+        run_async(_update())
 
     try:
         # 1. Download
@@ -122,7 +129,11 @@ def download_and_process_task(
         )
         strategy_obj = run_async(
             base_strategy_service.generate_visual_strategy(
-                transcript, niche, style=style, visual_insights=visual_insights
+                transcript,
+                niche,
+                style=style,
+                visual_insights=visual_insights,
+                analysis_data=analysis_data,
             )
         )
         strategy = strategy_obj.dict()
@@ -138,16 +149,16 @@ def download_and_process_task(
         processor = VideoProcessor()
         output_name = f"{uuid.uuid4()}.mp4"
 
-        # Dashboard filters (manual) + AI filters (autonomous)
         from api.utils.models import VideoFilterDB
+        from sqlalchemy import select
 
-        with SessionLocal() as filter_db:
-            filters = (
-                filter_db.query(VideoFilterDB)
-                .filter(VideoFilterDB.enabled == True)
-                .all()
-            )
-            enabled_filters = [f.id for f in filters]
+        async def get_filters():
+            async with async_session_factory() as db:
+                stmt = select(VideoFilterDB).where(VideoFilterDB.enabled == True)
+                result = await db.execute(stmt)
+                return [f.id for f in result.scalars().all()]
+        
+        enabled_filters = run_async(get_filters())
 
         processed_path = run_async(
             processor.process_full_pipeline(
@@ -259,7 +270,7 @@ def download_and_process_task(
             cleanup_local_files(processed_path)
         return {"status": "error", "message": str(e)}
     finally:
-        db.close()
+        pass
 
 
 @celery_app.task(name="video.generate", bind=True)
@@ -275,35 +286,39 @@ def generate_video_task(
     """
     Background task for AI Video Synthesis (T2V).
     """
-    from api.utils.database import SessionLocal
+    from api.utils.database import async_session_factory
     from api.utils.models import VideoJobDB
+    from sqlalchemy import select
     from .synthesis_service import generative_service
     import uuid
 
     task_id = self.request.id
-    db = SessionLocal()
 
     def update_job(status=None, progress=None, output_path=None):
-        job = db.query(VideoJobDB).filter(VideoJobDB.id == task_id).first()
-        if job:
-            if status:
-                job.status = status
-            if progress is not None:
-                job.progress = progress
-            if output_path:
-                job.output_path = output_path
-            db.commit()
+        async def _update():
+            async with async_session_factory() as db:
+                stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
+                result = await db.execute(stmt)
+                job = result.scalar_one_or_none()
+                if job:
+                    if status:
+                        job.status = status
+                    if progress is not None:
+                        job.progress = progress
+                    if output_path:
+                        job.output_path = output_path
+                    await db.commit()
 
-            from api.routes.ws import notify_job_update_sync
-
-            notify_job_update_sync(
-                {
-                    "id": task_id,
-                    "status": job.status,
-                    "progress": job.progress,
-                    "output_path": job.output_path,
-                }
-            )
+                    from api.routes.ws import notify_job_update_sync
+                    notify_job_update_sync(
+                        {
+                            "id": task_id,
+                            "status": job.status,
+                            "progress": job.progress,
+                            "output_path": job.output_path,
+                        }
+                    )
+        run_async(_update())
 
     try:
         # 1. Synthesis
@@ -340,8 +355,11 @@ def generate_video_task(
             update_job(
                 status="Applying Pro Workflow (Upscale + Interpolate)", progress=70
             )
-            refined_video_path = await video_processor.apply_pro_workflow(
-                video_url, f"refined_{uuid.uuid4()}.mp4", aspect_ratio, 5.0, "premium"
+            # FIXED: Wrap in run_async
+            refined_video_path = run_async(
+                video_processor.apply_pro_workflow(
+                    video_url, f"refined_{uuid.uuid4()}.mp4", aspect_ratio, 5.0, "premium"
+                )
             )
             if refined_video_path != video_url:
                 video_url = refined_video_path
@@ -371,7 +389,7 @@ def generate_video_task(
         logging.error(f"[Synthesis Task] Error: {e}")
         return {"status": "error", "message": str(e)}
     finally:
-        db.close()
+        pass
 
 
 @celery_app.task(name="video.generate_story", bind=True)
@@ -379,8 +397,9 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
     """
     Orchestrates the synthesis of a multi-scene narrative story.
     """
-    from api.utils.database import SessionLocal
+    from api.utils.database import async_session_factory
     from api.utils.models import VideoJobDB
+    from sqlalchemy import select
     from services.decision_engine.service import base_strategy_service
     from services.video_engine.synthesis_service import generative_service
     from services.video_engine.voiceover import base_voiceover_service
@@ -388,29 +407,32 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
     import asyncio
 
     task_id = self.request.id
-    db = SessionLocal()
 
     def update_job(status=None, progress=None, output_path=None):
-        job = db.query(VideoJobDB).filter(VideoJobDB.id == task_id).first()
-        if job:
-            if status:
-                job.status = status
-            if progress is not None:
-                job.progress = progress
-            if output_path:
-                job.output_path = output_path
-            db.commit()
+        async def _update():
+            async with async_session_factory() as db:
+                stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
+                result = await db.execute(stmt)
+                job = result.scalar_one_or_none()
+                if job:
+                    if status:
+                        job.status = status
+                    if progress is not None:
+                        job.progress = progress
+                    if output_path:
+                        job.output_path = output_path
+                    await db.commit()
 
-            from api.routes.ws import notify_job_update_sync
-
-            notify_job_update_sync(
-                {
-                    "id": task_id,
-                    "status": job.status,
-                    "progress": job.progress,
-                    "output_path": job.output_path,
-                }
-            )
+                    from api.routes.ws import notify_job_update_sync
+                    notify_job_update_sync(
+                        {
+                            "id": task_id,
+                            "status": job.status,
+                            "progress": job.progress,
+                            "output_path": job.output_path,
+                        }
+                    )
+        run_async(_update())
 
     try:
         # 1. Scripting Agent
@@ -480,4 +502,4 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
         logging.error(f"[Story Task] Error: {e}")
         return {"status": "error", "message": str(e)}
     finally:
-        db.close()
+        pass

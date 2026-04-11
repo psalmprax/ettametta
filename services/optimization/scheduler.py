@@ -11,31 +11,33 @@ class SmartScheduler:
             {"start": 18, "end": 21}  # Evening peak
         ]
 
-    def _get_peak_windows_from_db(self, user_id: int = None) -> List[dict]:
+    async def _get_peak_windows_from_db(self, user_id: int = None) -> List[dict]:
         """
         Dynamically calculate peak engagement windows based on historic real performance.
         Falls back to default windows if insufficient data.
         """
         try:
-            from api.utils.database import SessionLocal
+            from api.utils.database import async_session_factory
             from api.utils.models import PublishedContentDB
-            from sqlalchemy import extract, func
+            from sqlalchemy import extract, func, select
             
-            db = SessionLocal()
-            try:
+            async with async_session_factory() as db:
                 # Query views grouped by the hour the post was created/published
-                query = db.query(
+                stmt = select(
                     extract('hour', PublishedContentDB.published_at).label('hour'),
-                    func.avg(PublishedContentDB.view_count).label('avg_views')
-                ).filter(PublishedContentDB.status == "Published", PublishedContentDB.view_count > 0)
+                    func.avg(PublishedContentDB.views).label('avg_views')
+                ).where(PublishedContentDB.status == "Published", PublishedContentDB.views > 0)
                 
                 if user_id:
-                    query = query.filter(PublishedContentDB.user_id == user_id)
+                    stmt = stmt.where(PublishedContentDB.user_id == user_id)
                 
-                results = query.group_by(extract('hour', PublishedContentDB.published_at)) \
-                               .order_by(func.avg(PublishedContentDB.view_count).desc()) \
-                               .limit(3).all()
-                               
+                stmt = stmt.group_by(extract('hour', PublishedContentDB.published_at)) \
+                           .order_by(func.avg(PublishedContentDB.views).desc()) \
+                           .limit(3)
+                
+                result = await db.execute(stmt)
+                results = result.all()
+                                
                 if len(results) >= 2:
                     # Construct smart windows based on top performing hours
                     windows = []
@@ -43,8 +45,6 @@ class SmartScheduler:
                         hour = int(row.hour)
                         windows.append({"start": hour, "end": hour + 2})
                     return sorted(windows, key=lambda x: x["start"])
-            finally:
-                db.close()
         except Exception as e:
             # If DB error or missing models, we fall back to defaults
             import logging
@@ -63,7 +63,8 @@ class SmartScheduler:
         next_time = base_time + timedelta(minutes=random.randint(30, 90))
         
         # Adjust to nearest peak window
-        peak_windows = self._get_peak_windows_from_db(user_id)
+        import asyncio
+        peak_windows = asyncio.run(self._get_peak_windows_from_db(user_id))
         current_hour = next_time.hour
         for window in peak_windows:
             if current_hour >= window["start"] and current_hour <= window["end"]:

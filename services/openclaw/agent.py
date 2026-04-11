@@ -6,6 +6,14 @@ from groq import Groq
 from config import settings
 from typing import Dict, Any, Optional
 import httpx
+
+try:
+    from api.utils.llm_vault import get_llm_api_key
+
+    VAULT_AVAILABLE = True
+except ImportError:
+    VAULT_AVAILABLE = False
+
 from skills.discovery import discovery_skill
 from skills.system import system_skill
 from skills.analytics import analytics_skill
@@ -24,20 +32,42 @@ from skills.self_improve import self_improve_skill
 from skills.repurpose import repurpose_skill
 from skills.trend_prediction import trend_prediction_skill
 from skills.competitor import competitor_skill
+from skills.audit import audit_skill
 from skills.notifications import notification_skill
 from skills.workflow import workflow_skill
 from skills.self_healing import self_healing_skill
+from skills.cashclaw import cashclaw_skill
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class OpenClawAgent:
-    def __init__(self):
+    def __init__(self, user_id: int = None, reasoning_mode: str = "standard"):
+        self.user_id = user_id
+        self.reasoning_mode = reasoning_mode
         self.llm_provider = getattr(settings, "DEFAULT_LLM_PROVIDER", "groq")
         self.clients = {}
         self._init_llm_clients()
         self.model = self._get_model_name()
+
+    def _get_api_key(self, key_name: str) -> str:
+        """Get API key from vault or fall back to settings"""
+        if VAULT_AVAILABLE:
+            api_key = get_llm_api_key(key_name, user_id=self.user_id)
+            if api_key:
+                return api_key
+        return getattr(settings, f"{key_name.upper()}_API_KEY", None) or getattr(
+            settings, key_name.upper(), None
+        )
+
+    def _get_setting(self, key_name: str, default=None):
+        """Get setting from vault or fall back to settings"""
+        if VAULT_AVAILABLE:
+            value = get_llm_api_key(key_name, user_id=self.user_id)
+            if value:
+                return value
+        return getattr(settings, key_name.upper(), default)
 
     def _init_llm_clients(self):
         """Initialize multiple LLM clients with fallback support"""
@@ -48,6 +78,15 @@ class OpenClawAgent:
             "xai": self._init_xai,
             "deepseek": self._init_deepseek,
             "gemini": self._init_gemini,
+            "cohere": self._init_cohere,
+            "mistral": self._init_mistral,
+            "cerebras": self._init_cerebras,
+            "cloudflare": self._init_cloudflare,
+            "huggingface": self._init_huggingface,
+            "openrouter": self._init_openrouter,
+            "nvidia": self._init_nvidia,
+            "ollama_cloud": self._init_ollama_cloud,
+            "siliconflow": self._init_siliconflow,
             "ollama": self._init_ollama,
             "lm_studio": self._init_lm_studio,
         }
@@ -76,30 +115,168 @@ class OpenClawAgent:
                 except Exception as e:
                     logger.debug(f"[OpenClaw] {provider_name} not available: {e}")
 
-        # If no providers work, use a dummy fallback
-        logger.error("[OpenClaw] No LLM providers available - using dummy fallback")
-        self.clients["dummy"] = True
+        # Hardened: No dummy fallback allowed. System must fail clearly if unconfigured.
+        logger.error("[OpenClaw] No LLM providers available - please check environment variables.")
+        raise RuntimeError("OpenClaw configuration error: No valid LLM providers initialized. Set GROQ_API_KEY or similar.")
 
     def _init_groq(self):
-        if settings.GROQ_API_KEY:
-            self.clients["groq"] = Groq(api_key=settings.GROQ_API_KEY)
+        api_key = self._get_api_key("groq")
+        if api_key:
+            self.clients["groq"] = Groq(api_key=api_key)
 
     def _init_openai(self):
-        if hasattr(settings, "OPENAI_API_KEY") and settings.OPENAI_API_KEY:
+        api_key = self._get_api_key("openai")
+        if api_key:
             try:
                 from openai import OpenAI
 
-                self.clients["openai"] = OpenAI(api_key=settings.OPENAI_API_KEY)
+                self.clients["openai"] = OpenAI(api_key=api_key)
             except ImportError:
                 logger.warning("[OpenClaw] OpenAI package not installed")
 
     def _init_anthropic(self):
-        if hasattr(settings, "ANTHROPIC_API_KEY") and settings.ANTHROPIC_API_KEY:
+        api_key = self._get_api_key("anthropic")
+        if api_key:
             try:
                 import anthropic
 
-                self.clients["anthropic"] = anthropic.Anthropic(
-                    api_key=settings.ANTHROPIC_API_KEY
+                self.clients["anthropic"] = anthropic.Anthropic(api_key=api_key)
+            except ImportError:
+                logger.warning("[OpenClaw] Anthropic package not installed")
+
+    def _init_xai(self):
+        api_key = self._get_api_key("xai")
+        if api_key:
+            try:
+                from openai import OpenAI
+
+                self.clients["xai"] = OpenAI(
+                    api_key=api_key, base_url="https://api.x.ai/v1"
+                )
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for XAI")
+
+    def _init_deepseek(self):
+        api_key = self._get_api_key("deepseek")
+        if api_key:
+            try:
+                from openai import OpenAI
+
+                self.clients["deepseek"] = OpenAI(
+                    api_key=api_key, base_url="https://api.deepseek.com/v1"
+                )
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for DeepSeek")
+
+    def _init_gemini(self):
+        api_key = self._get_api_key("google")
+        if api_key:
+            try:
+                import google.generativeai as genai
+
+                genai.configure(api_key=api_key)
+                self.clients["gemini"] = genai.GenerativeModel("gemini-pro")
+            except ImportError:
+                logger.warning("[OpenClaw] Google Generative AI package not installed")
+
+    def _init_cohere(self):
+        api_key = self._get_api_key("cohere")
+        if api_key:
+            try:
+                import cohere
+
+                self.clients["cohere"] = cohere.Client(api_key=api_key)
+                logger.info("[OpenClaw] Cohere initialized")
+            except ImportError:
+                logger.warning("[OpenClaw] Cohere package not installed")
+
+    def _init_mistral(self):
+        api_key = self._get_api_key("mistral")
+        if api_key:
+            try:
+                from openai import OpenAI
+
+                self.clients["mistral"] = OpenAI(
+                    api_key=api_key, base_url="https://api.mistral.ai/v1"
+                )
+                logger.info("[OpenClaw] Mistral AI initialized")
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for Mistral")
+
+    def _init_cerebras(self):
+        api_key = self._get_api_key("cerebras")
+        if api_key:
+            try:
+                from openai import OpenAI
+
+                self.clients["cerebras"] = OpenAI(
+                    api_key=api_key, base_url="https://api.cerebras.ai/v1"
+                )
+                logger.info("[OpenClaw] Cerebras initialized")
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for Cerebras")
+
+    def _init_cloudflare(self):
+        api_key = self._get_api_key("cloudflare")
+        account_id = self._get_setting("cloudflare_account_id", "")
+        if api_key:
+            self.clients["cloudflare"] = {"api_key": api_key, "account_id": account_id}
+            logger.info("[OpenClaw] Cloudflare Workers AI initialized")
+
+    def _init_huggingface(self):
+        api_key = self._get_api_key("huggingface")
+        if api_key:
+            self.clients["huggingface"] = {"api_key": api_key}
+            logger.info("[OpenClaw] Hugging Face initialized")
+
+    def _init_openrouter(self):
+        api_key = self._get_api_key("openrouter")
+        if api_key:
+            try:
+                from openai import OpenAI
+
+                self.clients["openrouter"] = OpenAI(
+                    api_key=api_key, base_url="https://openrouter.ai/api/v1"
+                )
+                logger.info("[OpenClaw] OpenRouter initialized")
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for OpenRouter")
+
+    def _init_nvidia(self):
+        api_key = self._get_api_key("nvidia")
+        if api_key:
+            try:
+                from openai import OpenAI
+
+                self.clients["nvidia"] = OpenAI(
+                    api_key=api_key, base_url="https://integrate.api.nvidia.com/v1"
+                )
+                logger.info("[OpenClaw] NVIDIA NIM initialized")
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for NVIDIA")
+
+    def _init_ollama_cloud(self):
+        api_key = self._get_api_key("ollama_cloud")
+        if api_key:
+            self.clients["ollama_cloud"] = {
+                "api_key": api_key,
+                "base_url": "https://cloud.ollama.ai/v1",
+            }
+            logger.info("[OpenClaw] Ollama Cloud initialized")
+
+    def _init_siliconflow(self):
+        api_key = self._get_api_key("siliconflow")
+        if api_key:
+            try:
+                from openai import OpenAI
+
+                self.clients["siliconflow"] = OpenAI(
+                    api_key=api_key, base_url="https://api.siliconflow.cn/v1"
+                )
+                logger.info("[OpenClaw] SiliconFlow initialized")
+            except ImportError:
+                logger.warning(
+                    "[OpenClaw] OpenAI package not installed for SiliconFlow"
                 )
             except ImportError:
                 logger.warning("[OpenClaw] Anthropic package not installed")
@@ -140,9 +317,7 @@ class OpenClawAgent:
     def _init_ollama(self):
         """Initialize Ollama for local LLM support"""
         try:
-            # Try to connect to Ollama
-            ollama_url = getattr(settings, "OLLAMA_URL", "http://localhost:11434")
-            # Test connection
+            ollama_url = self._get_setting("ollama_url", "http://localhost:11434")
             response = requests.get(f"{ollama_url}/api/tags", timeout=5)
             if response.status_code == 200:
                 self.clients["ollama"] = {"base_url": ollama_url}
@@ -155,7 +330,7 @@ class OpenClawAgent:
     def _init_lm_studio(self):
         """Initialize LM Studio for local LLM support"""
         try:
-            lm_studio_url = getattr(settings, "LM_STUDIO_URL", "http://localhost:1234")
+            lm_studio_url = self._get_setting("lm_studio_url", "http://localhost:1234")
             # Test connection
             response = requests.get(f"{lm_studio_url}/v1/models", timeout=5)
             if response.status_code == 200:
@@ -166,6 +341,114 @@ class OpenClawAgent:
         except Exception as e:
             logger.warning(f"[OpenClaw] LM Studio not available: {e}")
 
+    def _init_cohere(self):
+        """Initialize Cohere for free LLM support"""
+        if hasattr(settings, "COHERE_API_KEY") and settings.COHERE_API_KEY:
+            try:
+                import cohere
+
+                self.clients["cohere"] = cohere.Client(api_key=settings.COHERE_API_KEY)
+                logger.info("[OpenClaw] Cohere initialized")
+            except ImportError:
+                logger.warning("[OpenClaw] Cohere package not installed")
+
+    def _init_mistral(self):
+        """Initialize Mistral AI for free LLM support"""
+        if hasattr(settings, "MISTRAL_API_KEY") and settings.MISTRAL_API_KEY:
+            try:
+                from openai import OpenAI
+
+                self.clients["mistral"] = OpenAI(
+                    api_key=settings.MISTRAL_API_KEY,
+                    base_url="https://api.mistral.ai/v1",
+                )
+                logger.info("[OpenClaw] Mistral AI initialized")
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for Mistral")
+
+    def _init_cerebras(self):
+        """Initialize Cerebras for free LLM support - 30 RPM, 14,400 RPD"""
+        if hasattr(settings, "CEREBRAS_API_KEY") and settings.CEREBRAS_API_KEY:
+            try:
+                from openai import OpenAI
+
+                self.clients["cerebras"] = OpenAI(
+                    api_key=settings.CEREBRAS_API_KEY,
+                    base_url="https://api.cerebras.ai/v1",
+                )
+                logger.info("[OpenClaw] Cerebras initialized")
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for Cerebras")
+
+    def _init_cloudflare(self):
+        """Initialize Cloudflare Workers AI for free LLM support"""
+        if hasattr(settings, "CLOUDFLARE_API_KEY") and settings.CLOUDFLARE_API_KEY:
+            account_id = getattr(settings, "CLOUDFLARE_ACCOUNT_ID", "")
+            self.clients["cloudflare"] = {
+                "api_key": settings.CLOUDFLARE_API_KEY,
+                "account_id": account_id,
+            }
+            logger.info("[OpenClaw] Cloudflare Workers AI initialized")
+
+    def _init_huggingface(self):
+        """Initialize Hugging Face for free LLM support"""
+        if hasattr(settings, "HUGGING_FACE_API_KEY") and settings.HUGGING_FACE_API_KEY:
+            self.clients["huggingface"] = {"api_key": settings.HUGGING_FACE_API_KEY}
+            logger.info("[OpenClaw] Hugging Face initialized")
+
+    def _init_openrouter(self):
+        """Initialize OpenRouter for free LLM support - 50 RPD free"""
+        if hasattr(settings, "OPENROUTER_API_KEY") and settings.OPENROUTER_API_KEY:
+            try:
+                from openai import OpenAI
+
+                self.clients["openrouter"] = OpenAI(
+                    api_key=settings.OPENROUTER_API_KEY,
+                    base_url="https://openrouter.ai/api/v1",
+                )
+                logger.info("[OpenClaw] OpenRouter initialized")
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for OpenRouter")
+
+    def _init_nvidia(self):
+        """Initialize NVIDIA NIM for free LLM support - 40 RPM"""
+        if hasattr(settings, "NVIDIA_API_KEY") and settings.NVIDIA_API_KEY:
+            try:
+                from openai import OpenAI
+
+                self.clients["nvidia"] = OpenAI(
+                    api_key=settings.NVIDIA_API_KEY,
+                    base_url="https://integrate.api.nvidia.com/v1",
+                )
+                logger.info("[OpenClaw] NVIDIA NIM initialized")
+            except ImportError:
+                logger.warning("[OpenClaw] OpenAI package not installed for NVIDIA")
+
+    def _init_ollama_cloud(self):
+        """Initialize Ollama Cloud for free LLM support"""
+        if hasattr(settings, "OLLAMA_CLOUD_API_KEY") and settings.OLLAMA_CLOUD_API_KEY:
+            self.clients["ollama_cloud"] = {
+                "api_key": settings.OLLAMA_CLOUD_API_KEY,
+                "base_url": "https://cloud.ollama.ai/v1",
+            }
+            logger.info("[OpenClaw] Ollama Cloud initialized")
+
+    def _init_siliconflow(self):
+        """Initialize SiliconFlow for free LLM support - 1K RPM, 50K TPM"""
+        if hasattr(settings, "SILICONFLOW_API_KEY") and settings.SILICONFLOW_API_KEY:
+            try:
+                from openai import OpenAI
+
+                self.clients["siliconflow"] = OpenAI(
+                    api_key=settings.SILICONFLOW_API_KEY,
+                    base_url="https://api.siliconflow.cn/v1",
+                )
+                logger.info("[OpenClaw] SiliconFlow initialized")
+            except ImportError:
+                logger.warning(
+                    "[OpenClaw] OpenAI package not installed for SiliconFlow"
+                )
+
     def _get_model_name(self) -> str:
         """Get the appropriate model name for the current provider"""
         model_map = {
@@ -175,6 +458,15 @@ class OpenClawAgent:
             "xai": "grok-1",
             "deepseek": "deepseek-chat",
             "gemini": "gemini-pro",
+            "cohere": "command-a",  # Cohere - 20 RPM, 1K tokens/mo
+            "mistral": "mistral-small-3.1-2506",  # Mistral - 1 req/s, 1B tokens/mo
+            "cerebras": "llama-3.3-70b",  # Cerebras - 30 RPM, 14,400 RPD
+            "cloudflare": "@cf/meta-llama/llama-3.3-70b-instruct",  # Cloudflare - 10K neurons/day
+            "huggingface": "meta-llama/Llama-3.3-70B-Instruct",  # HuggingFace - $0.10/mo
+            "openrouter": "deepseek/deepseek-r1",  # OpenRouter - 50 RPD free
+            "nvidia": "meta/llama-3.3-70b-instruct",  # NVIDIA NIM - 40 RPM
+            "ollama_cloud": "deepseek-v3.2",  # Ollama Cloud - light usage
+            "siliconflow": "Qwen/Qwen3-8B",  # SiliconFlow - 1K RPM, 50K TPM
             "ollama": "llama3",
             "lm_studio": "local-model",
         }
@@ -185,7 +477,7 @@ class OpenClawAgent:
         Unified LLM calling method that supports multiple providers
         """
         if self.llm_provider == "dummy":
-            return {"content": "LLM not configured - using dummy response"}
+             raise RuntimeError("LLM not configured. Cannot perform autonomous analysis.")
 
         try:
             if self.llm_provider == "groq":
@@ -200,6 +492,24 @@ class OpenClawAgent:
                 return await self._call_deepseek(messages, **kwargs)
             elif self.llm_provider == "gemini":
                 return await self._call_gemini(messages, **kwargs)
+            elif self.llm_provider == "cohere":
+                return await self._call_cohere(messages, **kwargs)
+            elif self.llm_provider == "mistral":
+                return await self._call_mistral(messages, **kwargs)
+            elif self.llm_provider == "cerebras":
+                return await self._call_cerebras(messages, **kwargs)
+            elif self.llm_provider == "cloudflare":
+                return await self._call_cloudflare(messages, **kwargs)
+            elif self.llm_provider == "huggingface":
+                return await self._call_huggingface(messages, **kwargs)
+            elif self.llm_provider == "openrouter":
+                return await self._call_openrouter(messages, **kwargs)
+            elif self.llm_provider == "nvidia":
+                return await self._call_nvidia(messages, **kwargs)
+            elif self.llm_provider == "ollama_cloud":
+                return await self._call_ollama_cloud(messages, **kwargs)
+            elif self.llm_provider == "siliconflow":
+                return await self._call_siliconflow(messages, **kwargs)
             elif self.llm_provider == "ollama":
                 return await self._call_ollama(messages, **kwargs)
             elif self.llm_provider == "lm_studio":
@@ -208,18 +518,26 @@ class OpenClawAgent:
                 raise Exception(f"Unsupported LLM provider: {self.llm_provider}")
         except Exception as e:
             logger.error(f"[OpenClaw] LLM call failed for {self.llm_provider}: {e}")
-            # Try fallback providers
             return await self._try_fallback_llm(messages, **kwargs)
 
     async def _try_fallback_llm(self, messages: list, **kwargs) -> Dict[str, Any]:
         """Try fallback LLM providers if primary fails"""
         fallback_providers = [
             "groq",
+            "cerebras",
+            "openrouter",
+            "mistral",
+            "deepseek",
             "openai",
             "xai",
-            "deepseek",
+            "nvidia",
+            "siliconflow",
             "ollama",
             "lm_studio",
+            "ollama_cloud",
+            "huggingface",
+            "cloudflare",
+            "cohere",
         ]
         original_provider = self.llm_provider
 
@@ -383,6 +701,177 @@ class OpenClawAgent:
             else:
                 raise Exception(f"LM Studio API error: {response.status_code}")
 
+    async def _call_cohere(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call Cohere API - 20 RPM, 1K tokens/mo free"""
+        client = self.clients.get("cohere")
+        if not client:
+            raise Exception("Cohere client not initialized")
+
+        system_message = ""
+        cohere_messages = []
+        for msg in messages:
+            if msg["role"] == "system":
+                system_message = msg["content"]
+            else:
+                cohere_messages.append({"role": msg["role"], "message": msg["content"]})
+
+        response = client.chat(
+            model=self._get_model_name(),
+            message=messages[-1]["content"] if messages else "",
+            chat_history=cohere_messages[:-1] if len(cohere_messages) > 1 else [],
+            system_prompt=system_message,
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1024),
+        )
+        return {"content": response.text}
+
+    async def _call_mistral(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call Mistral AI API - 1 req/s, 1B tokens/mo free"""
+        client = self.clients.get("mistral")
+        if not client:
+            raise Exception("Mistral client not initialized")
+
+        response = client.chat.completions.create(
+            model=self._get_model_name(),
+            messages=messages,
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1024),
+        )
+        return {"content": response.choices[0].message.content}
+
+    async def _call_cerebras(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call Cerebras API - 30 RPM, 14,400 RPD free"""
+        client = self.clients.get("cerebras")
+        if not client:
+            raise Exception("Cerebras client not initialized")
+
+        response = client.chat.completions.create(
+            model=self._get_model_name(),
+            messages=messages,
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1024),
+        )
+        return {"content": response.choices[0].message.content}
+
+    async def _call_cloudflare(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call Cloudflare Workers AI - 10K neurons/day free"""
+        config = self.clients.get("cloudflare")
+        if not config:
+            raise Exception("Cloudflare not configured")
+
+        payload = {
+            "messages": messages,
+            "model": self._get_model_name(),
+        }
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                "https://api.cloudflare.com/client/v4/accounts/{}/ai/run/@cf/meta/llama-3.3-70b-instruct".format(
+                    config.get("account_id", "")
+                ),
+                headers={"Authorization": f"Bearer {config['api_key']}"},
+                json=payload,
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return {"content": data.get("result", {}).get("response", "")}
+            else:
+                raise Exception(f"Cloudflare API error: {response.status_code}")
+
+    async def _call_huggingface(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call Hugging Face Inference API - $0.10/mo free credits"""
+        config = self.clients.get("huggingface")
+        if not config:
+            raise Exception("HuggingFace not configured")
+
+        payload = {
+            "inputs": messages[-1]["content"] if messages else "",
+            "parameters": {
+                "temperature": kwargs.get("temperature", 0.7),
+                "max_new_tokens": kwargs.get("max_tokens", 1024),
+            },
+        }
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                f"https://api-inference.huggingface.co/models/{self._get_model_name()}",
+                headers={"Authorization": f"Bearer {config['api_key']}"},
+                json=payload,
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list) and len(data) > 0:
+                    return {"content": data[0].get("generated_text", "")}
+                return {"content": str(data)}
+            else:
+                raise Exception(f"HuggingFace API error: {response.status_code}")
+
+    async def _call_openrouter(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call OpenRouter API - 50 RPD free, 1K with $10"""
+        client = self.clients.get("openrouter")
+        if not client:
+            raise Exception("OpenRouter client not initialized")
+
+        response = client.chat.completions.create(
+            model=self._get_model_name(),
+            messages=messages,
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1024),
+        )
+        return {"content": response.choices[0].message.content}
+
+    async def _call_nvidia(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call NVIDIA NIM API - 40 RPM free"""
+        client = self.clients.get("nvidia")
+        if not client:
+            raise Exception("NVIDIA client not initialized")
+
+        response = client.chat.completions.create(
+            model=self._get_model_name(),
+            messages=messages,
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1024),
+        )
+        return {"content": response.choices[0].message.content}
+
+    async def _call_ollama_cloud(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call Ollama Cloud API - light usage free"""
+        config = self.clients.get("ollama_cloud")
+        if not config:
+            raise Exception("Ollama Cloud not configured")
+
+        payload = {
+            "model": self._get_model_name(),
+            "messages": messages,
+            "stream": False,
+        }
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                f"{config['base_url']}/chat",
+                headers={"Authorization": f"Bearer {config['api_key']}"},
+                json=payload,
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return {"content": data.get("message", {}).get("content", "")}
+            else:
+                raise Exception(f"Ollama Cloud API error: {response.status_code}")
+
+    async def _call_siliconflow(self, messages: list, **kwargs) -> Dict[str, Any]:
+        """Call SiliconFlow API - 1K RPM, 50K TPM free"""
+        client = self.clients.get("siliconflow")
+        if not client:
+            raise Exception("SiliconFlow client not initialized")
+
+        response = client.chat.completions.create(
+            model=self._get_model_name(),
+            messages=messages,
+            temperature=kwargs.get("temperature", 0.7),
+            max_tokens=kwargs.get("max_tokens", 1024),
+        )
+        return {"content": response.choices[0].message.content}
+
         self.system_prompt = """You are OpenClaw, the autonomous Master Controller for the ettametta multi-agent empire.
         Your goal is to assist the user by orchestrating a team of specialized agents:
         - SCOUT (Discovery): Advanced trend discovery, competitor analysis, content ideation, and market research.
@@ -424,6 +913,7 @@ class OpenClawAgent:
         - BROWSER: Advanced browser automation for web scraping. Params: {"action": "navigate|click|extract", "url": "string", "selector": "string"}
         - DOCUMENT: Process PDF/DOCX/PPTX files. Params: {"type": "pdf|docx|pptx", "action": "extract|analyze", "file_url": "string"}
         - WATCHDOG: Monitor system health and auto-restart processes. Params: {"action": "status|check|restart", "process": "string"}
+        - ACCOUNT_AUDIT: Audit YOUR account on any platform for growth and monetization. Includes competitor comparison. Params: {"action": "audit|compare", "platform": "youtube|tiktok|instagram|...", "competitor_url": "string"}
         
         PLANNING MODE:
         When a user gives a complex command, you must first output a brief "Plan" explicitly naming which sub-agents (SCOUT, MUSE, etc.) you are delegating to, followed by the actual tool JSON.
@@ -481,10 +971,22 @@ class OpenClawAgent:
             return f"⛔ Unauthorized access. Your ID is: `{identifier}`.\n\nPlease log in to the ettametta dashboard and add this ID to your profile settings to enable agent access."
 
         try:
-            # 1. Ask LLM for intent
+            # 5-Star Upgrade: Closed-Loop Learning
+            # Before processing, probe analytics for historical viral performance to ground the response.
+            recent_metrics = "No recent data"
+            try:
+                recent_metrics = analytics_skill.get_system_stats()
+            except:
+                pass
+
+            # 5-Star Upgrade: Hierarchical Negotiation (Workforce Council)
+            if self.reasoning_mode == "hierarchical":
+                return await self._process_hierarchical(message, recent_metrics)
+
+            # 1. Ask LLM for intent (Standard Mode)
             completion = await self._call_llm(
                 [
-                    {"role": "system", "content": self.system_prompt},
+                    {"role": "system", "content": f"{self.system_prompt}\n\n[CLOSED-LOOP CONTEXT]: {recent_metrics}"},
                     {"role": "user", "content": message},
                 ]
             )
@@ -801,14 +1303,62 @@ class OpenClawAgent:
             else:
                 return "⚠️ Missing competitor URL for analysis"
 
-        elif tool == "WATCHDOG":
-            action = params.get("action", "status")
-            if action == "check":
-                return self_healing_skill.perform_health_check()
-            elif action == "restart":
-                process = params.get("process", "")
-                return self_healing_skill.restart_process(process)
+        elif tool == "ACCOUNT_AUDIT":
+            action = params.get("action", "audit")
+            platform = params.get("platform", "youtube")
+            user_id = user.get("id", 1)
+
+            if action == "audit":
+                return audit_skill.audit_account(user_id, platform)
+            elif action == "compare":
+                competitor_url = params.get("competitor_url", "")
+                if not competitor_url:
+                    return "⚠️ Missing competitor_url for comparison"
+                return audit_skill.compare_with_competitor(
+                    user_id, competitor_url, platform
+                )
             else:
-                return self_healing_skill.get_watchdog_status()
+                return "⚠️ Unknown audit action. Use 'audit' or 'compare'"
+
+        elif tool == "CASHCLAW":
+            action = params.get("action", "audit")
+            if action == "audit":
+                return cashclaw_skill.run_recovery_audit()
+            elif action == "optimize":
+                return cashclaw_skill.optimize_monetization(params.get("niche", "general"))
+            else:
+                return "⚠️ Unknown CashClaw action."
 
         return f"❓ Unknown tool: {tool}"
+
+    async def _process_hierarchical(self, message: str, metrics: str) -> str:
+        """
+        Works as the 'Director' for the Workforce Council.
+        """
+        logger.info("[OpenClaw] Council Deliberation initiated.")
+        
+        manager_prompt = (
+            "You are the OpenClaw Workforce Council Director (GPT-4o). "
+            "Analyze the user request and historical performance metrics. "
+            "Formulate a multi-step strategy using specialized tools. "
+            "If the request is complex, break it down into steps for specialists."
+        )
+
+        # Force high-reasoning model for Council Manager
+        original_model = self.model
+        original_provider = self.llm_provider
+        
+        if "openai" in self.clients:
+            self.llm_provider = "openai"
+            self.model = "gpt-4o"
+
+        try:
+            completion = await self._call_llm([
+                {"role": "system", "content": f"{manager_prompt}\n\n[ANALYTICS]: {metrics}"},
+                {"role": "user", "content": message}
+            ])
+            response = completion.get("content", "Council failed to deliberate.")
+            return f"🏛️ **Workforce Council Strategy**\n\n{response}"
+        finally:
+            self.llm_provider = original_provider
+            self.model = original_model

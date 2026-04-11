@@ -1,6 +1,8 @@
 from fastapi import HTTPException, status, Depends
+from api.utils.database import get_db
 from api.utils.user_models import UserDB, SubscriptionTier
 from api.routes.auth import get_current_user
+from sqlalchemy.ext.asyncio import AsyncSession
 from functools import wraps
 
 def subscription_required(required_tier: SubscriptionTier):
@@ -35,6 +37,7 @@ async def check_daily_limit(current_user: UserDB, db_session):
     """
     from api.utils.models import VideoJobDB
     from datetime import datetime, timedelta
+    from sqlalchemy import select, func
     
     # Define limits (Daily for Free/Creator, Monthly for others)
     LIMITS = {
@@ -54,10 +57,14 @@ async def check_daily_limit(current_user: UserDB, db_session):
     else:
         lookback = datetime.utcnow() - timedelta(days=1)
         
-    job_count = db_session.query(VideoJobDB).filter(
-        VideoJobDB.user_id == current_user.id,
-        VideoJobDB.created_at >= lookback
-    ).count()
+    # Async-compatible count query
+    result = await db_session.execute(
+        select(func.count(VideoJobDB.id)).where(
+            VideoJobDB.user_id == current_user.id,
+            VideoJobDB.created_at >= lookback
+        )
+    )
+    job_count = result.scalar()
     
     if job_count >= quota:
         window_name = "monthly" if config["window"] == "month" else "daily"
@@ -109,19 +116,40 @@ def credits_required(action: str):
     """
     Dependency to check and consume credits for an action.
     """
-    async def dependency(current_user: UserDB = Depends(get_current_user)):
+    async def dependency(
+        current_user: UserDB = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
+    ):
         from services.payment.credit_service import credit_service
         
         tier = current_user.subscription.value if current_user.subscription else "free"
         cost = credit_service.get_action_cost(action, tier)
         
-        if not credit_service.has_sufficient_credits(current_user.id, cost):
+        if not await credit_service.has_sufficient_credits(current_user.id, cost, db):
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
                 detail=f"Insufficient credits. Need {cost} credits for {action.replace('_', ' ')}."
             )
         
-        # Note: We don't consume yet, the route should do it to avoid consuming when validation fails
-        # but we provide the cost in the return for the route to use
         return cost
     return dependency
+
+async def get_user_subscription_tier(user: UserDB, db: AsyncSession) -> str:
+    """
+    Get user's current subscription tier as a string.
+    """
+    # Simply use the enum's value
+    return user.subscription.value if user.subscription else "free"
+
+def get_provider_quota_info(engine: str) -> dict:
+    """
+    Get quota information for a specific AI video engine.
+    """
+    quota_mapping = {
+        "veo3": {"daily_limit": 5, "premium": True, "provider": "Google"},
+        "runway": {"daily_limit": 5, "premium": True, "provider": "RunwayML"},
+        "pika": {"daily_limit": 10, "premium": True, "provider": "Pika Labs"},
+        "ltx-video": {"daily_limit": 20, "premium": False, "provider": "Lightbox"},
+        "hunyuan": {"daily_limit": 15, "premium": False, "provider": "Tencent"},
+    }
+    return quota_mapping.get(engine, {"daily_limit": 10, "premium": False, "provider": "Default"})

@@ -4,7 +4,7 @@ Celery tasks for automated posting and video cleanup
 """
 
 from api.utils.celery import celery_app
-from api.utils.database import SessionLocal
+from api.utils.database import async_session_factory
 from api.utils.models import ScheduledPostDB, PublishedContentDB
 from services.optimization.models import PostMetadata
 from services.optimization.auth import token_manager
@@ -13,6 +13,8 @@ import logging
 import asyncio
 import os
 from typing import Optional, Dict
+from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -48,19 +50,112 @@ def _get_publisher(platform: str):
         return None
 
 
-def _run_async(coro):
-    """Run async coroutine in sync context (Python 3.10+ compatible)"""
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+async def _check_and_post_scheduled_internal(task_self):
+    """Internal async logic for posting scheduled content"""
+    async with async_session_factory() as db:
+        processed = 0
+        failed = 0
         try:
-            return loop.run_until_complete(coro)
-        finally:
-            loop.close()
-    else:
-        return asyncio.coroutines.run(coro)
+            now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            stmt = select(ScheduledPostDB).where(
+                ScheduledPostDB.status == "PENDING",
+                ScheduledPostDB.scheduled_time <= now,
+            )
+            result = await db.execute(stmt)
+            pending_posts = result.scalars().all()
+
+            logger.info(f"[Scheduler] Found {len(pending_posts)} pending posts to process")
+
+            for post in pending_posts:
+                try:
+                    meta_dict = post.metadata_json
+                    if not meta_dict:
+                        logger.error(f"[Scheduler] No metadata for post {post.id}")
+                        post.status = "FAILED"
+                        post.error_message = "No metadata available"
+                        await db.commit()
+                        failed += 1
+                        continue
+
+                    metadata = PostMetadata(**meta_dict)
+
+                    user_tokens = await token_manager.get_token_data(post.platform, post.user_id)
+                    if not user_tokens:
+                        logger.error(
+                            f"[Scheduler] No tokens for user {post.user_id} on platform {post.platform}"
+                        )
+                        post.status = "FAILED"
+                        post.error_message = "No authentication tokens"
+                        await db.commit()
+                        failed += 1
+                        continue
+
+                    publisher = _get_publisher(post.platform)
+                    if not publisher:
+                        logger.error(
+                            f"[Scheduler] No publisher for platform: {post.platform}"
+                        )
+                        post.status = "FAILED"
+                        post.error_message = f"Platform {post.platform} not supported"
+                        await db.commit()
+                        failed += 1
+                        continue
+
+                    # Adjust to nearest peak window
+                    import asyncio
+                    peak_windows = await self._get_peak_windows_from_db(post.user_id)
+                    
+                    url = await publisher.upload_video(
+                        post.video_path,
+                        metadata,
+                        user_id=post.user_id,
+                        account_id=post.account_id,
+                    )
+
+                    if url:
+                        post.status = "PUBLISHED"
+                        post.published_at = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+                        history = PublishedContentDB(
+                            title=metadata.title,
+                            platform=post.platform,
+                            status="Published",
+                            url=url,
+                            account_id=post.account_id,
+                            user_id=post.user_id,
+                            niche=getattr(metadata, "niche", None),
+                        )
+                        db.add(history)
+
+                        logger.info(
+                            f"[Scheduler] Successfully published post {post.id}: {url}"
+                        )
+                    else:
+                        post.status = "FAILED"
+                        post.error_message = "Upload failed - no URL returned"
+                        logger.warning(f"[Scheduler] Post {post.id} upload failed")
+                        failed += 1
+
+                except Exception as e:
+                    logger.error(f"[Scheduler] Post {post.id} failed: {e}")
+                    post.status = "FAILED"
+                    post.error_message = str(e)[:500]
+                    failed += 1
+                    # In a real async task, we'd handle retries differently, 
+                    # but for now we follow the existing pattern of flagging as FAILED.
+                
+                await db.commit()
+                processed += 1
+
+            return {
+                "processed": processed,
+                "failed": failed,
+                "total": len(pending_posts),
+                "status": "completed",
+            }
+        except Exception as e:
+            logger.error(f"[Scheduler] Critical error: {e}")
+            return {"error": str(e), "status": "failed"}
 
 
 @celery_app.task(
@@ -73,244 +168,131 @@ def _run_async(coro):
 )
 def check_and_post_scheduled(self):
     """
-    Periodic task to check for scheduled posts that need to be published.
-    Includes retry logic for failed posts.
+    Periodic task wrapper to check for scheduled posts.
+    Runs internal async logic.
     """
-    db = SessionLocal()
-    processed = 0
-    failed = 0
+    return asyncio.run(_check_and_post_scheduled_internal(self))
 
-    try:
-        now = datetime.datetime.utcnow()
-        pending_posts = (
-            db.query(ScheduledPostDB)
-            .filter(
-                ScheduledPostDB.status == "PENDING",
-                ScheduledPostDB.scheduled_time <= now,
-            )
-            .all()
-        )
 
-        logger.info(f"[Scheduler] Found {len(pending_posts)} pending posts to process")
+async def _retry_failed_posts_internal():
+    """Internal async logic for retrying failed posts"""
+    async with async_session_factory() as db:
+        retried = 0
+        try:
+            stmt = select(ScheduledPostDB).where(ScheduledPostDB.status == "FAILED")
+            result = await db.execute(stmt)
+            failed_posts = result.scalars().all()
 
-        for post in pending_posts:
-            try:
-                meta_dict = post.metadata_json
-                if not meta_dict:
-                    logger.error(f"[Scheduler] No metadata for post {post.id}")
-                    post.status = "FAILED"
-                    post.error_message = "No metadata available"
-                    db.commit()
-                    failed += 1
-                    continue
+            for post in failed_posts:
+                retry_count = getattr(post, "retry_count", 0)
+                max_retries = getattr(post, "max_retries", 3)
 
-                metadata = PostMetadata(**meta_dict)
-
-                user_tokens = token_manager.get_token_data(post.platform, post.user_id)
-                if not user_tokens:
-                    logger.error(
-                        f"[Scheduler] No tokens for user {post.user_id} on platform {post.platform}"
-                    )
-                    post.status = "FAILED"
-                    post.error_message = "No authentication tokens"
-                    db.commit()
-                    failed += 1
-                    continue
-
-                publisher = _get_publisher(post.platform)
-                if not publisher:
-                    logger.error(
-                        f"[Scheduler] No publisher for platform: {post.platform}"
-                    )
-                    post.status = "FAILED"
-                    post.error_message = f"Platform {post.platform} not supported"
-                    db.commit()
-                    failed += 1
-                    continue
-
-                url = _run_async(
-                    publisher.upload_video(
-                        post.video_path,
-                        metadata,
-                        user_id=post.user_id,
-                        account_id=post.account_id,
-                    )
-                )
-
-                if url:
-                    post.status = "PUBLISHED"
-                    post.published_at = datetime.datetime.utcnow()
-
-                    history = PublishedContentDB(
-                        title=metadata.title,
-                        platform=post.platform,
-                        status="Published",
-                        url=url,
-                        account_id=post.account_id,
-                        user_id=post.user_id,
-                        niche=getattr(metadata, "niche", None),
-                    )
-                    db.add(history)
-
+                if retry_count < max_retries:
+                    post.status = "PENDING"
+                    post.retry_count = retry_count + 1
+                    post.error_message = f"Retry {retry_count + 1}/{max_retries}"
+                    await db.commit()
+                    retried += 1
                     logger.info(
-                        f"[Scheduler] Successfully published post {post.id}: {url}"
+                        f"[Scheduler] Retrying post {post.id} (attempt {retry_count + 1})"
                     )
-                else:
-                    post.status = "FAILED"
-                    post.error_message = "Upload failed - no URL returned"
-                    logger.warning(f"[Scheduler] Post {post.id} upload failed")
-                    failed += 1
 
-            except Exception as e:
-                logger.error(f"[Scheduler] Post {post.id} failed: {e}")
-                post.status = "FAILED"
-                post.error_message = str(e)[:500]
-                failed += 1
-
-                raise self.retry(exc=e)
-
-            db.commit()
-            processed += 1
-
-        return {
-            "processed": processed,
-            "failed": failed,
-            "total": len(pending_posts),
-            "status": "completed",
-        }
-
-    except Exception as e:
-        logger.error(f"[Scheduler] Critical error: {e}")
-        return {"error": str(e), "status": "failed"}
-    finally:
-        db.close()
-
+            return {"retried": retried, "status": "completed"}
+        except Exception as e:
+            logger.error(f"[Scheduler] Retry internal error: {e}")
+            return {"error": str(e), "status": "failed"}
 
 @celery_app.task(name="optimization.retry_failed_posts")
 def retry_failed_posts():
     """
-    Retry failed posts that haven't exceeded max retry count
+    Retry failed posts wrapper.
     """
-    db = SessionLocal()
-    retried = 0
+    return asyncio.run(_retry_failed_posts_internal())
 
-    try:
-        failed_posts = (
-            db.query(ScheduledPostDB).filter(ScheduledPostDB.status == "FAILED").all()
-        )
 
-        for post in failed_posts:
-            retry_count = getattr(post, "retry_count", 0)
-            max_retries = getattr(post, "max_retries", 3)  # Configurable, default 3
+async def _cleanup_pending_videos_internal():
+    """Internal async logic for cleaning up pending videos"""
+    async with async_session_factory() as db:
+        deleted_count = 0
+        try:
+            now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            stmt = select(PublishedContentDB).where(PublishedContentDB.status == "PENDING_AUTH")
+            result = await db.execute(stmt)
+            pending_videos = result.scalars().all()
 
-            if retry_count < max_retries:
-                post.status = "PENDING"
-                post.retry_count = retry_count + 1
-                post.error_message = f"Retry {retry_count + 1}/{max_retries}"
-                db.commit()
-                retried += 1
-                logger.info(
-                    f"[Scheduler] Retrying post {post.id} (attempt {retry_count + 1})"
-                )
+            for video in pending_videos:
+                metadata = video.metadata_json or {}
+                delete_at_str = metadata.get("delete_at")
 
-        return {"retried": retried, "status": "completed"}
-    except Exception as e:
-        logger.error(f"[Scheduler] Retry task error: {e}")
-        return {"error": str(e), "status": "failed"}
-    finally:
-        db.close()
+                if delete_at_str:
+                    try:
+                        delete_at = datetime.datetime.fromisoformat(
+                            delete_at_str.replace("Z", "+00:00")
+                        ).replace(tzinfo=None)
 
+                        if now >= delete_at:
+                            logger.info(
+                                f"[Cleanup] Deleting video {video.id} - retention expired"
+                            )
+
+                            video_path = metadata.get("video_path")
+                            if video_path and os.path.exists(video_path):
+                                try:
+                                    os.remove(video_path)
+                                    logger.info(f"[Cleanup] Deleted file: {video_path}")
+                                except Exception as e:
+                                    logger.error(f"[Cleanup] Failed to delete file: {e}")
+
+                            video.status = "EXPIRED"
+                            metadata["deleted_at"] = now.isoformat()
+                            metadata["deletion_reason"] = "retention_expired"
+                            video.metadata_json = metadata
+
+                            deleted_count += 1
+                    except Exception as e:
+                        logger.error(f"[Cleanup] Error processing video {video.id}: {e}")
+
+            await db.commit()
+            return {"deleted": deleted_count, "status": "completed"}
+        except Exception as e:
+            logger.error(f"[Cleanup] Critical internal error: {e}")
+            return {"error": str(e), "status": "failed"}
 
 @celery_app.task(name="optimization.cleanup_pending_videos")
 def cleanup_pending_videos():
     """
-    Periodic task to clean up videos pending authentication beyond retention period.
-    Default retention: 3 hours
+    Periodic task wrapper to clean up videos.
     """
-    db = SessionLocal()
-    deleted_count = 0
+    return asyncio.run(_cleanup_pending_videos_internal())
 
-    try:
-        now = datetime.datetime.utcnow()
 
-        pending_videos = (
-            db.query(PublishedContentDB)
-            .filter(PublishedContentDB.status == "PENDING_AUTH")
-            .all()
-        )
+async def _cleanup_old_scheduled_internal():
+    """Internal async logic for cleaning up old scheduled posts"""
+    async with async_session_factory() as db:
+        deleted = 0
+        try:
+            cutoff = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - datetime.timedelta(days=7)
+            stmt = select(ScheduledPostDB).where(
+                ScheduledPostDB.status == "PENDING",
+                ScheduledPostDB.scheduled_time < cutoff,
+            )
+            result = await db.execute(stmt)
+            old_posts = result.scalars().all()
 
-        for video in pending_videos:
-            metadata = video.metadata or {}
-            delete_at_str = metadata.get("delete_at")
+            for post in old_posts:
+                logger.info(f"[Cleanup] Deleting old scheduled post {post.id}")
+                await db.delete(post)
+                deleted += 1
 
-            if delete_at_str:
-                try:
-                    delete_at = datetime.datetime.fromisoformat(
-                        delete_at_str.replace("Z", "+00:00")
-                    ).replace(tzinfo=None)
-
-                    if now >= delete_at:
-                        logger.info(
-                            f"[Cleanup] Deleting video {video.id} - retention expired"
-                        )
-
-                        video_path = metadata.get("video_path")
-                        if video_path and os.path.exists(video_path):
-                            try:
-                                os.remove(video_path)
-                                logger.info(f"[Cleanup] Deleted file: {video_path}")
-                            except Exception as e:
-                                logger.error(f"[Cleanup] Failed to delete file: {e}")
-
-                        video.status = "EXPIRED"
-                        metadata["deleted_at"] = now.isoformat()
-                        metadata["deletion_reason"] = "retention_expired"
-                        video.metadata = metadata
-
-                        deleted_count += 1
-                except Exception as e:
-                    logger.error(f"[Cleanup] Error processing video {video.id}: {e}")
-
-        db.commit()
-
-        return {"deleted": deleted_count, "status": "completed"}
-    except Exception as e:
-        logger.error(f"[Cleanup] Critical error: {e}")
-        return {"error": str(e), "status": "failed"}
-    finally:
-        db.close()
-
+            await db.commit()
+            return {"deleted": deleted, "status": "completed"}
+        except Exception as e:
+            logger.error(f"[Cleanup] Old scheduled internal error: {e}")
+            return {"error": str(e), "status": "failed"}
 
 @celery_app.task(name="optimization.cleanup_old_scheduled")
 def cleanup_old_scheduled():
     """
-    Clean up old scheduled posts that were never published
+    Clean up old scheduled posts wrapper.
     """
-    db = SessionLocal()
-    deleted = 0
-
-    try:
-        cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=7)
-
-        old_posts = (
-            db.query(ScheduledPostDB)
-            .filter(
-                ScheduledPostDB.status == "PENDING",
-                ScheduledPostDB.scheduled_time < cutoff,
-            )
-            .all()
-        )
-
-        for post in old_posts:
-            logger.info(f"[Cleanup] Deleting old scheduled post {post.id}")
-            db.delete(post)
-            deleted += 1
-
-        db.commit()
-
-        return {"deleted": deleted, "status": "completed"}
-    except Exception as e:
-        logger.error(f"[Cleanup] Old scheduled cleanup error: {e}")
-        return {"error": str(e), "status": "failed"}
-    finally:
-        db.close()
+    return asyncio.run(_cleanup_old_scheduled_internal())

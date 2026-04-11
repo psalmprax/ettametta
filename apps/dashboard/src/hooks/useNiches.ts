@@ -35,7 +35,7 @@ export function useNiches() {
     }, [refreshNiches]);
 
     return {
-        niches: niches.length > 0 ? niches : ["Motivation", "AI Tech", "Finance", "History"], // Fallback to basic if backend is totally empty
+        niches,
         styles,
         isLoading,
         refreshNiches

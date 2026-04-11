@@ -3,11 +3,14 @@ Webhooks API Routes for Viral Forge
 Handles callbacks from YouTube, TikTok, and other platforms with proper security
 """
 
-from fastapi import APIRouter, Request, HTTPException, Header
+from fastapi import APIRouter, Request, HTTPException, Header, Depends
 from pydantic import BaseModel, field_validator
 from typing import Optional, Dict, Any
-from api.utils.database import SessionLocal
+from api.utils.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 from api.utils.models import PublishedContentDB, WebhookEventDB
+from api.routes.auth import admin_required
 from datetime import datetime
 import hashlib
 import hmac
@@ -27,22 +30,22 @@ def _verify_signature(payload: bytes, signature: Optional[str], secret: str) -> 
     return hmac.compare_digest(signature, expected)
 
 
-def _check_idempotency(db, event_type: str, external_id: str, platform: str) -> bool:
+async def _check_idempotency(db: AsyncSession, event_type: str, external_id: str, platform: str) -> bool:
     """Check if this event was already processed"""
-    existing = (
-        db.query(WebhookEventDB)
-        .filter(
+    stmt = (
+        select(WebhookEventDB)
+        .where(
             WebhookEventDB.event_type == event_type,
             WebhookEventDB.external_id == external_id,
             WebhookEventDB.platform == platform,
             WebhookEventDB.processed_at.isnot(None),
         )
-        .first()
     )
-    return existing is not None
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none() is not None
 
 
-def _record_event(db, event_type: str, external_id: str, platform: str, payload: dict):
+def _record_event(db: AsyncSession, event_type: str, external_id: str, platform: str, payload: dict):
     """Record webhook event for idempotency"""
     event = WebhookEventDB(
         event_type=event_type,
@@ -79,6 +82,7 @@ async def youtube_upload_status(
     payload: YouTubeWebhookPayload,
     request: Request,
     x_youtube_signature: Optional[str] = Header(None, alias="X-Youtube-Signature"),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Receive upload status updates from YouTube
@@ -95,26 +99,21 @@ async def youtube_upload_status(
             logger.warning("[Webhooks] YouTube signature verification failed")
             raise HTTPException(status_code=401, detail="Invalid signature")
 
-    db = SessionLocal()
     try:
-        if _check_idempotency(db, "youtube_upload_status", payload.video_id, "youtube"):
+        if await _check_idempotency(db, "youtube_upload_status", payload.video_id, "youtube"):
             logger.info(
                 f"[Webhooks] YouTube event {payload.video_id} already processed (idempotency)"
             )
             return {"status": "already_processed", "message": "Event already handled"}
 
-        content = (
-            db.query(PublishedContentDB)
-            .filter(PublishedContentDB.external_video_id == payload.video_id)
-            .first()
-        )
+        stmt = select(PublishedContentDB).where(PublishedContentDB.external_video_id == payload.video_id)
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
 
         if not content and payload.title:
-            content = (
-                db.query(PublishedContentDB)
-                .filter(PublishedContentDB.title.ilike(f"%{payload.title}%"))
-                .first()
-            )
+            stmt = select(PublishedContentDB).where(PublishedContentDB.title.ilike(f"%{payload.title}%"))
+            result = await db.execute(stmt)
+            content = result.scalar_one_or_none()
 
         if content:
             old_status = content.status
@@ -144,7 +143,7 @@ async def youtube_upload_status(
                 "youtube",
                 payload.model_dump(),
             )
-            db.commit()
+            await db.commit()
 
             logger.info(
                 f"[Webhooks] YouTube video {payload.video_id} status: {old_status} -> {content.status}"
@@ -158,11 +157,9 @@ async def youtube_upload_status(
         return {"status": "not_found", "message": "Video not found"}
 
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error(f"[Webhooks] YouTube webhook error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
 
 
 # === TikTok Webhooks ===
@@ -190,6 +187,7 @@ async def tiktok_upload_status(
     payload: TikTokWebhookPayload,
     request: Request,
     x_tiktok_signature: Optional[str] = Header(None, alias="X-Tiktok-Signature"),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Receive upload status updates from TikTok
@@ -205,25 +203,19 @@ async def tiktok_upload_status(
             logger.warning("[Webhooks] TikTok signature verification failed")
             raise HTTPException(status_code=401, detail="Invalid signature")
 
-    db = SessionLocal()
     try:
-        if _check_idempotency(db, "tiktok_upload_status", payload.video_id, "tiktok"):
+        if await _check_idempotency(db, "tiktok_upload_status", payload.video_id, "tiktok"):
             logger.info(f"[Webhooks] TikTok event {payload.video_id} already processed")
             return {"status": "already_processed", "message": "Event already handled"}
 
-        content = (
-            db.query(PublishedContentDB)
-            .filter(PublishedContentDB.external_video_id == payload.video_id)
-            .first()
-        )
+        stmt = select(PublishedContentDB).where(PublishedContentDB.external_video_id == payload.video_id)
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
 
         if not content:
-            content = (
-                db.query(PublishedContentDB)
-                .filter(PublishedContentDB.platform == "tiktok")
-                .order_by(PublishedContentDB.created_at.desc())
-                .first()
-            )
+            stmt = select(PublishedContentDB).where(PublishedContentDB.platform == "tiktok").order_by(PublishedContentDB.created_at.desc())
+            result = await db.execute(stmt)
+            content = result.scalars().first()
 
         if content:
             old_status = content.status
@@ -259,7 +251,7 @@ async def tiktok_upload_status(
                 "tiktok",
                 payload.model_dump(),
             )
-            db.commit()
+            await db.commit()
 
             logger.info(
                 f"[Webhooks] TikTok video {payload.video_id} status: {old_status} -> {content.status}"
@@ -273,11 +265,9 @@ async def tiktok_upload_status(
         return {"status": "not_found", "message": "Video not found"}
 
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error(f"[Webhooks] TikTok webhook error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
 
 
 # === Generic Platform Webhook ===
@@ -310,6 +300,7 @@ async def generic_platform_status(
     payload: GenericPlatformWebhookPayload,
     request: Request,
     x_platform_signature: Optional[str] = Header(None, alias="X-Platform-Signature"),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Generic webhook for any platform status updates
@@ -329,20 +320,17 @@ async def generic_platform_status(
             )
             raise HTTPException(status_code=401, detail="Invalid signature")
 
-    db = SessionLocal()
     try:
         event_key = f"{payload.platform}_{payload.status}"
-        if _check_idempotency(db, event_key, payload.external_id, payload.platform):
+        if await _check_idempotency(db, event_key, payload.external_id, payload.platform):
             return {"status": "already_processed", "message": "Event already handled"}
 
-        content = (
-            db.query(PublishedContentDB)
-            .filter(
-                PublishedContentDB.external_video_id == payload.external_id,
-                PublishedContentDB.platform == payload.platform,
-            )
-            .first()
+        stmt = select(PublishedContentDB).where(
+            PublishedContentDB.external_video_id == payload.external_id,
+            PublishedContentDB.platform == payload.platform,
         )
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
 
         if content:
             old_status = content.status
@@ -365,7 +353,7 @@ async def generic_platform_status(
                 payload.platform,
                 payload.model_dump(),
             )
-            db.commit()
+            await db.commit()
 
             logger.info(
                 f"[Webhooks] {payload.platform} video {payload.external_id} status: {old_status} -> {content.status}"
@@ -381,11 +369,9 @@ async def generic_platform_status(
         return {"status": "not_found", "message": "Video not found"}
 
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error(f"[Webhooks] Platform webhook error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
 
 
 # === Webhook Verification ===
@@ -408,27 +394,292 @@ async def verify_webhook():
     }
 
 
+# === Monetization Webhooks ===
+
+
+@router.post("/monetization/amazon")
+async def amazon_affiliate_webhook(
+    request: Request,
+    x_amz_signature: Optional[str] = Header(None, alias="X-Amz-Signature"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Handle Amazon Associates commission webhooks.
+    Processes commission payments and updates revenue tracking.
+    """
+    from api.utils.models import RevenueLogDB, AffiliateLinkDB
+
+    body = await request.body()
+    data = await request.json()
+
+    # Log webhook event
+    try:
+        # Record webhook event
+        event = WebhookEventDB(
+            event_type="amazon_commission",
+            platform="amazon",
+            external_id=data.get("transaction_id", "unknown"),
+            payload_json=json.dumps(data),
+            processed_at=datetime.utcnow(),
+        )
+        db.add(event)
+
+        # Process commission data
+        if data.get("status") == "approved":
+            commission_amount = float(data.get("commission_amount", 0))
+            link_id = data.get("link_id")
+
+            # Find the affiliate link
+            stmt = select(AffiliateLinkDB).where(AffiliateLinkDB.id == link_id)
+            result = await db.execute(stmt)
+            affiliate_link = result.scalar_one_or_none()
+
+            if affiliate_link and commission_amount > 0:
+                # Create revenue log
+                revenue_log = RevenueLogDB(
+                    platform="amazon",
+                    niche=affiliate_link.niche,
+                    amount=commission_amount,
+                    user_id=affiliate_link.user_id,
+                    metadata={
+                        "transaction_id": data.get("transaction_id"),
+                        "product_name": affiliate_link.product_name,
+                        "commission_rate": data.get("commission_rate"),
+                        "click_timestamp": data.get("click_timestamp"),
+                    },
+                )
+                db.add(revenue_log)
+
+        await db.commit()
+        return {"status": "success", "processed": True}
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"[Webhooks] Amazon webhook error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/monetization/impact-radius")
+async def impact_radius_webhook(
+    request: Request,
+    authorization: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Handle Impact Radius affiliate webhooks.
+    """
+    from api.utils.models import RevenueLogDB
+
+    body = await request.body()
+    data = await request.json()
+
+    # Log webhook event
+    try:
+        event = WebhookEventDB(
+            event_type="impact_radius_conversion",
+            platform="impact_radius",
+            external_id=data.get("event_id", "unknown"),
+            payload_json=json.dumps(data),
+            processed_at=datetime.utcnow(),
+        )
+        db.add(event)
+
+        # Process conversion data
+        if data.get("event_type") == "conversion":
+            amount = float(data.get("payout_amount", 0))
+            if amount > 0:
+                revenue_log = RevenueLogDB(
+                    platform="impact_radius",
+                    niche=data.get("campaign_category", "general"),
+                    amount=amount,
+                    metadata={
+                        "event_id": data.get("event_id"),
+                        "campaign_id": data.get("campaign_id"),
+                        "conversion_type": data.get("conversion_type"),
+                    },
+                )
+                db.add(revenue_log)
+
+        await db.commit()
+        return {"status": "success"}
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"[Webhooks] Impact Radius webhook error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/monetization/shareasale")
+async def shareasale_webhook(
+    request: Request,
+    x_shareasale_signature: Optional[str] = Header(
+        None, alias="X-ShareASale-Signature"
+    ),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Handle ShareASale affiliate webhooks.
+    """
+    from api.utils.models import RevenueLogDB
+
+    body = await request.body()
+    data = await request.json()
+
+    # Log webhook event
+    try:
+        event = WebhookEventDB(
+            event_type="shareasale_commission",
+            platform="shareasale",
+            external_id=data.get("trans_id", "unknown"),
+            payload_json=json.dumps(data),
+            processed_at=datetime.utcnow(),
+        )
+        db.add(event)
+
+        # Process commission data
+        commission = float(data.get("commission", 0))
+        if commission > 0:
+            revenue_log = RevenueLogDB(
+                platform="shareasale",
+                niche=data.get("category", "general"),
+                amount=commission,
+                metadata={
+                    "transaction_id": data.get("trans_id"),
+                    "merchant_id": data.get("merchant_id"),
+                    "commission_rate": data.get("commission_percent"),
+                    "order_date": data.get("order_date"),
+                },
+            )
+            db.add(revenue_log)
+
+        await db.commit()
+        return {"status": "success"}
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"[Webhooks] ShareASale webhook error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/monetization/stripe")
+async def stripe_monetization_webhook(
+    request: Request,
+    stripe_signature: Optional[str] = Header(None, alias="Stripe-Signature"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Handle Stripe webhooks for subscription payments and one-time purchases.
+    This extends the existing Stripe webhook for monetization events.
+    """
+    from api.utils.models import RevenueLogDB
+    import stripe
+
+    body = await request.body()
+    data = await request.json()
+
+    # Log webhook event
+    try:
+        event = WebhookEventDB(
+            event_type=data.get("type", "unknown"),
+            platform="stripe",
+            external_id=data.get("id", "unknown"),
+            payload_json=json.dumps(data),
+            processed_at=datetime.utcnow(),
+        )
+        db.add(event)
+
+        # Handle different event types
+        event_type = data.get("type")
+
+        if event_type == "payment_intent.succeeded":
+            payment_intent = data.get("data", {}).get("object", {})
+            amount = payment_intent.get("amount", 0) / 100  # Convert from cents
+
+            if amount > 0:
+                revenue_log = RevenueLogDB(
+                    platform="stripe",
+                    niche="subscription",  # Could be enhanced to track product types
+                    amount=amount,
+                    metadata={
+                        "payment_intent_id": payment_intent.get("id"),
+                        "customer_id": payment_intent.get("customer"),
+                        "currency": payment_intent.get("currency"),
+                        "description": payment_intent.get("description"),
+                    },
+                )
+                db.add(revenue_log)
+
+        elif event_type == "invoice.payment_succeeded":
+            invoice = data.get("data", {}).get("object", {})
+            amount = invoice.get("amount_paid", 0) / 100
+
+            if amount > 0:
+                revenue_log = RevenueLogDB(
+                    platform="stripe",
+                    niche="subscription",
+                    amount=amount,
+                    metadata={
+                        "invoice_id": invoice.get("id"),
+                        "subscription_id": invoice.get("subscription"),
+                        "customer_id": invoice.get("customer"),
+                        "period_start": invoice.get("period_start"),
+                        "period_end": invoice.get("period_end"),
+                    },
+                )
+                db.add(revenue_log)
+
+        await db.commit()
+        return {"status": "success"}
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"[Webhooks] Stripe monetization webhook error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/verify")
+async def verify_webhook():
+    """Verify webhook endpoints are active"""
+    return {
+        "status": "active",
+        "endpoints": {
+            "youtube": "/webhooks/youtube/upload-status",
+            "tiktok": "/webhooks/tiktok/upload-status",
+            "generic": "/webhooks/platform-status",
+            "amazon": "/webhooks/monetization/amazon",
+            "impact_radius": "/webhooks/monetization/impact-radius",
+            "shareasale": "/webhooks/monetization/shareasale",
+            "stripe": "/webhooks/monetization/stripe",
+        },
+        "security": {
+            "signature_verification": "Configure webhook secrets for each platform",
+            "idempotency": "Enabled for duplicate event prevention",
+        },
+    }
+
+
 @router.get("/events")
 async def get_webhook_events(
-    platform: Optional[str] = None, limit: int = 20, offset: int = 0
+    platform: Optional[str] = None, 
+    limit: int = 20, 
+    offset: int = 0,
+    admin=Depends(admin_required),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Get recent webhook events (admin only in production)"""
+    """Get recent webhook events (admin only)"""
     if limit < 1 or limit > 100:
         raise HTTPException(status_code=400, detail="Limit must be between 1 and 100")
 
-    db = SessionLocal()
     try:
-        query = db.query(WebhookEventDB)
+        stmt = select(WebhookEventDB)
         if platform:
-            query = query.filter(WebhookEventDB.platform == platform.lower())
+            stmt = stmt.where(WebhookEventDB.platform == platform.lower())
 
-        total = query.count()
-        events = (
-            query.order_by(WebhookEventDB.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-            .all()
-        )
+        # Count
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        res_count = await db.execute(count_stmt)
+        total = res_count.scalar() or 0
+
+        # Results
+        stmt = stmt.order_by(WebhookEventDB.created_at.desc()).offset(offset).limit(limit)
+        result = await db.execute(stmt)
+        events = result.scalars().all()
 
         return {
             "events": [
@@ -437,9 +688,7 @@ async def get_webhook_events(
                     "platform": e.platform,
                     "event_type": e.event_type,
                     "external_id": e.external_id,
-                    "processed_at": e.processed_at.isoformat()
-                    if e.processed_at
-                    else None,
+                    "processed_at": e.processed_at.isoformat() if e.processed_at else None,
                     "created_at": e.created_at.isoformat(),
                 }
                 for e in events
@@ -448,5 +697,6 @@ async def get_webhook_events(
             "limit": limit,
             "offset": offset,
         }
-    finally:
-        db.close()
+    except Exception as e:
+        logger.error(f"Failed to fetch events: {e}")
+        raise HTTPException(status_code=500, detail="Internal error")

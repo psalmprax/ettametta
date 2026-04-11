@@ -2,7 +2,6 @@ import logging
 import random
 from typing import List, Dict, Any
 from .base import BaseMonetizationStrategy
-from api.utils.database import SessionLocal
 from api.utils.models import SystemSettings
 
 class SponsorshipStrategy(BaseMonetizationStrategy):
@@ -12,25 +11,25 @@ class SponsorshipStrategy(BaseMonetizationStrategy):
     
     async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
         """
-        Fetches sponsorship deals from database configuration.
-        Returns available brand sponsorships for the given niche.
+        Fetches brand partners from database configuration.
         """
-        db = SessionLocal()
-        try:
-            # Check for configured sponsorship info
-            setting = db.query(SystemSettings).filter(
-                SystemSettings.key == "sponsorship_contact"
-            ).first()
+        from sqlalchemy import select
+        from api.utils.database import async_session_factory
+        
+        async with async_session_factory() as db:
+            stmt = select(SystemSettings).filter(SystemSettings.key == "brand_partners")
+            result = await db.execute(stmt)
+            setting = result.scalar_one_or_none()
             
-            contact_email = setting.value if setting else ""
+            brand_partners_str = setting.value if setting else ""
+            brand_partners = [b.strip() for b in brand_partners_str.split(",") if b.strip()]
             
-            # Check for brand partners
-            brands_setting = db.query(SystemSettings).filter(
-                SystemSettings.key == "brand_partners"
-            ).first()
-            
-            brand_partners = brands_setting.value.split(",") if brands_setting and brands_setting.value else []
-            
+            # Get contact email
+            stmt_email = select(SystemSettings).filter(SystemSettings.key == "contact_email")
+            result_email = await db.execute(stmt_email)
+            setting_email = result_email.scalar_one_or_none()
+            contact_email = setting_email.value if setting_email else "support@ettametta.ai"
+
             if not brand_partners:
                 logging.warning(f"[SponsorshipStrategy] No brand partners configured. Set 'brand_partners' in settings.")
                 return []
@@ -41,15 +40,13 @@ class SponsorshipStrategy(BaseMonetizationStrategy):
                 assets.append({
                     "id": f"sponsor_{i}",
                     "name": brand.strip(),
-                    "url": f"https://{brand.strip().lower().replace(' ', '')}.com",
+                    "url": "", # Hardened: Do not generate fake URLs based on name.
                     "contact": contact_email,
                     "type": "sponsorship",
                     "source": "sponsorship"
                 })
             
             return assets
-        finally:
-            db.close()
 
     async def generate_cta(self, niche: str, context: str) -> str:
         """

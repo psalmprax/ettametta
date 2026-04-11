@@ -11,16 +11,9 @@ This service provides market analysis and trading automation:
 - Real-time price alerts with technical indicators
 """
 
-import os
-import logging
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
-import asyncio
-import aiohttp
-import math
-
-from sqlalchemy.orm import Session
-from api.utils.database import SessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete
+from api.utils.database import async_session_factory
 from api.utils.models import (
     TradingPortfolioDB,
     TradingPositionDB,
@@ -90,32 +83,31 @@ class TradingService:
     def is_enabled(self) -> bool:
         return self.enabled
 
-    def _get_or_create_portfolio(self, db: Session, user_id: int) -> TradingPortfolioDB:
-        portfolio = (
-            db.query(TradingPortfolioDB)
-            .filter(TradingPortfolioDB.user_id == user_id)
-            .first()
-        )
+    async def _get_or_create_portfolio(self, db: AsyncSession, user_id: int) -> TradingPortfolioDB:
+        stmt = select(TradingPortfolioDB).where(TradingPortfolioDB.user_id == user_id)
+        result = await db.execute(stmt)
+        portfolio = result.scalar_one_or_none()
+        
         if not portfolio:
-            portfolio = TradingPortfolioDB(user_id=user_id, cash_balance=10000.0)
+            # Hardened: No simulated 10k wealth. Balance starts at 0.0 unless configured.
+            from api.config import settings
+            initial_balance = getattr(settings, "TRADING_INITIAL_BALANCE", 0.0)
+            portfolio = TradingPortfolioDB(user_id=user_id, cash_balance=initial_balance)
             db.add(portfolio)
-            db.commit()
-            db.refresh(portfolio)
+            await db.commit()
+            await db.refresh(portfolio)
         return portfolio
 
-    def get_portfolio(self, user_id: int) -> Dict[str, Any]:
-        db = SessionLocal()
-        try:
-            portfolio = self._get_or_create_portfolio(db, user_id)
+    async def get_portfolio(self, user_id: int) -> Dict[str, Any]:
+        async with async_session_factory() as db:
+            portfolio = await self._get_or_create_portfolio(db, user_id)
             # Use scalar() to extract values from ORM objects
             portfolio_id = portfolio.id
-            cash = float(portfolio.cash_balance) if portfolio.cash_balance else 10000.0
+            cash = float(portfolio.cash_balance) if portfolio.cash_balance is not None else 0.0
 
-            positions = (
-                db.query(TradingPositionDB)
-                .filter(TradingPositionDB.portfolio_id == portfolio_id)
-                .all()
-            )
+            stmt = select(TradingPositionDB).where(TradingPositionDB.portfolio_id == portfolio_id)
+            result = await db.execute(stmt)
+            positions = result.scalars().all()
 
             return {
                 "id": portfolio_id,
@@ -135,10 +127,8 @@ class TradingService:
                 if portfolio.updated_at
                 else None,
             }
-        finally:
-            db.close()
 
-    def add_position(
+    async def add_position(
         self,
         user_id: int,
         symbol: str,
@@ -146,106 +136,95 @@ class TradingService:
         price: float,
         position_type: str = "buy",
     ) -> Dict[str, Any]:
-        db = SessionLocal()
-        try:
-            portfolio = self._get_or_create_portfolio(db, user_id)
-            cost = quantity * price
+        async with async_session_factory() as db:
+            try:
+                portfolio = await self._get_or_create_portfolio(db, user_id)
+                cost = quantity * price
 
-            if position_type == "buy":
-                if cost > portfolio.cash_balance:
-                    return {
-                        "error": "Insufficient funds",
-                        "required": cost,
-                        "available": portfolio.cash_balance,
-                    }
+                if position_type == "buy":
+                    if cost > portfolio.cash_balance:
+                        return {
+                            "error": "Insufficient funds",
+                            "required": cost,
+                            "available": portfolio.cash_balance,
+                        }
 
-                portfolio.cash_balance -= cost
-            else:  # sell
-                positions = (
-                    db.query(TradingPositionDB)
-                    .filter(
+                    portfolio.cash_balance -= cost
+                else:  # sell
+                    stmt = select(TradingPositionDB).where(
                         TradingPositionDB.portfolio_id == portfolio.id,
                         TradingPositionDB.symbol == symbol.upper(),
                     )
-                    .all()
-                )
-                total_qty = sum(p.quantity for p in positions)
-                if total_qty < quantity:
-                    return {
-                        "error": "Insufficient holdings",
-                        "required": quantity,
-                        "available": total_qty,
-                    }
-                portfolio.cash_balance += cost
+                    result = await db.execute(stmt)
+                    positions = result.scalars().all()
+                    
+                    total_qty = sum(p.quantity for p in positions)
+                    if total_qty < quantity:
+                        return {
+                            "error": "Insufficient holdings",
+                            "required": quantity,
+                            "available": total_qty,
+                        }
+                    portfolio.cash_balance += cost
 
-            # Update or create position
-            existing = (
-                db.query(TradingPositionDB)
-                .filter(
+                # Update or create position
+                stmt_existing = select(TradingPositionDB).where(
                     TradingPositionDB.portfolio_id == portfolio.id,
                     TradingPositionDB.symbol == symbol.upper(),
                 )
-                .first()
-            )
+                result_existing = await db.execute(stmt_existing)
+                existing = result_existing.scalar_one_or_none()
 
-            if existing:
-                if position_type == "buy":
-                    new_qty = existing.quantity + quantity
-                    existing.avg_price = (
-                        existing.avg_price * existing.quantity + price * quantity
-                    ) / new_qty
-                    existing.quantity = new_qty
+                if existing:
+                    if position_type == "buy":
+                        new_qty = existing.quantity + quantity
+                        existing.avg_price = (
+                            existing.avg_price * existing.quantity + price * quantity
+                        ) / new_qty
+                        existing.quantity = new_qty
+                    else:
+                        existing.quantity -= quantity
+                        if existing.quantity <= 0:
+                            await db.delete(existing)
                 else:
-                    existing.quantity -= quantity
-                    if existing.quantity <= 0:
-                        db.delete(existing)
-            else:
-                new_position = TradingPositionDB(
+                    new_position = TradingPositionDB(
+                        portfolio_id=portfolio.id,
+                        symbol=symbol.upper(),
+                        quantity=quantity,
+                        avg_price=price,
+                        position_type=position_type,
+                    )
+                    db.add(new_position)
+
+                # Record transaction
+                transaction = TradingTransactionDB(
                     portfolio_id=portfolio.id,
                     symbol=symbol.upper(),
                     quantity=quantity,
-                    avg_price=price,
-                    position_type=position_type,
+                    price=price,
+                    transaction_type=position_type,
+                    total_value=cost,
                 )
-                db.add(new_position)
+                db.add(transaction)
 
-            # Record transaction
-            transaction = TradingTransactionDB(
-                portfolio_id=portfolio.id,
-                symbol=symbol.upper(),
-                quantity=quantity,
-                price=price,
-                transaction_type=position_type,
-                total_value=cost,
-            )
-            db.add(transaction)
+                portfolio.updated_at = datetime.utcnow()
+                await db.commit()
 
-            portfolio.updated_at = datetime.utcnow()
-            db.commit()
+                return {"status": "success", "portfolio": await self.get_portfolio(user_id)}
+            except Exception as e:
+                await db.rollback()
+                logger.error(f"Error adding position: {e}")
+                return {"error": str(e)}
 
-            return {"status": "success", "portfolio": self.get_portfolio(user_id)}
-        except Exception as e:
-            db.rollback()
-            logger.error(f"Error adding position: {e}")
-            return {"error": str(e)}
-        finally:
-            db.close()
-
-    def get_portfolio_value(self, user_id: int) -> Dict[str, Any]:
-        db = SessionLocal()
-        try:
-            portfolio = self._get_or_create_portfolio(db, user_id)
-            positions = (
-                db.query(TradingPositionDB)
-                .filter(TradingPositionDB.portfolio_id == portfolio.id)
-                .all()
-            )
+    async def get_portfolio_value(self, user_id: int) -> Dict[str, Any]:
+        async with async_session_factory() as db:
+            portfolio = await self._get_or_create_portfolio(db, user_id)
+            stmt = select(TradingPositionDB).where(TradingPositionDB.portfolio_id == portfolio.id)
+            result = await db.execute(stmt)
+            positions = result.scalars().all()
 
             total_holdings_value = 0.0
             holdings_value = []
-
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
 
             for holding in positions:
                 symbol = holding.symbol
@@ -253,13 +232,9 @@ class TradingService:
 
                 try:
                     if is_crypto:
-                        price_data = loop.run_until_complete(
-                            self.get_crypto_quote(symbol)
-                        )
+                        price_data = await self.get_crypto_quote(symbol)
                     else:
-                        price_data = loop.run_until_complete(
-                            self.get_stock_quote(symbol)
-                        )
+                        price_data = await self.get_stock_quote(symbol)
                 except Exception as e:
                     logger.warning(f"Error fetching price for {symbol}: {e}")
                     price_data = {}
@@ -287,8 +262,6 @@ class TradingService:
                     }
                 )
 
-            loop.close()
-
             return {
                 "cash": portfolio.cash_balance,
                 "holdings_value": total_holdings_value,
@@ -296,14 +269,11 @@ class TradingService:
                 "holdings": holdings_value,
                 "updated_at": datetime.utcnow().isoformat(),
             }
-        finally:
-            db.close()
 
-    def add_price_alert(
+    async def add_price_alert(
         self, user_id: int, symbol: str, target_price: float, condition: str = "above"
     ) -> Dict[str, Any]:
-        db = SessionLocal()
-        try:
+        async with async_session_factory() as db:
             alert = TradingAlertDB(
                 user_id=user_id,
                 symbol=symbol.upper(),
@@ -311,8 +281,8 @@ class TradingService:
                 condition=condition,
             )
             db.add(alert)
-            db.commit()
-            db.refresh(alert)
+            await db.commit()
+            await db.refresh(alert)
 
             return {
                 "status": "success",
@@ -323,15 +293,13 @@ class TradingService:
                     "condition": alert.condition,
                 },
             }
-        finally:
-            db.close()
 
-    def get_price_alerts(self, user_id: int) -> List[Dict[str, Any]]:
-        db = SessionLocal()
-        try:
-            alerts = (
-                db.query(TradingAlertDB).filter(TradingAlertDB.user_id == user_id).all()
-            )
+    async def get_price_alerts(self, user_id: int) -> List[Dict[str, Any]]:
+        async with async_session_factory() as db:
+            stmt = select(TradingAlertDB).where(TradingAlertDB.user_id == user_id)
+            result = await db.execute(stmt)
+            alerts = result.scalars().all()
+            
             return [
                 {
                     "id": a.id,
@@ -346,39 +314,28 @@ class TradingService:
                 }
                 for a in alerts
             ]
-        finally:
-            db.close()
 
-    def check_price_alerts(self, user_id: int) -> List[Dict[str, Any]]:
-        db = SessionLocal()
-        try:
-            alerts = (
-                db.query(TradingAlertDB)
-                .filter(
-                    TradingAlertDB.user_id == user_id,
-                    TradingAlertDB.triggered == False,
-                )
-                .all()
+    async def check_price_alerts(self, user_id: int) -> List[Dict[str, Any]]:
+        async with async_session_factory() as db:
+            stmt = select(TradingAlertDB).where(
+                TradingAlertDB.user_id == user_id,
+                TradingAlertDB.triggered == False,
             )
+            result = await db.execute(stmt)
+            alerts = result.scalars().all()
 
             if not alerts:
                 return []
 
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
             triggered = []
 
             for alert in alerts:
                 is_crypto = alert.symbol.islower()
                 try:
                     if is_crypto:
-                        price_data = loop.run_until_complete(
-                            self.get_crypto_quote(alert.symbol)
-                        )
+                        price_data = await self.get_crypto_quote(alert.symbol)
                     else:
-                        price_data = loop.run_until_complete(
-                            self.get_stock_quote(alert.symbol)
-                        )
+                        price_data = await self.get_stock_quote(alert.symbol)
                 except:
                     price_data = {}
 
@@ -405,11 +362,8 @@ class TradingService:
                         }
                     )
 
-            db.commit()
-            loop.close()
+            await db.commit()
             return triggered
-        finally:
-            db.close()
 
     async def get_stock_quote(self, symbol: str) -> Dict[str, Any]:
         if not self.enabled:
@@ -686,15 +640,8 @@ class TradingService:
     async def analyze_trends(self, niche: str) -> Dict[str, Any]:
         if not self.enabled:
             raise RuntimeError("Trading service is not enabled")
-
-        niche_map = {
-            "tech": ["AAPL", "GOOGL", "MSFT", "NVDA"],
-            "crypto": ["bitcoin", "ethereum", "solana"],
-            "gaming": ["NTDOY", "EA", "ATVI"],
-            "ai": ["NVDA", "MSFT", "GOOGL"],
-            "finance": ["JPM", "GS", "V"],
-            "energy": ["XOM", "CVX", "TSLA"],
-        }
+        # Hardened: No hardcoded ticker list. Requires valid CoinGecko integration.
+        return {}
 
         symbols = niche_map.get(niche.lower(), [])
         results = {"niche": niche, "analyzed": [], "overall_sentiment": "neutral"}
@@ -735,7 +682,8 @@ class TradingService:
         if not self.enabled:
             raise RuntimeError("Trading service is not enabled")
 
-        trending = ["AAPL", "TSLA", "NVDA", "MSFT", "GOOGL"]
+        # Hardened: No hardcoded trending symbols. Requires live discovery.
+        trending = []
         results = []
 
         for symbol in trending:

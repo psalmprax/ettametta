@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"google.golang.org/api/option"
 	"google.golang.org/api/youtube/v3"
 )
@@ -124,7 +125,7 @@ func (s *Scanner) scanDuckDuckGo(niche string) []ScanResult {
 	fmt.Printf("[Scanner] Using DuckDuckGo fallback for: %s\n", niche)
 
 	// Use html.duckduckgo.com (more reliable than lite.duckduckgo.com)
-	searchURL := fmt.Sprintf("https://html.duckduckgo.com/html/?q=trending+%s+videos", strings.ReplaceAll(niche, " ", "+"))
+	searchURL := fmt.Sprintf("https://html.duckduckgo.com/html/?q=trending+%s+videos", url.QueryEscape(niche))
 
 	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
@@ -142,92 +143,89 @@ func (s *Scanner) scanDuckDuckGo(niche string) []ScanResult {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("[Scanner] DuckDuckGo read error: %v\n", err)
+	if resp.StatusCode != 200 {
+		fmt.Printf("[Scanner] DuckDuckGo returned status: %d\n", resp.StatusCode)
 		return nil
 	}
 
-	return s.parseDuckDuckGoResults(string(body), niche)
+	return s.parseDuckDuckGoResults(resp.Body, niche)
 }
 
-// parseDuckDuckGoResults parses DuckDuckGo HTML results
-func (s *Scanner) parseDuckDuckGoResults(html string, niche string) []ScanResult {
+// parseDuckDuckGoResults parses DuckDuckGo HTML results using goquery
+func (s *Scanner) parseDuckDuckGoResults(body io.Reader, niche string) []ScanResult {
 	var results []ScanResult
 
-	// Enhanced regex to handle various DDG HTML structures and capture titles correctly
-	resultRegex := regexp.MustCompile(`<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)</a>`)
-	matches := resultRegex.FindAllStringSubmatch(html, -1)
+	doc, err := goquery.NewDocumentFromReader(body)
+	if err != nil {
+		fmt.Printf("[Scanner] Failed to parse DDG HTML: %v\n", err)
+		return nil
+	}
 
-	for i, match := range matches {
-		if i >= 10 { // Limit to 10 results
-			break
+	doc.Find(".result__a").Each(func(i int, sel *goquery.Selection) {
+		if len(results) >= 10 {
+			return
 		}
-		if len(match) >= 3 {
-			url := match[1]
-			titleRaw := match[2]
 
-			// Strip HTML tags from title (e.g. <b> highlighting)
-			tagRegex := regexp.MustCompile(`<[^>]*>`)
-			title := strings.TrimSpace(tagRegex.ReplaceAllString(titleRaw, ""))
+		rawURL, exists := sel.Attr("href")
+		if !exists {
+			return
+		}
 
-			// Resolve DuckDuckGo redirection links
-			if strings.Contains(url, "uddg=") {
-				params := strings.Split(url, "uddg=")
-				if len(params) > 1 {
-					actualURL := strings.Split(params[1], "&")[0]
-					// Unescape the URL (simple replacement for common chars)
-					actualURL = strings.ReplaceAll(actualURL, "%3A", ":")
-					actualURL = strings.ReplaceAll(actualURL, "%2F", "/")
-					actualURL = strings.ReplaceAll(actualURL, "%3F", "?")
-					actualURL = strings.ReplaceAll(actualURL, "%3D", "=")
-					actualURL = strings.ReplaceAll(actualURL, "%26", "&")
-					url = actualURL
+		title := strings.TrimSpace(sel.Text())
+		finalURL := rawURL
+
+		// Resolve DuckDuckGo redirection links
+		if strings.Contains(rawURL, "uddg=") {
+			u, err := url.Parse(rawURL)
+			if err == nil {
+				actualURL := u.Query().Get("uddg")
+				if actualURL != "" {
+					finalURL = actualURL
 				}
 			}
-
-			// Skip remaining internal DuckDuckGo links
-			if strings.HasPrefix(url, "/") || strings.Contains(url, "duckduckgo.com") && !strings.Contains(url, "uddg=") {
-				continue
-			}
-
-			// Detect platform from URL
-			platform := "Web"
-			urlLower := strings.ToLower(url)
-			if strings.Contains(urlLower, "youtube.com") || strings.Contains(urlLower, "youtu.be") {
-				platform = "YouTube"
-			} else if strings.Contains(urlLower, "tiktok.com") {
-				platform = "TikTok"
-			} else if strings.Contains(urlLower, "instagram.com") {
-				platform = "Instagram"
-			} else if strings.Contains(urlLower, "twitter.com") || strings.Contains(urlLower, "x.com") {
-				platform = "X"
-			} else if strings.Contains(urlLower, "reddit.com") {
-				platform = "Reddit"
-			}
-
-			// STRICTOR PATH VALIDATION: Ensure it's a direct video link, not a landing page
-			category := classifyURL(urlLower, platform)
-			if category == "skip" {
-				continue
-			}
-
-			// Estimate velocity based on platform
-			velocity := 0.5
-			if platform == "YouTube" {
-				velocity = 0.7
-			}
-
-			results = append(results, ScanResult{
-				Niche:    niche,
-				Velocity: velocity,
-				URL:      url,
-				Title:    title,
-				Platform: platform,
-				Category: category,
-			})
 		}
-	}
+
+		// Skip remaining internal DuckDuckGo links
+		if strings.HasPrefix(finalURL, "/") || strings.Contains(finalURL, "duckduckgo.com") && !strings.Contains(finalURL, "uddg=") {
+			return
+		}
+
+		// Detect platform from URL
+		platform := "Web"
+		urlLower := strings.ToLower(finalURL)
+		if strings.Contains(urlLower, "youtube.com") || strings.Contains(urlLower, "youtu.be") {
+			platform = "YouTube"
+		} else if strings.Contains(urlLower, "tiktok.com") {
+			platform = "TikTok"
+		} else if strings.Contains(urlLower, "instagram.com") {
+			platform = "Instagram"
+		} else if strings.Contains(urlLower, "twitter.com") || strings.Contains(urlLower, "x.com") {
+			platform = "X"
+		} else if strings.Contains(urlLower, "reddit.com") {
+			platform = "Reddit"
+		}
+
+		// STRICTOR PATH VALIDATION: Ensure it's a direct video link, not a landing page
+		category := classifyURL(urlLower, platform)
+		if category == "skip" {
+			return
+		}
+
+		// Estimate velocity based on platform
+		velocity := 0.5
+		if platform == "YouTube" {
+			velocity = 0.7
+		}
+
+		results = append(results, ScanResult{
+			Niche:    niche,
+			Velocity: velocity,
+			URL:      finalURL,
+			Title:    title,
+			Platform: platform,
+			Category: category,
+		})
+	})
 
 	fmt.Printf("[Scanner] DuckDuckGo found %d results for: %s\n", len(results), niche)
 	return results

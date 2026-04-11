@@ -126,61 +126,45 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
         while True:
             # Generate telemetry from real system state
             try:
-                from api.utils.database import SessionLocal
+                from api.utils.database import get_db
                 from api.utils.models import (
                     VideoJobDB,
                     PublishedContentDB,
                     ContentCandidateDB,
                 )
-                from sqlalchemy import func
+                from sqlalchemy import select, func
+                from sqlalchemy.ext.asyncio import AsyncSession
+                from api.utils.database import async_session_factory
 
-                db = SessionLocal()
-                try:
-                    active_jobs = (
-                        db.query(func.count(VideoJobDB.id))
-                        .filter(VideoJobDB.status.in_(["Queued", "Rendering"]))
-                        .scalar()
-                        or 0
-                    )
+                async with async_session_factory() as db:
+                    stmt_active = select(func.count(VideoJobDB.id)).where(VideoJobDB.status.in_(["Queued", "Rendering"]))
+                    res_active = await db.execute(stmt_active)
+                    active_jobs = res_active.scalar() or 0
 
-                    total_published = (
-                        db.query(func.count(PublishedContentDB.id)).scalar() or 0
-                    )
-                    total_discovered = (
-                        db.query(func.count(ContentCandidateDB.id)).scalar() or 0
-                    )
-                    completed_jobs = (
-                        db.query(func.count(VideoJobDB.id))
-                        .filter(VideoJobDB.status == "Completed")
-                        .scalar()
-                        or 0
-                    )
+                    stmt_published = select(func.count(PublishedContentDB.id))
+                    res_published = await db.execute(stmt_published)
+                    total_published = res_published.scalar() or 0
 
-                    # Calculate velocity from recent activity
-                    from datetime import datetime, timedelta
+                    stmt_discovered = select(func.count(ContentCandidateDB.id))
+                    res_discovered = await db.execute(stmt_discovered)
+                    total_discovered = res_discovered.scalar() or 0
+
+                    stmt_completed = select(func.count(VideoJobDB.id)).where(VideoJobDB.status == "Completed")
+                    res_completed = await db.execute(stmt_completed)
+                    completed_jobs = res_completed.scalar() or 0
 
                     recent_cutoff = datetime.utcnow() - timedelta(hours=24)
-                    recent_published = (
-                        db.query(func.count(PublishedContentDB.id))
-                        .filter(PublishedContentDB.published_at >= recent_cutoff)
-                        .scalar()
-                        or 0
-                    )
+                    stmt_recent = select(func.count(PublishedContentDB.id)).where(PublishedContentDB.published_at >= recent_cutoff)
+                    res_recent = await db.execute(stmt_recent)
+                    recent_published = res_recent.scalar() or 0
 
-                    total_views = (
-                        db.query(
-                            func.coalesce(func.sum(PublishedContentDB.view_count), 0)
-                        ).scalar()
-                        or 0
-                    )
-                    total_likes = (
-                        db.query(
-                            func.coalesce(func.sum(PublishedContentDB.likes), 0)
-                        ).scalar()
-                        or 0
-                    )
-                finally:
-                    db.close()
+                    stmt_views = select(func.coalesce(func.sum(PublishedContentDB.view_count), 0))
+                    res_views = await db.execute(stmt_views)
+                    total_views = res_views.scalar() or 0
+
+                    stmt_likes = select(func.coalesce(func.sum(PublishedContentDB.likes), 0))
+                    res_likes = await db.execute(stmt_likes)
+                    total_likes = res_likes.scalar() or 0
             except Exception:
                 active_jobs = 0
                 total_published = 0
@@ -258,18 +242,19 @@ def notify_system_log_sync(message: str, level: str = "INFO", module: str = "SYS
     """
     Synchronous utility to publish system logs to Redis and persist to DB.
     """
-    import redis as redis_sync
-    import time
-    from api.utils.database import SessionLocal
-    from api.utils.models import SystemActivityDB
-
     # Persist to DB
+    from api.utils.database import async_session_factory
+    from api.utils.models import SystemActivityDB
+    import asyncio
+
+    async def _db_log():
+        async with async_session_factory() as db:
+            log_entry = SystemActivityDB(level=level, module=module, message=message)
+            db.add(log_entry)
+            await db.commit()
+
     try:
-        db = SessionLocal()
-        log_entry = SystemActivityDB(level=level, module=module, message=message)
-        db.add(log_entry)
-        db.commit()
-        db.close()
+        asyncio.run(_db_log())
     except Exception as e:
         logging.error(f"Failed to persist system log: {e}")
 
@@ -290,13 +275,23 @@ def notify_system_log_sync(message: str, level: str = "INFO", module: str = "SYS
 
 async def notify_system_log_async(message: str, level: str = "INFO", module: str = "SYSTEM"):
     """
-    Asynchronous utility to publish system logs to Redis.
+    Asynchronous utility to publish system logs to Redis and persist to DB.
     """
     import redis.asyncio as redis_async
     import time
+    from api.utils.database import async_session_factory
+    from api.utils.models import SystemActivityDB
 
-    # Note: We don't persist in async to avoid blocking service loops if DB is slow
-    # but we could use a background task if needed.
+    # Persist to DB in background
+    try:
+        async with async_session_factory() as db:
+            log_entry = SystemActivityDB(level=level, module=module, message=message)
+            db.add(log_entry)
+            await db.commit()
+    except Exception as e:
+        logging.error(f"Failed to persist system log (async): {e}")
+
+    # Broadcast via Redis
     try:
         r = redis_async.from_url(settings.REDIS_URL)
         message_data = json.dumps({
