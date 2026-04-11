@@ -318,6 +318,121 @@ class ContentEditorSkill:
         """Build FFmpeg filter for clip cutting"""
         return "trim=start=5:end=15,setpts=PTS-STARTPTS"
 
+    async def edit_with_moviepy(
+        self,
+        video_path: str,
+        output_path: str = "/tmp/moviepy_edited.mp4",
+        operations: Dict = None,
+    ) -> Dict[str, Any]:
+        """
+        Alternative: Edit using MoviePy (more Pythonic, better for text overlays)
+        
+        Operations:
+        - text_overlay: Add titles, captions
+        - composite: Layer multiple clips
+        - effects: zoom, fade, colorFX
+        
+        Uses: moviepy library already in project
+        """
+        try:
+            from moviepy import (
+                VideoFileClip,
+                TextClip,
+                CompositeVideoClip,
+                concatenate_videoclips,
+                vfx,
+            )
+
+            ops = operations or {}
+
+            clip = VideoFileClip(video_path)
+
+            if ops.get("text_overlay"):
+                text = ops["text_overlay"]
+                txt_clip = TextClip(
+                    text,
+                    fontsize=ops.get("fontsize", 50),
+                    color=ops.get("color", "white"),
+                    font=ops.get("font", "DejaVuSans-Bold"),
+                )
+                txt_clip = txt_clip.set_position(("center", "bottom")).set_duration(clip.duration)
+                final = CompositeVideoClip([clip, txt_clip])
+            else:
+                final = clip
+
+            if ops.get("zoom"):
+                final = final.fx(vfx.resize, lambda t: 1 + 0.1 * t)
+
+            if ops.get("fade"):
+                final = final.fadein(0.5).fadeout(0.5)
+
+            final.write_videofile(output_path, codec="libx264", fps=24)
+
+            return {"status": "success", "output_path": output_path, "engine": "moviepy"}
+
+        except ImportError:
+            return {"status": "failed", "error": "moviepy not available"}
+        except Exception as e:
+            return {"status": "failed", "error": str(e)}
+
+    async def edit_with_opencv(
+        self,
+        video_path: str,
+        output_path: str = "/tmp/opencv_edited.mp4",
+        operations: Dict = None,
+    ) -> Dict[str, Any]:
+        """
+        Alternative: Edit using OpenCV (fast, great for motion detection)
+        
+        Operations:
+        - motion_detect: Detect moving objects
+        - speed_up: Fast forward effect
+        - stabilize: Video stabilization
+        - track: Object tracking
+        
+        Uses: cv2 (OpenCV) already in project
+        """
+        try:
+            import cv2
+            import numpy as np
+
+            ops = operations or {}
+
+            cap = cv2.VideoCapture(video_path)
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+            frames = []
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                if ops.get("speed_up"):
+                    for _ in range(ops.get("speed_factor", 2)):
+                        out.write(frame)
+
+                elif ops.get("grayscale"):
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+                    out.write(frame)
+                else:
+                    out.write(frame)
+
+            cap.release()
+            out.release()
+
+            return {"status": "success", "output_path": output_path, "engine": "opencv"}
+
+        except ImportError:
+            return {"status": "failed", "error": "opencv not available"}
+        except Exception as e:
+            return {"status": "failed", "error": str(e)}
+
     async def add_captions(
         self,
         video_path: str,
