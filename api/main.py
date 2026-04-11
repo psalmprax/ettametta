@@ -168,7 +168,7 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
     message = "An internal database error occurred."
     if settings.DEBUG:
         message = f"Database Error: {str(exc)}"
-    
+
     return JSONResponse(
         status_code=500,
         content={
@@ -182,13 +182,31 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     logger.warning(f"Validation error: {exc.errors()}")
+    details = []
+    for err in exc.errors():
+        details.append(
+            {k: str(v) if isinstance(v, Exception) else v for k, v in err.items()}
+        )
     return JSONResponse(
         status_code=422,
         content={
             "error": "Validation Error",
             "message": "Invalid data provided.",
-            "details": exc.errors(),
+            "details": details,
             "code": "VALIDATION_ERROR",
+        },
+    )
+
+
+@app.exception_handler(ValueError)
+async def value_error_exception_handler(request: Request, exc: ValueError):
+    logger.warning(f"Value error: {exc}")
+    return JSONResponse(
+        status_code=400,
+        content={
+            "error": "Bad Request",
+            "message": str(exc),
+            "code": "VALUE_ERROR",
         },
     )
 
@@ -226,7 +244,7 @@ async def seed_monitored_niches():
             # Async-compatible count check
             result = await db.execute(select(func.count()).select_from(MonitoredNiche))
             count = result.scalar()
-            
+
             if count == 0:
                 logger.info("[Startup] Seeding default monitored niches...")
                 default_niches = [
