@@ -9,3 +9,4 @@ python-dotenv==1.0.1
 python-multipart==0.0.9
 aiohttp==3.9.1
 psutil==5.9.8
+playwright==1.44.0
