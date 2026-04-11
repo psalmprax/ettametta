@@ -123,6 +123,22 @@ class FreeVideoProviderService:
             "supports_image2video": True,
             "supports_audio": False,
         },
+        "haiper": {
+            "api_url": "https://api.haiper.ai/v1",
+            "free_credits": 25,  # Daily - very generous
+            "max_duration": 5,
+            "default_aspect": "9:16",
+            "supports_image2video": True,
+            "supports_audio": True,
+        },
+        "luma": {
+            "api_url": "https://api.lumalabs.ai/dream-machine/v1",
+            "free_credits": 15,  # Daily
+            "max_duration": 7,
+            "default_aspect": "9:16",
+            "supports_image2video": True,
+            "supports_audio": False,
+        },
     }
 
     def __init__(self):
@@ -276,9 +292,17 @@ class FreeVideoProviderService:
             return await self._generate_runway(
                 enhanced_prompt, duration, aspect_ratio, api_key, config
             )
-        elif provider == "pika":
+         elif provider == "pika":
             return await self._generate_pika(
                 enhanced_prompt, duration, aspect_ratio, api_key, config
+            )
+        elif provider == "haiper":
+            return await self._generate_haiper(
+                enhanced_prompt, duration, aspect_ratio, image_url, api_key, config
+            )
+        elif provider == "luma":
+            return await self._generate_luma(
+                enhanced_prompt, duration, aspect_ratio, image_url, api_key, config
             )
 
         return None
@@ -393,18 +417,14 @@ class FreeVideoProviderService:
                             "video_url": data.get("video_url"),
                             "metadata": {"model": "zsky-wan"},
                         }
-                    elif status in ("failed", "cancelled"):
-                        return None
+         elif status in ("failed", "cancelled"):
+                return None
 
-                    await asyncio.sleep(delay)
+            await asyncio.sleep(delay)
 
-                except Exception as e:
-                    logger.warning(f"[FreeVideoProvider] ZSky poll exception: {e}")
-                    await asyncio.sleep(delay)
+        return None
 
-            return None
-
-    async def _generate_kling(
+    async def _generate_haiper(
         self,
         prompt: str,
         duration: int,
@@ -413,7 +433,7 @@ class FreeVideoProviderService:
         api_key: str,
         config: Dict,
     ) -> Optional[Dict[str, Any]]:
-        """Generate video using Kling AI API"""
+        """Generate video using Haiper AI"""
         import httpx
 
         headers = {
@@ -423,114 +443,7 @@ class FreeVideoProviderService:
 
         payload = {
             "prompt": prompt,
-            "mode": "std",  # standard mode
-            "duration": min(duration, config["max_duration"]),
-            "aspect_ratio": aspect_ratio.replace(":", "x"),
-        }
-
-        if image_url and config.get("supports_image2video"):
-            payload["first_frame_image"] = image_url
-
-        try:
-            async with httpx.AsyncClient(timeout=60) as client:
-                response = await client.post(
-                    f"{config['api_url']}/generations/text-to-video",
-                    headers=headers,
-                    json=payload,
-                )
-
-                if response.status_code != 200:
-                    logger.error(
-                        f"[FreeVideoProvider] Kling error {response.status_code}: {response.text}"
-                    )
-                    return None
-
-                data = response.json()
-
-                if "data" in data and "video_url" in data["data"]:
-                    return {
-                        "video_url": data["data"]["video_url"],
-                        "metadata": {"model": "kling"},
-                    }
-                elif "task_id" in data or "taskId" in data:
-                    task_id = data.get("task_id") or data.get("taskId")
-                    return await self._poll_kling_job(task_id, api_key, config)
-
-                return None
-
-        except Exception as e:
-            logger.error(f"[FreeVideoProvider] Kling request failed: {e}")
-            return None
-
-    async def _poll_kling_job(
-        self,
-        job_id: str,
-        api_key: str,
-        config: Dict,
-        max_attempts: int = 60,
-        delay: int = 5,
-    ) -> Optional[Dict[str, Any]]:
-        """Poll Kling job until completion"""
-        import httpx
-
-        headers = {"Authorization": f"Bearer {api_key}"}
-
-        async with httpx.AsyncClient(timeout=30) as client:
-            for attempt in range(max_attempts):
-                try:
-                    response = await client.get(
-                        f"{config['api_url']}/generations/{job_id}",
-                        headers=headers,
-                    )
-
-                    if response.status_code != 200:
-                        await asyncio.sleep(delay)
-                        continue
-
-                    data = response.json()
-                    status = data.get("status", "").lower()
-
-                    if status == "completed":
-                        if "data" in data and "video_url" in data["data"]:
-                            return {
-                                "video_url": data["data"]["video_url"],
-                                "metadata": {"model": "kling"},
-                            }
-                    elif status == "failed":
-                        return None
-
-                    await asyncio.sleep(delay)
-
-                except Exception as e:
-                    logger.warning(f"[FreeVideoProvider] Kling poll exception: {e}")
-                    await asyncio.sleep(delay)
-
-            return None
-
-    async def _generate_pixverse(
-        self,
-        prompt: str,
-        duration: int,
-        aspect_ratio: str,
-        image_url: Optional[str],
-        api_key: str,
-        config: Dict,
-    ) -> Optional[Dict[str, Any]]:
-        """Generate video using PixVerse API"""
-        import httpx
-
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-
-        # PixVerse uses different aspect ratio format
-        pix_ratio_map = {"9:16": "9:16", "16:9": "16:9", "1:1": "1:1"}
-        pix_ratio = pix_ratio_map.get(aspect_ratio, "9:16")
-
-        payload = {
-            "text": prompt,
-            "aspect_ratio": pix_ratio,
+            "aspect_ratio": aspect_ratio,
             "duration": min(duration, config["max_duration"]),
         }
 
@@ -547,7 +460,7 @@ class FreeVideoProviderService:
 
                 if response.status_code != 200:
                     logger.error(
-                        f"[FreeVideoProvider] PixVerse error {response.status_code}: {response.text}"
+                        f"[FreeVideoProvider] Haiper error {response.status_code}: {response.text}"
                     )
                     return None
 
@@ -556,216 +469,30 @@ class FreeVideoProviderService:
                 if "video_url" in data:
                     return {
                         "video_url": data["video_url"],
-                        "metadata": {"model": "pixverse"},
+                        "metadata": {"model": "haiper"},
                     }
                 elif "task_id" in data:
-                    return await self._poll_pixverse_job(
+                    return await self._poll_haiper_job(
                         data["task_id"], api_key, config
                     )
+                else:
+                    logger.info("[Haiper] API unavailable, falling back to browser automation")
+                    from services.openclaw.skills.haiper import haiper_skill
+                    return await haiper_skill.generate(prompt, aspect_ratio)
 
                 return None
 
         except Exception as e:
-            logger.error(f"[FreeVideoProvider] PixVerse request failed: {e}")
-            return None
-
-    async def _poll_pixverse_job(
-        self,
-        job_id: str,
-        api_key: str,
-        config: Dict,
-        max_attempts: int = 60,
-        delay: int = 5,
-    ) -> Optional[Dict[str, Any]]:
-        """Poll PixVerse job until completion"""
-        import httpx
-
-        headers = {"Authorization": f"Bearer {api_key}"}
-
-        async with httpx.AsyncClient(timeout=30) as client:
-            for attempt in range(max_attempts):
-                try:
-                    response = await client.get(
-                        f"{config['api_url']}/task/{job_id}",
-                        headers=headers,
-                    )
-
-                    if response.status_code != 200:
-                        await asyncio.sleep(delay)
-                        continue
-
-                    data = response.json()
-                    status = data.get("status", "").lower()
-
-                    if status == "completed":
-                        return {
-                            "video_url": data.get("video_url"),
-                            "metadata": {"model": "pixverse"},
-                        }
-                    elif status == "failed":
-                        return None
-
-                    await asyncio.sleep(delay)
-
-                except Exception as e:
-                    logger.warning(f"[FreeVideoProvider] PixVerse poll exception: {e}")
-                    await asyncio.sleep(delay)
-
-            return None
-
-    async def _generate_replicate(
-        self,
-        provider: str,
-        prompt: str,
-        duration: int,
-        aspect_ratio: str,
-        image_url: Optional[str],
-        api_key: str,
-        config: Dict,
-    ) -> Optional[Dict[str, Any]]:
-        """Generate video using Replicate API"""
-        import httpx
-
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-
-        # Check if this is a specific model (wan, seedance, hailuo)
-        model = config.get("replicate_model") or config.get(
-            "model_default", "minimax/mimi-alpha-01"
-        )
-
-        # Build input payload based on model type
-        input_data = {
-            "prompt": prompt,
-        }
-
-        # Model-specific parameters
-        if "wan-2.2-5b" in model:
-            input_data["duration"] = min(duration, 5)  # Wan max 5s
-        elif "seedance" in model:
-            input_data["duration"] = min(duration, 10)
-            input_data["resolution"] = "720p"
-        elif "hailuo" in model:
-            input_data["duration"] = min(duration, 6)
-        else:
-            input_data["duration"] = min(duration, config.get("max_duration", 10))
-
-        # Handle image-to-video
-        if image_url and config.get("supports_image2video"):
-            if "wan-2.2" in model:
-                input_data["image"] = image_url
-            else:
-                input_data["image"] = image_url
-
-        payload = {
-            "version": model,
-            "input": input_data,
-        }
-
-        try:
-            async with httpx.AsyncClient(timeout=120) as client:
-                response = await client.post(
-                    "https://api.replicate.com/v1/predictions",
-                    headers=headers,
-                    json=payload,
-                )
-
-                if response.status_code not in (200, 201):
-                    logger.error(
-                        f"[FreeVideoProvider] Replicate {provider} error {response.status_code}: {response.text}"
-                    )
-                    return None
-
-                data = response.json()
-
-                if "urls" in data and "get" in data["urls"]:
-                    result = await self._poll_replicate_job(
-                        data["urls"]["get"], api_key, provider, config
-                    )
-                    if result:
-                        # Add cost info
-                        result["cost"] = config.get("cost_per_video", 0)
-                    return result
-
+            logger.error(f"[FreeVideoProvider] Haiper request failed: {e}")
+            logger.info("[Haiper] Falling back to browser automation")
+            try:
+                from services.openclaw.skills.haiper import haiper_skill
+                return await haiper_skill.generate(prompt, aspect_ratio)
+            except Exception as browser_err:
+                logger.error(f"[FreeVideoProvider] Haiper browser fallback failed: {browser_err}")
                 return None
 
-        except Exception as e:
-            logger.error(
-                f"[FreeVideoProvider] Replicate {provider} request failed: {e}"
-            )
-            return None
-
-    async def _poll_replicate_job(
-        self,
-        poll_url: str,
-        api_key: str,
-        provider: str = "replicate",
-        config: Dict = None,
-        max_attempts: int = 60,
-        delay: int = 5,
-    ) -> Optional[Dict[str, Any]]:
-        """Poll Replicate job until completion"""
-        import httpx
-
-        headers = {"Authorization": f"Bearer {api_key}"}
-
-        async with httpx.AsyncClient(timeout=30) as client:
-            for attempt in range(max_attempts):
-                try:
-                    response = await client.get(poll_url, headers=headers)
-
-                    if response.status_code != 200:
-                        await asyncio.sleep(delay)
-                        continue
-
-                    data = response.json()
-                    status = data.get("status", "").lower()
-
-                    if status == "succeeded":
-                        output = data.get("output", {})
-                        video_url = None
-
-                        # Handle different output formats
-                        if isinstance(output, list) and len(output) > 0:
-                            video_url = output[0]
-                        elif isinstance(output, str):
-                            video_url = output
-                        elif isinstance(output, dict):
-                            video_url = (
-                                output.get("video")
-                                or output.get("url")
-                                or output.get("output")
-                            )
-
-                        if video_url:
-                            return {
-                                "video_url": video_url,
-                                "metadata": {
-                                    "model": provider,
-                                    "provider": "replicate",
-                                },
-                            }
-                        return None
-                    elif status in ("failed", "canceled"):
-                        logger.error(
-                            f"[FreeVideoProvider] Replicate {provider} job failed: {data.get('error')}"
-                        )
-                        return None
-
-                    await asyncio.sleep(delay)
-
-                except Exception as e:
-                    logger.warning(
-                        f"[FreeVideoProvider] Replicate {provider} poll exception: {e}"
-                    )
-                    await asyncio.sleep(delay)
-
-            logger.error(f"[FreeVideoProvider] Replicate {provider} job timed out")
-            return None
-
-    async def _generate_stability(
+    async def _generate_luma(
         self,
         prompt: str,
         duration: int,
@@ -774,87 +501,7 @@ class FreeVideoProviderService:
         api_key: str,
         config: Dict,
     ) -> Optional[Dict[str, Any]]:
-        """Generate video using Stability AI API"""
-        import httpx
-
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Accept": "application/json",
-        }
-
-        # Stability uses SVD (Stable Video Diffusion)
-        if image_url and config.get("supports_image2video"):
-            # Image to video
-            endpoint = f"{config['api_url']}/image-to-video/sea"
-            payload = {
-                "image_url": image_url,
-                "prompt": prompt,
-            }
-        else:
-            # Text to video
-            endpoint = f"{config['api_url']}/text-to-video/sea"
-            payload = {
-                "prompt": prompt,
-            }
-
-        try:
-            async with httpx.AsyncClient(timeout=60) as client:
-                response = await client.post(
-                    endpoint,
-                    headers=headers,
-                    json=payload,
-                )
-
-                if response.status_code != 200:
-                    logger.error(
-                        f"[FreeVideoProvider] Stability error {response.status_code}: {response.text}"
-                    )
-                    return None
-
-                data = response.json()
-
-                if "artifacts" in data and len(data["artifacts"]) > 0:
-                    video_base64 = data["artifacts"][0].get("base64")
-                    if video_base64:
-                        # Would need to decode and save - for now return placeholder
-                        return {
-                            "video_url": f"data:video/mp4;base64,{video_base64[:100]}...",
-                            "metadata": {"model": "stability-svd"},
-                        }
-                elif "seed" in data:
-                    return await self._poll_stability_job(data["seed"], api_key, config)
-
-                return None
-
-        except Exception as e:
-            logger.error(f"[FreeVideoProvider] Stability request failed: {e}")
-            return None
-
-    async def _poll_stability_job(
-        self,
-        job_id: str,
-        api_key: str,
-        config: Dict,
-        max_attempts: int = 30,
-        delay: int = 5,
-    ) -> Optional[Dict[str, Any]]:
-        """Poll Stability job until completion"""
-        # Stability usually returns synchronously or very fast
-        await asyncio.sleep(delay)
-        return {
-            "video_url": f"stability://{job_id}",
-            "metadata": {"model": "stability-svd"},
-        }
-
-    async def _generate_runway(
-        self,
-        prompt: str,
-        duration: int,
-        aspect_ratio: str,
-        api_key: str,
-        config: Dict,
-    ) -> Optional[Dict[str, Any]]:
-        """Generate video using Runway ML API"""
+        """Generate video using Luma Dream Machine"""
         import httpx
 
         headers = {
@@ -864,22 +511,24 @@ class FreeVideoProviderService:
 
         payload = {
             "prompt": prompt,
-            "duration": min(duration, config["max_duration"]),
             "aspect_ratio": aspect_ratio,
-            "watermark": False,
+            "duration": min(duration, config["max_duration"]),
         }
+
+        if image_url and config.get("supports_image2video"):
+            payload["image_url"] = image_url
 
         try:
             async with httpx.AsyncClient(timeout=60) as client:
                 response = await client.post(
-                    f"{config['api_url']}/generation/text-to-video",
+                    f"{config['api_url']}/generations",
                     headers=headers,
                     json=payload,
                 )
 
                 if response.status_code != 200:
                     logger.error(
-                        f"[FreeVideoProvider] Runway error {response.status_code}: {response.text}"
+                        f"[FreeVideoProvider] Luma error {response.status_code}: {response.text}"
                     )
                     return None
 
@@ -888,182 +537,28 @@ class FreeVideoProviderService:
                 if "video_url" in data:
                     return {
                         "video_url": data["video_url"],
-                        "metadata": {"model": "runway"},
+                        "metadata": {"model": "luma"},
                     }
                 elif "id" in data:
-                    return await self._poll_runway_job(data["id"], api_key, config)
+                    return await self._poll_luma_job(
+                        data["id"], api_key, config
+                    )
+                else:
+                    logger.info("[Luma] API unavailable, falling back to browser automation")
+                    from services.openclaw.skills.luma import luma_skill
+                    return await luma_skill.generate(prompt, aspect_ratio)
 
                 return None
 
         except Exception as e:
-            logger.error(f"[FreeVideoProvider] Runway request failed: {e}")
-            return None
-
-    async def _poll_runway_job(
-        self,
-        job_id: str,
-        api_key: str,
-        config: Dict,
-        max_attempts: int = 60,
-        delay: int = 5,
-    ) -> Optional[Dict[str, Any]]:
-        """Poll Runway job until completion"""
-        import httpx
-
-        headers = {"Authorization": f"Bearer {api_key}"}
-
-        async with httpx.AsyncClient(timeout=30) as client:
-            for attempt in range(max_attempts):
-                try:
-                    response = await client.get(
-                        f"{config['api_url']}/generation/{job_id}",
-                        headers=headers,
-                    )
-
-                    if response.status_code != 200:
-                        await asyncio.sleep(delay)
-                        continue
-
-                    data = response.json()
-                    status = data.get("status", "").lower()
-
-                    if status == "succeeded":
-                        return {
-                            "video_url": data.get("video_url"),
-                            "metadata": {"model": "runway"},
-                        }
-                    elif status in ("failed", "cancelled"):
-                        return None
-
-                    await asyncio.sleep(delay)
-
-                except Exception as e:
-                    logger.warning(f"[FreeVideoProvider] Runway poll exception: {e}")
-                    await asyncio.sleep(delay)
-
-            return None
-
-    async def _generate_pika(
-        self,
-        prompt: str,
-        duration: int,
-        aspect_ratio: str,
-        api_key: str,
-        config: Dict,
-    ) -> Optional[Dict[str, Any]]:
-        """Generate video using Pika Labs API"""
-        import httpx
-
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-
-        pika_ratio = aspect_ratio.replace(":", "x")
-
-        payload = {
-            "prompt": prompt,
-            "seconds": min(duration, config["max_duration"]),
-            "ratio": pika_ratio,
-        }
-
-        try:
-            async with httpx.AsyncClient(timeout=60) as client:
-                response = await client.post(
-                    f"{config['api_url']}/generation/text-to-video",
-                    headers=headers,
-                    json=payload,
-                )
-
-                if response.status_code != 200:
-                    logger.error(
-                        f"[FreeVideoProvider] Pika error {response.status_code}: {response.text}"
-                    )
-                    return None
-
-                data = response.json()
-
-                if "video_url" in data:
-                    return {
-                        "video_url": data["video_url"],
-                        "metadata": {"model": "pika"},
-                    }
-                elif "id" in data:
-                    return await self._poll_pika_job(data["id"], api_key, config)
-
+            logger.error(f"[FreeVideoProvider] Luma request failed: {e}")
+            logger.info("[Luma] Falling back to browser automation")
+            try:
+                from services.openclaw.skills.luma import luma_skill
+                return await luma_skill.generate(prompt, aspect_ratio)
+            except Exception as browser_err:
+                logger.error(f"[FreeVideoProvider] Luma browser fallback failed: {browser_err}")
                 return None
-
-        except Exception as e:
-            logger.error(f"[FreeVideoProvider] Pika request failed: {e}")
-            return None
-
-    async def _poll_pika_job(
-        self,
-        job_id: str,
-        api_key: str,
-        config: Dict,
-        max_attempts: int = 60,
-        delay: int = 5,
-    ) -> Optional[Dict[str, Any]]:
-        """Poll Pika job until completion"""
-        import httpx
-
-        headers = {"Authorization": f"Bearer {api_key}"}
-
-        async with httpx.AsyncClient(timeout=30) as client:
-            for attempt in range(max_attempts):
-                try:
-                    response = await client.get(
-                        f"{config['api_url']}/generation/{job_id}",
-                        headers=headers,
-                    )
-
-                    if response.status_code != 200:
-                        await asyncio.sleep(delay)
-                        continue
-
-                    data = response.json()
-                    status = data.get("status", "").lower()
-
-                    if status == "completed":
-                        return {
-                            "video_url": data.get("video_url"),
-                            "metadata": {"model": "pika"},
-                        }
-                    elif status in ("failed", "cancelled"):
-                        return None
-
-                    await asyncio.sleep(delay)
-
-                except Exception as e:
-                    logger.warning(f"[FreeVideoProvider] Pika poll exception: {e}")
-                    await asyncio.sleep(delay)
-
-            return None
-
-    def get_provider_info(self) -> Dict[str, Any]:
-        """Get information about available providers"""
-        providers = []
-        for name, config in self.PROVIDER_CONFIGS.items():
-            api_key = self._get_api_key(name)
-            providers.append(
-                {
-                    "name": name,
-                    "enabled": bool(api_key),
-                    "free_credits_daily": config.get("free_credits", 0),
-                    "max_duration": config.get("max_duration"),
-                    "supports_image2video": config.get("supports_image2video", False),
-                    "supports_audio": config.get("supports_audio", False),
-                }
-            )
-
-        return {
-            "primary_provider": self.primary_provider,
-            "fallback_providers": self.fallback_providers,
-            "enabled": self.enabled,
-            "providers": providers,
-        }
-
 
 # Global instance
 free_video_provider = FreeVideoProviderService()
