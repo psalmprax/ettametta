@@ -142,7 +142,14 @@ class EmpireService:
         # If no real data, return gateway cluster topology
         if len(nodes) <= 1:
             # Add master gateway node
-            nodes.append({"id": "gateway_1", "group": 1, "label": "149.104.110.122"})
+            nodes.append(
+                {
+                    "id": "gateway_1",
+                    "group": 1,
+                    "label": "149.104.110.122",
+                    "status": "ONLINE",
+                }
+            )
             links.append({"source": "root", "target": "gateway_1", "value": 20})
 
             # Add default service nodes
