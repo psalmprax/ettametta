@@ -73,8 +73,11 @@ export default function LoginPage() {
                 try {
                     // Only proceed if login actually succeeds and user is verified
                     await login(data.access_token, remember);
-                    // User is definitely loaded at this point, safe to redirect
-                    router.push("/");
+                    // Force a small delay to ensure React state has fully propagated across context boundaries
+                    setTimeout(() => {
+                        // User is definitely loaded at this point, safe to redirect
+                        router.push("/");
+                    }, 50);
                 } catch (loginErr) {
                     setError("Session verification failed. Please try again.");
                 }
