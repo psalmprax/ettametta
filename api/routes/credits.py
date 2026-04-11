@@ -9,7 +9,6 @@ from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
 from api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.credits.service import credit_service
 import stripe
 import logging
 
