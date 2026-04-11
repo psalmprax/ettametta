@@ -802,9 +802,7 @@ def push_heartbeat_loop():
                 "url": my_public_url,
                 "busy": model_manager.is_busy,
                 "current_model": model_manager.current_model_key
-                or (
-                    list(model_manager.utils.keys())[0] if model_manager.utils else None
-                ),
+                or (list(VIDEO_MODELS.keys())[0] if VIDEO_MODELS else None),
                 "hardware": hardware,
                 "status": "ready",
             }
