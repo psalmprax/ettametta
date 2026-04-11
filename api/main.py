@@ -184,9 +184,18 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     logger.warning(f"Validation error: {exc.errors()}")
     details = []
     for err in exc.errors():
-        details.append(
-            {k: str(v) if isinstance(v, Exception) else v for k, v in err.items()}
-        )
+        cleaned = {}
+        for k, v in err.items():
+            if isinstance(v, Exception):
+                cleaned[k] = str(v)
+            elif isinstance(v, dict):
+                cleaned[k] = {
+                    sk: str(sv) if isinstance(sv, Exception) else sv
+                    for sk, sv in v.items()
+                }
+            else:
+                cleaned[k] = v
+        details.append(cleaned)
     return JSONResponse(
         status_code=422,
         content={
