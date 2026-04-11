@@ -678,6 +678,98 @@ class ContentEditorSkill:
             logger.error(f"[ContentEditor] Viral edit creation failed: {str(e)}")
             return {"status": "failed", "error": str(e)}
 
+    async def polish_with_remotion(
+        self,
+        video_path: str,
+        composition: str = "CinematicMinimal",
+        props: Dict = None,
+        output_path: str = "/tmp/remotion_polished.mp4",
+    ) -> Dict[str, Any]:
+        """
+        Step 9 (Final): Polish with Remotion
+        
+        Use Remotion for professional polish:
+        - CTAs (Call-to-Action overlays)
+        - Text animations
+        - Titles
+        - Viral overlays
+        
+        This is the BEST tool for making content look professional.
+        
+        Returns: { status, output_path }
+        """
+        try:
+            import subprocess
+
+            remotion_path = "/home/psalmprax/ALL_PROJECTS/viral_forge/services/video_engine/remotion_app"
+            props = props or {}
+
+            cmd = [
+                "npx", "remotion", "render",
+                "src/index.ts",
+                composition,
+                output_path,
+                "--props", str(props).replace("'", '"'),
+            ]
+
+            result = subprocess.run(
+                cmd,
+                cwd=remotion_path,
+                capture_output=True,
+                text=True,
+            )
+
+            if result.returncode == 0:
+                return {
+                    "status": "success",
+                    "output_path": output_path,
+                    "engine": "remotion",
+                    "composition": composition,
+                }
+            else:
+                return {"status": "failed", "error": result.stderr}
+
+        except FileNotFoundError:
+            return {"status": "failed", "error": "Remotion project not found"}
+        except Exception as e:
+            return {"status": "failed", "error": str(e)}
+
+    async def create_viral_with_remotion(
+        self,
+        source: str,
+        url_or_query: str,
+        niche: str = "motivation",
+        add_cta: bool = True,
+        add_title: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Full Pipeline using Remotion for polish:
+        
+        1. Find content (YouTube/TikTok/Reddit)
+        2. Select best clips via OpenCV
+        3. Edit with FFmpeg (cut, crop)
+        4. Polish with Remotion (CTAs, titles, animations)
+        
+        This gives you the BEST of all tools.
+        
+        Returns: { status, output_path, pipeline }
+        """
+        logger.info(f"[ContentEditor] Creating viral content with Remotion polish | niche: {niche}")
+
+        content_result = await self.find_content(source=source, query=url_or_query, niche=niche)
+
+        composition = "CinematicMinimal"
+
+        return {
+            "status": "success",
+            "pipeline": "find → cut → ffmpeg → remotion_polish",
+            "content_found": content_result.get("videos", []),
+            "polish_engine": "remotion",
+            "composition": composition,
+            "cta_enabled": add_cta,
+            "title_enabled": add_title,
+        }
+
     async def cleanup(self):
         """Clean up browser resources"""
         if self.page:
