@@ -11,8 +11,14 @@ from api.utils.user_models import UserDB
 from api.utils import credit_models  # Import to register credit models with SQLAlchemy
 from sqlalchemy import select, func
 
+
+@app.on_event("startup")
+async def startup_event():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
 # Tables should be managed via Alembic in production.
-# Removed: Base.metadata.create_all(bind=engine)
 
 from services.security.service import base_security_sentinel
 from api.config import settings
