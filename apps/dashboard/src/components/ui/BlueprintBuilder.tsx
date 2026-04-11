@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { NodeType } from "./NexusNode";
 import { withRealFallback } from "@/lib/real_first_utils";
 import { API_BASE } from "@/lib/config";
+import { getAuthToken } from "@/lib/auth_utils";
 
 interface BlueprintBuilderProps {
     isOpen: boolean;
@@ -18,22 +19,28 @@ interface BlueprintBuilderProps {
 export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilderProps) {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [nodes, setNodes] = useState<{ type: NodeType; label: string; desc: string }[]>([
-        { type: "ingress", label: "Initial Node", desc: "Data entry point" }
+    const [nodes, setNodes] = useState<{ id: string; type: NodeType; label: string; desc: string }[]>([
+        { id: crypto.randomUUID(), type: "ingress", label: "Initial Node", desc: "Data entry point" }
     ]);
     const [isSaving, setIsSaving] = useState(false);
 
     const addNode = (type: NodeType) => {
-        setNodes([...nodes, { type, label: `New ${type.toUpperCase()} Node`, desc: "Configure this node" }]);
+        setNodes([...nodes, { 
+            id: crypto.randomUUID(),
+            type, 
+            label: `New ${type.toUpperCase()} Node`, 
+            desc: "Configure this node" 
+        }]);
     };
 
-    const removeNode = (index: number) => {
-        setNodes(nodes.filter((_, i) => i !== index));
+    const removeNode = (id: string) => {
+        setNodes(nodes.filter(node => node.id !== id));
     };
 
-    const updateNode = (index: number, field: string, value: string) => {
-        const newNodes = [...nodes];
-        (newNodes[index] as any)[field] = value;
+    const updateNode = (id: string, field: string, value: string) => {
+        const newNodes = nodes.map(node => 
+            node.id === id ? { ...node, [field]: value } : node
+        );
         setNodes(newNodes);
     };
 
@@ -45,7 +52,11 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
 
         setIsSaving(true);
         const blueprintId = name.toLowerCase().replace(/[^a-z0-9]/gi, '-');
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsSaving(false);
+            return;
+        }
 
         await withRealFallback(
             () => fetch(`${API_BASE}/nexus/blueprints`, {
@@ -138,8 +149,8 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                         </div>
 
                         <div className="space-y-4">
-                            {nodes.map((node, idx) => (
-                                <div key={idx} className="p-6 rounded-3xl bg-white/2 border border-white/5 flex items-start gap-6 group hover:border-white/10 transition-all">
+                            {nodes.map((node) => (
+                                <div key={node.id} className="p-6 rounded-3xl bg-white/2 border border-white/5 flex items-start gap-6 group hover:border-white/10 transition-all">
                                     <div className={cn(
                                         "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 border",
                                         node.type === 'ingress' && "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
@@ -156,19 +167,19 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <input
                                             value={node.label}
-                                            onChange={(e) => updateNode(idx, 'label', e.target.value)}
+                                            onChange={(e) => updateNode(node.id, 'label', e.target.value)}
                                             placeholder="Node Label"
                                             className="bg-transparent border-b border-white/5 py-2 text-sm font-black text-white focus:outline-none focus:border-primary/40"
                                         />
                                         <input
                                             value={node.desc}
-                                            onChange={(e) => updateNode(idx, 'desc', e.target.value)}
+                                            onChange={(e) => updateNode(node.id, 'desc', e.target.value)}
                                             placeholder="Node Description"
                                             className="bg-transparent border-b border-white/5 py-2 text-xs font-bold text-zinc-500 focus:outline-none focus:border-primary/40"
                                         />
                                     </div>
 
-                                    <button onClick={() => removeNode(idx)} className="opacity-0 group-hover:opacity-100 p-2 text-zinc-700 hover:text-rose-500 transition-all">
+                                    <button onClick={() => removeNode(node.id)} className="opacity-0 group-hover:opacity-100 p-2 text-zinc-700 hover:text-rose-500 transition-all">
                                         <Trash2 className="h-4 w-4" />
                                     </button>
                                 </div>
