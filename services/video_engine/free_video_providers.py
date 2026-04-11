@@ -139,6 +139,46 @@ class FreeVideoProviderService:
             "supports_image2video": True,
             "supports_audio": False,
         },
+        "kaiber": {
+            "api_url": "https://api.kaiber.ai/v1",
+            "free_credits": 20,  # Daily
+            "max_duration": 10,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": True,
+        },
+        "fliki": {
+            "api_url": "https://api.fliki.ai/v1",
+            "free_credits": 15,  # Daily
+            "max_duration": 5,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": True,
+        },
+        "invideo": {
+            "api_url": "https://api.invideo.io/v1",
+            "free_credits": 20,  # Daily
+            "max_duration": 10,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": False,
+        },
+        "morph": {
+            "api_url": "https://api.morphstudio.com/v1",
+            "free_credits": 10,  # Daily
+            "max_duration": 6,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": False,
+        },
+        "genmo": {
+            "api_url": "https://api.genmo.ai/v1",
+            "free_credits": 15,  # Daily
+            "max_duration": 8,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": False,
+        },
     }
 
     def __init__(self):
@@ -292,7 +332,7 @@ class FreeVideoProviderService:
             return await self._generate_runway(
                 enhanced_prompt, duration, aspect_ratio, api_key, config
             )
-         elif provider == "pika":
+        elif provider == "pika":
             return await self._generate_pika(
                 enhanced_prompt, duration, aspect_ratio, api_key, config
             )
@@ -303,6 +343,26 @@ class FreeVideoProviderService:
         elif provider == "luma":
             return await self._generate_luma(
                 enhanced_prompt, duration, aspect_ratio, image_url, api_key, config
+            )
+        elif provider == "kaiber":
+            return await self._generate_browser_automation(
+                "kaiber", prompt, aspect_ratio
+            )
+        elif provider == "fliki":
+            return await self._generate_browser_automation(
+                "fliki", prompt, aspect_ratio
+            )
+        elif provider == "invideo":
+            return await self._generate_browser_automation(
+                "invideo", prompt, aspect_ratio
+            )
+        elif provider == "morph":
+            return await self._generate_browser_automation(
+                "morph", prompt, aspect_ratio
+            )
+        elif provider == "genmo":
+            return await self._generate_browser_automation(
+                "genmo", prompt, aspect_ratio
             )
 
         return None
@@ -417,8 +477,8 @@ class FreeVideoProviderService:
                             "video_url": data.get("video_url"),
                             "metadata": {"model": "zsky-wan"},
                         }
-         elif status in ("failed", "cancelled"):
-                return None
+                    elif status in ("failed", "cancelled"):
+                        return None
 
             await asyncio.sleep(delay)
 
@@ -559,6 +619,41 @@ class FreeVideoProviderService:
             except Exception as browser_err:
                 logger.error(f"[FreeVideoProvider] Luma browser fallback failed: {browser_err}")
                 return None
+
+    async def _generate_browser_automation(
+        self,
+        provider: str,
+        prompt: str,
+        aspect_ratio: str = "16:9",
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Generate video using browser automation (no API key required).
+        Falls back to Playwright automation for free video providers.
+        """
+        import httpx
+
+        logger.info(f"[FreeVideoProvider] Using browser automation for {provider}")
+
+        skill_map = {
+            "kaiber": "services.openclaw.skills.kaiber",
+            "fliki": "services.openclaw.skills.fliki",
+            "invideo": "services.openclaw.skills.invideo",
+            "morph": "services.openclaw.skills.morph",
+            "genmo": "services.openclaw.skills.genmo",
+        }
+
+        try:
+            if provider in skill_map:
+                module = __import__(skill_map[provider], fromlist=[f"{provider}_skill"])
+                skill = getattr(module, f"{provider}_skill")
+                result = await skill.generate(prompt, aspect_ratio)
+                return result
+            return None
+
+        except Exception as e:
+            logger.error(f"[FreeVideoProvider] Browser automation failed for {provider}: {e}")
+            return None
+
 
 # Global instance
 free_video_provider = FreeVideoProviderService()
