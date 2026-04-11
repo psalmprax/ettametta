@@ -18,7 +18,7 @@ interface AuthContextType {
     token: string | null;
     credits: number | null;
     isLoading: boolean;
-    login: (token: string, remember?: boolean) => void;
+    login: (token: string, remember?: boolean) => Promise<boolean>;
     logout: () => void;
     refreshCredits: () => Promise<void>;
 }
