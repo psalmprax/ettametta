@@ -22,7 +22,7 @@ class SubscriptionTier(str, enum.Enum):
 class UserDB(Base):
     __tablename__ = "users"
 
-    id = Column(String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
@@ -38,5 +38,9 @@ class UserDB(Base):
     google_id = Column(String, nullable=True)
     api_keys = Column(JSON, nullable=True)
     system_settings = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
