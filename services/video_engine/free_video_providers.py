@@ -179,6 +179,94 @@ class FreeVideoProviderService:
             "supports_image2video": True,
             "supports_audio": False,
         },
+        "kling": {
+            "api_url": "https://api.klingai.com/v1",
+            "free_credits": 66,  # Daily - most generous
+            "max_duration": 10,
+            "default_aspect": "9:16",
+            "supports_image2video": True,
+            "supports_audio": True,
+        },
+        "pika": {
+            "api_url": "https://api.pika.art/v1",
+            "free_credits": 150,  # Monthly
+            "max_duration": 4,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": False,
+        },
+        "leonardo": {
+            "api_url": "https://api.leonardo.ai/v1",
+            "free_credits": 50,  # Daily
+            "max_duration": 5,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": False,
+        },
+        "frameloop": {
+            "api_url": "https://api.frameloop.ai/v1",
+            "free_credits": 20,  # Daily
+            "max_duration": 8,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": True,
+        },
+        "wavespeed": {
+            "api_url": "https://api.wavespeed.ai/v1",
+            "free_credits": 25,  # Daily
+            "max_duration": 15,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": True,
+        },
+        "ltx": {
+            "api_url": "https://api.ltx.ai/v1",
+            "free_credits": 15,  # Daily
+            "max_duration": 20,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": True,
+        },
+        "videoany": {
+            "api_url": "https://api.videoany.io/v1",
+            "free_credits": 20,  # Daily
+            "max_duration": 8,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": True,
+        },
+        "vidu": {
+            "api_url": "https://api.vidu.ai/v1",
+            "free_credits": 10,  # Trial
+            "max_duration": 8,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": True,
+        },
+        "hailuo": {
+            "api_url": "https://api.hailuoml.com/v1",
+            "free_credits": 15,  # Daily
+            "max_duration": 6,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": False,
+        },
+        "seedance": {
+            "api_url": "https://api.seedance.ai/v1",
+            "free_credits": 20,  # Daily
+            "max_duration": 15,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": True,
+        },
+        "heygen": {
+            "api_url": "https://api.heygen.com/v1",
+            "free_credits": 3,  # Monthly
+            "max_duration": 10,
+            "default_aspect": "16:9",
+            "supports_image2video": True,
+            "supports_audio": True,
+        },
     }
 
     def __init__(self):
@@ -363,6 +451,50 @@ class FreeVideoProviderService:
         elif provider == "genmo":
             return await self._generate_browser_automation(
                 "genmo", prompt, aspect_ratio
+            )
+        elif provider == "kling":
+            return await self._generate_browser_automation(
+                "kling", prompt, aspect_ratio
+            )
+        elif provider == "pika":
+            return await self._generate_browser_automation(
+                "pika", prompt, aspect_ratio
+            )
+        elif provider == "leonardo":
+            return await self._generate_browser_automation(
+                "leonardo", prompt, aspect_ratio
+            )
+        elif provider == "frameloop":
+            return await self._generate_browser_automation(
+                "frameloop", prompt, aspect_ratio
+            )
+        elif provider == "wavespeed":
+            return await self._generate_browser_automation(
+                "wavespeed", prompt, aspect_ratio
+            )
+        elif provider == "ltx":
+            return await self._generate_browser_automation(
+                "ltx", prompt, aspect_ratio
+            )
+        elif provider == "videoany":
+            return await self._generate_browser_automation(
+                "videoany", prompt, aspect_ratio
+            )
+        elif provider == "vidu":
+            return await self._generate_browser_automation(
+                "vidu", prompt, aspect_ratio
+            )
+        elif provider == "hailuo":
+            return await self._generate_browser_automation(
+                "hailuo", prompt, aspect_ratio
+            )
+        elif provider == "seedance":
+            return await self._generate_browser_automation(
+                "seedance", prompt, aspect_ratio
+            )
+        elif provider == "heygen":
+            return await self._generate_browser_automation(
+                "heygen", prompt, aspect_ratio
             )
 
         return None
@@ -640,6 +772,18 @@ class FreeVideoProviderService:
             "invideo": "services.openclaw.skills.invideo",
             "morph": "services.openclaw.skills.morph",
             "genmo": "services.openclaw.skills.genmo",
+            "kling": "services.openclaw.skills.kling",
+            "pika": "services.openclaw.skills.pika",
+            "runway": "services.openclaw.skills.runway",
+            "leonardo": "services.openclaw.skills.leonardo",
+            "frameloop": "services.openclaw.skills.frameloop",
+            "wavespeed": "services.openclaw.skills.wavespeed",
+            "ltx": "services.openclaw.skills.ltx",
+            "videoany": "services.openclaw.skills.videoany",
+            "vidu": "services.openclaw.skills.vidu",
+            "hailuo": "services.openclaw.skills.hailuo",
+            "seedance": "services.openclaw.skills.seedance",
+            "heygen": "services.openclaw.skills.heygen",
         }
 
         try:
