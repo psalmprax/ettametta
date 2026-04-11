@@ -9,7 +9,7 @@ import os
 import time
 import numpy as np
 from PIL import Image
-from .hardware_manager import hardware_manager
+from hardware_manager import hardware_manager
 from diffusers import (
     StableDiffusionXLPipeline, 
     StableDiffusionPipeline,

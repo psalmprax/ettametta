@@ -24,16 +24,17 @@ class ScriptGenerator:
         
         STRUCTURE REQUIREMENTS:
         1. HOOK (0-5 sec): High-impact, pattern-interrupting opening that stops the scroll.
-        2. BODY (5-{duration_sec-5} sec): Engaging, fast-paced content breakdown. Use clear, punchy sentences.
-        3. CTA ({duration_sec-5} to end): Clear call to action (e.g., Follow for more, Check link in bio).
-        4. B-ROLL CUES: Suggest specific visual cues for each segment.
+        2. MID-CONTENT ENGAGEMENT (at roughly 50% duration): Explicitly appeal to viewers to LIKE the video and SUBSCRIBE for more {niche} secrets. Explain WHY it helps them (e.g., 'so you never miss a trending update').
+        3. BODY: Engaging, fast-paced content breakdown. Use clear, punchy sentences.
+        4. FINAL MONETIZATION CTA (last 5-8 seconds): High-urgency, aggressive call to action. Tell them to check the link in the bio NOW for the product/service mentioned. Use scarcity (e.g., 'limited time', 'don't wait').
+        5. B-ROLL CUES: Suggest specific visual cues for each segment, including visual "LIKE" and "SUBSCRIBE" animations for the engagement segment.
         
         OUTPUT FORMAT (JSON ONLY):
         {{
             "title": "Viral title idea",
             "segments": [
                 {{
-                    "type": "hook",
+                    "type": "hook | content | engagement | cta",
                     "text": "The script text here",
                     "visual_cue": "Description of what to show on screen",
                     "duration": 5

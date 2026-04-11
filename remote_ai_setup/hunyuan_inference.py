@@ -4,7 +4,7 @@ import time
 from diffusers import HunyuanVideo15Pipeline
 from diffusers.utils import export_to_video
 from huggingface_hub import InferenceClient
-from .hardware_manager import hardware_manager
+from hardware_manager import hardware_manager
 
 # Model cache
 _hunyuan_pipe = None

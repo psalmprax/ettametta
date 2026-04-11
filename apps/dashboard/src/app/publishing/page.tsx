@@ -57,8 +57,9 @@ const getPlatformIcon = (platform: string) => {
 };
 
 import { motion, AnimatePresence } from "framer-motion";
-
 import { toast } from "sonner";
+
+const POLL_INTERVAL_MS = 10000;
 
 export default function PublishingPage() {
     const [accounts, setAccounts] = useState<SocialAccount[]>([]);
@@ -137,62 +138,74 @@ export default function PublishingPage() {
         const fetchData = async () => {
             const token = localStorage.getItem("et_token");
             const headers = { Authorization: `Bearer ${token}` };
-            try {
-                const [accRes, histRes, jobsRes, nichesRes] = await Promise.all([
-                    fetch(`${API_BASE}/publish/accounts`, { headers }),
-                    fetch(`${API_BASE}/publish/history`, { headers }),
-                    fetch(`${API_BASE}/video/jobs`, { headers }),
-                    fetch(`${API_BASE}/discovery/niches`, { headers })
-                ]);
-
-                if (accRes.ok) setAccounts(await accRes.json());
-                if (histRes.ok) setHistory(await histRes.json());
-                if (jobsRes.ok) setJobs(await jobsRes.json());
-                if (nichesRes.ok) setNiches(await nichesRes.json());
-
-                // Fetch scheduled posts from history (filter by status)
-                try {
-                    const schedRes = await fetch(`${API_BASE}/publish/history`, { headers });
-                    if (schedRes.ok) {
-                        const allPosts = await schedRes.json();
-                        setScheduledPosts(allPosts.filter((p: any) => p.status === "scheduled" || p.status === "pending"));
+            await Promise.all([
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/publish/accounts`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (data) => setAccounts(data)
                     }
-                } catch (e) {}
-            } catch (err) {
-                console.error("Failed to fetch publishing data:", err);
-                toast.error("Failed to load publishing data");
-            } finally {
-                setIsLoading(false);
-            }
+                ),
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/publish/history`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (data) => {
+                            setHistory(data);
+                            setScheduledPosts(data.filter((p: any) => p.status === "scheduled" || p.status === "pending"));
+                        }
+                    }
+                ),
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/video/jobs`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (data) => setJobs(data)
+                    }
+                ),
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/discovery/niches`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (data) => setNiches(data)
+                    }
+                )
+            ]);
+            setIsLoading(false);
         };
         fetchData();
-        const interval = setInterval(fetchData, 10000); // Polling for job updates
+        const interval = setInterval(fetchData, POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, []);
 
     const handleSync = async (postId: number) => {
         const token = localStorage.getItem("et_token");
-        toast.promise(
-            fetch(`${API_BASE}/publish/sync/${postId}`, {
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/publish/sync/${postId}`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
-            }).then(async res => {
-                if (!res.ok) throw new Error("Sync failed");
-                const historyRes = await fetch(`${API_BASE}/publish/history`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (historyRes.ok) setHistory(await historyRes.json());
-                return res.json();
             }),
             {
-                loading: 'Synchronizing Neural Metrics...',
-                success: 'Telemetry Updated Successfully',
-                error: 'Sync Failed - Service Unavailable'
+                fallback: null,
+                onSuccess: async () => {
+                    toast.success('Telemetry Updated Successfully');
+                    await withRealFallback<any>(
+                        () => fetch(`${API_BASE}/publish/history`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        }),
+                        {
+                            fallback: [],
+                            onSuccess: (data) => setHistory(data)
+                        }
+                    );
+                },
+                errorMessage: "Sync Failed - Service Unavailable"
             }
         );
     };
 
     const handleManualDeploy = async () => {
+        const token = localStorage.getItem("et_token");
         if (!selectedJobForDeploy || accounts.length === 0) {
             toast.error("Deployment Guard", {
                 description: "Select a valid asset and linked account node."
@@ -202,7 +215,6 @@ export default function PublishingPage() {
         setIsDeploying(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
                 const endpoint = isScheduled && scheduleTime ? `${API_BASE}/publish/schedule` : `${API_BASE}/publish/post`;
                 const body: any = {
                     video_path: selectedJobForDeploy.output_path,
@@ -234,11 +246,15 @@ export default function PublishingPage() {
                         description: "Handshake verified. Packets streaming to target node."
                     });
                     setIsDeployModalOpen(false);
-                    const token = localStorage.getItem("et_token");
-                    const historyRes = await fetch(`${API_BASE}/publish/history`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    if (historyRes.ok) setHistory(await historyRes.json());
+                    await withRealFallback<any>(
+                        () => fetch(`${API_BASE}/publish/history`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        }),
+                        {
+                            fallback: [],
+                            onSuccess: (data) => setHistory(data)
+                        }
+                    );
                 },
                 onFallback: (err: any) => {
                     toast.error("Transmission Failed", {
@@ -251,6 +267,7 @@ export default function PublishingPage() {
     };
 
     const handleMultiDeploy = async () => {
+        const token = localStorage.getItem("et_token");
         if (!selectedJobForDeploy || accounts.length === 0) {
             toast.error("Deployment Guard", {
                 description: "Select a valid asset and linked account node."
@@ -266,7 +283,6 @@ export default function PublishingPage() {
         setIsMultiDeploying(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
                 const body: any = {
                     video_path: selectedJobForDeploy.output_path,
                     niche: selectedNiche,
@@ -293,11 +309,15 @@ export default function PublishingPage() {
                     });
                     setIsDeployModalOpen(false);
                     setSelectedPlatforms([]);
-                    const token = localStorage.getItem("et_token");
-                    const historyRes = await fetch(`${API_BASE}/publish/history`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    if (historyRes.ok) setHistory(await historyRes.json());
+                    await withRealFallback<any>(
+                        () => fetch(`${API_BASE}/publish/history`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        }),
+                        {
+                            fallback: [],
+                            onSuccess: (data) => setHistory(data)
+                        }
+                    );
                 },
                 onFallback: (err: any) => {
                     toast.error("Multi-Transmission Failed", {
@@ -312,24 +332,30 @@ export default function PublishingPage() {
     const handleRetry = async (contentId: number) => {
         const token = localStorage.getItem("et_token");
         setRetryingPostId(contentId);
-        toast.promise(
-            fetch(`${API_BASE}/publish/retry/${contentId}`, {
+        
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/publish/retry/${contentId}`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
-            }).then(async res => {
-                if (!res.ok) throw new Error("Retry failed");
-                const historyRes = await fetch(`${API_BASE}/publish/history`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (historyRes.ok) setHistory(await historyRes.json());
-                return res.json();
-            }).finally(() => setRetryingPostId(null)),
+            }),
             {
-                loading: 'Retrying Transmission...',
-                success: 'Handshake Re-Established',
-                error: 'Retry Failed - Service Unavailable'
+                fallback: null,
+                onSuccess: async () => {
+                    toast.success('Handshake Re-Established');
+                    await withRealFallback<any>(
+                        () => fetch(`${API_BASE}/publish/history`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        }),
+                        {
+                            fallback: [],
+                            onSuccess: (data) => setHistory(data)
+                        }
+                    );
+                },
+                errorMessage: "Retry Failed - Service Unavailable"
             }
         );
+        setRetryingPostId(null);
     };
 
     const handleDisconnect = async (accountId: number) => {
@@ -363,10 +389,10 @@ export default function PublishingPage() {
     };
 
     const handleGenerateSeo = async () => {
+        const token = localStorage.getItem("et_token");
         setIsGeneratingSeo(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
                 return fetch(
                     `${API_BASE}/publish/package?niche=${encodeURIComponent(selectedNiche)}&platform=${encodeURIComponent(selectedPlatform)}`,
                     {

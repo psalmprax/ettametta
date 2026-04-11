@@ -8,20 +8,26 @@ interface User {
     email: string;
     role: string;
     subscription: string;
+    telegram_chat_id?: string;
+    telegram_token?: string;
+    whatsapp_number?: string;
 }
 
 interface AuthContextType {
     user: User | null;
     token: string | null;
+    credits: number | null;
     isLoading: boolean;
     login: (token: string, remember?: boolean) => void;
     logout: () => void;
+    refreshCredits: () => Promise<void>;
 }
 
 // Secure token management
 class TokenManager {
     private static readonly TOKEN_KEY = "et_token";
     private static readonly USER_KEY = "et_user";
+    private static readonly CREDITS_KEY = "et_credits";
 
     static setToken(token: string, remember: boolean = false): void {
         const storage = remember ? localStorage : sessionStorage;
@@ -42,6 +48,7 @@ class TokenManager {
         localStorage.removeItem(this.TOKEN_KEY);
         sessionStorage.removeItem(this.TOKEN_KEY);
         localStorage.removeItem(this.USER_KEY);
+        localStorage.removeItem(this.CREDITS_KEY);
     }
 
     static setUser(user: User): void {
@@ -55,6 +62,15 @@ class TokenManager {
         } catch {
             return null;
         }
+    }
+
+    static setCredits(credits: number): void {
+        localStorage.setItem(this.CREDITS_KEY, credits.toString());
+    }
+
+    static getCredits(): number | null {
+        const credits = localStorage.getItem(this.CREDITS_KEY);
+        return credits ? parseInt(credits) : null;
     }
 }
 
@@ -93,41 +109,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
             {
                 fallback: null,
+                onSuccess: (userData: any) => {
+                    if (userData && userData.username) {
+                        setUser(userData);
+                        TokenManager.setUser(userData);
+                    } else {
+                        logout();
+                    }
+                },
+                onFallback: () => {
+                    logout();
+                }
             }
-        ).then(async (response) => {
-            if (response && response.ok) {
-                const userData = await response.json();
-                setUser(userData);
-                TokenManager.setUser(userData);
-            } else {
-                // Invalid token, logout
-                logout();
+        );
+    };
+
+    const [credits, setCredits] = useState<number | null>(null);
+
+    const fetchCredits = async (authToken: string) => {
+        await withRealFallback(
+            async () => {
+                return fetch(`${API_BASE}/credits/balance`, {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    if (data && typeof data.balance === "number") {
+                        setCredits(data.balance);
+                        TokenManager.setCredits(data.balance);
+                    }
+                }
             }
-        }).catch((error) => {
-            console.error("Failed to fetch user:", error);
-            logout();
-        });
+        );
+    };
+
+    const initAuth = async () => {
+        const storedToken = TokenManager.getToken();
+        const storedUser = TokenManager.getUser();
+        const storedCredits = TokenManager.getCredits();
+
+        if (storedToken) {
+            setToken(storedToken);
+            if (storedUser) {
+                setUser(storedUser);
+            }
+            if (storedCredits !== null) {
+                setCredits(storedCredits);
+            }
+            // Always fetch fresh user and credits if we have a token
+            await Promise.all([
+                fetchUser(storedToken),
+                fetchCredits(storedToken)
+            ]);
+        }
+
+        setIsLoading(false);
     };
 
     useEffect(() => {
-        const initAuth = async () => {
-            const storedToken = TokenManager.getToken();
-            const storedUser = TokenManager.getUser();
-
-            if (storedToken) {
-                setToken(storedToken);
-                if (storedUser) {
-                    setUser(storedUser);
-                } else {
-                    await fetchUser(storedToken);
-                }
-            }
-
-            setIsLoading(false);
-        };
-
         initAuth();
     }, []);
+
+    const refreshCredits = async () => {
+        if (token) {
+            await fetchCredits(token);
+        }
+    };
 
     useEffect(() => {
         if (!isLoading && !user && !publicPaths.includes(pathname)) {
@@ -135,13 +184,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, [user, isLoading, pathname, router]);
 
-    return {
-        user,
-        token,
-        isLoading,
-        login,
-        logout,
-    };
+    // Periodically refresh credits (every 2 mins)
+    useEffect(() => {
+        if (token && !isLoading) {
+            const interval = setInterval(refreshCredits, 120000);
+            return () => clearInterval(interval);
+        }
+    }, [token, isLoading]);
+
+    return (
+        <AuthContext.Provider
+            value={{
+                user,
+                token,
+                isLoading,
+                credits,
+                login,
+                logout,
+                refreshCredits,
+            }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
 }
 
 export function useAuth() {

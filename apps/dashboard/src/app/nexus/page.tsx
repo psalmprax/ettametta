@@ -28,6 +28,8 @@ import {
     Send,
     Bot,
     ShieldCheck,
+    Trash2,
+    X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
@@ -37,6 +39,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ClusterManager } from "@/components/ui/ClusterManager";
+import { BlueprintBuilder } from "@/components/ui/BlueprintBuilder";
 
 interface Blueprint {
     id: string;
@@ -55,6 +58,8 @@ export default function NexusPage() {
     const [userTier, setUserTier] = useState<string>("free");
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
     const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+    const [showClusterManager, setShowClusterManager] = useState(false);
+    const [showBlueprintBuilder, setShowBlueprintBuilder] = useState(false);
     const [selectedNodeIndex, setSelectedNodeIndex] = useState<number>(0);
     const [logStream, setLogStream] = useState<string[]>([]);
 
@@ -72,83 +77,79 @@ export default function NexusPage() {
     const [personaName, setPersonaName] = useState("");
     const [personaImageUrl, setPersonaImageUrl] = useState("");
     const [isCreatingPersona, setIsCreatingPersona] = useState(false);
-    const [createdPersona, setCreatedPersona] = useState<{ name: string; reference_image_url: string } | null>(null);
+    const [personas, setPersonas] = useState<any[]>([]);
+    const [createdPersona, setCreatedPersona] = useState<{ id: string; name: string; reference_image_url: string } | null>(null);
     const [videoTopic, setVideoTopic] = useState("");
     const [videoScript, setVideoScript] = useState("");
     const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
     const [telemetry, setTelemetry] = useState<any>(null);
-    const [showClusterManager, setShowClusterManager] = useState(false);
 
     // Fetch initial data
     useEffect(() => {
         const fetchData = async () => {
             const token = localStorage.getItem("et_token");
             if (!token) return;
+            const headers = { Authorization: `Bearer ${token}` };
 
-            try {
-                // Fetch User Tier
-                const userRes = await fetch(`${API_BASE}/auth/me`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (userRes.ok) {
-                    const userData = await userRes.json();
-                    setUserTier(userData.subscription.toLowerCase());
-                }
-
-                // Fetch Blueprints
-                const bpRes = await fetch(`${API_BASE}/nexus/blueprints`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (bpRes.ok) {
-                    const bpData = await bpRes.json();
-                    setBlueprints(bpData);
-                    if (bpData.length > 0) setActiveBlueprint(bpData[0]);
-                }
-
-                // Fetch Niches
-                const nicheRes = await fetch(`${API_BASE}/discovery/niches`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (nicheRes.ok) {
-                    const nicheData = await nicheRes.json();
-                    setNiches(nicheData);
-                    if (nicheData.length > 0) setSelectedNiche(nicheData[0]);
-                }
-
-                // Fetch Initial Jobs
-                const jobsRes = await fetch(`${API_BASE}/nexus/jobs`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (jobsRes.ok) {
-                    setNexusJobs(await jobsRes.json());
-                }
-
-                // Fetch Agent Capabilities
-                const capRes = await fetch(`${API_BASE}/agent/capabilities`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (capRes.ok) {
-                    const capData = await capRes.json();
-                    // Flatten capabilities object into displayable strings
-                    const capabilities = capData.capabilities || capData || {};
-                    const flattenedCaps = Object.entries(capabilities).map(([key, value]: [string, any]) => {
-                        if (key === 'discovery') {
-                            return `🔍 Advanced Discovery: Trend analysis, competitor research, content ideation`;
+            await Promise.all([
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/auth/me`, { headers }),
+                    {
+                        fallback: { subscription: "free" },
+                        onSuccess: (data) => setUserTier(data.subscription.toLowerCase())
+                    }
+                ),
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/nexus/blueprints`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (data) => {
+                            setBlueprints(data);
+                            if (data.length > 0) setActiveBlueprint(data[0]);
                         }
-                        if (key === 'competitor') {
-                            return `🎯 Competitor Analysis: Strategy breakdown and market intelligence`;
+                    }
+                ),
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/discovery/niches`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (data) => {
+                            setNiches(data);
+                            if (data.length > 0) setSelectedNiche(data[0]);
                         }
-                        if (typeof value === 'object' && value.description) {
-                            return `${value.enabled ? '✅' : '❌'} ${key}: ${value.description}`;
+                    }
+                ),
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/nexus/jobs`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (data) => setNexusJobs(data)
+                    }
+                ),
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/agent/capabilities`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (capData) => {
+                            const capabilities = capData.capabilities || capData || {};
+                            const flattenedCaps = Object.entries(capabilities).map(([key, value]: [string, any]) => {
+                                if (key === 'discovery') return `🔍 Advanced Discovery: Trend analysis, competitor research, content ideation`;
+                                if (key === 'competitor') return `🎯 Competitor Analysis: Strategy breakdown and market intelligence`;
+                                if (typeof value === 'object' && value.description) return `${value.enabled ? '✅' : '❌'} ${key}: ${value.description}`;
+                                return `${key}: ${String(value)}`;
+                            });
+                            setAgentCapabilities(flattenedCaps);
                         }
-                        return `${key}: ${String(value)}`;
-                    });
-                    setAgentCapabilities(flattenedCaps);
-                }
-            } catch (err) {
-                console.error("Failed to fetch Nexus data:", err);
-                toast.error("Failed to load nexus jobs");
-            }
+                    }
+                ),
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/persona/list`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (data) => setPersonas(data)
+                    }
+                )
+            ]);
         };
 
         fetchData();
@@ -157,12 +158,15 @@ export default function NexusPage() {
         const fetchTelemetry = async () => {
             const token = localStorage.getItem("et_token");
             if (!token) return;
-            try {
-                const res = await fetch(`${API_BASE}/nexus/telemetry`, {
+            await withRealFallback<any>(
+                () => fetch(`${API_BASE}/nexus/telemetry`, {
                     headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.ok) setTelemetry(await res.json());
-            } catch (e) { console.error("Telemetry fetch error:", e); }
+                }),
+                {
+                    fallback: null,
+                    onSuccess: (data) => setTelemetry(data)
+                }
+            );
         };
 
         fetchTelemetry();
@@ -205,7 +209,7 @@ export default function NexusPage() {
     };
 
     const handleCustomRecipe = () => {
-        window.location.href = '/creation';
+        setShowBlueprintBuilder(true);
     };
 
     const handleInspectResult = (job: any) => {
@@ -312,8 +316,10 @@ export default function NexusPage() {
             },
             {
                 fallback: null,
-                onSuccess: () => {
-                    setCreatedPersona({ name: personaName, reference_image_url: personaImageUrl });
+                onSuccess: (data: any) => {
+                    const newPersona = { id: data.id || Date.now().toString(), name: personaName, reference_image_url: personaImageUrl };
+                    setCreatedPersona(newPersona);
+                    setPersonas(prev => [newPersona, ...prev]);
                     toast.success("Persona Created", {
                         description: `Persona "${personaName}" is ready for video generation.`
                     });
@@ -326,6 +332,41 @@ export default function NexusPage() {
             }
         );
         setIsCreatingPersona(false);
+    };
+
+    const handleDeletePersona = async (personaId: string) => {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback(
+            () => fetch(`${API_BASE}/persona/${personaId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setPersonas(prev => prev.filter(p => (p.id || p._id) !== personaId));
+                    if (createdPersona && (createdPersona.id === personaId)) setCreatedPersona(null);
+                    toast.success("Persona Purged", { description: "The digital identity has been removed from the lab." });
+                }
+            }
+        );
+    };
+
+    const handleClearHistory = async () => {
+        const token = localStorage.getItem("et_token");
+        await withRealFallback(
+            () => fetch(`${API_BASE}/nexus/jobs`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setNexusJobs([]);
+                    toast.success("Activity Cleared", { description: "Production job history has been truncated." });
+                }
+            }
+        );
     };
 
     const handleGenerateVideo = async () => {
@@ -369,19 +410,6 @@ export default function NexusPage() {
     return (
         <DashboardLayout>
             <div className="max-w-[1600px] mx-auto p-8 space-y-12">
-                <ConfirmModal
-                    isOpen={isConfirmClearOpen}
-                    onClose={() => setIsConfirmClearOpen(false)}
-                    onConfirm={() => {
-                        setLogStream([]);
-                        setIsConfirmClearOpen(false);
-                        toast.success("Event Stream Purged");
-                    }}
-                    title="Purge Event Stream?"
-                    description="This will clear all localized telemetry logs from the current session view. Raw cluster data remains intact."
-                    variant="danger"
-                    confirmText="Purge Stream"
-                />
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4">
                     <div className="space-y-4">
@@ -706,19 +734,29 @@ export default function NexusPage() {
                                 </button>
                             </div>
 
-                            {createdPersona && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: "auto" }}
-                                    className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-center gap-3"
-                                >
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                                    <div>
-                                        <p className="text-xs font-black text-emerald-400 uppercase tracking-tight">{createdPersona.name}</p>
-                                        <p className="text-[9px] text-zinc-500 truncate max-w-[280px]">{createdPersona.reference_image_url}</p>
-                                    </div>
-                                </motion.div>
-                            )}
+
+                            <div className="space-y-3 pt-4 border-t border-white/5">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Active Identities</p>
+                                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                                    {personas.map((p) => (
+                                        <div key={p.id || p._id} className="group flex items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5 hover:border-primary/20 transition-all cursor-pointer" onClick={() => setCreatedPersona(p)}>
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-lg bg-zinc-800 border border-white/5 overflow-hidden">
+                                                    <img src={p.reference_image_url} alt={p.name} className="h-full w-full object-cover" />
+                                                </div>
+                                                <span className="text-xs font-black text-white uppercase tracking-tight">{p.name}</span>
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleDeletePersona(p.id || p._id); }}
+                                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                            >
+                                                <Trash2 className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {personas.length === 0 && <p className="text-[9px] text-zinc-700 italic">No identities established.</p>}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Generate Video Card */}
@@ -790,7 +828,7 @@ export default function NexusPage() {
                             onClick={() => setIsClearModalOpen(true)}
                             className="text-[10px] font-black uppercase tracking-widest text-primary/60 hover:text-primary transition-colors"
                         >
-                            Clear Stream
+                            Clear History
                         </button>
                     </div>
 
@@ -982,15 +1020,23 @@ export default function NexusPage() {
             <ConfirmModal
                 isOpen={isClearModalOpen}
                 onClose={() => setIsClearModalOpen(false)}
+                onConfirm={handleClearHistory}
+                title="Purge Job History?"
+                description="This will permanently delete all autonomous pipeline history from the production cluster. Visual results and logs will be removed."
+                confirmText="Purge History"
+                variant="danger"
+            />
+            
+            <ConfirmModal
+                isOpen={isConfirmClearOpen}
+                onClose={() => setIsConfirmClearOpen(false)}
                 onConfirm={() => {
                     setLogStream([]);
-                    setIsClearModalOpen(false);
-                    toast.info("Activity Stream Purged", {
-                        description: "Telemetry logs have been flushed from the local buffer."
-                    });
+                    setIsConfirmClearOpen(false);
+                    toast.info("Event Stream Purged");
                 }}
-                title="Purge Activity Stream?"
-                description="This will clear all telemetry logs and system activity from your current session cache. This action won't affect backend audit logs."
+                title="Purge Event Stream?"
+                description="This will clear all localized telemetry logs from the current session view. Raw cluster data remains intact."
                 confirmText="Purge Stream"
                 variant="danger"
             />

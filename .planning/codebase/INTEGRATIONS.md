@@ -1,11 +1,11 @@
 # External Integrations
 
-**Analysis Date:** 2026-04-08
+**Analysis Date:** 2026-04-10
 
 ## APIs & External Services
 
 **[AI/ML Providers]:**
-- Groq - Primary LLM provider
+- Groq - LLM provider
   - SDK/Client: groq Python library
   - Auth: GROQ_API_KEY environment variable
 - OpenAI - LLM and image generation
@@ -13,22 +13,16 @@
   - Auth: OPENAI_API_KEY
 - Google Generative AI - Vision and text
   - SDK/Client: google-generativeai
-  - Auth: GOOGLE_API_KEY (inferred)
+  - Auth: Not specified in code
 - YouTube API - Publishing and analytics
   - SDK/Client: google-api-python-client
   - Auth: YOUTUBE_API_KEY, OAuth with GOOGLE_CLIENT_ID/SECRET
-
-**[Social Media Platforms]:**
 - TikTok API - Publishing
   - SDK/Client: Custom HTTP client
   - Auth: TIKTOK_API_KEY, OAuth with TIKTOK_CLIENT_KEY/SECRET
-
-**[Voice & Audio]:**
 - ElevenLabs - Text-to-speech
   - SDK/Client: Not detected in code
   - Auth: ELEVENLABS_API_KEY
-
-**[Media & Content]:**
 - Pexels API - Stock images/videos
   - SDK/Client: Not detected in code
   - Auth: PEXELS_API_KEY
@@ -94,12 +88,13 @@
 
 **Required env vars:**
 - Database: DATABASE_URL
-- Redis: REDIS_URL
+- Redis: REDIS_URL, CELERY_BROKER_URL, CELERY_RESULT_BACKEND
 - Secrets: SECRET_KEY, INTERNAL_API_TOKEN
-- AI APIs: GROQ_API_KEY, OPENAI_API_KEY, etc.
+- AI APIs: GROQ_API_KEY, OPENAI_API_KEY, ELEVENLABS_API_KEY, PEXELS_API_KEY
 - OAuth: GOOGLE_CLIENT_ID/SECRET, TIKTOK_CLIENT_KEY/SECRET
 - Payment: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 - Cloud: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_STORAGE_BUCKET_NAME
+- Production: PRODUCTION_DOMAIN
 
 **Secrets location:**
 - Environment variables (from .env file)
@@ -109,7 +104,7 @@
 
 **Incoming:**
 - Stripe webhooks: Payment events
-  - Endpoint: /webhooks/monetization/stripe
+  - Endpoint: Not specified in code
   - Auth: STRIPE_WEBHOOK_SECRET
 
 **Outgoing:**
@@ -117,4 +112,4 @@
 
 ---
 
-*Integration audit: 2026-04-08*
+*Integration audit: 2026-04-10*

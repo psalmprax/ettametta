@@ -93,17 +93,17 @@ api/
 ### Database Schema (PostgreSQL)
 
 ```sql
--- Core Tables
-UserDB          (id, username, email, role, subscription, telegram_chat_id, created_at)
+-- Core Tables (Standardized on UUID-v4 String Identifiers)
+UserDB          (id: UUID, username, email, role, subscription, telegram_chat_id, created_at)
   -- subscription: free, creator, empire, sovereign, studio
-ContentCandidate (id, title, platform, views, engagement_score, thumbnail_url, ...)
-VideoJob        (id, user_id, status, input_url, output_path, created_at)
-PublishedContent (id, user_id, job_id, platform, views, likes, revenue, ...)
-SocialAccount   (id, user_id, platform, access_token, open_id, ...)
-NicheTrendDB    (id, niche, trend_data, score, created_at)
-MonitoredNiche  (id, niche, is_active, last_scanned_at)
-ABTestDB        (id, user_id, content_id, variant_a_title, variant_b_title, ...)
-NexusJobDB      (id, user_id, status, blueprint_id, node_data, created_at)
+ContentCandidate (id: UUID/EXT, title, platform, views, engagement_score, thumbnail_url, ...)
+VideoJob        (id: UUID, user_id, status, input_url, output_path, created_at)
+PublishedContent (id: UUID, user_id, job_id, platform, views, likes, revenue, ...)
+SocialAccount   (id: UUID, user_id, platform, access_token, open_id, ...)
+NicheTrendDB    (id: UUID, niche, trend_data, score, created_at)
+MonitoredNiche  (id: UUID, niche, is_active, last_scanned_at)
+ABTestDB        (id: UUID, user_id, content_id, variant_a_title, variant_b_title, ...)
+NexusJobDB      (id: UUID, user_id, status, blueprint_id, node_data, created_at)
 ```
 
 ---

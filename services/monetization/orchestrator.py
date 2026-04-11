@@ -1,6 +1,7 @@
 import logging
 from typing import List, Dict, Any, Optional
-from api.utils.database import SessionLocal
+from api.utils.database import async_session_factory
+from sqlalchemy import select
 from api.utils.models import SystemSettings
 from .strategies.commerce import CommerceStrategy
 from .strategies.affiliate import AffiliateStrategy
@@ -26,9 +27,10 @@ class MonetizationOrchestrator:
         self.logger = logging.getLogger("MonetizationOrchestrator")
 
     async def get_active_strategy(self) -> Any:
-        db = SessionLocal()
-        try:
-            setting = db.query(SystemSettings).filter(SystemSettings.key == "active_monetization_strategy").first()
+        async with async_session_factory() as db:
+            stmt = select(SystemSettings).where(SystemSettings.key == "active_monetization_strategy")
+            result = await db.execute(stmt)
+            setting = result.scalar_one_or_none()
             strategy_key = setting.value if setting else "commerce"
             
             if strategy_key not in self.strategies:
@@ -36,13 +38,12 @@ class MonetizationOrchestrator:
                 return self.strategies["commerce"]
             
             return self.strategies[strategy_key]
-        finally:
-            db.close()
 
     async def should_monetize(self, viral_score: int = 0) -> bool:
-        db = SessionLocal()
-        try:
-            setting = db.query(SystemSettings).filter(SystemSettings.key == "monetization_mode").first()
+        async with async_session_factory() as db:
+            stmt = select(SystemSettings).where(SystemSettings.key == "monetization_mode")
+            result = await db.execute(stmt)
+            setting = result.scalar_one_or_none()
             mode = setting.value if setting else "selective"
             
             if mode == "all":
@@ -50,8 +51,6 @@ class MonetizationOrchestrator:
             
             # Selective mode: Only monetize high-potential content
             return viral_score >= 85
-        finally:
-            db.close()
 
     async def get_monetization_assets(self, niche: str, viral_score: int = 0) -> List[Dict[str, Any]]:
         if not await self.should_monetize(viral_score):

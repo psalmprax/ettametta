@@ -1,85 +1,88 @@
 # Coding Conventions
 
-**Analysis Date:** 2024-04-08
+**Analysis Date:** 2026-04-09
 
 ## Naming Patterns
 
 **Files:**
-- Python: snake_case (e.g., `config.py`, `database.py`)
-- TypeScript/React: PascalCase for components (e.g., `Sidebar.tsx`, `AuthContext.tsx`), camelCase for utilities (e.g., `utils.ts`)
+- Python: snake_case (e.g., `auth.py`, `user_models.py`, `conftest.py`)
+- TypeScript: camelCase (e.g., `utils.ts`, `useNiches.ts`)
 
 **Functions:**
-- Python: snake_case (e.g., `get_current_user`, `create_access_token`)
-- TypeScript: camelCase (e.g., `handleSubmit`, `useAuth`)
+- Python: snake_case (e.g., `get_db()`, `verify_password()`)
+- TypeScript: camelCase (e.g., `cn()`)
 
 **Variables:**
-- Python: snake_case (e.g., `hashed_pwd`, `access_token`)
-- TypeScript: camelCase (e.g., `navItems`, `collapsed`)
+- Python: snake_case (e.g., `hashed_pwd`, `db_user`)
+- TypeScript: camelCase (e.g., `inputs`)
 
 **Types:**
-- Python: PascalCase for classes (e.g., `TestConfigSettings`, `UserCreate`)
-- TypeScript: PascalCase for interfaces and types (e.g., `SidebarProps`, `UserResponse`)
+- Python: PascalCase for classes (e.g., `UserCreate`, `Token`)
+- TypeScript: PascalCase for types and interfaces
 
 ## Code Style
 
 **Formatting:**
-- Python: No explicit formatter detected (no black, autopep8 config)
-- TypeScript: ESLint with Next.js config, no Prettier config detected
+- Python: No explicit formatter detected (no black, autopep8)
+- TypeScript: No explicit formatter detected (no prettier config)
 
 **Linting:**
-- Python: No dedicated linter config (no .flake8, pylint.ini)
-- TypeScript: ESLint with `eslint-config-next` (core-web-vitals and typescript rules)
+- TypeScript: ESLint with Next.js config (`eslint.config.mjs`)
+- Python: No linting tools detected (no flake8, pylint, mypy)
 
 ## Import Organization
 
 **Order:**
-1. Standard library imports (e.g., `import os`, `import secrets`)
-2. Third-party imports (e.g., `from fastapi import FastAPI`, `import React from "react"`)
-3. Local imports (e.g., `from api.config import settings`, `import { cn } from "@/lib/utils"`)
+1. Standard library imports
+2. Third-party imports (fastapi, sqlalchemy, etc.)
+3. Local imports (api.utils.*, services.*)
 
 **Path Aliases:**
-- TypeScript: `@/` for `src/` (e.g., `@/lib/utils`)
+- Python: Relative imports (e.g., `from api.utils.database import get_db`)
+- TypeScript: Not observed
 
 ## Error Handling
 
 **Patterns:**
-- Python: HTTPException for API errors, global exception handlers in main.py
-- TypeScript: Error boundaries (e.g., `GlobalErrorBoundary.tsx`), try-catch in async functions
+- Structured JSON responses with error codes
+- HTTPException for API errors
+- Global exception handlers for uncaught errors
+- Logging errors with context
 
 ## Logging
 
-**Framework:** Python logging module, configured in main.py
+**Framework:** Standard library logging
 
 **Patterns:**
-- Logger instances with `__name__` (e.g., `logger = logging.getLogger(__name__)`)
-- Info for requests, error for exceptions
-- Structured error responses with error codes
+- Logger per module: `logger = logging.getLogger(__name__)`
+- Levels: info, warning, error
+- Structured messages with request context
 
 ## Comments
 
 **When to Comment:**
-- Module-level docstrings for test files and complex functions
-- Inline comments for complex logic
-- JSDoc not observed in TypeScript files
+- Module-level docstrings describing purpose
+- Complex business logic
+- API endpoint descriptions
 
 **JSDoc/TSDoc:**
-- Not used
+- Not observed in sampled files
 
 ## Function Design
 
-**Size:** Variable, some functions span multiple screens (e.g., main.py startup)
+**Size:** Varies; main.py is 325 lines, smaller utilities are concise
 
-**Parameters:** Dependency injection with FastAPI Depends, optional parameters with defaults
+**Parameters:** Dependency injection with FastAPI Depends()
 
-**Return Values:** Consistent types (e.g., Pydantic models for API responses)
+**Return Values:** Pydantic models for structured responses
 
 ## Module Design
 
-**Exports:** Default exports for React components, named exports for utilities
+**Exports:** Explicit imports in __init__.py for router modules
 
 **Barrel Files:** Not observed
 
 ---
 
-*Convention analysis: 2024-04-08*</content>
-<parameter name="filePath">.planning/codebase/CONVENTIONS.md
+*Convention analysis: 2026-04-09*</content>
+<parameter name="filePath">ALL_PROJECTS/viral_forge/.planning/codebase/CONVENTIONS.md

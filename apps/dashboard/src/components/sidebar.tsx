@@ -208,7 +208,7 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
             </AnimatePresence>
         </motion.div>
     );
-}
+});
 
 export function MobileNav() {
     const pathname = usePathname();

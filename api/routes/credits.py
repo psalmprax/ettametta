@@ -7,7 +7,8 @@ from pydantic import BaseModel
 from typing import Optional, List
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
-from services.payment.credit_service import credit_service
+from api.utils.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
 import stripe
 import logging
 
@@ -16,23 +17,23 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/credits", tags=["Credits & Billing"])
 
 DEFAULT_PACKAGES = [
-    {"id": 1, "name": "Starter", "credits": 50, "price_cents": 499, "features": []},
+    {"id": "starter", "name": "Starter", "credits": 50, "price_cents": 499, "features": []},
     {
-        "id": 2,
+        "id": "pro",
         "name": "Pro",
         "credits": 200,
         "price_cents": 1499,
         "features": ["10% bonus"],
     },
     {
-        "id": 3,
+        "id": "enterprise",
         "name": "Enterprise",
         "credits": 1000,
         "price_cents": 4999,
         "features": ["25% bonus", "Priority support"],
     },
     {
-        "id": 4,
+        "id": "scale",
         "name": "Scale",
         "credits": 2500,
         "price_cents": 9999,
@@ -44,7 +45,7 @@ PACKAGE_IDS = {p["id"] for p in DEFAULT_PACKAGES}
 
 
 class PurchaseCreditsRequest(BaseModel):
-    package_id: int
+    package_id: str
 
 
 class ApplyReferralRequest(BaseModel):
@@ -55,15 +56,14 @@ class CreditCostRequest(BaseModel):
     action: str
 
 
-def _get_packages() -> List[dict]:
+async def _get_packages(db: AsyncSession) -> List[dict]:
     """Get packages from DB or return defaults"""
-    packages = credit_service.get_credit_packages()
+    packages = await credit_service.get_credit_packages(db)
     return packages if packages else DEFAULT_PACKAGES
 
-
-def _get_package_by_id(package_id: int) -> Optional[dict]:
+async def _get_package_by_id(package_id: str, db: AsyncSession) -> Optional[dict]:
     """Get package by ID with validation"""
-    packages = _get_packages()
+    packages = await _get_packages(db)
     return next((p for p in packages if p["id"] == package_id), None)
 
 
@@ -71,15 +71,20 @@ def _get_package_by_id(package_id: int) -> Optional[dict]:
 
 
 @router.get("/balance")
-async def get_credit_balance(current_user: UserDB = Depends(get_current_user)):
+async def get_credit_balance(
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """Get user's current credit balance"""
-    balance = credit_service.get_balance(current_user.id)
+    balance = await credit_service.get_balance(current_user.id, db)
     return {"balance": balance, "user_id": current_user.id}
-
 
 @router.get("/transactions")
 async def get_transaction_history(
-    limit: int = 50, offset: int = 0, current_user: UserDB = Depends(get_current_user)
+    limit: int = 50, 
+    offset: int = 0, 
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """Get credit transaction history with pagination"""
     if limit < 1 or limit > 100:
@@ -87,8 +92,8 @@ async def get_transaction_history(
     if offset < 0:
         raise HTTPException(status_code=400, detail="Offset must be non-negative")
 
-    transactions = credit_service.get_transaction_history(
-        current_user.id, limit=limit, offset=offset
+    transactions = await credit_service.get_transaction_history(
+        current_user.id, db, limit=limit, offset=offset
     )
     return {
         "transactions": transactions,
@@ -100,25 +105,27 @@ async def get_transaction_history(
 
 # === Credit Packages ===
 @router.get("/packages")
-async def get_credit_packages():
+async def get_credit_packages(db: AsyncSession = Depends(get_db)):
     """Get available credit packages for purchase"""
-    packages = _get_packages()
+    packages = await _get_packages(db)
     return {"packages": packages, "count": len(packages)}
 
 
 # === Credit Purchase ===
 @router.post("/purchase")
 async def purchase_credits(
-    request: PurchaseCreditsRequest, current_user: UserDB = Depends(get_current_user)
+    request: PurchaseCreditsRequest, 
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """Purchase credits - creates Stripe checkout session"""
     from services.payment.stripe_service import get_payment_service
     from api.config import settings
     import uuid
 
-    package = _get_package_by_id(request.package_id)
+    package = await _get_package_by_id(request.package_id, db)
     if not package:
-        available_ids = [p["id"] for p in _get_packages()]
+        available_ids = [p["id"] for p in await _get_packages(db)]
         raise HTTPException(
             status_code=404,
             detail=f"Package {request.package_id} not found. Available IDs: {available_ids}",
@@ -144,25 +151,9 @@ async def purchase_credits(
             )
             stripe_customer_id = customer["stripe_customer_id"]
 
-            from api.utils.database import SessionLocal
-
-            db = SessionLocal()
-            try:
-                from api.utils.user_models import UserDB as UserDBModel
-
-                db_user = (
-                    db.query(UserDBModel)
-                    .filter(UserDBModel.id == current_user.id)
-                    .first()
-                )
-                if db_user:
-                    db_user.stripe_customer_id = stripe_customer_id
-                    db.commit()
-            except Exception as e:
-                logger.error(f"[Credits] Failed to update Stripe customer ID: {e}")
-                db.rollback()
-            finally:
-                db.close()
+            # Update stripe_customer_id
+            current_user.stripe_customer_id = stripe_customer_id
+            await db.commit()
         except Exception as e:
             logger.error(f"[Credits] Failed to create Stripe customer: {e}")
             raise HTTPException(
@@ -250,9 +241,12 @@ async def get_credit_costs(current_user: UserDB = Depends(get_current_user)):
 
 # === Referral System ===
 @router.get("/referral/code")
-async def get_referral_code(current_user: UserDB = Depends(get_current_user)):
+async def get_referral_code(
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """Get user's referral code with share URL"""
-    code = credit_service.get_referral_code(current_user.id)
+    code = await credit_service.get_referral_code(current_user.id, db)
     from api.config import settings
 
     share_url = f"{settings.PRODUCTION_DOMAIN}/register?ref={code}"
@@ -262,14 +256,16 @@ async def get_referral_code(current_user: UserDB = Depends(get_current_user)):
 
 @router.post("/referral/apply")
 async def apply_referral_code(
-    request: ApplyReferralRequest, current_user: UserDB = Depends(get_current_user)
+    request: ApplyReferralRequest, 
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """Apply a referral code with validation"""
     if not request.referral_code or len(request.referral_code.strip()) < 4:
         raise HTTPException(status_code=400, detail="Invalid referral code")
 
-    success, message = credit_service.apply_referral_code(
-        current_user.id, request.referral_code.strip().upper()
+    success, message = await credit_service.apply_referral_code(
+        current_user.id, request.referral_code.strip().upper(), db
     )
 
     if not success:
@@ -279,14 +275,20 @@ async def apply_referral_code(
 
 
 @router.get("/referrals")
-async def get_referrals(current_user: UserDB = Depends(get_current_user)):
+async def get_referrals(
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """Get user's referrals with stats"""
-    referrals = credit_service.get_referrals(current_user.id)
-    stats = credit_service.get_referral_stats(current_user.id)
+    referrals = await credit_service.get_referrals(current_user.id, db)
+    stats = await credit_service.get_referral_stats(current_user.id, db)
     return {"referrals": referrals, "stats": stats}
 
 
 @router.get("/referral/stats")
-async def get_referral_stats(current_user: UserDB = Depends(get_current_user)):
+async def get_referral_stats(
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """Get referral statistics"""
-    return credit_service.get_referral_stats(current_user.id)
+    return await credit_service.get_referral_stats(current_user.id, db)

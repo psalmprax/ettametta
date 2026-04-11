@@ -54,7 +54,7 @@ export const NeuralConfig = memo<NeuralConfigProps>(function NeuralConfig({
                         className="w-4 h-4 bg-zinc-900 border border-zinc-800 rounded focus:ring-primary focus:ring-2"
                     />
                     <label htmlFor="excludeShorts" className="text-sm font-medium text-zinc-300">
-                        Exclude Shorts (< 60s)
+                        Exclude Shorts (&lt; 60s)
                     </label>
                 </div>
             </div>

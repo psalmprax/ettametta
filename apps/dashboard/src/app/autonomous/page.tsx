@@ -41,8 +41,9 @@ export default function AutonomousPage() {
         withRealFallback<any>(
             () => fetch(`${API_BASE}/zero/status`, { headers }),
             {
-                fallback: { is_running: isRunning, current_step: currentStep || "IDLE", last_run: lastRun, next_run: nextRun },
+                fallback: null,
                 onSuccess: (data) => {
+                    if (!data) return;
                     setIsRunning(data.is_running);
                     setCurrentStep(data.current_step);
                     setLastRun(data.last_run);
@@ -56,8 +57,8 @@ export default function AutonomousPage() {
         withRealFallback<any>(
             () => fetch(`${API_BASE}/zero/insights`, { headers }),
             {
-                fallback: insights,
-                onSuccess: (data) => setInsights(data.insights || data)
+                fallback: null,
+                onSuccess: (data) => data && setInsights(data.insights || data)
             }
         );
     }, [isRunning, currentStep, lastRun, nextRun, insights]);
@@ -95,12 +96,15 @@ export default function AutonomousPage() {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
-                fallback: { status: "success", message: `Directing Agent Zero to ${action}...` },
+                fallback: null,
                 onSuccess: (data) => {
                     setIsRunning(!isRunning);
                     setStatus(!isRunning ? "Initializing Engine..." : "Halt Signal Sent");
-                    setLogs(prev => [`[SYSTEM] ${data.message || `Agent Zero ${action}ed`}`, ...prev]);
+                    setLogs(prev => [`[SYSTEM] ${data?.message || `Agent Zero ${action}ed`}`, ...prev]);
                     toast.success(`Agent Zero ${action === 'start' ? 'Activated' : 'Halted'}`);
+                },
+                onFallback: () => {
+                    toast.error(`Failed to ${action} Agent Zero`);
                 }
             }
         );

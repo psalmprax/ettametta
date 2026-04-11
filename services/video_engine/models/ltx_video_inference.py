@@ -119,9 +119,10 @@ def generate_ltx_api(
         "width": width,
     }
 
-    headers = {"Content-Type": "application/json"}
-    if hasattr(settings, "INTERNAL_API_TOKEN") and settings.INTERNAL_API_TOKEN:
-        headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
+    headers = {
+        "Content-Type": "application/json",
+        "x-worker-token": settings.AI_CLUSTER_SECRET,
+    }
 
     response = requests.post(
         f"{settings.RENDER_NODE_URL}/generate",

@@ -2,7 +2,6 @@ import logging
 import random
 from typing import List, Dict, Any
 from .base import BaseMonetizationStrategy
-from api.utils.database import SessionLocal
 from api.utils.models import SystemSettings
 
 class CourseStrategy(BaseMonetizationStrategy):
@@ -12,23 +11,17 @@ class CourseStrategy(BaseMonetizationStrategy):
     
     async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
         """
-        Fetches available courses from database configuration.
-        Returns course offerings for the given niche.
+        Fetches course platform URL from database configuration.
         """
-        db = SessionLocal()
-        try:
-            # Check for configured course platform URL
-            setting = db.query(SystemSettings).filter(
-                SystemSettings.key == "course_platform_url"
-            ).first()
-            
-            platform_url = setting.value if setting else None
-            
-            if not platform_url:
-                logging.warning(f"[CourseStrategy] No course platform configured. Set 'course_platform_url' in settings.")
-                return []
-            
-            # Return courses as assets
+        from sqlalchemy import select
+        from api.utils.database import async_session_factory
+        
+        async with async_session_factory() as db:
+            stmt = select(SystemSettings).filter(SystemSettings.key == "course_platform_url")
+            result = await db.execute(stmt)
+            setting = result.scalar_one_or_none()
+            platform_url = setting.value if setting else "https://ettametta.ai/academy"
+
             return [
                 {
                     "id": "course_1",
@@ -55,8 +48,6 @@ class CourseStrategy(BaseMonetizationStrategy):
                     "source": "course"
                 }
             ]
-        finally:
-            db.close()
 
     async def generate_cta(self, niche: str, context: str) -> str:
         """

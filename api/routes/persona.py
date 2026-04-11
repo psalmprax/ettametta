@@ -12,13 +12,13 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/persona", tags=["Persona Engine"])
 
 class PersonaResponse(BaseModel):
-    id: int
+    id: str
     name: str
     reference_image_url: str | None = None
     voice_clone_id: str | None = None
 
 class PersonaGenerateRequest(BaseModel):
-    persona_id: int
+    persona_id: str
     topic: str
     script: str = None  # Optional override
 

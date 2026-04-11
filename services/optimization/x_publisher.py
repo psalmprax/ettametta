@@ -224,9 +224,9 @@ class XPublisher(SocialPublisher):
 
             return {"error": data.get("error", {}).get("message", "Unknown error")}
 
-    def health_check(self, user_id: int) -> bool:
+    async def health_check(self, user_id: int) -> bool:
         """Verify X credentials"""
-        return token_manager.get_token("x", user_id=user_id) is not None
+        return await token_manager.get_token("x", user_id=user_id) is not None
 
 
 base_x_publisher = XPublisher()

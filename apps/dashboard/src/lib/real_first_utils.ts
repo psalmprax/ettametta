@@ -109,12 +109,7 @@ export function getSignalStatus(isLive: boolean, hasError: boolean): "NOMINAL" |
  * otherwise provides a deterministic growth curve (no random noise).
  */
 export function getVelocityPoints(history: any[] | null, fallbackTotal: number) {
-    if (history && history.length > 0) return history;
-    
-    // Deterministic fallback curve (0.0, 0.12, 0.38, 0.55, 0.78, 0.92, 1.0)
-    const curve = [0, 0.12, 0.38, 0.55, 0.78, 0.92, 1];
-    return curve.map((p, i) => ({
-        time: `${i * 4}h`,
-        views: Math.round(fallbackTotal * p)
-    }));
+    // Hardened: No deterministic fallbacks or simulated curves.
+    // Return empty array. The UI component must handle the empty state.
+    return [];
 }

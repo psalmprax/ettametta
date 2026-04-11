@@ -1,14 +1,17 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional, Dict
+import httpx
+import os
+import logging
+import datetime
+import json
+
 from services.discovery.service import base_discovery_service
 from services.discovery.models import ContentCandidate, ViralPattern
 from fastapi_cache.decorator import cache
 
 router = APIRouter(prefix="/discovery", tags=["Discovery"])
-
-import httpx
-import os
 
 DISCOVERY_GO_URL = os.getenv("DISCOVERY_GO_URL", "http://discovery-go:8080")
 
@@ -16,7 +19,10 @@ from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
 from api.utils.subscription import credits_required
 from services.payment.credit_service import credit_service
-from fastapi import APIRouter, HTTPException, Depends
+from api.config import settings
+from api.utils.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 
 @router.get("/trends", response_model=List[ContentCandidate])
@@ -154,6 +160,7 @@ async def analyze_candidate(
     candidate: ContentCandidate,
     user: UserDB = Depends(get_current_user),
     credits_cost: int = Depends(credits_required("viral_analysis")),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Asynchronous deconstruction: Dispatches deep AI analysis to Celery
@@ -162,11 +169,12 @@ async def analyze_candidate(
     from services.discovery.tasks import analyze_viral_pattern_task
 
     # Consume credits
-    credit_service.consume_credits(
+    await credit_service.consume_credits(
         user_id=user.id,
         amount=credits_cost,
         action="viral_analysis",
-        description=f"Viral analysis: {candidate.id}",
+        db=db,
+        reference_id=candidate.id, # Using candidate ID as reference
     )
 
     task = analyze_viral_pattern_task.delay(candidate.dict())
@@ -200,21 +208,22 @@ async def get_niche_trends(niche: str, user: UserDB = Depends(get_current_user))
 
 
 @router.get("/niches", response_model=List[str])
-async def list_monitored_niches(user: UserDB = Depends(get_current_user)):
-    from api.utils.database import SessionLocal
+async def list_monitored_niches(
+    user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
     from api.utils.models import MonitoredNiche
 
-    db = SessionLocal()
     try:
-        niches = (
-            db.query(MonitoredNiche.niche)
+        stmt = (
+            select(MonitoredNiche.niche)
             .filter(MonitoredNiche.is_active == True)
             .distinct()
-            .all()
         )
+        result = await db.execute(stmt)
+        niches = result.all()
         return [n[0] for n in niches]
-    finally:
-        db.close()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/analyze/{task_id}")
@@ -266,13 +275,13 @@ async def create_video_from_analysis(
     request: CreateVideoFromAnalysisRequest,
     user: UserDB = Depends(get_current_user),
     credits_cost: int = Depends(credits_required("video_transformation")),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Create a video transformation from completed analysis.
     """
     from api.utils.celery import celery_app
     from services.video_engine.tasks import download_and_process_task
-    from api.utils.database import SessionLocal
     from api.utils.models import VideoJobDB
 
     try:
@@ -294,7 +303,6 @@ async def create_video_from_analysis(
         # If we have the URL from pattern, use it
         if "pattern" in analysis:
             pattern = analysis.get("pattern", {})
-            # Try to get source URL from pattern
             candidate_url = pattern.get("source_url", "")
 
         if not candidate_url:
@@ -302,38 +310,51 @@ async def create_video_from_analysis(
                 status_code=400, detail="No source URL found in analysis"
             )
 
+        # Dispatch Task
+        try:
+            task = download_and_process_task.delay(
+                source_url=candidate_url,
+                niche=request.niche,
+                platform=request.platform,
+                style=request.style,
+                quality_tier=request.quality_tier,
+            )
+        except Exception as task_err:
+            logger.error(f"Task dispatch failure: {task_err}")
+            raise HTTPException(status_code=503, detail="Task queue unavailable")
+
         # Consume credits
-        credit_service.consume_credits(
+        success, msg = await credit_service.consume_credits(
             user_id=user.id,
             amount=credits_cost,
             action="video_transformation",
-            description=f"Video creation from analysis: {task_id}",
+            db=db,
+            reference_id=task.id,
         )
-
-        # Trigger video transformation
-        task = download_and_process_task.delay(
-            source_url=candidate_url,
-            niche=request.niche,
-            platform=request.platform,
-            style=request.style,
-            quality_tier=request.quality_tier,
-        )
+        
+        if not success:
+            from api.utils.celery import celery_app
+            celery_app.control.revoke(task.id, terminate=True)
+            raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
 
         # Create job record
-        db = SessionLocal()
-        try:
-            new_job = VideoJobDB(
-                id=task.id,
-                title=f"From Analysis - {request.niche}",
-                status="Queued",
-                progress=0,
-                input_url=candidate_url,
-                user_id=user.id,
-            )
-            db.add(new_job)
-            db.commit()
-        finally:
-            db.close()
+        new_job = VideoJobDB(
+            id=task.id,
+            title=f"From Analysis - {request.niche}",
+            status="Queued",
+            progress=0,
+            input_url=candidate_url,
+            user_id=user.id,
+        )
+        db.add(new_job)
+        await db.commit()
+
+        return {
+            "status": "video_creation_started",
+            "task_id": task.id,
+            "analysis_task_id": task_id,
+            "message": "Video transformation started from analysis",
+        }
 
         return {
             "status": "video_creation_started",
@@ -373,7 +394,7 @@ async def get_niche_insights(niche: str, user: UserDB = Depends(get_current_user
     filters = ["Glitch Alpha", "Cinematic Pulse"]
     confidence = 0.85
 
-    if settings.GROQ_API_KEY and settings.GROQ_API_KEY != "your_key_here":
+    if settings.GROQ_API_KEY:
         try:
             client = Groq(api_key=settings.GROQ_API_KEY)
             prompt = f"""
@@ -504,17 +525,16 @@ class InteractionRequest(BaseModel):
 
 @router.post("/interact")
 async def record_interaction(
-    request: InteractionRequest, user: UserDB = Depends(get_current_user)
+    request: InteractionRequest, 
+    user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
     """
-    Records a UI interaction (e.g. handshake, negotiate) with a discovery candidate.
-    In a real-first system, this triggers a backend event rather than a frontend delay.
+    Records a UI interaction with a discovery candidate.
     """
-    from api.utils.database import SessionLocal
     from api.utils.models import DiscoveryInteractionDB
     import datetime
 
-    db = SessionLocal()
     try:
         new_interaction = DiscoveryInteractionDB(
             candidate_id=request.candidate_id,
@@ -527,16 +547,16 @@ async def record_interaction(
             },
         )
         db.add(new_interaction)
-        db.commit()
-        db.refresh(new_interaction)
+        await db.commit()
+        await db.refresh(new_interaction)
 
         return {
             "status": "Handshake Established",
             "candidate_id": request.candidate_id,
             "interaction_id": new_interaction.id,
             "timestamp": new_interaction.created_at.isoformat(),
-            "signals": ["SYNC_LOCKED", "NEGOTIATION_ACTIVE"],
-            "message": f"Successfully established {request.action} protocol with target node.",
+            "message": "Protocol established with target node.",
         }
-    finally:
-        db.close()
+    except Exception as e:
+        logger.error(f"Interaction record failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to record interaction")

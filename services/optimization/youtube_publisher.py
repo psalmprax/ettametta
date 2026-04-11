@@ -40,7 +40,7 @@ class YouTubePublisher(SocialPublisher):
         from googleapiclient.http import MediaFileUpload
         from google.oauth2.credentials import Credentials
 
-        access_token = token_manager.get_token(
+        access_token = await token_manager.get_token(
             "youtube", user_id=user_id, account_id=account_id
         )
         if not access_token:
@@ -91,7 +91,7 @@ class YouTubePublisher(SocialPublisher):
         from googleapiclient.discovery import build
         from google.oauth2.credentials import Credentials
 
-        access_token = token_manager.get_token(
+        access_token = await token_manager.get_token(
             "youtube", user_id=user_id, account_id=account_id
         )
         if not access_token:
@@ -118,9 +118,9 @@ class YouTubePublisher(SocialPublisher):
             logger.error(f"[YouTubePublisher] Metrics fetch failed: {e}")
             return {"error": str(e)}
 
-    def health_check(self, user_id: int) -> bool:
+    async def health_check(self, user_id: int) -> bool:
         """Verify YouTube credentials"""
-        return token_manager.get_token("youtube", user_id=user_id) is not None
+        return await token_manager.get_token("youtube", user_id=user_id) is not None
 
 
 base_youtube_publisher = YouTubePublisher()
