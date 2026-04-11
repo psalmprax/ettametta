@@ -30,16 +30,20 @@ class TokenManager {
     private static readonly CREDITS_KEY = "et_credits";
 
     static setToken(token: string, remember: boolean = false): void {
-        const storage = remember ? localStorage : sessionStorage;
-        storage.setItem(this.TOKEN_KEY, token);
+        // Hotfix: Always use localStorage for production stability since many pages 
+        // directly reach into localStorage bypass-ing the context.
+        localStorage.setItem(this.TOKEN_KEY, token);
+        sessionStorage.setItem(this.TOKEN_KEY, token);
     }
 
     static getToken(): string | null {
-        // Check sessionStorage first (preferred for security)
+        // Check sessionStorage first
         let token = sessionStorage.getItem(this.TOKEN_KEY);
         if (!token) {
-            // Fallback to localStorage for backward compatibility
             token = localStorage.getItem(this.TOKEN_KEY);
+        } else {
+            // Sync to localStorage to satisfy direct access from sub-pages
+            localStorage.setItem(this.TOKEN_KEY, token);
         }
         return token;
     }
@@ -95,9 +99,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push("/login");
     };
 
-    const login = (authToken: string, remember: boolean = false) => {
+    const login = async (authToken: string, remember: boolean = false) => {
         TokenManager.setToken(authToken, remember);
         setToken(authToken);
+        
+        // Directly verify token is valid and fetch user WITH proper error handling
+        try {
+            const userRes = await fetch(`${API_BASE}/auth/me`, {
+                headers: { Authorization: `Bearer ${authToken}` },
+            });
+            
+            if (!userRes.ok) {
+                logout();
+                throw new Error("Invalid token received");
+            }
+            
+            const userData = await userRes.json();
+            setUser(userData);
+            TokenManager.setUser(userData);
+            
+            // Fetch credits in background, don't block login
+            fetchCredits(authToken);
+            
+            // Explicitly confirm user is loaded before returning
+            return true;
+        } catch (e) {
+            logout();
+            throw e;
+        }
     };
 
     const fetchUser = async (authToken: string) => {
@@ -150,7 +179,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedUser = TokenManager.getUser();
         const storedCredits = TokenManager.getCredits();
 
-        if (storedToken) {
+        // Fix "null" string token bug - reject invalid token values
+        if (storedToken && storedToken !== "null" && storedToken !== "undefined" && storedToken.trim().length > 0) {
             setToken(storedToken);
             if (storedUser) {
                 setUser(storedUser);
@@ -179,10 +209,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     useEffect(() => {
+        // Never redirect during active login flow - give time for state to propagate
+        if (token && !user) return;
+        
+        // Only redirect after auth initialization is complete AND we have confirmed no user exists
         if (!isLoading && !user && !publicPaths.includes(pathname)) {
-            router.push("/login");
+            // Always verify both token AND user exist in storage before redirecting
+            const storedToken = TokenManager.getToken();
+            const storedUser = TokenManager.getUser();
+            
+            // Only redirect if there is truly no active session at all
+            if (!storedToken || !storedUser) {
+                router.push("/login");
+            }
         }
-    }, [user, isLoading, pathname, router]);
+    }, [user, isLoading, pathname, router, token]);
 
     // Periodically refresh credits (every 2 mins)
     useEffect(() => {
