@@ -22,4 +22,6 @@ from . import (
     opencli,
     tools,
     llm,
+    video_generate,
+    content_editor,
 )
