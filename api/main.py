@@ -111,6 +111,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 app.add_middleware(RequestLoggingMiddleware)
 
 from api.routes import (
+    auth,
     security,
     billing,
     remotion,
@@ -128,6 +129,16 @@ from api.routes import (
     video_transform,
     video_generate,
     content_editor,
+    discovery,
+    publish,
+    settings,
+    nexus,
+    no_face,
+    analytics,
+    monetization,
+    ws,
+    ab_testing,
+    routes_settings,
 )
 
 from fastapi.staticfiles import StaticFiles
