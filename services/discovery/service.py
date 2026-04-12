@@ -3,6 +3,7 @@ import redis
 import asyncio
 import datetime
 import os
+from sqlalchemy import select
 from typing import List
 from .models import ContentCandidate, ViralPattern
 from .youtube_scanner import YouTubeShortsScanner
