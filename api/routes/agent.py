@@ -61,6 +61,11 @@ async def chat_with_agent(
     correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
     request.state.correlation_id = correlation_id
 
+    # Check for video generation intent first
+    video_trigger = await trigger_video_generation(body.message, body.context)
+    if video_trigger:
+        return video_trigger
+
     # Try OpenAI first (default), fallback to Groq
     provider = body.context.get("provider", "openai") if body.context else "openai"
 
@@ -111,6 +116,93 @@ async def chat_with_agent(
             raise HTTPException(status_code=503, detail="No LLM API keys configured")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Video generation trigger - detects intent and calls OpenCLAW skills
+async def trigger_video_generation(message: str, context: dict) -> dict:
+    """Detect video generation intent and trigger OpenCLAW skill"""
+    import re
+
+    message_lower = message.lower()
+
+    # Detect video generation keywords
+    video_keywords = [
+        "generate video",
+        "create video",
+        "make video",
+        "video of",
+        "generate using",
+        "create using",
+        "make using",
+    ]
+    provider_keywords = [
+        "pixverse",
+        "kling",
+        "haiper",
+        "luma",
+        "leiapix",
+        "pika",
+        "runway",
+        "leonardo",
+        "heygen",
+        "genmo",
+    ]
+
+    # Check if it's a video generation request
+    is_video_request = any(kw in message_lower for kw in video_keywords)
+    provider = None
+
+    # Detect which provider
+    for kw in provider_keywords:
+        if kw in message_lower:
+            provider = kw
+            break
+
+    if is_video_request and provider:
+        # Extract prompt from message
+        prompt_match = re.search(
+            r"video (?:of |about )?(.+?)(?:using|$)", message, re.IGNORECASE
+        )
+        prompt = prompt_match.group(1).strip() if prompt_match else message
+
+        # Get aspect ratio from context or default
+        aspect_ratio = context.get("aspect_ratio", "16:9") if context else "16:9"
+
+        # Import and run the skill
+        try:
+            skill_map = {
+                "pixverse": ("services.openclaw.skills.pixverse", "PixVerseSkill"),
+                "kling": ("services.openclaw.skills.kling", "KlingSkill"),
+                "haiper": ("services.openclaw.skills.haiper", "HaiperSkill"),
+                "luma": ("services.openclaw.skills.luma", "LumaSkill"),
+                "leiapix": ("services.openclaw.skills.leiapix", "LeiaPixSkill"),
+                "pika": ("services.openclaw.skills.pika", "PikaSkill"),
+                "runway": ("services.openclaw.skills.runway", "RunwaySkill"),
+            }
+
+            if provider in skill_map:
+                module_path, class_name = skill_map[provider]
+                module = __import__(module_path, fromlist=[class_name])
+                skill_class = getattr(module, class_name)
+
+                skill = skill_class()
+                await skill.initialize()
+                result = await skill.generate(prompt=prompt, aspect_ratio=aspect_ratio)
+                await skill.cleanup()
+
+                return {
+                    "response": f"Video generated successfully! URL: {result.get('video_url', 'N/A')}",
+                    "status": "success",
+                    "provider": provider,
+                    "video_url": result.get("video_url"),
+                }
+        except Exception as e:
+            return {
+                "response": f"Video generation failed: {str(e)}",
+                "status": "error",
+            }
+
+    return None  # Not a video generation request
 
 
 @router.post("/crew")
