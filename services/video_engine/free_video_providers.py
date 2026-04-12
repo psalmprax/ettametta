@@ -363,7 +363,36 @@ class FreeVideoProviderService:
                 logger.warning(f"[FreeVideoProvider] {provider} failed: {e}")
                 continue
 
+        # Fallback: Try browser automation (Playwright) when API keys are not available
+        logger.info("[FreeVideoProvider] All API providers failed, trying browser automation...")
+        result = await self._generate_with_browser(prompt, duration, aspect_ratio)
+        if result:
+            return result
+
         logger.error("[FreeVideoProvider] All providers failed")
+        return None
+
+    async def _generate_with_browser(
+        self, prompt: str, duration: int, aspect_ratio: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Generate video using Playwright browser automation as fallback.
+        Uses OpenCLAW skills to automate free video platform UIs.
+        """
+        try:
+            # Try PixVerse first (easiest UI)
+            from services.openclaw.skills.pixverse import PixVerseSkill
+
+            skill = PixVerseSkill()
+            await skill.initialize()
+            result = await skill.generate(prompt, aspect_ratio=aspect_ratio)
+            await skill.cleanup()
+
+            if result and result.get("video_url"):
+                return {"video_url": result["video_url"], "provider": "pixverse-browser"}
+        except Exception as e:
+            logger.warning(f"[FreeVideoProvider] Browser fallback failed: {e}")
+
         return None
 
     async def _generate_with_provider(
