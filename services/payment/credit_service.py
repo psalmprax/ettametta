@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 def utc_now():
-    """Get current UTC datetime consistently"""
-    return datetime.now(timezone.utc)
+    """Get current UTC datetime (naive for PostgreSQL compatibility)"""
+    return datetime.utcnow()
 
 
 class CreditService:
@@ -61,7 +61,7 @@ class CreditService:
     async def get_user_credits(self, user_id: str, db) -> UserCreditDB:
         """Get or create user's credit balance"""
         from sqlalchemy import select
-        
+
         result = await db.execute(
             select(UserCreditDB).where(UserCreditDB.user_id == user_id)
         )
@@ -99,7 +99,7 @@ class CreditService:
         Returns (success, message)
         """
         from sqlalchemy import select
-        
+
         try:
             # Use SELECT FOR UPDATE to lock the row and prevent race conditions
             result = await db.execute(
@@ -272,7 +272,9 @@ class CreditService:
     ) -> tuple[bool, str]:
         """Apply a referral code (when new user signs up)"""
         try:
-            stmt = select(ReferralDB).where(ReferralDB.referral_code == referral_code.upper())
+            stmt = select(ReferralDB).where(
+                ReferralDB.referral_code == referral_code.upper()
+            )
             result = await db.execute(stmt)
             referral = result.scalar_one_or_none()
 
@@ -367,10 +369,10 @@ class CreditService:
         stmt = select(UserDB).where(UserDB.id == user_id)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
-        
+
         if not user:
             return False, "User not found"
-            
+
         tier = user.subscription.value if user.subscription else "free"
         cost = self.get_action_cost(action, tier)
 
