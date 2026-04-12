@@ -120,7 +120,7 @@ engine_map = {
             "zsky-wan": SubscriptionTier.FREE,
             "ltx-video": SubscriptionTier.PREMIUM,
         }
-        
+
         required_tier = engine_map.get(engine, SubscriptionTier.STUDIO)
         user_tier_val = tier_values.get(current_user.subscription, 0)
         required_tier_val = tier_values.get(required_tier, 4)
