@@ -113,6 +113,20 @@ class Settings(BaseSettings):
         None  # Override auto-detected VRAM (for testing or manual config)
     )
 
+    # Video Provider Credentials (for browser automation)
+    PIXVERSE_EMAIL: Optional[str] = None
+    PIXVERSE_PASSWORD: Optional[str] = None
+    KLING_EMAIL: Optional[str] = None
+    KLING_PASSWORD: Optional[str] = None
+    HAIPER_EMAIL: Optional[str] = None
+    HAIPER_PASSWORD: Optional[str] = None
+    LUMA_EMAIL: Optional[str] = None
+    LUMA_PASSWORD: Optional[str] = None
+    RUNWAY_EMAIL: Optional[str] = None
+    RUNWAY_PASSWORD: Optional[str] = None
+    PIKA_EMAIL: Optional[str] = None
+    PIKA_PASSWORD: Optional[str] = None
+
     # Hardware detection (auto-populated)
     _detected_gpu_info: Dict[str, Any] = hardware_detector.get_gpu_info()
 
