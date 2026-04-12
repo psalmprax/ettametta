@@ -187,15 +187,33 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
 
                 skill = skill_class()
                 await skill.initialize()
-                result = await skill.generate(prompt=prompt, aspect_ratio=aspect_ratio)
-                await skill.cleanup()
+                try:
+                    # Increase timeout for slow platforms
+                    result = await asyncio.wait_for(
+                        skill.generate(prompt=prompt, aspect_ratio=aspect_ratio),
+                        timeout=180.0,  # 3 minutes
+                    )
+                    await skill.cleanup()
 
-                return {
-                    "response": f"Video generated successfully! URL: {result.get('video_url', 'N/A')}",
-                    "status": "success",
-                    "provider": provider,
-                    "video_url": result.get("video_url"),
-                }
+                    if result.get("status") == "success":
+                        return {
+                            "response": f"✅ Video generated successfully! URL: {result.get('video_url', 'N/A')}",
+                            "status": "success",
+                            "provider": provider,
+                            "video_url": result.get("video_url"),
+                        }
+                    else:
+                        return {
+                            "response": f"⚠️ Video generation failed: {result.get('error', 'Unknown error')}",
+                            "status": "error",
+                            "provider": provider,
+                        }
+                except asyncio.TimeoutError:
+                    await skill.cleanup()
+                    return {
+                        "response": f"⏱️ Video generation timed out after 3 minutes. Platform {provider} may be slow or require manual verification.",
+                        "status": "error",
+                    }
         except Exception as e:
             return {
                 "response": f"Video generation failed: {str(e)}",
