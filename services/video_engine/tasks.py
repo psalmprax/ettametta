@@ -14,12 +14,26 @@ logger = logging.getLogger(__name__)
 
 # Bridge to use async code in synchronous Celery worker
 def run_async(coro):
+    """Run async coroutine in sync context (Celery worker)"""
     try:
-        return asyncio.run(coro)
-    except RuntimeError:
-        # Fallback for nested loops
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(coro)
+        # Try to get running loop - if none, create new one
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # No running loop - we can safely use asyncio.run()
+            return asyncio.run(coro)
+
+        # There's a running loop - use ensure_future
+        return asyncio.get_event_loop().run_until_complete(coro)
+    except Exception as e:
+        # Last resort: create new event loop
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
 
 
 def cleanup_local_files(*paths):
@@ -79,6 +93,7 @@ def download_and_process_task(
 
                     # Real-time WebSocket Notification
                     from api.routes.ws import notify_job_update_sync
+
                     notify_job_update_sync(
                         {
                             "id": task_id,
@@ -87,6 +102,7 @@ def download_and_process_task(
                             "output_path": job.output_path,
                         }
                     )
+
         run_async(_update())
 
     try:
@@ -157,7 +173,7 @@ def download_and_process_task(
                 stmt = select(VideoFilterDB).where(VideoFilterDB.enabled == True)
                 result = await db.execute(stmt)
                 return [f.id for f in result.scalars().all()]
-        
+
         enabled_filters = run_async(get_filters())
 
         processed_path = run_async(
@@ -310,6 +326,7 @@ def generate_video_task(
                     await db.commit()
 
                     from api.routes.ws import notify_job_update_sync
+
                     notify_job_update_sync(
                         {
                             "id": task_id,
@@ -318,6 +335,7 @@ def generate_video_task(
                             "output_path": job.output_path,
                         }
                     )
+
         run_async(_update())
 
     try:
@@ -358,7 +376,11 @@ def generate_video_task(
             # FIXED: Wrap in run_async
             refined_video_path = run_async(
                 video_processor.apply_pro_workflow(
-                    video_url, f"refined_{uuid.uuid4()}.mp4", aspect_ratio, 5.0, "premium"
+                    video_url,
+                    f"refined_{uuid.uuid4()}.mp4",
+                    aspect_ratio,
+                    5.0,
+                    "premium",
                 )
             )
             if refined_video_path != video_url:
@@ -424,6 +446,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
                     await db.commit()
 
                     from api.routes.ws import notify_job_update_sync
+
                     notify_job_update_sync(
                         {
                             "id": task_id,
@@ -432,6 +455,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
                             "output_path": job.output_path,
                         }
                     )
+
         run_async(_update())
 
     try:
