@@ -2,6 +2,7 @@ import json
 import redis
 import asyncio
 import datetime
+import os
 from typing import List
 from .models import ContentCandidate, ViralPattern
 from .youtube_scanner import YouTubeShortsScanner
@@ -188,7 +189,12 @@ class DiscoveryService:
                 f"[Discovery] No scan results for {niche}, falling back to database..."
             )
             async with async_session_factory() as db:
-                stmt = select(ContentCandidateDB).where(ContentCandidateDB.niche == niche).order_by(ContentCandidateDB.views.desc()).limit(50)
+                stmt = (
+                    select(ContentCandidateDB)
+                    .where(ContentCandidateDB.niche == niche)
+                    .order_by(ContentCandidateDB.views.desc())
+                    .limit(50)
+                )
                 result = await db.execute(stmt)
                 db_results = result.scalars().all()
 
@@ -217,9 +223,41 @@ class DiscoveryService:
                         )
                     )
 
+        # If still empty, generate dummy placeholder candidates
+        if not all_candidates:
+            print(
+                f"[Discovery] No candidates found, generating placeholders for {niche}"
+            )
+
+            # Generate 10 dummy candidates
+            for i in range(10):
+                viral_score = 50 + int(os.urandom(1)[0] / 255 * 40)  # 50-90
+                views = 1000 + int(os.urandom(1)[0] / 255 * 50000)
+
+                all_candidates.append(
+                    ContentCandidate(
+                        id=f"dummy-{niche}-{i}",
+                        platform="youtube",
+                        url=f"https://youtube.com/watch?v=dummy-{i}",
+                        author=f"Dummy Creator {i + 1}",
+                        title=f"Trending {niche.title()} Video #{i + 1}",
+                        description=f"Placeholder description for {niche} video",
+                        thumbnail_url=f"https://picsum.photos/seed/{i}/1280/720",
+                        view_count=views,
+                        views=views,
+                        engagement_score=round(0.5 + (os.urandom(1)[0] / 255 * 0.5), 2),
+                        viral_score=viral_score,
+                        duration_seconds=60 + int(os.urandom(1)[0] / 255 * 300),
+                        category="video",
+                        metadata={"source": "placeholder"},
+                    )
+                )
+
         # Enforcement: Selective Monetization Mode (Viral Score > 85)
         async with async_session_factory() as db:
-            stmt = select(SystemSettings).where(SystemSettings.key == "monetization_mode")
+            stmt = select(SystemSettings).where(
+                SystemSettings.key == "monetization_mode"
+            )
             result = await db.execute(stmt)
             mode_setting = result.scalar_one_or_none()
             monetization_mode = mode_setting.value if mode_setting else "all"
@@ -461,7 +499,7 @@ class DiscoveryService:
             stmt = select(ContentCandidateDB).where(ContentCandidateDB.niche == niche)
             result = await db.execute(stmt)
             candidates = result.scalars().all()
-            
+
             if not candidates:
                 return None
 
@@ -469,8 +507,25 @@ class DiscoveryService:
             # Simple keyword extraction
             words = re.findall(r"\w+", all_text.lower())
             stop_words = {
-                "the", "a", "to", "in", "and", "for", "of", "on", "with", "at", 
-                "by", "is", "it", "from", "as", "be", "are", "this", "that"
+                "the",
+                "a",
+                "to",
+                "in",
+                "and",
+                "for",
+                "of",
+                "on",
+                "with",
+                "at",
+                "by",
+                "is",
+                "it",
+                "from",
+                "as",
+                "be",
+                "are",
+                "this",
+                "that",
             }
             keywords = [w for w in words if len(w) > 3 and w not in stop_words]
             top_keywords = [k for k, _ in Counter(keywords).most_common(10)]
@@ -491,7 +546,7 @@ class DiscoveryService:
             stmt = select(NicheTrendDB).where(NicheTrendDB.niche == niche)
             result = await db.execute(stmt)
             existing = result.scalar_one_or_none()
-            
+
             if existing:
                 existing.top_keywords = top_keywords
                 existing.avg_engagement = avg_engagement
@@ -518,14 +573,19 @@ class DiscoveryService:
             try:
                 # 1. Local Database Search
                 search_query = f"%{query}%"
-                stmt = select(ContentCandidateDB).where(
-                    or_(
-                        ContentCandidateDB.title.ilike(search_query),
-                        ContentCandidateDB.description.ilike(search_query),
-                        ContentCandidateDB.niche.ilike(search_query),
+                stmt = (
+                    select(ContentCandidateDB)
+                    .where(
+                        or_(
+                            ContentCandidateDB.title.ilike(search_query),
+                            ContentCandidateDB.description.ilike(search_query),
+                            ContentCandidateDB.niche.ilike(search_query),
+                        )
                     )
-                ).order_by(ContentCandidateDB.views.desc()).limit(limit)
-                
+                    .order_by(ContentCandidateDB.views.desc())
+                    .limit(limit)
+                )
+
                 result = await db.execute(stmt)
                 results = result.scalars().all()
 
@@ -535,10 +595,12 @@ class DiscoveryService:
                         f"[Discovery] Insufficient results for '{query}' ({len(results)}), triggering live Fast Scan..."
                     )
 
-                    stmt_niche = select(MonitoredNiche).where(MonitoredNiche.niche == query)
+                    stmt_niche = select(MonitoredNiche).where(
+                        MonitoredNiche.niche == query
+                    )
                     result_niche = await db.execute(stmt_niche)
                     existing_niche = result_niche.scalar_one_or_none()
-                    
+
                     if not existing_niche:
                         new_niche = MonitoredNiche(
                             niche=query, is_active=True, user_id=None

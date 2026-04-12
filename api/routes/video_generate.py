@@ -22,6 +22,7 @@ import logging
 router = APIRouter(prefix="/video", tags=["Video Generation"])
 logger = logging.getLogger(__name__)
 
+
 class GenerationRequest(BaseModel):
     prompt: str
     engine: str = "veo3"
@@ -29,10 +30,12 @@ class GenerationRequest(BaseModel):
     aspect_ratio: str = "9:16"
     custom_image_url: Optional[str] = None
 
+
 class StoryRequest(BaseModel):
     prompt: str
     engine: str = "veo3"
     style: str = "Cinematic"
+
 
 @router.post("/generate")
 @limiter.limit("5/minute")
@@ -55,7 +58,27 @@ async def generate_single_video(
             "hunyuan": "video_generation_hunyuan",
             "veo3": "video_generation_veo3",
             "runway": "video_generation_runway",
-            # ... (mapping truncated for brevity, implement full version)
+            "kling": "video_generation_kling",
+            "pika": "video_generation_pika",
+            "leonardo": "video_generation_leonardo",
+            "frameloop": "video_generation_frameloop",
+            "wavespeed": "video_generation_wavespeed",
+            "ltx": "video_generation_ltx",
+            "videoany": "video_generation_videoany",
+            "vidu": "video_generation_vidu",
+            "hailuo": "video_generation_hailuo",
+            "seedance": "video_generation_seedance",
+            "heygen": "video_generation_heygen",
+            "pixverse": "video_generation_pixverse",
+            "haiper": "video_generation_haiper",
+            "luma": "video_generation_luma",
+            "leiapix": "video_generation_leiapix",
+            "kaiber": "video_generation_kaiber",
+            "fliki": "video_generation_fliki",
+            "invideo": "video_generation_invideo",
+            "morph": "video_generation_morph",
+            "genmo": "video_generation_genmo",
+            "zsky-wan": "video_generation_zsky",
         }
         action = engine_to_action.get(body.engine, "video_generation_ltx")
         credits_cost = await credits_required(action)(current_user, db)
@@ -82,9 +105,10 @@ async def generate_single_video(
             db=db,
             reference_id=task.id,
         )
-        
+
         if not success:
             from api.utils.celery import celery_app
+
             celery_app.control.revoke(task.id, terminate=True)
             raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
 
@@ -117,6 +141,7 @@ async def generate_single_video(
         logger.error(f"video_generate.py: Error: {e}")
         raise HTTPException(status_code=500, detail="Generation failed")
 
+
 @router.post("/generate-story")
 async def start_story_generation(
     request: Request,
@@ -145,11 +170,12 @@ async def start_story_generation(
             amount=credits_cost,
             action="storytelling",
             db=db,
-            reference_id=task.id
+            reference_id=task.id,
         )
 
         if not success:
             from api.utils.celery import celery_app
+
             celery_app.control.revoke(task.id, terminate=True)
             raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
 
