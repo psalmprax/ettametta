@@ -164,6 +164,10 @@ services:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
       - REDIS_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
+      # Video model quantization (fp16, int8, int4) - reduces VRAM usage
+      - LTX_QUANTIZATION=${LTX_QUANTIZATION:-fp16}
+      - HUNYUAN_QUANTIZATION=${HUNYUAN_QUANTIZATION:-fp16}
+      - COGVIDEO_QUANTIZATION=${COGVIDEO_QUANTIZATION:-fp16}
       # Pass-through credentials
       - GOOGLE_CLIENT_ID
       - GOOGLE_CLIENT_SECRET

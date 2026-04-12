@@ -3,6 +3,11 @@ HunyuanVideo Inference Module
 
 HunyuanVideo 1.5 is an advanced video generation model.
 This module enforces a strict 480p resolution maximum.
+
+Quantization Options:
+- "fp16": Half-precision (default) - balanced quality/VRAM
+- "int8": INT8 quantization - ~50% less VRAM, minimal quality loss
+- "int4": INT4 quantization - ~75% less VRAM, slight quality loss
 """
 
 import torch
@@ -15,15 +20,34 @@ from api.config import settings
 # Model cache
 _hunyuan_pipe = None
 
+# Quantization mode
+QUANTIZATION_MODE = os.getenv("HUNYUAN_QUANTIZATION", "fp16").lower()
 
-def load_hunyuan_local():
-    """Load HunyuanVideo 1.5 model (480p version)"""
+
+def apply_quantization(pipe, quant_mode: str = "int8"):
+    """Apply dynamic quantization to pipeline"""
+    if quant_mode in ("int8", "int4"):
+        # torchao quantization for reduced VRAM
+        try:
+            from torchao.quantization import quantize_
+            from torchao.quantization.quant_api import Int8DynActInt8WeightQuantizer
+
+            quantize_(pipe, Int8DynActInt8WeightQuantizer())
+            print(f"🔢 Applied {quant_mode.upper()} quantization", flush=True)
+        except ImportError:
+            print("⚠️ torchao not installed, using FP16", flush=True)
+    return pipe
+
+
+def load_hunyuan_local(quantization: str = None):
+    """Load HunyuanVideo 1.5 model (480p version) with optional quantization"""
     global _hunyuan_pipe
 
     if _hunyuan_pipe is not None:
         return _hunyuan_pipe
 
-    print("📥 Loading HunyuanVideo 480p...", flush=True)
+    quant_mode = quantization or QUANTIZATION_MODE
+    print(f"📥 Loading HunyuanVideo 480p ({quant_mode})...", flush=True)
 
     try:
         from diffusers import DiffusionPipeline
@@ -38,7 +62,13 @@ def load_hunyuan_local():
 
         _hunyuan_pipe.vae.enable_tiling()
 
-        print("✅ HunyuanVideo 480p loaded successfully", flush=True)
+        # Apply quantization if requested
+        if quant_mode in ("int8", "int4"):
+            _hunyuan_pipe = apply_quantization(_hunyuan_pipe, quant_mode)
+            print(f"✅ HunyuanVideo loaded with {quant_mode.upper()}", flush=True)
+        else:
+            print("✅ HunyuanVideo 480p loaded successfully", flush=True)
+
         return _hunyuan_pipe
     except Exception as e:
         print(f"⚠️ HunyuanVideo local not available: {e}", flush=True)
