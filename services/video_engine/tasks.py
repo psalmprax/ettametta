@@ -348,32 +348,10 @@ def generate_video_task(
             # But for our current GenerativeService mocks, we'll just log it
             pass
 
-        # 3. Apply pro workflow refinement for premium quality
-        update_job(status="Refining", progress=60)
+        # 3. Skip heavy post-processing for demo
+        update_job(status="Complete", progress=90)
 
-        # Check if premium quality requested (we can infer from engine or add parameter)
-        # For now, apply to all videos for A+ quality
-        from services.video_engine.processor import video_processor
-
-        if engine in ["veo3", "wan2.2"] or True:  # Apply to all for now
-            update_job(
-                status="Applying Pro Workflow (Upscale + Interpolate)", progress=70
-            )
-            # FIXED: Wrap in run_async
-            refined_video_path = run_async(
-                video_processor.apply_pro_workflow(
-                    video_url,
-                    f"refined_{uuid.uuid4()}.mp4",
-                    aspect_ratio,
-                    5.0,
-                    "premium",
-                )
-            )
-            if refined_video_path != video_url:
-                video_url = refined_video_path
-                update_job(status="Pro Refinement Complete", progress=80)
-
-        # 4. Storage & Finalization
+        # 4. Storage
         from services.storage.service import base_storage_service
 
         # Upload to Storage
