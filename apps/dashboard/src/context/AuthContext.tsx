@@ -45,6 +45,7 @@ class TokenManager {
             // Sync to localStorage to satisfy direct access from sub-pages
             localStorage.setItem(this.TOKEN_KEY, token);
         }
+        if (token === "null") return null;
         return token;
     }
 

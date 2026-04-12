@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from api.utils.database import get_db
 from api.utils.models import AffiliateLinkDB, RevenueLogDB
 from api.routes.auth import get_current_user
@@ -27,7 +28,7 @@ class AutoMerchRequest(BaseModel):
 async def recommend_links(
     request: LinkRecommendationRequest,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Recommends products/links based on script content.
@@ -37,10 +38,9 @@ async def recommend_links(
     )
 
     # Check if we have actual links in DB for these categories
-    # (In a real app, we'd search AffiliateLinkDB by niche/type)
-    db_links = (
-        db.query(AffiliateLinkDB).filter(AffiliateLinkDB.niche == request.niche).all()
-    )
+    stmt = select(AffiliateLinkDB).where(AffiliateLinkDB.niche == request.niche)
+    result = await db.execute(stmt)
+    db_links = result.scalars().all()
 
     return {"suggestions": recommendations, "available_links": db_links}
 
@@ -49,7 +49,7 @@ async def recommend_links(
 async def auto_merch(
     request: AutoMerchRequest,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     credits_cost: int = Depends(credits_required("auto_merch")),
 ):
     """
@@ -58,11 +58,12 @@ async def auto_merch(
     from services.monetization.auto_merch import base_auto_merch_service as auto_merch_service
 
     # Consume credits
-    credit_service.consume_credits(
+    await credit_service.consume_credits(
         user_id=current_user.id,
         amount=credits_cost,
         action="auto_merch",
         description=f"Auto-merch generation for {request.trend_topic}",
+        db=db,
     )
 
     product_data = await auto_merch_service.generate_and_publish_merch(
@@ -83,12 +84,14 @@ async def auto_merch(
 
 @router.get("/report")
 async def get_monetization_report(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Aggregates revenue tracking data for the dashboard.
     """
-    logs = db.query(RevenueLogDB).filter(RevenueLogDB.user_id == current_user.id).all()
+    stmt = select(RevenueLogDB).where(RevenueLogDB.user_id == current_user.id)
+    result = await db.execute(stmt)
+    logs = result.scalars().all()
 
     total_rev = sum(log.amount for log in logs)
     total_views = sum(log.views for log in logs)
@@ -99,16 +102,16 @@ async def get_monetization_report(
 
 @router.get("/empire/metrics")
 async def get_empire_metrics(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     from services.monetization.empire_service import base_empire_service
 
-    return base_empire_service.get_empire_metrics(db, current_user.id)
+    return await base_empire_service.get_empire_metrics(db, current_user.id)
 
 
 @router.get("/empire/activity")
 async def get_empire_activity(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Returns the recent activity logs for the empire timeline.
@@ -126,30 +129,30 @@ class CloneRequest(BaseModel):
 
 @router.get("/empire/blueprints")
 async def get_winning_blueprints(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     from services.monetization.empire_service import base_empire_service
 
-    return base_empire_service.get_winning_blueprints(db, current_user.id)
+    return await base_empire_service.get_winning_blueprints(db, current_user.id)
 
 
 @router.get("/empire/network")
 async def get_network_graph(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Returns the visualization graph (nodes/links) for the empire mesh.
     """
     from services.monetization.empire_service import base_empire_service
 
-    return base_empire_service.get_network_graph(db, current_user.id)
+    return await base_empire_service.get_network_graph(db, current_user.id)
 
 
 @router.post("/commerce/sync")
 async def sync_commerce_products(
     niche: str = "General",
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Triggers a test sync with the configured Shopify store.
@@ -174,7 +177,7 @@ async def sync_commerce_products(
 async def clone_strategy(
     request: CloneRequest,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     from services.monetization.empire_service import base_empire_service
 
@@ -198,16 +201,14 @@ class LinkCreate(BaseModel):
 
 @router.get("/links")
 async def list_affiliate_links(
-    current_user=Depends(get_current_user), db: Session = Depends(get_db)
+    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """
     Lists all affiliate links for the current user.
     """
-    links = (
-        db.query(AffiliateLinkDB)
-        .filter(AffiliateLinkDB.user_id == current_user.id)
-        .all()
-    )
+    stmt = select(AffiliateLinkDB).where(AffiliateLinkDB.user_id == current_user.id)
+    result = await db.execute(stmt)
+    links = result.scalars().all()
     return {"links": links}
 
 
@@ -215,15 +216,15 @@ async def list_affiliate_links(
 async def create_affiliate_link(
     link: LinkCreate,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Registers a new affiliate link.
     """
-    db_link = AffiliateLinkDB(**link.dict())
+    db_link = AffiliateLinkDB(**link.model_dump())
     db.add(db_link)
-    db.commit()
-    db.refresh(db_link)
+    await db.commit()
+    await db.refresh(db_link)
     return db_link
 
 

@@ -29,6 +29,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import dynamic from "next/dynamic";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { withRealFallback, getVelocityPoints } from "@/lib/real_first_utils";
+import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 
 const GlobalPulseGlobe = dynamic(() => import("@/components/ui/GlobalPulseGlobe"), { ssr: false });
@@ -119,7 +120,9 @@ export default function AnalyticsPage() {
 
     // --- DATA FETCHING ---
     const fetchPosts = useCallback(async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
+        
         const data = await withRealFallback<SocialPost[]>(
             () => fetch(`${API_BASE}/analytics/posts`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -143,7 +146,8 @@ export default function AnalyticsPage() {
     const fetchData = useCallback(async () => {
         if (!selectedPostId) {
             // Fetch Global/Active AB Tests even if no post is selected
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
+            if (!token) return;
             const headers = { Authorization: `Bearer ${token}` };
             
             const testsData = await withRealFallback<any>(
@@ -160,7 +164,8 @@ export default function AnalyticsPage() {
             return;
         }
 
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
 
         // Performance Report
@@ -232,7 +237,8 @@ export default function AnalyticsPage() {
         if (!isAutoPilot || activeTests.length === 0) return;
 
         const checkWinners = async () => {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
+            if (!token) return;
             for (const test of activeTests) {
                 const totalViews = (test.variant_a_views || 0) + (test.variant_b_views || 0);
                 // Threshold: 100 views per variant roughly
@@ -328,7 +334,8 @@ export default function AnalyticsPage() {
 
     const confirmApplyAction = async () => {
         setIsConfirmingApply(false);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
 
         const data = await withRealFallback<any>(
             () => fetch(`${API_BASE}/analytics/inject-pattern/${selectedPostId || "global"}`, {
@@ -459,7 +466,8 @@ export default function AnalyticsPage() {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={async () => {
-                                const token = localStorage.getItem("et_token");
+                                const token = getAuthToken();
+                                if (!token) return;
                                 try {
                                     const response = await fetch(`${API_BASE}/analytics/export`, {
                                         headers: { Authorization: `Bearer ${token}` }
@@ -908,7 +916,8 @@ export default function AnalyticsPage() {
                                 <button
                                     onClick={async () => {
                                         if (!newTestContentId) return;
-                                        const token = localStorage.getItem("et_token");
+                                        const token = getAuthToken();
+                                        if (!token) return;
 
                                         await withRealFallback<any>(
                                             () => fetch(`${API_BASE}/ab-testing/ab/test/start`, {
@@ -962,7 +971,8 @@ export default function AnalyticsPage() {
                                         </div>
                                         <button
                                             onClick={async () => {
-                                                const token = localStorage.getItem("et_token");
+                                                const token = getAuthToken();
+                                                if (!token) return;
                                                 await withRealFallback<any>(
                                                     () => fetch(`${API_BASE}/ab-testing/ab/test/${test.id}/determine-winner`, {
                                                         method: "POST",

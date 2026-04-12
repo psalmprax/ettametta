@@ -1,6 +1,7 @@
 "use client";
 
 import { withRealFallback } from "@/lib/real_first_utils";
+import { getAuthToken } from "@/lib/auth_utils";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import DashboardLayout from "@/components/layout";
 import {
@@ -112,9 +113,10 @@ function DiscoveryContent() {
     const [analysisResults, setAnalysisResults] = useState<Record<string, { status: string, result?: any }>>({});
     const [analysisTaskId, setAnalysisTaskId] = useState<string | null>(null);
 
+
     useEffect(() => {
         const fetchNiches = async () => {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
             await withRealFallback<string[]>(
                 () => fetch(`${API_BASE}/discovery/niches`, {
                     headers: { Authorization: `Bearer ${token}` }
@@ -131,7 +133,7 @@ function DiscoveryContent() {
         };
 
         const fetchProfile = async () => {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
             await withRealFallback<any>(
                 () => fetch(`${API_BASE}/auth/me`, {
                     headers: { Authorization: `Bearer ${token}` }
@@ -144,7 +146,8 @@ function DiscoveryContent() {
         };
 
         const fetchSessions = async () => {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
+            if (!token) return;
             await withRealFallback<any>(
                 () => fetch(`${API_BASE}/opencli/sessions`, {
                     headers: { Authorization: `Bearer ${token}` }
@@ -156,8 +159,25 @@ function DiscoveryContent() {
             );
         };
 
+        const fetchSummary = async () => {
+            const token = getAuthToken();
+            if (!token) return;
+            await withRealFallback<any>(
+                () => fetch(`${API_BASE}/discovery/summary`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                }),
+                {
+                    fallback: {},
+                    onSuccess: (data) => {
+                        // Handle summary data
+                    }
+                }
+            );
+        };
+
         const loadUserSettings = async () => {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
+            if (!token) return;
             await withRealFallback<any>(
                 () => fetch(`${API_BASE}/settings/`, {
                     headers: { Authorization: `Bearer ${token}` }
@@ -183,6 +203,7 @@ function DiscoveryContent() {
         fetchNiches();
         fetchProfile();
         fetchSessions();
+        fetchSummary();
         loadUserSettings();
     }, []);
 
@@ -192,7 +213,8 @@ function DiscoveryContent() {
 
      const fetchTrends = useCallback(async () => {
          setIsLoading(true);
-         const token = localStorage.getItem("et_token");
+         const token = getAuthToken();
+         if (!token) { setIsLoading(false); return; }
          const params = new URLSearchParams({
              niche: activeNiche,
              horizon: timeHorizon,
@@ -231,7 +253,8 @@ function DiscoveryContent() {
     }, [fetchTrends]);
 
     const handleAddToQueue = useCallback(async (candidate: ContentCandidate) => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
 
         // Check if we have analysis data for this candidate
         const analysisResult = analysisResults[candidate.id];
@@ -270,7 +293,8 @@ function DiscoveryContent() {
     }, [activeNiche, selectedStyle, analysisResults]);
 
     const handleAnalyze = useCallback(async (candidate: ContentCandidate) => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/discovery/analyze`, {
@@ -336,7 +360,8 @@ function DiscoveryContent() {
         setBusyInteractions(prev => ({ ...prev, [interactionKey]: true }));
         
         try {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
+            if (!token) return;
             
             // Real-First Interaction Protocol
             const data = await withRealFallback<any>(
@@ -373,12 +398,12 @@ function DiscoveryContent() {
                             Authorization: `Bearer ${token}`
                         },
                         body: JSON.stringify({
-                            platform: candidate.platform.toLowerCase().includes('youtube') ? 'youtube' : 
-                                     candidate.platform.toLowerCase().includes('tiktok') ? 'tiktok' : 
-                                     candidate.platform.toLowerCase().includes('x') ? 'x' : 
-                                     candidate.platform.toLowerCase().includes('twitter') ? 'x' :
-                                     candidate.platform.toLowerCase().includes('instagram') ? 'instagram' :
-                                     candidate.platform.toLowerCase().split(' ')[0],
+                            platform: candidate.platform?.toLowerCase().includes('youtube') ? 'youtube' : 
+                                     candidate.platform?.toLowerCase().includes('tiktok') ? 'tiktok' : 
+                                     candidate.platform?.toLowerCase().includes('x') ? 'x' : 
+                                     candidate.platform?.toLowerCase().includes('twitter') ? 'x' :
+                                     candidate.platform?.toLowerCase().includes('instagram') ? 'instagram' :
+                                     candidate.platform?.toLowerCase().split(' ')[0] || "unknown",
                             action: action,
                             content_url: candidate.url
                         })
@@ -416,7 +441,8 @@ function DiscoveryContent() {
 
     const handleTestDrive = useCallback(async () => {
         setIsTestDriving(true);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) { setIsTestDriving(false); return; }
 
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/video/test-drive`, {
@@ -441,7 +467,8 @@ function DiscoveryContent() {
     }, [activeNiche, selectedStyle]);
 
     const handleCreateVideoFromAnalysis = useCallback(async (analysisTaskId: string, candidate: ContentCandidate) => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
 
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/discovery/analyze/${analysisTaskId}/create-video`, {
@@ -471,10 +498,14 @@ function DiscoveryContent() {
         );
     }, [activeNiche, selectedStyle]);
 
-    const handleGenerate = useCallback(async () => {
-        if (!genPrompt.trim()) return;
+    const handleGenerate = async () => {
+        if (!genPrompt) return;
         setIsGenerating(true);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsGenerating(false);
+            return;
+        }
         const endpoint = isStoryMode ? "/video/generate-story" : "/video/generate";
 
         await withRealFallback<any>(
@@ -506,10 +537,11 @@ function DiscoveryContent() {
             }
         );
         setIsGenerating(false);
-    }, [genPrompt, genEngine, selectedStyle, isStoryMode]);
+    };
 
     const saveNeuralConfig = useCallback(async (key: string, value: string) => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/settings/`, {
                 method: "POST",
@@ -526,7 +558,7 @@ function DiscoveryContent() {
     const filteredCandidates = React.useMemo(() => {
         if (!Array.isArray(candidates)) return [];
         return candidates.filter(c => {
-            const platformMatch = filter === 'all' || c.platform.toLowerCase().includes(filter.toLowerCase());
+            const platformMatch = filter === 'all' || c.platform?.toLowerCase().includes(filter.toLowerCase());
             const categoryMatch = activeCategory === 'all' || (c.category || 'video').toLowerCase() === activeCategory.toLowerCase();
             return platformMatch && categoryMatch;
         });
@@ -536,7 +568,8 @@ function DiscoveryContent() {
     const [isSearching, setIsSearching] = useState(false);
 
     const handleRemoveNiche = useCallback(async (nicheToRemove: string) => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback(
             () => fetch(`${API_BASE}/discovery/niches/${encodeURIComponent(nicheToRemove)}`, {
                 method: "DELETE",
@@ -556,7 +589,7 @@ function DiscoveryContent() {
         );
     }, [activeNiche, niches]);
 
-    const handleSearch = useCallback(async (e?: React.FormEvent, customQuery?: string) => {
+    const handleSearch = async (e?: React.FormEvent, customQuery?: string) => {
         if (e) e.preventDefault();
         const query = customQuery !== undefined ? customQuery : searchQuery;
         if (!query.trim()) {
@@ -566,7 +599,8 @@ function DiscoveryContent() {
 
         setIsSearching(true);
         setIsLoading(true);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) { setIsLoading(false); setIsSearching(false); return; }
 
         await withRealFallback<ContentCandidate[]>(
             () => fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(query)}`, {
@@ -585,7 +619,7 @@ function DiscoveryContent() {
         );
         setIsLoading(false);
         setIsSearching(false);
-    }, [searchQuery, fetchTrends, niches]);
+    };
 
     const { data: telemetryData } = useWebSocket(`${WS_BASE}/telemetry`);
     const telemetry = telemetryData as any;
@@ -690,7 +724,8 @@ function DiscoveryContent() {
                                     animate={{ opacity: 1, x: 0 }}
                                     type="button"
                                     onClick={async () => {
-                                        const token = localStorage.getItem("et_token");
+                                        const token = getAuthToken();
+                                        if (!token) return;
                                         setIsLoading(true);
                                         await withRealFallback<any>(
                                             () => fetch(`${API_BASE}/discovery/scan`, {
