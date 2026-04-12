@@ -53,36 +53,62 @@ async def chat_with_agent(
     current_user: UserDB = Depends(get_current_user),
 ):
     """
-    Chat with AI agent using Groq.
+    Chat with AI agent. Supports both Groq and OpenAI.
     """
+    from api.config import settings
+
     # Add correlation ID for tracing
     correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
     request.state.correlation_id = correlation_id
 
-    client = get_groq_client()
-    if not client:
-        raise HTTPException(status_code=503, detail="GROQ API not configured")
+    # Try OpenAI first (default), fallback to Groq
+    provider = body.context.get("provider", "openai") if body.context else "openai"
 
     try:
         system_prompt = "You are a helpful AI assistant for a viral content creation platform. Be concise and actionable."
         if body.context:
             system_prompt += f"\n\nContext: {body.context}"
 
-        response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": body.message},
-            ],
-            temperature=0.7,
-            max_tokens=1024,
-        )
-        return {
-            "response": response.choices[0].message.content,
-            "status": "success",
-            "agent": "groq-direct",
-            "correlation_id": correlation_id,
-        }
+        if provider == "openai" and settings.OPENAI_API_KEY:
+            from openai import AsyncOpenAI
+
+            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            response = await client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": body.message},
+                ],
+                temperature=0.7,
+                max_tokens=1024,
+            )
+            return {
+                "response": response.choices[0].message.content,
+                "status": "success",
+                "agent": "openai",
+                "correlation_id": correlation_id,
+            }
+        elif settings.GROQ_API_KEY:
+            client = get_groq_client()
+            if not client:
+                raise HTTPException(status_code=503, detail="GROQ API not configured")
+            response = await client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": body.message},
+                ],
+                temperature=0.7,
+                max_tokens=1024,
+            )
+            return {
+                "response": response.choices[0].message.content,
+                "status": "success",
+                "agent": "groq",
+                "correlation_id": correlation_id,
+            }
+        else:
+            raise HTTPException(status_code=503, detail="No LLM API keys configured")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
