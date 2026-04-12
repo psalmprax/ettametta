@@ -37,8 +37,8 @@ COPY services/openclaw/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers
-RUN playwright install chromium
-RUN playwright install-deps chromium
+RUN playwright install chromium || true
+RUN playwright install-deps chromium || true
 
 # Install OpenClaw agent skills for gaps via git clone
 RUN git clone https://github.com/vercel-labs/agent-skills.git /tmp/agent-skills && \

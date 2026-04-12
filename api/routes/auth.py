@@ -11,7 +11,7 @@ from api.utils.auth import (
     verify_oauth_state,
 )
 from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional
+from typing import Optional, List
 from api.config import settings
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
@@ -21,7 +21,7 @@ from authlib.integrations.base_client import OAuthError
 import secrets
 import redis
 import redis.asyncio as redis_async
-from api.utils.user_models import UserDB
+from api.utils.user_models import UserDB, SubscriptionTier
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -82,6 +82,7 @@ class PasswordChange(BaseModel):
 class UserResponse(BaseModel):
     id: str
     email: str
+    subscription: Optional[SubscriptionTier] = None
 
     class Config:
         from_attributes = True

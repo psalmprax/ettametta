@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { API_BASE } from "@/lib/config";
+import { getAuthToken } from "@/lib/auth_utils";
 
 export function useNiches() {
     const [niches, setNiches] = useState<string[]>([]);
@@ -11,7 +12,11 @@ export function useNiches() {
     const refreshNiches = useCallback(async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
+            if (!token) {
+                setIsLoading(false);
+                return;
+            }
             const res = await fetch(`${API_BASE}/discovery/niches`, {
                 headers: { Authorization: `Bearer ${token}` }
             });

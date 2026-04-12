@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { useNiches } from "@/hooks/useNiches";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { getAuthToken } from "@/lib/auth_utils";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -79,7 +80,11 @@ export default function Home() {
   }, [wsData]);
 
   const fetchStats = async () => {
-    const token = localStorage.getItem("et_token");
+    const token = getAuthToken();
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
     const headers = { Authorization: `Bearer ${token}` };
 
     // Parallel fetches for efficiency
@@ -115,7 +120,11 @@ export default function Home() {
 
   const handleTriggerScan = async () => {
     setIsScanning(true);
-    const token = localStorage.getItem("et_token");
+    const token = getAuthToken();
+    if (!token) {
+      setIsScanning(false);
+      return;
+    }
     const scanNiches = niches.slice(0, 3);
 
     await withRealFallback<any>(

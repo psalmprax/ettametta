@@ -32,9 +32,10 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_system_settings_id'), 'system_settings', ['id'], unique=False)
     op.create_index(op.f('ix_system_settings_key'), 'system_settings', ['key'], unique=True)
-    op.drop_index(op.f('ix_viral_patterns_content_id'), table_name='viral_patterns')
-    op.drop_index(op.f('ix_viral_patterns_id'), table_name='viral_patterns')
-    op.drop_table('viral_patterns')
+    # op.drop_index(op.f('ix_viral_patterns_content_id'), table_name='viral_patterns')
+    # op.drop_index(op.f('ix_viral_patterns_id'), table_name='viral_patterns')
+    # op.drop_table('viral_patterns')
+
     op.add_column('content_candidates', sa.Column('platform', sa.String(), nullable=True))
     op.add_column('content_candidates', sa.Column('author', sa.String(), nullable=True))
     op.add_column('content_candidates', sa.Column('title', sa.String(), nullable=True))
