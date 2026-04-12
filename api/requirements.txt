@@ -38,6 +38,7 @@ slowapi
 easyocr
 opencv-python
 google-generativeai
+openai
 fastapi-cache2[redis]
 prometheus-fastapi-instrumentator
 
