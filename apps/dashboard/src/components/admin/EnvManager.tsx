@@ -18,6 +18,7 @@ import {
 import { API_BASE } from "@/lib/config";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getAuthToken } from "@/lib/auth_utils";
 
 interface EnvKey {
     keys: string[];
@@ -35,7 +36,11 @@ export default function EnvManager() {
     const fetchEnvKeys = async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
+            if (!token) {
+                setIsLoading(false);
+                return;
+            }
             const response = await fetch(`${API_BASE}/admin/system/env`, {
                 headers: {
                     "Authorization": `Bearer ${token}`
@@ -65,7 +70,11 @@ export default function EnvManager() {
         formData.append("file", file);
 
         try {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
+            if (!token) {
+                setIsUploading(false);
+                return;
+            }
             const response = await fetch(`${API_BASE}/admin/system/env/upload`, {
                 method: "POST",
                 headers: {
@@ -100,7 +109,11 @@ export default function EnvManager() {
         setIsRestarting(true);
         setShowRestartConfirm(false);
         try {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
+            if (!token) {
+                setIsRestarting(false);
+                return;
+            }
             const response = await fetch(`${API_BASE}/admin/system/restart`, {
                 method: "POST",
                 headers: {

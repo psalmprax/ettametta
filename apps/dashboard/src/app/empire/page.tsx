@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
+import { getAuthToken } from "@/lib/auth_utils";
 import dynamic from "next/dynamic";
 
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
@@ -57,7 +58,11 @@ export default function EmpirePage() {
 
     const fetchSentinel = async () => {
         setIsRefreshing(true);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsRefreshing(false);
+            return;
+        }
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/no-face/sentinel/status`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -85,7 +90,8 @@ export default function EmpirePage() {
         }
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/monetization/empire/clone`, {
                     method: "POST",
                     headers: {
@@ -116,7 +122,8 @@ export default function EmpirePage() {
     };
 
     const handleDeleteAffiliateLink = async (linkId: string) => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback(
             () => fetch(`${API_BASE}/monetization/links/${linkId}`, {
                 method: "DELETE",
@@ -133,7 +140,8 @@ export default function EmpirePage() {
     };
 
     const fetchEmpireMetrics = async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/monetization/empire/metrics`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -147,7 +155,8 @@ export default function EmpirePage() {
     };
 
     const fetchBlueprints = async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback<any[]>(
             () => fetch(`${API_BASE}/monetization/empire/blueprints`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -161,7 +170,8 @@ export default function EmpirePage() {
     };
 
     const fetchAvailableNiches = async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback<string[]>(
             () => fetch(`${API_BASE}/discovery/niches`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -179,7 +189,8 @@ export default function EmpirePage() {
     };
 
     const fetchAffiliateLinks = async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/monetization/links`, {
                 method: "GET",
@@ -196,7 +207,11 @@ export default function EmpirePage() {
     const handleAddAffiliateLink = async () => {
         if (!newLink.product_name || !newLink.link) return;
         setIsAddingLink(true);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsAddingLink(false);
+            return;
+        }
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/monetization/links`, {
                 method: "POST",
@@ -222,7 +237,8 @@ export default function EmpirePage() {
     };
 
     const fetchRevenueReport = async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/monetization/report`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -249,7 +265,8 @@ export default function EmpirePage() {
         setIsGeneratingPromo(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/monetization/promo/generate`, {
                     method: "POST",
                     headers: {
@@ -271,7 +288,11 @@ export default function EmpirePage() {
     const handleAutoMerch = async () => {
         if (!autoMerchTopic) return;
         setIsGeneratingMerch(true);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsGeneratingMerch(false);
+            return;
+        }
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/monetization/auto-merch`, {
                 method: "POST",
@@ -298,7 +319,8 @@ export default function EmpirePage() {
         setIsRecommending(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/monetization/recommend-links`, {
                     method: "POST",
                     headers: {
@@ -323,7 +345,11 @@ export default function EmpirePage() {
 
     const handleShopifySync = async () => {
         setIsSyncingShopify(true);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsSyncingShopify(false);
+            return;
+        }
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/monetization/commerce/sync`, {
                 method: "POST",
@@ -347,7 +373,8 @@ export default function EmpirePage() {
     const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
 
     const fetchNetwork = async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/monetization/empire/network`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -361,7 +388,8 @@ export default function EmpirePage() {
     };
 
     const fetchTimelineEvents = async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback<any[]>(
             () => fetch(`${API_BASE}/monetization/empire/activity`, {
                 headers: { Authorization: `Bearer ${token}` }

@@ -23,6 +23,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
+import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { useNiches } from "@/hooks/useNiches";
 
@@ -71,7 +72,11 @@ export default function CreationPage() {
         if (!topic) return;
         setIsGenerating(true);
         setHookAnalysis(null);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsGenerating(false);
+            return;
+        }
 
         await withRealFallback<ScriptOutput | null>(
             () => fetch(`${API_BASE}/no-face/generate-script`, {
@@ -97,7 +102,11 @@ export default function CreationPage() {
         if (!hookSegment) return;
 
         setIsValidating(true);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsValidating(false);
+            return;
+        }
 
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/no-face/validate-hook`, {
@@ -118,7 +127,11 @@ export default function CreationPage() {
 
     const handleSynthesizeAudio = async (index: number, text: string) => {
         setLoadingSegment(`audio-${index}`);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setLoadingSegment(null);
+            return;
+        }
 
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/no-face/generate-voiceover`, {
@@ -144,7 +157,11 @@ export default function CreationPage() {
 
     const handleGenerateSegmentImage = async (index: number, prompt: string) => {
         setLoadingSegment(`image-${index}`);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setLoadingSegment(null);
+            return;
+        }
 
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/no-face/generate-image`, {
@@ -170,7 +187,11 @@ export default function CreationPage() {
 
     const handleSearchStock = async (index: number, query: string) => {
         setLoadingSegment(`stock-${index}`);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setLoadingSegment(null);
+            return;
+        }
 
         await withRealFallback<any[]>(
             () => fetch(`${API_BASE}/no-face/search-stock?query=${encodeURIComponent(query)}`, {
@@ -192,7 +213,11 @@ export default function CreationPage() {
     const handleGlobalize = async (lang: string) => {
         if (!script) return;
         setIsGenerating(true);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsGenerating(false);
+            return;
+        }
 
         await withRealFallback<ScriptSegment[]>(
             () => fetch(`${API_BASE}/no-face/localize`, {
@@ -249,7 +274,11 @@ export default function CreationPage() {
     const handleLaunchProduction = async () => {
         if (!script) return;
         setIsLaunchingProduction(true);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsLaunchingProduction(false);
+            return;
+        }
 
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/nexus/compose`, {
@@ -284,7 +313,11 @@ export default function CreationPage() {
     const handleLaunchCinema = async () => {
         if (!topic) return;
         setIsCinemaLaunching(true);
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsCinemaLaunching(false);
+            return;
+        }
 
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/nexus/compose`, {

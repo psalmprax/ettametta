@@ -4,7 +4,8 @@ Provides statistical A/B testing with proper significance testing
 """
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from api.utils.database import get_db
 from api.utils.models import ABTestDB
 from api.routes.auth import get_current_user
@@ -115,7 +116,7 @@ def calculate_statistics(
 async def start_ab_test(
     request: ABTestCreate,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Initializes an A/B test for a piece of content with proper statistical setup.
@@ -130,8 +131,8 @@ async def start_ab_test(
         target_metric=request.target_metric,
     )
     db.add(test)
-    db.commit()
-    db.refresh(test)
+    await db.commit()
+    await db.refresh(test)
 
     return {
         "test_id": test.id,
@@ -145,17 +146,16 @@ async def start_ab_test(
 
 @router.get("/test/{test_id}")
 async def get_test_results(
-    test_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_user)
+    test_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Get detailed test results with statistical analysis"""
-    test = (
-        db.query(ABTestDB)
-        .filter(
-            ABTestDB.id == test_id,
-            (ABTestDB.user_id == current_user.id) | (current_user.role == "admin"),
-        )
-        .first()
+    stmt = select(ABTestDB).where(
+        ABTestDB.id == test_id,
+        (ABTestDB.user_id == current_user.id) | (current_user.role == "admin"),
     )
+    result = await db.execute(stmt)
+    test = result.scalar_one_or_none()
+    
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
@@ -248,12 +248,15 @@ def _interpret_effect_size(effect_size: float) -> str:
 
 @router.post("/record/{test_id}/event")
 async def record_variant_event(
-    test_id: str, event: ABTestVariantEvent, db: Session = Depends(get_db)
+    test_id: str, event: ABTestVariantEvent, db: AsyncSession = Depends(get_db)
 ):
     """
     Records a view, click, or conversion event for a specific variant.
     """
-    test = db.query(ABTestDB).filter(ABTestDB.id == test_id).first()
+    stmt = select(ABTestDB).where(ABTestDB.id == test_id)
+    result = await db.execute(stmt)
+    test = result.scalar_one_or_none()
+    
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
@@ -280,25 +283,24 @@ async def record_variant_event(
         else:
             test.variant_b_conversions += 1
 
-    db.commit()
+    await db.commit()
     return {"status": "recorded", "variant": variant, "event_type": event.event_type}
 
 
 @router.post("/test/{test_id}/determine-winner")
 async def determine_winner(
-    test_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_user)
+    test_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """
     Determines and records the winning variant based on proper statistical significance.
     """
-    test = (
-        db.query(ABTestDB)
-        .filter(
-            ABTestDB.id == test_id,
-            (ABTestDB.user_id == current_user.id) | (current_user.role == "admin"),
-        )
-        .first()
+    stmt = select(ABTestDB).where(
+        ABTestDB.id == test_id,
+        (ABTestDB.user_id == current_user.id) | (current_user.role == "admin"),
     )
+    result = await db.execute(stmt)
+    test = result.scalar_one_or_none()
+    
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
@@ -335,7 +337,7 @@ async def determine_winner(
         winner_title = (
             test.variant_a_title if stats.winner == "A" else test.variant_b_title
         )
-        db.commit()
+        await db.commit()
 
         return {
             "status": "winner_determined",
@@ -361,11 +363,14 @@ async def determine_winner(
 
 
 @router.get("/test/{test_id}/recommend-variant")
-async def recommend_variant(test_id: str, db: Session = Depends(get_db)):
+async def recommend_variant(test_id: str, db: AsyncSession = Depends(get_db)):
     """
     Returns which variant should be shown based on statistical analysis.
     """
-    test = db.query(ABTestDB).filter(ABTestDB.id == test_id).first()
+    stmt = select(ABTestDB).where(ABTestDB.id == test_id)
+    result = await db.execute(stmt)
+    test = result.scalar_one_or_none()
+    
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
@@ -411,14 +416,16 @@ async def recommend_variant(test_id: str, db: Session = Depends(get_db)):
 
 @router.get("/tests/active")
 async def get_active_tests(
-    db: Session = Depends(get_db), current_user=Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Get all active A/B tests with statistics"""
-    query = db.query(ABTestDB).filter(ABTestDB.status == "active")
+    stmt = select(ABTestDB).where(ABTestDB.status == "active")
     if current_user.role != "admin":
-        query = query.filter(ABTestDB.user_id == current_user.id)
+        stmt = stmt.where(ABTestDB.user_id == current_user.id)
 
-    tests = query.order_by(ABTestDB.created_at.desc()).all()
+    stmt = stmt.order_by(ABTestDB.created_at.desc())
+    result = await db.execute(stmt)
+    tests = result.scalars().all()
 
     return {
         "active_tests": [
@@ -441,14 +448,16 @@ async def get_active_tests(
 
 @router.get("/tests/completed")
 async def get_completed_tests(
-    db: Session = Depends(get_db), current_user=Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Get all completed A/B tests with winner analysis"""
-    query = db.query(ABTestDB).filter(ABTestDB.status == "completed")
+    stmt = select(ABTestDB).where(ABTestDB.status == "completed")
     if current_user.role != "admin":
-        query = query.filter(ABTestDB.user_id == current_user.id)
+        stmt = stmt.where(ABTestDB.user_id == current_user.id)
 
-    tests = query.order_by(ABTestDB.completed_at.desc()).limit(20).all()
+    stmt = stmt.order_by(ABTestDB.completed_at.desc()).limit(20)
+    result = await db.execute(stmt)
+    tests = result.scalars().all()
 
     return {
         "completed_tests": [
@@ -473,17 +482,20 @@ async def get_completed_tests(
 
 @router.delete("/test/{test_id}")
 async def delete_test(
-    test_id: str, db: Session = Depends(get_db), current_user=Depends(get_current_user)
+    test_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Delete an A/B test (admin only)"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
 
-    test = db.query(ABTestDB).filter(ABTestDB.id == test_id).first()
+    stmt = select(ABTestDB).where(ABTestDB.id == test_id)
+    result = await db.execute(stmt)
+    test = result.scalar_one_or_none()
+    
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
-    db.delete(test)
-    db.commit()
+    await db.delete(test)
+    await db.commit()
 
     return {"status": "deleted", "test_id": test_id}

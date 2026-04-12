@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
+import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import EnvManager from "@/components/admin/EnvManager";
 
@@ -134,7 +135,8 @@ export default function AdminSettingsPage() {
         setIsLoading(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/settings/system`, {
                     headers: {
                         "Authorization": `Bearer ${token}`,
@@ -157,7 +159,8 @@ export default function AdminSettingsPage() {
         setSaveStatus("idle");
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/settings/system`, {
                     method: "POST",
                     headers: {
@@ -189,7 +192,8 @@ export default function AdminSettingsPage() {
     const fetchSecurityStatus = async () => {
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/security/status`, {
                     headers: {
                         "Authorization": `Bearer ${token}`,
@@ -209,7 +213,8 @@ export default function AdminSettingsPage() {
     const fetchSecurityEvents = async () => {
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/security/events`, {
                     headers: {
                         "Authorization": `Bearer ${token}`,
@@ -230,7 +235,8 @@ export default function AdminSettingsPage() {
         setIsScanning(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/security/scan`, {
                     method: "POST",
                     headers: {

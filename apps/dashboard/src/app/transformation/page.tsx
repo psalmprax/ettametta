@@ -30,6 +30,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_BASE } from "@/lib/config";
 import { useNiches } from "@/hooks/useNiches";
 
+import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 
 interface VideoJob {
@@ -74,7 +75,11 @@ function TransformationPageContent() {
         if (e) e.preventDefault();
         if (!newJobUrl) return;
 
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsSubmitting(false);
+            return;
+        }
         setIsSubmitting(true);
         await withRealFallback(
             async () => {
@@ -126,7 +131,8 @@ function TransformationPageContent() {
     const handleToggleFilter = async (id: string) => {
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/settings/filters/${id}/toggle`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` }
@@ -161,7 +167,8 @@ function TransformationPageContent() {
     const handleAbort = async (id: string) => {
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/video/jobs/${id}/abort`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` }
@@ -213,7 +220,7 @@ function TransformationPageContent() {
 
     React.useEffect(() => {
         const fetchData = async () => {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
             if (!token) return;
             const headers = { Authorization: `Bearer ${token}` };
 
@@ -249,7 +256,7 @@ function TransformationPageContent() {
     // Fetch AI insights based on niche
     useEffect(() => {
         const fetchInsight = async () => {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
             if (!token) return;
             await withRealFallback<any>(
                 () => fetch(`${API_BASE}/discovery/insights/${currentNiche}`, {

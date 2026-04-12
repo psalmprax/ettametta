@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
+import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 
 interface MarketData {
@@ -88,7 +89,8 @@ export default function TradingPage() {
         const fetchTrending = async () => {
             await withRealFallback(
                 async () => {
-                    const token = localStorage.getItem("et_token");
+                    const token = getAuthToken();
+                    if (!token) throw new Error("Authentication required");
                     return fetch(`${API_BASE}/trading/crypto/trending`, {
                         headers: { Authorization: `Bearer ${token}` },
                     });
@@ -117,7 +119,8 @@ export default function TradingPage() {
         setAiAnalysis(null);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) throw new Error("Authentication required");
                 return fetch(`${API_BASE}/trading/market/${marketSymbol.toUpperCase()}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
@@ -145,7 +148,8 @@ export default function TradingPage() {
         setIsLookingUpCrypto(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) throw new Error("Authentication required");
                 return fetch(`${API_BASE}/trading/crypto/${cryptoId.toLowerCase()}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
@@ -169,7 +173,8 @@ export default function TradingPage() {
         setIsRunningScreener(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) throw new Error("Authentication required");
                 return fetch(`${API_BASE}/trading/screener`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
@@ -193,7 +198,8 @@ export default function TradingPage() {
         setIsAnalyzing(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) throw new Error("Authentication required");
                 return fetch(`${API_BASE}/trading/analysis/${marketData.symbol}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });

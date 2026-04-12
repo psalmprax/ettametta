@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getAuthToken } from "@/lib/auth_utils";
 import { withRealFallback } from "@/lib/real_first_utils";
 import DashboardLayout from "@/components/layout";
 import {
@@ -125,7 +126,7 @@ export default function CreditsPage() {
     const [copied, setCopied] = useState(false);
 
     const authHeaders = () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
         return { Authorization: `Bearer ${token}` };
     };
 

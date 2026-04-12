@@ -57,6 +57,7 @@ const getPlatformIcon = (platform: string) => {
 };
 
 import { motion, AnimatePresence } from "framer-motion";
+import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 
 const POLL_INTERVAL_MS = 10000;
@@ -106,11 +107,12 @@ export default function PublishingPage() {
         setIsPlatformModalOpen(false);
         setIsRedirecting(platform);
 
-        const lowerPlatform = platform.toLowerCase().replace(" Shorts", "").replace(" Reels", "");
+        const lowerPlatform = platform?.toLowerCase().replace(" Shorts", "").replace(" Reels", "");
         
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) throw new Error("Authentication required");
                 return fetch(`${API_BASE}/publish/auth/${lowerPlatform}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -136,7 +138,11 @@ export default function PublishingPage() {
 
     React.useEffect(() => {
         const fetchData = async () => {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
+            if (!token) {
+                setIsLoading(false);
+                return;
+            }
             const headers = { Authorization: `Bearer ${token}` };
             await Promise.all([
                 withRealFallback<any>(
@@ -179,7 +185,8 @@ export default function PublishingPage() {
     }, []);
 
     const handleSync = async (postId: number) => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/publish/sync/${postId}`, {
                 method: "POST",
@@ -205,7 +212,11 @@ export default function PublishingPage() {
     };
 
     const handleManualDeploy = async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            toast.error("Authentication required");
+            return;
+        }
         if (!selectedJobForDeploy || accounts.length === 0) {
             toast.error("Deployment Guard", {
                 description: "Select a valid asset and linked account node."
@@ -267,7 +278,11 @@ export default function PublishingPage() {
     };
 
     const handleMultiDeploy = async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            toast.error("Authentication required");
+            return;
+        }
         if (!selectedJobForDeploy || accounts.length === 0) {
             toast.error("Deployment Guard", {
                 description: "Select a valid asset and linked account node."
@@ -330,7 +345,8 @@ export default function PublishingPage() {
     };
 
     const handleRetry = async (contentId: number) => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         setRetryingPostId(contentId);
         
         await withRealFallback<any>(
@@ -359,7 +375,8 @@ export default function PublishingPage() {
     };
 
     const handleDisconnect = async (accountId: number) => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         setIsDisconnecting(true);
         await withRealFallback(
             async () => {
@@ -389,7 +406,8 @@ export default function PublishingPage() {
     };
 
     const handleGenerateSeo = async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         setIsGeneratingSeo(true);
         await withRealFallback(
             async () => {
@@ -695,7 +713,7 @@ export default function PublishingPage() {
                                         onClick={() => {
                                             setIsAccountModalOpen(false);
                                             if (selectedAccountForDetail) {
-                                                window.location.href = `${API_BASE}/publish/auth/${selectedAccountForDetail.platform.toLowerCase()}`;
+                                                window.location.href = `${API_BASE}/publish/auth/${selectedAccountForDetail.platform?.toLowerCase()}`;
                                             }
                                         }}
                                         className="w-full bg-primary text-white font-black py-5 rounded-2xl shadow-lg uppercase text-xs tracking-widest"

@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
+import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 
 const SettingsSchema = z.object({
@@ -167,7 +168,8 @@ export default function SettingsPage() {
         setIsLoading(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 const headers = { Authorization: `Bearer ${token}` };
                 return fetch(`${API_BASE}/settings/`, { headers });
             },
@@ -186,7 +188,8 @@ export default function SettingsPage() {
     const fetchProfile = async () => {
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/auth/me`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -218,7 +221,11 @@ export default function SettingsPage() {
         setIsSaving(true);
         setSaveStatus("idle");
         
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsSaving(false);
+            return;
+        }
         const payload = Object.entries(data).map(([key, value]) => ({
             key,
             value: String(value ?? ""),
@@ -274,7 +281,8 @@ export default function SettingsPage() {
     const fetchSubscription = async () => {
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/billing/subscription`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -290,7 +298,8 @@ export default function SettingsPage() {
         setIsCancelling(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/billing/cancel`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` }
@@ -321,7 +330,8 @@ export default function SettingsPage() {
         setVerifyStatus(prev => ({ ...prev, [platform]: "idle" }));
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/auth/verify-comms?platform=${platform}`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` }
@@ -348,7 +358,8 @@ export default function SettingsPage() {
         setIsVerifyingService(prev => ({ ...prev, [serviceId]: true }));
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/settings/verify/${serviceId}`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` }
@@ -386,7 +397,8 @@ export default function SettingsPage() {
         setPasswordStatus("idle");
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/auth/me/change-password`, {
                     method: "POST",
                     headers: {
@@ -774,7 +786,8 @@ export default function SettingsPage() {
                                                     key={plan.tier}
                                                     onClick={async () => {
                                                         try {
-                                                            const token = localStorage.getItem("et_token");
+                                                            const token = getAuthToken();
+                                                            if (!token) return;
                                                             const res = await fetch(`${API_BASE}/billing/create-checkout-session`, {
                                                                 method: "POST",
                                                                 headers: {
@@ -1170,7 +1183,8 @@ function OpenCLITab() {
     const fetchSessions = async () => {
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/opencli/sessions`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -1197,7 +1211,8 @@ function OpenCLITab() {
         setStatusMsg("");
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/opencli/sessions/connect`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -1224,7 +1239,8 @@ function OpenCLITab() {
     const disconnectPlatform = async (platform: string) => {
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/opencli/sessions/disconnect/${platform}`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` }
@@ -1246,7 +1262,8 @@ function OpenCLITab() {
     const verifyPlatform = async (platform: string) => {
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) return;
                 return fetch(`${API_BASE}/opencli/sessions/verify/${platform}`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` }
