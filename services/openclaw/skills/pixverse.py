@@ -4,6 +4,7 @@ import os
 from playwright.async_api import async_playwright, Browser, Page
 from typing import Optional, Dict, Any
 import uuid
+from api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,31 @@ class PixVerseSkill:
 
         # Create context with fingerprint randomization
         self.context = await self.browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+            viewport={"width": 1920, "height": 1080},
+        )
+        self.page = await self.context.new_page()
+        self.page.set_default_timeout(60000)
+
+        # Auto-login if credentials are available
+        if settings.PIXVERSE_EMAIL and settings.PIXVERSE_PASSWORD:
+            await self.login()
+
+    async def login(self):
+        """Login to PixVerse if credentials available"""
+        try:
+            await self.page.goto(f"{self.base_url}/login")
+            await self.page.wait_for_load_state("networkidle")
+
+            # Fill login form
+            await self.page.fill('input[type="email"]', settings.PIXVERSE_EMAIL)
+            await self.page.fill('input[type="password"]', settings.PIXVERSE_PASSWORD)
+            await self.page.click('button[type="submit"]')
+            await self.page.wait_for_load_state("networkidle")
+
+            logger.info("[PixVerse] Logged in successfully")
+        except Exception as e:
+            logger.warning(f"[PixVerse] Login failed (proceeding without login): {e}")
             viewport={"width": 1920, "height": 1080},
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         )
