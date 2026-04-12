@@ -14,25 +14,27 @@ logger = logging.getLogger(__name__)
 
 # Bridge to use async code in synchronous Celery worker
 def run_async(coro):
-    """Run async coroutine in sync context (Celery worker)"""
+    """Run async coroutine in sync context (Celery worker)
+    
+    Creates a fresh event loop each time to avoid loop reuse issues.
+    """
+    # Always create a fresh event loop to avoid "cannot reuse already awaited coroutine"
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
-        # Try to get running loop - if none, create new one
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            # No running loop - we can safely use asyncio.run()
-            return asyncio.run(coro)
-
-        # There's a running loop - use ensure_future
-        return asyncio.get_event_loop().run_until_complete(coro)
-    except Exception as e:
-        # Last resort: create new event loop
-        try:
+        result = loop.run_until_complete(coro)
+        return result
+    except RuntimeError as e:
+        if "Event loop is closed" in str(e) or "already awaited" in str(e):
+            # Loop was closed or coroutine already awaited - try with fresh loop
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            return loop.run_until_complete(coro)
-        finally:
-            loop.close()
+            result = loop.run_until_complete(coro)
+            return result
+        raise
+    finally:
+        loop.close()
+        asyncio.set_event_loop(None)
             asyncio.set_event_loop(None)
 
 
