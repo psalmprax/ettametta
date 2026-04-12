@@ -5,6 +5,7 @@ from api.utils.models import AuditLogDB
 from api.utils.database import async_session_factory
 import json
 
+
 class AuditService:
     @staticmethod
     async def log(
@@ -15,7 +16,7 @@ class AuditService:
         details: Optional[dict] = None,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
-        db: Optional[AsyncSession] = None
+        db: Optional[AsyncSession] = None,
     ):
         """
         Record an audit log entry.
@@ -29,7 +30,7 @@ class AuditService:
             details=details,
             ip_address=ip_address,
             user_agent=user_agent,
-            created_at=datetime.now(timezone.utc)
+            created_at=datetime.utcnow(),
         )
 
         if db:
@@ -41,14 +42,17 @@ class AuditService:
                 await session.commit()
 
     @staticmethod
-    async def log_provider_success(provider: str, metadata: dict, db: Optional[AsyncSession] = None):
+    async def log_provider_success(
+        provider: str, metadata: dict, db: Optional[AsyncSession] = None
+    ):
         """Log successful provider metadata fetch"""
         await AuditService.log(
             action="PROVIDER_FETCH_SUCCESS",
             resource_type="AI_PROVIDER",
             resource_id=provider,
             details=metadata,
-            db=db
+            db=db,
         )
+
 
 audit_service = AuditService()
