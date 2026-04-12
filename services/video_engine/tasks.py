@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Bridge to use async code in synchronous Celery worker
 def run_async(coro):
     """Run async coroutine in sync context (Celery worker)
-    
+
     Creates a fresh event loop each time to avoid loop reuse issues.
     """
     # Always create a fresh event loop to avoid "cannot reuse already awaited coroutine"
@@ -35,7 +35,6 @@ def run_async(coro):
     finally:
         loop.close()
         asyncio.set_event_loop(None)
-            asyncio.set_event_loop(None)
 
 
 def cleanup_local_files(*paths):
