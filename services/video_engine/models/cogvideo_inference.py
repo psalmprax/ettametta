@@ -3,6 +3,11 @@ CogVideoX Inference Module
 
 CogVideoX is an open-source text-to-video model from THUDM.
 Enforces a strict 480p resolution maximum.
+
+Quantization Options:
+- "fp16": Half-precision (default)
+- "int8": INT8 quantization - ~50% less VRAM
+- "int4": INT4 quantization - ~75% less VRAM
 """
 
 import torch
@@ -16,20 +21,24 @@ from api.config import settings
 _cogvideo_pipe = None
 _cogvideo_i2v_pipe = None
 
+# Quantization mode
+QUANTIZATION_MODE = os.getenv("COGVIDEO_QUANTIZATION", "fp16").lower()
 
-def load_cogvideo_model(model_size: str = "2b"):
-    """Load CogVideoX model (lazy loading)"""
+
+def load_cogvideo_model(model_size: str = "2b", quantization: str = None):
+    """Load CogVideoX model with optional quantization"""
     global _cogvideo_pipe
 
     if _cogvideo_pipe is not None:
         return _cogvideo_pipe
 
+    quant_mode = quantization or QUANTIZATION_MODE
     try:
         from diffusers import CogVideoXPipeline
 
         # Default to 2b for memory efficiency at 480p
         model_id = "THUDM/CogVideoX-2b" if model_size == "2b" else "THUDM/CogVideoX-5b"
-        print(f"📥 Loading CogVideoX {model_size}...", flush=True)
+        print(f"📥 Loading CogVideoX {model_size} ({quant_mode})...", flush=True)
 
         _cogvideo_pipe = CogVideoXPipeline.from_pretrained(
             model_id, torch_dtype=torch.float16
@@ -38,7 +47,19 @@ def load_cogvideo_model(model_size: str = "2b"):
         _cogvideo_pipe.enable_model_cpu_offload()
         _cogvideo_pipe.vae.enable_tiling()
 
-        print(f"✅ CogVideoX {model_size} loaded successfully", flush=True)
+        # Apply quantization if requested
+        if quant_mode in ("int8", "int4"):
+            try:
+                from torchao.quantization import quantize_
+                from torchao.quantization.quant_api import Int8DynActInt8WeightQuantizer
+
+                quantize_(_cogvideo_pipe, Int8DynActInt8WeightQuantizer())
+                print(f"🔢 CogVideoX loaded with {quant_mode.upper()}", flush=True)
+            except ImportError:
+                print("⚠️ torchao not installed, using FP16", flush=True)
+        else:
+            print(f"✅ CogVideoX {model_size} loaded successfully", flush=True)
+
         return _cogvideo_pipe
     except Exception as e:
         print(f"⚠️ CogVideoX local not available: {e}", flush=True)
