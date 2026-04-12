@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from api.utils.database import get_db
 from api.utils.models import PersonaDB
 from api.routes.auth import get_current_user
@@ -28,7 +29,7 @@ async def create_persona(
     image: UploadFile = File(None),
     audio: UploadFile = File(None),
     current_user = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Registers a new Persona for deepfake generation.
@@ -65,17 +66,19 @@ async def create_persona(
         persona.voice_clone_id = f"xtts_clone_{uuid.uuid4().hex[:8]}"
         
     db.add(persona)
-    db.commit()
-    db.refresh(persona)
+    await db.commit()
+    await db.refresh(persona)
     
     return persona
     
 @router.post("/generate")
-async def generate_persona_video(request: PersonaGenerateRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+async def generate_persona_video(request: PersonaGenerateRequest, current_user = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """
     Initiates the deepfake generation pipeline via PersonaService.
     """
-    persona = db.query(PersonaDB).filter(PersonaDB.id == request.persona_id, PersonaDB.user_id == current_user.id).first()
+    stmt = select(PersonaDB).where(PersonaDB.id == request.persona_id, PersonaDB.user_id == current_user.id)
+    result = await db.execute(stmt)
+    persona = result.scalar_one_or_none()
     
     if not persona:
         raise HTTPException(status_code=404, detail="Persona not found")
@@ -91,3 +94,12 @@ async def generate_persona_video(request: PersonaGenerateRequest, current_user =
         return {"status": "success", "video_url": url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@router.get("/list", response_model=List[PersonaResponse])
+async def list_personas(current_user = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """
+    Returns all personas created by the current user.
+    """
+    stmt = select(PersonaDB).where(PersonaDB.user_id == current_user.id)
+    result = await db.execute(stmt)
+    personas = result.scalars().all()
+    return personas

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Form
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from api.utils.database import get_db
-from api.utils.models import SystemSettings, BotCodeDB
+from api.utils.models import SystemSettings, BotCodeDB, UserSetting, VideoFilterDB
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
 from api.utils.notifications import configure_telegram_bot, configure_whatsapp_bot
@@ -35,19 +36,21 @@ def admin_required(current_user: UserDB = Depends(get_current_user)):
 
 @router.get("/")
 async def get_settings(
-    db: Session = Depends(get_db), current_user: UserDB = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
     from api.config import settings as app_settings
     from api.utils.models import UserSetting
 
     # 1. Fetch system-wide defaults from DB
-    db_items = db.query(SystemSettings).all()
+    stmt_system = select(SystemSettings)
+    result_system = await db.execute(stmt_system)
+    db_items = result_system.scalars().all()
     system_dict = {s.key: s.value for s in db_items}
 
     # 2. Fetch user-specific overrides
-    user_items = (
-        db.query(UserSetting).filter(UserSetting.user_id == current_user.id).all()
-    )
+    stmt_user = select(UserSetting).where(UserSetting.user_id == current_user.id)
+    result_user = await db.execute(stmt_user)
+    user_items = result_user.scalars().all()
     user_dict = {s.key: s.value for s in user_items}
 
     # 3. Defaults from app config (hardcoded fallback)
@@ -191,7 +194,7 @@ async def get_settings(
 @router.post("/")
 async def update_setting(
     request: SettingUpdateRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     from api.utils.models import UserSetting
@@ -199,14 +202,12 @@ async def update_setting(
     # Non-admins can only update their own UserSetting overrides
     # Adms can update SystemSettings via /admin routes, but we'll allow them to have personal overrides too if they use this route.
 
-    setting = (
-        db.query(UserSetting)
-        .filter(
-            UserSetting.user_id == current_user.id,
-            UserSetting.key == request.key.lower(),
-        )
-        .first()
+    stmt = select(UserSetting).where(
+        UserSetting.user_id == current_user.id,
+        UserSetting.key == request.key.lower(),
     )
+    result = await db.execute(stmt)
+    setting = result.scalar_one_or_none()
 
     if setting:
         setting.value = request.value
@@ -220,18 +221,20 @@ async def update_setting(
         )
         db.add(setting)
 
-    db.commit()
-    db.refresh(setting)
+    await db.commit()
+    await db.refresh(setting)
     return {"status": "success", "key": setting.key, "scope": "user"}
 
 
 @router.get("/monetization/strategies")
-async def get_monetization_strategies(db: Session = Depends(get_db)):
+async def get_monetization_strategies(db: AsyncSession = Depends(get_db)):
     """Returns all available monetization strategies with their configuration status"""
     from api.config import settings as app_settings
 
     # Get system settings to check configuration status
-    db_items = db.query(SystemSettings).all()
+    stmt = select(SystemSettings)
+    result = await db.execute(stmt)
+    db_items = result.scalars().all()
     system_dict = {s.key: s.value for s in db_items}
 
     def _configured(key: str) -> bool:
@@ -305,41 +308,47 @@ async def get_monetization_strategies(db: Session = Depends(get_db)):
 
 @router.get("/system")
 async def get_system_settings(
-    db: Session = Depends(get_db), _admin=Depends(admin_required)
+    db: AsyncSession = Depends(get_db), _admin=Depends(admin_required)
 ):
     """Get all system-wide settings (admin only)"""
-    db_items = db.query(SystemSettings).all()
+    stmt = select(SystemSettings)
+    result = await db.execute(stmt)
+    db_items = result.scalars().all()
     system_dict = {s.key: s.value for s in db_items}
     return system_dict
 
 
 @router.post("/system")
 async def update_system_settings(
-    settings_dict: dict, db: Session = Depends(get_db), _admin=Depends(admin_required)
+    settings_dict: dict, db: AsyncSession = Depends(get_db), _admin=Depends(admin_required)
 ):
     """Update system-wide settings (admin only)"""
     for key, value in settings_dict.items():
         if key in ("id", "created_at", "updated_at"):
             continue
-        setting = db.query(SystemSettings).filter(SystemSettings.key == key).first()
+        stmt = select(SystemSettings).where(SystemSettings.key == key)
+        result = await db.execute(stmt)
+        setting = result.scalar_one_or_none()
         if setting:
             setting.value = str(value)
         else:
             setting = SystemSettings(key=key, value=str(value), category="system")
             db.add(setting)
 
-    db.commit()
+    await db.commit()
     return {"status": "success", "updated_count": len(settings_dict)}
 
 
 @router.post("/bulk")
 async def bulk_update_settings(
     settings_list: List[SettingUpdateRequest],
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     _admin=Depends(admin_required),
 ):
     for req in settings_list:
-        setting = db.query(SystemSettings).filter(SystemSettings.key == req.key).first()
+        stmt = select(SystemSettings).where(SystemSettings.key == req.key)
+        result = await db.execute(stmt)
+        setting = result.scalar_one_or_none()
         if setting:
             setting.value = req.value
             setting.category = req.category or setting.category
@@ -349,28 +358,26 @@ async def bulk_update_settings(
             )
             db.add(setting)
 
-    db.commit()
+    await db.commit()
     return {"status": "success"}
 
 
 @router.post("/user")
 async def bulk_update_user_settings(
     settings_list: List[SettingUpdateRequest],
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     """Bulk update user-specific settings (non-admin users)"""
     from api.utils.models import UserSetting
 
     for req in settings_list:
-        setting = (
-            db.query(UserSetting)
-            .filter(
-                UserSetting.user_id == current_user.id,
-                UserSetting.key == req.key.lower(),
-            )
-            .first()
+        stmt = select(UserSetting).where(
+            UserSetting.user_id == current_user.id,
+            UserSetting.key == req.key.lower(),
         )
+        result = await db.execute(stmt)
+        setting = result.scalar_one_or_none()
         if setting:
             setting.value = req.value
             setting.category = req.category or setting.category
@@ -383,14 +390,14 @@ async def bulk_update_user_settings(
             )
             db.add(setting)
 
-    db.commit()
+    await db.commit()
     return {"status": "success", "updated_count": len(settings_list)}
 
 
 @router.post("/filters/{filter_id}/toggle")
 async def toggle_filter(
     filter_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     # Handle service-level filters (Sound Design, Motion Graphics)
@@ -400,13 +407,15 @@ async def toggle_filter(
             if filter_id == "sound_design"
             else "ENABLE_MOTION_GRAPHICS"
         )
-        current = db.query(SystemSettings).filter(SystemSettings.key == env_key).first()
+        stmt = select(SystemSettings).where(SystemSettings.key == env_key)
+        result = await db.execute(stmt)
+        current = result.scalar_one_or_none()
         new_value = "false" if current and current.value.lower() == "true" else "true"
         if current:
             current.value = new_value
         else:
             db.add(SystemSettings(key=env_key, value=new_value, category="engine"))
-        db.commit()
+        await db.commit()
 
         return {
             "id": filter_id,
@@ -423,13 +432,15 @@ async def toggle_filter(
     # Handle standard video filter toggles
     from api.utils.models import VideoFilterDB
 
-    filter_item = db.query(VideoFilterDB).filter(VideoFilterDB.id == filter_id).first()
+    stmt = select(VideoFilterDB).where(VideoFilterDB.id == filter_id)
+    result = await db.execute(stmt)
+    filter_item = result.scalar_one_or_none()
     if not filter_item:
         raise HTTPException(status_code=404, detail="Filter not found")
 
     filter_item.enabled = not filter_item.enabled
-    db.commit()
-    db.refresh(filter_item)
+    await db.commit()
+    await db.refresh(filter_item)
     return {
         "id": filter_item.id,
         "name": filter_item.name,
@@ -441,12 +452,14 @@ async def toggle_filter(
 
 @router.get("/filters")
 async def get_available_filters(
-    db: Session = Depends(get_db), current_user: UserDB = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
     from api.utils.models import VideoFilterDB
     from api.config import settings as app_settings
 
-    filters = db.query(VideoFilterDB).all()
+    stmt = select(VideoFilterDB)
+    result = await db.execute(stmt)
+    filters = result.scalars().all()
 
     # Auto-seed defaults if table is empty
     if not filters:
@@ -502,11 +515,15 @@ async def get_available_filters(
         ]
         for df in default_filters:
             db.add(VideoFilterDB(**df))
-        db.commit()
-        filters = db.query(VideoFilterDB).all()
+        await db.commit()
+        stmt = select(VideoFilterDB)
+        result = await db.execute(stmt)
+        filters = result.scalars().all()
 
     # Include Sound Design and Motion Graphics as virtual system filters
-    db_items = db.query(SystemSettings).all()
+    stmt_sys = select(SystemSettings)
+    result_hash = await db.execute(stmt_sys)
+    db_items = result_hash.scalars().all()
     system_dict = {s.key: s.value for s in db_items}
 
     sound_design_enabled = (
@@ -553,7 +570,7 @@ async def get_available_filters(
 @router.post("/verify/{service_id}")
 async def verify_service(
     service_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     """
@@ -587,11 +604,11 @@ async def verify_service(
     keys = service_map[service_id]
     settings = {}
     for key in keys:
-        s = (
-            db.query(UserSetting)
-            .filter(UserSetting.user_id == current_user.id, UserSetting.key == key)
-            .first()
+        stmt = select(UserSetting).where(
+            UserSetting.user_id == current_user.id, UserSetting.key == key
         )
+        result = await db.execute(stmt)
+        s = result.scalar_one_or_none()
         settings[key] = s.value if s else None
 
     # Perform validation based on service type
@@ -824,30 +841,28 @@ async def verify_service(
 
 
 @router.post("/webhooks/telegram")
-async def telegram_webhook(update: dict, db: Session = Depends(get_db)):
+async def telegram_webhook(update: dict, db: AsyncSession = Depends(get_db)):
     """Handle Telegram bot webhook for configuration"""
     try:
         if "message" in update:
             chat_id = str(update["message"]["chat"]["id"])
             text = update["message"].get("text", "").strip()
             if text:
-                bot_code = (
-                    db.query(BotCodeDB)
-                    .filter(
-                        BotCodeDB.code == text,
-                        BotCodeDB.platform == "telegram",
-                        BotCodeDB.used == False,
-                    )
-                    .first()
+                stmt = select(BotCodeDB).where(
+                    BotCodeDB.code == text,
+                    BotCodeDB.platform == "telegram",
+                    BotCodeDB.used == False,
                 )
+                result = await db.execute(stmt)
+                bot_code = result.scalar_one_or_none()
                 if bot_code:
-                    user = (
-                        db.query(UserDB).filter(UserDB.id == bot_code.user_id).first()
-                    )
+                    stmt_user = select(UserDB).where(UserDB.id == bot_code.user_id)
+                    result_user = await db.execute(stmt_user)
+                    user = result_user.scalar_one_or_none()
                     if user:
                         user.telegram_chat_id = chat_id
                         bot_code.used = True
-                        db.commit()
+                        await db.commit()
                         await configure_telegram_bot(user.id, chat_id)
                         return {"status": "configured"}
         return {"status": "ignored"}
@@ -857,27 +872,27 @@ async def telegram_webhook(update: dict, db: Session = Depends(get_db)):
 
 @router.post("/webhooks/whatsapp")
 async def whatsapp_webhook(
-    Body: str = Form(...), From: str = Form(...), db: Session = Depends(get_db)
+    Body: str = Form(...), From: str = Form(...), db: AsyncSession = Depends(get_db)
 ):
     """Handle WhatsApp webhook for configuration"""
     try:
         body = Body.strip()
         from_number = From
-        bot_code = (
-            db.query(BotCodeDB)
-            .filter(
-                BotCodeDB.code == body,
-                BotCodeDB.platform == "whatsapp",
-                BotCodeDB.used == False,
-            )
-            .first()
+        stmt = select(BotCodeDB).where(
+            BotCodeDB.code == body,
+            BotCodeDB.platform == "whatsapp",
+            BotCodeDB.used == False,
         )
+        result = await db.execute(stmt)
+        bot_code = result.scalar_one_or_none()
         if bot_code:
-            user = db.query(UserDB).filter(UserDB.id == bot_code.user_id).first()
+            stmt_user = select(UserDB).where(UserDB.id == bot_code.user_id)
+            result_user = await db.execute(stmt_user)
+            user = result_user.scalar_one_or_none()
             if user:
                 user.whatsapp_number = from_number
                 bot_code.used = True
-                db.commit()
+                await db.commit()
                 await configure_whatsapp_bot(user.id, from_number)
                 return {"status": "configured"}
         return {"status": "ignored"}
@@ -887,7 +902,7 @@ async def whatsapp_webhook(
 
 @router.get("/user-settings")
 async def get_user_settings(
-    db: Session = Depends(get_db), current_user: UserDB = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
     """Retrieve user-specific settings including notifications and API integrations"""
     return {
@@ -901,14 +916,14 @@ async def get_user_settings(
 @router.put("/user-settings")
 async def update_user_settings(
     request: UserSettingsUpdate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     """Update user-specific settings including notifications and API integrations"""
     for field, value in request.dict(exclude_unset=True).items():
         setattr(current_user, field, value)
-    db.commit()
-    db.refresh(current_user)
+    await db.commit()
+    await db.refresh(current_user)
 
     # Trigger bot flows
     if request.telegram_chat_id:
@@ -922,7 +937,7 @@ async def update_user_settings(
 @router.post("/generate-bot-code")
 async def generate_bot_code(
     platform: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     """Generate a code for bot configuration"""
@@ -931,7 +946,7 @@ async def generate_bot_code(
     code = secrets.token_hex(8)
     bot_code = BotCodeDB(user_id=current_user.id, platform=platform, code=code)
     db.add(bot_code)
-    db.commit()
+    await db.commit()
     return {
         "code": code,
         "platform": platform,

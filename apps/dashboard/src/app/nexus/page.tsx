@@ -36,6 +36,7 @@ import { API_BASE, WS_BASE } from "@/lib/config";
 import { motion, AnimatePresence } from "framer-motion";
 import { NexusNode, NodeType } from "@/components/ui/NexusNode";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ClusterManager } from "@/components/ui/ClusterManager";
@@ -87,7 +88,7 @@ export default function NexusPage() {
     // Fetch initial data
     useEffect(() => {
         const fetchData = async () => {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
             if (!token) return;
             const headers = { Authorization: `Bearer ${token}` };
 
@@ -96,7 +97,7 @@ export default function NexusPage() {
                     () => fetch(`${API_BASE}/auth/me`, { headers }),
                     {
                         fallback: { subscription: "free" },
-                        onSuccess: (data) => setUserTier(data.subscription.toLowerCase())
+                        onSuccess: (data) => setUserTier(data.subscription?.toLowerCase() || "free")
                     }
                 ),
                 withRealFallback<any>(
@@ -156,7 +157,7 @@ export default function NexusPage() {
 
         // Polling for telemetry
         const fetchTelemetry = async () => {
-            const token = localStorage.getItem("et_token");
+            const token = getAuthToken();
             if (!token) return;
             await withRealFallback<any>(
                 () => fetch(`${API_BASE}/nexus/telemetry`, {
@@ -228,7 +229,8 @@ export default function NexusPage() {
         setIsLaunching(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) throw new Error("Authentication required");
                 return fetch(`${API_BASE}/nexus/compose`, {
                     method: "POST",
                     headers: {
@@ -271,7 +273,8 @@ export default function NexusPage() {
 
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) throw new Error("Authentication required");
                 return fetch(`${API_BASE}/agent/chat`, {
                     method: "POST",
                     headers: {
@@ -301,7 +304,8 @@ export default function NexusPage() {
         setIsCreatingPersona(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) throw new Error("Authentication required");
                 return fetch(`${API_BASE}/persona/create`, {
                     method: "POST",
                     headers: {
@@ -335,7 +339,8 @@ export default function NexusPage() {
     };
 
     const handleDeletePersona = async (personaId: string) => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback(
             () => fetch(`${API_BASE}/persona/${personaId}`, {
                 method: "DELETE",
@@ -353,7 +358,8 @@ export default function NexusPage() {
     };
 
     const handleClearHistory = async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         await withRealFallback(
             () => fetch(`${API_BASE}/nexus/jobs`, {
                 method: "DELETE",
@@ -374,7 +380,8 @@ export default function NexusPage() {
         setIsGeneratingVideo(true);
         await withRealFallback(
             async () => {
-                const token = localStorage.getItem("et_token");
+                const token = getAuthToken();
+                if (!token) throw new Error("Authentication required");
                 const body: Record<string, string> = {
                     reference_image_url: createdPersona.reference_image_url,
                     topic: videoTopic,

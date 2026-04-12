@@ -256,6 +256,14 @@ services:
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
     networks:
       - viral_forge
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+    restart: unless-stopped
 
   node-skills:
     image: node:18-alpine

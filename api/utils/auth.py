@@ -51,8 +51,13 @@ async def decode_access_token(token: str):
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             return payload
-        except JWTError:
+        except JWTError as e:
+            print(f"DEBUG: JWT Decode Error for token {token[:10]}... : {str(e)}")
             return None
+        except Exception as e:
+            print(f"DEBUG: Internal Error during decode: {str(e)}")
+            return None
+
     finally:
         await redis_client.close()
 

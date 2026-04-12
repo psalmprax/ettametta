@@ -21,6 +21,7 @@ import { API_BASE } from "@/lib/config";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useCallback } from "react";
+import { getAuthToken } from "@/lib/auth_utils";
 
 export default function AutonomousPage() {
     const [isRunning, setIsRunning] = useState(false);
@@ -34,7 +35,8 @@ export default function AutonomousPage() {
 
     // --- DATA FETCHING ---
     const fetchStatus = useCallback(async () => {
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
 
         // Zero Status
@@ -88,7 +90,11 @@ export default function AutonomousPage() {
     const handleToggle = async () => {
         setIsProcessing(true);
         const action = isRunning ? "stop" : "start";
-        const token = localStorage.getItem("et_token");
+        const token = getAuthToken();
+        if (!token) {
+            setIsProcessing(false);
+            return;
+        }
 
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/zero/${action}`, {

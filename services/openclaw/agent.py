@@ -37,6 +37,7 @@ from skills.notifications import notification_skill
 from skills.workflow import workflow_skill
 from skills.self_healing import self_healing_skill
 from skills.cashclaw import cashclaw_skill
+from skills.pixverse import pixverse_skill
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -116,8 +117,12 @@ class OpenClawAgent:
                     logger.debug(f"[OpenClaw] {provider_name} not available: {e}")
 
         # Hardened: No dummy fallback allowed. System must fail clearly if unconfigured.
-        logger.error("[OpenClaw] No LLM providers available - please check environment variables.")
-        raise RuntimeError("OpenClaw configuration error: No valid LLM providers initialized. Set GROQ_API_KEY or similar.")
+        logger.error(
+            "[OpenClaw] No LLM providers available - please check environment variables."
+        )
+        raise RuntimeError(
+            "OpenClaw configuration error: No valid LLM providers initialized. Set GROQ_API_KEY or similar."
+        )
 
     def _init_groq(self):
         api_key = self._get_api_key("groq")
@@ -477,7 +482,9 @@ class OpenClawAgent:
         Unified LLM calling method that supports multiple providers
         """
         if self.llm_provider == "dummy":
-             raise RuntimeError("LLM not configured. Cannot perform autonomous analysis.")
+            raise RuntimeError(
+                "LLM not configured. Cannot perform autonomous analysis."
+            )
 
         try:
             if self.llm_provider == "groq":
@@ -986,7 +993,10 @@ class OpenClawAgent:
             # 1. Ask LLM for intent (Standard Mode)
             completion = await self._call_llm(
                 [
-                    {"role": "system", "content": f"{self.system_prompt}\n\n[CLOSED-LOOP CONTEXT]: {recent_metrics}"},
+                    {
+                        "role": "system",
+                        "content": f"{self.system_prompt}\n\n[CLOSED-LOOP CONTEXT]: {recent_metrics}",
+                    },
                     {"role": "user", "content": message},
                 ]
             )
@@ -1325,7 +1335,9 @@ class OpenClawAgent:
             if action == "audit":
                 return cashclaw_skill.run_recovery_audit()
             elif action == "optimize":
-                return cashclaw_skill.optimize_monetization(params.get("niche", "general"))
+                return cashclaw_skill.optimize_monetization(
+                    params.get("niche", "general")
+                )
             else:
                 return "⚠️ Unknown CashClaw action."
 
@@ -1336,7 +1348,7 @@ class OpenClawAgent:
         Works as the 'Director' for the Workforce Council.
         """
         logger.info("[OpenClaw] Council Deliberation initiated.")
-        
+
         manager_prompt = (
             "You are the OpenClaw Workforce Council Director (GPT-4o). "
             "Analyze the user request and historical performance metrics. "
@@ -1347,16 +1359,21 @@ class OpenClawAgent:
         # Force high-reasoning model for Council Manager
         original_model = self.model
         original_provider = self.llm_provider
-        
+
         if "openai" in self.clients:
             self.llm_provider = "openai"
             self.model = "gpt-4o"
 
         try:
-            completion = await self._call_llm([
-                {"role": "system", "content": f"{manager_prompt}\n\n[ANALYTICS]: {metrics}"},
-                {"role": "user", "content": message}
-            ])
+            completion = await self._call_llm(
+                [
+                    {
+                        "role": "system",
+                        "content": f"{manager_prompt}\n\n[ANALYTICS]: {metrics}",
+                    },
+                    {"role": "user", "content": message},
+                ]
+            )
             response = completion.get("content", "Council failed to deliberate.")
             return f"🏛️ **Workforce Council Strategy**\n\n{response}"
         finally:
