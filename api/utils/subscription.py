@@ -87,17 +87,38 @@ def engine_access_required(engine: str):
         }
         
         # Engine-to-Tier Mapping
-        engine_map = {
-            "lite4k": SubscriptionTier.PREMIUM,
-            "ltx-video": SubscriptionTier.SOVEREIGN,
-            "hunyuan": SubscriptionTier.SOVEREIGN,
-            "mochi": SubscriptionTier.SOVEREIGN,
+engine_map = {
             "cogvideo": SubscriptionTier.SOVEREIGN,
             "wan": SubscriptionTier.SOVEREIGN,
             "veo3": SubscriptionTier.STUDIO,
             "wan2.2": SubscriptionTier.STUDIO,
-            "runway": SubscriptionTier.STUDIO,
-            "pika": SubscriptionTier.STUDIO
+            
+            # Free tier engines (browser automation)
+            "kling": SubscriptionTier.FREE,
+            "pika": SubscriptionTier.FREE,
+            "runway": SubscriptionTier.FREE,
+            "leonardo": SubscriptionTier.FREE,
+            "frameloop": SubscriptionTier.FREE,
+            "wavespeed": SubscriptionTier.FREE,
+            "ltx": SubscriptionTier.FREE,
+            "videoany": SubscriptionTier.FREE,
+            "vidu": SubscriptionTier.FREE,
+            "hailuo": SubscriptionTier.FREE,
+            "seedance": SubscriptionTier.FREE,
+            "heygen": SubscriptionTier.FREE,
+            "pixverse": SubscriptionTier.FREE,
+            "haiper": SubscriptionTier.FREE,
+            "luma": SubscriptionTier.FREE,
+            "leiapix": SubscriptionTier.FREE,
+            "kaiber": SubscriptionTier.FREE,
+            "fliki": SubscriptionTier.FREE,
+            "invideo": SubscriptionTier.FREE,
+            "morph": SubscriptionTier.FREE,
+            "genmo": SubscriptionTier.FREE,
+            
+            # Mid tier
+            "zsky-wan": SubscriptionTier.FREE,
+            "ltx-video": SubscriptionTier.PREMIUM,
         }
         
         required_tier = engine_map.get(engine, SubscriptionTier.STUDIO)
