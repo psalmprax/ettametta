@@ -1,24 +1,8 @@
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from api.config import settings
-from datetime import datetime
-
-
-# Fix: Ensure PostgreSQL receives naive timestamps
-# Strip timezone info from all datetime values before INSERT/UPDATE
-@event.listens_for(engine, "before_cursor_execute")
-def set_timezone_naive(conn, cursor, statement, parameters, context):
-    if parameters:
-        new_params = []
-        for p in parameters:
-            if isinstance(p, datetime) and p.tzinfo is not None:
-                new_params.append(p.replace(tzinfo=None))
-            else:
-                new_params.append(p)
-        # Would need to replace in parameters tuple - complex, skip for now
-        pass
 
 
 # 1. Sync Database Configuration (for background workers/Celery)
