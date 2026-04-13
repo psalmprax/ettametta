@@ -74,6 +74,90 @@ Each provider returns standardized metadata:
 | **Runway** | 30 | 720p | 10s | Runway ML |
 | **Pika** | 30 | 720p | 8s | Pika Labs |
 
+### OpenCLAW Browser-Based Skills (Free, No API Required)
+
+Viral Forge includes OpenCLAW skills that automate browser UIs for platforms without public APIs. These use Playwright for browser automation.
+
+#### Image Generation Providers
+
+| Provider | Type | Features | Resolution | Use Cases |
+|----------|------|----------|------------|-----------|
+| **Perchance** | Image | negative prompts, seed control, batch generation | 512-1024px | social media, anime, product, artwork |
+| **Leonardo** | Image | image-to-video, controlnet, inpainting | 512-1024px | concept art, game assets, characters |
+
+#### Video Generation Providers
+
+| Provider | Type | Features | Max Duration | Resolution | Use Cases |
+|----------|------|----------|-------------|------------|-----------|
+| **PixVerse** | Video | image-to-video, text-to-video | 10s | 540-1080p | short_form, social_media |
+| **Kling** | Video | text-to-video, image-to-video, extend | 20s | 720-1080p | cinematic, professional |
+| **Haiper** | Video | text-to-video, image-to-video | 8s | 720-1080p | animated_content |
+| **Luma** | Video | image-to-video, camera motion | 10s | 720-1080p | product_shots, cinematic |
+| **Runway** | Video | image-to-video, video-to-video | 10s | 720-1080p | professional, film |
+| **Pika** | Video | text-to-video, image-to-video | 10s | 720-1080p | short_form, quick |
+| **LTX Video** | Video | text-to-video, cartoon | 16s | 512-1024px | cartoon, animation |
+| **VidU** | Video | image-to-video, character consistency | 10s | 720-1080p | characters, portraits |
+| **Hailuo** | Video | text-to-video, image-to-video | 10s | 720-1080p | short_clips, social_media |
+| **Seedance** | Video | text-to-video, image-to-video | 10s | 720-1080p | advertising, promos |
+| **LeiaPix** | Video | image-to-video, motion effects | 8s | 720-1080p | image_to_video, cinemagraphs |
+| **Fliki** | Video | text-to-video, voiceover | 30s | 720-1080p | video_with_audio |
+| **InVideo** | Video | text-to-video, templates | 30s | 720-1080p | social_media, marketing |
+| **Kaiber** | Video | image-to-video, style transfer | 30s | 720-1080p | artistic, music_videos |
+| **Morph** | Video | text-to-video, image-to-video | 10s | 720-1080p | animation, short_clips |
+| **Genmo** | Video | text-to-video, creative | 10s | 512-1024px | creative, artistic |
+| **HeyGen** | Video | avatar, talking_head | 60s | 720-1080p | avatars, presentations |
+| **FrameLoop** | Video | text-to-video, image-to-video | 10s | 720-1080p | motion_design |
+| **WaveSpeed** | Video | text-to-video, image-to-video | 10s | 720-1080p | short_form |
+
+#### Using OpenCLAW Skills
+
+```python
+from services.openclaw.skills import (
+    perchance_skill,
+    get_model_settings,
+    get_recommended_settings,
+    list_providers,
+)
+
+# Get recommended settings for a use case
+settings = get_recommended_settings("pixverse", use_case="short_form")
+# Returns: {"aspect_ratio": "9:16", "resolution": "720"}
+
+# List all providers with a feature
+video_providers = list_providers(type="video", feature="image_to_video")
+
+# Generate image with Perchance
+result = await perchance_skill.generate(
+    prompt="cyberpunk city",
+    generator="default",
+    resolution="portrait_hd",
+    aspect_ratio="9:16",
+    negative_prompt="blurry, deformed",
+    seed=42,
+    batch_size=4
+)
+```
+
+#### API Usage
+
+```bash
+# Auto-detect use case from message
+POST /agent/chat
+{"message": "generate video tiktok using pixverse", "context": {}}
+
+# With custom settings
+POST /agent/chat
+{
+  "message": "generate anime portrait",
+  "context": {
+    "provider": "perchance",
+    "generator": "anime",
+    "resolution": "portrait_hd",
+    "aspect_ratio": "9:16"
+  }
+}
+```
+
 ## Quota Management
 
 ### Daily Limits by Subscription Tier
