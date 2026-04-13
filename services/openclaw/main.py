@@ -1,30 +1,116 @@
 import asyncio
 import logging
-import requests
+import httpx
 from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    ContextTypes,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
 from config import settings
 from agent import OpenClawAgent
 from dispatcher import dispatcher
 import uvicorn
 from fastapi import FastAPI, BackgroundTasks, Request, Response
-from typing import Dict, List
+from typing import Dict, List, Optional
 from pydantic import BaseModel
+import time
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 
 # Logging setup
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 logger = logging.getLogger("OpenClaw")
 
 app = FastAPI()
 agent = OpenClawAgent()
 
+
+class CircuitBreaker:
+    """Simple circuit breaker to prevent cascading failures"""
+
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 60):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+
+    def is_open(self) -> bool:
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+
+
 class BotManager:
     def __init__(self):
         self.apps: Dict[int, any] = {}
         self._starting_ids: set = set()
+        self.api_circuit_breaker = CircuitBreaker()
+        self.http_client: Optional[httpx.AsyncClient] = None
+
+    @property
+    def http(self) -> httpx.AsyncClient:
+        if not self.http_client:
+            self.http_client = httpx.AsyncClient(timeout=10.0, follow_redirects=True)
+        return self.http_client
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError)),
+        reraise=True,
+    )
+    async def _fetch_users_with_bots(self) -> List[Dict]:
+        """Fetch users with async HTTP client and circuit breaking"""
+        if self.api_circuit_breaker.is_open():
+            logger.warning("API circuit breaker is OPEN - skipping user fetch")
+            return []
+
+        try:
+            headers = {}
+            if settings.INTERNAL_API_TOKEN:
+                headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
+
+            response = await self.http.get(
+                f"{settings.API_URL}/api/v1/auth/internal/users-with-bots",
+                headers=headers,
+                timeout=5.0,
+            )
+
+            if response.status_code == 200:
+                self.api_circuit_breaker.record_success()
+                return response.json()
+
+            self.api_circuit_breaker.record_failure()
+            logger.error(f"Failed to fetch users: {response.status_code}")
+            return []
+
+        except Exception as e:
+            self.api_circuit_breaker.record_failure()
+            logger.error(f"Error fetching users: {e}")
+            raise
 
     async def start_bot(self, user_id: int, token: str):
         if user_id in self._starting_ids:
@@ -33,37 +119,38 @@ class BotManager:
 
         if user_id in self.apps:
             await self.stop_bot(user_id)
-        
+
         self._starting_ids.add(user_id)
         try:
             logger.info(f"Starting bot for user {user_id}...")
             application = ApplicationBuilder().token(token).build()
-            
+
             # Use specific user_id in context for the agent
             async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.send_message(
-                    chat_id=update.effective_chat.id, 
-                    text="🦅 OpenClaw Online. Your private agent is ready."
+                    chat_id=update.effective_chat.id,
+                    text="🦅 OpenClaw Online. Your private agent is ready.",
                 )
 
             async def msg_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 tg_user_id = update.effective_user.id
                 text = update.message.text
-                
+
                 response = await agent.process_message(tg_user_id, text)
-                
+
                 await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text=response
+                    chat_id=update.effective_chat.id, text=response
                 )
 
-            application.add_handler(CommandHandler('start', start_cmd))
-            application.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), msg_handler))
-            
+            application.add_handler(CommandHandler("start", start_cmd))
+            application.add_handler(
+                MessageHandler(filters.TEXT & (~filters.COMMAND), msg_handler)
+            )
+
             await application.initialize()
             await application.start()
             await application.updater.start_polling()
-            
+
             self.apps[user_id] = application
             logger.info(f"Bot for user {user_id} started successfully.")
         except Exception as e:
@@ -91,39 +178,44 @@ class BotManager:
             if 0 not in self.apps and 0 not in self._starting_ids:
                 logger.info("Initializing Master Bot from system settings...")
                 asyncio.create_task(self.start_bot(0, settings.TELEGRAM_BOT_TOKEN))
-        
+
         # 2. Fetch all users with tokens from API
         max_retries = 5
         for attempt in range(max_retries):
             try:
-                headers = {}
-                if settings.INTERNAL_API_TOKEN:
-                    headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-                
-                response = requests.get(f"{settings.API_URL}/api/v1/auth/internal/users-with-bots", headers=headers, timeout=5)
-                if response.status_code == 200:
-                    users = response.json()
+                users = await self._fetch_users_with_bots()
+                if users:
                     logger.info(f"Auto-starting bots for {len(users)} users...")
                     for user in users:
                         user_id = user.get("id")
                         token = user.get("telegram_token")
                         if user_id and token:
                             # Avoid restarting 0 if it's already managed or starting
-                            if user_id not in self.apps and user_id not in self._starting_ids:
+                            if (
+                                user_id not in self.apps
+                                and user_id not in self._starting_ids
+                            ):
                                 asyncio.create_task(self.start_bot(user_id, token))
                     break
                 else:
-                    logger.error(f"Failed to fetch users (Attempt {attempt+1}/{max_retries}): {response.status_code}")
+                    logger.error(
+                        f"Failed to fetch users (Attempt {attempt + 1}/{max_retries})"
+                    )
             except Exception as e:
-                logger.error(f"Error initializing bots (Attempt {attempt+1}/{max_retries}): {e}")
-            
-            await asyncio.sleep(5) # Wait for API to come online
+                logger.error(
+                    f"Error initializing bots (Attempt {attempt + 1}/{max_retries}): {e}"
+                )
+
+            await asyncio.sleep(5)  # Wait for API to come online
+
 
 bot_manager = BotManager()
+
 
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "openclaw", "active_bots": len(bot_manager.apps)}
+
 
 @app.post("/refresh-bot/{user_id}")
 async def refresh_bot(user_id: int, background_tasks: BackgroundTasks):
@@ -131,19 +223,34 @@ async def refresh_bot(user_id: int, background_tasks: BackgroundTasks):
     try:
         # Internal call to get user info (we'll need to make sure this returns the token)
         # Note: In production, this should be internal-only and secure
-        response = requests.get(f"{settings.API_URL}/api/v1/auth/verify-telegram-internal/{user_id}")
+        headers = {}
+        if settings.INTERNAL_API_TOKEN:
+            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
+
+        response = await bot_manager.http.get(
+            f"{settings.API_URL}/api/v1/auth/verify-telegram-internal/{user_id}",
+            headers=headers,
+            timeout=5.0,
+        )
         if response.status_code == 200:
             user_data = response.json()
             token = user_data.get("telegram_token")
             if token:
                 background_tasks.add_task(bot_manager.start_bot, user_id, token)
-                return {"status": "success", "message": f"Refreshing bot for user {user_id}"}
+                return {
+                    "status": "success",
+                    "message": f"Refreshing bot for user {user_id}",
+                }
             else:
                 background_tasks.add_task(bot_manager.stop_bot, user_id)
-                return {"status": "success", "message": f"Stopping bot for user {user_id} (no token)"}
+                return {
+                    "status": "success",
+                    "message": f"Stopping bot for user {user_id} (no token)",
+                }
         return {"status": "error", "message": "User not found or API error"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
 
 @app.post("/webhook/whatsapp")
 async def whatsapp_webhook(request: Request):
@@ -153,8 +260,8 @@ async def whatsapp_webhook(request: Request):
     try:
         # Twilio sends data as form-urlencoded
         form_data = await request.form()
-        incoming_msg = form_data.get('Body', '')
-        sender_id = form_data.get('From', '') # Format: "whatsapp:+1234567890"
+        incoming_msg = form_data.get("Body", "")
+        sender_id = form_data.get("From", "")  # Format: "whatsapp:+1234567890"
 
         logger.info(f"Incoming WhatsApp from {sender_id}: {incoming_msg}")
 
@@ -168,7 +275,7 @@ async def whatsapp_webhook(request: Request):
         <Response>
             <Message>{response_text}</Message>
         </Response>"""
-        
+
         return Response(content=twiml, media_type="application/xml")
 
     except Exception as e:
@@ -180,13 +287,17 @@ async def whatsapp_webhook(request: Request):
         </Response>"""
         return Response(content=twiml, media_type="application/xml")
 
+
 class BroadcastRequest(BaseModel):
     user_ids: List[str]
     message: str
     platform_hint: str = None
 
+
 @app.post("/broadcast")
-async def broadcast_message(request: BroadcastRequest, background_tasks: BackgroundTasks):
+async def broadcast_message(
+    request: BroadcastRequest, background_tasks: BackgroundTasks
+):
     """
     Triggers an outbound message to specific users via the MessageDispatcher.
     """
@@ -195,17 +306,27 @@ async def broadcast_message(request: BroadcastRequest, background_tasks: Backgro
         for uid in request.user_ids:
             # We fire these off in the background to avoid blocking the API response
             # In a heavy environment, we'd use Celery for this.
-            background_tasks.add_task(dispatcher.broadcast_to_user, uid, request.message, request.platform_hint)
+            background_tasks.add_task(
+                dispatcher.broadcast_to_user,
+                uid,
+                request.message,
+                request.platform_hint,
+            )
             success_count += 1
-            
-        return {"status": "success", "message": f"Broadcast queued for {success_count} users."}
+
+        return {
+            "status": "success",
+            "message": f"Broadcast queued for {success_count} users.",
+        }
     except Exception as e:
         logger.error(f"Broadcast Error: {e}")
         return {"status": "error", "message": str(e)}
+
 
 @app.on_event("startup")
 async def startup_event():
     asyncio.create_task(bot_manager.init_bots())
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=settings.PORT)

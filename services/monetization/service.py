@@ -1,17 +1,55 @@
 import logging
 import json
+import time
 from typing import List, Dict, Any, Optional
 from groq import AsyncGroq
 from api.config import settings
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 
 from .orchestrator import base_monetization_orchestrator
 
 
+class CircuitBreaker:
+    """Simple circuit breaker to prevent cascading failures"""
+
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+
+    def is_open(self) -> bool:
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+
+
 class MonetizationEngine:
     def __init__(self):
-        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+        self.logger = logging.getLogger("MonetizationEngine")
+        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY, timeout=15.0)
         self.orchestrator = base_monetization_orchestrator
         self.model = "llama-3.3-70b-versatile"
+        self.groq_circuit_breaker = CircuitBreaker()
 
     async def recommend_products(
         self, niche: str, script_text: str
@@ -21,11 +59,43 @@ class MonetizationEngine:
         """
         return await self.orchestrator.get_monetization_assets(niche)
 
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=1, min=1, max=5),
+        retry=retry_if_exception_type(
+            (TimeoutError, ConnectionError, json.JSONDecodeError)
+        ),
+        reraise=False,
+    )
+    async def _call_groq(self, prompt: str, **kwargs) -> Optional[str]:
+        """Call Groq API with circuit breaking and retries"""
+        if self.groq_circuit_breaker.is_open():
+            self.logger.warning("Groq API circuit breaker is OPEN - using fallback")
+            return None
+
+        if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
+            return None
+
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=30.0,
+                **kwargs,
+            )
+            self.groq_circuit_breaker.record_success()
+            return response.choices[0].message.content
+        except Exception as e:
+            self.groq_circuit_breaker.record_failure()
+            self.logger.warning(f"Groq API call failed: {e}")
+            return None
+
     async def match_viral_to_product(
         self, niche: str, viral_title: str
     ) -> Optional[Dict[str, Any]]:
         """
         Matches a specific viral trend to the most relevant asset from the active strategy.
+        Production-grade with circuit breaking and retries.
         """
         assets = await self.orchestrator.get_monetization_assets(niche)
         if not assets:
@@ -44,19 +114,21 @@ class MonetizationEngine:
         """
 
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
+            content = await self._call_groq(
+                prompt, response_format={"type": "json_object"}
             )
-            content = response.choices[0].message.content
-            if content:
-                data = json.loads(content)
-                aid = data.get("asset_id")
-                return next((p for p in assets if p["id"] == aid), assets[0])
-            return assets[0] if assets else None
+
+            if not content:
+                self.logger.warning(
+                    "Groq call failed, returning first asset as fallback"
+                )
+                return assets[0] if assets else None
+
+            data = json.loads(content)
+            aid = data.get("asset_id")
+            return next((p for p in assets if p["id"] == aid), assets[0])
         except Exception as e:
-            logging.error(f"[Monetization] Asset matching failed: {e}")
+            self.logger.error(f"[Monetization] Asset matching failed: {e}")
             return assets[0] if assets else None
 
     async def auto_insert_links(
@@ -102,6 +174,7 @@ class MonetizationEngine:
     ) -> Dict[str, Any]:
         """
         Uses AI to plan where and how to insert affiliate links in video content.
+        Production-grade with retries and circuit breaking.
         """
         asset_text = "\n".join(
             [f"- {a['name']}: {a['cta_text']} -> {a['link']}" for a in assets]
@@ -135,17 +208,16 @@ class MonetizationEngine:
         """
 
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
+            content = await self._call_groq(
+                prompt, response_format={"type": "json_object"}
             )
-            content = response.choices[0].message.content
-            if content:
-                return json.loads(content)
-            return {"insertions": []}
+
+            if not content:
+                return {"insertions": []}
+
+            return json.loads(content)
         except Exception as e:
-            logging.error(f"[Monetization] Insertion planning failed: {e}")
+            self.logger.error(f"[Monetization] Insertion planning failed: {e}")
             return {"insertions": []}
 
     async def process_video_with_links(

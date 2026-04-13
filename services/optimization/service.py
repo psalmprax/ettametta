@@ -8,19 +8,122 @@ import json
 import logging
 import random
 import asyncio
-from typing import Dict, Any, List
+import time
+import redis
+from typing import Dict, Any, List, Optional
 from sqlalchemy import select
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 from services.monetization.auto_merch import base_auto_merch_service
 
 
+class CircuitBreaker:
+    """Simple circuit breaker to prevent cascading failures"""
+
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 60):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+
+    def is_open(self) -> bool:
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+
+
 class OptimizationService:
+    def __init__(self):
+        self.logger = logging.getLogger("OptimizationService")
+        self.groq_circuit_breaker = CircuitBreaker(
+            failure_threshold=3, recovery_timeout=120
+        )
+        self._redis_client = None
+
+    @property
+    def redis(self):
+        if not self._redis_client:
+            self._redis_client = redis.Redis.from_url(
+                settings.REDIS_URL, decode_responses=True
+            )
+        return self._redis_client
+
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=1, min=1, max=5),
+        retry=retry_if_exception_type(
+            (TimeoutError, ConnectionError, json.JSONDecodeError)
+        ),
+        reraise=False,
+    )
+    async def _call_groq(self, prompt: str, max_tokens: int = 1000) -> Optional[str]:
+        """Call Groq API with circuit breaking and retries"""
+        if self.groq_circuit_breaker.is_open():
+            self.logger.warning("Groq API circuit breaker is OPEN - using fallback")
+            return None
+
+        if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
+            return None
+
+        try:
+            from groq import AsyncGroq
+
+            client = AsyncGroq(api_key=settings.GROQ_API_KEY, timeout=15.0)
+
+            response = await client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=max_tokens,
+                timeout=30.0,
+            )
+
+            self.groq_circuit_breaker.record_success()
+            return response.choices[0].message.content
+        except Exception as e:
+            self.groq_circuit_breaker.record_failure()
+            self.logger.warning(f"Groq API call failed: {e}")
+            return None
+
     async def generate_viral_package(
         self, content_id: str, niche: str, platform: str
     ) -> PostMetadata:
         """
         Uses shared AIWorker to generate SEO-optimized title, description, and hashtags.
         Automatically injects relevant affiliate links and CTAs if available.
+        Production-grade with caching, circuit breaking, and retries.
         """
+        # Check cache first
+        cache_key = f"optimization:viral_package:{content_id}:{niche}:{platform}"
+        try:
+            cached = self.redis.get(cache_key)
+            if cached:
+                self.logger.info(
+                    f"[Optimization] Serving cached viral package for {content_id}"
+                )
+                data = json.loads(cached)
+                return PostMetadata(**data)
+        except Exception as e:
+            self.logger.warning(f"[Optimization] Cache read failed: {e}")
+
         affiliate_info = ""
         commerce_info = ""
         aggression = 100  # Default
@@ -28,17 +131,21 @@ class OptimizationService:
         try:
             async with async_session_factory() as db:
                 # 1. Check Monetization Settings
-                agg_stmt = select(SystemSettings).where(SystemSettings.key == "monetization_aggression")
+                agg_stmt = select(SystemSettings).where(
+                    SystemSettings.key == "monetization_aggression"
+                )
                 agg_result = await db.execute(agg_stmt)
                 agg_setting = agg_result.scalar_one_or_none()
-                
+
                 if agg_setting:
                     aggression = int(agg_setting.value)
 
-                strategy_stmt = select(SystemSettings).where(SystemSettings.key == "active_monetization_strategy")
+                strategy_stmt = select(SystemSettings).where(
+                    SystemSettings.key == "active_monetization_strategy"
+                )
                 strategy_result = await db.execute(strategy_stmt)
                 strategy_setting = strategy_result.scalar_one_or_none()
-                
+
                 active_strategy = (
                     strategy_setting.value if strategy_setting else "affiliate"
                 )
@@ -58,21 +165,29 @@ class OptimizationService:
                             )
 
                             strategy = CommerceStrategy()
-                            commerce_cta = await strategy.generate_cta(niche, content_id)
+                            commerce_cta = await strategy.generate_cta(
+                                niche, content_id
+                            )
                             commerce_info = f"\n- MONETIZATION CTA: {commerce_cta}"
 
                     elif active_strategy == "affiliate":
-                        aff_stmt = select(AffiliateLinkDB).where(AffiliateLinkDB.niche == niche).order_by(AffiliateLinkDB.created_at.desc())
+                        aff_stmt = (
+                            select(AffiliateLinkDB)
+                            .where(AffiliateLinkDB.niche == niche)
+                            .order_by(AffiliateLinkDB.created_at.desc())
+                        )
                         aff_result = await db.execute(aff_stmt)
                         aff_product = aff_result.scalar_one_or_none()
-                        
+
                         if aff_product:
                             from services.monetization.strategies.affiliate import (
                                 AffiliateStrategy,
                             )
 
                             strategy = AffiliateStrategy()
-                            affiliate_cta = await strategy.generate_cta(niche, content_id)
+                            affiliate_cta = await strategy.generate_cta(
+                                niche, content_id
+                            )
                             affiliate_info = f"\n- MONETIZATION CTA: {affiliate_cta}"
 
                     # 3. Monetization Arbitrage (Reverse Strategy)
@@ -80,22 +195,30 @@ class OptimizationService:
                     if aggression > 50:  # Only for aggressive growth accounts
                         # Check viral potential from discovery engagement score
                         try:
-                            from services.discovery.service import base_discovery_service
+                            from services.discovery.service import (
+                                base_discovery_service,
+                            )
 
-                            recent_content = await base_discovery_service.discover_niche(
-                                niche, platform
+                            recent_content = (
+                                await base_discovery_service.discover_niche(
+                                    niche, platform
+                                )
                             )
                             if recent_content and any(
                                 c.engagement_rate > 0.7 for c in recent_content
                             ):
                                 arbitrage_suggestion = (
-                                    await base_auto_merch_service.trigger_auto_merch(niche)
+                                    await base_auto_merch_service.trigger_auto_merch(
+                                        niche
+                                    )
                                 )
                                 commerce_info += (
                                     f"\n- ARBITRAGE SUGGESTION: {arbitrage_suggestion}"
                                 )
-                        except Exception:
-                            pass  # Discovery unavailable, skip arbitrage
+                        except Exception as e:
+                            self.logger.debug(
+                                f"Discovery unavailable, skipping arbitrage: {e}"
+                            )
 
             # Fallback if no real key is configured
             if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
@@ -114,10 +237,52 @@ class OptimizationService:
             - cta: A strong, urgent call to action
             """
 
-            response_content = await ai_worker.analyze_viral_pattern(prompt)
+            response_content = await self._call_groq(prompt)
 
-            if "Error" in response_content:
+            if not response_content:
+                # Fallback to AIWorker if Groq failed
+                response_content = await ai_worker.analyze_viral_pattern(prompt)
+
+            if "Error" in response_content or not response_content:
                 return self._get_fallback_package(niche, platform)
+
+            try:
+                # Attempt to parse JSON if model returned it
+                if "{" in response_content:
+                    start = response_content.find("{")
+                    end = response_content.rfind("}") + 1
+                    data = json.loads(response_content[start:end])
+                else:
+                    raise ValueError("No JSON found in response")
+
+            except (json.JSONDecodeError, ValueError):
+                # Fallback to simple parsing or just use defaults
+                self.logger.warning(
+                    f"Failed to parse optimization response: {response_content[:100]}..."
+                )
+                return self._get_fallback_package(niche, platform)
+
+            result = PostMetadata(
+                title=data.get("title", f"Secret of {niche} in 2026"),
+                description=data.get(
+                    "description", f"Uncovering the reality of {niche}."
+                ),
+                hashtags=data.get("hashtags", ["Viral", niche.replace(" ", "")]),
+                cta=data.get("cta", "Follow for more!"),
+                best_posting_time="Optimal Time Identified",
+                platform=platform,
+            )
+
+            # Cache result for 1 hour
+            try:
+                self.redis.setex(cache_key, 3600, result.json())
+            except Exception as e:
+                self.logger.warning(f"Failed to cache optimization result: {e}")
+
+            return result
+        except Exception as e:
+            self.logger.error(f"Optimization Job Error: {e}")
+            return self._get_fallback_package(niche, platform)
 
             try:
                 # Attempt to parse JSON if model returned it
@@ -153,7 +318,7 @@ class OptimizationService:
             description += f" \n\n{product.cta_text}: {product.link}"
 
         return PostMetadata(
-            title=title,
+            title=f"Secret of {niche} in 2026",
             description=description,
             hashtags=[niche.replace(" ", "")],
             cta="Subscribe for more!",
@@ -172,19 +337,14 @@ class OptimizationService:
         """
         Complete SEO optimization using AI for viral content.
         Returns optimized title, description, hashtags, and SEO metadata.
+        Production-grade with retries and circuit breaking.
         """
-        from api.config import settings
-
         # Use Groq for AI-powered SEO optimization
-        if not settings.GROQ_API_KEY:
+        if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
             # Fallback to basic optimization
             return self._basic_seo_optimization(title, description, platform, niche)
 
         try:
-            from groq import Groq
-
-            client = Groq(api_key=settings.GROQ_API_KEY)
-
             # Platform-specific optimization prompts
             platform_prompts = {
                 "youtube": """
@@ -228,29 +388,24 @@ class OptimizationService:
             Format as JSON with keys: title, description, hashtags, seo_score, ctr_prediction, viral_potential, reasoning
             """
 
-            response = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{"role": "user", "content": seo_prompt}],
-                    temperature=0.7,
-                    max_tokens=1000,
-                ),
-            )
+            result_text = await self._call_groq(seo_prompt, max_tokens=1000)
 
-            result_text = response.choices[0].message.content
+            if not result_text:
+                return self._basic_seo_optimization(title, description, platform, niche)
+
             # Parse JSON response
-            import json
-
             try:
                 seo_result = json.loads(result_text)
                 return seo_result
             except json.JSONDecodeError:
                 # Fallback to basic optimization if JSON parsing fails
+                self.logger.warning(
+                    f"Failed to parse SEO response: {result_text[:100]}..."
+                )
                 return self._basic_seo_optimization(title, description, platform, niche)
 
         except Exception as e:
-            logging.warning(f"[SEO] AI optimization failed: {e}")
+            self.logger.warning(f"[SEO] AI optimization failed: {e}")
             return self._basic_seo_optimization(title, description, platform, niche)
 
     def _basic_seo_optimization(
@@ -285,17 +440,12 @@ class OptimizationService:
     ) -> List[str]:
         """
         Generate viral hook suggestions for content creation.
+        Production-grade with retries and circuit breaking.
         """
-        from api.config import settings
-
-        if not settings.GROQ_API_KEY:
+        if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
             return self._basic_hook_suggestions(topic, platform, count)
 
         try:
-            from groq import Groq
-
-            client = Groq(api_key=settings.GROQ_API_KEY)
-
             hooks_prompt = f"""
             Generate {count} viral hook suggestions for {platform} content about: {topic}
 
@@ -309,18 +459,10 @@ class OptimizationService:
             Return as a JSON array of strings.
             """
 
-            response = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{"role": "user", "content": hooks_prompt}],
-                    temperature=0.8,
-                    max_tokens=500,
-                ),
-            )
+            result_text = await self._call_groq(hooks_prompt, max_tokens=500)
 
-            result_text = response.choices[0].message.content
-            import json
+            if not result_text:
+                return self._basic_hook_suggestions(topic, platform, count)
 
             try:
                 hooks = json.loads(result_text)
@@ -329,11 +471,12 @@ class OptimizationService:
                     if isinstance(hooks, list)
                     else self._basic_hook_suggestions(topic, platform, count)
                 )
-            except:
+            except Exception as e:
+                self.logger.warning(f"Failed to parse hooks response: {e}")
                 return self._basic_hook_suggestions(topic, platform, count)
 
         except Exception as e:
-            logging.warning(f"[Hooks] Generation failed: {e}")
+            self.logger.warning(f"[Hooks] Generation failed: {e}")
             return self._basic_hook_suggestions(topic, platform, count)
 
     def _basic_hook_suggestions(

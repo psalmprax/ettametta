@@ -1,32 +1,169 @@
 from .models import ContentPerformance
-from typing import List
+from typing import List, Optional, Dict, Any
+import logging
+import redis
+import json
+import time
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
+from googleapiclient.errors import HttpError as GoogleHttpError
+from api.config import settings
+from services.optimization.auth import token_manager
+
+
+class CircuitBreaker:
+    """Simple circuit breaker to prevent cascading failures"""
+
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 60):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+
+    def is_open(self) -> bool:
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
 
 
 class AnalyticsService:
+    def __init__(self):
+        self.logger = logging.getLogger("AnalyticsService")
+        self.youtube_circuit_breaker = CircuitBreaker()
+        self.groq_circuit_breaker = CircuitBreaker()
+        self._redis_client = None
+
+    @property
+    def redis(self):
+        if not self._redis_client:
+            self._redis_client = redis.Redis.from_url(
+                settings.REDIS_URL, decode_responses=True
+            )
+        return self._redis_client
+
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=1, min=1, max=5),
+        retry=retry_if_exception_type((GoogleHttpError, TimeoutError, ConnectionError)),
+        reraise=False,
+    )
+    async def _fetch_youtube_data(
+        self, post_id: str, token_data: Dict
+    ) -> Dict[str, Any]:
+        """Fetch YouTube data with retries and circuit breaking"""
+        if self.youtube_circuit_breaker.is_open():
+            raise RuntimeError("YouTube API circuit breaker is OPEN")
+
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+        import httplib2
+
+        try:
+            creds = Credentials(
+                token=token_data["access_token"],
+                refresh_token=token_data.get("refresh_token"),
+                token_uri="https://oauth2.googleapis.com/token",
+                client_id=settings.GOOGLE_CLIENT_ID,
+                client_secret=settings.GOOGLE_CLIENT_SECRET,
+            )
+
+            # 1. Fetch Metadata (Basic Stats) from YouTube Data API
+            youtube = build("youtube", "v3", credentials=creds, cache_discovery=False)
+            request = youtube.videos().list(part="statistics", id=post_id)
+
+            # Add timeout
+            http = httplib2.Http(timeout=10)
+            response = request.execute(http=http)
+
+            views = 0
+            likes = 0
+            if response.get("items"):
+                stats = response["items"][0]["statistics"]
+                views = int(stats.get("viewCount", 0))
+                likes = int(stats.get("likeCount", 0))
+
+            # 2. Fetch Advanced Metrics from YouTube Analytics API
+            yt_analytics = build(
+                "youtubeAnalytics", "v2", credentials=creds, cache_discovery=False
+            )
+
+            import datetime
+
+            end_date = datetime.date.today().isoformat()
+            start_date = (
+                datetime.date.today() - datetime.timedelta(days=30)
+            ).isoformat()
+
+            report_request = yt_analytics.reports().query(
+                ids="channel==MINE",
+                startDate=start_date,
+                endDate=end_date,
+                metrics="views,likes,comments,shares,estimatedMinutesWatched,averageViewDuration",
+                dimensions="video",
+                filters=f"video=={post_id}",
+            )
+
+            report_response = report_request.execute(http=http)
+
+            watch_time = 0.0
+            shares = 0
+            comments = 0
+            retention_rate = 0.75
+            avg_duration = 0.0
+
+            if report_response.get("rows"):
+                row = report_response["rows"][0]
+                comments = int(row[3])
+                shares = int(row[4])
+                watch_time = float(row[5]) / 60.0  # Convert minutes to hours
+                avg_duration = float(row[6])
+
+            self.youtube_circuit_breaker.record_success()
+            return {
+                "views": views,
+                "likes": likes,
+                "comments": comments,
+                "shares": shares,
+                "watch_time": watch_time,
+                "avg_duration": avg_duration,
+            }
+
+        except Exception as e:
+            self.youtube_circuit_breaker.record_failure()
+            raise
+
     async def get_performance_report(
         self, post_id: str, user_id: int, platform: str = "youtube"
     ) -> ContentPerformance:
-        from google.oauth2.credentials import Credentials
-        from googleapiclient.discovery import build
-        from services.optimization.auth import token_manager
-        from api.config import settings
-        import logging
-        import redis
-        import json
-
         # Redis Caching Layer
+        cache_key = f"analytics:report:{post_id}:{user_id}"
+
         try:
-            r = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
-            cache_key = (
-                f"analytics:report:{post_id}:{user_id}"  # Include user_id in cache key
-            )
-            cached_data = r.get(cache_key)
+            cached_data = self.redis.get(cache_key)
             if cached_data:
-                logging.info(f"[Analytics] Serving cached report for {post_id}")
+                self.logger.info(f"[Analytics] Serving cached report for {post_id}")
                 data = json.loads(cached_data)
                 return ContentPerformance(**data)
         except Exception as e:
-            logging.warning(f"[Analytics] Cache partial failure: {e}")
+            self.logger.warning(f"[Analytics] Cache partial failure: {e}")
 
         # Try to fetch real data based on platform
         if platform.lower() == "youtube":
@@ -39,7 +176,7 @@ class AnalyticsService:
             # Hardened: No fallback to mock data. Return empty performance if platform unsupported.
             return ContentPerformance(
                 post_id=post_id,
-                optimization_insight="Platform tracking active. Telemetry pending."
+                optimization_insight="Platform tracking active. Telemetry pending.",
             )
 
     async def _get_youtube_analytics(
@@ -48,92 +185,32 @@ class AnalyticsService:
         """Fetch YouTube analytics data"""
         token_data = token_manager.get_token("youtube", user_id)
         if not token_data or not settings.GOOGLE_CLIENT_ID:
+            pass  # Fall through to DB fallback
+        else:
             try:
-                creds = Credentials(
-                    token=token_data["access_token"],
-                    refresh_token=token_data.get("refresh_token"),
-                    token_uri="https://oauth2.googleapis.com/token",
-                    client_id=settings.GOOGLE_CLIENT_ID,
-                    client_secret=settings.GOOGLE_CLIENT_SECRET,
-                )
-
-                # 1. Fetch Metadata (Basic Stats) from YouTube Data API
-                youtube = build("youtube", "v3", credentials=creds)
-                request = youtube.videos().list(part="statistics", id=post_id)
-                response = request.execute()
-
-                views = 0
-                likes = 0
-                if response.get("items"):
-                    stats = response["items"][0]["statistics"]
-                    views = int(stats.get("viewCount", 0))
-                    likes = int(stats.get("likeCount", 0))
-
-                # 2. Fetch Advanced Metrics from YouTube Analytics API
-                # Note: Reporting API requires 'channel' or 'contentOwner' context
-                # For solo creators, we use 'mine==true'
-                yt_analytics = build("youtubeAnalytics", "v2", credentials=creds)
-
-                # We need to compute start/end dates. For now, let's fetch for the last 30 days.
-                import datetime
-
-                end_date = datetime.date.today().isoformat()
-                start_date = (
-                    datetime.date.today() - datetime.timedelta(days=30)
-                ).isoformat()
-
-                report_request = yt_analytics.reports().query(
-                    ids="channel==MINE",
-                    startDate=start_date,
-                    endDate=end_date,
-                    metrics="views,likes,comments,shares,estimatedMinutesWatched,averageViewDuration",
-                    dimensions="video",
-                    filters=f"video=={post_id}",
-                )
-                report_response = report_request.execute()
-
-                watch_time = 0.0
-                shares = 0
-                comments = 0
-                retention_rate = 0.75  # Default fallback
-
-                if report_response.get("rows"):
-                    row = report_response["rows"][0]
-                    # Columns: [video, views, likes, comments, shares, estimatedMinutesWatched, averageViewDuration]
-                    comments = int(row[3])
-                    shares = int(row[4])
-                    watch_time = float(row[5]) / 60.0  # Convert minutes to hours
-                    avg_duration = float(row[6])
+                data = await self._fetch_youtube_data(post_id, token_data)
 
                 # Generate a dynamic retention curve based on avg_duration vs total video length (estimated 60s for Shorts)
                 video_length = 60.0  # Standard Short
                 raw_retention_rate = (
-                    avg_duration / video_length if video_length > 0 else 0.5
+                    data["avg_duration"] / video_length
+                    if video_length > 0 and data["avg_duration"] > 0
+                    else 0.5
                 )
 
                 # Hardened: No simulated decay curves. Return empty if unavailable.
-                retention_data = [] 
+                retention_data = []
 
                 insight = await self._generate_ai_insight(
-                    views, likes, shares, comments
+                    data["views"], data["likes"], data["shares"], data["comments"]
                 )
                 result = ContentPerformance(
                     post_id=post_id,
-                    views=views
-                    or (
-                        int(report_response["rows"][0][1])
-                        if report_response.get("rows")
-                        else 0
-                    ),
-                    watch_time=watch_time,
+                    views=data["views"],
+                    watch_time=data["watch_time"],
                     retention_rate=raw_retention_rate,
-                    likes=likes
-                    or (
-                        int(report_response["rows"][0][2])
-                        if report_response.get("rows")
-                        else 0
-                    ),
-                    shares=shares,
+                    likes=data["likes"],
+                    shares=data["shares"],
                     follows_gained=0,
                     retention_data=retention_data,
                     optimization_insight=insight,
@@ -142,12 +219,12 @@ class AnalyticsService:
                 # Cache result
                 try:
                     r.setex(cache_key, 3600, result.json())
-                except:
-                    pass
+                except Exception as e:
+                    self.logger.warning(f"Failed to cache analytics result: {e}")
 
                 return result
             except Exception as e:
-                logging.error(f"Failed to fetch YouTube analytics: {e}")
+                self.logger.error(f"Failed to fetch YouTube analytics: {e}")
 
         # Fallback: Query local database first before resorting to zeros
         db_views, db_likes, db_shares = 0, 0, 0
@@ -163,7 +240,7 @@ class AnalyticsService:
                 )
                 result = await db.execute(stmt)
                 content_record = result.scalar_one_or_none()
-                
+
                 if content_record:
                     db_views = getattr(content_record, "view_count", 0)
                     db_likes = getattr(content_record, "like_count", 0)
@@ -192,7 +269,9 @@ class AnalyticsService:
 
         return fallback_result
 
-    async def _get_social_analytics(self, post_id: str, user_id: int, platform: str, r) -> ContentPerformance:
+    async def _get_social_analytics(
+        self, post_id: str, user_id: int, platform: str, r
+    ) -> ContentPerformance:
         """Fetch analytics from social media platforms"""
         try:
             # Get platform-specific metrics
@@ -208,7 +287,9 @@ class AnalyticsService:
                 shares=metrics.get("shares", 0) + metrics.get("retweets", 0),
                 follows_gained=metrics.get("follows_gained", 0),
                 retention_data=metrics.get("retention_data", []),
-                optimization_insight=metrics.get("optimization_insight", "Platform analytics active")
+                optimization_insight=metrics.get(
+                    "optimization_insight", "Platform analytics active"
+                ),
             )
 
             # Cache the result
@@ -217,10 +298,14 @@ class AnalyticsService:
             return performance
 
         except Exception as e:
-            logging.warning(f"[Analytics] Failed to fetch {platform} data for {post_id}: {e}")
+            logging.warning(
+                f"[Analytics] Failed to fetch {platform} data for {post_id}: {e}"
+            )
             return ContentPerformance()
 
-    async def _fetch_platform_metrics(self, platform: str, post_id: str, user_id: int) -> dict:
+    async def _fetch_platform_metrics(
+        self, platform: str, post_id: str, user_id: int
+    ) -> dict:
         """Fetch metrics from specific social platform"""
         if platform == "instagram":
             return await self._get_instagram_metrics(post_id, user_id)
@@ -234,6 +319,7 @@ class AnalyticsService:
     async def _get_instagram_metrics(self, post_id: str, user_id: int) -> dict:
         """Get Instagram post metrics"""
         from services.optimization.instagram_publisher import base_instagram_publisher
+
         try:
             metrics = await base_instagram_publisher.get_metrics(post_id, user_id)
             return {
@@ -245,7 +331,7 @@ class AnalyticsService:
                 "retention_rate": 0.0,
                 "follows_gained": 0,
                 "retention_data": [],
-                "optimization_insight": "Instagram engagement metrics retrieved"
+                "optimization_insight": "Instagram engagement metrics retrieved",
             }
         except Exception as e:
             logging.warning(f"[Instagram Analytics] Failed: {e}")
@@ -257,12 +343,13 @@ class AnalyticsService:
         # For now, return default metrics with a note
         return {
             **self._get_default_metrics(),
-            "optimization_insight": "TikTok analytics integration pending"
+            "optimization_insight": "TikTok analytics integration pending",
         }
 
     async def _get_x_metrics(self, post_id: str, user_id: int) -> dict:
         """Get X/Twitter metrics"""
         from services.optimization.x_publisher import base_x_publisher
+
         try:
             metrics = await base_x_publisher.get_metrics(post_id, user_id)
             return {
@@ -274,7 +361,7 @@ class AnalyticsService:
                 "retention_rate": 0.0,
                 "follows_gained": 0,
                 "retention_data": [],
-                "optimization_insight": "X engagement metrics retrieved"
+                "optimization_insight": "X engagement metrics retrieved",
             }
         except Exception as e:
             logging.warning(f"[X Analytics] Failed: {e}")
@@ -289,19 +376,30 @@ class AnalyticsService:
         # Returning empty to satisfy the API router without faking data.
         return []
 
-
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=1, min=1, max=3),
+        retry=retry_if_exception_type((TimeoutError, ConnectionError)),
+        reraise=False,
+    )
     async def _generate_ai_insight(
         self, views: int, likes: int, shares: int, comments: int
     ) -> str:
-        """Generates real performance insights using Groq."""
-        from groq import Groq
+        """Generates real performance insights using Groq with retries and circuit breaking."""
+        from groq import AsyncGroq
         from api.config import settings
 
         if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
             return "Strong engagement detected. Recommend consistent posting schedule."
 
+        if self.groq_circuit_breaker.is_open():
+            self.logger.warning(
+                "Groq API circuit breaker is OPEN - using fallback insight"
+            )
+            return "Metrics show healthy growth. Maintain current content pacing."
+
         try:
-            client = Groq(api_key=settings.GROQ_API_KEY)
+            client = AsyncGroq(api_key=settings.GROQ_API_KEY, timeout=10.0)
             prompt = f"""
             Analyze these video metrics and provide a single, actionable viral optimization insight (max 20 words):
             Views: {views}
@@ -310,12 +408,16 @@ class AnalyticsService:
             Comments: {comments}
             """
 
-            chat_completion = client.chat.completions.create(
+            chat_completion = await client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model="llama-3.3-70b-versatile",
+                timeout=15.0,
             )
+            self.groq_circuit_breaker.record_success()
             return chat_completion.choices[0].message.content.strip()
-        except Exception:
+        except Exception as e:
+            self.groq_circuit_breaker.record_failure()
+            self.logger.warning(f"Groq API failed: {e}")
             return "Metrics show healthy growth. Maintain current content pacing."
 
     def analyze_retention_dropoff(self, retention_data: List[float]) -> str:
