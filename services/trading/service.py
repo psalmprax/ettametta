@@ -11,6 +11,10 @@ This service provides market analysis and trading automation:
 - Real-time price alerts with technical indicators
 """
 
+import logging
+import time
+from datetime import datetime
+from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from api.utils.database import async_session_factory
@@ -19,6 +23,12 @@ from api.utils.models import (
     TradingPositionDB,
     TradingAlertDB,
     TradingTransactionDB,
+)
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,8 +59,39 @@ class RateLimiter:
         return max(0.0, self._period - (now - oldest).total_seconds())
 
 
+class CircuitBreaker:
+    """Simple circuit breaker to prevent cascading failures"""
+
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+
+    def is_open(self) -> bool:
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+
+
 alpha_vantage_limiter = RateLimiter(max_calls=5, period_seconds=60)
 coingecko_limiter = RateLimiter(max_calls=10, period_seconds=60)
+alpha_vantage_circuit_breaker = CircuitBreaker()
+coingecko_circuit_breaker = CircuitBreaker()
 
 
 class TradingService:
@@ -83,16 +124,21 @@ class TradingService:
     def is_enabled(self) -> bool:
         return self.enabled
 
-    async def _get_or_create_portfolio(self, db: AsyncSession, user_id: int) -> TradingPortfolioDB:
+    async def _get_or_create_portfolio(
+        self, db: AsyncSession, user_id: int
+    ) -> TradingPortfolioDB:
         stmt = select(TradingPortfolioDB).where(TradingPortfolioDB.user_id == user_id)
         result = await db.execute(stmt)
         portfolio = result.scalar_one_or_none()
-        
+
         if not portfolio:
             # Hardened: No simulated 10k wealth. Balance starts at 0.0 unless configured.
             from api.config import settings
+
             initial_balance = getattr(settings, "TRADING_INITIAL_BALANCE", 0.0)
-            portfolio = TradingPortfolioDB(user_id=user_id, cash_balance=initial_balance)
+            portfolio = TradingPortfolioDB(
+                user_id=user_id, cash_balance=initial_balance
+            )
             db.add(portfolio)
             await db.commit()
             await db.refresh(portfolio)
@@ -103,9 +149,15 @@ class TradingService:
             portfolio = await self._get_or_create_portfolio(db, user_id)
             # Use scalar() to extract values from ORM objects
             portfolio_id = portfolio.id
-            cash = float(portfolio.cash_balance) if portfolio.cash_balance is not None else 0.0
+            cash = (
+                float(portfolio.cash_balance)
+                if portfolio.cash_balance is not None
+                else 0.0
+            )
 
-            stmt = select(TradingPositionDB).where(TradingPositionDB.portfolio_id == portfolio_id)
+            stmt = select(TradingPositionDB).where(
+                TradingPositionDB.portfolio_id == portfolio_id
+            )
             result = await db.execute(stmt)
             positions = result.scalars().all()
 
@@ -157,7 +209,7 @@ class TradingService:
                     )
                     result = await db.execute(stmt)
                     positions = result.scalars().all()
-                    
+
                     total_qty = sum(p.quantity for p in positions)
                     if total_qty < quantity:
                         return {
@@ -210,7 +262,10 @@ class TradingService:
                 portfolio.updated_at = datetime.utcnow()
                 await db.commit()
 
-                return {"status": "success", "portfolio": await self.get_portfolio(user_id)}
+                return {
+                    "status": "success",
+                    "portfolio": await self.get_portfolio(user_id),
+                }
             except Exception as e:
                 await db.rollback()
                 logger.error(f"Error adding position: {e}")
@@ -219,7 +274,9 @@ class TradingService:
     async def get_portfolio_value(self, user_id: int) -> Dict[str, Any]:
         async with async_session_factory() as db:
             portfolio = await self._get_or_create_portfolio(db, user_id)
-            stmt = select(TradingPositionDB).where(TradingPositionDB.portfolio_id == portfolio.id)
+            stmt = select(TradingPositionDB).where(
+                TradingPositionDB.portfolio_id == portfolio.id
+            )
             result = await db.execute(stmt)
             positions = result.scalars().all()
 
@@ -299,7 +356,7 @@ class TradingService:
             stmt = select(TradingAlertDB).where(TradingAlertDB.user_id == user_id)
             result = await db.execute(stmt)
             alerts = result.scalars().all()
-            
+
             return [
                 {
                     "id": a.id,
@@ -365,10 +422,20 @@ class TradingService:
             await db.commit()
             return triggered
 
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=1, min=1, max=5),
+        retry=retry_if_exception_type((TimeoutError, ConnectionError)),
+        reraise=False,
+    )
     async def get_stock_quote(self, symbol: str) -> Dict[str, Any]:
         if not self.enabled:
             raise RuntimeError("Trading service is not enabled")
         if not self.alpha_vantage_key:
+            return {}
+
+        if alpha_vantage_circuit_breaker.is_open():
+            logger.warning("Alpha Vantage circuit breaker is OPEN")
             return {}
 
         # Rate limiting
@@ -387,10 +454,16 @@ class TradingService:
                 async with session.get(
                     url, params=params, timeout=aiohttp.ClientTimeout(total=10)
                 ) as resp:
+                    if resp.status != 200:
+                        alpha_vantage_circuit_breaker.record_failure()
+                        logger.warning(f"Alpha Vantage returned {resp.status}")
+                        return {}
+
                     data = await resp.json()
 
                     if "Global Quote" in data and data["Global Quote"]:
                         quote = data["Global Quote"]
+                        alpha_vantage_circuit_breaker.record_success()
                         return {
                             "symbol": quote.get("01. symbol"),
                             "price": float(quote.get("05. price", 0)),
@@ -399,14 +472,26 @@ class TradingService:
                             "volume": int(quote.get("06. volume", 0)),
                             "timestamp": datetime.utcnow().isoformat(),
                         }
+                    alpha_vantage_circuit_breaker.record_success()
                     return {}
         except Exception as e:
+            alpha_vantage_circuit_breaker.record_failure()
             logger.error(f"Alpha Vantage API error: {e}")
             return {}
 
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=1, min=1, max=5),
+        retry=retry_if_exception_type((TimeoutError, ConnectionError)),
+        reraise=False,
+    )
     async def get_crypto_quote(self, symbol: str) -> Dict[str, Any]:
         if not self.enabled:
             raise RuntimeError("Trading service is not enabled")
+
+        if coingecko_circuit_breaker.is_open():
+            logger.warning("CoinGecko circuit breaker is OPEN")
+            return {}
 
         # Rate limiting
         while not coingecko_limiter.acquire():
@@ -425,10 +510,16 @@ class TradingService:
                 async with session.get(
                     url, params=params, timeout=aiohttp.ClientTimeout(total=10)
                 ) as resp:
+                    if resp.status != 200:
+                        coingecko_circuit_breaker.record_failure()
+                        logger.warning(f"CoinGecko returned {resp.status}")
+                        return {}
+
                     data = await resp.json()
 
                     if symbol in data:
                         quote = data[symbol]
+                        coingecko_circuit_breaker.record_success()
                         return {
                             "symbol": symbol,
                             "price": quote.get("usd", 0),
@@ -436,8 +527,10 @@ class TradingService:
                             "market_cap": quote.get("usd_market_cap", 0),
                             "timestamp": datetime.utcnow().isoformat(),
                         }
+                    coingecko_circuit_breaker.record_success()
                     return {}
         except Exception as e:
+            coingecko_circuit_breaker.record_failure()
             logger.error(f"CoinGecko API error: {e}")
             return {}
 
