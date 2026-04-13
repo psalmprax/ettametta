@@ -256,7 +256,7 @@ services:
       - GROQ_API_KEY=${GROQ_API_KEY}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
-      - API_URL=http://api:8000
+      - API_URL=http://nginx/api/v1
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
     networks:
       - viral_forge
