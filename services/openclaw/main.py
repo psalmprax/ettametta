@@ -94,7 +94,7 @@ class BotManager:
                 headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
 
             response = await self.http.get(
-                f"{settings.API_URL}/api/v1/auth/internal/users-with-bots",
+                f"{settings.API_URL}/auth/internal/users-with-bots",
                 headers=headers,
                 timeout=5.0,
             )
@@ -228,7 +228,7 @@ async def refresh_bot(user_id: int, background_tasks: BackgroundTasks):
             headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
 
         response = await bot_manager.http.get(
-            f"{settings.API_URL}/api/v1/auth/verify-telegram-internal/{user_id}",
+            f"{settings.API_URL}/auth/verify-telegram-internal/{user_id}",
             headers=headers,
             timeout=5.0,
         )
