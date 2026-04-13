@@ -41,6 +41,7 @@ google-generativeai
 openai
 fastapi-cache2[redis]
 prometheus-fastapi-instrumentator
+tenacity>=8.2.3
 
 # Testing
 pytest>=7.4.0
