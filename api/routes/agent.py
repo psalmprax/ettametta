@@ -146,6 +146,7 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
         "leonardo",
         "heygen",
         "genmo",
+        "perchance",
     ]
 
     # Check if it's a video generation request
@@ -165,8 +166,56 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
         )
         prompt = prompt_match.group(1).strip() if prompt_match else message
 
-        # Get aspect ratio from context or default
-        aspect_ratio = context.get("aspect_ratio", "16:9") if context else "16:9"
+        # Auto-detect use case from message
+        use_case = None
+        if (
+            "short" in message_lower
+            or "tiktok" in message_lower
+            or "reels" in message_lower
+        ):
+            use_case = "short_form"
+        elif "cinematic" in message_lower or "film" in message_lower:
+            use_case = "cinematic"
+        elif "product" in message_lower:
+            use_case = "product"
+        elif "portrait" in message_lower:
+            use_case = "portrait"
+
+        # Get model settings for auto-recommendation
+        from services.openclaw.skills.model_settings import (
+            get_model_settings,
+            get_recommended_settings,
+            get_image_recommended_settings,
+        )
+
+        model_info = get_model_settings(provider)
+
+        # Get aspect ratio from context or auto-recommend
+        if context is None:
+            context = {}
+
+        use_case_from_ctx = context.get("use_case", use_case)
+
+        if provider == "perchance":
+            # Image generation - use image recommended settings
+            if not context.get("generator"):
+                img_recs = get_image_recommended_settings(provider)
+                context.setdefault("generator", img_recs.get("generator", "default"))
+            if not context.get("resolution"):
+                img_recs = get_image_recommended_settings(provider)
+                context.setdefault("resolution", img_recs.get("resolution", "hd"))
+            if not context.get("aspect_ratio"):
+                img_recs = get_image_recommended_settings(provider)
+                context.setdefault("aspect_ratio", img_recs.get("aspect_ratio", "1:1"))
+            aspect_ratio = context.get("aspect_ratio", "1:1")
+        else:
+            # Video generation - use video recommended settings
+            aspect_ratio = context.get("aspect_ratio")
+            if not aspect_ratio and model_info:
+                video_recs = get_recommended_settings(provider, use_case_from_ctx)
+                aspect_ratio = video_recs.get("aspect_ratio", "16:9")
+            elif not aspect_ratio:
+                aspect_ratio = "16:9"
 
         # Import and run the skill
         try:
@@ -178,6 +227,7 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
                 "leiapix": ("services.openclaw.skills.leiapix", "LeiaPixSkill"),
                 "pika": ("services.openclaw.skills.pika", "PikaSkill"),
                 "runway": ("services.openclaw.skills.runway", "RunwaySkill"),
+                "perchance": ("services.openclaw.skills.perchance", "PerchanceSkill"),
             }
 
             if provider in skill_map:
@@ -188,30 +238,59 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
                 skill = skill_class()
                 await skill.initialize()
                 try:
-                    # Increase timeout for slow platforms
-                    result = await asyncio.wait_for(
-                        skill.generate(prompt=prompt, aspect_ratio=aspect_ratio),
-                        timeout=180.0,  # 3 minutes
-                    )
-                    await skill.cleanup()
-
-                    if result.get("status") == "success":
-                        return {
-                            "response": f"✅ Video generated successfully! URL: {result.get('video_url', 'N/A')}",
-                            "status": "success",
-                            "provider": provider,
-                            "video_url": result.get("video_url"),
-                        }
+                    # Perchance = image generation (different params)
+                    if provider == "perchance":
+                        result = await asyncio.wait_for(
+                            skill.generate(
+                                prompt=prompt,
+                                generator=context.get("generator", "default"),
+                                resolution=context.get("resolution", "hd"),
+                                aspect_ratio=context.get("aspect_ratio", "1:1"),
+                                negative_prompt=context.get("negative_prompt", ""),
+                                seed=context.get("seed", -1),
+                                batch_size=context.get("batch_size", 1),
+                            ),
+                            timeout=180.0,
+                        )
+                        await skill.cleanup()
+                        if result.get("status") == "success":
+                            return {
+                                "response": f"✅ Image generated successfully! URLs: {result.get('image_urls', [])}",
+                                "status": "success",
+                                "provider": provider,
+                                "image_urls": result.get("image_urls"),
+                            }
+                        else:
+                            return {
+                                "response": f"⚠️ Image generation failed: {result.get('error', 'Unknown error')}",
+                                "status": "error",
+                                "provider": provider,
+                            }
                     else:
-                        return {
-                            "response": f"⚠️ Video generation failed: {result.get('error', 'Unknown error')}",
-                            "status": "error",
-                            "provider": provider,
-                        }
+                        # Video providers
+                        result = await asyncio.wait_for(
+                            skill.generate(prompt=prompt, aspect_ratio=aspect_ratio),
+                            timeout=180.0,  # 3 minutes
+                        )
+                        await skill.cleanup()
+
+                        if result.get("status") == "success":
+                            return {
+                                "response": f"✅ Video generated successfully! URL: {result.get('video_url', 'N/A')}",
+                                "status": "success",
+                                "provider": provider,
+                                "video_url": result.get("video_url"),
+                            }
+                        else:
+                            return {
+                                "response": f"⚠️ Video generation failed: {result.get('error', 'Unknown error')}",
+                                "status": "error",
+                                "provider": provider,
+                            }
                 except asyncio.TimeoutError:
                     await skill.cleanup()
                     return {
-                        "response": f"⏱️ Video generation timed out after 3 minutes. Platform {provider} may be slow or require manual verification.",
+                        "response": f"⏱️ Generation timed out after 3 minutes. Platform {provider} may be slow or require manual verification.",
                         "status": "error",
                     }
         except Exception as e:
