@@ -52,35 +52,14 @@ async def generate_single_video(
         await engine_access_required(body.engine)(current_user)
         await check_daily_limit(current_user, db)
 
-        # Map engine to action for credit check
-        engine_to_action = {
-            "ltx-video": "video_generation_ltx",
-            "hunyuan": "video_generation_hunyuan",
-            "veo3": "video_generation_veo3",
-            "runway": "video_generation_runway",
-            "kling": "video_generation_kling",
-            "pika": "video_generation_pika",
-            "leonardo": "video_generation_leonardo",
-            "frameloop": "video_generation_frameloop",
-            "wavespeed": "video_generation_wavespeed",
-            "ltx": "video_generation_ltx",
-            "videoany": "video_generation_videoany",
-            "vidu": "video_generation_vidu",
-            "hailuo": "video_generation_hailuo",
-            "seedance": "video_generation_seedance",
-            "heygen": "video_generation_heygen",
-            "pixverse": "video_generation_pixverse",
-            "haiper": "video_generation_haiper",
-            "luma": "video_generation_luma",
-            "leiapix": "video_generation_leiapix",
-            "kaiber": "video_generation_kaiber",
-            "fliki": "video_generation_fliki",
-            "invideo": "video_generation_invideo",
-            "morph": "video_generation_morph",
-            "genmo": "video_generation_genmo",
-            "zsky-wan": "video_generation_zsky",
-        }
-        action = engine_to_action.get(body.engine, "video_generation_ltx")
+        from api.config.engine_config import (
+            ENGINE_TO_ACTION,
+            get_credit_action,
+            DEFAULT_ENGINE,
+            is_free_engine,
+            is_premium_engine,
+        )
+
         credits_cost = await credits_required(action)(current_user, db)
 
         # 1. Dispatch Task first
