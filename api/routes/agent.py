@@ -182,13 +182,16 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
             use_case = "portrait"
 
         # Get model settings for auto-recommendation
-        from services.openclaw.skills.model_settings import (
-            get_model_settings,
-            get_recommended_settings,
-            get_image_recommended_settings,
-        )
+        try:
+            from services.openclaw.skills.model_settings import (
+                get_model_settings,
+                get_recommended_settings,
+                get_image_recommended_settings,
+            )
 
-        model_info = get_model_settings(provider)
+            model_info = get_model_settings(provider)
+        except ImportError:
+            model_info = None
 
         # Get aspect ratio from context or auto-recommend
         if context is None:

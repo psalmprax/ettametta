@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict
+from typing import List, Dict, Optional
 from sqlalchemy import select
 from api.utils.models import BlueprintDB
 
@@ -58,7 +58,7 @@ FALLBACK_BLUEPRINTS = [
                 "desc": "Saving results locally for verification.",
             },
         ],
-    }
+    },
 ]
 
 
@@ -69,7 +69,7 @@ async def get_blueprints(db: AsyncSession) -> List[Dict]:
     stmt = select(BlueprintDB)
     result = await db.execute(stmt)
     blueprints = result.scalars().all()
-    
+
     if not blueprints:
         return FALLBACK_BLUEPRINTS
 
@@ -221,9 +221,13 @@ async def _execute_synthesis_node(inputs: Dict, previous_results: Dict) -> Dict:
         prompt = previous_results["cognition"].get("analysis")
 
     if not prompt:
-        prompt = "Cinematic aerial view of a futuristic city at sunset, 4k, hyper-realistic"
+        prompt = (
+            "Cinematic aerial view of a futuristic city at sunset, 4k, hyper-realistic"
+        )
 
-    logger.info(f"[Blueprint] Triggering {engine} synthesis for prompt: {prompt[:50]}...")
+    logger.info(
+        f"[Blueprint] Triggering {engine} synthesis for prompt: {prompt[:50]}..."
+    )
 
     try:
         # Use synthesize_video which handles GPU queueing and remote/local dispatch
@@ -286,7 +290,7 @@ async def get_blueprint_by_id(db: AsyncSession, blueprint_id: str) -> Optional[D
     stmt = select(BlueprintDB).where(BlueprintDB.id == blueprint_id)
     result = await db.execute(stmt)
     bp = result.scalar_one_or_none()
-    
+
     if not bp:
         return next(
             (
@@ -298,5 +302,8 @@ async def get_blueprint_by_id(db: AsyncSession, blueprint_id: str) -> Optional[D
         )
 
     return {
-        "id": bp.id, "name": bp.name, "description": bp.description, "nodes": bp.nodes
+        "id": bp.id,
+        "name": bp.name,
+        "description": bp.description,
+        "nodes": bp.nodes,
     }
