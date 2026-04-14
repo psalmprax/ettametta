@@ -60,6 +60,8 @@ async def generate_single_video(
             is_premium_engine,
         )
 
+        # Get credit action for the engine
+        action = get_credit_action(body.engine)
         credits_cost = await credits_required(action)(current_user, db)
 
         # 1. Dispatch Task first
