@@ -325,6 +325,13 @@ async def crew_task(
         try:
             from services.crewai.service import crewai_service
 
+            # Check if service is enabled
+            if not crewai_service.is_enabled():
+                raise HTTPException(
+                    status_code=503,
+                    detail="CrewAI service not enabled. Set ENABLE_CREWAI=true and provide valid GROQ_API_KEY.",
+                )
+
             result = await crewai_service.execute_task(
                 task=body.task,
                 agents=body.agents or ["researcher", "writer"],
@@ -336,6 +343,8 @@ async def crew_task(
                 "agent": "crewai",
                 "correlation_id": correlation_id,
             }
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 

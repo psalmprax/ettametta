@@ -45,6 +45,20 @@ async def list_providers(current_user: UserDB = Depends(get_current_user)):
     }
 
 
+@router.get("/models")
+async def list_models():
+    """
+    Get available models across all LLM providers.
+    """
+    return {
+        "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
+        "anthropic": ["claude-3-5-sonnet", "claude-3-opus", "claude-3-haiku"],
+        "groq": ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "gemma-7b"],
+        "mistral": ["mistral-large", "mistral-small", "mixtral"],
+        "perplexity": ["llama-3.1-sonar-small", "llama-3.1-sonar-large"],
+    }
+
+
 @router.post("/complete")
 async def complete(
     request: CompletionRequest, current_user: UserDB = Depends(get_current_user)

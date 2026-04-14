@@ -113,3 +113,16 @@ async def list_personas(
     result = await db.execute(stmt)
     personas = result.scalars().all()
     return personas
+
+
+@router.get("/active", response_model=List[PersonaResponse])
+async def list_active_personas(
+    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """
+    Returns only active personas (all personas for now).
+    """
+    stmt = select(PersonaDB).where(PersonaDB.user_id == current_user.id)
+    result = await db.execute(stmt)
+    personas = result.scalars().all()
+    return personas

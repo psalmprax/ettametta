@@ -27,6 +27,13 @@ class CreateViralRequest(BaseModel):
     add_title: bool = True
 
 
+class GenerateRequest(BaseModel):
+    prompt: str
+    provider: str = "kling"
+    niche: str = "general"
+    style: str = "fast"
+
+
 class FindContentResponse(BaseModel):
     status: str
     videos: List[Dict] = []
@@ -130,19 +137,19 @@ async def get_providers(
 @router.post("/generate")
 async def generate_video(
     request: Request,
-    prompt: str,
-    provider: str = "kling",
+    body: GenerateRequest,
     current_user: UserDB = Depends(get_current_user),
 ):
     """
     Generate video using selected provider.
+    Accepts JSON body: {"prompt": "...", "provider": "kling"}
     """
     try:
         result = await content_editor_skill.create_viral_edit(
-            source=provider,
-            url_or_query=prompt,
-            niche="general",
-            style="fast",
+            source=body.provider,
+            url_or_query=body.prompt,
+            niche=body.niche if hasattr(body, "niche") else "general",
+            style=body.style if hasattr(body, "style") else "fast",
         )
         return result
 

@@ -174,7 +174,7 @@ async def analyze_candidate(
         amount=credits_cost,
         action="viral_analysis",
         db=db,
-        reference_id=candidate.id, # Using candidate ID as reference
+        reference_id=candidate.id,  # Using candidate ID as reference
     )
 
     task = analyze_viral_pattern_task.delay(candidate.dict())
@@ -211,6 +211,28 @@ async def get_niche_trends(niche: str, user: UserDB = Depends(get_current_user))
 async def list_monitored_niches(
     user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
+    from api.utils.models import MonitoredNiche
+
+    try:
+        stmt = (
+            select(MonitoredNiche.niche)
+            .filter(MonitoredNiche.is_active == True)
+            .distinct()
+        )
+        result = await db.execute(stmt)
+        niches = result.all()
+        return [n[0] for n in niches]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/categories")
+async def list_categories(
+    user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """
+    Alias for /niches - returns list of monitored content categories.
+    """
     from api.utils.models import MonitoredNiche
 
     try:
@@ -331,9 +353,10 @@ async def create_video_from_analysis(
             db=db,
             reference_id=task.id,
         )
-        
+
         if not success:
             from api.utils.celery import celery_app
+
             celery_app.control.revoke(task.id, terminate=True)
             raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
 
@@ -525,9 +548,9 @@ class InteractionRequest(BaseModel):
 
 @router.post("/interact")
 async def record_interaction(
-    request: InteractionRequest, 
+    request: InteractionRequest,
     user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Records a UI interaction with a discovery candidate.
