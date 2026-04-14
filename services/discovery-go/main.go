@@ -17,8 +17,8 @@ func main() {
 
 	r.GET("/health", healthHandler)
 
-	// Use clean service handler
-	r.POST("/scan", multiScanHandler)
+	// Use clean service handler with auth middleware
+	r.POST("/scan", RequireAuth(), multiScanHandler)
 
 	log.Printf("Discovery Engine (Go) starting on port %s", port)
 	if err := r.Run(":" + port); err != nil {
