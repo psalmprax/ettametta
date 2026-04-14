@@ -40,7 +40,7 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
             stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
             result = await db.execute(stmt)
             job = result.scalar_one_or_none()
-            
+
             if not job:
                 logging.error(f"[Nexus] Job {job_id} not found")
                 return
@@ -97,7 +97,9 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                         return
                     else:
                         job.status = "FAILED"
-                        job.error_log = execution_result.get("error", "Blueprint execution failed")
+                        job.error_log = execution_result.get(
+                            "error", "Blueprint execution failed"
+                        )
                         await db.commit()
                         notify_nexus_job_update_sync(
                             {
@@ -159,7 +161,10 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
             )
         except Exception as e:
             import traceback
-            logging.error(f"[Nexus] Error in background task: {e}\n{traceback.format_exc()}")
+
+            logging.error(
+                f"[Nexus] Error in background task: {e}\n{traceback.format_exc()}"
+            )
             try:
                 # Refresh session and update job status
                 stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
@@ -210,6 +215,7 @@ async def list_nexus_blueprints(
     Returns the available Nexus production recipes/blueprints.
     """
     from services.nexus_engine.blueprints import get_blueprints
+
     return await get_blueprints(db)
 
 
@@ -235,7 +241,7 @@ async def create_nexus_blueprint(
     stmt = select(BlueprintDB).where(BlueprintDB.id == blueprint.id)
     result = await db.execute(stmt)
     existing = result.scalar_one_or_none()
-    
+
     if existing:
         raise HTTPException(status_code=400, detail="Blueprint ID already exists")
 
@@ -269,14 +275,96 @@ async def list_nexus_jobs(
     return result.scalars().all()
 
 
+@router.get("/stats")
+async def get_nexus_stats(
+    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """
+    Returns Nexus performance statistics.
+    """
+    from sqlalchemy import func
+
+    # Count by status
+    total_result = await db.execute(
+        select(func.count(NexusJobDB.id)).where(NexusJobDB.user_id == current_user.id)
+    )
+    total = total_result.scalar() or 0
+
+    completed_result = await db.execute(
+        select(func.count(NexusJobDB.id)).where(
+            NexusJobDB.user_id == current_user.id, NexusJobDB.status == "COMPLETED"
+        )
+    )
+    completed = completed_result.scalar() or 0
+
+    failed_result = await db.execute(
+        select(func.count(NexusJobDB.id)).where(
+            NexusJobDB.user_id == current_user.id, NexusJobDB.status == "FAILED"
+        )
+    )
+    failed = failed_result.scalar() or 0
+
+    pending_result = await db.execute(
+        select(func.count(NexusJobDB.id)).where(
+            NexusJobDB.user_id == current_user.id, NexusJobDB.status == "PENDING"
+        )
+    )
+    pending = pending_result.scalar() or 0
+
+    return {
+        "total": total,
+        "completed": completed,
+        "failed": failed,
+        "pending": pending,
+        "success_rate": round(completed / total * 100, 1) if total > 0 else 0,
+    }
+
+
+@router.get("/queue")
+async def get_nexus_queue(
+    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """
+    Returns current job queue status.
+    """
+    from sqlalchemy import func
+
+    # Get pending/processing jobs
+    stmt = (
+        select(NexusJobDB)
+        .where(
+            NexusJobDB.user_id == current_user.id,
+            NexusJobDB.status.in_(["PENDING", "COMPOSING", "ANALYZING"]),
+        )
+        .order_by(NexusJobDB.created_at.asc())
+    )
+    result = await db.execute(stmt)
+    jobs = result.scalars().all()
+
+    return {
+        "queue_length": len(jobs),
+        "jobs": [
+            {
+                "id": j.id,
+                "niche": j.niche,
+                "status": j.status,
+                "created_at": j.created_at.isoformat() if j.created_at else None,
+            }
+            for j in jobs
+        ],
+    }
+
+
 @router.get("/job/{job_id}")
 async def get_nexus_job(
-    job_id: str, current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    job_id: str,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
     result = await db.execute(stmt)
     job = result.scalar_one_or_none()
-    
+
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
@@ -292,9 +380,13 @@ async def get_nexus_telemetry(
     start_time = time.time()
 
     # 1. Database Access Metrics (Real Job Count)
-    nexus_active_stmt = select(func.count(NexusJobDB.id)).where(NexusJobDB.status.in_(["PENDING", "COMPOSING"]))
-    video_active_stmt = select(func.count(VideoJobDB.id)).where(VideoJobDB.status.in_(["Queued", "Downloading", "Processing", "Rendering"]))
-    
+    nexus_active_stmt = select(func.count(NexusJobDB.id)).where(
+        NexusJobDB.status.in_(["PENDING", "COMPOSING"])
+    )
+    video_active_stmt = select(func.count(VideoJobDB.id)).where(
+        VideoJobDB.status.in_(["Queued", "Downloading", "Processing", "Rendering"])
+    )
+
     active_nexus_jobs = (await db.execute(nexus_active_stmt)).scalar() or 0
     active_video_jobs = (await db.execute(video_active_stmt)).scalar() or 0
 
