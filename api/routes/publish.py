@@ -258,8 +258,7 @@ async def auth_youtube_callback(
 
 @router.get("/accounts")
 async def list_accounts(
-    current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     try:
         stmt = select(SocialAccount)
@@ -282,9 +281,9 @@ async def list_accounts(
 
 @router.delete("/account/{account_id}")
 async def delete_account(
-    account_id: str, 
+    account_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         stmt = select(SocialAccount).where(SocialAccount.id == account_id)
@@ -309,9 +308,9 @@ async def delete_account(
 
 @router.post("/retry/{content_id}")
 async def retry_publish(
-    content_id: str, 
+    content_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Retry publishing a video that was pending authentication.
@@ -352,7 +351,8 @@ async def retry_publish(
         from services.optimization.auth import token_manager
 
         has_auth = (
-            await token_manager.get_token(platform_key, user_id=current_user.id) is not None
+            await token_manager.get_token(platform_key, user_id=current_user.id)
+            is not None
         )
 
         if not has_auth:
@@ -952,9 +952,9 @@ async def get_content_comments(
 
 @router.post("/sync/{content_id}")
 async def sync_content_metrics(
-    content_id: str, 
+    content_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Syncs live metrics from the social platform to the database for a specific post.
@@ -1091,8 +1091,7 @@ async def sync_content_metrics(
 
 @router.get("/history")
 async def get_publish_history(
-    current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     try:
         stmt = select(PublishedContentDB)
@@ -1103,6 +1102,27 @@ async def get_publish_history(
         result = await db.execute(stmt)
         history = result.scalars().all()
         return history
+    finally:
+        pass
+
+
+@router.get("/scheduled")
+async def get_scheduled_posts(
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """Get scheduled posts waiting for publish."""
+    from api.utils.models import ScheduledPostDB
+    import datetime
+
+    try:
+        stmt = select(ScheduledPostDB).where(
+            ScheduledPostDB.user_id == current_user.id,
+            ScheduledPostDB.scheduled_time > datetime.datetime.utcnow(),
+        )
+        stmt = stmt.order_by(ScheduledPostDB.scheduled_time.asc())
+        result = await db.execute(stmt)
+        scheduled = result.scalars().all()
+        return scheduled
     finally:
         pass
 
@@ -1212,7 +1232,9 @@ async def publish_video(
                     if aff_link:
                         injection_text = f"\n\n🔥 {aff_link.cta_text or 'Check this out'}: {aff_link.link}"
                         metadata.description += injection_text
-                        logger.info(f"[Monetization] Injected link: {aff_link.product_name}")
+                        logger.info(
+                            f"[Monetization] Injected link: {aff_link.product_name}"
+                        )
             except Exception as e:
                 # Fallback to database on any error
                 logger.warning(f"[Monetization] AI recommendation failed: {e}")
@@ -1227,7 +1249,9 @@ async def publish_video(
                 if aff_link:
                     injection_text = f"\n\n🔥 {aff_link.cta_text or 'Check this out'}: {aff_link.link}"
                     metadata.description += injection_text
-                    logger.info(f"[Monetization] Injected link: {aff_link.product_name}")
+                    logger.info(
+                        f"[Monetization] Injected link: {aff_link.product_name}"
+                    )
 
         # 3. Upload (Using Variant A Title as default)
         url = None
@@ -1684,6 +1708,7 @@ async def opencli_post(
     if result.get("success"):
         # Record in DB
         from api.utils.database import async_session_factory
+
         async with async_session_factory() as db:
             try:
                 post = PublishedContentDB(

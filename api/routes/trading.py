@@ -3,8 +3,10 @@ from pydantic import BaseModel, validator
 from typing import Optional, List
 import httpx
 import re
+from sqlalchemy.ext.asyncio import AsyncSession
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
+from api.utils.database import get_db
 
 router = APIRouter(prefix="/trading", tags=["Trading"])
 
@@ -35,6 +37,21 @@ class MarketDataRequest(BaseModel):
 
 class CryptoRequest(BaseModel):
     coin_id: str
+
+
+@router.get("/")
+async def get_trading_summary(
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """
+    Get trading dashboard summary.
+    """
+    # Return stub data for now
+    return {
+        "positions": 0,
+        "unrealized_pnl": 0.0,
+        "status": "no_positions",
+    }
 
 
 @router.get("/market/{symbol}")
