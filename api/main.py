@@ -30,12 +30,6 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 logger = logging.getLogger(__name__)
 
-from fastapi import FastAPI, Request, APIRouter
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import JSONResponse
-
 app = FastAPI(
     title="Viral Forge API",
     description="""## Overview
