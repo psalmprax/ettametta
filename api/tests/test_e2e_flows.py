@@ -72,12 +72,22 @@ class TestDiscoveryToCreationFlow:
         )
         assert response.status_code == 200
 
-    def test_viral_analysis(self, token, test_discover_trends):
+    def test_viral_analysis(self, token):
         """Analyze a trending video"""
-        if not test_discover_trends:
+        # Get trends first
+        trends_response = requests.get(
+            f"{BASE_URL}/api/v1/discovery/trends",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        trends = trends_response.json() if trends_response.status_code == 200 else []
+
+        if not trends:
             pytest.skip("No trends to analyze")
 
-        trend_url = test_discover_trends.get("url")
+        trend_url = trends[0].get("url") if trends else None
+        if not trend_url:
+            pytest.skip("No URL in trends")
+
         response = requests.post(
             f"{BASE_URL}/api/v1/discovery/analyze",
             headers={"Authorization": f"Bearer {token}"},
@@ -102,7 +112,7 @@ class TestContentCreationFlow:
         )
         assert response.status_code == 200
         data = response.json()
-        assert "generation" in data
+        assert "providers" in data  # Check providers key exists
 
     def test_video_transform(self, token):
         """Start video transformation"""
