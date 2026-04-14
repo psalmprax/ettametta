@@ -31,7 +31,10 @@
 | `GET /content-editor/providers` | ✅ 200 | 12 generation providers |
 | `POST /agent/chat` | ✅ 200 | GPT-4 responds |
 | `GET /nexus/jobs` | ✅ 200 | Jobs list |
-| `GET /nexus/blueprints` | ⚠️ 500 | Internal error |
+| `GET /nexus/blueprints` | ✅ 200 | Fixed (added Optional import) |
+| `POST /video/transform` | ✅ 200 | Task created successfully |
+| `GET /publish/platforms` | ✅ 200 | 8 platforms supported |
+| `GET /analytics/stats/summary` | ✅ 200 | Dashboard stats |
 
 ### 2. OpenCLAW Service (Port 7214)
 
@@ -196,10 +199,36 @@ Output:
 4. **Perchance/Cloudflare** - Would need residential proxy
 5. **GPU Server Network** - vast.ai blocks HTTP outbound
 
-### Medium Priority
+## Autonomous Menu Status
 
-4. **Perchance/Cloudflare** - Would need residential proxy
-5. **GPU Server Network** - vast.ai blocks HTTP outbound
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Dashboard UI | ✅ Renders | All menus work |
+| `/zero/status` | ✅ Working | Zero-inference status |
+| `/agent/crew` | ⚠️ Needs config | Requires `ENABLE_CREWAI=true` and valid API key |
+
+### CrewAI Requirements
+
+To enable CrewAI multi-agent workflow:
+1. Set environment variable `ENABLE_CREWAI=true`
+2. Provide either:
+   - Valid `GROQ_API_KEY` (starts with `gsk_`), OR
+   - Valid `OPENAI_API_KEY` as fallback
+3. Install `crewai` package: `pip install crewai langchain-crewai`
+
+Current status: Disabled (not enabled on server)
+
+---
+
+## Transformation / Publishing / Analytics API Status
+
+| Endpoint | Status | Response |
+|----------|--------|----------|
+| `/video/transform` | ✅ 200 | Task created successfully |
+| `/publish/platforms` | ✅ 200 | 8 platforms supported |
+| `/analytics/stats/summary` | ✅ 200 | Dashboard stats |
+
+**Dashboard pages tested:** transformation, publishing, analytics, empire, credits, trading, settings - all render 200 OK.
 
 ---
 

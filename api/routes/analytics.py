@@ -16,21 +16,70 @@ router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 @router.get("/posts")
 async def list_analytics_posts(
-    page: int = 1, size: int = 20, 
+    page: int = 1,
+    size: int = 20,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     try:
-        stmt = select(PublishedContentDB).where(PublishedContentDB.status == "Published")
+        stmt = select(PublishedContentDB).where(
+            PublishedContentDB.status == "Published"
+        )
         if current_user.role != "admin":
             stmt = stmt.where(PublishedContentDB.user_id == current_user.id)
 
-        stmt = stmt.order_by(PublishedContentDB.published_at.desc()).offset((page - 1) * size).limit(size)
+        stmt = (
+            stmt.order_by(PublishedContentDB.published_at.desc())
+            .offset((page - 1) * size)
+            .limit(size)
+        )
         result = await db.execute(stmt)
         posts = result.scalars().all()
         return posts
     finally:
         pass
+
+
+@router.get("/report")
+async def get_analytics_report(
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """
+    Get overall analytics report summary.
+    """
+    from sqlalchemy import func
+
+    # Total posts
+    posts_result = await db.execute(
+        select(func.count(PublishedContentDB.id)).where(
+            PublishedContentDB.user_id == current_user.id
+        )
+    )
+    total_posts = posts_result.scalar() or 0
+
+    # Total views
+    views_result = await db.execute(
+        select(func.sum(PublishedContentDB.view_count)).where(
+            PublishedContentDB.user_id == current_user.id
+        )
+    )
+    total_views = views_result.scalar() or 0
+
+    # Total likes
+    likes_result = await db.execute(
+        select(func.sum(PublishedContentDB.likes)).where(
+            PublishedContentDB.user_id == current_user.id
+        )
+    )
+    total_likes = likes_result.scalar() or 0
+
+    return {
+        "total_posts": total_posts,
+        "total_views": int(total_views or 0),
+        "total_likes": int(total_likes or 0),
+        "avg_views": int(total_views / total_posts) if total_posts > 0 else 0,
+        "avg_likes": int(total_likes / total_posts) if total_posts > 0 else 0,
+    }
 
 
 @router.get("/report/{post_id}", response_model=ContentPerformance)
@@ -39,7 +88,7 @@ async def get_report(
     post_id: str,
     platform: str = "youtube",
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         # Verify user owns this content
@@ -66,9 +115,9 @@ async def get_report(
 
 @router.get("/insights/{post_id}")
 async def get_insights(
-    post_id: str, 
+    post_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         # Verify user owns this content
@@ -82,7 +131,9 @@ async def get_insights(
             raise HTTPException(status_code=403, detail="Access denied")
 
         report = await base_analytics_service.get_performance_report(
-            post_id, current_user.id, "youtube"  # Explicitly default to youtube for insights
+            post_id,
+            current_user.id,
+            "youtube",  # Explicitly default to youtube for insights
         )
         return {"insight": report.optimization_insight}
     except HTTPException:
@@ -98,7 +149,7 @@ async def get_monetization_suggestions(
     post_id: str,
     niche: str = "Motivation",
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         # Verify user owns this content
@@ -112,7 +163,9 @@ async def get_monetization_suggestions(
             raise HTTPException(status_code=403, detail="Access denied")
 
         report = await base_analytics_service.get_performance_report(
-            post_id, current_user.id, "youtube"  # Explicitly default to youtube for monetization
+            post_id,
+            current_user.id,
+            "youtube",  # Explicitly default to youtube for monetization
         )
         suggestions = base_analytics_service.suggest_optimal_monetization(report, niche)
         return {"report": report, "suggestions": suggestions}
@@ -127,13 +180,14 @@ async def get_monetization_suggestions(
 @router.get("/stats/summary")
 @cache(expire=600)
 async def get_stats_summary(
-    current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """Get dashboard summary stats for the home page."""
     try:
         # Base queries
-        post_stmt = select(PublishedContentDB).where(PublishedContentDB.status == "Published")
+        post_stmt = select(PublishedContentDB).where(
+            PublishedContentDB.status == "Published"
+        )
         job_stmt = select(VideoJobDB)
 
         # User isolation
@@ -142,7 +196,9 @@ async def get_stats_summary(
             job_stmt = job_stmt.where(VideoJobDB.user_id == current_user.id)
 
         # Count published posts
-        result = await db.execute(select(func.count()).select_from(post_stmt.subquery()))
+        result = await db.execute(
+            select(func.count()).select_from(post_stmt.subquery())
+        )
         total_posts = result.scalar() or 0
 
         # Count total video jobs
@@ -180,17 +236,23 @@ async def get_stats_summary(
 
         # Calculate velocity
         yesterday = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
-        stmt_recent = select(func.count(NicheTrendDB.id)).where(NicheTrendDB.last_updated >= yesterday)
+        stmt_recent = select(func.count(NicheTrendDB.id)).where(
+            NicheTrendDB.last_updated >= yesterday
+        )
         result = await db.execute(stmt_recent)
         recent_count = result.scalar() or 0
 
         # Calculate engine load
-        stmt_pending = select(func.count(VideoJobDB.id)).where(VideoJobDB.status.in_(["Queued", "Transcribing", "Rendering"]))
+        stmt_pending = select(func.count(VideoJobDB.id)).where(
+            VideoJobDB.status.in_(["Queued", "Transcribing", "Rendering"])
+        )
         result = await db.execute(stmt_pending)
         pending_jobs = result.scalar() or 0
-        
+
         MAX_CAPACITY = 10
-        engine_load = int((pending_jobs / MAX_CAPACITY) * 100) if MAX_CAPACITY > 0 else 0
+        engine_load = (
+            int((pending_jobs / MAX_CAPACITY) * 100) if MAX_CAPACITY > 0 else 0
+        )
 
         return {
             "active_trends": active_trends_count,
@@ -235,9 +297,9 @@ async def get_storage_stats(current_user: UserDB = Depends(get_current_user)):
 
 @router.get("/ab/results/{content_id}")
 async def get_ab_results(
-    content_id: str, 
+    content_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         stmt = select(ABTestDB).where(ABTestDB.content_id == content_id)
@@ -281,9 +343,9 @@ async def get_report_history(
 
 @router.post("/inject-pattern/{post_id}")
 async def inject_pattern(
-    post_id: str, 
+    post_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         # Verify user owns this content
@@ -309,15 +371,16 @@ async def inject_pattern(
 
 @router.get("/export")
 async def export_analytics(
-    current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     import csv
     import io
     from fastapi.responses import StreamingResponse
 
     try:
-        stmt = select(PublishedContentDB).where(PublishedContentDB.status == "Published")
+        stmt = select(PublishedContentDB).where(
+            PublishedContentDB.status == "Published"
+        )
         if current_user.role != "admin":
             stmt = stmt.where(PublishedContentDB.user_id == current_user.id)
 

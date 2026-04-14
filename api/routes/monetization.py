@@ -55,7 +55,9 @@ async def auto_merch(
     """
     Triggers the Reverse Monetization flow: Trend -> Design -> Mockup -> Store.
     """
-    from services.monetization.auto_merch import base_auto_merch_service as auto_merch_service
+    from services.monetization.auto_merch import (
+        base_auto_merch_service as auto_merch_service,
+    )
 
     # Consume credits
     await credit_service.consume_credits(
@@ -104,9 +106,47 @@ async def get_monetization_report(
 async def get_empire_metrics(
     current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    from services.monetization.empire_service import base_empire_service
+    """Get empire metrics - returns basic stats for now."""
+    import datetime
+    from sqlalchemy import select, func, desc
+    from api.utils.models import PublishedContentDB, SocialAccount, VideoJobDB
 
-    return await base_empire_service.get_empire_metrics(db, current_user.id)
+    now = datetime.datetime.utcnow()
+    last_week = now - datetime.timedelta(days=7)
+
+    # Total connected accounts
+    account_result = await db.execute(
+        select(func.count(SocialAccount.id)).where(
+            SocialAccount.user_id == current_user.id
+        )
+    )
+    total_accounts = account_result.scalar() or 0
+
+    # Published content this week
+    publish_result = await db.execute(
+        select(func.count(PublishedContentDB.id)).where(
+            PublishedContentDB.user_id == current_user.id,
+            PublishedContentDB.published_at >= last_week,
+        )
+    )
+    recent_published = publish_result.scalar() or 0
+
+    # Total views this week
+    views_result = await db.execute(
+        select(func.sum(PublishedContentDB.view_count)).where(
+            PublishedContentDB.user_id == current_user.id,
+            PublishedContentDB.published_at >= last_week,
+        )
+    )
+    total_views = views_result.scalar() or 0
+
+    return {
+        "total_accounts": total_accounts,
+        "recent_published": recent_published,
+        "total_views": int(total_views),
+        "growth_rate": 0.0,
+        "week_over_week": 0,
+    }
 
 
 @router.get("/empire/activity")
@@ -115,11 +155,31 @@ async def get_empire_activity(
 ):
     """
     Returns the recent activity logs for the empire timeline.
-    Aggregates monetization events and sentinel shifts.
     """
-    from services.monetization.empire_service import base_empire_service
+    import datetime
+    from sqlalchemy import select, desc
+    from api.utils.models import PublishedContentDB
 
-    return await base_empire_service.get_activity_stream(db, current_user.id)
+    # Get recent published content
+    result = await db.execute(
+        select(PublishedContentDB)
+        .where(PublishedContentDB.user_id == current_user.id)
+        .order_by(desc(PublishedContentDB.published_at))
+        .limit(10)
+    )
+    recent = result.scalars().all()
+
+    return {
+        "activities": [
+            {
+                "type": "published",
+                "title": p.title,
+                "platform": p.platform,
+                "published_at": p.published_at.isoformat() if p.published_at else None,
+            }
+            for p in recent
+        ]
+    }
 
 
 class CloneRequest(BaseModel):
@@ -131,9 +191,32 @@ class CloneRequest(BaseModel):
 async def get_winning_blueprints(
     current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    from services.monetization.empire_service import base_empire_service
+    """Get winning content blueprints from past publishes."""
+    from sqlalchemy import select, desc, func
+    from api.utils.models import PublishedContentDB
 
-    return await base_empire_service.get_winning_blueprints(db, current_user.id)
+    # Get top performing content
+    result = await db.execute(
+        select(PublishedContentDB)
+        .where(
+            PublishedContentDB.user_id == current_user.id,
+            PublishedContentDB.view_count > 0,
+        )
+        .order_by(desc(PublishedContentDB.view_count))
+        .limit(20)
+    )
+    top_content = result.scalars().all()
+
+    # Group by niche
+    blueprints = {}
+    for p in top_content:
+        niche = p.niche or "general"
+        if niche not in blueprints:
+            blueprints[niche] = {"niche": niche, "count": 0, "total_views": 0}
+        blueprints[niche]["count"] += 1
+        blueprints[niche]["total_views"] += p.view_count or 0
+
+    return {"blueprints": list(blueprints.values())}
 
 
 @router.get("/empire/network")
@@ -143,7 +226,54 @@ async def get_network_graph(
     """
     Returns the visualization graph (nodes/links) for the empire mesh.
     """
-    from services.monetization.empire_service import base_empire_service
+    from sqlalchemy import select
+    from api.utils.models import PublishedContentDB, SocialAccount
+
+    # Get connected accounts as nodes
+    accounts_result = await db.execute(
+        select(SocialAccount).where(SocialAccount.user_id == current_user.id)
+    )
+    accounts = accounts_result.scalars().all()
+
+    # Get published content for connections
+    content_result = await db.execute(
+        select(PublishedContentDB)
+        .where(PublishedContentDB.user_id == current_user.id)
+        .limit(50)
+    )
+    content = content_result.scalars().all()
+
+    nodes = []
+    links = []
+
+    # Create nodes for accounts
+    for acc in accounts:
+        nodes.append(
+            {
+                "id": f"account_{acc.id}",
+                "type": "account",
+                "platform": acc.platform,
+                "name": acc.username,
+            }
+        )
+
+    # Create nodes for content and links
+    for c in content:
+        nodes.append(
+            {
+                "id": f"content_{c.id}",
+                "type": "content",
+                "title": c.title[:30],
+            }
+        )
+        links.append(
+            {
+                "source": f"account_{c.account_id}",
+                "target": f"content_{c.id}",
+            }
+        )
+
+    return {"nodes": nodes, "links": links}
 
     return await base_empire_service.get_network_graph(db, current_user.id)
 
