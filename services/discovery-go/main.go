@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -47,21 +46,12 @@ func scanHandler(c *gin.Context) {
 		req.Niches = []string{"AI", "Fitness", "Motivation"}
 	}
 
-	scanner := NewScanner()
-	results := scanner.StartMultiScan(req.Niches)
-
-	bridge := NewAIBridge()
-	for _, res := range results {
-		go func(r ScanResult) {
-			if err := bridge.SendToDeconstructor(r); err != nil {
-				fmt.Printf("[Bridge] Error sending to Python: %v\n", err)
-			}
-		}(res)
-	}
+	// Use bounded broadcast instead of unbounded goroutines
+	results := MultiScanWithBroadcast(req.Niches)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Concurrent scan completed and sent to AI pipeline",
+		"message": "Scan completed with bounded concurrency",
 		"results": results,
-		"engine":  "golang-concurrency",
+		"engine":  "golang-bounded-worker-pool",
 	})
 }
