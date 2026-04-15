@@ -9,7 +9,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from config import settings
+from api.config import settings
 from agent import OpenClawAgent
 from dispatcher import dispatcher
 import uvicorn

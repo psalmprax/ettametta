@@ -1,11 +1,3 @@
-from moviepy import (
-    VideoFileClip,
-    TextClip,
-    CompositeVideoClip,
-    concatenate_videoclips,
-    ColorClip,
-    vfx,
-)
 import os
 import uuid
 import random
@@ -19,18 +11,54 @@ from .stock_service import stock_service
 from .ffmpeg_utils import ffmpeg_transformer
 from api.config import settings
 
-try:
-    import cv2
-    import numpy as np
+logger = logging.getLogger(__name__)
 
-    CV2_AVAILABLE = True
-except ImportError:
-    CV2_AVAILABLE = False
-    logging.warning("OpenCV not available, using MoviePy only")
+# Lazy loading flags
+_moviepy_available = None
+_cv2_available = None
 
+def check_moviepy_available():
+    global _moviepy_available
+    if _moviepy_available is None:
+        try:
+            from moviepy.editor import VideoFileClip
+            _moviepy_available = True
+        except ImportError:
+            _moviepy_available = False
+            logger.warning("[VideoProcessor] moviepy not installed. Editing features limited.")
+    return _moviepy_available
+
+def check_cv2_available():
+    global _cv2_available
+    if _cv2_available is None:
+        try:
+            import cv2
+            _cv2_available = True
+        except ImportError:
+            _cv2_available = False
+            logger.warning("[VideoProcessor] OpenCV not available. Visual analysis degraded.")
+    return _cv2_available
 
 class VideoProcessor:
+    """
+    Advanced Video Processing Engine for ViralForge.
+    
+    This class handles multi-stage video synthesis, frame-level transformations,
+    OCR injection, and subtitle rendering using both MoviePy and OpenCV (where available).
+    
+    Attributes:
+        output_dir (str): Directory for temporary and final video assets.
+        use_gpu (bool): Whether to use hardware acceleration (NVENC) for rendering.
+        font_path (str): Path to the primary font for captions.
+    """
     def __init__(self, output_dir: str = "outputs"):
+        """
+        Initializes the Video Engine with dynamic font resolution and FFmpeg patching.
+        
+        Args:
+            output_dir (str): Root directory for video outputs. Defaults to "outputs".
+        """
+        self.output_dir = output_dir
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
         # Check for GPU availability
@@ -83,20 +111,44 @@ class VideoProcessor:
         self.video_load_timeout = 30
 
     def _check_ffmpeg_version(self):
-        """Check ffmpeg version and log warnings for known issues."""
+        """Checks ffmpeg version for compatibility."""
         try:
-            result = subprocess.run(
-                ["ffmpeg", "-version"], capture_output=True, text=True, timeout=5
-            )
-            version_line = result.stdout.split("\n")[0]
-            logging.info(f"[VideoProcessor] FFmpeg: {version_line}")
+            result = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True)
+            if result.returncode == 0:
+                version_line = result.stdout.split('\n')[0]
+                logger.info(f"[VideoProcessor] FFmpeg version: {version_line}")
+            else:
+                logger.warning("[VideoProcessor] FFmpeg check failed. Video processing may be unstable.")
+        except FileNotFoundError:
+            logger.error("[VideoProcessor] FFmpeg NOT FOUND. Video processing will FAIL.")
 
-            logging.info(f"[VideoProcessor] FFmpeg: {version_line}")
-        except Exception as e:
-            logging.warning(f"[VideoProcessor] Could not check ffmpeg version: {e}")
+    def get_dependency_report(self):
+        """Returns health of local Video Processing drivers."""
+        m_available = check_moviepy_available()
+        c_available = check_cv2_available()
+        return {
+            "name": "Video Processor Core",
+            "drivers": [
+                {
+                    "name": "moviepy",
+                    "installed": m_available,
+                    "impact": "Complex editing, transitions, and text overlays will be unavailable."
+                },
+                {
+                    "name": "opencv-python",
+                    "installed": c_available,
+                    "impact": "Cinematic motion and visual quality enhancement will be unavailable."
+                }
+            ],
+            "healthy": m_available # MoviePy is the primary driver
+        }
 
-    async def _verify_video_readable(self, clip: VideoFileClip):
+    async def _verify_video_readable(self, clip: "VideoFileClip"):
         """Verify video can be read by iterating frames."""
+        if not check_moviepy_available():
+            logger.warning("[VideoProcessor] Cannot verify video readability: moviepy missing.")
+            return
+
         import threading
 
         result = {"success": False, "error": None}
@@ -119,13 +171,13 @@ class VideoProcessor:
             raise RuntimeError(f"Video not readable: {result.get('error', 'timeout')}")
 
     async def _create_opencv_based_processing(
-        self, input_path: str, clip: VideoFileClip = None
+        self, input_path: str, clip: "VideoFileClip" = None
     ):
         """
         Create OpenCV-based video processing when MoviePy hangs.
         This is a simpler path that processes video frame-by-frame with OpenCV.
         """
-        if not CV2_AVAILABLE:
+        if not check_cv2_available():
             logging.error("[VideoProcessor] OpenCV not available for fallback")
             raise RuntimeError("OpenCV not available")
 
@@ -164,6 +216,7 @@ class VideoProcessor:
         # Try to return MoviePy clip one more time with different settings
         try:
             # Try with different reader
+            from moviepy.editor import VideoFileClip
             clip = VideoFileClip(
                 input_path, audio=False, target_resolution=(height, width)
             )
@@ -174,7 +227,7 @@ class VideoProcessor:
             # Return a dummy clip that will trigger OpenCV processing
             raise RuntimeError(f"MoviePy completely failed, need OpenCV rewrite: {e}")
 
-    async def _load_video_with_timeout(self, input_path: str) -> VideoFileClip:
+    async def _load_video_with_timeout(self, input_path: str) -> "VideoFileClip":
         """
         Load video with timeout and fallback to OpenCV if it hangs.
         """
@@ -182,6 +235,7 @@ class VideoProcessor:
 
         # First try with asyncio timeout
         try:
+            from moviepy.editor import VideoFileClip
             clip = await asyncio.wait_for(
                 asyncio.to_thread(VideoFileClip, input_path),
                 timeout=self.video_load_timeout,
@@ -216,16 +270,17 @@ class VideoProcessor:
         # Fallback: Use OpenCV to probe video info, then retry MoviePy
         return await self._load_video_opencv_fallback(input_path)
 
-    async def _load_video_opencv_fallback(self, input_path: str) -> VideoFileClip:
+    async def _load_video_opencv_fallback(self, input_path: str) -> "VideoFileClip":
         """
         OpenCV-based fallback for video loading.
         Probes video properties and tries again with MoviePy.
         """
-        if not CV2_AVAILABLE:
+        if not check_cv2_available():
             logging.error("[VideoProcessor] OpenCV not available, cannot fallback")
             raise RuntimeError("Video loading failed and OpenCV fallback unavailable")
 
         logging.info(f"[VideoProcessor] Probing video with OpenCV: {input_path}")
+        import cv2
         cap = cv2.VideoCapture(input_path)
 
         if not cap.isOpened():
@@ -250,6 +305,7 @@ class VideoProcessor:
 
         # Try loading with MoviePy again with extended timeout
         try:
+            from moviepy.editor import VideoFileClip
             clip = await asyncio.wait_for(
                 asyncio.to_thread(VideoFileClip, input_path), timeout=60
             )
@@ -367,6 +423,7 @@ class VideoProcessor:
         )
 
         # Original MoviePy Fallback (kept for safety)
+        from moviepy.editor import VideoFileClip, vfx
         clip = VideoFileClip(input_path)
         transformed = clip.with_effects([vfx.MirrorX()]).resized(
             height=int(clip.h * 1.05)
@@ -396,14 +453,15 @@ class VideoProcessor:
         logging.warning(
             "[VideoProcessor] Fast concat failed, falling back to MoviePy compose"
         )
+        from moviepy.editor import VideoFileClip, concatenate_videoclips
         clips = [VideoFileClip(p) for p in clip_paths]
         final_clip = concatenate_videoclips(clips, method="compose")
         final_clip.write_videofile(output_path, codec="libx264")
         return output_path
 
     def apply_speed_ramping(
-        self, clip: VideoFileClip, speed_range: List[float] = [0.95, 1.05]
-    ) -> VideoFileClip:
+        self, clip: "VideoFileClip", speed_range: List[float] = [0.95, 1.05]
+    ) -> "VideoFileClip":
         """
         Randomly shifts speed based on AI strategy range to reset algorithm clocks.
         """
@@ -411,8 +469,8 @@ class VideoProcessor:
         return clip.with_effects([vfx.MultiplySpeed(speed)])
 
     def apply_dynamic_jitter(
-        self, clip: VideoFileClip, intensity: float = 1.0
-    ) -> VideoFileClip:
+        self, clip: "VideoFileClip", intensity: float = 1.0
+    ) -> "VideoFileClip":
         """
         Simulates handheld motion by applying small random position offsets.
         Uses intensity from AI strategy.
@@ -429,7 +487,7 @@ class VideoProcessor:
         zoomed = clip.resized(height=int(clip.h * zoom_factor))
         return zoomed.with_position(jitter)
 
-    def apply_cinematic_overlays(self, clip: VideoFileClip) -> VideoFileClip:
+    def apply_cinematic_overlays(self, clip: "VideoFileClip") -> "VideoFileClip":
         """
         Adds high-energy light leaks/overlays with smooth transitions.
         """
@@ -443,7 +501,7 @@ class VideoProcessor:
 
         return CompositeVideoClip([clip, leak.with_position("center")])
 
-    def apply_atmospheric_glow(self, clip: VideoFileClip) -> VideoFileClip:
+    def apply_atmospheric_glow(self, clip: "VideoFileClip") -> "VideoFileClip":
         """
         Adds a soft, glowing atmospheric layer (f9).
         """
@@ -452,20 +510,20 @@ class VideoProcessor:
         )
         return CompositeVideoClip([clip, glow])
 
-    def apply_film_grain(self, clip: VideoFileClip) -> VideoFileClip:
+    def apply_film_grain(self, clip: "VideoFileClip") -> "VideoFileClip":
         """
         Adds a subtle film grain effect to simulate analog texture (f10).
         """
         # Placeholder for real noise generation; for now, we use a subtle contrast jitter
         return clip.with_effects([vfx.LumContrast(lum=0, contrast=0.08)])
 
-    def apply_grayscale(self, clip: VideoFileClip) -> VideoFileClip:
+    def apply_grayscale(self, clip: "VideoFileClip") -> "VideoFileClip":
         """
         Converts video to black and white for the Noir style (f11).
         """
         return clip.with_effects([vfx.BlackAndWhite()])
 
-    def apply_random_glitch(self, clip: VideoFileClip) -> VideoFileClip:
+    def apply_random_glitch(self, clip: "VideoFileClip") -> "VideoFileClip":
         """
         Applies a random glitch effect by shifting RGB channels or adding noise (f12).
         """
@@ -475,8 +533,8 @@ class VideoProcessor:
         )
 
     def apply_vibe_adjustments(
-        self, clip: VideoFileClip, insights: Dict
-    ) -> VideoFileClip:
+        self, clip: "VideoFileClip", insights: Dict
+    ) -> "VideoFileClip":
         """
         Maps VLM visual insights (mood, predominant colors) to MoviePy visual effects.
         """
@@ -508,8 +566,8 @@ class VideoProcessor:
         return clip
 
     def trim_to_hooks(
-        self, clip: VideoFileClip, hooks: List[List[float]]
-    ) -> VideoFileClip:
+        self, clip: "VideoFileClip", hooks: List[List[float]]
+    ) -> "VideoFileClip":
         """
         Cuts the video to only the segments identified as high-energy hooks.
         """
@@ -530,8 +588,8 @@ class VideoProcessor:
         return concatenate_videoclips(segments, method="compose")
 
     async def inject_b_roll(
-        self, clip: VideoFileClip, keywords: List[str]
-    ) -> VideoFileClip:
+        self, clip: "VideoFileClip", keywords: List[str]
+    ) -> "VideoFileClip":
         """
         Fetches a stock B-roll clip and overlays it onto the main video.
         """
@@ -788,7 +846,7 @@ class VideoProcessor:
 
                 # 1. Download Video Clip if it's a URL
                 local_vid = await _download_media(video_url, ".mp4")
-                clip = VideoFileClip(local_vid)
+                from moviepy.editor import VideoFileClip; clip = VideoFileClip(local_vid)
 
                 # 2. Add Narration Audio if exists
                 if audio_url:

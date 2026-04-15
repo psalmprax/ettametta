@@ -4,7 +4,7 @@ import requests
 from datetime import datetime
 from typing import Dict, List, Optional
 from api.config import settings
-from skills.memory import memory_skill
+from .memory import memory_skill
 
 logger = logging.getLogger(__name__)
 

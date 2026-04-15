@@ -4,7 +4,7 @@ import requests
 from datetime import datetime
 from typing import Dict, List, Optional
 from api.config import settings
-from skills.memory import memory_skill
+from .memory import memory_skill
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +168,7 @@ class CompetitorSkill:
 
     def _analyze_instagram(self, username: str) -> str:
         try:
-            from skills.metrics import social_metrics_skill
+            from .metrics import social_metrics_skill
 
             profile = social_metrics_skill.get_instagram_profile(username)
 

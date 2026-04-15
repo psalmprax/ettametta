@@ -103,6 +103,8 @@ class Settings(BaseSettings):
     COMFYUI_URL: str = "http://220.135.0.171:8188"
     COMFYUI_WORKFLOWS_DIR: str = "services/video_engine/workflows"
     COMFYUI_MODELS_DIR: str = "services/video_engine/models"
+    VIDEO_OUTPUTS_DIR: str = "outputs"
+    REMOTE_VIDEO_OUTPUTS_DIR: str = "/workspace/outputs"
     CLEANUP_TRANSIENT_MODELS: bool = True
     GPU_QUEUE_SLOTS: int = (
         1  # Concurrent generations allowed (auto-detected from hardware)

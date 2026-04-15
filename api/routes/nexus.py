@@ -398,30 +398,50 @@ async def get_nexus_telemetry(
     except:
         load_1 = 0.0  # Fallback for non-unix or restricted envs
 
-    # 3. Real Latency Measurement (Synthetic RTT)
-    latency_ms = max(db_query_time_ms, 5)
+    # 3. Dynamic Hardware Signals (Live Reports)
     node_id = os.getenv("NEXUS_NODE_ID", socket.gethostname())
+    
+    # Lazily import services to avoid circular dependencies
+    from services.video_engine.synthesis_service import generative_service
+    from services.llm.service import unified_llm_service
+    
+    gen_report = generative_service.get_dependency_report()
+    llm_report = unified_llm_service.get_intelligence_report()
+    
+    signals = []
+    
+    # Synthesis & GPU Signals
+    signals.append({
+        "id": "GPU_Cluster",
+        "status": gen_report.get("circuit_status", "CLOSED"),
+        "offset": f"{db_query_time_ms}ms"
+    })
+    
+    # Driver-level signals (Sample 2 key ones)
+    for driver in gen_report.get("drivers", [])[:2]:
+        signals.append({
+            "id": driver["name"].replace(" ", "_"),
+            "status": "HEALTHY" if driver.get("status") == "Healthy" or driver.get("installed") else "DEGRADED",
+            "offset": "0ms"
+        })
+        
+    # Intelligence Framework Signals
+    for fw in llm_report.get("frameworks", []):
+        signals.append({
+            "id": f"Neural_{fw['name']}",
+            "status": fw["status"].upper(),
+            "offset": "1ms"
+        })
 
     return {
-        "status": "OPERATIONAL",
+        "status": "OPERATIONAL" if gen_report["healthy"] else "DEGRADED",
         "cluster_node": node_id,
         "hostname": node_id,
         "active_jobs": active_nexus_jobs + active_video_jobs,
         "nexus_active": active_nexus_jobs,
         "video_active": active_video_jobs,
-        "latency_ms": latency_ms,
+        "latency_ms": db_query_time_ms,
         "timestamp": time.time(),
         "load_avg": round(load_1, 2),
-        "signals": [
-            {
-                "id": "Primary_Node",
-                "status": "ACTIVE" if active_nexus_jobs > 0 else "IDLE",
-                "offset": f"{latency_ms}ms",
-            },
-            {
-                "id": "Neural_Mesh",
-                "status": "SYNCED" if active_video_jobs > 0 else "STANDBY",
-                "offset": "2ms",
-            },
-        ],
+        "signals": signals,
     }

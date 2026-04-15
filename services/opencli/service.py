@@ -23,13 +23,47 @@ import json
 import asyncio
 import logging
 import subprocess
+import time
 from typing import Optional, Dict, List, Any
 from pathlib import Path
 from datetime import datetime
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 
 from api.config import settings
 
 logger = logging.getLogger(__name__)
+
+class CircuitBreaker:
+    """Simple circuit breaker to prevent cascading failures"""
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0
+        self.state = "CLOSED"
+
+    def is_open(self) -> bool:
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
 
 # Platform capabilities matrix — what each platform supports via opencli-rs
 PLATFORM_CAPABILITIES = {
@@ -88,6 +122,7 @@ class OpenCLIService:
         self.sessions_dir = Path(settings.OPENCLI_SESSIONS_DIR)
         self.sessions_dir.mkdir(parents=True, exist_ok=True)
         self._binary_available = None
+        self.circuit_breaker = CircuitBreaker()
 
     def _check_binary(self) -> bool:
         """Check if opencli-rs binary is installed."""
@@ -273,6 +308,12 @@ class OpenCLIService:
             logger.error(f"[OpenCLI] Failed to disconnect: {e}")
             return False
 
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=1, min=1, max=5),
+        retry=retry_if_exception_type((asyncio.TimeoutError, subprocess.SubprocessError)),
+        reraise=False
+    )
     async def _run_opencli(
         self,
         user_id: int,
@@ -281,18 +322,11 @@ class OpenCLIService:
         params: Optional[Dict[str, str]] = None,
         timeout: int = 30,
     ) -> Optional[Dict[str, Any]]:
-        """Execute an opencli-rs command with the user's session cookies.
+        """Execute an opencli-rs command with circuit breaking and retries."""
+        if self.circuit_breaker.is_open():
+            logger.warning("[OpenCLI] Circuit breaker is OPEN - skipping execution")
+            return None
 
-        Args:
-            user_id: User ID (for cookie isolation)
-            platform: Target platform
-            command: opencli command (search, feed, trending, post, etc.)
-            params: Command parameters
-            timeout: Command timeout in seconds
-
-        Returns:
-            Parsed JSON result or None on failure
-        """
         platform = platform.lower()
         cookie_path = self._cookie_path(user_id, platform)
 
@@ -328,6 +362,7 @@ class OpenCLIService:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
 
             if proc.returncode != 0:
+                self.circuit_breaker.record_failure()
                 logger.error(
                     f"[OpenCLI] Command failed (rc={proc.returncode}): "
                     f"{stderr.decode()[:500]}"
@@ -338,15 +373,19 @@ class OpenCLIService:
             if not output:
                 return None
 
-            return json.loads(output)
+            result = json.loads(output)
+            self.circuit_breaker.record_success()
+            return result
 
         except asyncio.TimeoutError:
+            self.circuit_breaker.record_failure()
             logger.error(f"[OpenCLI] Command timed out after {timeout}s")
             return None
         except json.JSONDecodeError:
             logger.warning(f"[OpenCLI] Non-JSON output: {output[:200]}")
             return {"raw": output}
         except Exception as e:
+            self.circuit_breaker.record_failure()
             logger.error(f"[OpenCLI] Execution error: {e}")
             return None
 
