@@ -52,7 +52,12 @@
   1. User can transform existing videos with AI enhancements like sound design and quality tiers
   2. User can generate new videos from scratch using multiple AI engines (Veo3, LTX-Video, etc.)
   3. User can preview generated videos and retry failed jobs
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 03-01-PLAN.md — Install and verify video processing dependencies
+- [ ] 03-02-PLAN.md — Test video generation with multiple engines
+- [ ] 03-03-PLAN.md — Add error handling and retry logic
+- [ ] 03-04-PLAN.md — Optimize Docker builds for video processing
+- [ ] 03-05-PLAN.md — Implement video preview and storage upload
 
 ### Phase 4: Advanced Video Generation
 **Goal**: Users can create complex storytelling videos
@@ -101,7 +106,7 @@
 |-------|----------------|--------|-----------|
 | 1. User Authentication and Settings | 5/6 | Executing | - |
 | 2. Content Discovery | 0/0 | Not started | - |
-| 3. Basic Video Generation | 0/0 | Not started | - |
+| 3. Basic Video Generation | 0/5 | Planned | - |
 | 4. Advanced Video Generation | 0/0 | Not started | - |
 | 5. Multi-Platform Publishing | 0/0 | Not started | - |
 | 6. Automated Scheduling Publishing | 0/0 | Not started | - |
