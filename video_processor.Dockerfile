@@ -1,34 +1,30 @@
-# Video Processor Dockerfile
-# Includes all dependencies for video editing and processing
+# Video Processor Dockerfile with Multi-Stage Build
+# Optimized for efficient video processing deployment
 
 ARG BASE_IMAGE=python:3.10
 
-FROM ${BASE_IMAGE} as base
+# Build stage: Install all dependencies and compile native extensions
+FROM ${BASE_IMAGE} as builder
 
-# Install system dependencies for video processing
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    curl \
-    git \
     build-essential \
     pkg-config \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
+    git \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Copy requirements and install Python dependencies
+# Copy requirements and install Python dependencies with caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir -r requirements.txt
 
-# Install video processing dependencies
-RUN pip install --no-cache-dir \
+# Install video processing dependencies with caching
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir \
     moviepy \
     opencv-python \
     torch \
@@ -45,6 +41,24 @@ RUN pip install --no-cache-dir \
     nodejs \
     npm
 
+# Runtime stage: Minimal image for execution
+FROM ${BASE_IMAGE}-slim as runtime
+
+# Install only runtime system dependencies
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    curl \
+    libglib2.0-0 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed Python packages from builder stage
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Set working directory
+WORKDIR /app
+
 # Copy application code
 COPY . .
 
@@ -54,7 +68,7 @@ RUN mkdir -p outputs/scene_based_videos inputs cache
 # Set environment variables for video processing
 ENV PYTHONPATH=/app
 ENV TORCH_USE_CUDA_DSA=1
-ENV CUDA_VISIBLE_DEVICES=""
+ENV CUDA_VISIBLE_DEVICES=all
 
 # Default command
 CMD ["python", "-c", "print('Video Processor Container Ready')"]
