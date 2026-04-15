@@ -53,7 +53,7 @@
   2. User can generate new videos from scratch using multiple AI engines (Veo3, LTX-Video, etc.)
   3. User can preview generated videos and retry failed jobs
 **Plans**: 5 plans
-- [ ] 03-01-PLAN.md — Install and verify video processing dependencies
+- [x] 03-01-PLAN.md — Install and verify video processing dependencies
 - [ ] 03-02-PLAN.md — Test video generation with multiple engines
 - [ ] 03-03-PLAN.md — Add error handling and retry logic
 - [ ] 03-04-PLAN.md — Optimize Docker builds for video processing
