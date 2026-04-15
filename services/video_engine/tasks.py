@@ -369,23 +369,45 @@ def generate_video_task(
     Simplified sync version for demo.
     """
     from api.utils.models import VideoJobDB
+    from api.utils.database import async_session_factory
+    from services.storage.service import base_storage_service
     from .synthesis_service import generative_service
     import uuid
 
     task_id = self.request.id
 
     def update_job(status=None, progress=None, output_path=None, error_message=None):
-        """Simple sync job update for demo"""
-        logger.info(
-            f"[VideoJob] {task_id}: {status} ({progress}%) - Error: {error_message}"
-        )
-        # In real implementation, this would update the DB
-        return {
-            "task_id": task_id,
-            "status": status,
-            "progress": progress,
-            "error_message": error_message,
-        }
+        async def _update():
+            async with async_session_factory() as db:
+                stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
+                result = await db.execute(stmt)
+                job = result.scalar_one_or_none()
+                if job:
+                    if status:
+                        job.status = status
+                    if progress is not None:
+                        job.progress = progress
+                    if output_path:
+                        job.output_path = output_path
+                    if error_message:
+                        job.error_message = error_message
+                    await db.commit()
+
+                    # Real-time WebSocket Notification
+                    from api.routes.ws import notify_job_update_sync
+
+                    notification = {
+                        "id": task_id,
+                        "status": job.status,
+                        "progress": job.progress,
+                        "output_path": job.output_path,
+                    }
+                    if job.error_message:
+                        notification["error_message"] = job.error_message
+
+                    notify_job_update_sync(notification)
+
+        run_async(_update())
 
     try:
         # 1. Synthesis
@@ -438,29 +460,25 @@ def generate_video_task(
 
         # 2. Download generated asset (if it's a URL)
         update_job(status="Downloading Asset", progress=40)
-        # For mocks, we treat the URL as the path if it's local, or download it
         if video_url.startswith("http"):
-            # In a real scenario, we'd use base_video_downloader.download_video(video_url)
-            # But for our current GenerativeService mocks, we'll just log it
-            pass
+            local_video_path = run_async(
+                base_video_downloader.download_video(video_url)
+            )
+        else:
+            local_video_path = video_url
 
         # 3. Skip heavy post-processing for demo
         update_job(status="Complete", progress=90)
 
         # 4. Storage
-        from services.storage.service import base_storage_service
-
-        # Upload to Storage
-        try:
-            from services.storage.service import base_storage_service
-
-            storage_key = base_storage_service.upload_file(video_url)
-            public_url = base_storage_service.get_public_url(storage_key)
-        except Exception:
-            # Demo: just use the video_url directly
-            public_url = video_url
+        storage_key = base_storage_service.upload_file(local_video_path)
+        public_url = base_storage_service.get_public_url(storage_key)
 
         update_job(status="Completed", progress=100, output_path=public_url)
+
+        # Cleanup
+        if local_video_path != video_url and settings.STORAGE_PROVIDER != "LOCAL":
+            cleanup_local_files(local_video_path)
 
         return {
             "status": "success",
