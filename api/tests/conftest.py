@@ -4,9 +4,16 @@ Test Configuration and Fixtures
 Shared test fixtures for API integration tests
 """
 
+import sys
+from unittest.mock import MagicMock
+
+# Mock version check for email-validator BEFORE any other imports
+mock_metadata = MagicMock()
+mock_metadata.version.return_value = "2.0.0"
+sys.modules["importlib.metadata"] = mock_metadata
+
 import pytest
 import os
-import sys
 from pathlib import Path
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock

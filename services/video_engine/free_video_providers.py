@@ -17,12 +17,56 @@ Configure via AI_VIDEO_PROVIDER env var:
 import os
 import logging
 import asyncio
+import time
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 import uuid
 import json
 
 logger = logging.getLogger(__name__)
+
+class CircuitBreaker:
+    """Simple circuit breaker to prevent cascading failures"""
+    def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 300):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0
+        self.state = "CLOSED"
+
+    def is_open(self) -> bool:
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+            logger.warning("[FreeVideoProvider] Circuit opened due to API/Browser failures")
+
+
+# Lazy check for browser automation
+_playwright_available = None
+
+def check_playwright_available():
+    global _playwright_available
+    if _playwright_available is None:
+        try:
+            import playwright
+            _playwright_available = True
+        except ImportError:
+            _playwright_available = False
+            logger.warning("[FreeVideoProvider] Playwright not installed. Browser automation fallback disabled.")
+    return _playwright_available
 
 
 class FreeVideoProviderService:
@@ -273,6 +317,7 @@ class FreeVideoProviderService:
         # Get primary provider from env
         self.primary_provider = os.getenv("AI_VIDEO_PROVIDER", "none").lower()
         self.enabled = self.primary_provider != "none"
+        self.circuit_breaker = CircuitBreaker()
 
         # Also check for fallback providers (comma-separated list)
         fallback_str = os.getenv("AI_VIDEO_FALLBACKS", "")
@@ -298,6 +343,34 @@ class FreeVideoProviderService:
             f"[FreeVideoProvider] Primary: {self.primary_provider}, "
             f"Fallbacks: {self.fallback_providers}, Enabled: {self.enabled}"
         )
+
+    def get_dependency_report(self):
+        """Returns health of browser automation and API drivers."""
+        p_available = check_playwright_available()
+        return {
+            "name": "Free Video Providers",
+            "drivers": [
+                {
+                    "name": "playwright",
+                    "installed": p_available,
+                    "impact": "Browser automation fallbacks (Kling, LTX, etc.) will be disabled."
+                }
+            ],
+            "healthy": True # Service can still use Direct APIs if playwright is missing
+        }
+
+    def get_health_report(self):
+        """Returns real-time health for the dashboard."""
+        status = "Healthy"
+        if self.circuit_breaker.is_open():
+            status = "Degraded"
+        
+        return {
+            "service": "Free Video Providers",
+            "status": status,
+            "circuit_breaker": self.circuit_breaker.state,
+            "primary": self.primary_provider
+        }
 
     def _get_api_key(self, provider: str) -> Optional[str]:
         """Get API key for a specific provider"""
@@ -333,44 +406,53 @@ class FreeVideoProviderService:
     ) -> Optional[Dict[str, Any]]:
         """
         Generate video using available free provider.
-
-        Tries primary provider first, then fallbacks.
-
-        Returns:
-            Dict with video_url, provider, and metadata, or None on failure
         """
+        if self.circuit_breaker.is_open():
+            logger.error("[FreeVideoProvider] Circuit is open. Skipping generation.")
+            return None
+
         providers = self._get_all_providers()
 
-        for provider in providers:
-            api_key = self._get_api_key(provider)
-            if not api_key:
-                logger.debug(f"[FreeVideoProvider] No API key for {provider}, skipping")
-                continue
+        try:
+            for provider in providers:
+                api_key = self._get_api_key(provider)
+                if not api_key:
+                    logger.debug(f"[FreeVideoProvider] No API key for {provider}, skipping")
+                    continue
 
-            logger.info(
-                f"[FreeVideoProvider] Attempting {provider} - prompt: {prompt[:50]}..."
-            )
-
-            try:
-                result = await self._generate_with_provider(
-                    provider, prompt, duration, aspect_ratio, style, image_url, api_key
+                logger.info(
+                    f"[FreeVideoProvider] Attempting {provider} - prompt: {prompt[:50]}..."
                 )
+
+                try:
+                    result = await self._generate_with_provider(
+                        provider, prompt, duration, aspect_ratio, style, image_url, api_key
+                    )
+                    if result:
+                        result["provider"] = provider
+                        logger.info(f"[FreeVideoProvider] Success with {provider}")
+                        self.circuit_breaker.record_success()
+                        return result
+                except Exception as e:
+                    logger.warning(f"[FreeVideoProvider] {provider} failed: {e}")
+                    continue
+
+            # Fallback: Try browser automation (Playwright) when API keys are not available
+            if check_playwright_available():
+                logger.info("[FreeVideoProvider] All API providers failed, trying browser automation...")
+                result = await self._generate_with_browser(prompt, duration, aspect_ratio)
                 if result:
-                    result["provider"] = provider
-                    logger.info(f"[FreeVideoProvider] Success with {provider}")
+                    self.circuit_breaker.record_success()
                     return result
-            except Exception as e:
-                logger.warning(f"[FreeVideoProvider] {provider} failed: {e}")
-                continue
 
-        # Fallback: Try browser automation (Playwright) when API keys are not available
-        logger.info("[FreeVideoProvider] All API providers failed, trying browser automation...")
-        result = await self._generate_with_browser(prompt, duration, aspect_ratio)
-        if result:
-            return result
+            self.circuit_breaker.record_failure()
+            logger.error("[FreeVideoProvider] All providers failed")
+            return None
 
-        logger.error("[FreeVideoProvider] All providers failed")
-        return None
+        except Exception as e:
+            self.circuit_breaker.record_failure()
+            logger.error(f"[FreeVideoProvider] Generation exploded: {e}")
+            return None
 
     async def _generate_with_browser(
         self, prompt: str, duration: int, aspect_ratio: str
@@ -640,8 +722,12 @@ class FreeVideoProviderService:
                         }
                     elif status in ("failed", "cancelled"):
                         return None
+                except Exception as e:
+                    logger.warning(f"[FreeVideoProvider] Poll error for {job_id}: {e}")
+                    await asyncio.sleep(delay)
+                    continue
 
-            await asyncio.sleep(delay)
+                await asyncio.sleep(delay)
 
         return None
 

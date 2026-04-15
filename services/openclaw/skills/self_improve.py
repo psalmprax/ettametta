@@ -9,7 +9,11 @@ from pathlib import Path
 import requests
 
 from api.config import settings
-from skills.memory import memory_skill
+try:
+    from .memory import memory_skill
+except (ImportError, ValueError):
+    # Fallback for direct execution if needed
+    memory_skill = None
 
 logger = logging.getLogger(__name__)
 

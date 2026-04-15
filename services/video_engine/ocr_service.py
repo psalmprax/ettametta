@@ -1,29 +1,81 @@
-import easyocr
-import cv2
 import os
 import logging
-import numpy as np
 from typing import List, Dict, Tuple
+
+logger = logging.getLogger(__name__)
+
+# Lazy loading flags
+_easyocr_available = None
+_cv2_available = None
+
+def check_easyocr_available():
+    global _easyocr_available
+    if _easyocr_available is None:
+        try:
+            import easyocr
+            _easyocr_available = True
+        except ImportError:
+            _easyocr_available = False
+            logger.warning("[OCRService] easyocr not installed. OCR features disabled.")
+    return _easyocr_available
+
+def check_cv2_available():
+    global _cv2_available
+    if _cv2_available is None:
+        try:
+            import cv2
+            _cv2_available = True
+        except ImportError:
+            _cv2_available = False
+            logger.warning("[OCRService] OpenCV not available. Video analysis disabled.")
+    return _cv2_available
 
 class OCRService:
     def __init__(self):
-        # Initialize reader once. This will download models on first run if not present.
-        # We use English by default, but can be expanded.
-        try:
-            self.reader = easyocr.Reader(['en'], gpu=False) # GPU=False for OCI ARM compatibility
-            logging.info("[OCRService] EasyOCR initialized.")
-        except Exception as e:
-            logging.error(f"[OCRService] Failed to initialize EasyOCR: {e}")
-            self.reader = None
+        self.reader = None
+        self._init_attempted = False
+
+    def _ensure_reader(self):
+        """Lazy initialization of the EasyOCR reader."""
+        if self._init_attempted:
+            return
+        
+        self._init_attempted = True
+        if check_easyocr_available():
+            try:
+                import easyocr
+                self.reader = easyocr.Reader(['en'], gpu=False)
+                logger.info("[OCRService] EasyOCR initialized.")
+            except Exception as e:
+                logger.error(f"[OCRService] Failed to initialize EasyOCR: {e}")
+                self.reader = None
+
+    def get_dependency_report(self):
+        """Returns health of OCR drivers."""
+        e_available = check_easyocr_available()
+        c_available = check_cv2_available()
+        return {
+            "name": "OCR Service",
+            "drivers": [
+                {
+                    "name": "easyocr",
+                    "installed": e_available,
+                    "impact": "Text detection and placement optimization will be disabled."
+                }
+            ],
+            "healthy": e_available and c_available
+        }
 
     def detect_text_regions(self, video_path: str, sample_rate: int = 30) -> List[Dict]:
         """
         Samples frames from a video and detects bounding boxes of text.
         Returns a list of regions found.
         """
-        if not self.reader:
+        self._ensure_reader()
+        if not self.reader or not check_cv2_available():
             return []
 
+        import cv2
         cap = cv2.VideoCapture(video_path)
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))

@@ -42,9 +42,19 @@ class StrategyService:
     async def generate_screenplay(
         self, prompt: str, style: str = "Cinematic"
     ) -> StoryScript:
-        """
-        Converts a narrative idea into a structured screenplay for multi-scene synthesis.
-        """
+        # Check if CrewAI is enabled for multi-agent strategy
+        from services.crewai.service import crewai_service
+        if crewai_service.is_enabled():
+            logging.info(f"[StrategyService] Delegating screenplay to CrewAI Team for: {prompt}")
+            try:
+                # This will use the Researcher + Writer agents
+                crew_result = await crewai_service.run_content_team(prompt)
+                if crew_result:
+                    # Expecting StoryScript compatible JSON from CrewAI
+                    return StoryScript(**crew_result)
+            except Exception as e:
+                logging.warning(f"[StrategyService] CrewAI failed, falling back to Groq: {e}")
+
         system_prompt = f"You are an elite AI Screenwriter for ettametta. Break down narrative prompts into structured scenes. Output JSON."
         user_prompt = f"""
         NARRATIVE IDEA: {prompt}

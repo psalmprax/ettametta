@@ -1,21 +1,47 @@
-"""
-LangChain Service - Optional LLM chaining & prompt management
-=============================================================
-Disabled by default. Enable with: ENABLE_LANGCHAIN=true
-
-This service enhances the existing Groq integration with:
-- Prompt templates
-- L
-LM chaining- Memory management
-- Output parsing
-"""
-
 import os
 import logging
+import time
+import json
 from typing import Optional, Dict, Any, List
 from datetime import datetime
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+def _check_langchain_available():
+    try:
+        import langchain
+        return True
+    except ImportError:
+        return False
+
+class CircuitBreaker:
+    """Simple circuit breaker to prevent cascading failures"""
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 60):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+
+    def is_open(self) -> bool:
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+            logger.warning("[LangChain] Circuit opened due to failures")
 
 # Lazy import to avoid dependency issues when disabled
 _langchain_available = False
@@ -44,13 +70,12 @@ class LangChainService:
         self.enabled = os.getenv("ENABLE_LANGCHAIN", "false").lower() == "true"
         self.llm = None
         self.memory = None
+        self.circuit_breaker = CircuitBreaker()
         
         if not self.enabled:
-            logger.info("LangChain service is disabled (ENABLE_LANGCHAIN=false)")
             return
             
         if not _langchain_available:
-            logger.error("LangChain not installed. Cannot enable service.")
             self.enabled = False
             return
         
@@ -59,7 +84,6 @@ class LangChainService:
         
         api_key = settings.GROQ_API_KEY
         if not api_key:
-            logger.error("GROQ_API_KEY not configured. LangChain service disabled.")
             self.enabled = False
             return
         
@@ -73,14 +97,49 @@ class LangChainService:
                 memory_key="chat_history",
                 return_messages=True
             )
-            logger.info("LangChain service initialized successfully")
+            logger.info("[LangChain] Service initialized successfully")
         except Exception as e:
-            logger.error(f"Failed to initialize LangChain: {e}")
+            logger.error(f"[LangChain] Failed to initialize: {e}")
             self.enabled = False
     
     def is_enabled(self) -> bool:
         """Check if service is enabled and available."""
-        return self.enabled and self.llm is not None
+        return self.enabled and self.llm is not None and not self.circuit_breaker.is_open()
+    
+    async def analyze_video_vibe(self, niche: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Cognitive analysis of video metadata to suggest optimal 'Vibe' and 'Style' overrides.
+        Implemented for NexusOrchestrator integration.
+        """
+        if not self.is_enabled():
+            return {}
+
+        prompt = ChatPromptTemplate.from_template("""
+        Analyze the following video metadata for the {niche} niche and suggest a viral visual vibe.
+        
+        METADATA:
+        {metadata}
+        
+        TASK:
+        1. Suggest a 'vibe' (e.g., Cinematic, Energetic, Hectic, Calm, Noir).
+        2. Suggest a 'filter_override' code (e.g., f7, f8, f9, f12).
+        3. Explain why.
+        
+        Output JSON only.
+        """)
+        
+        try:
+            chain = LLMChain(llm=self.llm, prompt=prompt)
+            result_str = await chain.arun(niche=niche, metadata=json.dumps(metadata))
+            import json as json_lib
+            data = json_lib.loads(result_str)
+            self.circuit_breaker.record_success()
+            logger.info(f"[LangChain] Vibe Analysis Success for {niche}: {data.get('vibe')}")
+            return data
+        except Exception as e:
+            self.circuit_breaker.record_failure()
+            logger.error(f"[LangChain] Vibe Analysis Failed: {e}")
+            return {}
     
     async def chain_prompt(
         self, 
@@ -181,6 +240,72 @@ class LangChainService:
         
         result = await chain.arun(input=user_input)
         return result
+    
+    async def predict_virality_score(
+        self,
+        script_text: str,
+        niche: str,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Use LangChain memory and cognitive patterns to predict a script's viral potential.
+        Provides a 'Viral Probability' score and improvement tips.
+        
+        Args:
+            script_text: The video script content
+            niche: Target niche (e.g. 'coding', 'funny')
+            metadata: Additional context (visuals, duration, etc.)
+            
+        Returns:
+            Dict containing viral_score, confidence, and feedback
+        """
+        if not self.is_enabled():
+            return {"viral_score": 0, "status": "disabled"}
+
+        start_time = time.time()
+        try:
+            prompt = ChatPromptTemplate.from_template("""
+                System: You are the ViralForge Predictor. Analyze the following script for viral potential.
+                Niche: {niche}
+                Metadata: {metadata}
+                
+                Script:
+                {script_text}
+                
+                Analyze based on:
+                1. Hook Strength (0-100)
+                2. Translatability (0-100)
+                3. Retention Hooks (0-100)
+                
+                Return a JSON object with:
+                - viral_score (int)
+                - probability (float)
+                - feedback (str)
+                - suggested_edits (list)
+            """)
+            
+            chain = LLMChain(llm=self.llm, prompt=prompt)
+            result = await chain.arun(
+                niche=niche,
+                metadata=json.dumps(metadata or {}),
+                script_text=script_text
+            )
+            
+            # Record success
+            self.circuit_breaker.record_success()
+            
+            # Simple cleanup of response if it's not pure JSON
+            if "```json" in result:
+                result = result.split("```json")[1].split("```")[0].strip()
+            
+            return json.loads(result)
+            
+        except Exception as e:
+            self.circuit_breaker.record_failure()
+            logger.error(f"[LangChain] Virality prediction failed: {e}")
+            return {"error": str(e), "viral_score": 0}
+        finally:
+            logger.info(f"[LangChain] Virality prediction completed in {time.time() - start_time:.2f}s")
     
     async def parse_output(
         self,

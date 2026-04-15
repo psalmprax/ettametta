@@ -1,11 +1,18 @@
 import asyncio
 import logging
 import os
-from playwright.async_api import async_playwright, Browser, Page
 from typing import Optional, Dict, Any
 import uuid
 
 logger = logging.getLogger(__name__)
+
+# Optional dependency
+try:
+    from playwright.async_api import async_playwright
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+    logger.warning("[Luma] Playwright not installed. Browser automation disabled.")
 
 
 class LumaSkill:
@@ -21,6 +28,12 @@ class LumaSkill:
         """
         Generate video from prompt using Luma Dream Machine
         """
+        if not PLAYWRIGHT_AVAILABLE:
+            return {
+                "status": "failed",
+                "error": "Playwright is not installed. Run 'pip install playwright && playwright install chromium' to enable browser-based AI skills.",
+                "engine": "luma",
+            }
 
         try:
             playwright = await async_playwright().start()

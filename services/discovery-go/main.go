@@ -1,13 +1,17 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	// Initialize default structured logger
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -20,8 +24,9 @@ func main() {
 	// Use clean service handler with auth middleware
 	r.POST("/scan", RequireAuth(), multiScanHandler)
 
-	log.Printf("Discovery Engine (Go) starting on port %s", port)
+	slog.Info("Discovery Engine (Go) starting", slog.String("port", port))
 	if err := r.Run(":" + port); err != nil {
-		log.Fatalf("Failed to run server: %v", err)
+		slog.Error("Failed to run server", slog.Any("error", err))
+		os.Exit(1)
 	}
 }

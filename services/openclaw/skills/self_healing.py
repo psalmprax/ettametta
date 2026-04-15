@@ -4,8 +4,8 @@ import subprocess
 import time
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
-from skills.notifications import notification_skill
-from skills.memory import memory_skill
+from .notifications import notification_skill
+from .memory import memory_skill
 
 logger = logging.getLogger(__name__)
 

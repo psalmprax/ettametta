@@ -577,8 +577,19 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
     Get available agent capabilities with real status.
     """
     from api.config import settings
+    from services.openclaw.agent import openclaw_agent
+
+    report = openclaw_agent.get_dependency_report()
+    cb_status = openclaw_agent.circuit_breaker.state  # "closed", "open", "half-open"
 
     capabilities = {
+        "workforce": {
+            "enabled": True,
+            "status": "healthy" if cb_status == "closed" else "degraded",
+            "report": report,
+            "circuit_breaker": cb_status,
+            "description": "Alpha Workforce (OpenClaw) Agentic Engine",
+        },
         "discovery": {
             "enabled": True,
             "actions": ["search", "trends", "scan", "predict", "ideas", "analyze"],

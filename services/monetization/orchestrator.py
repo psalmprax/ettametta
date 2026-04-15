@@ -39,6 +39,44 @@ class MonetizationOrchestrator:
             
             return self.strategies[strategy_key]
 
+    async def _execute_with_failover(self, method_name: str, *args, **kwargs) -> Any:
+        """
+        Executes a strategy method with automatic failover if the primary strategy fails or its circuit is open.
+        """
+        primary = await self.get_active_strategy()
+        
+        # Try primary first if circuit is CLOSED/HALF_OPEN
+        if not primary.circuit_breaker.is_open():
+            try:
+                method = getattr(primary, method_name)
+                result = await method(*args, **kwargs)
+                if result: # Consider empty result as candidate for failover in some cases
+                    primary.circuit_breaker.record_success()
+                    return result
+            except Exception as e:
+                self.logger.error(f"[Monetization] Primary strategy failed: {e}")
+                primary.circuit_breaker.record_failure()
+        
+        # Failover Loop: Try all other strategies
+        self.logger.warning("[Monetization] Primary strategy unusable. Primary failover initiated...")
+        for name, strategy in self.strategies.items():
+            if strategy == primary:
+                continue
+            
+            if not strategy.circuit_breaker.is_open():
+                try:
+                    self.logger.info(f"[Monetization] Trying failover strategy: {name}")
+                    method = getattr(strategy, method_name)
+                    result = await method(*args, **kwargs)
+                    if result:
+                        strategy.circuit_breaker.record_success()
+                        return result
+                except Exception as e:
+                    self.logger.error(f"[Monetization] Failover strategy {name} failed: {e}")
+                    strategy.circuit_breaker.record_failure()
+        
+        return "" if method_name == "generate_cta" else []
+
     async def should_monetize(self, viral_score: int = 0) -> bool:
         async with async_session_factory() as db:
             stmt = select(SystemSettings).where(SystemSettings.key == "monetization_mode")
@@ -55,13 +93,11 @@ class MonetizationOrchestrator:
     async def get_monetization_assets(self, niche: str, viral_score: int = 0) -> List[Dict[str, Any]]:
         if not await self.should_monetize(viral_score):
             return []
-        strategy = await self.get_active_strategy()
-        return await strategy.get_assets(niche)
+        return await self._execute_with_failover("get_assets", niche)
 
     async def get_monetization_cta(self, niche: str, context: str, viral_score: int = 0) -> str:
         if not await self.should_monetize(viral_score):
             return ""
-        strategy = await self.get_active_strategy()
-        return await strategy.generate_cta(niche, context)
+        return await self._execute_with_failover("generate_cta", niche, context)
 
 base_monetization_orchestrator = MonetizationOrchestrator()
