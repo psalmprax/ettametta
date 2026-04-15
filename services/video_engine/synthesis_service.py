@@ -13,6 +13,47 @@ import redis
 import time
 from contextlib import asynccontextmanager
 
+# Graceful imports for optional dependencies
+try:
+    import torch
+
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    torch = None
+
+try:
+    import cv2
+
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    cv2 = None
+
+try:
+    import moviepy
+
+    MOVIEPY_AVAILABLE = True
+except ImportError:
+    MOVIEPY_AVAILABLE = False
+    moviepy = None
+
+try:
+    import diffusers
+
+    DIFFUSERS_AVAILABLE = True
+except ImportError:
+    DIFFUSERS_AVAILABLE = False
+    diffusers = None
+
+try:
+    import faster_whisper
+
+    FASTER_WHISPER_AVAILABLE = True
+except ImportError:
+    FASTER_WHISPER_AVAILABLE = False
+    faster_whisper = None
+
 
 class ModelManager:
     """
@@ -131,59 +172,96 @@ class ModelManager:
                 del self.active_usage[model_name]
 
 
-class GpuQueueManager:
-    """
-    Manages a Redis-backed semaphore to limit concurrent GPU tasks on the VPS.
-    Ensures VRAM isn't overloaded.
-    """
+class CircuitBreaker:
+    """Enhanced circuit breaker to prevent cascading failures with engine-specific tracking"""
 
-    def __init__(self):
-        self.redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
-        self.semaphore_key = "gpu_generation_slots"
-        self.total_slots = (
-            settings.EFFECTIVE_GPU_QUEUE_SLOTS
-        )  # Auto-calculated based on detected GPU hardware
-        self.timeout = settings.GPU_QUEUE_TIMEOUT
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+        self.engine_failures = {}  # Track failures per engine
+
+    def is_open(self, engine: str = None) -> bool:
+        # Global circuit breaker check
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+                logging.info("[CircuitBreaker] Circuit entering half-open state")
+                return False
+            return True
+
+        # Engine-specific check
+        if engine and self.engine_failures.get(engine, 0) >= self.failure_threshold:
+            logging.warning(
+                f"[CircuitBreaker] Engine {engine} temporarily disabled due to failures"
+            )
+            return True
+
+        return False
+
+    def record_success(self, engine: str = None):
+        self.failure_count = 0
+        self.state = "CLOSED"
+        if engine:
+            self.engine_failures[engine] = 0  # Reset engine-specific failures
+
+    def record_failure(self, engine: str = None):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+            logging.warning("[CircuitBreaker] Global circuit opened due to failures")
+
+        # Track engine-specific failures
+        if engine:
+            self.engine_failures[engine] = self.engine_failures.get(engine, 0) + 1
+            if self.engine_failures[engine] >= self.failure_threshold:
+                logging.warning(
+                    f"[CircuitBreaker] Engine {engine} disabled due to repeated failures"
+                )
+
+
+class GpuQueueManager:
+    def _initialize_queue(self):
+        """Initializes the GPU slot queue with tokens if empty."""
+        try:
+            if not self.redis.exists(self.semaphore_key):
+                logging.info(
+                    f"[GpuQueue] Initializing {self.total_slots} slots in Redis list..."
+                )
+                tokens = [str(i) for i in range(self.total_slots)]
+                self.redis.rpush(self.semaphore_key, *tokens)
+                self.redis.expire(self.semaphore_key, 604800)  # 7 days persistence
+        except Exception as e:
+            logging.error(f"[GpuQueue] Initialization failed: {e}")
 
     @asynccontextmanager
     async def acquire_slot(self):
         """
-        Async context manager to acquire a GPU slot.
+        Async context manager to acquire a GPU slot using blocking BLPOP.
         """
-        logging.info("[GpuQueue] Requesting GPU slot...")
-        start_time = time.time()
+        logging.info("[GpuQueue] Requesting GPU slot (BRPOP)...")
+        self._initialize_queue()
 
-        # Simple polling-based semaphore and slot acquisition
-        # In a real heavy-prod environment, we'd use Redlock or Blpop
-        while True:
-            current_slots = self.redis.get(self.semaphore_key)
-            if current_slots is None:
-                # Initialize slots if not present
-                self.redis.set(self.semaphore_key, self.total_slots)
-                current_slots = self.total_slots
-
-            slots = int(current_slots)
-            if slots > 0:
-                # Atomic decrement
-                if self.redis.decr(self.semaphore_key) >= 0:
-                    logging.info(f"[GpuQueue] Slot acquired. Slots left: {slots - 1}")
-                    try:
-                        yield True
-                        return
-                    finally:
-                        self.redis.incr(self.semaphore_key)
-                        logging.info("[GpuQueue] Slot released.")
-                else:
-                    # Oops, someone took it just now
-                    self.redis.incr(self.semaphore_key)
-
-            if time.time() - start_time > self.timeout:
+        token = None
+        try:
+            # blpop returns (key, value) or None on timeout
+            result = self.redis.blpop(self.semaphore_key, timeout=int(self.timeout))
+            if result:
+                _, token = result
+                logging.info(f"[GpuQueue] Slot acquired (Token: {token})")
+                yield True
+            else:
                 logging.error("[GpuQueue] Timeout waiting for GPU slot.")
                 raise TimeoutError(
                     "System busy: All GPU generation slots are currently occupied."
                 )
-
-            await asyncio.sleep(1)  # Wait before retry
+        finally:
+            if token:
+                self.redis.rpush(self.semaphore_key, token)
+                logging.info(f"[GpuQueue] Slot released (Token: {token}).")
 
 
 class GenerativeService:
@@ -192,6 +270,91 @@ class GenerativeService:
         self.silicon_flow_key = get_secret("silicon_flow_key")
         self.model_manager = ModelManager()
         self.gpu_queue = GpuQueueManager()
+        self.circuit_breaker = CircuitBreaker()
+
+    def get_dependency_report(self):
+        """Aggregate reports from media drivers and internal GPU status."""
+        from .processor import VideoProcessor
+        from .free_video_providers import free_video_provider
+
+        proc = VideoProcessor()
+        p_report = proc.get_dependency_report()
+        f_report = free_video_provider.get_dependency_report()
+
+        circuit_open = self.circuit_breaker.is_open()
+
+        return {
+            "name": "Synthesis Engine",
+            "circuit_status": "OPEN" if circuit_open else "CLOSED",
+            "drivers": [
+                {
+                    "name": "Local GPU (RTX 8000)",
+                    "status": "Healthy" if not circuit_open else "Circuit Open",
+                    "slots": getattr(self.gpu_queue, "total_slots", 1),
+                }
+            ]
+            + p_report["drivers"]
+            + f_report["drivers"],
+            "healthy": not circuit_open
+            and (p_report["healthy"] or f_report["healthy"]),
+        }
+
+    def get_health_report(self):
+        """Returns real-time health for the dashboard."""
+        status = "Healthy"
+        issues = []
+
+        if self.circuit_breaker.is_open():
+            status = "Degraded"
+            issues.append("Global circuit breaker open")
+
+        if self.circuit_breaker.engine_failures:
+            failing_engines = [
+                k
+                for k, v in self.circuit_breaker.engine_failures.items()
+                if v >= self.circuit_breaker.failure_threshold
+            ]
+            if failing_engines:
+                status = "Degraded"
+                issues.append(f"Engines disabled: {', '.join(failing_engines)}")
+
+        dep_report = self.get_dependency_report()
+        if not dep_report["healthy"]:
+            status = "Degraded"
+            issues.extend(
+                [
+                    f"{driver['name']}: {driver['status']}"
+                    for driver in dep_report["drivers"]
+                    if driver["status"] != "Healthy"
+                ]
+            )
+
+        return {
+            "service": "Synthesis Service",
+            "status": status,
+            "circuit_breaker": self.circuit_breaker.state,
+            "managed_models": len(self.model_manager.persistent_models),
+            "engine_failures": self.circuit_breaker.engine_failures,
+            "issues": issues,
+        }
+
+        # Check optional dependencies
+        self.dependencies_available = {
+            "torch": TORCH_AVAILABLE,
+            "cv2": CV2_AVAILABLE,
+            "moviepy": MOVIEPY_AVAILABLE,
+            "diffusers": DIFFUSERS_AVAILABLE,
+            "faster_whisper": FASTER_WHISPER_AVAILABLE,
+        }
+
+        self.logger = logging.getLogger(__name__)
+        if not all(self.dependencies_available.values()):
+            missing = [k for k, v in self.dependencies_available.items() if not v]
+            self.logger.warning(
+                f"GenerativeService: Missing dependencies: {missing}. Some features may not work."
+            )
+        else:
+            self.logger.info("GenerativeService: All dependencies available.")
 
     def _get_engine_params(self, engine: str) -> Dict:
         """
@@ -359,48 +522,77 @@ class GenerativeService:
         """
         Synthesizes a new video from a text prompt.
         """
+        if self.circuit_breaker.is_open(engine):
+            logging.error(
+                f"[GenerativeService] Circuit is open for engine {engine}. Skipping synthesis."
+            )
+            return None
+
         # Global Prompt Optimization (Engine & Style Aware)
-        optimized_prompt = self.optimize_prompt(prompt, style=style, engine=engine)
-        params = self._get_engine_params(engine)
+        try:
+            optimized_prompt = self.optimize_prompt(prompt, style=style, engine=engine)
+        except Exception as e:
+            logging.warning(
+                f"[GenerativeService] Prompt optimization failed: {e}, using original"
+            )
+            optimized_prompt = prompt
+
+        try:
+            params = self._get_engine_params(engine)
+        except Exception as e:
+            logging.warning(
+                f"[GenerativeService] Failed to get engine params for {engine}: {e}, using defaults"
+            )
+            params = self._get_engine_params("veo3")  # fallback
 
         logging.info(
             f"[GenerativeService] Synthesizing video with engine: {engine} (Steps: {params['steps']}, CFG: {params['cfg']}), prompt: {optimized_prompt[:50]}..."
         )
 
-        # Engines that run on the local production GPU (RTX 8000)
-        local_gpu_engines = [
-            "hunyuan",
-            "mochi",
-            "cogvideo",
-            "wan",
-            "ltx-video",
-            "zeroscope",
-            "lite4k",
-            "animatediff",
-        ]
+        try:
+            # Engines that run on the local production GPU (RTX 8000)
+            local_gpu_engines = [
+                "hunyuan",
+                "mochi",
+                "cogvideo",
+                "wan",
+                "ltx-video",
+                "zeroscope",
+                "lite4k",
+                "animatediff",
+            ]
 
-        if engine in local_gpu_engines:
-            try:
+            if engine in local_gpu_engines:
                 async with self.gpu_queue.acquire_slot():
                     video_path = await self._dispatch_synthesis(
                         optimized_prompt, engine, aspect_ratio, params, custom_image_url
                     )
-                    # Apply quality enhancement if requested and video was generated
-                    if video_path and enhance_quality:
-                        video_path = await self._enhance_video_quality(video_path)
-                    return video_path
-            except TimeoutError as e:
-                logging.warning(f"[GenerativeService] Queue Timeout: {e}")
-                return None
-        else:
-            # Cloud engines don't need the local GPU queue
-            video_path = await self._dispatch_synthesis(
-                optimized_prompt, engine, aspect_ratio, params, custom_image_url
-            )
+            else:
+                # Cloud engines don't need the local GPU queue
+                video_path = await self._dispatch_synthesis(
+                    optimized_prompt, engine, aspect_ratio, params, custom_image_url
+                )
+
             # Apply quality enhancement if requested and video was generated
             if video_path and enhance_quality:
-                video_path = await self._enhance_video_quality(video_path)
-            return video_path
+                try:
+                    video_path = await self._enhance_video_quality(video_path)
+                except Exception as e:
+                    logging.warning(
+                        f"[GenerativeService] Quality enhancement failed: {e}, using original video"
+                    )
+
+            if video_path:
+                self.circuit_breaker.record_success(engine)
+                return video_path
+            else:
+                self.circuit_breaker.record_failure(engine)
+                return video_path
+
+        except Exception as e:
+            self.circuit_breaker.record_failure(engine)
+            logging.error(f"[GenerativeService] Synthesis failed for {engine}: {e}")
+            return None
 
     async def _dispatch_synthesis(
         self,
@@ -410,60 +602,121 @@ class GenerativeService:
         params: Dict = None,
         custom_image_url: str = None,
     ) -> Optional[str]:
-        """Internal dispatcher for actual synthesis calls."""
-        if not params:
-            params = self._get_engine_params(engine)
+        """Internal dispatcher for actual synthesis calls with comprehensive error handling."""
+        try:
+            if not params:
+                params = self._get_engine_params(engine)
+        except Exception as e:
+            logging.warning(
+                f"[GenerativeService] Failed to get params for {engine}: {e}"
+            )
+            params = {}
 
-        if engine == "veo3":
-            return await self._synthesize_veo3(prompt, aspect_ratio)
-        elif engine in ["wan2.2", "wan"]:
-            from .models.wan_inference import generate_wan_t2v
+        try:
+            if engine == "veo3":
+                return await self._synthesize_veo3(prompt, aspect_ratio)
+            elif engine in ["wan2.2", "wan"]:
+                try:
+                    from .models.wan_inference import generate_wan_t2v
 
-            loop = asyncio.get_event_loop()
-            _, path = await loop.run_in_executor(None, generate_wan_t2v, prompt)
-            return path
-        elif engine == "hunyuan":
-            from .models.hunyuan_inference import generate_hunyuan
+                    loop = asyncio.get_event_loop()
+                    _, path = await loop.run_in_executor(None, generate_wan_t2v, prompt)
+                    return path
+                except ImportError as e:
+                    logging.error(f"[GenerativeService] Wan model not available: {e}")
+                    return None
+                except Exception as e:
+                    logging.error(f"[GenerativeService] Wan synthesis failed: {e}")
+                    return None
+            elif engine == "hunyuan":
+                try:
+                    from .models.hunyuan_inference import generate_hunyuan
 
-            loop = asyncio.get_event_loop()
-            _, path = await loop.run_in_executor(None, generate_hunyuan, prompt)
-            return path
-        elif engine == "ltx-video":
-            from .models.ltx_video_inference import generate_ltx
+                    loop = asyncio.get_event_loop()
+                    _, path = await loop.run_in_executor(None, generate_hunyuan, prompt)
+                    return path
+                except ImportError as e:
+                    logging.error(
+                        f"[GenerativeService] Hunyuan model not available: {e}"
+                    )
+                    return None
+                except Exception as e:
+                    logging.error(f"[GenerativeService] Hunyuan synthesis failed: {e}")
+                    return None
+            elif engine == "ltx-video":
+                try:
+                    from .models.ltx_video_inference import generate_ltx
 
-            loop = asyncio.get_event_loop()
-            _, path = await loop.run_in_executor(None, generate_ltx, prompt)
-            return path
-        elif engine == "mochi":
-            from .models.mochi_inference import generate_mochi
+                    loop = asyncio.get_event_loop()
+                    _, path = await loop.run_in_executor(None, generate_ltx, prompt)
+                    return path
+                except ImportError as e:
+                    logging.error(
+                        f"[GenerativeService] LTX-Video model not available: {e}"
+                    )
+                    return None
+                except Exception as e:
+                    logging.error(
+                        f"[GenerativeService] LTX-Video synthesis failed: {e}"
+                    )
+                    return None
+            elif engine == "mochi":
+                try:
+                    from .models.mochi_inference import generate_mochi
 
-            loop = asyncio.get_event_loop()
-            _, path = await loop.run_in_executor(None, generate_mochi, prompt)
-            return path
-        elif engine == "cogvideo":
-            from .models.cogvideo_inference import generate_cogvideo
+                    loop = asyncio.get_event_loop()
+                    _, path = await loop.run_in_executor(None, generate_mochi, prompt)
+                    return path
+                except ImportError as e:
+                    logging.error(f"[GenerativeService] Mochi model not available: {e}")
+                    return None
+                except Exception as e:
+                    logging.error(f"[GenerativeService] Mochi synthesis failed: {e}")
+                    return None
+            elif engine == "cogvideo":
+                try:
+                    from .models.cogvideo_inference import generate_cogvideo
 
-            loop = asyncio.get_event_loop()
-            _, path = await loop.run_in_executor(None, generate_cogvideo, prompt)
-            return path
-        elif engine == "animatediff":
-            # Use remote AI service for AnimateDiff (most robust implementation)
-            return await self._synthesize_animatediff(prompt, aspect_ratio, params)
-        elif engine == "lite4k":
-            return await self._synthesize_lite_4k(prompt, aspect_ratio)
-        # Free daily providers (external APIs)
-        elif engine in [
-            "zsky",
-            "kling",
-            "pixverse",
-            "replicate",
-            "stability",
-            "runway",
-            "pika",
-        ]:
-            return await self._synthesize_free_provider(engine, prompt, aspect_ratio)
-        else:
-            logging.error(f"[GenerativeService] Unsupported engine: {engine}")
+                    loop = asyncio.get_event_loop()
+                    _, path = await loop.run_in_executor(
+                        None, generate_cogvideo, prompt
+                    )
+                    return path
+                except ImportError as e:
+                    logging.error(
+                        f"[GenerativeService] CogVideo model not available: {e}"
+                    )
+                    return None
+                except Exception as e:
+                    logging.error(f"[GenerativeService] CogVideo synthesis failed: {e}")
+                    return None
+            elif engine == "animatediff":
+                # Use remote AI service for AnimateDiff (most robust implementation)
+                return await self._synthesize_animatediff(prompt, aspect_ratio, params)
+            elif engine == "lite4k":
+                return await self._synthesize_lite_4k(
+                    prompt, aspect_ratio, custom_image_url
+                )
+            # Free daily providers (external APIs)
+            elif engine in [
+                "zsky",
+                "kling",
+                "pixverse",
+                "replicate",
+                "stability",
+                "runway",
+                "pika",
+            ]:
+                return await self._synthesize_free_provider(
+                    engine, prompt, aspect_ratio
+                )
+            else:
+                logging.error(f"[GenerativeService] Unsupported engine: {engine}")
+                return None
+        except Exception as e:
+            logging.error(
+                f"[GenerativeService] Dispatch failed for engine {engine}: {e}"
+            )
             return None
 
     async def _synthesize_comfy(
@@ -491,8 +744,8 @@ class GenerativeService:
                 f"[GenerativeService] Dispatching ComfyUI workflow for {model_name} to {settings.COMFYUI_URL}..."
             )
 
-            output_path = f"outputs/comfy_{uuid.uuid4()}.mp4"
-            os.makedirs("outputs", exist_ok=True)
+            output_path = f"{settings.VIDEO_OUTPUTS_DIR}/comfy_{uuid.uuid4()}.mp4"
+            os.makedirs(settings.VIDEO_OUTPUTS_DIR, exist_ok=True)
 
             # Actual ComfyUI execution logic
             success = False
@@ -686,7 +939,7 @@ class GenerativeService:
         import uuid, os
 
         job_id = f"veo3_{uuid.uuid4().hex[:8]}"
-        output_dir = "/workspace/outputs"
+        output_dir = settings.REMOTE_VIDEO_OUTPUTS_DIR
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, f"{job_id}.mp4")
 
@@ -747,7 +1000,7 @@ class GenerativeService:
         import uuid, os
 
         job_id = f"wan_{uuid.uuid4().hex[:8]}"
-        output_dir = "/workspace/outputs"
+        output_dir = settings.REMOTE_VIDEO_OUTPUTS_DIR
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, f"{job_id}.mp4")
 
@@ -1103,8 +1356,10 @@ class GenerativeService:
                                         f"{render_node_url}/download/{job_id}"
                                     )
                                     if dl_resp.status_code == 200:
-                                        output_path = f"outputs/animatediff_{uuid.uuid4().hex[:8]}.mp4"
-                                        os.makedirs("outputs", exist_ok=True)
+                                        output_path = f"{settings.VIDEO_OUTPUTS_DIR}/animatediff_{uuid.uuid4().hex[:8]}.mp4"
+                                        os.makedirs(
+                                            settings.VIDEO_OUTPUTS_DIR, exist_ok=True
+                                        )
                                         with open(output_path, "wb") as f:
                                             f.write(dl_resp.content)
                                         return output_path
