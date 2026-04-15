@@ -321,3 +321,61 @@ async def get_video_preview(
     except Exception as e:
         logger.error(f"Video preview failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to get video preview")
+
+
+@router.get("/jobs")
+async def list_video_jobs(
+    page: int = 1,
+    limit: int = 10,
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get paginated list of user's video generation jobs.
+    """
+    try:
+        if page < 1:
+            page = 1
+        if limit < 1 or limit > 50:
+            limit = 10
+
+        offset = (page - 1) * limit
+
+        stmt = (
+            select(VideoJobDB)
+            .where(VideoJobDB.user_id == current_user.id)
+            .order_by(VideoJobDB.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        result = await db.execute(stmt)
+        jobs = result.scalars().all()
+
+        # Get total count for pagination info
+        count_stmt = select(VideoJobDB).where(VideoJobDB.user_id == current_user.id)
+        count_result = await db.execute(count_stmt)
+        total_jobs = len(count_result.scalars().all())
+
+        return {
+            "jobs": [
+                {
+                    "job_id": job.id,
+                    "status": job.status,
+                    "progress": job.progress,
+                    "public_url": job.output_path,
+                    "title": job.title,
+                    "created_at": job.created_at,
+                    "updated_at": job.updated_at,
+                }
+                for job in jobs
+            ],
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total_jobs,
+                "pages": (total_jobs + limit - 1) // limit,
+            },
+        }
+    except Exception as e:
+        logger.error(f"Video jobs listing failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list video jobs")
