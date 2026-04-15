@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from skills.memory import memory_skill
+from .memory import memory_skill
 
 logger = logging.getLogger(__name__)
 

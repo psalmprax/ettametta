@@ -1,5 +1,6 @@
 import logging
 from typing import List, Dict, Any
+from tenacity import retry, stop_after_attempt, wait_exponential
 from .base import BaseMonetizationStrategy
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,11 @@ class LeadGenStrategy(BaseMonetizationStrategy):
             "service": "mailchimp" if settings.MAILCHIMP_API_KEY else "convertkit"
         }]
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True
+    )
     async def subscribe_lead(self, email: str, niche: str) -> bool:
         """
         Subscribes a lead to the configured email marketing service.
@@ -41,6 +47,8 @@ class LeadGenStrategy(BaseMonetizationStrategy):
             
             async with httpx.AsyncClient() as client:
                 response = await client.post(url, auth=("apikey", settings.MAILCHIMP_API_KEY), json=data, timeout=10.0)
+                if response.status_code >= 500: # Trigger retry on server errors
+                    response.raise_for_status()
                 return response.status_code in [200, 201]
 
         # 2. ConvertKit Integration
@@ -54,6 +62,8 @@ class LeadGenStrategy(BaseMonetizationStrategy):
             }
             async with httpx.AsyncClient() as client:
                 response = await client.post(url, json=data, timeout=10.0)
+                if response.status_code >= 500:
+                    response.raise_for_status()
                 return response.status_code == 200
 
         logger.warning("[LeadGen] No email marketing service configured for subscription.")

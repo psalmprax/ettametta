@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,11 +17,19 @@ import (
 	"google.golang.org/api/youtube/v3"
 )
 
-var userAgents = []string{
+var defaultUserAgents = []string{
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
 	"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 	"Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+}
+
+func getUserAgents() []string {
+	custom := os.Getenv("DISCOVERY_USER_AGENTS")
+	if custom != "" {
+		return strings.Split(custom, ",")
+	}
+	return defaultUserAgents
 }
 
 type ScanResult struct {
@@ -39,6 +48,7 @@ type Scanner struct {
 	youtubeAPI *youtube.Service
 	hasAPIKey  bool
 	httpClient *http.Client
+	userAgents []string
 }
 
 func NewScanner() *Scanner {
@@ -49,22 +59,23 @@ func NewScanner() *Scanner {
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+		userAgents: getUserAgents(),
 	}
 
 	if apiKey != "" {
 		ctx := context.Background()
 		youtubeService, err := youtube.NewService(ctx, option.WithAPIKey(apiKey))
 		if err != nil {
-			fmt.Printf("[Scanner] Warning: Failed to initialize YouTube API: %v\n", err)
+			slog.Warn("Failed to initialize YouTube API", slog.Any("error", err))
 			scanner.hasAPIKey = false
 		} else {
 			scanner.youtubeAPI = youtubeService
-			fmt.Printf("[Scanner] YouTube API initialized successfully\n")
+			slog.Info("YouTube API initialized successfully")
 		}
 	}
 
 	if !scanner.hasAPIKey {
-		fmt.Printf("[Scanner] Warning: YOUTUBE_API_KEY not set - will use DuckDuckGo fallback\n")
+		slog.Warn("YOUTUBE_API_KEY not set - using DuckDuckGo fallback")
 	}
 
 	return scanner
@@ -85,7 +96,7 @@ func (s *Scanner) scanYouTube(niche string) []ScanResult {
 
 	response, err := call.Context(ctx).Do()
 	if err != nil {
-		fmt.Printf("[Scanner] YouTube search error for '%s': %v\n", niche, err)
+		slog.Error("YouTube search error", slog.String("niche", niche), slog.Any("error", err))
 		return nil
 	}
 
@@ -122,29 +133,29 @@ func (s *Scanner) scanYouTube(niche string) []ScanResult {
 // scanDuckDuckGo searches DuckDuckGo for trending videos in the niche
 // This is a free fallback when YouTube API quota is exceeded
 func (s *Scanner) scanDuckDuckGo(niche string) []ScanResult {
-	fmt.Printf("[Scanner] Using DuckDuckGo fallback for: %s\n", niche)
+	slog.Info("Using DuckDuckGo fallback", slog.String("niche", niche))
 
 	// Use html.duckduckgo.com (more reliable than lite.duckduckgo.com)
 	searchURL := fmt.Sprintf("https://html.duckduckgo.com/html/?q=trending+%s+videos", url.QueryEscape(niche))
 
 	req, err := http.NewRequest("GET", searchURL, nil)
 	if err != nil {
-		fmt.Printf("[Scanner] DuckDuckGo request error: %v\n", err)
+		slog.Error("DuckDuckGo request error", slog.Any("error", err))
 		return nil
 	}
 
-	req.Header.Set("User-Agent", userAgents[time.Now().UnixNano()%int64(len(userAgents))])
+	req.Header.Set("User-Agent", s.userAgents[time.Now().UnixNano()%int64(len(s.userAgents))])
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		fmt.Printf("[Scanner] DuckDuckGo response error: %v\n", err)
+		slog.Error("DuckDuckGo response error", slog.Any("error", err))
 		return nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		fmt.Printf("[Scanner] DuckDuckGo returned status: %d\n", resp.StatusCode)
+		slog.Warn("DuckDuckGo returned non-200 status", slog.Int("status", resp.StatusCode))
 		return nil
 	}
 
@@ -157,7 +168,7 @@ func (s *Scanner) parseDuckDuckGoResults(body io.Reader, niche string) []ScanRes
 
 	doc, err := goquery.NewDocumentFromReader(body)
 	if err != nil {
-		fmt.Printf("[Scanner] Failed to parse DDG HTML: %v\n", err)
+		slog.Error("Failed to parse DDG HTML", slog.Any("error", err))
 		return nil
 	}
 
@@ -227,7 +238,7 @@ func (s *Scanner) parseDuckDuckGoResults(body io.Reader, niche string) []ScanRes
 		})
 	})
 
-	fmt.Printf("[Scanner] DuckDuckGo found %d results for: %s\n", len(results), niche)
+	slog.Info("DuckDuckGo scan complete", slog.Int("results", len(results)), slog.String("niche", niche))
 	return results
 }
 
@@ -353,7 +364,7 @@ func (s *Scanner) StartMultiScan(niches []string) []ScanResult {
 
 	// If no real results, try DuckDuckGo fallback
 	if len(results) == 0 {
-		fmt.Printf("[Scanner] No results from YouTube API, trying DuckDuckGo fallback...\n")
+		slog.Warn("No results from YouTube API, trying DuckDuckGo fallback")
 		for _, niche := range niches {
 			ddgResults := s.scanDuckDuckGo(niche)
 			for _, r := range ddgResults {

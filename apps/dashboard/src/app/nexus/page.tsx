@@ -70,6 +70,7 @@ export default function NexusPage() {
     const [isChatting, setIsChatting] = useState(false);
     const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
     const [agentCapabilities, setAgentCapabilities] = useState<string[]>([]);
+    const [workforceReport, setWorkforceReport] = useState<any>(null);
 
     const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/jobs`);
     const { data: logUpdate } = useWebSocket<any>(`${WS_BASE}/logs`);
@@ -133,10 +134,20 @@ export default function NexusPage() {
                         fallback: [],
                         onSuccess: (capData) => {
                             const capabilities = capData.capabilities || capData || {};
+                            
+                            // Extract workforce report if available (Phase 4 Hardening)
+                            if (capabilities.workforce) {
+                                setWorkforceReport(capabilities.workforce);
+                            }
+
                             const flattenedCaps = Object.entries(capabilities).map(([key, value]: [string, any]) => {
+                                if (key === 'workforce') return `🏛️ Workforce: ${value.status.toUpperCase()} (${value.circuit_breaker})`;
                                 if (key === 'discovery') return `🔍 Advanced Discovery: Trend analysis, competitor research, content ideation`;
                                 if (key === 'competitor') return `🎯 Competitor Analysis: Strategy breakdown and market intelligence`;
-                                if (typeof value === 'object' && value.description) return `${value.enabled ? '✅' : '❌'} ${key}: ${value.description}`;
+                                if (typeof value === 'object' && value.description) {
+                                    const statusIcon = value.available ? '✅' : '⚠️';
+                                    return `${statusIcon} ${key}: ${value.description}`;
+                                }
                                 return `${key}: ${String(value)}`;
                             });
                             setAgentCapabilities(flattenedCaps);
@@ -985,6 +996,63 @@ export default function NexusPage() {
 
                         {/* Capabilities Display */}
                         <div className="space-y-6">
+                            {/* Workforce Cluster Health Module (Phase 4) */}
+                            {workforceReport && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="glass-card p-8 space-y-6 bg-linear-to-br from-black to-zinc-950 border border-white/5 rounded-4xl relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 p-4">
+                                        <div className={cn(
+                                            "h-2 w-2 rounded-full animate-pulse shadow-[0_0_10px_rgba(0,0,0,0.5)]",
+                                            workforceReport.status === 'healthy' ? "bg-emerald-500 shadow-emerald-500/50" : "bg-amber-500 shadow-amber-500/50"
+                                        )} />
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn(
+                                            "h-12 w-12 rounded-2xl flex items-center justify-center border",
+                                            workforceReport.status === 'healthy' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                                        )}>
+                                            <Activity className="h-6 w-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-black text-white tracking-tighter uppercase">Workforce Cluster</h3>
+                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                                                Health: <span className={workforceReport.status === 'healthy' ? "text-emerald-500" : "text-amber-500"}>{workforceReport.status}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 pt-2">
+                                        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Dependency Inventory</p>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {Object.entries(workforceReport.report.status || {}).map(([pkg, installed]: [any, any]) => (
+                                                    <div key={pkg} className="flex items-center gap-2">
+                                                        <div className={cn("h-1.5 w-1.5 rounded-full", installed ? "bg-emerald-500" : "bg-rose-500")} />
+                                                        <span className={cn("text-[10px] uppercase font-bold", installed ? "text-zinc-400" : "text-rose-500")}>{pkg}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {workforceReport.report.impact && Object.keys(workforceReport.report.impact).length > 0 && (
+                                            <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/10 space-y-2">
+                                                <div className="flex items-center gap-2 text-rose-500">
+                                                    <AlertCircle className="h-3 w-3" />
+                                                    <p className="text-[9px] font-black uppercase tracking-widest">Degraded Capabilities</p>
+                                                </div>
+                                                {Object.values(workforceReport.report.impact).map((msg: any, idx) => (
+                                                    <p key={idx} className="text-[10px] text-zinc-500 leading-tight">• {msg}</p>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+
                             <div className="glass-card p-8 space-y-6 bg-black border border-white/5 rounded-4xl">
                                 <div className="flex items-center gap-4">
                                     <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">

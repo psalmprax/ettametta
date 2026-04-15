@@ -1,7 +1,20 @@
 import os
 import logging
+import json
+from typing import Optional, Dict, List
+from pathlib import Path
+import os
 import asyncio
 import time
+
+# Graceful imports for optional dependencies
+try:
+    import moviepy
+
+    MOVIEPY_AVAILABLE = True
+except ImportError:
+    MOVIEPY_AVAILABLE = False
+    moviepy = None
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -48,6 +61,16 @@ class NexusOrchestrator:
         os.makedirs(output_dir, exist_ok=True)
         self.remotion_circuit_breaker = CircuitBreaker()
         self.logger = logging.getLogger("NexusOrchestrator")
+
+        # Check optional dependencies
+        self.dependencies_available = {
+            "moviepy": MOVIEPY_AVAILABLE,
+        }
+
+        if not self.dependencies_available["moviepy"]:
+            self.logger.warning(
+                "NexusOrchestrator: moviepy not available. Video processing features disabled."
+            )
 
     async def _retry_remotion_render(
         self, composition_id: str, props: Dict, output_name: str
@@ -162,6 +185,26 @@ class NexusOrchestrator:
 
             # 2. Cognition Node - Extract metadata and prepare clips
             update_node("cognition", "ACTIVE", 40)
+
+            # Cognitive Vibe Check (LangChain Integration)
+            vibe_data = {}
+            from services.langchain.service import langchain_service
+
+            if langchain_service.is_enabled():
+                self.logger.info(f"[Nexus] Performing Cognitive Vibe Check for {niche}")
+                vibe_data = await langchain_service.analyze_video_vibe(
+                    niche,
+                    {
+                        "num_clips": len(visual_paths),
+                        "blueprint": blueprint_id,
+                        "job_id": str(job_id),
+                    },
+                )
+                if vibe_data:
+                    self.logger.info(
+                        f"[Nexus] LangChain suggested vibe: {vibe_data.get('vibe')}"
+                    )
+
             import cv2
 
             def get_frame_count(path: str) -> Optional[int]:
@@ -221,7 +264,9 @@ class NexusOrchestrator:
             audio_url = voiceover_paths[0] if voiceover_paths else music_path
             props = {
                 "title": niche.title(),
-                "subtitle": "Analysis & Insights",
+                "subtitle": vibe_data.get("explanation", "Analysis & Insights"),
+                "vibe": vibe_data.get("vibe", "Neutral"),
+                "filter_override": vibe_data.get("filter_override"),
                 "clips": remotion_clips,
                 "audioUrl": audio_url,
                 "jobId": job_id,

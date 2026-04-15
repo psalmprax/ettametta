@@ -4,7 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -32,7 +32,7 @@ func RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Skip if no API key configured
 		if authCfg.APIKey == "" {
-			log.Println("[Auth] WARNING: No API key configured - allowing all requests")
+			slog.Warn("No API key configured - allowing all requests")
 			c.Next()
 			return
 		}
@@ -45,7 +45,7 @@ func RequireAuth() gin.HandlerFunc {
 		}
 
 		if apiKey == "" {
-			log.Printf("[Auth] Denied: No API key provided from %s", c.ClientIP())
+			slog.Warn("Access denied: No API key provided", slog.String("ip", c.ClientIP()))
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "API key required"})
 			c.Abort()
 			return
@@ -57,19 +57,19 @@ func RequireAuth() gin.HandlerFunc {
 			expectedSig := computeHMAC(c.Request.URL.Path, authCfg.HMACSecret)
 			sig := c.GetHeader("X-Signature")
 			if sig == "" || !hmac.Equal([]byte(sig), []byte(expectedSig)) {
-				log.Printf("[Auth] Denied: Invalid signature from %s", c.ClientIP())
+				slog.Warn("Access denied: Invalid signature", slog.String("ip", c.ClientIP()))
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid signature"})
 				c.Abort()
 				return
 			}
 		} else if apiKey != authCfg.APIKey {
-			log.Printf("[Auth] Denied: Invalid API key from %s", c.ClientIP())
+			slog.Warn("Access denied: Invalid API key", slog.String("ip", c.ClientIP()))
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid API key"})
 			c.Abort()
 			return
 		}
 
-		log.Printf("[Auth] Allowed: %s", c.ClientIP())
+		slog.Debug("Access allowed", slog.String("ip", c.ClientIP()))
 		c.Next()
 	}
 }
@@ -102,7 +102,7 @@ func RateLimitMiddleware() gin.HandlerFunc {
 		case requests <- time.Now():
 			c.Next()
 		default:
-			log.Printf("[RateLimit] Too many requests from %s", c.ClientIP())
+			slog.Warn("Rate limit exceeded", slog.String("ip", c.ClientIP()), slog.Int("limit", authCfg.RateLimitRPS))
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": "Rate limit exceeded"})
 			c.Abort()
 		}

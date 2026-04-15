@@ -1,6 +1,7 @@
 import logging
 import random
 from typing import List, Dict, Any, Optional
+from tenacity import retry, stop_after_attempt, wait_exponential
 from sqlalchemy import select
 from .base import BaseMonetizationStrategy
 from api.utils.database import async_session_factory
@@ -93,6 +94,11 @@ class CryptoStrategy(BaseMonetizationStrategy):
             return bool(re.match(r"^0x[a-fA-F0-9]{40}$", address))
         return len(address) > 20
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=False
+    )
     async def get_balance(self, address: str, symbol: str) -> Optional[float]:
         """
         Fetches real balance from public blockchain APIs.

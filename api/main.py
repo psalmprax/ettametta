@@ -215,9 +215,29 @@ async def value_error_exception_handler(request: Request, exc: ValueError):
     )
 
 
+import traceback
+from api.utils.models import SelfHealingAuditDB
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
+
+    # Standard: Hardening Observability - Fault Persistence
+    try:
+        async with AsyncSessionLocal() as db:
+            audit = SelfHealingAuditDB(
+                path=request.url.path,
+                method=request.method,
+                exception_type=type(exc).__name__,
+                message=str(exc),
+                traceback=traceback.format_exc(),
+            )
+            db.add(audit)
+            await db.commit()
+    except Exception as db_exc:
+        logger.error(f"Failed to persist fault audit: {db_exc}")
+
     return JSONResponse(
         status_code=500,
         content={

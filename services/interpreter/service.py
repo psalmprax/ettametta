@@ -15,6 +15,8 @@ import os
 import logging
 import subprocess
 import tempfile
+import asyncio
+import json
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
@@ -74,27 +76,63 @@ class InterpreterService:
 
     async def execute_code(self, code: str, language: str = "python") -> Dict[str, Any]:
         """
-        Execute code for custom processing.
-
-        Args:
-            code: Code to execute
-            language: Programming language (python, javascript)
-
-        Returns:
-            Dict with output, errors, and execution info
+        Execute code for custom processing using subprocess isolation with enhanced security.
         """
         if not self.enabled:
             raise RuntimeError("Interpreter service is not enabled")
 
-        if not self.sandbox_mode:
-            logger.warning("Running interpreter WITHOUT sandbox - security risk!")
+        # Enhanced security validation
+        security_issues = self._validate_code_security(code, language)
+        if security_issues:
+            return {
+                "success": False,
+                "error": f"Security violation: {', '.join(security_issues)}",
+                "output": "",
+            }
+
+        # Rate limiting check
+        if not self._check_rate_limit():
+            return {
+                "success": False,
+                "error": "Rate limit exceeded. Please wait before executing more code.",
+                "output": "",
+            }
+
+        # Language-specific forbidden patterns
+        forbidden_map = {
+            "python": [
+                "os.",
+                "subprocess.",
+                "socket.",
+                "sys.",
+                "eval(",
+                "getattr(",
+                "__import__",
+            ],
+            "javascript": [
+                "require(",
+                "process.",
+                "child_process",
+                "fs.",
+                "eval(",
+                "ActiveX",
+            ],
+        }
+
+        forbidden = forbidden_map.get(language, [])
+        for f in forbidden:
+            if f in code:
+                return {
+                    "success": False,
+                    "error": f"Forbidden keyword detected in {language}: {f}",
+                    "output": "",
+                }
 
         start_time = datetime.utcnow()
 
         try:
-            # For Python, we can use exec in a controlled environment
             if language == "python":
-                result = await self._execute_python(code)
+                result = await self._execute_python_sandboxed(code)
             elif language == "javascript":
                 result = await self._execute_javascript(code)
             else:
@@ -106,7 +144,7 @@ class InterpreterService:
 
             return {
                 "success": True,
-                "output": result["output"],
+                "output": result.get("output", ""),
                 "error": result.get("error", ""),
                 "execution_time": (datetime.utcnow() - start_time).total_seconds(),
             }
@@ -120,72 +158,82 @@ class InterpreterService:
                 "execution_time": (datetime.utcnow() - start_time).total_seconds(),
             }
 
-    async def _execute_python(self, code: str) -> Dict[str, Any]:
-        """Execute Python code in sandbox."""
-
-        # Create safe execution environment
-        safe_globals = {
-            "__builtins__": {
-                "print": print,
-                "len": len,
-                "range": range,
-                "str": str,
-                "int": int,
-                "float": float,
-                "list": list,
-                "dict": dict,
-                "tuple": tuple,
-                "set": set,
-                "bool": bool,
-                "type": type,
-                "isinstance": isinstance,
-                "hasattr": hasattr,
-                "getattr": getattr,
-                "zip": zip,
-                "map": map,
-                "filter": filter,
-                "sorted": sorted,
-                "min": min,
-                "max": max,
-                "sum": sum,
-                "abs": abs,
-                "round": round,
-            },
-            # Allow common data processing libraries
-            "numpy": None,  # Will be imported if needed
-            "pandas": None,
-        }
-
-        output_capture = []
-
-        def safe_print(*args, **kwargs):
-            output_capture.append(" ".join(str(a) for a in args))
-
-        safe_globals["print"] = safe_print
+    async def _execute_python_sandboxed(self, code: str) -> Dict[str, Any]:
+        """
+        Execute Python code in a separate process for isolation.
+        """
+        sandbox_script = os.path.join(os.path.dirname(__file__), "sandbox_runner.py")
 
         try:
-            exec(code, safe_globals, {})
-            return {"output": "\n".join(output_capture), "error": ""}
+            # Pass code and timeout to the runner
+            proc = await asyncio.create_subprocess_exec(
+                "python3",
+                sandbox_script,
+                code,
+                str(self.max_runtime),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+
+            # The runner has its own internal alarm, but we still keep the process communicate timeout
+            stdout, stderr = await asyncio.wait_for(
+                proc.communicate(), timeout=self.max_runtime + 2
+            )
+
+            if proc.returncode != 0:
+                err_msg = (
+                    stderr.decode().strip()
+                    or f"Process exited with rc={proc.returncode}"
+                )
+                return {"output": "", "error": err_msg}
+
+            output = stdout.decode().strip()
+            try:
+                # Try to find the JSON part of the output (in case of unexpected stdout)
+                if "{" in output and "}" in output:
+                    json_str = output[output.find("{") : output.rfind("}") + 1]
+                    return json.loads(json_str)
+                return {"output": output, "error": "Invalid sandbox response format"}
+            except json.JSONDecodeError:
+                return {"output": output, "error": "Invalid sandbox output format"}
+
+        except asyncio.TimeoutError:
+            return {"output": "", "error": f"Execution timeout ({self.max_runtime}s)"}
         except Exception as e:
-            return {"output": "\n".join(output_capture), "error": str(e)}
+            return {"output": "", "error": str(e)}
 
     async def _execute_javascript(self, code: str) -> Dict[str, Any]:
         """Execute JavaScript code via Node.js."""
-
         try:
+            # Simple JS sandbox wrapper to restrict globals a bit more
+            wrapped_code = f"""
+(function() {{
+    const forbidden = ['os', 'fs', 'child_process', 'process', 'net', 'http', 'https'];
+    const originalRequire = require;
+    global.require = function(module) {{
+        if (forbidden.includes(module)) {{
+            throw new Error('Access to ' + module + ' is forbidden');
+        }}
+        return originalRequire(module);
+    }};
+    // Disable process access
+    global.process = {{ exit: () => {{}}, env: {{}} }};
+    
+    {code}
+}})();
+"""
             with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
-                f.write(code)
+                f.write(wrapped_code)
                 temp_file = f.name
 
             result = subprocess.run(
-                ["node", temp_file],
+                ["node", "--disallow-code-generation-from-strings", temp_file],
                 capture_output=True,
                 text=True,
                 timeout=self.max_runtime,
             )
 
             os.unlink(temp_file)
-
             return {"output": result.stdout, "error": result.stderr}
 
         except subprocess.TimeoutExpired:
@@ -195,105 +243,151 @@ class InterpreterService:
 
     async def generate_video_effect(
         self, effect_name: str, parameters: Dict[str, Any]
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
-        Generate custom video effect code.
-
-        Args:
-            effect_name: Name of effect to generate
-            parameters: Effect parameters
-
-        Returns:
-            Path to generated effect or error message
+        Generate parameters for custom video effects.
+        Refactored to delegate to VideoProcessor instead of generating raw code.
         """
         if not self.enabled:
             raise RuntimeError("Interpreter service is not enabled")
 
-        # Template code for video effects using MoviePy
-        effect_templates = {
-            "zoom": """
-import numpy as np
-
-def zoom_effect(clip, zoom_factor=1.5, duration=None):
-    def zoom_effect(get_frame, t):
-        frame = get_frame(t)
-        h, w = frame.shape[:2]
-        
-        # Calculate zoom
-        current_zoom = 1 + (zoom_factor - 1) * (t / duration)
-        
-        # Simple center crop zoom
-        center_h, center_w = h // 2, w // 2
-        new_h, new_w = int(h / current_zoom), int(w / current_zoom)
-        
-        start_h = max(0, center_h - new_h // 2)
-        start_w = max(0, center_w - new_w // 2)
-        
-        zoomed = frame[start_h:start_h+new_h, start_w:start_w+new_w]
-        return np.clip(zoomed, 0, 255).astype(np.uint8)
-    
-    return clip.fl(zoom_effect)
-
-print(f"Zoom effect with factor {zoom_factor} generated")
-""",
-            "glitch": """
-import numpy as np
-
-def glitch_effect(clip, offset=10):
-    \"\"\"
-    Apply a simple RGB channel shift glitch effect.
-    Shifts red channel horizontally and blue channel vertically.
-    \"\"\"
-    def shift_frame(get_frame, t):
-        frame = get_frame(t).copy()
-        # Roll red channel horizontally
-        frame[:, :, 0] = np.roll(frame[:, :, 0], offset, axis=1)
-        # Roll blue channel vertically
-        frame[:, :, 2] = np.roll(frame[:, :, 2], -offset, axis=0)
-        return frame
-    return clip.fl(shift_frame)
-""",
-            "colorgrade": """
-import numpy as np
-
-def colorgrade(clip, brightness=0, contrast=1.0, saturation=1.0):
-    \"\"\"
-    Adjust brightness, contrast, and saturation.
-    brightness: added to pixel values (e.g., 50)
-    contrast: multiplied factor (e.g., 1.2)
-    saturation: color intensity multiplier (e.g., 1.5)
-    \"\"\"
-    def adjust_pixels(get_frame, t):
-        frame = get_frame(t).astype('float32')
-        # Apply contrast and brightness
-        frame = frame * contrast + brightness
-        # Saturation: convert to HSV? Simpler: blend with grayscale
-        if saturation != 1.0:
-            gray = np.mean(frame, axis=2, keepdims=True)
-            frame = gray + (frame - gray) * saturation
-        return np.clip(frame, 0, 255).astype('uint8')
-    return clip.fl(adjust_pixels)
-""",
-            "colorgrade": """
-def color_grade(clip, warmth=0, saturation=1.0):
-    print(f"Color grade: warmth={warmth}, saturation={saturation}")
-""",
+        # Map desired effect to native VideoProcessor methods/params
+        effect_mapping = {
+            "zoom": {
+                "method": "apply_originality_transformation",
+                "params": {"zoom": parameters.get("zoom_factor", 1.05)},
+            },
+            "glitch": {
+                "method": "apply_random_glitch",
+                "params": {"intensity": parameters.get("intensity", 1.0)},
+            },
+            "colorgrade": {
+                "method": "apply_vibe_adjustments",
+                "params": {
+                    "visual_mood": parameters.get("mood", "energetic"),
+                    "aesthetic_rating": 8,
+                },
+            },
+            "noir": {"method": "apply_grayscale", "params": {}},
         }
 
-        code = effect_templates.get(effect_name, "")
-        if not code:
-            return f"Unknown effect: {effect_name}"
+        effect_spec = effect_mapping.get(effect_name)
+        if not effect_spec:
+            return {"success": False, "error": f"Unknown effect: {effect_name}"}
 
-        # Inject parameters
-        for key, value in parameters.items():
-            code = code.replace(f"{key}=", f"{key}={value}")
+        # Return the specification for the engine to use
+        return {
+            "success": True,
+            "effect": effect_name,
+            "instruction": effect_spec,
+            "message": f"Effect '{effect_name}' initialized using native engine methods.",
+        }
 
-        result = await self.execute_code(code)
+    def _validate_code_security(self, code: str, language: str) -> List[str]:
+        """
+        Comprehensive security validation for code execution.
+        Returns list of security violations found.
+        """
+        issues = []
+        
+        # 1. Normalize code for bypass detection (remove whitespace, common separators)
+        normalized = "".join(code.split()).replace('"', "").replace("'", "").replace("+", "").lower()
 
-        if result["success"]:
-            return f"Effect '{effect_name}' generated successfully"
-        else:
-            return f"Error: {result['error']}"
+        # Language-specific forbidden patterns
+        forbidden_patterns = {
+            "python": [
+                "os.",
+                "subprocess",
+                "socket",
+                "sys.",
+                "eval(",
+                "getattr",
+                "hasattr",
+                "__import__",
+                "open(",
+                "exec(",
+                "compile(",
+                "importlib",
+                "builtins",
+                "globals",
+                "locals",
+                "vars(",
+                "dir(",
+                "inspect",
+                "pickle",
+                "marshal",
+                "shelve",
+                "__class__",
+                "__mro__",
+                "__subclasses__",
+            ],
+            "javascript": [
+                "require(",
+                "process.",
+                "child_process",
+                "fs.",
+                "eval(",
+                "ActiveX",
+                "XMLHttpRequest",
+                "fetch(",
+                "import(",
+                "document.",
+                "window.",
+                "global.",
+                "console.",
+            ],
+        }
+
+        patterns = forbidden_patterns.get(language, [])
+        for pattern in patterns:
+            # Check raw code
+            if pattern in code:
+                issues.append(f"forbidden pattern '{pattern}'")
+            
+            # Check normalized code for obfuscated concatenation (e.g. "o" + "s." + "s" + "ystem")
+            # We strip separators for the check
+            clean_pattern = pattern.replace(".", "").replace("(", "").replace("__", "").lower()
+            if clean_pattern and clean_pattern in normalized:
+                 # Only add if not already caught by raw check to avoid duplicates
+                 if f"obfuscated {clean_pattern}" not in [i.split("'")[1] if "'" in i else i for i in issues]:
+                    issues.append(f"possible obfuscated {pattern}")
+
+        # Length limits
+        if len(code) > 10000:
+            issues.append("code too long (>10KB)")
+        if len(code.split("\n")) > 100:
+            issues.append("too many lines (>100)")
+
+        # Suspicious shell patterns
+        suspicious = ["rm ", "del ", "format(", "delete", "drop table", "truncate", "sh ", "bash "]
+        for pattern in suspicious:
+            if pattern.lower() in code.lower():
+                issues.append(f"suspicious pattern '{pattern}'")
+
+        return issues
+
+    def _check_rate_limit(self) -> bool:
+        """
+        Rate limiting for code execution to prevent abuse.
+        """
+        import time
+
+        current_time = time.time()
+
+        if not hasattr(self, "_execution_times"):
+            self._execution_times = []
+
+        # Clean old entries (keep last 10 minutes)
+        self._execution_times = [
+            t for t in self._execution_times if current_time - t < 600
+        ]
+
+        # Allow max 10 executions per 10 minutes
+        if len(self._execution_times) >= 10:
+            return False
+
+        self._execution_times.append(current_time)
+        return True
 
 
 # Singleton instance

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -26,7 +27,7 @@ func NewAIBridge() *AIBridge {
 func (b *AIBridge) SendToDeconstructor(candidate ScanResult) error {
 	// Skip if no URL (empty result from API)
 	if candidate.URL == "" {
-		fmt.Printf("[Bridge] Skipping %s - no results from YouTube API\n", candidate.Niche)
+		slog.Warn("Skipping - no results from YouTube API", slog.String("niche", candidate.Niche))
 		return nil
 	}
 
@@ -58,6 +59,6 @@ func (b *AIBridge) SendToDeconstructor(candidate ScanResult) error {
 		return fmt.Errorf("Python API returned status: %s", resp.Status)
 	}
 
-	fmt.Printf("[Bridge] Successfully sent %s to Python deconstructor\n", candidate.Niche)
+	slog.Info("Successfully sent to Python deconstructor", slog.String("niche", candidate.Niche))
 	return nil
 }
