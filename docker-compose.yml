@@ -339,7 +339,7 @@ services:
       - PYTHONPATH=/app
       # Video processing environment
       - TORCH_USE_CUDA_DSA=1
-      - CUDA_VISIBLE_DEVICES=""
+      - CUDA_VISIBLE_DEVICES=all
       # API keys for video processing
       - YOUTUBE_API_KEY
       - GROQ_API_KEY
@@ -348,12 +348,25 @@ services:
       - ELEVENLABS_API_KEY
     networks:
       - viral_forge
+    runtime: nvidia
     deploy:
       resources:
         limits:
           memory: 4G
+          cpus: '2.0'
         reservations:
           memory: 2G
+          cpus: '1.0'
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     command: >
       bash -c "
       echo '🎬 Video Processor Ready'
