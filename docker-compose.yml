@@ -319,6 +319,67 @@ services:
     networks:
       - viral_forge
 
+  video_processor:
+    profiles:
+      - video  # Enable with: docker-compose --profile video up
+    build:
+      context: .
+      dockerfile: ./video_processor.Dockerfile
+      args:
+        - BASE_IMAGE=python:3.10-slim
+    ports:
+      - "7206:8001"
+    volumes:
+      - .:/app  # Full codebase access
+      - ./outputs:/app/outputs  # Video output directory
+      - ./inputs:/app/inputs    # Video input directory
+      - video_cache:/app/cache  # Processing cache
+    environment:
+      - ENV=development
+      - PYTHONPATH=/app
+      # Video processing environment
+      - TORCH_USE_CUDA_DSA=1
+      - CUDA_VISIBLE_DEVICES=""
+      # API keys for video processing
+      - YOUTUBE_API_KEY
+      - GROQ_API_KEY
+      - OPENAI_API_KEY
+      - PEXELS_API_KEY
+      - ELEVENLABS_API_KEY
+    networks:
+      - viral_forge
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+    command: >
+      bash -c "
+      echo '🎬 Video Processor Ready'
+      echo 'Available functions:'
+      echo '- scene_based_orchestrator.produce_scene_based_video()'
+      echo '- Generates real MP4 files with MoviePy/FFmpeg/OpenCV'
+      echo '- Outputs to: /app/outputs/scene_based_videos/'
+      echo ''
+      echo 'Example usage:'
+      echo 'scenes = ['
+      echo \"  {'description': 'Intro to topic', 'visual_prompt': 'Modern workspace'},\"      echo \"  {'description': 'Main demonstration', 'visual_prompt': 'Step-by-step guide'}\"      echo ']'
+      echo '# result = await scene_based_orchestrator.produce_scene_based_video(scenes=scenes, niche=\"your_topic\")'
+      echo 'Ready for video production commands...'
+      echo ''
+      echo 'To run video production:'
+      echo 'docker-compose --profile video exec video_processor python3 -c \"'
+      echo 'import asyncio'
+      echo 'from services.video_engine.scene_orchestrator import scene_based_orchestrator'
+      echo ''
+      echo 'scenes = [{\"description\": \"Intro to AI\", \"visual_prompt\": \"Modern workspace\"}]'
+      echo 'result = asyncio.run(scene_based_orchestrator.produce_scene_based_video(scenes=scenes, niche=\"AI tools\"))'
+      echo 'print(f\"Video created: {result.get(\\\"video_path\\\")}\")'
+      echo '\"'
+      "
+    restart: unless-stopped
+
   # Monitoring Stack
   prometheus:
     image: prom/prometheus:latest
@@ -408,6 +469,7 @@ services:
 volumes:
   postgres_data:
   voiceover_cache:
+  video_cache:
   prometheus_data:
   grafana_data:
   loki_data:

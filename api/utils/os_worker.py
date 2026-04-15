@@ -1,7 +1,23 @@
 import os
 import httpx
-from faster_whisper import WhisperModel
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Lazy loading flag
+_whisper_available = None
+
+def check_whisper_available():
+    global _whisper_available
+    if _whisper_available is None:
+        try:
+            from faster_whisper import WhisperModel
+            _whisper_available = True
+        except ImportError:
+            _whisper_available = False
+            logger.warning("[OS-Worker] faster-whisper not installed. Transcription disabled.")
+    return _whisper_available
 
 class AIWorker:
     def __init__(self):
@@ -12,10 +28,30 @@ class AIWorker:
         self.whisper_model_size = "base"
         self.whisper_model = None 
 
+    def get_dependency_report(self):
+        """Returns health of local AI drivers."""
+        available = check_whisper_available()
+        return {
+            "name": "Local AI Core",
+            "drivers": [
+                {
+                    "name": "faster-whisper",
+                    "installed": available,
+                    "impact": "Local transcription will be unavailable if missing."
+                }
+            ],
+            "healthy": available
+        }
+
     async def transcribe(self, audio_path: str):
         """Transcribes audio using fast-whisper locally."""
+        if not check_whisper_available():
+            logger.error("[OS-Worker] Transcription requested but dependency is missing.")
+            return []
+
         if not self.whisper_model:
-            print(f"[OS-Worker] Loading Whisper ({self.whisper_model_size})...")
+            from faster_whisper import WhisperModel
+            logger.info(f"[OS-Worker] Loading Whisper ({self.whisper_model_size})...")
             self.whisper_model = WhisperModel(self.whisper_model_size, device="cpu", compute_type="int8")
             
         segments, info = self.whisper_model.transcribe(audio_path, beam_size=5)

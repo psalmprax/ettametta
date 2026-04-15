@@ -2,7 +2,7 @@ import logging
 import requests
 from typing import Dict, Any, List
 from groq import Groq
-from config import settings
+from api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,8 @@ class Claw4ScienceSkill:
     
     def __init__(self):
         self.groq_client = Groq(api_key=settings.GROQ_API_KEY)
-        self.model = settings.MODEL
+        # Use LANGCHAIN_MODEL as default or fallback to llama3-8b
+        self.model = getattr(settings, "LANGCHAIN_MODEL", "llama-3.1-8b-instant")
         
     def convert_technical_to_viral(self, raw_data: str, target_platform: str = "TikTok") -> str:
         """

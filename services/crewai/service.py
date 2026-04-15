@@ -1,21 +1,45 @@
-"""
-CrewAI Service - Optional multi-agent orchestration
-==================================================
-Disabled by default. Enable with: ENABLE_CREWAI=true
-
-This service adds multi-agent workflows for complex content creation:
-- Researcher agent (finds trends, topics)
-- Writer agent (creates scripts)
-- Editor agent (reviews, improves)
-- Publisher agent (formats, schedules)
-"""
-
 import os
 import logging
+import time
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+def _check_crewai_available():
+    try:
+        import crewai
+        return True
+    except ImportError:
+        return False
+
+class CircuitBreaker:
+    """Simple circuit breaker to prevent cascading failures"""
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120): # Longer timeout for agents
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+
+    def is_open(self) -> bool:
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+            logger.warning("[CrewAI] Circuit opened due to agent execution failures")
 
 
 # Lazy import - check availability dynamically
@@ -47,9 +71,10 @@ class CrewAIService:
         self.enabled = os.getenv("ENABLE_CREWAI", "false").lower() == "true"
         self.agents_config = self._parse_agents_config()
         self.llm = None
+        self.circuit_breaker = CircuitBreaker()
+        self.search_tool = None
 
         if not self.enabled:
-            logger.info("CrewAI service is disabled (ENABLE_CREWAI=false)")
             return
 
         # Check crewai availability
@@ -140,6 +165,21 @@ class CrewAIService:
             verbose=True,
         )
 
+    def _create_fact_checker_agent(self):
+        """Create fact checker agent."""
+        from crewai import Agent
+
+        return Agent(
+            llm=self.llm,
+            role="Fact Checker",
+            goal="Verify all quantitative and qualitative claims for accuracy and reputability",
+            backstory="""You are a meticulous fact-checker. You ensure that 
+            any news, numbers, or claims in the content are accurate and 
+            backed by reputable sources. You protect the brand's integrity.""",
+            tools=[self.search_tool],
+            verbose=True,
+        )
+
     def _create_editor_agent(self):
         """Create editor agent."""
         from crewai import Agent
@@ -171,14 +211,7 @@ class CrewAIService:
         self, topic: str, platform: str = "youtube"
     ) -> Dict[str, Any]:
         """
-        Run content creation team workflow.
-
-        Args:
-            topic: Topic to research and create content about
-            platform: Target platform (youtube, tiktok, instagram)
-
-        Returns:
-            Dict with research, script, edited content, and publishing info
+        Run content creation team workflow with fact-checking.
         """
         if not self.is_enabled():
             raise RuntimeError("CrewAI service is not enabled")
@@ -187,6 +220,8 @@ class CrewAIService:
         agents = []
         if "researcher" in self.agents_config:
             agents.append(self._create_researcher_agent())
+        if "fact_checker" in self.agents_config or True: # Force fact checker for ROI
+            agents.append(self._create_fact_checker_agent())
         if "writer" in self.agents_config:
             agents.append(self._create_writer_agent())
         if "editor" in self.agents_config:
@@ -198,6 +233,7 @@ class CrewAIService:
         if not agents:
             agents = [
                 self._create_researcher_agent(),
+                self._create_fact_checker_agent(),
                 self._create_writer_agent(),
                 self._create_editor_agent(),
             ]
@@ -214,6 +250,14 @@ class CrewAIService:
                 expected_output="A list of trending angles and hook ideas",
             )
             tasks.append(research_task)
+
+        if any(a.role == "Fact Checker" for a in agents):
+            fc_task = Task(
+                description="Verify the research findings. Ensure all claims about trending events or data are accurate.",
+                agent=next(a for a in agents if a.role == "Fact Checker"),
+                expected_output="Verified fact report or corrections",
+            )
+            tasks.append(fc_task)
 
         if any(a.role == "Writer" for a in agents):
             writer = next(a for a in agents if a.role == "Writer")

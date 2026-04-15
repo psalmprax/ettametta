@@ -2,10 +2,16 @@ import logging
 import json
 import requests
 import asyncio
+import time
 from groq import Groq
-from config import settings
-from typing import Dict, Any, Optional
+from api.config import settings
+from typing import Dict, Any, Optional, List
 import httpx
+
+from .utils import is_package_available
+
+logger = logging.getLogger(__name__)
+
 
 try:
     from api.utils.llm_vault import get_llm_api_key
@@ -14,33 +20,63 @@ try:
 except ImportError:
     VAULT_AVAILABLE = False
 
-from skills.discovery import discovery_skill
-from skills.system import system_skill
-from skills.analytics import analytics_skill
-from skills.content import content_skill
-from skills.publishing import publishing_skill
-from skills.niche import niche_skill
-from skills.security import security_skill
-from skills.no_face import noface_skill
-from skills.outreach import outreach_skill
-from skills.metrics import social_metrics_skill
-from skills.external.paperclip_integration import paperclip_skill
-from skills.external.claw4science_integration import claw4science_skill
-from skills.render_remotion import remotion_skill
-from skills.memory import memory_skill
-from skills.self_improve import self_improve_skill
-from skills.repurpose import repurpose_skill
-from skills.trend_prediction import trend_prediction_skill
-from skills.competitor import competitor_skill
-from skills.audit import audit_skill
-from skills.notifications import notification_skill
-from skills.workflow import workflow_skill
-from skills.self_healing import self_healing_skill
-from skills.cashclaw import cashclaw_skill
-from skills.pixverse import pixverse_skill
+from .skills import (
+    discovery_skill,
+    system_skill,
+    analytics_skill,
+    content_skill,
+    publishing_skill,
+    niche_skill,
+    security_skill,
+    noface_skill,
+    outreach_skill,
+    social_metrics_skill,
+    paperclip_skill,
+    claw4science_skill,
+    remotion_skill,
+    memory_skill,
+    self_improve_skill,
+    repurpose_skill,
+    trend_prediction_skill,
+    competitor_skill,
+    audit_skill,
+    notification_skill,
+    workflow_skill,
+    self_healing_skill,
+    cashclaw_skill,
+    pixverse_skill,
+    luma_skill,
+)
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
+class CircuitBreaker:
+    """Simple circuit breaker to prevent cascading failures"""
+
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 60):
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+
+    def is_open(self) -> bool:
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+            logger.warning("[OpenClaw] Circuit opened due to failures")
 
 
 class OpenClawAgent:
@@ -49,8 +85,37 @@ class OpenClawAgent:
         self.reasoning_mode = reasoning_mode
         self.llm_provider = getattr(settings, "DEFAULT_LLM_PROVIDER", "groq")
         self.clients = {}
+        self.circuit_breaker = CircuitBreaker()
         self._init_llm_clients()
         self.model = self._get_model_name()
+
+    def get_dependency_status(self) -> Dict[str, bool]:
+        """Check availability of optional heavy dependencies."""
+        return {
+            "playwright": is_package_available("playwright"),
+            "groq": is_package_available("groq"),
+            "requests": is_package_available("requests"),
+            "openai": is_package_available("openai"),
+        }
+
+    def get_dependency_report(self) -> Dict[str, Any]:
+        """Generate a detailed report of missing dependencies and their impact."""
+        status = self.get_dependency_status()
+        missing = [pkg for pkg, installed in status.items() if not installed]
+        
+        impact = {}
+        if not status["playwright"]:
+            impact["playwright"] = "24+ Browser AI skills (Luma, Runway, Pika, etc.) are disabled."
+        if not status["groq"]:
+            impact["groq"] = "Standard reasoning mode is disabled."
+
+        return {
+            "all_installed": len(missing) == 0,
+            "status": status,
+            "missing": missing,
+            "impact": impact,
+            "fix_command": f"pip install {' '.join(missing)}" if missing else None
+        }
 
     def _get_api_key(self, key_name: str) -> str:
         """Get API key from vault or fall back to settings"""
@@ -1379,3 +1444,8 @@ class OpenClawAgent:
         finally:
             self.llm_provider = original_provider
             self.model = original_model
+
+
+# Global singleton for unified status and health reporting
+# This orchestrator manages discovery and reasoning across all sectors.
+openclaw_agent = OpenClawAgent()

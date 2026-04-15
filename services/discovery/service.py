@@ -6,6 +6,15 @@ import os
 from sqlalchemy import select
 from typing import List
 from .models import ContentCandidate, ViralPattern
+
+# Graceful imports for optional dependencies
+try:
+    import faster_whisper
+
+    FASTER_WHISPER_AVAILABLE = True
+except ImportError:
+    FASTER_WHISPER_AVAILABLE = False
+    faster_whisper = None
 from .youtube_scanner import YouTubeShortsScanner
 from .youtube_long_scanner import YouTubeLongScanner
 from .tiktok_scanner import TikTokScanner
@@ -23,6 +32,8 @@ from .linkedin_scanner import base_linkedin_scanner
 from .bilibili_scanner import base_bilibili_scanner
 from .skool_scanner import base_skool_scanner
 from .duckduckgo_scanner import base_duckduckgo_scanner
+from .trading_scanner import TradingScanner
+from .video_lead_scanner import video_lead_scanner
 from .deconstructor import pattern_deconstructor
 from api.utils.database import async_session_factory
 from api.utils.models import (
@@ -39,12 +50,18 @@ from groq import Groq
 
 class DiscoveryService:
     def __init__(self):
+        # Check optional dependencies
+        self.dependencies_available = {
+            "faster_whisper": FASTER_WHISPER_AVAILABLE,
+        }
+
         # Primary scanners (run for every niche)
         # These are the production-ready scanners with real APIs
         self.scanners = [
             YouTubeShortsScanner(),  # Real API ✓
             YouTubeLongScanner(),  # Real API ✓
             TikTokScanner(),  # Web scrape ✓
+            TradingScanner(),  # Financial Market Moves ✓
             base_duckduckgo_scanner,  # Free fallback ✓
         ]
         # Secondary scanners (supplementary, web scraping)
@@ -64,6 +81,9 @@ class DiscoveryService:
             base_metasearch_scanner,  # Partial
             base_skool_scanner,  # Partial
         ]
+
+        # Video lead discovery capabilities
+        self.video_lead_scanner = video_lead_scanner
 
     async def _log(self, message: str, level: str = "INFO"):
         """Broadcasts a discovery log message."""
@@ -649,6 +669,69 @@ class DiscoveryService:
             except Exception as e:
                 print(f"[Discovery] Search failed: {e}")
                 return []
+
+    # Video Lead Discovery Methods
+    async def discover_video_leads(
+        self,
+        niche: str,
+        platforms: list = None,
+        min_viral_score: float = 7.0,
+        max_results: int = 20,
+    ):
+        """
+        Discover high-performing video content leads across platforms.
+
+        Args:
+            niche: Content niche to search for
+            platforms: List of platforms to search (youtube, tiktok, instagram)
+            min_viral_score: Minimum viral score (0-10)
+            max_results: Maximum leads to return
+
+        Returns:
+            List of video leads with performance metrics
+        """
+        if platforms is None:
+            platforms = ["youtube", "tiktok"]
+
+        return await self.video_lead_scanner.discover_video_leads(
+            niche=niche,
+            platforms=platforms,
+            min_viral_score=min_viral_score,
+            max_results=max_results,
+        )
+
+    async def analyze_video_performance(self, video_url: str, niche: str):
+        """
+        Deep analysis of a specific video's performance and viral potential.
+
+        Args:
+            video_url: URL of video to analyze
+            niche: Content niche for context
+
+        Returns:
+            Detailed performance analysis with repurposing suggestions
+        """
+        return await self.video_lead_scanner.analyze_video_performance(
+            video_url=video_url, niche=niche
+        )
+
+    async def find_video_templates(
+        self, niche: str, template_type: str = "viral", min_samples: int = 10
+    ):
+        """
+        Find successful video templates and patterns in a niche.
+
+        Args:
+            niche: Content niche
+            template_type: Type of template (viral, educational, entertainment)
+            min_samples: Minimum samples to analyze
+
+        Returns:
+            Template analysis with patterns and success factors
+        """
+        return await self.video_lead_scanner.find_video_templates(
+            niche=niche, template_type=template_type, min_samples=min_samples
+        )
 
 
 base_discovery_service = DiscoveryService()

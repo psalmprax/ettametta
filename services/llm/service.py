@@ -62,6 +62,41 @@ class UnifiedLLMService:
         self.default_provider = default_provider
         self._api_keys: Dict[LLMProvider, str] = {}
         self._load_api_keys()
+        
+        # Framework integration
+        self.enable_langchain = os.getenv("ENABLE_LANGCHAIN", "false").lower() == "true"
+        self.enable_crewai = os.getenv("ENABLE_CREWAI", "false").lower() == "true"
+
+    def get_intelligence_report(self):
+        """Returns status of agentic frameworks."""
+        from services.langchain.service import _check_langchain_available
+        from services.crewai.service import _check_crewai_available
+        
+        lc_installed = _check_langchain_available()
+        ca_installed = _check_crewai_available()
+        
+        return {
+            "name": "Intelligence Suite",
+            "frameworks": [
+                {
+                    "name": "LangChain",
+                    "installed": lc_installed,
+                    "enabled": self.enable_langchain,
+                    "status": "Healthy" if lc_installed and self.enable_langchain else "Inactive"
+                },
+                {
+                    "name": "CrewAI",
+                    "installed": ca_installed,
+                    "enabled": self.enable_crewai,
+                    "status": "Healthy" if ca_installed and self.enable_crewai else "Inactive"
+                }
+            ],
+            "healthy": lc_installed or ca_installed
+        }
+
+    def get_dependency_report(self):
+        """Audit compatibility for intelligence frameworks."""
+        return self.get_intelligence_report()
 
     def _load_api_keys(self):
         """Load API keys from environment variables."""

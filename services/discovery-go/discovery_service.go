@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"sync"
 
@@ -31,21 +31,21 @@ func getEnv(key, fallback string) string {
 
 // DiscoveryService wraps scanner + bridge with proper logging
 type DiscoveryService struct {
-	scanner *Scanner
-	bridge  *AIBridge
-	config  Config
-	wg      sync.WaitGroup
-	jobs    chan ScanResult
+	scanner    *Scanner
+	bridge     *AIBridge
+	config     Config
+	wg         sync.WaitGroup
+	resultChan chan ScanResult
 }
 
 // NewDiscoveryService creates a properly structured service
 func NewDiscoveryService() *DiscoveryService {
 	cfg := defaultConfig
 	return &DiscoveryService{
-		scanner: NewScanner(),
-		bridge:  NewAIBridge(),
-		config:  cfg,
-		jobs:    make(chan ScanResult, cfg.QueueSize),
+		scanner:    NewScanner(),
+		bridge:     NewAIBridge(),
+		config:     cfg,
+		resultChan: make(chan ScanResult, cfg.QueueSize),
 	}
 }
 
@@ -55,50 +55,50 @@ func (s *DiscoveryService) Start(workerCount int) {
 		s.config.MaxWorkers = workerCount
 	}
 
-	log.Printf("[Discovery] Starting worker pool with %d workers", s.config.MaxWorkers)
+	s.wg.Add(s.config.MaxWorkers)
+	slog.Info("Starting worker pool", slog.Int("max_workers", s.config.MaxWorkers))
 
-	for i := 0; i < s.config.MaxWorkers; i++ {
-		s.wg.Add(1)
+	for i := 1; i <= s.config.MaxWorkers; i++ {
 		go func(workerID int) {
 			defer s.wg.Done()
-			log.Printf("[Discovery] Worker %d started", workerID)
-			for job := range s.jobs {
-				if err := s.bridge.SendToDeconstructor(job); err != nil {
-					log.Printf("[Worker %d] Error sending to Python: %v", workerID, err)
+			slog.Debug("Worker started", slog.Int("worker_id", workerID))
+			for res := range s.resultChan {
+				if err := s.bridge.SendToDeconstructor(res); err != nil {
+					slog.Error("Failed to send to Python deconstructor", slog.Int("worker_id", workerID), slog.Any("error", err))
 				}
 			}
 		}(i)
 	}
 }
 
-// ProcessNiches scans niches and broadcasts results
-func (s *DiscoveryService) ProcessNiches(niches []string) []ScanResult {
-	log.Printf("[Discovery] Starting multi-scan for niches: %v", niches)
+// StartMultiScan scans niches and broadcasts results
+func (s *DiscoveryService) StartMultiScan(niches []string) []ScanResult {
+	slog.Info("Starting multi-scan", slog.Any("niches", niches))
 
 	results := s.scanner.StartMultiScan(niches)
-	log.Printf("[Discovery] Scan completed, got %d results", len(results))
+	slog.Info("Scan completed", slog.Int("count", len(results)))
 
 	// Send results through bounded worker pool
 	queued := 0
 	for _, res := range results {
 		select {
-		case s.jobs <- res:
+		case s.resultChan <- res:
 			queued++
 		default:
-			log.Printf("[Discovery] Queue full, dropping result: %s", res.Title)
+			slog.Warn("Broadcast queue full, dropping result", slog.String("title", res.Title))
 		}
 	}
 
-	log.Printf("[Discovery] Queued %d/%d results for broadcast", queued, len(results))
+	slog.Info("Results queued for broadcast", slog.Int("queued", queued), slog.Int("total", len(results)))
 	return results
 }
 
-// Close gracefully shuts down the worker pool
-func (s *DiscoveryService) Close() {
-	log.Println("[Discovery] Closing worker pool...")
-	close(s.jobs)
+// Stop gracefully shuts down the worker pool
+func (s *DiscoveryService) Stop() {
+	slog.Info("Closing worker pool...")
+	close(s.resultChan)
 	s.wg.Wait()
-	log.Println("[Discovery] Worker pool closed")
+	slog.Info("Worker pool closed")
 }
 
 // HealthCheck returns service health status
@@ -132,8 +132,8 @@ func multiScanHandler(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("[Discovery] Invalid request: %v", err)
-		c.JSON(400, gin.H{"error": err.Error()})
+		slog.Error("Invalid scan request", slog.Any("error", err))
+		c.JSON(400, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -141,7 +141,7 @@ func multiScanHandler(c *gin.Context) {
 		req.Niches = []string{"AI", "Fitness", "Motivation"}
 	}
 
-	results := discoverySvc.ProcessNiches(req.Niches)
+	results := discoverySvc.StartMultiScan(req.Niches)
 
 	c.JSON(200, gin.H{
 		"message": "Scan completed with bounded concurrency",
