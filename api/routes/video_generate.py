@@ -286,3 +286,38 @@ async def retry_failed_job(
     except Exception as e:
         logger.error(f"Job retry failed: {e}")
         raise HTTPException(status_code=500, detail="Retry failed")
+
+
+@router.get("/{job_id}/preview")
+async def get_video_preview(
+    job_id: str,
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get video preview information including public URL and status.
+    """
+    try:
+        stmt = select(VideoJobDB).where(
+            VideoJobDB.id == job_id, VideoJobDB.user_id == current_user.id
+        )
+        result = await db.execute(stmt)
+        job = result.scalar_one_or_none()
+
+        if not job:
+            raise HTTPException(status_code=404, detail="Video job not found")
+
+        return {
+            "job_id": job.id,
+            "status": job.status,
+            "progress": job.progress,
+            "public_url": job.output_path,
+            "title": job.title,
+            "created_at": job.created_at,
+            "updated_at": job.updated_at,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Video preview failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get video preview")
