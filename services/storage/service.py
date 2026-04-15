@@ -2,6 +2,7 @@ from api.utils.vault import get_secret
 from typing import Optional
 import os
 import logging
+import mimetypes
 
 try:
     import boto3
@@ -85,6 +86,12 @@ class StorageService:
         Uploads a file to the configured provider.
         Returns the object key (Cloud) or absolute file path (Local).
         """
+        if not os.path.exists(file_path) or not os.path.isfile(file_path):
+            logging.error(
+                f"[StorageService] File does not exist or is not a file: {file_path}"
+            )
+            raise ValueError(f"Invalid file path: {file_path}")
+
         if object_name is None:
             object_name = os.path.basename(file_path)
 
@@ -110,9 +117,20 @@ class StorageService:
             object_name = os.path.basename(file_path)
 
         try:
-            s3_client.upload_file(file_path, self.bucket, object_name)
+            # Detect MIME type for proper content handling
+            content_type, _ = mimetypes.guess_type(file_path)
+            extra_args = {}
+            if content_type:
+                extra_args["ContentType"] = content_type
+                logging.info(
+                    f"[StorageService] Detected content type: {content_type} for {file_path}"
+                )
+
+            s3_client.upload_file(
+                file_path, self.bucket, object_name, ExtraArgs=extra_args
+            )
             logging.info(
-                f"[StorageService] Force-uploaded {file_path} to {self.bucket}/{object_name}"
+                f"[StorageService] Uploaded {file_path} to {self.bucket}/{object_name}"
             )
             return object_name
         except Exception as e:
