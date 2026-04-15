@@ -163,11 +163,14 @@ class VideoJobDB(Base):
 
     id = Column(String(36), primary_key=True, index=True)  # Task ID (UUID)
     title = Column(String)
-    status = Column(String)  # Queued, Transcribing, Rendering, Completed, Failed
+    status = Column(
+        String
+    )  # Queued, Validating, Downloading, Analyzing, Strategizing, Rendering, Retrying, Completed, Failed, Failed - API Limit, etc.
     progress = Column(Integer, default=0)
     time_remaining = Column(String, nullable=True)
     input_url = Column(String)
     output_path = Column(String, nullable=True)
+    error_message = Column(String, nullable=True)  # Detailed error information
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
     updated_at = Column(
@@ -321,6 +324,27 @@ class AuditLogDB(Base):
     details = Column(JSON, nullable=True)  # Additional context
     ip_address = Column(String, nullable=True)
     user_agent = Column(String, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+
+
+class SelfHealingAuditDB(Base):
+    """
+    Standard: Hardening Observability - Fault Persistence.
+    Persists catastrophic faults with tracebacks for automated or manual recovery.
+    """
+
+    __tablename__ = "self_healing_audits"
+
+    id = Column(
+        String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
+    )
+    path = Column(String, index=True)
+    method = Column(String)
+    exception_type = Column(String)
+    message = Column(String)
+    traceback = Column(String)
+    resolved = Column(Boolean, default=False)
+    resolution_notes = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
 
