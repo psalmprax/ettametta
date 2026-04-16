@@ -17,44 +17,54 @@ logger = logging.getLogger(__name__)
 _moviepy_available = None
 _cv2_available = None
 
+
 def check_moviepy_available():
     global _moviepy_available
     if _moviepy_available is None:
         try:
             from moviepy.editor import VideoFileClip
+
             _moviepy_available = True
         except ImportError:
             _moviepy_available = False
-            logger.warning("[VideoProcessor] moviepy not installed. Editing features limited.")
+            logger.warning(
+                "[VideoProcessor] moviepy not installed. Editing features limited."
+            )
     return _moviepy_available
+
 
 def check_cv2_available():
     global _cv2_available
     if _cv2_available is None:
         try:
             import cv2
+
             _cv2_available = True
         except ImportError:
             _cv2_available = False
-            logger.warning("[VideoProcessor] OpenCV not available. Visual analysis degraded.")
+            logger.warning(
+                "[VideoProcessor] OpenCV not available. Visual analysis degraded."
+            )
     return _cv2_available
+
 
 class VideoProcessor:
     """
     Advanced Video Processing Engine for ViralForge.
-    
+
     This class handles multi-stage video synthesis, frame-level transformations,
     OCR injection, and subtitle rendering using both MoviePy and OpenCV (where available).
-    
+
     Attributes:
         output_dir (str): Directory for temporary and final video assets.
         use_gpu (bool): Whether to use hardware acceleration (NVENC) for rendering.
         font_path (str): Path to the primary font for captions.
     """
+
     def __init__(self, output_dir: str = "outputs"):
         """
         Initializes the Video Engine with dynamic font resolution and FFmpeg patching.
-        
+
         Args:
             output_dir (str): Root directory for video outputs. Defaults to "outputs".
         """
@@ -113,14 +123,20 @@ class VideoProcessor:
     def _check_ffmpeg_version(self):
         """Checks ffmpeg version for compatibility."""
         try:
-            result = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True)
+            result = subprocess.run(
+                ["ffmpeg", "-version"], capture_output=True, text=True
+            )
             if result.returncode == 0:
-                version_line = result.stdout.split('\n')[0]
+                version_line = result.stdout.split("\n")[0]
                 logger.info(f"[VideoProcessor] FFmpeg version: {version_line}")
             else:
-                logger.warning("[VideoProcessor] FFmpeg check failed. Video processing may be unstable.")
+                logger.warning(
+                    "[VideoProcessor] FFmpeg check failed. Video processing may be unstable."
+                )
         except FileNotFoundError:
-            logger.error("[VideoProcessor] FFmpeg NOT FOUND. Video processing will FAIL.")
+            logger.error(
+                "[VideoProcessor] FFmpeg NOT FOUND. Video processing will FAIL."
+            )
 
     def get_dependency_report(self):
         """Returns health of local Video Processing drivers."""
@@ -132,21 +148,23 @@ class VideoProcessor:
                 {
                     "name": "moviepy",
                     "installed": m_available,
-                    "impact": "Complex editing, transitions, and text overlays will be unavailable."
+                    "impact": "Complex editing, transitions, and text overlays will be unavailable.",
                 },
                 {
                     "name": "opencv-python",
                     "installed": c_available,
-                    "impact": "Cinematic motion and visual quality enhancement will be unavailable."
-                }
+                    "impact": "Cinematic motion and visual quality enhancement will be unavailable.",
+                },
             ],
-            "healthy": m_available # MoviePy is the primary driver
+            "healthy": m_available,  # MoviePy is the primary driver
         }
 
     async def _verify_video_readable(self, clip: "VideoFileClip"):
         """Verify video can be read by iterating frames."""
         if not check_moviepy_available():
-            logger.warning("[VideoProcessor] Cannot verify video readability: moviepy missing.")
+            logger.warning(
+                "[VideoProcessor] Cannot verify video readability: moviepy missing."
+            )
             return
 
         import threading
@@ -217,6 +235,7 @@ class VideoProcessor:
         try:
             # Try with different reader
             from moviepy.editor import VideoFileClip
+
             clip = VideoFileClip(
                 input_path, audio=False, target_resolution=(height, width)
             )
@@ -236,6 +255,7 @@ class VideoProcessor:
         # First try with asyncio timeout
         try:
             from moviepy.editor import VideoFileClip
+
             clip = await asyncio.wait_for(
                 asyncio.to_thread(VideoFileClip, input_path),
                 timeout=self.video_load_timeout,
@@ -281,6 +301,7 @@ class VideoProcessor:
 
         logging.info(f"[VideoProcessor] Probing video with OpenCV: {input_path}")
         import cv2
+
         cap = cv2.VideoCapture(input_path)
 
         if not cap.isOpened():
@@ -306,6 +327,7 @@ class VideoProcessor:
         # Try loading with MoviePy again with extended timeout
         try:
             from moviepy.editor import VideoFileClip
+
             clip = await asyncio.wait_for(
                 asyncio.to_thread(VideoFileClip, input_path), timeout=60
             )
@@ -326,7 +348,7 @@ class VideoProcessor:
         Full video processing pipeline using OpenCV when MoviePy fails.
         This is a fallback that applies basic transformations.
         """
-        if not CV2_AVAILABLE:
+        if not check_cv2_available():
             raise RuntimeError("OpenCV not available")
 
         logging.info(f"[VideoProcessor] Processing video with OpenCV: {input_path}")
@@ -424,6 +446,7 @@ class VideoProcessor:
 
         # Original MoviePy Fallback (kept for safety)
         from moviepy.editor import VideoFileClip, vfx
+
         clip = VideoFileClip(input_path)
         transformed = clip.with_effects([vfx.MirrorX()]).resized(
             height=int(clip.h * 1.05)
@@ -454,6 +477,7 @@ class VideoProcessor:
             "[VideoProcessor] Fast concat failed, falling back to MoviePy compose"
         )
         from moviepy.editor import VideoFileClip, concatenate_videoclips
+
         clips = [VideoFileClip(p) for p in clip_paths]
         final_clip = concatenate_videoclips(clips, method="compose")
         final_clip.write_videofile(output_path, codec="libx264")
@@ -582,8 +606,6 @@ class VideoProcessor:
 
         if not segments:
             return clip
-
-        return concatenate_videoclips(segments, method="compose")
 
         return concatenate_videoclips(segments, method="compose")
 
@@ -846,7 +868,9 @@ class VideoProcessor:
 
                 # 1. Download Video Clip if it's a URL
                 local_vid = await _download_media(video_url, ".mp4")
-                from moviepy.editor import VideoFileClip; clip = VideoFileClip(local_vid)
+                from moviepy.editor import VideoFileClip
+
+                clip = VideoFileClip(local_vid)
 
                 # 2. Add Narration Audio if exists
                 if audio_url:

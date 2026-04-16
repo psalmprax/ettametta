@@ -210,8 +210,9 @@ class SecuritySentinel:
             async def check_db():
                 async with async_session_factory() as db:
                     await db.execute(select(1))
-            
+
             import asyncio
+
             asyncio.run(check_db())
         except:
             issues.append("Database connectivity failed")
@@ -299,7 +300,7 @@ class SecuritySentinel:
                 timeout=10,
             )
             if result.returncode == 0 and result.stdout.strip():
-                lines = result.stdout.split('\n')
+                lines = result.stdout.split("\n")
                 vulnerabilities.append(
                     {
                         "type": "HARDCODED_SECRETS",
@@ -332,11 +333,11 @@ class SecuritySentinel:
         }
 
         try:
-            self.redis_client.set(self.health_key, json.dumps(report))
+            self.redis_client.set(self.health_key, json.dumps(vulnerabilities))
         except Exception as e:
             logging.getLogger(__name__).warning(f"Failed to cache security report: {e}")
 
-        return report
+        return vulnerabilities
 
 
 base_security_sentinel = SecuritySentinel()
