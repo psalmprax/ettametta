@@ -1,25 +1,21 @@
-ARG BASE_IMAGE=python:3.10-slim
+ARG BASE_IMAGE=python:3.12-slim
 FROM ${BASE_IMAGE}
 
 WORKDIR /app
 
 # Install System Dependencies (FFmpeg, Image processing libs, and JS runtime for yt-dlp)
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
-    libgl1-mesa-glx \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
-    libxrender-dev \
+    libxrender1 \
     libgomp1 \
     curl \
     nodejs \
     npm \
     tesseract-ocr \
     libtesseract-dev \
-    chromium \
-    libnss3 \
-    libnspr4 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
     libcups2 \
