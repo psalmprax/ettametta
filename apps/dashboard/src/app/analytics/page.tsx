@@ -455,10 +455,12 @@ export default function AnalyticsPage() {
 
                     <div className="flex flex-wrap items-center gap-6">
                         <div className="space-y-1">
-                            <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest text-right">Selected Node</p>
+                            <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest text-right">Oracle Stability</p>
                             <div className="bg-zinc-950/50 border border-white/5 rounded-2xl px-6 py-4 flex items-center gap-4">
-                                <span className="text-white font-black">VF-{selectedPostId || "GLOBAL"}</span>
-                                <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                <span className={cn("font-black tracking-tighter", telemetry?.real_stats?.oracle_status === 'STABLE' ? "text-emerald-500" : "text-amber-500")}>
+                                    {telemetry?.real_stats?.oracle_status || "INITIALIZING..."}
+                                </span>
+                                <div className={cn("h-2 w-2 rounded-full animate-pulse", telemetry?.real_stats?.oracle_status === 'STABLE' ? "bg-emerald-500 shadow-glow-emerald" : "bg-amber-500")} />
                             </div>
                         </div>
 
@@ -510,10 +512,10 @@ export default function AnalyticsPage() {
                         ))
                     ) : (
                         <>
-                            <TelemetryTile title="Network Bitrate" value={`${telemetry?.metrics?.bitrate || "000.0"} Mb/s`} icon={<Zap className="h-6 w-6 text-primary" />} label="Signal Bandwidth" subtext={`${telemetry?.metrics?.latency || "00.0"} ms Latency`} />
-                            <TelemetryTile title="Propagation Velocity" value={`${telemetry?.metrics?.global_velocity || "0.0"}x`} icon={<TrendingUp className="h-6 w-6 text-primary" />} label="Viral Acceleration" subtext={`${telemetry?.metrics?.active_nodes || "0"} Active Nodes`} />
-                            <TelemetryTile title="Signal Strength" value={`${Math.round((telemetry?.metrics?.signal_strength || 0) * 100)}%`} icon={<BarChart3 className="h-6 w-6 text-primary" />} label="Connection Quality" subtext="Sync Locked" />
-                            <TelemetryTile title="Global Reach" value={metrics.views.toLocaleString()} icon={<Play className="h-6 w-6 text-primary" />} label="Network Ripple" subtext="+12.4% Velocity" />
+                             <TelemetryTile title="Network Bitrate" value={`${telemetry?.metrics?.bitrate || "000.0"} Mb/s`} icon={<Zap className="h-6 w-6 text-primary" />} label="Signal Bandwidth" subtext={`${telemetry?.metrics?.latency || "00.0"} ms Latency`} />
+                             <TelemetryTile title="Prediction Accuracy" value={`${Math.round((1 - (telemetry?.real_stats?.oracle_mae || 0.1)) * 100)}%`} icon={<Target className="h-6 w-6 text-primary" />} label="Oracle Honesty" subtext={`MAE: ${telemetry?.real_stats?.oracle_mae?.toFixed(3) || "0.000"}`} />
+                             <TelemetryTile title="Signal Strength" value={`${Math.round((telemetry?.metrics?.signal_strength || 0) * 100)}%`} icon={<BarChart3 className="h-6 w-6 text-primary" />} label="Connection Quality" subtext="Sync Locked" />
+                             <TelemetryTile title="Global Reach" value={metrics.views.toLocaleString()} icon={<Play className="h-6 w-6 text-primary" />} label="Network Ripple" subtext={`${telemetry?.metrics?.global_velocity || "0.0"}x Velocity`} />
                         </>
                     )}
                 </div>
