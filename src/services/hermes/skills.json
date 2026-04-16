@@ -1,0 +1,27 @@
+{
+    "global": [],
+    "niches": {
+        "organic_trending": [
+            {
+                "skill_name": "Negative Emotion Hook",
+                "pattern_type": "hook",
+                "niche": "trading",
+                "abstracted_pattern": "Start with a warning about a common mistake that loses people money.",
+                "confidence_score": 0.98,
+                "job_id": "viral_123",
+                "timestamp": 0
+            }
+        ],
+        "trading": [
+            {
+                "skill_name": "Negative Emotion Hook",
+                "pattern_type": "hook",
+                "niche": "trading",
+                "abstracted_pattern": "Start with a warning about a common mistake that loses people money.",
+                "confidence_score": 0.98,
+                "job_id": "viral_123",
+                "timestamp": 1776270273.4832392
+            }
+        ]
+    }
+}

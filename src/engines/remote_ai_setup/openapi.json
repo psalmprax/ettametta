@@ -1,0 +1,211 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Viral Forge Remote AI Engine",
+    "description": "High-performance GPU inference server for video synthesis and multi-modal analysis.",
+    "version": "1.5.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8122",
+      "description": "Local/Tunneled Render Node"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "System Health & Telemetry",
+        "responses": {
+          "200": {
+            "description": "Ouptut hardware telemetry, VRAM status, and active backend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generate": {
+      "post": {
+        "summary": "Standard Video Generation (LTX-2/Hunyuan)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job queued successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job_id": { "type": "string" },
+                    "status": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generate_hunyuan": {
+      "post": {
+        "summary": "Tencent HunyuanVideo Optimized Endpoint",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hunyuan job initiated."
+          }
+        }
+      }
+    },
+    "/voice": {
+      "post": {
+        "summary": "SpeechT5 Text-to-Speech",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Audio generated."
+          }
+        }
+      }
+    },
+    "/vlm": {
+      "post": {
+        "summary": "Moondream2 Visual Analysis",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VLMRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analysis result."
+          }
+        }
+      }
+    },
+    "/llm": {
+      "post": {
+        "summary": "Llama-3.1 Orchestration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LLMRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "LLM response text."
+          }
+        }
+      }
+    },
+    "/download/{job_id}": {
+      "get": {
+        "summary": "Download Finished Asset",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The video/audio file.",
+            "content": {
+              "video/mp4": {},
+              "audio/wav": {}
+            }
+          },
+          "404": { "description": "File not found." }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "VideoRequest": {
+        "type": "object",
+        "required": ["prompt"],
+        "properties": {
+          "prompt": { "type": "string" },
+          "image_base64": { "type": "string", "nullable": true },
+          "frames": { "type": "integer", "default": 121 },
+          "steps": { "type": "integer", "default": 35 },
+          "upscale_factor": { "type": "integer", "default": 4 },
+          "enhance_face": { "type": "boolean", "default": true },
+          "likeness_strength": { "type": "number", "default": 1.0 },
+          "face_enhance_weight": { "type": "number", "default": 0.5 },
+          "quantize": { "type": "boolean", "default": true },
+          "force_reload": { "type": "boolean", "default": false }
+        }
+      },
+      "VoiceRequest": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "text": { "type": "string" }
+        }
+      },
+      "VLMRequest": {
+        "type": "object",
+        "required": ["image_base64"],
+        "properties": {
+          "image_base64": { "type": "string" },
+          "prompt": { "type": "string", "default": "Describe this image." }
+        }
+      },
+      "LLMRequest": {
+        "type": "object",
+        "required": ["prompt"],
+        "properties": {
+          "prompt": { "type": "string" },
+          "system_prompt": { "type": "string", "default": "You are a specialized AI assistant for ettametta." },
+          "max_tokens": { "type": "integer", "default": 512 }
+        }
+      }
+    }
+  }
+}

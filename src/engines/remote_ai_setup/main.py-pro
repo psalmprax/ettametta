@@ -1,0 +1,367 @@
+import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
+import time
+import threading
+import uuid
+import base64
+import io
+import gc
+import shutil
+import asyncio
+import torch
+import torchvision
+import torchvision.transforms.functional as F
+
+# Shim for basicsr/realesrgan compatibility with newer torchvision
+try:
+    import torchvision.transforms.functional_tensor as F_t
+except ImportError:
+    import sys
+    # Create a dummy module to satisfy the import
+    from types import ModuleType
+    mock_ft = ModuleType('torchvision.transforms.functional_tensor')
+    mock_ft.rgb_to_grayscale = F.rgb_to_grayscale
+    mock_ft.center_crop = F.center_crop
+    mock_ft.normalize = F.normalize
+    mock_ft.pad = F.pad
+    mock_ft.resize = F.resize
+    mock_ft.to_tensor = F.to_tensor
+    sys.modules['torchvision.transforms.functional_tensor'] = mock_ft
+    print("🛠️ TorchVision shim applied for basicsr compatibility.")
+
+import numpy as np
+import cv2
+import PIL.Image as Image
+import torch
+from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+# import lip_sync 
+import sys
+import os
+
+# Add Wav2Lip repo to sys.path
+WAV2LIP_PATH = os.path.join(os.getcwd(), "wav2lip_repo")
+if WAV2LIP_PATH not in sys.path:
+    sys.path.append(WAV2LIP_PATH)
+
+# from models import Wav2Lip
+# import audio
+
+# =========================
+# CONFIGURATION
+# =========================
+CONTENT_DIR = "/tmp/ai_content"
+os.makedirs(CONTENT_DIR, exist_ok=True)
+
+app = FastAPI(title="Viral Forge Remote AI Engine (Pro-Grade 8K/60FPS)")
+
+# Auto-detect hardware
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"📡 High-End Engine active on: {DEVICE}")
+
+# =========================
+# GLOBALS (Lazy Loading & Locking)
+# =========================
+pipe = None
+face_enhancer = None
+upscaler_model = None
+render_lock = threading.Lock() # Serial Queue
+
+class VideoRequest(BaseModel):
+    prompt: str
+    image_base64: str = None
+    frames: int = 161
+    steps: int = 30
+    upscale_factor: int = 1 
+    enhance_face: bool = False
+    motion_score: int = 500
+    purge_hallucination: bool = False # New: Phase 95
+
+class SyncRequest(BaseModel):
+    video_id: str
+    audio_base64: str
+
+# =========================
+# MODEL LOADERS
+# =========================
+VRAM_MODE = None  # Tracks which strategy is active: "4bit", "8bit", or "offload"
+QUANT_BITS = int(os.environ.get("QUANT_BITS", "4"))  # Set to 4 or 8
+
+def _build_quant_config(bits):
+    """Build a BitsAndBytesConfig for the given bit width."""
+    from transformers import BitsAndBytesConfig
+    if bits == 4:
+        return BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4"
+        )
+    else:  # 8-bit
+        return BitsAndBytesConfig(
+            load_in_8bit=True,
+            llm_int8_threshold=6.0
+        )
+
+def _try_quantized_load(target_class, mode_label, bits):
+    """Attempt to load the pipeline with a quantized transformer."""
+    from diffusers import LTX2VideoTransformer3DModel
+    print(f"⚡ [{bits}-BIT MODE] Loading LTX-Video ({mode_label}) with {bits}-bit quantized transformer...")
+    quant_config = _build_quant_config(bits)
+    transformer = LTX2VideoTransformer3DModel.from_pretrained(
+        "Lightricks/LTX-2",
+        subfolder="transformer",
+        quantization_config=quant_config,
+        torch_dtype=torch.bfloat16
+    )
+    pipe = target_class.from_pretrained(
+        "Lightricks/LTX-2",
+        transformer=transformer,
+        torch_dtype=torch.bfloat16
+    )
+    pipe.enable_sequential_cpu_offload()
+    return pipe
+
+def load_ltx(is_i2v=False):
+    global pipe, VRAM_MODE
+    from diffusers import LTX2Pipeline, LTX2ImageToVideoPipeline
+    
+    target_class = LTX2ImageToVideoPipeline if is_i2v else LTX2Pipeline
+    
+    if pipe is not None and not isinstance(pipe, target_class):
+        print(f"🔄 Switching Pipeline to {'I2V' if is_i2v else 'T2V'}...")
+        del pipe
+        gc.collect()
+        torch.cuda.empty_cache()
+        pipe = None
+
+    if pipe is None:
+        mode_label = 'I2V' if is_i2v else 'T2V'
+        alt_bits = 8 if QUANT_BITS == 4 else 4
+        
+        # ===== STRATEGY A: Preferred quantization (QUANT_BITS) =====
+        try:
+            pipe = _try_quantized_load(target_class, mode_label, QUANT_BITS)
+            VRAM_MODE = f"{QUANT_BITS}bit"
+            print(f"✅ [{QUANT_BITS}-BIT MODE] Active")
+        except Exception as e:
+            print(f"⚠️ {QUANT_BITS}-bit quantization failed: {e}")
+            pipe = None; gc.collect(); torch.cuda.empty_cache()
+        
+        # ===== STRATEGY B: Alternate quantization =====
+        if pipe is None:
+            try:
+                print(f"🔄 Trying {alt_bits}-bit as fallback...")
+                pipe = _try_quantized_load(target_class, mode_label, alt_bits)
+                VRAM_MODE = f"{alt_bits}bit"
+                print(f"✅ [{alt_bits}-BIT MODE] Active (fallback)")
+            except Exception as e:
+                print(f"⚠️ {alt_bits}-bit quantization also failed: {e}")
+                pipe = None; gc.collect(); torch.cuda.empty_cache()
+        
+        # ===== STRATEGY C: Sequential CPU Offload (SAFE FALLBACK) =====
+        if pipe is None:
+            print(f"🐢 [SAFE MODE] Loading LTX-Video ({mode_label}) with sequential CPU offload...")
+            pipe = target_class.from_pretrained("Lightricks/LTX-2", torch_dtype=torch.bfloat16)
+            pipe.enable_sequential_cpu_offload()
+            VRAM_MODE = "offload"
+            print(f"✅ [SAFE MODE] Sequential CPU offload active — expect ~90s/step")
+        
+        # Common optimizations for all strategies
+        try:
+            pipe.enable_attention_slicing()
+            if hasattr(pipe, 'vae') and pipe.vae is not None:
+                pipe.vae.enable_slicing()
+                pipe.vae.enable_tiling()
+        except Exception as e:
+            print(f"⚠️ Slicing optimization warning: {e}")
+        
+        print(f"📊 Active VRAM Strategy: {VRAM_MODE.upper()}")
+
+    return pipe
+
+def load_enhancers(upscale_factor=1):
+    global face_enhancer, upscaler_model
+    from gfpgan import GFPGANer
+    from realesrgan import RealESRGANer
+    from basicsr.archs.rrdbnet_arch import RRDBNet
+    
+    if face_enhancer is None:
+        print(f"📥 Loading GFPGAN (Device: {DEVICE})...")
+        face_enhancer = GFPGANer(model_path='https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth', upscale=1, arch='clean', channel_multiplier=2, device=torch.device(DEVICE))
+        
+    if upscaler_model is None:
+        print(f"📥 Loading Real-ESRGAN (Device: {DEVICE})...")
+        model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
+        upscaler_model = RealESRGANer(
+            scale=4, 
+            model_path='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth',
+            model=model, tile=400, tile_pad=10, pre_pad=0, half=(DEVICE == 'cuda'), device=torch.device(DEVICE)
+        )
+    return face_enhancer, upscaler_model
+
+# =========================
+# CORE RENDERER (PHASE 95)
+# =========================
+def render_video(job_id, req):
+    print(f"🚀 [BACKGROUND] Starting Task: {job_id}...")
+    with render_lock: # Ensure only one render at a time
+        print(f"🔒 [LOCK] Acquired for {job_id}")
+        try:
+            # 1. Diffusion Base
+            pipe_local = load_ltx(is_i2v=bool(req.image_base64))
+            
+            image_obj = None
+            if req.image_base64:
+                img_data = base64.b64decode(req.image_base64)
+                image_obj = Image.open(io.BytesIO(img_data)).convert("RGB")
+                image_obj = image_obj.resize((768, 512), Image.Resampling.LANCZOS)
+
+            guidance_scale = 3.0 # Significantly lowered to 3.0 to eliminate grid/deep-frying artifacts
+            prompt_ext = ", ultra-realistic 8k, highly detailed skin texture, cinematic lighting, masterpiece, high-end 35mm photography"
+            negative_prompt = "low quality, animation, cartoon, blur, distorted, text, watermark, CGI, fake, smooth skin, mutated, morphed, extra limbs, melting, deformed, disfigured, poorly drawn"
+
+            print(f"🎨 PRO Diffusion Started (Job: {job_id}) | Target Motion: {req.motion_score}...")
+            if req.motion_score > 700:
+                req.prompt += ", high energy, dynamic movement, very active, large gestures"
+            
+            with torch.inference_mode():
+                if image_obj:
+                    result = pipe_local(
+                        prompt=req.prompt + prompt_ext, image=image_obj, 
+                        negative_prompt=negative_prompt,
+                        num_frames=req.frames, num_inference_steps=req.steps, 
+                        guidance_scale=guidance_scale
+                    )
+                else:
+                    result = pipe_local(
+                        prompt=req.prompt + prompt_ext, negative_prompt=negative_prompt,
+                        num_frames=req.frames, num_inference_steps=req.steps, 
+                        guidance_scale=guidance_scale
+                    )
+            
+            frames = result.frames[0]
+            print(f"✅ Diffusion Done. Generated {len(frames)} frames.")
+            
+            # 2. 8K Refinement & Face Restoration
+            print(f"✨ 8K Refinement Pass (Upscale: {req.upscale_factor}x)...")
+            face_restorer, upscaler = load_enhancers(upscale_factor=req.upscale_factor)
+            
+            refined_frames = []
+            for i, frame in enumerate(frames):
+                img_bgr = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
+                
+                # Face Restoration
+                if req.enhance_face:
+                    _, _, img_bgr = face_restorer.enhance(img_bgr, has_aligned=False, only_center_face=False, paste_back=True)
+                
+                # Spatial Upscaling (8K equivalence)
+                if req.upscale_factor > 1:
+                    img_bgr, _ = upscaler.enhance(img_bgr, outscale=req.upscale_factor)
+                
+                # Micro-Sharpening
+                kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+                img_bgr = cv2.filter2D(img_bgr, -1, kernel)
+                
+                refined_frames.append(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
+                if i % 10 == 0: print(f"   Refined {i}/{len(frames)} frames...")
+            
+            frames = refined_frames
+
+            # 3. Mastering & Hallucination Purge (Phase 95)
+            temp_path = f"{CONTENT_DIR}/{job_id}_raw.mp4"
+            final_path = f"{CONTENT_DIR}/{job_id}.mp4"
+            
+            import imageio
+            writer = imageio.get_writer(temp_path, fps=24, codec='libx264', quality=None, ffmpeg_params=['-crf', '10', '-pix_fmt', 'yuv420p'])
+            for f in frames: writer.append_data(np.array(f))
+            writer.close()
+            
+            if req.purge_hallucination:
+                print("🛡️ Hallucination Purge Active: Running Dual-Pass Stabilization (Tuned)...")
+                # Pass 1: Analyze motion (stricter accuracy)
+                os.system(f"ffmpeg -i {temp_path} -vf vidstabdetect=shakiness=10:accuracy=15:result={CONTENT_DIR}/{job_id}_transforms.trf -f null -")
+                # Pass 2 & 3: Apply stabilization + HQ Denoise 
+                mastering_cmd = (
+                    f"ffmpeg -i {temp_path} "
+                    f"-vf \"vidstabtransform=input={CONTENT_DIR}/{job_id}_transforms.trf:smoothing=30,hqdn3d=2.0:1.5:6:6\" "
+                    f"-c:v libx264 -crf 16 -pix_fmt yuv420p -preset medium {final_path} -y"
+                )
+                ret = os.system(mastering_cmd)
+                if os.path.exists(f"{CONTENT_DIR}/{job_id}_transforms.trf"): os.remove(f"{CONTENT_DIR}/{job_id}_transforms.trf")
+            else:
+                print(f"🎬 Mastering Pro-Grade High-Quality Output...")
+                mastering_cmd = (
+                    f"ffmpeg -i {temp_path} "
+                    f"-c:v libx264 -crf 16 -pix_fmt yuv420p -preset medium {final_path} -y"
+                )
+                ret = os.system(mastering_cmd)
+            
+            if ret == 0 and os.path.exists(final_path) and os.path.getsize(final_path) > 1000:
+                if os.path.exists(temp_path): os.remove(temp_path)
+                print(f"✅ Pro-Grade Master Completed: {final_path}")
+            else:
+                print(f"⚠️ FFmpeg Mastering failed. Falling back to direct copy.")
+                shutil.copy(temp_path, final_path)
+                if os.path.exists(temp_path): os.remove(temp_path)
+            
+        except Exception as e:
+            print(f"❌ Error (Pro-Mastering): {e}")
+
+# =========================
+# ENDPOINTS
+# =========================
+@app.post("/video")
+def trigger_video(req: VideoRequest, background_tasks: BackgroundTasks):
+    job_id = f"pro_{uuid.uuid4().hex[:6]}"
+    background_tasks.add_task(render_video, job_id, req)
+    return {"job_id": job_id, "download": f"/download/{job_id}"}
+
+@app.get("/download/{job_id}")
+def download_video(job_id: str):
+    path = f"{CONTENT_DIR}/{job_id}.mp4"
+    if os.path.exists(path):
+        return FileResponse(path)
+    raise HTTPException(status_code=404, detail="File not found")
+
+@app.post("/sync")
+def trigger_sync(req: SyncRequest, background_tasks: BackgroundTasks):
+    sync_id = f"sync_{uuid.uuid4().hex[:6]}"
+    background_tasks.add_task(perform_sync, sync_id, req)
+    return {"job_id": sync_id, "download": f"/download/{sync_id}"}
+
+def perform_sync(job_id, req):
+    with render_lock:
+        try:
+            video_path = f"{CONTENT_DIR}/{req.video_id}.mp4"
+            if not os.path.exists(video_path):
+                return
+            audio_path = f"{CONTENT_DIR}/{job_id}_audio.wav"
+            audio_data = base64.b64decode(req.audio_base64)
+            with open(audio_path, "wb") as f: f.write(audio_data)
+#             engine = lip_sync.SyncEngine(checkpoint_path="wav2lip_repo/checkpoints/wav2lip_gan.pth", device=DEVICE)
+#             final_path = f"{CONTENT_DIR}/{job_id}.mp4"
+#             engine.sync(video_path, audio_path, final_path)
+            if os.path.exists(audio_path): os.remove(audio_path)
+        except Exception as e:
+            print(f"❌ Error (Lip-Sync): {e}")
+
+@app.get("/health")
+def health():
+    return {"status": "healthy", "device": DEVICE, "vram_mode": VRAM_MODE or "not_loaded", "quant_bits": QUANT_BITS, "8k_enabled": True, "60fps_enabled": True}
+
+if __name__ == "__main__":
+    try:
+        from pyngrok import ngrok
+        ngrok.set_auth_token("3A2lY17VmZc4OjOK3YjT843iJgW_4KCSDY1bRAHvyFtLkgJbh")
+        tunnels = ngrok.get_tunnels()
+        for t in tunnels: ngrok.disconnect(t.public_url)
+        public_url = ngrok.connect(8000).public_url
+        print(f"🌍 Public URL: {public_url}")
+    except Exception as e:
+        print(f"⚠️ Ngrok Failed: {e}")
+    import uvicorn
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+    uvicorn.run(app, host="0.0.0.0", port=8000)

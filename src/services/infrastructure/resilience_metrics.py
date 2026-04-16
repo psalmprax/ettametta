@@ -1,0 +1,81 @@
+"""
+Resilience Metrics: Production-Grade Prometheus KPIs.
+
+Exposes business-critical resilience counters, gauges, and histograms
+that power the Grafana "Reality Run" dashboard. Every subsystem
+(Sentinel, ChaosUtility, RecoveryService) increments these atomically.
+"""
+
+from prometheus_client import Counter, Histogram, Gauge
+
+# ─── Job Lifecycle ────────────────────────────────────────────────
+jobs_submitted = Counter(
+    "viralforge_jobs_submitted_total",
+    "Total content jobs submitted to the pipeline",
+)
+jobs_completed = Counter(
+    "viralforge_jobs_completed_total",
+    "Total content jobs that completed successfully",
+)
+jobs_failed = Counter(
+    "viralforge_jobs_failed_total",
+    "Total content jobs that failed permanently",
+)
+jobs_duplicate_blocked = Counter(
+    "viralforge_jobs_duplicate_total",
+    "Duplicate job execution attempts that were blocked by idempotency guard",
+)
+
+# ─── State Consistency ────────────────────────────────────────────
+state_drift_detected = Counter(
+    "viralforge_state_drift_detected_total",
+    "Number of Redis↔Postgres state drift events detected by Sentinel",
+    ["drift_type"],  # "missing_from_cache", "count_mismatch"
+)
+state_repairs_triggered = Counter(
+    "viralforge_state_repairs_total",
+    "Number of autonomous repair cycles triggered by Sentinel",
+)
+recovery_duration = Histogram(
+    "viralforge_recovery_duration_seconds",
+    "Time taken for a full state recovery cycle",
+    buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0],
+)
+
+# ─── Sentinel Auditing ───────────────────────────────────────────
+sentinel_audit_pass = Counter(
+    "viralforge_sentinel_audit_pass_total",
+    "Number of audit cycles that found zero drift",
+)
+sentinel_audit_fail = Counter(
+    "viralforge_sentinel_audit_fail_total",
+    "Number of audit cycles that detected drift",
+)
+
+# ─── Chaos Engineering ───────────────────────────────────────────
+chaos_faults_injected = Counter(
+    "viralforge_chaos_faults_injected_total",
+    "Total fault injection events by type",
+    ["fault_type"],  # "latency", "crash", "exhaustion", "scenario"
+)
+chaos_scenarios_run = Counter(
+    "viralforge_chaos_scenarios_total",
+    "Orchestrated chaos scenarios executed",
+    ["scenario_name"],
+)
+chaos_active = Gauge(
+    "viralforge_chaos_active_faults",
+    "Number of currently active chaos fault injections",
+)
+
+# ─── Event Bus Health ─────────────────────────────────────────────
+event_bus_messages_processed = Counter(
+    "viralforge_event_bus_messages_processed_total",
+    "Total messages processed by the distributed event bus",
+    ["stream"],
+)
+event_bus_dlq_total = Counter(
+    "viralforge_event_bus_dlq_total",
+    "Messages sent to the Dead Letter Queue after max retries",
+    ["stream"],
+)

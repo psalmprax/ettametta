@@ -1,0 +1,42 @@
+# Core API & Utils
+fastapi
+pydantic
+uvicorn
+requests
+nest-asyncio
+pyngrok
+
+# ML Lifecycle (Hardware-Agnostic part)
+transformers
+diffusers>=0.31.0
+accelerate
+huggingface_hub
+safetensors
+datasets
+peft
+scipy
+sentencepiece
+numba==0.64.0
+bitsandbytes
+
+# Video & Image Processing
+imageio
+imageio-ffmpeg
+pillow
+opencv-python
+ffmpeg-python
+gfpgan>=1.3.8
+realesrgan>=0.3.0
+basicsr>=1.4.2
+facexlib
+
+# Audio & Speech
+soundfile
+librosa
+faster-whisper
+# fairseq - Moved to manual install in install.sh for stability
+praat-parselmouth
+pyworld
+
+# Specialized Engines
+llama-cpp-python
