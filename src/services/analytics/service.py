@@ -254,7 +254,7 @@ class AnalyticsService:
                     db_likes = getattr(content_record, "like_count", 0)
                     db_shares = getattr(content_record, "share_count", 0)
         except Exception as e:
-            logging.warning(f"[Analytics] DB fallback failed: {e}")
+            self.logger.warning(f"[Analytics] DB fallback failed: {e}")
 
         # Generate a fallback insight
         fallback_insight = await self._generate_ai_insight(
@@ -306,7 +306,7 @@ class AnalyticsService:
             return performance
 
         except Exception as e:
-            logging.warning(
+            self.logger.warning(
                 f"[Analytics] Failed to fetch {platform} data for {post_id}: {e}"
             )
             return ContentPerformance()
@@ -342,7 +342,7 @@ class AnalyticsService:
                 "optimization_insight": "Instagram engagement metrics retrieved",
             }
         except Exception as e:
-            logging.warning(f"[Instagram Analytics] Failed: {e}")
+            self.logger.warning(f"[Instagram Analytics] Failed: {e}")
             return self._get_default_metrics()
 
     async def _get_tiktok_metrics(self, post_id: str, user_id: int) -> dict:
@@ -372,7 +372,7 @@ class AnalyticsService:
                 "optimization_insight": "X engagement metrics retrieved",
             }
         except Exception as e:
-            logging.warning(f"[X Analytics] Failed: {e}")
+            self.logger.warning(f"[X Analytics] Failed: {e}")
             return self._get_default_metrics()
 
     async def get_historical_performance(self, post_id: str) -> List[dict]:
@@ -586,7 +586,8 @@ class AnalyticsService:
                 "z_score": round(z_score, 2),
                 "winner": "CHALLENGER" if z_score > 0 and status == "SIGNIFICANT" else "CHAMPION"
             }
-        except Exception:
+        except Exception as e:
+            self.logger.error(f"[Analytics] stats significance error: {e}")
             return {"status": "ERROR", "confidence": 0, "p_value": 1.0}
 
     def calculate_sprt_decision(self, champ_views: int, champ_engagements: int, chall_views: int, chall_engagements: int, target_improvement: float = 0.2) -> dict:
@@ -626,7 +627,8 @@ class AnalyticsService:
             else:
                 return {"decision": "CONTINUE", "llr": round(llr, 4)}
                 
-        except Exception:
+        except Exception as e:
+            self.logger.debug(f"[Analytics] SPRT decision error: {e}")
             return {"decision": "CONTINUE", "llr": 0.0}
 
     async def record_snapshot(self, post_id: str, views: int, likes: int, shares: int, comments: int, retention_rate: float = 0.0, avg_duration: float = 0.0):
@@ -674,14 +676,12 @@ class AnalyticsService:
         Executes a real-world neural pattern injection by synchronizing high-velocity
         viral telemetry with the distribution weights of a specific post.
         """
-        import logging
         import redis
         import datetime
         from services.optimization.youtube_publisher import base_youtube_publisher
         from api.config import settings
 
-        logger = logging.getLogger(__name__)
-        logger.info(
+        self.logger.info(
             f"[Analytics] Injecting neural pattern into post {post_id} for user {user_id}"
         )
 
@@ -702,7 +702,7 @@ class AnalyticsService:
                 r = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
                 r.setex(f"analytics:injection:{post_id}", 86400, "active")
             except Exception as e:
-                logger.warning(f"[Analytics] Redis injection log failed: {e}")
+                self.logger.warning(f"[Analytics] Redis injection log failed: {e}")
 
             return {
                 "status": "success",

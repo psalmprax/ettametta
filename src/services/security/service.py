@@ -2,7 +2,12 @@ import os
 import json
 import datetime
 import redis
+import logging
+import socket
+import asyncio
 from api.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class SecuritySentinel:
@@ -89,8 +94,10 @@ class SecuritySentinel:
                         f"WARNING: Port {port} is open on localhost (potential exposure)"
                     )
                     score -= 5
-            except Exception:
-                pass
+            except socket.error as e:
+                logger.debug(f"Port scan failed for {port}: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error during port scan: {e}")
 
         report = {
             "score": max(0, score),
@@ -120,8 +127,8 @@ class SecuritySentinel:
         for event_json in raw_events:
             try:
                 events.append(json.loads(event_json))
-            except:
-                pass
+            except (json.JSONDecodeError, TypeError, ValueError) as e:
+                logger.warning(f"Failed to decode security event: {e}")
 
         # Categorize threat levels
         threat_levels = {"low": 0, "medium": 0, "high": 0, "critical": 0}
@@ -166,8 +173,8 @@ class SecuritySentinel:
                 event = json.loads(event_json)
                 if event.get("severity") == "critical":
                     critical_events += 1
-            except:
-                pass
+            except (json.JSONDecodeError, TypeError, ValueError) as e:
+                logger.warning(f"Failed to decode security event for health score: {e}")
 
         penalties += critical_events * 20  # 20 points per critical event
 
@@ -181,13 +188,15 @@ class SecuritySentinel:
                 penalties += 10
             if not settings.AWS_ACCESS_KEY_ID:
                 penalties += 10
-        except:
+        except Exception as e:
+            logger.warning(f"Failed to check API key health: {e}")
             penalties += 20  # Config issues
 
         # Check Redis connectivity
         try:
             self.redis_client.ping()
-        except:
+        except Exception as e:
+            logger.error(f"Redis connectivity failed: {e}")
             penalties += 30  # Redis down is critical
 
         return max(0, base_score - penalties)
@@ -199,7 +208,8 @@ class SecuritySentinel:
         # Check Redis
         try:
             self.redis_client.ping()
-        except:
+        except Exception as e:
+            logger.error(f"Redis health check failed: {e}")
             issues.append("Redis connectivity failed")
 
         # Check database
@@ -211,10 +221,9 @@ class SecuritySentinel:
                 async with async_session_factory() as db:
                     await db.execute(select(1))
 
-            import asyncio
-
             asyncio.run(check_db())
-        except:
+        except Exception as e:
+            logger.error(f"Database health check failed: {e}")
             issues.append("Database connectivity failed")
 
         # Check file system
@@ -222,7 +231,8 @@ class SecuritySentinel:
             with open("/tmp/sentinel_health_check", "w") as f:
                 f.write("ok")
             os.remove("/tmp/sentinel_health_check")
-        except:
+        except Exception as e:
+            logger.error(f"File system health check failed: {e}")
             issues.append("File system write permissions issue")
 
         if not issues:
@@ -335,7 +345,7 @@ class SecuritySentinel:
         try:
             self.redis_client.set(self.health_key, json.dumps(vulnerabilities))
         except Exception as e:
-            logging.getLogger(__name__).warning(f"Failed to cache security report: {e}")
+            logger.warning(f"Failed to cache security report: {e}")
 
         return vulnerabilities
 

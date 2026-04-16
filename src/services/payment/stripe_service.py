@@ -125,7 +125,9 @@ class PaymentService:
             if idempotency_key:
                 session_params["idempotency_key"] = idempotency_key
 
-            session = await asyncio.to_thread(stripe.checkout.Session.create, **session_params)
+            session = await asyncio.to_thread(
+                stripe.checkout.Session.create, **session_params
+            )
             logger.info(
                 f"[PaymentService] Created checkout session {session.id} for tier {tier}"
             )
@@ -195,6 +197,7 @@ class PaymentService:
                 credits = int(metadata.get("credits", 0))
                 if user_id and credits > 0:
                     from services.payment.credit_service import credit_service
+
                     # Assuming add_credits is now async or we wrap it
                     await credit_service.add_credits(
                         user_id=int(user_id),
@@ -219,7 +222,7 @@ class PaymentService:
                 stmt = select(UserDB).where(UserDB.stripe_customer_id == customer_id)
                 result = await db.execute(stmt)
                 user = result.scalar_one_or_none()
-                
+
                 if user:
                     user.subscription = getattr(
                         SubscriptionTier, tier, SubscriptionTier.FREE
@@ -237,10 +240,12 @@ class PaymentService:
             logger.info(f"[PaymentService] Subscription cancelled: {subscription.id}")
 
             async with async_session_factory() as db:
-                stmt = select(UserDB).where(UserDB.stripe_subscription_id == subscription.id)
+                stmt = select(UserDB).where(
+                    UserDB.stripe_subscription_id == subscription.id
+                )
                 result = await db.execute(stmt)
                 user = result.scalar_one_or_none()
-                
+
                 if user:
                     user.subscription = SubscriptionTier.FREE
                     user.stripe_subscription_id = None
@@ -255,10 +260,12 @@ class PaymentService:
             logger.info(f"[PaymentService] Subscription updated: {subscription.id}")
 
             async with async_session_factory() as db:
-                stmt = select(UserDB).where(UserDB.stripe_subscription_id == subscription.id)
+                stmt = select(UserDB).where(
+                    UserDB.stripe_subscription_id == subscription.id
+                )
                 result = await db.execute(stmt)
                 user = result.scalar_one_or_none()
-                
+
                 if user:
                     # Check if subscription is still active
                     if subscription.status == "active":
@@ -297,7 +304,7 @@ class PaymentService:
                 stmt = select(UserDB).where(UserDB.stripe_customer_id == customer_id)
                 result = await db.execute(stmt)
                 user = result.scalar_one_or_none()
-                
+
                 if user:
                     # Could add notification logic here
                     logger.warning(
@@ -305,10 +312,6 @@ class PaymentService:
                     )
 
             return {"status": "processed", "event": "invoice.payment_failed"}
-
-        else:
-            logger.warning(f"[PaymentService] Unhandled event type: {event['type']}")
-            return {"status": "ignored", "event": event["type"]}
 
         else:
             logger.warning(f"[PaymentService] Unhandled event type: {event['type']}")
