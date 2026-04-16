@@ -16,11 +16,10 @@ logger = logging.getLogger(__name__)
 def run_async(coro):
     """Run async coroutine in sync context (Celery worker)
 
-    Creates a fresh event loop each time to avoid loop reuse issues.
+    Uses fresh event loop per call to avoid loop reuse issues between tasks.
     """
-    # Always create a fresh event loop to avoid "cannot reuse already awaited coroutine"
+    # Always create a fresh event loop - don't set it globally to avoid cross-task contamination
     loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
         result = loop.run_until_complete(coro)
         return result
@@ -28,10 +27,11 @@ def run_async(coro):
         if "Event loop is closed" in str(e) or "already awaited" in str(e):
             # Loop was closed or coroutine already awaited - try with fresh loop
             loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
             result = loop.run_until_complete(coro)
             return result
         raise
+    finally:
+        loop.close()
     finally:
         loop.close()
         asyncio.set_event_loop(None)
@@ -78,17 +78,28 @@ def download_and_process_task(
     - enhanced: Tier 2 + sound design
     - premium: Tier 3 full processing (sound + motion graphics)
     """
-    from api.utils.database import async_session_factory
+    from api.utils.database import get_async_db_url, AsyncSession
     from api.utils.models import VideoJobDB
     from sqlalchemy import select
+    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+    from api.config import settings
     import uuid
     import asyncio
 
     task_id = self.request.id
+    
+    # Create fresh async engine per task to avoid event loop issues with Celery
+    _async_engine = create_async_engine(
+        get_async_db_url(settings.DATABASE_URL), 
+        pool_pre_ping=True,
+        pool_size=2,
+        max_overflow=0
+    )
+    _task_session_factory = async_sessionmaker(bind=_async_engine, class_=AsyncSession, expire_on_commit=False)
 
     def update_job(status=None, progress=None, output_path=None, error_message=None):
         async def _update():
-            async with async_session_factory() as db:
+            async with _task_session_factory() as db:
                 stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
                 result = await db.execute(stmt)
                 job = result.scalar_one_or_none()
