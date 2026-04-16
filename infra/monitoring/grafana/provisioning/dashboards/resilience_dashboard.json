@@ -1,0 +1,289 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "🎯 Job Completion Rate",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "targets": [
+        {
+          "expr": "viralforge_jobs_completed_total / clamp_min(viralforge_jobs_submitted_total, 1)",
+          "legendFormat": "Completion Rate"
+        }
+      ]
+    },
+    {
+      "title": "📊 Jobs Overview",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "viralforge_jobs_submitted_total",
+          "legendFormat": "Submitted"
+        },
+        {
+          "expr": "viralforge_jobs_completed_total",
+          "legendFormat": "Completed"
+        },
+        {
+          "expr": "viralforge_jobs_failed_total",
+          "legendFormat": "Failed"
+        }
+      ]
+    },
+    {
+      "title": "🔁 Duplicate Executions Blocked",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 5 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "viralforge_jobs_duplicate_total",
+          "legendFormat": "Duplicates Blocked"
+        }
+      ]
+    },
+    {
+      "title": "🛡️ Sentinel Audit Results",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "viralforge_sentinel_audit_pass_total",
+          "legendFormat": "Pass"
+        },
+        {
+          "expr": "viralforge_sentinel_audit_fail_total",
+          "legendFormat": "Fail"
+        }
+      ]
+    },
+    {
+      "title": "⚠️ State Drift Events (Time Series)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 50,
+            "gradientMode": "scheme"
+          },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(viralforge_state_drift_detected_total[5m])",
+          "legendFormat": "Drift: {{ drift_type }}"
+        }
+      ]
+    },
+    {
+      "title": "🔧 Autonomous Repairs Triggered",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "gradientMode": "scheme"
+          },
+          "color": { "mode": "fixed", "fixedColor": "orange" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(viralforge_state_repairs_total[5m])",
+          "legendFormat": "Repairs / 5m"
+        }
+      ]
+    },
+    {
+      "title": "⏱️ Recovery Duration (Percentiles)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(viralforge_recovery_duration_seconds_bucket[5m]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(viralforge_recovery_duration_seconds_bucket[5m]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(viralforge_recovery_duration_seconds_bucket[5m]))",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "title": "💣 Chaos Faults Injected (by Type)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "stacking": { "mode": "normal" },
+            "fillOpacity": 60
+          },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(viralforge_chaos_faults_injected_total[5m])",
+          "legendFormat": "{{ fault_type }}"
+        }
+      ]
+    },
+    {
+      "title": "🌪️ Chaos Scenarios Executed",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "viralforge_chaos_scenarios_total",
+          "legendFormat": "{{ scenario_name }}"
+        }
+      ]
+    },
+    {
+      "title": "🔄 Active Chaos Faults",
+      "type": "gauge",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 3 },
+              { "color": "red", "value": 8 }
+            ]
+          },
+          "min": 0,
+          "max": 15
+        }
+      },
+      "targets": [
+        {
+          "expr": "viralforge_chaos_active_faults",
+          "legendFormat": "Active Faults"
+        }
+      ]
+    },
+    {
+      "title": "📬 Event Bus Health",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(viralforge_event_bus_messages_processed_total[5m])",
+          "legendFormat": "Processed: {{ stream }}"
+        },
+        {
+          "expr": "rate(viralforge_event_bus_dlq_total[5m])",
+          "legendFormat": "DLQ: {{ stream }}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["viralforge", "resilience", "chaos", "reality-run"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "ViralForge Reality Run Dashboard",
+  "uid": "viralforge-reality-run",
+  "version": 1
+}

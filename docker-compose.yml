@@ -27,7 +27,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: ./api/Dockerfile
+      dockerfile: ./infra/docker/api.Dockerfile
       args:
         - BASE_IMAGE=python:3.10-slim
 
@@ -56,9 +56,11 @@ services:
       start_period: 30s
     volumes:
       - .:/app
+      - ./data/storage/outputs:/app/data/storage/outputs
       - /app/apps/remotion-studio/node_modules
     environment:
       - ENV=development
+      - PYTHONPATH=/app/src
       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
@@ -101,7 +103,9 @@ services:
       - viral_forge
 
   discovery-go:
-    build: ./services/discovery-go
+    build: 
+      context: ./sr./src/services/discovery-go
+      dockerfile: ../../../infra/docker/discovery-go.Dockerfile
     ports:
       - "7205:8080"
     environment:
@@ -148,7 +152,7 @@ services:
   celery_worker:
     build:
       context: .
-      dockerfile: ./api/Dockerfile
+      dockerfile: ./infra/docker/api.Dockerfile
       args:
         - BASE_IMAGE=python:3.10-slim
 
@@ -157,9 +161,11 @@ services:
     env_file: .env
     volumes:
       - .:/app
+      - ./data/storage/outputs:/app/data/storage/outputs
       - /app/apps/remotion-studio/node_modules
     environment:
       - ENV=development
+      - PYTHONPATH=/app/src
       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
@@ -206,7 +212,7 @@ services:
   celery_beat:
     build:
       context: .
-      dockerfile: ./api/Dockerfile
+      dockerfile: ./infra/docker/api.Dockerfile
       args:
         - BASE_IMAGE=python:3.10-slim
 
@@ -217,6 +223,7 @@ services:
       - .:/app
     environment:
       - ENV=development
+      - PYTHONPATH=/app/src
       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
@@ -240,7 +247,7 @@ services:
       - "7200:80"
       - "7213:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/docker/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
     networks:
       - viral_forge
@@ -248,7 +255,7 @@ services:
   openclaw:
     build:
       context: .
-      dockerfile: ./services/openclaw/Dockerfile
+      dockerfile: ./infra/docker/openclaw.Dockerfile
     image: viral_forge-openclaw
     ports:
       - "7214:3001"
@@ -272,7 +279,7 @@ services:
   node-skills:
     image: node:18-alpine
     volumes:
-      - ./external-skills:/app
+      - ./apps/external-skills:/app
     working_dir: /app
     command: /bin/sh -c "npm install && npm start"
     ports:
@@ -286,8 +293,8 @@ services:
 
   ai-gateway:
     build:
-      context: ./remote_ai_setup
-      dockerfile: Dockerfile.gateway
+      context: .
+      dockerfile: ./infra/docker/gatekeeper.Dockerfile
     image: viral_forge-ai-gateway
     ports:
       - "8133:8133"
@@ -296,7 +303,7 @@ services:
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
       - AI_CLUSTER_SECRET=${AI_CLUSTER_SECRET:-"viral_forge_neural_default_secret"}
     volumes:
-      - ./remote_ai_setup:/app
+      - ./src/engines/remote_ai_setup:/app
       - gateway_data:/workspace
     restart: always
     networks:
@@ -306,13 +313,14 @@ services:
     profiles:
       - optional
     build:
-      context: ./services/voiceover
+      context: .
+      dockerfile: ./infra/docker/voiceover.Dockerfile
     ports:
       - "7207:8080"
     environment:
       - DEVICE=cpu
     volumes:
-      - ./services/voiceover:/app
+      - ./src/services/voiceover:/app
       - voiceover_cache:/app/cache
     deploy:
       replicas: 0
@@ -324,19 +332,19 @@ services:
       - video  # Enable with: docker-compose --profile video up
     build:
       context: .
-      dockerfile: ./video_processor.Dockerfile
+      dockerfile: ./infra/docker/video_processor.Dockerfile
       args:
         - BASE_IMAGE=python:3.10-slim
     ports:
       - "7206:8001"
     volumes:
-      - .:/app  # Full codebase access
-      - ./outputs:/app/outputs  # Video output directory
-      - ./inputs:/app/inputs    # Video input directory
-      - video_cache:/app/cache  # Processing cache
+      - .:/app
+      - ./data/storage/outputs:/app/data/storage/outputs
+      - ./data/storage/inputs:/app/data/storage/inputs
+      - video_cache:/app/cache
     environment:
       - ENV=development
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app/src
       # Video processing environment
       - TORCH_USE_CUDA_DSA=1
       - CUDA_VISIBLE_DEVICES=all
@@ -397,7 +405,7 @@ services:
   prometheus:
     image: prom/prometheus:latest
     volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -413,7 +421,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     volumes:
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
       - grafana_data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
@@ -459,7 +467,7 @@ services:
     image: grafana/loki:2.9.10
     user: "0:0"
     volumes:
-      - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml
+      - ./infra/monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml
       - loki_data:/loki
     command: -config.file=/etc/loki/local-config.yaml
     ports:
@@ -471,7 +479,7 @@ services:
   promtail:
     image: grafana/promtail:latest
     volumes:
-      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
+      - ./infra/monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
 #      - /var/lib/docker/containers:/var/lib/docker/containers:ro
     command: -config.file=/etc/promtail/config.yml

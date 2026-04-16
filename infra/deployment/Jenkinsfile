@@ -1,0 +1,306 @@
+/*
+ * ettametta Jenkins CI/CD Pipeline
+ * ===================================
+ * SETUP: Before running this pipeline, configure the following
+ * credentials in Jenkins → Manage Jenkins → Credentials → Global:
+ *
+ *  ID                        Type                  Description
+ *  ─────────────────────────────────────────────────────────────────────
+ *  GITHUB_CREDENTIALS        Username/Password     GitHub username + Personal Access Token
+ *  OCI_SSH_KEY               SSH Private Key       The .pem key used to SSH into your OCI instance
+ *  DOCKER_HUB_CREDENTIALS    Username/Password     Docker Hub username + password/access token
+ *  GROQ_API_KEY              Secret text           Your Groq API key
+ *  OPENAI_API_KEY            Secret text           Optional: OpenAI API key
+ *  ELEVENLABS_API_KEY        Secret text           Optional: ElevenLabs API key
+ *  PEXELS_API_KEY            Secret text           Your Pexels API key for stock footage
+ *  TELEGRAM_BOT_TOKEN        Secret text           Your Telegram bot token
+ *  TELEGRAM_ADMIN_ID         Secret text           Your Telegram User ID (numeric)
+ *  POSTGRES_PASSWORD         Secret text           PostgreSQL password
+ *  REDIS_PASSWORD            Secret text           Redis password
+ *  JWT_SECRET_KEY            Secret text           Random secret for JWT signing
+ *  STRIPE_SECRET_KEY         Secret text           Stripe payment processing
+ *  STRIPE_WEBHOOK_SECRET    Secret text           Stripe webhook signing secret
+ *  AWS_ACCESS_KEY_ID        Secret text           AWS S3 storage access key
+ *  AWS_SECRET_ACCESS_KEY    Secret text           AWS S3 storage secret key
+ *  AWS_STORAGE_BUCKET_NAME  Secret text           AWS S3 bucket name
+ *
+ * HOW TO ADD A CREDENTIAL IN JENKINS:
+ *  1. Go to: Jenkins → Manage Jenkins → Credentials → System → Global credentials
+ *  2. Click "Add Credentials"
+ *  3. Choose the Type (Secret text / Username+Password / SSH Private Key)
+ *  4. Set the ID exactly as shown in the table above
+ *  5. Save
+ *
+ * PIPELINE VARIABLES (edit these to match your setup):
+ */
+
+pipeline {
+    agent any
+    
+    parameters {
+        string(name: 'PRODUCTION_DOMAIN', defaultValue: 'http://130.61.26.105', description: 'Public URL of your ettametta instance')
+        choice(name: 'VOICE_ENGINE', choices: ['fish_speech', 'elevenlabs'], description: 'Primary voice synthesis engine')
+        choice(name: 'MONETIZATION_MODE', choices: ['selective', 'all'], description: 'Monetization strategy')
+        // Video Quality Tiers
+        choice(name: 'DEFAULT_QUALITY_TIER', choices: ['standard', 'enhanced', 'premium'], description: 'Video processing tier')
+        choice(name: 'AI_VIDEO_PROVIDER', choices: ['none', 'runway', 'pika'], description: 'AI video generation')
+        // Agent Frameworks (disabled by default)
+        choice(name: 'ENABLE_LANGCHAIN', choices: ['true', 'false'], description: 'Enable LangChain')
+        choice(name: 'ENABLE_CREWAI', choices: ['true', 'false'], description: 'Enable CrewAI')
+        choice(name: 'ENABLE_SOUND_DESIGN', choices: ['true', 'false'], description: 'Enable high-fidelity sound design')
+        choice(name: 'ENABLE_MOTION_GRAPHICS', choices: ['true', 'false'], description: 'Enable neural motion graphics')
+        choice(name: 'ENABLE_INTERPRETER', choices: ['true', 'false'], description: 'Enable Open Interpreter')
+        choice(name: 'ENABLE_AFFILIATE_API', choices: ['true', 'false'], description: 'Enable Affiliate marketing APIs')
+        choice(name: 'ENABLE_TRADING', choices: ['false', 'true'], description: 'Enable Trading APIs')
+    }
+
+    environment {
+        PROJECT_NAME          = "ettametta"
+        DOCKER_COMPOSE_FILE   = "docker-compose.yml"
+        
+        // Deployment directory on the SAME server
+        DEPLOY_DIR            = "/home/ubuntu/ettametta"
+        PUBLIC_IP             = "130.61.26.105"
+        HEALTH_CHECK_URL      = "http://172.17.0.1:3000/api/health"
+        
+        // Ensure tools in /usr/bin are found
+        PATH                  = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
+
+        // Injected from Jenkins credentials store
+        // Injected mapping
+        GROQ_API_KEY          = credentials('GROQ_API_KEY')
+        OPENAI_API_KEY        = credentials('OPENAI_API_KEY')
+        ELEVENLABS_API_KEY    = credentials('ELEVENLABS_API_KEY')
+        PEXELS_API_KEY        = credentials('PEXELS_API_KEY')
+        TELEGRAM_BOT_TOKEN    = credentials('TELEGRAM_BOT_TOKEN')
+        POSTGRES_PASSWORD     = credentials('POSTGRES_PASSWORD')
+        REDIS_PASSWORD        = credentials('REDIS_PASSWORD')
+        SECRET_KEY            = credentials('JWT_SECRET_KEY')
+        TELEGRAM_ADMIN_ID     = credentials('TELEGRAM_ADMIN_ID')
+        
+        // OAuth & Social
+        GOOGLE_CLIENT_ID       = credentials('GOOGLE_CLIENT_ID')
+        GOOGLE_CLIENT_SECRET   = credentials('GOOGLE_CLIENT_SECRET')
+        TIKTOK_CLIENT_KEY      = credentials('TIKTOK_CLIENT_KEY')
+        TIKTOK_CLIENT_SECRET   = credentials('TIKTOK_CLIENT_SECRET')
+        YOUTUBE_API_KEY        = credentials('YOUTUBE_API_KEY')
+        TIKTOK_API_KEY         = credentials('TIKTOK_API_KEY')
+        
+        // OCI Storage
+        OCI_STORAGE_ACCESS_KEY = credentials('STORAGE_ACCESS_KEY')
+        OCI_STORAGE_SECRET_KEY = credentials('STORAGE_SECRET_KEY')
+        
+        // Payment Processing
+        STRIPE_SECRET_KEY      = credentials('STRIPE_SECRET_KEY')
+        STRIPE_WEBHOOK_SECRET = credentials('STRIPE_WEBHOOK_SECRET')
+        
+        // Video Quality Tiers
+        // Video Quality Tiers (Handled via params)
+        // Agent Frameworks (Handled via params)
+        
+        // Affiliate & Trading APIs
+        AMAZON_ASSOCIATES_TAG = credentials('AMAZON_ASSOCIATES_TAG')
+        ALPHA_VANTAGE_API_KEY = credentials('ALPHA_VANTAGE_API_KEY')
+        COINGECKO_API_KEY = credentials('COINGECKO_API_KEY')
+        
+        // AWS Storage (for S3 uploads)
+        AWS_ACCESS_KEY_ID       = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY   = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_STORAGE_BUCKET_NAME = credentials('AWS_STORAGE_BUCKET_NAME')
+
+        // LTX-2 Remote Render Node
+        RENDER_NODE_URL         = credentials('RENDER_NODE_URL')
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                // Fetching source code
+                git(
+                    branch: 'master',
+                    url: "https://github.com/psalmprax/ettametta.git",
+                    credentialsId: 'GITHUB_CREDENTIALS'
+                )
+                echo "Checked out branch: ${env.GIT_BRANCH} @ ${env.GIT_COMMIT?.take(7)}"
+            }
+        }
+
+        stage('Deploy & Build Locally') {
+            steps {
+                script {
+                    // 1. Prepare Deployment Directory (Local)
+                    sh "mkdir -p ${DEPLOY_DIR}"
+                    
+                    // 2. Sync Files Locally (Workspace -> Deploy Dir)
+                    // Using rsync locally to exclude git/venv/etc
+                    sh """
+                        rsync -avz --delete \\
+                            --exclude '.git' \\
+                            --exclude 'venv' \\
+                            --exclude '__pycache__' \\
+                            --exclude '.env' \\
+                            --exclude 'terraform' \\
+                            . ${DEPLOY_DIR}
+                    """
+
+                    // 3. Write .env file Locally
+                    script {
+                        def envContent = """
+GROQ_API_KEY=${GROQ_API_KEY}
+OPENAI_API_KEY=${OPENAI_API_KEY}
+ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+PEXELS_API_KEY=${PEXELS_API_KEY}
+TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+REDIS_PASSWORD=${REDIS_PASSWORD}
+SECRET_KEY=${SECRET_KEY}
+# Networking
+PRODUCTION_DOMAIN=${params.PRODUCTION_DOMAIN}
+# AI Control
+VOICE_ENGINE=${params.VOICE_ENGINE}
+MONETIZATION_MODE=${params.MONETIZATION_MODE}
+# Video Quality Tiers
+DEFAULT_QUALITY_TIER=${params.DEFAULT_QUALITY_TIER}
+AI_VIDEO_PROVIDER=${params.AI_VIDEO_PROVIDER}
+ENABLE_SOUND_DESIGN=${params.ENABLE_SOUND_DESIGN ?: 'false'}
+ENABLE_MOTION_GRAPHICS=${params.ENABLE_MOTION_GRAPHICS ?: 'false'}
+# Agent Frameworks
+ENABLE_LANGCHAIN=${params.ENABLE_LANGCHAIN ?: 'false'}
+ENABLE_CREWAI=${params.ENABLE_CREWAI ?: 'false'}
+ENABLE_INTERPRETER=${params.ENABLE_INTERPRETER ?: 'false'}
+ENABLE_AFFILIATE_API=${params.ENABLE_AFFILIATE_API ?: 'false'}
+ENABLE_TRADING=${params.ENABLE_TRADING ?: 'false'}
+# OAuth
+GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+TIKTOK_CLIENT_KEY=${TIKTOK_CLIENT_KEY}
+TIKTOK_CLIENT_SECRET=${TIKTOK_CLIENT_SECRET}
+YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+TIKTOK_API_KEY=${TIKTOK_API_KEY}
+# Storage
+STORAGE_PROVIDER=OCI
+STORAGE_ENDPOINT=https://frraceg1idjv.compat.objectstorage.eu-frankfurt-1.oraclecloud.com
+STORAGE_BUCKET=viral-forge-assets
+STORAGE_ACCESS_KEY=${OCI_STORAGE_ACCESS_KEY}
+STORAGE_SECRET_KEY=${OCI_STORAGE_SECRET_KEY}
+STORAGE_REGION=eu-frankfurt-1
+# LTX-2
+RENDER_NODE_URL=${RENDER_NODE_URL}
+"""
+                        sh "umask 077 && echo '${envContent}' > ${DEPLOY_DIR}/.env"
+                    }
+
+                    // 4. Build and Launch
+                    script {
+                        try {
+                            withCredentials([usernamePassword(
+                                credentialsId: 'DOCKER_HUB_CREDENTIALS',
+                                usernameVariable: 'DOCKER_USER',
+                                passwordVariable: 'DOCKER_PASS'
+                            )]) {
+                                sh "echo '$DOCKER_PASS' | docker login -u '$DOCKER_USER' --password-stdin"
+                            }
+                        } catch (Exception e) {
+                            echo "⚠️ Docker Hub credentials not found or login failed. Skipping login (this is fine if base images are public)."
+                        }
+
+                        sh """
+                            cd ${DEPLOY_DIR}
+                            
+                            # Build & Up
+                            docker-compose build --no-cache
+                            docker-compose up -d --remove-orphans
+                            docker system prune -f
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                sh "sleep 15 && curl -sf ${HEALTH_CHECK_URL} && echo 'API healthy' || exit 1"
+            }
+        }
+
+        stage('Integration Tests') {
+            steps {
+                script {
+                    echo "Running integration tests against deployed API..."
+                    sh """
+                        cd api
+                        mkdir -p test-results
+                        pip3 install -q pytest pytest-asyncio pytest-mock requests || pip install -q pytest pytest-asyncio pytest-mock requests || true
+                        
+                        # Run units & integration tests (Discovery, Video, Config, Routes)
+                        python3 -m pytest tests/ -v -ra --tb=short --junitxml=test-results/combined-results.xml
+                    """
+                }
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                script {
+                    echo "Running code linting..."
+                    sh """
+                        pip3 install -q ruff || pip install -q ruff || true
+                        ruff check api/
+                    """
+                }
+            }
+        }
+
+        stage('E2E Tests') {
+            steps {
+                script {
+                    echo "Running E2E tests with Playwright..."
+                    sh """
+                        # Install Playwright dependencies
+                        cd e2e
+                        npm install
+                        npx playwright install --with-deps chromium
+                        
+                        # Run E2E tests
+                        npm test
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Publish test results
+            script {
+                try {
+                    junit 'api/test-results/*.xml, e2e/results.xml'
+                    archiveArtifacts artifacts: 'api/test-results/*.xml, e2e/results.xml, e2e/playwright-report/**', allowEmptyArchive: true
+                    echo "Test results published and archived"
+                } catch (e) {
+                    echo "No test results to publish (or junit plugin not installed)"
+                }
+            }
+            script {
+                try {
+                    sh 'docker logout || true'
+                } catch (e) {
+                    echo "Cleanup: Docker logout failed (expected if no login occurred)"
+                }
+                try {
+                    cleanWs()
+                } catch (e) {
+                    echo "Cleanup: Workspace cleaning failed (expected if no workspace was allocated)"
+                }
+            }
+        }
+    }
+}
