@@ -32,9 +32,6 @@ def run_async(coro):
         raise
     finally:
         loop.close()
-    finally:
-        loop.close()
-        asyncio.set_event_loop(None)
 
 
 def cleanup_local_files(*paths):
@@ -87,15 +84,17 @@ def download_and_process_task(
     import asyncio
 
     task_id = self.request.id
-    
+
     # Create fresh async engine per task to avoid event loop issues with Celery
     _async_engine = create_async_engine(
-        get_async_db_url(settings.DATABASE_URL), 
+        get_async_db_url(settings.DATABASE_URL),
         pool_pre_ping=True,
         pool_size=2,
-        max_overflow=0
+        max_overflow=0,
     )
-    _task_session_factory = async_sessionmaker(bind=_async_engine, class_=AsyncSession, expire_on_commit=False)
+    _task_session_factory = async_sessionmaker(
+        bind=_async_engine, class_=AsyncSession, expire_on_commit=False
+    )
 
     def update_job(status=None, progress=None, output_path=None, error_message=None):
         async def _update():
@@ -693,7 +692,9 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
     retry_backoff=True,
     max_retries=2,
 )
-def narrative_fusion_task(self, niche: str, duration_sec: int = 60, user_id: int = None):
+def narrative_fusion_task(
+    self, niche: str, duration_sec: int = 60, user_id: int = None
+):
     """
     Tier 10 Autonomous Narrative Fusion task.
     Discovers multiple assets from 15+ platforms and fuses them into a cinematic narrative.
@@ -702,7 +703,10 @@ def narrative_fusion_task(self, niche: str, duration_sec: int = 60, user_id: int
     from api.utils.models import VideoJobDB
     from sqlalchemy import select
     from engines.real_video_fusion_engine import RealVideoFusionEngine
-    from engines.intelligent_video_workflow import discover_multi_platform, analyze_content_type
+    from engines.intelligent_video_workflow import (
+        discover_multi_platform,
+        analyze_content_type,
+    )
     import asyncio
 
     task_id = self.request.id
@@ -714,29 +718,39 @@ def narrative_fusion_task(self, niche: str, duration_sec: int = 60, user_id: int
                 result = await db.execute(stmt)
                 job = result.scalar_one_or_none()
                 if job:
-                    if status: job.status = status
-                    if progress is not None: job.progress = progress
-                    if output_path: job.output_path = output_path
-                    if error_message: job.error_message = error_message
+                    if status:
+                        job.status = status
+                    if progress is not None:
+                        job.progress = progress
+                    if output_path:
+                        job.output_path = output_path
+                    if error_message:
+                        job.error_message = error_message
                     await db.commit()
+
         run_async(_update())
 
     try:
         # Phase 1: Intelligent Discovery
         update_job(status="Intelligent Discovery", progress=10)
         max_per_platform = max(2, int(duration_sec / 30))
-        discovered = run_async(discover_multi_platform(niche, max_per_platform=max_per_platform))
-        
+        discovered = run_async(
+            discover_multi_platform(niche, max_per_platform=max_per_platform)
+        )
+
         if not discovered:
-            update_job(status="Failed", error_message="No assets found across platforms")
+            update_job(
+                status="Failed", error_message="No assets found across platforms"
+            )
             return {"status": "error", "message": "No assets found"}
 
         # Phase 2: Parallel Analysis
         update_job(status="Narrative Analysis", progress=30)
+
         async def _analyze():
             tasks = [analyze_content_type(v) for v in discovered]
             return await asyncio.gather(*tasks)
-        
+
         analyses = run_async(_analyze())
         eligible_clips = []
         for i, v in enumerate(discovered):
@@ -747,25 +761,30 @@ def narrative_fusion_task(self, niche: str, duration_sec: int = 60, user_id: int
         # Phase 3: Real Video Fusion
         update_job(status="Cinematic Fusion", progress=50)
         fusion_engine = RealVideoFusionEngine()
-        result = run_async(fusion_engine.create_real_video_content(
-            eligible_clips, niche, duration_sec=duration_sec
-        ))
+        result = run_async(
+            fusion_engine.create_real_video_content(
+                eligible_clips, niche, duration_sec=duration_sec
+            )
+        )
 
         if result.get("success"):
             # Phase 4: Storage
             from services.storage.service import base_storage_service
+
             storage_key = base_storage_service.upload_file(result["video_path"])
             public_url = base_storage_service.get_public_url(storage_key)
-            
+
             update_job(status="Completed", progress=100, output_path=public_url)
             return {
                 "status": "success",
                 "video_url": public_url,
                 "niche": niche,
-                "audit": result.get("audit")
+                "audit": result.get("audit"),
             }
         else:
-            update_job(status="Failed", error_message=result.get("error", "Fusion failed"))
+            update_job(
+                status="Failed", error_message=result.get("error", "Fusion failed")
+            )
             return {"status": "error", "message": result.get("error")}
 
     except Exception as e:
