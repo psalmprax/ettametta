@@ -12,6 +12,8 @@ This service provides market analysis and trading automation:
 """
 
 import logging
+import asyncio
+import aiohttp
 import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional
@@ -393,7 +395,8 @@ class TradingService:
                         price_data = await self.get_crypto_quote(alert.symbol)
                     else:
                         price_data = await self.get_stock_quote(alert.symbol)
-                except:
+                except Exception as e:
+                    logger.warning(f"Failed to fetch price for alert check (symbol: {alert.symbol}): {e}")
                     price_data = {}
 
                 current_price = price_data.get("price")
