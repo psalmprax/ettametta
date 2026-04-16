@@ -38,6 +38,7 @@ COPY src/api/requirements.txt ./requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir --default-timeout=100 --upgrade pip && \
     pip install --no-cache-dir --default-timeout=100 --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt && \
+    pip install --no-cache-dir psutil && \
     pip install --no-cache-dir -U yt-dlp
 
 # Install Remotion dependencies for Tier 3 Motion Graphics
