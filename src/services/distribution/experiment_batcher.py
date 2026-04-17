@@ -1,12 +1,12 @@
 import logging
 import random
-from typing import Dict, Any, List, Optional
+from typing import Any
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from api.utils.database import AsyncSessionLocal
-from api.utils.models import ExperimentCohortDB
-from api.utils.redis import get_redis
+from src.api.utils.database import AsyncSessionLocal
+from src.api.utils.models import ExperimentCohortDB
+from src.api.utils.redis import get_redis
 
 logger = logging.getLogger("ExperimentBatcher")
 
@@ -42,13 +42,13 @@ class ExperimentBatcher:
             except Exception as e:
                 logger.error(f"Failed to sync batcher state from DB: {e}")
 
-    async def create_cohort_batch(self, strategy_name: str, size: int = 5) -> Dict[str, Any]:
+    async def create_cohort_batch(self, strategy_name: str, size: int = 5) -> dict[str, Any]:
         """
         Creates a new experiment cohort and persists to Postgres.
         Checks StrategyRegistryDB to ensure the strategy isn't 'KILLED'.
         """
         async with AsyncSessionLocal() as db:
-            from api.utils.models import StrategyRegistryDB
+            from src.api.utils.models import StrategyRegistryDB
             stmt = select(StrategyRegistryDB).where(StrategyRegistryDB.name == strategy_name)
             result = await db.execute(stmt)
             strat = result.scalar_one_or_none()
@@ -95,7 +95,7 @@ class ExperimentBatcher:
                 await db.rollback()
                 return {}
 
-    async def assign_to_batch(self, video_id: str) -> Optional[str]:
+    async def assign_to_batch(self, video_id: str) -> str | None:
         """
         Assigns a video to the current open cohort with persistent state update.
         Implements strict isolation: prevents a video from entering multiple experiments.
@@ -131,7 +131,7 @@ class ExperimentBatcher:
                         await db.rollback()
         return None
 
-    def get_batch_vitals(self) -> List[Dict]:
+    def get_batch_vitals(self) -> list[dict]:
         return [
             {"id": b["batch_id"], "strategy": b["strategy"], "fill": f"{len(b['participants'])}/{b['size']}"}
             for b in self.active_batches[-3:]

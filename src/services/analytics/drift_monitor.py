@@ -9,9 +9,9 @@ self-correction cycles for the Neural Oracle.
 import logging
 import json
 import numpy as np
-from typing import Dict, Any, List
-from services.analytics.ledger import base_performance_ledger
-from services.optimization.forecaster_pipeline import base_forecaster_pipeline
+from typing import Any
+from src.services.analytics.ledger import base_performance_ledger
+from src.services.optimization.forecaster_pipeline import base_forecaster_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class DriftMonitor:
     def __init__(self, drift_threshold: float = 0.15):
         self.drift_threshold = drift_threshold
 
-    def audit_system_honesty(self) -> Dict[str, Any]:
+    def audit_system_honesty(self) -> dict[str, Any]:
         """Calculates Mean Absolute Error for the last N productions"""
         report = base_performance_ledger.get_accuracy_report()
         error = report.get("avg_prediction_error", 0.0)

@@ -18,7 +18,7 @@ import os
 import logging
 import asyncio
 import time
-from typing import Optional, Dict, Any, List
+from typing import Any
 from pathlib import Path
 import uuid
 import json
@@ -372,7 +372,7 @@ class FreeVideoProviderService:
             "primary": self.primary_provider
         }
 
-    def _get_api_key(self, provider: str) -> Optional[str]:
+    def _get_api_key(self, provider: str) -> str | None:
         """Get API key for a specific provider"""
         key_map = {
             "zsky": self.zsky_key,
@@ -388,7 +388,7 @@ class FreeVideoProviderService:
         }
         return key_map.get(provider)
 
-    def _get_all_providers(self) -> List[str]:
+    def _get_all_providers(self) -> list[str]:
         """Get ordered list of all available providers"""
         providers = []
         if self.primary_provider != "none" and self._get_api_key(self.primary_provider):
@@ -401,9 +401,9 @@ class FreeVideoProviderService:
         prompt: str,
         duration: int = 5,
         aspect_ratio: str = "9:16",
-        style: Optional[str] = None,
-        image_url: Optional[str] = None,
-    ) -> Optional[Dict[str, Any]]:
+        style: str | None = None,
+        image_url: str | None = None,
+    ) -> dict[str, Any] | None:
         """
         Generate video using available free provider.
         """
@@ -456,14 +456,14 @@ class FreeVideoProviderService:
 
     async def _generate_with_browser(
         self, prompt: str, duration: int, aspect_ratio: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Generate video using Playwright browser automation as fallback.
         Uses OpenCLAW skills to automate free video platform UIs.
         """
         try:
             # Try PixVerse first (easiest UI)
-            from services.openclaw.skills.pixverse import PixVerseSkill
+            from src.services.openclaw.skills.pixverse import PixVerseSkill
 
             skill = PixVerseSkill()
             await skill.initialize()
@@ -483,10 +483,10 @@ class FreeVideoProviderService:
         prompt: str,
         duration: int,
         aspect_ratio: str,
-        style: Optional[str],
-        image_url: Optional[str],
+        style: str | None,
+        image_url: str | None,
         api_key: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Generate video with specific provider"""
         config = self.PROVIDER_CONFIGS.get(provider)
         if not config:
@@ -610,7 +610,7 @@ class FreeVideoProviderService:
 
         return None
 
-    def _apply_style(self, prompt: str, style: Optional[str], provider: str) -> str:
+    def _apply_style(self, prompt: str, style: str | None, provider: str) -> str:
         """Apply style preset to prompt"""
         if not style:
             return prompt
@@ -631,10 +631,10 @@ class FreeVideoProviderService:
         prompt: str,
         duration: int,
         aspect_ratio: str,
-        image_url: Optional[str],
+        image_url: str | None,
         api_key: str,
-        config: Dict,
-    ) -> Optional[Dict[str, Any]]:
+        config: dict,
+    ) -> dict[str, Any] | None:
         """Generate video using ZSky AI API"""
         import httpx
 
@@ -691,10 +691,10 @@ class FreeVideoProviderService:
         self,
         job_id: str,
         api_key: str,
-        config: Dict,
+        config: dict,
         max_attempts: int = 60,
         delay: int = 5,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Poll ZSky job until completion"""
         import httpx
 
@@ -736,10 +736,10 @@ class FreeVideoProviderService:
         prompt: str,
         duration: int,
         aspect_ratio: str,
-        image_url: Optional[str],
+        image_url: str | None,
         api_key: str,
-        config: Dict,
-    ) -> Optional[Dict[str, Any]]:
+        config: dict,
+    ) -> dict[str, Any] | None:
         """Generate video using Haiper AI"""
         import httpx
 
@@ -784,7 +784,7 @@ class FreeVideoProviderService:
                     )
                 else:
                     logger.info("[Haiper] API unavailable, falling back to browser automation")
-                    from services.openclaw.skills.haiper import haiper_skill
+                    from src.services.openclaw.skills.haiper import haiper_skill
                     return await haiper_skill.generate(prompt, aspect_ratio)
 
                 return None
@@ -793,7 +793,7 @@ class FreeVideoProviderService:
             logger.error(f"[FreeVideoProvider] Haiper request failed: {e}")
             logger.info("[Haiper] Falling back to browser automation")
             try:
-                from services.openclaw.skills.haiper import haiper_skill
+                from src.services.openclaw.skills.haiper import haiper_skill
                 return await haiper_skill.generate(prompt, aspect_ratio)
             except Exception as browser_err:
                 logger.error(f"[FreeVideoProvider] Haiper browser fallback failed: {browser_err}")
@@ -804,10 +804,10 @@ class FreeVideoProviderService:
         prompt: str,
         duration: int,
         aspect_ratio: str,
-        image_url: Optional[str],
+        image_url: str | None,
         api_key: str,
-        config: Dict,
-    ) -> Optional[Dict[str, Any]]:
+        config: dict,
+    ) -> dict[str, Any] | None:
         """Generate video using Luma Dream Machine"""
         import httpx
 
@@ -852,7 +852,7 @@ class FreeVideoProviderService:
                     )
                 else:
                     logger.info("[Luma] API unavailable, falling back to browser automation")
-                    from services.openclaw.skills.luma import luma_skill
+                    from src.services.openclaw.skills.luma import luma_skill
                     return await luma_skill.generate(prompt, aspect_ratio)
 
                 return None
@@ -861,7 +861,7 @@ class FreeVideoProviderService:
             logger.error(f"[FreeVideoProvider] Luma request failed: {e}")
             logger.info("[Luma] Falling back to browser automation")
             try:
-                from services.openclaw.skills.luma import luma_skill
+                from src.services.openclaw.skills.luma import luma_skill
                 return await luma_skill.generate(prompt, aspect_ratio)
             except Exception as browser_err:
                 logger.error(f"[FreeVideoProvider] Luma browser fallback failed: {browser_err}")
@@ -872,7 +872,7 @@ class FreeVideoProviderService:
         provider: str,
         prompt: str,
         aspect_ratio: str = "16:9",
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Generate video using browser automation (no API key required).
         Falls back to Playwright automation for free video providers.

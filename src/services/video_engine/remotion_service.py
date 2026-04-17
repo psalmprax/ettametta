@@ -4,16 +4,17 @@ import subprocess
 import logging
 import uuid
 import shutil
-from typing import Dict, Any, Optional
+from typing import Any
 from pathlib import Path
+from src.api.config import settings
 
 class RemotionService:
     """
     Bridges Python logic to the Remotion React studio for programmatic video rendering.
     """
 
-    def __init__(self, studio_path: str = "apps/remotion-studio"):
-        self.studio_path = os.path.abspath(studio_path)
+    def __init__(self, studio_path: str | None = None):
+        self.studio_path = os.path.abspath(studio_path or settings.REMOTION_STUDIO_PATH)
         self.output_dir = os.path.join(self.studio_path, "out")
         os.makedirs(self.output_dir, exist_ok=True)
         # Dynamic browser discovery
@@ -23,7 +24,7 @@ class RemotionService:
                            "/usr/bin/chromium"
         logging.info(f"[RemotionService] Using browser at: {self.browser_path}")
 
-    async def render_video(self, composition_id: str, props: Dict[str, Any], output_name: str = None) -> Optional[str]:
+    async def render_video(self, composition_id: str, props: dict[str, Any], output_name: str = None) -> str | None:
         """
         Renders a video using Remotion CLI.
         """
@@ -35,21 +36,30 @@ class RemotionService:
         input_props_path = os.path.join(self.studio_path, f"props_{job_id}.json")
 
         try:
+            # --- HARDENING: Path Mapping for Remotion Browser Security ---
+            # Remotion cannot access arbitrary absolute paths. We use the public/assets symlink.
+            hardened_props = json.loads(json.dumps(props))
+            if "sections" in hardened_props:
+                for section in hardened_props["sections"]:
+                    if "videoPath" in section and section["videoPath"]:
+                        # Convert /path/to/local_downloads/file.mp4 -> ./assets/file.mp4
+                        fname = os.path.basename(section["videoPath"])
+                        section["videoPath"] = f"./assets/{fname}"
+
             # 1. Write props to temporary JSON file
             with open(input_props_path, "w") as f:
-                json.dump(props, f)
+                json.dump(hardened_props, f)
 
             logging.info(f"[RemotionService] Starting render for {composition_id}...")
 
             # 2. Invoke Remotion CLI
-            # We use npx remotion render <entry> <comp-id> <output> --props <props-file>
             cmd = [
                 "npx", "remotion", "render",
                 "src/index.ts",
                 composition_id,
                 output_path,
                 "--props", input_props_path,
-                "--browser-executable", self.browser_path
+                "--browser-executable", self.browser_path,
             ]
 
             process = subprocess.Popen(
@@ -78,4 +88,4 @@ class RemotionService:
                 os.remove(input_props_path)
 
 # Singleton instance
-remotion_service = RemotionService()
+base_remotion_service = RemotionService()

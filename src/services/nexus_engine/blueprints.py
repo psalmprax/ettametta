@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Optional
 from sqlalchemy import select
-from api.utils.models import BlueprintDB
+from src.api.utils.models import BlueprintDB
 
 # Legacy hardcoded fallback for safety during transition
 FALLBACK_BLUEPRINTS = [
@@ -62,7 +61,7 @@ FALLBACK_BLUEPRINTS = [
 ]
 
 
-async def get_blueprints(db: AsyncSession) -> List[Dict]:
+async def get_blueprints(db: AsyncSession) -> list[dict]:
     """
     Returns the available Nexus production recipes/blueprints from the database.
     """
@@ -79,13 +78,13 @@ async def get_blueprints(db: AsyncSession) -> List[Dict]:
     ]
 
 
-async def execute_blueprint(blueprint: Dict, inputs: Dict, job_id: str) -> Dict:
+async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
     """
     Execute a blueprint workflow with given inputs.
     This provides the missing blueprint execution engine.
     """
     import logging
-    from api.routes.ws import notify_nexus_job_update_sync
+    from src.api.routes.ws import notify_nexus_job_update_sync
 
     logger = logging.getLogger(__name__)
     results = {}
@@ -161,7 +160,7 @@ async def execute_blueprint(blueprint: Dict, inputs: Dict, job_id: str) -> Dict:
         }
 
 
-def _execute_ingress_node(inputs: Dict) -> Dict:
+def _execute_ingress_node(inputs: dict) -> dict:
     """Execute data ingestion node."""
     # Ingest and validate input data
     return {
@@ -171,9 +170,9 @@ def _execute_ingress_node(inputs: Dict) -> Dict:
     }
 
 
-async def _execute_cognition_node(inputs: Dict, ingress_result: Dict) -> Dict:
+async def _execute_cognition_node(inputs: dict, ingress_result: dict) -> dict:
     """Execute AI cognition/processing node."""
-    from api.config import settings
+    from src.api.config import settings
 
     # Use AI for content analysis and processing
     if settings.GROQ_API_KEY:
@@ -206,9 +205,9 @@ async def _execute_cognition_node(inputs: Dict, ingress_result: Dict) -> Dict:
         return {"ai_processed": False, "fallback": "AI unavailable - basic processing"}
 
 
-async def _execute_synthesis_node(inputs: Dict, previous_results: Dict) -> Dict:
+async def _execute_synthesis_node(inputs: dict, previous_results: dict) -> dict:
     """Execute content synthesis node using real AI models."""
-    from services.video_engine.synthesis_service import GenerativeService
+    from src.services.video_engine.synthesis_service import GenerativeService
     import logging
 
     logger = logging.getLogger(__name__)
@@ -257,7 +256,7 @@ async def _execute_synthesis_node(inputs: Dict, previous_results: Dict) -> Dict:
         }
 
 
-def _execute_egress_node(results: Dict, job_id: int) -> Dict:
+def _execute_egress_node(results: dict, job_id: int) -> dict:
     """Execute output/finalization node."""
     synthesis = results.get("synthesis", {})
     video_path = synthesis.get("video_path")
@@ -270,7 +269,7 @@ def _execute_egress_node(results: Dict, job_id: int) -> Dict:
     }
 
 
-def _execute_custom_node(node_config: Dict, inputs: Dict, results: Dict) -> Dict:
+def _execute_custom_node(node_config: dict, inputs: dict, results: dict) -> dict:
     """Execute custom blueprint node."""
     # Allow for custom node logic based on configuration
     node_logic = node_config.get("logic", "default")
@@ -283,7 +282,7 @@ def _execute_custom_node(node_config: Dict, inputs: Dict, results: Dict) -> Dict
         return {"executed": True, "custom_logic": node_logic}
 
 
-async def get_blueprint_by_id(db: AsyncSession, blueprint_id: str) -> Optional[Dict]:
+async def get_blueprint_by_id(db: AsyncSession, blueprint_id: str) -> dict | None:
     """
     Retrieves a specific blueprint by ID.
     """

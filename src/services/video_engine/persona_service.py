@@ -1,7 +1,6 @@
 import logging
 import os
 import httpx
-from typing import Optional
 
 logger = logging.getLogger("PersonaService")
 
@@ -10,14 +9,14 @@ class PersonaService:
     def __init__(self):
         self.render_node_url = os.getenv("RENDER_NODE_URL")
 
-    async def _generate_tts(self, text: str) -> Optional[str]:
+    async def _generate_tts(self, text: str) -> str | None:
         """
         Generate TTS audio for persona animation.
         Tries voiceover service, then remote render node TTS.
         """
         # Try local voiceover service
         try:
-            from services.voiceover.service import voiceover_service
+            from src.services.voiceover.service import voiceover_service
 
             audio_path = await voiceover_service.generate_voiceover(text)
             if audio_path:
@@ -49,7 +48,7 @@ class PersonaService:
         return None
 
     async def animate_persona(
-        self, reference_image_url: str, topic: str, script: Optional[str] = None
+        self, reference_image_url: str, topic: str, script: str | None = None
     ) -> str:
         """
         Orchestrates the creation of a personalized deepfake video.
@@ -99,4 +98,4 @@ class PersonaService:
             raise RuntimeError(f"Failed to connect to render node: {e}")
 
 
-persona_service = PersonaService()
+base_persona_service = PersonaService()

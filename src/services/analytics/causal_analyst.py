@@ -1,9 +1,9 @@
 import json
 import logging
 import numpy as np
-from typing import Dict, Any, List, Optional
+from typing import Any
 from groq import AsyncGroq
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger("CausalAnalyst")
 
@@ -16,7 +16,7 @@ class CausalAnalyst:
         self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
         self.model = "llama-3.3-70b-versatile"
 
-    async def analyze_regret(self, predicted_curve: List[Dict], actual_curve: List[Dict], blueprint: Dict[str, Any]) -> Dict[str, Any]:
+    async def analyze_regret(self, predicted_curve: list[dict], actual_curve: list[dict], blueprint: dict[str, Any]) -> dict[str, Any]:
         """Identifies the 'Why' behind prediction errors."""
         
         # 1. Calculate the Delta
@@ -77,7 +77,7 @@ class CausalAnalyst:
             logger.error(f"[Causal] Reflection Failed: {e}")
             return {"causal_reason": "Unknown", "explanation": "System error during reflection."}
 
-    def _get_emotion_at(self, blueprint: Dict[str, Any], t: int) -> str:
+    def _get_emotion_at(self, blueprint: dict[str, Any], t: int) -> str:
         for arc in blueprint.get("emotional_arc", []):
             if arc["time_start"] <= t <= arc["time_end"]:
                 return arc["emotion"]

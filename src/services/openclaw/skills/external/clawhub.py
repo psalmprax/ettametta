@@ -2,7 +2,7 @@ import requests
 import logging
 import os
 import json
-from typing import Dict, Any, List, Optional
+from typing import Any
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class ClawHubSkillLoader:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.headers = {"User-Agent": "viral_forge/1.0"}
 
-    def list_categories(self) -> List[str]:
+    def list_categories(self) -> list[str]:
         """Get list of skill categories from the repo."""
         try:
             response = requests.get(
@@ -35,8 +35,8 @@ class ClawHubSkillLoader:
             logger.error(f"Error listing categories: {e}")
             return []
 
-    def list_skills_in_category(self, category: str) -> List[Dict]:
-        """List skills in a specific category."""
+    def list_skills_in_category(self, category: str) -> list[dict]:
+        """list skills in a specific category."""
         try:
             url = f"{CLAWHUB_SKILLS_REPO}/{category}"
             response = requests.get(url, headers=self.headers, timeout=30)
@@ -52,7 +52,7 @@ class ClawHubSkillLoader:
             logger.error(f"Error listing skills in {category}: {e}")
             return []
 
-    def get_skill_details(self, skill_path: str) -> Optional[Dict]:
+    def get_skill_details(self, skill_path: str) -> dict | None:
         """Get skill details (SKILL.md content)."""
         try:
             url = f"https://api.github.com/repos/openclaw/skills/contents/{skill_path}"
@@ -75,7 +75,7 @@ class ClawHubSkillLoader:
             logger.error(f"Error getting skill details for {skill_path}: {e}")
             return None
 
-    def search_skills(self, query: str, category: Optional[str] = None) -> List[Dict]:
+    def search_skills(self, query: str, category: str | None = None) -> list[dict]:
         """Search skills by query."""
         results = []
         categories = [category] if category else self.list_categories()
@@ -89,7 +89,7 @@ class ClawHubSkillLoader:
 
         return results[:20]
 
-    def get_skill_by_name(self, author: str, name: str) -> Optional[Dict]:
+    def get_skill_by_name(self, author: str, name: str) -> dict | None:
         """Get a specific skill by author/name."""
         try:
             path = f"skills/{author}/{name}"
@@ -110,7 +110,7 @@ class PopularSkills:
             "name": "affiliate-master",
             "description": "Full-stack affiliate marketing automation with FTC-compliant disclosures",
             "category": "Marketing & Sales",
-            "api_required": ["Amazon Associates"],  # Optional, can work without
+            "api_required": ["Amazon Associates"],  # Any, can work without
             "priority": "high",
         },
         "social_media_agent": {
@@ -196,15 +196,15 @@ class PopularSkills:
     }
 
     @classmethod
-    def get_skill(cls, key: str) -> Optional[Dict]:
+    def get_skill(cls, key: str) -> dict | None:
         return cls.SKILLS.get(key)
 
     @classmethod
-    def get_all_skills(cls) -> List[Dict]:
+    def get_all_skills(cls) -> list[dict]:
         return list(cls.SKILLS.values())
 
     @classmethod
-    def get_skills_by_priority(cls, priority: str) -> List[Dict]:
+    def get_skills_by_priority(cls, priority: str) -> list[dict]:
         return [s for s in cls.SKILLS.values() if s.get("priority") == priority]
 
 

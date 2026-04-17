@@ -1,16 +1,16 @@
 import logging
 import json
-from typing import List, Dict, Any, Optional
+from typing import Any
 from groq import AsyncGroq
-from api.config import settings
-from services.voiceover.service import base_voiceover_service
+from src.api.config import settings
+from src.services.voiceover.service import base_voiceover_service
 
 class GlobalReachAdapter:
     def __init__(self):
         self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
         self.model = "llama-3.3-70b-versatile"
 
-    async def translate_metadata(self, title: str, description: str, tags: List[str], target_lang: str) -> Dict[str, Any]:
+    async def translate_metadata(self, title: str, description: str, tags: list[str], target_lang: str) -> dict[str, Any]:
         """
         Translates video metadata using Groq/LLM.
         """
@@ -51,7 +51,7 @@ class GlobalReachAdapter:
                 "error": str(e)
             }
 
-    async def translate_script_segments(self, segments: List[Dict[str, Any]], target_lang: str) -> List[Dict[str, Any]]:
+    async def translate_script_segments(self, segments: list[dict[str, Any]], target_lang: str) -> list[dict[str, Any]]:
         """
         Translates a list of script segments for dubbing/subtitles.
         """

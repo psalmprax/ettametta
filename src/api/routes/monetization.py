@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.database import get_db
-from api.utils.models import AffiliateLinkDB, RevenueLogDB
-from api.routes.auth import get_current_user
-from services.monetization.service import base_monetization_engine
-from services.monetization.promo_generator import base_promo_generator
-from api.utils.subscription import credits_required
-from services.payment.credit_service import credit_service
+from src.api.utils.database import get_db
+from src.api.utils.models import AffiliateLinkDB, RevenueLogDB
+from src.api.routes.auth import get_current_user
+from src.services.monetization.service import base_monetization_engine
+from src.services.monetization.promo_generator import base_promo_generator
+from src.api.utils.subscription import credits_required
+from src.services.payment.credit_service import credit_service
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import Any
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/monetization", tags=["Monetization"])
@@ -55,7 +55,7 @@ async def auto_merch(
     """
     Triggers the Reverse Monetization flow: Trend -> Design -> Mockup -> Store.
     """
-    from services.monetization.auto_merch import (
+    from src.services.monetization.auto_merch import (
         base_auto_merch_service as auto_merch_service,
     )
 
@@ -109,7 +109,7 @@ async def get_empire_metrics(
     """Get empire metrics - returns basic stats for now."""
     import datetime
     from sqlalchemy import select, func, desc
-    from api.utils.models import PublishedContentDB, SocialAccount, VideoJobDB
+    from src.api.utils.models import PublishedContentDB, SocialAccount, VideoJobDB
 
     now = datetime.datetime.utcnow()
     last_week = now - datetime.timedelta(days=7)
@@ -158,7 +158,7 @@ async def get_empire_activity(
     """
     import datetime
     from sqlalchemy import select, desc
-    from api.utils.models import PublishedContentDB
+    from src.api.utils.models import PublishedContentDB
 
     # Get recent published content
     result = await db.execute(
@@ -193,7 +193,7 @@ async def get_winning_blueprints(
 ):
     """Get winning content blueprints from past publishes."""
     from sqlalchemy import select, desc, func
-    from api.utils.models import PublishedContentDB
+    from src.api.utils.models import PublishedContentDB
 
     # Get top performing content
     result = await db.execute(
@@ -227,7 +227,7 @@ async def get_network_graph(
     Returns the visualization graph (nodes/links) for the empire mesh.
     """
     from sqlalchemy import select
-    from api.utils.models import PublishedContentDB, SocialAccount
+    from src.api.utils.models import PublishedContentDB, SocialAccount
 
     # Get connected accounts as nodes
     accounts_result = await db.execute(
@@ -287,7 +287,7 @@ async def sync_commerce_products(
     """
     Triggers a test sync with the configured Shopify store.
     """
-    from services.monetization.commerce_service import base_commerce_service
+    from src.services.monetization.commerce_service import base_commerce_service
 
     # Test with the provided niche to verify connection
     products = await base_commerce_service.get_relevant_products(niche)
@@ -309,7 +309,7 @@ async def clone_strategy(
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    from services.monetization.empire_service import base_empire_service
+    from src.services.monetization.empire_service import base_empire_service
 
     success = await base_empire_service.clone_strategy(
         db, current_user.id, request.source_niche, request.target_niche
@@ -326,7 +326,7 @@ class LinkCreate(BaseModel):
     product_name: str
     niche: str
     link: str
-    cta_text: Optional[str] = "Check link in bio"
+    cta_text: str | None = "Check link in bio"
 
 
 @router.get("/links")

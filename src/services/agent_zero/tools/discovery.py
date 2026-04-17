@@ -1,7 +1,7 @@
 import requests
 import logging
-from typing import Dict, Any, List
-from services.openclaw.config import settings
+from typing import Any
+from src.services.openclaw.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ class DiscoveryTool:
     def __init__(self):
         self.api_url = f"{settings.API_URL}/discovery"
 
-    def run(self, topic: str, limit: int = 5) -> Dict[str, Any]:
+    def run(self, topic: str, limit: int = 5) -> dict[str, Any]:
         """
         Searches for trending topics across multi-platform scanners.
         """

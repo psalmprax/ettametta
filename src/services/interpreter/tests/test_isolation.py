@@ -1,7 +1,7 @@
 import pytest
 import asyncio
 import os
-from services.interpreter.service import interpreter_service
+from src.services.interpreter.service import interpreter_service
 
 @pytest.mark.asyncio
 async def test_interpreter_isolation():

@@ -1,9 +1,9 @@
 import logging
 import json
-from typing import Dict, Any, List, Optional
+from typing import Any
 from groq import AsyncGroq
-from api.config import settings
-from api.utils.vault import get_secret
+from src.api.config import settings
+from src.api.utils.vault import get_secret
 from .commerce_service import base_commerce_service
 
 class PromoGenerator:
@@ -13,7 +13,7 @@ class PromoGenerator:
         self.commerce = base_commerce_service
         self.model = "llama-3.3-70b-versatile"
 
-    async def generate_promo_script(self, product_name: str, niche: str, duration_sec: int = 30) -> Dict[str, Any]:
+    async def generate_promo_script(self, product_name: str, niche: str, duration_sec: int = 30) -> dict[str, Any]:
         """
         Generates a high-conversion promotional script for an affiliate product.
         Uses real commerce data if available.

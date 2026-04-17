@@ -5,9 +5,9 @@ Features: Chunked uploads, token refresh, proper logging
 """
 
 import os
-from typing import Optional
 import httpx
 import logging
+from typing import Any
 
 from .publisher_base import SocialPublisher, RetryConfig, RateLimitConfig
 from .models import PostMetadata
@@ -33,9 +33,9 @@ class TikTokPublisher(SocialPublisher):
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
-    ) -> Optional[str]:
+    ) -> str | None:
         """TikTok-specific upload implementation with chunked uploads"""
         if not headers:
             logger.error(f"[TikTokPublisher] No authentication for user {user_id}")
@@ -129,7 +129,7 @@ class TikTokPublisher(SocialPublisher):
         self,
         platform_id: str,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
     ) -> dict:
         """Fetch TikTok video metrics"""
@@ -174,10 +174,10 @@ class TikTokPublisher(SocialPublisher):
         self,
         platform_id: str,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
         limit: int = 10,
-    ) -> list:
+    ) -> list[dict[str, Any]]:
         """Fetch TikTok video comments"""
         headers["Content-Type"] = "application/json"
 

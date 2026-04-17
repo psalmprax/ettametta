@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
 import datetime
 from .models import ContentCandidate
 
 class TrendScanner(ABC):
     @abstractmethod
-    async def scan_trends(self, niche: str, published_after: Optional[datetime.datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime.datetime | None = None) -> list[ContentCandidate]:
         pass
 
     @abstractmethod

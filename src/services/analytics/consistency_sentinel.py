@@ -11,12 +11,12 @@ Evolution: Was a passive logger → Now an active repair enforcer.
 import asyncio
 import logging
 import time
-from typing import Dict, Any, List, Optional
+from typing import Any
 from sqlalchemy import select
-from api.utils.database import AsyncSessionLocal
-from api.utils.models import ExperimentCohortDB
-from services.distribution.experiment_batcher import base_experiment_batcher
-from services.infrastructure.resilience_metrics import (
+from src.api.utils.database import AsyncSessionLocal
+from src.api.utils.models import ExperimentCohortDB
+from src.services.distribution.experiment_batcher import base_experiment_batcher
+from src.services.infrastructure.resilience_metrics import (
     state_drift_detected,
     state_repairs_triggered,
     recovery_duration,
@@ -33,15 +33,15 @@ class DriftReport:
     def __init__(self):
         self.checked_at: float = time.time()
         self.cohorts_checked: int = 0
-        self.drifts: List[Dict[str, Any]] = []
+        self.drifts: list[dict[str, Any]] = []
         self.repair_triggered: bool = False
-        self.repair_duration_s: Optional[float] = None
+        self.repair_duration_s: float | None = None
 
     @property
     def is_clean(self) -> bool:
         return len(self.drifts) == 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "checked_at": self.checked_at,
             "cohorts_checked": self.cohorts_checked,
@@ -66,7 +66,7 @@ class ConsistencySentinel:
         self.repair_cooldown = repair_cooldown
         self._stop_event = asyncio.Event()
         self._last_repair_time: float = 0.0
-        self._audit_history: List[DriftReport] = []
+        self._audit_history: list[DriftReport] = []
         self._total_repairs: int = 0
 
     async def start(self):
@@ -186,7 +186,7 @@ class ConsistencySentinel:
         )
 
         # Lazy import to avoid circular dependency
-        from services.infrastructure.recovery_service import base_recovery_service
+        from src.services.infrastructure.recovery_service import base_recovery_service
 
         repair_start = time.time()
         try:
@@ -209,7 +209,7 @@ class ConsistencySentinel:
         except Exception as e:
             logger.error(f"[Sentinel] Repair FAILED: {e}", exc_info=True)
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Returns the current sentinel health summary."""
         recent = self._audit_history[-5:] if self._audit_history else []
         return {

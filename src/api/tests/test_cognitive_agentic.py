@@ -1,10 +1,10 @@
 import pytest
 import asyncio
 from unittest.mock import MagicMock, patch
-from services.langchain.service import LangChainService
-from services.crewai.service import CrewAIService
-from services.decision_engine.service import StrategyService
-from services.nexus_engine.orchestrator import NexusOrchestrator
+from src.services.langchain.service import LangChainService
+from src.services.crewai.service import CrewAIService
+from src.services.decision_engine.service import StrategyService
+from src.services.nexus_engine.orchestrator import NexusOrchestrator
 
 @pytest.mark.asyncio
 async def test_langchain_vibe_analysis():
@@ -58,7 +58,7 @@ async def test_nexus_cognitive_pipeline_integration():
     """Verify NexusOrchestrator uses LangChain vibes during assembly."""
     # We just need to verify that LangChain is CALLED within the logic
     # instead of mocking the whole orchestrator private methods
-    from services.langchain.service import langchain_service
+    from src.services.langchain.service import langchain_service
     
     with patch.object(langchain_service, "is_enabled", return_value=True), \
          patch.object(langchain_service, "analyze_video_vibe") as mock_analyze:

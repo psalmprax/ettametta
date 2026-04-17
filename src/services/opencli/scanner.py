@@ -11,8 +11,8 @@ and this scanner will use their session to search/fetch content.
 """
 
 import logging
-from typing import List, Optional, Dict, Any
-from services.discovery.models import ContentCandidate
+from typing import Any
+from src.services.discovery.models import ContentCandidate
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +27,16 @@ class OpenCLIScanner:
         self,
         niche: str,
         published_after=None,
-        platforms: Optional[List[str]] = None,
-    ) -> List[ContentCandidate]:
+        platforms: list[str] | None = None,
+    ) -> list[ContentCandidate]:
         """Search all connected platforms for the user.
 
         Args:
             niche: Search query / niche keyword
             platforms: Specific platforms to search (None = all connected)
         """
-        from services.opencli.service import opencli_service
-        from api.config import settings
+        from src.services.opencli.service import opencli_service
+        from src.api.config import settings
 
         if not settings.ENABLE_OPENCLI:
             return []
@@ -107,9 +107,9 @@ class OpenCLIScanner:
         platform: str,
         feed_type: str = "trending",
         limit: int = 20,
-    ) -> List[ContentCandidate]:
+    ) -> list[ContentCandidate]:
         """Get feed/trending from a specific platform for the user."""
-        from services.opencli.service import opencli_service
+        from src.services.opencli.service import opencli_service
 
         results = await opencli_service.get_platform_feed(
             self.user_id, platform, feed_type, limit

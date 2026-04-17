@@ -5,7 +5,6 @@ Features: Circuit breaker, token refresh, resumable uploads, proper logging
 """
 
 import os
-from typing import Optional
 import logging
 
 from .publisher_base import SocialPublisher, RetryConfig, RateLimitConfig
@@ -32,9 +31,9 @@ class YouTubePublisher(SocialPublisher):
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
-    ) -> Optional[str]:
+    ) -> str | None:
         """YouTube-specific upload implementation"""
         from googleapiclient.discovery import build
         from googleapiclient.http import MediaFileUpload
@@ -84,7 +83,7 @@ class YouTubePublisher(SocialPublisher):
         self,
         platform_id: str,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
     ) -> dict:
         """Fetch YouTube video statistics"""

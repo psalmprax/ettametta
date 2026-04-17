@@ -1,20 +1,20 @@
 import logging
 import random
-from typing import List, Dict, Any
+from typing import Any
 from .base import BaseMonetizationStrategy
-from api.utils.models import SystemSettings
+from src.api.utils.models import SystemSettings
 
 class SponsorshipStrategy(BaseMonetizationStrategy):
     """
     Sponsorship strategy - Brand deals and sponsored content
     """
     
-    async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
+    async def get_assets(self, niche: str) -> list[dict[str, Any]]:
         """
         Fetches brand partners from database configuration.
         """
         from sqlalchemy import select
-        from api.utils.database import async_session_factory
+        from src.api.utils.database import async_session_factory
         
         async with async_session_factory() as db:
             stmt = select(SystemSettings).filter(SystemSettings.key == "brand_partners")

@@ -1,16 +1,16 @@
 from .models import PostMetadata
-from api.config import settings
-from api.utils.os_worker import ai_worker
-from api.utils.database import async_session_factory
-from api.utils.models import AffiliateLinkDB, SystemSettings
-from services.monetization.service import base_monetization_engine
+from src.api.config import settings
+from src.api.utils.os_worker import ai_worker
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import AffiliateLinkDB, SystemSettings
+from src.services.monetization.service import base_monetization_engine
 import json
 import logging
 import random
 import asyncio
 import time
 import redis
-from typing import Dict, Any, List, Optional
+from typing import Any
 from sqlalchemy import select
 from tenacity import (
     retry,
@@ -18,7 +18,7 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type,
 )
-from services.monetization.auto_merch import base_auto_merch_service
+from src.services.monetization.auto_merch import base_auto_merch_service
 
 
 class CircuitBreaker:
@@ -74,7 +74,7 @@ class OptimizationService:
         ),
         reraise=False,
     )
-    async def _call_groq(self, prompt: str, max_tokens: int = 1000) -> Optional[str]:
+    async def _call_groq(self, prompt: str, max_tokens: int = 1000) -> str | None:
         """Call Groq API with circuit breaking and retries"""
         if self.groq_circuit_breaker.is_open():
             self.logger.warning("Groq API circuit breaker is OPEN - using fallback")
@@ -160,7 +160,7 @@ class OptimizationService:
                             niche, content_id
                         )
                         if product:
-                            from services.monetization.strategies.commerce import (
+                            from src.services.monetization.strategies.commerce import (
                                 CommerceStrategy,
                             )
 
@@ -180,7 +180,7 @@ class OptimizationService:
                         aff_product = aff_result.scalar_one_or_none()
 
                         if aff_product:
-                            from services.monetization.strategies.affiliate import (
+                            from src.services.monetization.strategies.affiliate import (
                                 AffiliateStrategy,
                             )
 
@@ -195,7 +195,7 @@ class OptimizationService:
                     if aggression > 50:  # Only for aggressive growth accounts
                         # Check viral potential from discovery engagement score
                         try:
-                            from services.discovery.service import (
+                            from src.services.discovery.service import (
                                 base_discovery_service,
                             )
 
@@ -333,7 +333,7 @@ class OptimizationService:
         platform: str,
         niche: str,
         target_audience: str = "general",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Complete SEO optimization using AI for viral content.
         Returns optimized title, description, hashtags, and SEO metadata.
@@ -410,7 +410,7 @@ class OptimizationService:
 
     def _basic_seo_optimization(
         self, title: str, description: str, platform: str, niche: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Fallback basic SEO optimization when AI is unavailable"""
         # Basic keyword insertion
         niche_keywords = niche.lower().split()
@@ -437,7 +437,7 @@ class OptimizationService:
 
     async def generate_viral_hooks(
         self, topic: str, platform: str, count: int = 5
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Generate viral hook suggestions for content creation.
         Production-grade with retries and circuit breaking.
@@ -481,7 +481,7 @@ class OptimizationService:
 
     def _basic_hook_suggestions(
         self, topic: str, platform: str, count: int
-    ) -> List[str]:
+    ) -> list[str]:
         """Basic hook suggestions when AI is unavailable"""
         base_hooks = [
             f"You won't believe what happened with {topic}",

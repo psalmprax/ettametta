@@ -2,7 +2,9 @@ import os
 import json
 import subprocess
 import logging
-from typing import Dict, Any
+from typing import Any
+
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -15,21 +17,21 @@ class RemotionRenderSkill:
 
     def __init__(
         self,
-        remotion_project_path: str = "/home/psalmprax/ALL_PROJECTS/viral_forge/services/video_engine/remotion_app",
+        remotion_project_path: str | None = None,
     ):
-        self.project_path = remotion_project_path
+        self.project_path = str(remotion_project_path or settings.REMOTION_APP_DIR)
 
     def render_remotion_clip(
         self,
         composition: str,
-        props: Dict[str, Any],
+        props: dict[str, Any],
         output_name: str = "remotion_output.mp4",
     ) -> str:
         """
         Executes a remotion render command.
         Example: npx remotion render <comp-id> out.mp4 --props='{"text": "Hello"}'
         """
-        output_path = f"/home/psalmprax/ALL_PROJECTS/viral_forge/outputs/{output_name}"
+        output_path = str(settings.OUTPUT_DIR / output_name)
         props_json = json.dumps(props)
 
         # Command construction

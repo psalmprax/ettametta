@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Any
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -10,7 +10,7 @@ LANGCHAIN_ENABLED = os.getenv("ENABLE_LANGCHAIN", "false").lower() == "true"
 
 class LangChainService:
     """
-    Optional LangChain integration for advanced prompt management and LLM chaining.
+    Any LangChain integration for advanced prompt management and LLM chaining.
     Disabled by default - enable with ENABLE_LANGCHAIN=true
     """
 
@@ -43,7 +43,7 @@ class LangChainService:
         system_prompt: str,
         human_prompt: str,
         model_name: str = "llama-3.3-70b-versatile",
-    ) -> Optional[Any]:
+    ) -> Any:
         """Create an LLM chain with system and human prompts."""
         if not self.enabled or not self.client:
             return None
@@ -73,8 +73,8 @@ class LangChainService:
             return f"Error: {str(e)}"
 
     def create_sequence(
-        self, prompts: List[str], model_name: str = "llama-3.3-70b-versatile"
-    ) -> Optional[Any]:
+        self, prompts: list[str], model_name: str = "llama-3.3-70b-versatile"
+    ) -> Any:
         """Create a sequence of prompts for multi-step processing."""
         if not self.enabled:
             return None
@@ -137,17 +137,17 @@ Optimize posting times, hashtags, and cross-platform strategies.""",
     }
 
     @classmethod
-    def get_template(cls, name: str) -> Optional[Dict]:
+    def get_template(cls, name: str) -> dict | None:
         """Get a prompt template by name."""
         return cls.TEMPLATES.get(name)
 
     @classmethod
-    def list_templates(cls) -> List[str]:
-        """List all available templates."""
+    def list_templates(cls) -> list[str]:
+        """list all available templates."""
         return list(cls.TEMPLATES.keys())
 
     @classmethod
-    def render_template(cls, name: str, **kwargs) -> Dict[str, str]:
+    def render_template(cls, name: str, **kwargs) -> dict[str, str]:
         """Render a template with variables."""
         template = cls.get_template(name)
         if not template:

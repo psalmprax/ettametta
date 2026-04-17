@@ -1,15 +1,15 @@
 import logging
 import json
-from typing import List, Dict, Any
+from typing import Any
 from groq import AsyncGroq
-from api.config import settings
+from src.api.config import settings
 
 class EmpireModeScheduler:
     def __init__(self):
         self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
         self.model = "llama-3.3-70b-versatile"
 
-    async def clone_strategy(self, base_script: Dict[str, Any], target_niche: str) -> Dict[str, Any]:
+    async def clone_strategy(self, base_script: dict[str, Any], target_niche: str) -> dict[str, Any]:
         """
         Re-spins a successful script for a new niche to avoid duplicate content flags.
         """

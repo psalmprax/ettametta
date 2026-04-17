@@ -246,9 +246,9 @@ def main():
             f"""
 import sys
 sys.path.insert(0, '/home/psalmprax/ALL_PROJECTS/viral_forge')
-from services.video_engine.remotion_service import remotion_service
+from src.services.video_engine.base_remotion_service import base_remotion_service
 import asyncio
-result = asyncio.run(remotion_service.render_video(
+result = asyncio.run(base_remotion_service.render_video(
     'CinematicMinimal',
     {{'title': 'AI Productivity 2026', 'subtitle': 'Viral Content'}},
     'e2e_test.mp4'

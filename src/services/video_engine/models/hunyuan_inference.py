@@ -14,8 +14,7 @@ import torch
 import os
 import time
 import requests
-from typing import Tuple, Optional
-from api.config import settings
+from src.api.config import settings
 
 # Model cache
 _hunyuan_pipe = None
@@ -83,7 +82,7 @@ def generate_hunyuan(
     height: int = 480,
     width: int = 832,
     output_dir: str = "outputs",
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """Generate video using HunyuanVideo (480p)"""
     # Enforce 480p Maximum
     height = min(height, 480)
@@ -131,7 +130,7 @@ def generate_hunyuan(
 
 def generate_hunyuan_api(
     prompt: str, output_dir: str, height: int = 480, width: int = 832
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """Generate video using Hunyuan API on Remote GPU"""
     job_id = f"hun_api_{int(time.time())}"
     output_path = os.path.join(output_dir, f"{job_id}.mp4")
@@ -180,7 +179,7 @@ def generate_hunyuan_api(
     raise Exception(f"Validation or Network failure (Status {response.status_code})")
 
 
-def generate_hunyuan_dummy(output_dir: str) -> Tuple[str, str]:
+def generate_hunyuan_dummy(output_dir: str) -> tuple[str, str]:
     """Raise error instead of generating garbage output"""
     raise RuntimeError(
         "HunyuanVideo generation failed: neither remote GPU node nor local model available. "

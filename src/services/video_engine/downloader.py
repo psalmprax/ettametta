@@ -2,18 +2,17 @@ import os
 import uuid
 import logging
 import yt_dlp
-from typing import Optional
 
 class VideoDownloader:
     def __init__(self, download_dir: str = "temp/downloads"):
         self.download_dir = download_dir
         os.makedirs(self.download_dir, exist_ok=True)
 
-    async def download_video(self, url: str) -> Optional[str]:
+    async def download_video(self, url: str) -> str | None:
         """
         Downloads a video from a URL and returns the local file path.
         """
-        from api.config import settings
+        from src.api.config import settings
         file_id = str(uuid.uuid4())
         output_path = os.path.join(self.download_dir, f"{file_id}.%(ext)s")
         
@@ -80,7 +79,7 @@ class VideoDownloader:
         """
         Quickly inspects the URL to ensure it has a valid video stream.
         """
-        from api.config import settings
+        from src.api.config import settings
         ydl_opts = {
             'quiet': True,
             'no_warnings': True,

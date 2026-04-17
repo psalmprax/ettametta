@@ -11,7 +11,7 @@ import logging
 import json
 import sqlite3
 import time
-from typing import Dict, Any, Optional
+from typing import Any
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class PersistentQueue:
                 )
             """)
 
-    def push(self, topic: str, data: Dict[str, Any], priority: int = 1):
+    def push(self, topic: str, data: dict[str, Any], priority: int = 1):
         """Pushes a signal into the persistent queue"""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
@@ -46,7 +46,7 @@ class PersistentQueue:
             )
         logger.info(f"💾 [Queue] Persistent Checkpoint for '{topic}'")
 
-    def pop(self) -> Optional[Dict[str, Any]]:
+    def pop(self) -> dict[str, Any] | None:
         """Retrieves and marks the oldest pending item"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(

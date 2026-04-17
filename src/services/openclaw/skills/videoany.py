@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 from playwright.async_api import async_playwright, Browser, Page
-from typing import Optional, Dict, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +15,8 @@ class VideoAnySkill:
 
     def __init__(self):
         self.base_url = "https://videoany.io"
-        self.browser: Optional[Browser] = None
-        self.page: Optional[Page] = None
+        self.browser: Browser | None = None
+        self.page: Page | None = None
 
     async def initialize(self):
         """Initialize stealth browser session"""
@@ -42,7 +42,7 @@ class VideoAnySkill:
         self.page = await self.context.new_page()
         self.page.set_default_timeout(120000)
 
-    async def generate(self, prompt: str, aspect_ratio: str = "16:9") -> Dict[str, Any]:
+    async def generate(self, prompt: str, aspect_ratio: str = "16:9") -> dict[str, Any]:
         """
         Generate video from prompt using VideoAny
         Returns: { status: success/failed, video_url: str, error: str }

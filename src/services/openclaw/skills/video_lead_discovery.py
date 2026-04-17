@@ -4,9 +4,9 @@ Video Lead Discovery Skill for OpenClaw
 Finds trending videos, analyzes performance, and identifies repurposing opportunities.
 """
 
-from typing import Dict, Any, List
+from typing import Any
 import logging
-from services.discovery.video_lead_scanner import video_lead_scanner
+from src.services.discovery.video_lead_scanner import video_lead_scanner
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class VideoLeadSkill:
         self.name = "video_lead_discovery"
         self.description = "Discover trending videos, analyze performance, and find repurposing opportunities"
 
-    async def execute(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Execute video lead discovery operations.
 
@@ -52,7 +52,7 @@ class VideoLeadSkill:
             logger.error(f"Video lead skill error: {e}")
             return {"success": False, "error": str(e)}
 
-    async def _discover_leads(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _discover_leads(self, params: dict[str, Any]) -> dict[str, Any]:
         """Discover high-performing video leads"""
         niche = params.get("niche", "")
         if not niche:
@@ -98,7 +98,7 @@ class VideoLeadSkill:
             "message": f"Found {len(leads_data)} video leads for '{niche}' niche",
         }
 
-    async def _analyze_video(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _analyze_video(self, params: dict[str, Any]) -> dict[str, Any]:
         """Analyze a specific video's performance"""
         video_url = params.get("video_url", "")
         niche = params.get("niche", "")
@@ -118,7 +118,7 @@ class VideoLeadSkill:
             "analysis": analysis,
         }
 
-    async def _find_templates(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _find_templates(self, params: dict[str, Any]) -> dict[str, Any]:
         """Find successful video templates in a niche"""
         niche = params.get("niche", "")
         template_type = params.get("template_type", "viral")

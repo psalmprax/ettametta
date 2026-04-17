@@ -1,14 +1,13 @@
 from .scanner_base import TrendScanner
 from .models import ContentCandidate
-from typing import List, Optional
 import random
-from api.config import settings
+from src.api.config import settings
 from googleapiclient.discovery import build
 import datetime
 import re
 
 class YouTubeLongScanner(TrendScanner):
-    async def scan_trends(self, niche: str, published_after: Optional[datetime.datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime.datetime | None = None) -> list[ContentCandidate]:
         """
         Scans YouTube for high-performance long-form videos (4-20 mins) in a niche.
         """

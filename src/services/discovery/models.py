@@ -1,15 +1,14 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
 from datetime import datetime
 
 class ContentCandidate(BaseModel):
     id: str
     platform: str
     url: str
-    author: Optional[str] = "Unknown"
-    title: Optional[str] = None
-    description: Optional[str] = None
-    thumbnail_url: Optional[str] = None
+    author: str | None = "Unknown"
+    title: str | None = None
+    description: str | None = None
+    thumbnail_url: str | None = None
     view_count: int = 0  # Legacy field for compatibility during migration
     engagement_rate: float = 0.0 # Legacy field
     views: int = 0
@@ -19,13 +18,13 @@ class ContentCandidate(BaseModel):
     category: str = "video"  # video, blog, social, news, other
     discovery_date: datetime = Field(default_factory=datetime.utcnow)
     quality_score: float = 1.0
-    quality_flags: List[str] = []
+    quality_flags: list[str] = []
     metadata: dict = {}
 
 class ViralPattern(BaseModel):
     id: str
     hook_score: float
     retention_estimate: float
-    pacing_bpm: Optional[int] = None
-    style_keywords: List[str] = []
-    emotional_triggers: List[str] = []
+    pacing_bpm: int | None = None
+    style_keywords: list[str] = []
+    emotional_triggers: list[str] = []

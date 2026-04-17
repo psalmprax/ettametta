@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
 from datetime import datetime
 from .memory import memory_skill
 
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class WorkflowStep:
     def __init__(
-        self, action: str, params: Dict = None, dependencies: List[str] = None
+        self, action: str, params: dict = None, dependencies: list[str] = None
     ):
         self.action = action
         self.params = params or {}
@@ -20,7 +20,7 @@ class WorkflowStep:
         self.start_time = None
         self.end_time = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "action": self.action,
             "params": self.params,
@@ -35,9 +35,9 @@ class WorkflowStep:
 
 class WorkflowSkill:
     def __init__(self):
-        self.active_workflows: Dict[str, Dict] = {}
+        self.active_workflows: dict[str, dict] = {}
 
-    def create_workflow(self, name: str, steps: List[Dict]) -> str:
+    def create_workflow(self, name: str, steps: list[dict]) -> str:
         """Create a new workflow definition"""
         workflow_steps = []
         for step_data in steps:
@@ -76,7 +76,7 @@ class WorkflowSkill:
 
         return f"🚀 Workflow '{name}' execution started"
 
-    async def _execute_workflow_async(self, workflow: Dict) -> None:
+    async def _execute_workflow_async(self, workflow: dict) -> None:
         """Execute workflow steps in order"""
         name = workflow["name"]
         steps = workflow["steps"]
@@ -158,7 +158,7 @@ class WorkflowSkill:
         return "\n".join(lines)
 
     def list_workflows(self) -> str:
-        """List all active workflows"""
+        """list all active workflows"""
         if not self.active_workflows:
             return "📋 No active workflows"
 

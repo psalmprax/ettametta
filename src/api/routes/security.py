@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
 import logging
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from services.security.service import base_security_sentinel
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.services.security.service import base_security_sentinel
 
 router = APIRouter(prefix="/security", tags=["Security"])
 logger = logging.getLogger(__name__)
@@ -18,8 +17,8 @@ def admin_required(current_user: UserDB = Depends(get_current_user)):
 
 class ErrorReport(BaseModel):
     message: str
-    stack: Optional[str] = None
-    componentStack: Optional[str] = None
+    stack: str | None = None
+    componentStack: str | None = None
     timestamp: str
 
 

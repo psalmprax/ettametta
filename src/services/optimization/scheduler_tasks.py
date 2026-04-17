@@ -3,16 +3,15 @@ Scheduled Posts and Cleanup Tasks for Viral Forge
 Celery tasks for automated posting and video cleanup
 """
 
-from api.utils.celery import celery_app
-from api.utils.database import async_session_factory
-from api.utils.models import ScheduledPostDB, PublishedContentDB
-from services.optimization.models import PostMetadata
-from services.optimization.auth import token_manager
+from src.api.utils.celery import celery_app
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import ScheduledPostDB, PublishedContentDB
+from src.services.optimization.models import PostMetadata
+from src.services.optimization.auth import token_manager
 import datetime
 import logging
 import asyncio
 import os
-from typing import Optional, Dict
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 

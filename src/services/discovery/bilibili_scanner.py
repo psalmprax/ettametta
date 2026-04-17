@@ -3,7 +3,6 @@ import logging
 import json
 import re
 import random
-from typing import List, Optional
 from datetime import datetime
 from .models import ContentCandidate
 
@@ -27,7 +26,7 @@ class BilibiliScanner:
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         ]
     
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Scans Bilibili for trending videos in a niche.
         Uses the popular/ranking page and search functionality.
@@ -62,7 +61,7 @@ class BilibiliScanner:
         logger.info(f"[BilibiliScanner] Found {len(unique)} videos")
         return unique[:15]
     
-    async def _get_popular(self, niche: str) -> List[ContentCandidate]:
+    async def _get_popular(self, niche: str) -> list[ContentCandidate]:
         """Get Bilibili popular/ranking videos."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -95,7 +94,7 @@ class BilibiliScanner:
         
         return candidates
     
-    async def _search_videos(self, query: str) -> List[ContentCandidate]:
+    async def _search_videos(self, query: str) -> list[ContentCandidate]:
         """Search Bilibili for videos."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -128,7 +127,7 @@ class BilibiliScanner:
         
         return candidates
     
-    def _parse_video_item(self, item: dict) -> Optional[ContentCandidate]:
+    def _parse_video_item(self, item: dict) -> ContentCandidate | None:
         """Parse a Bilibili video item from ranking/popular."""
         try:
             bvid = item.get("bvid", "")
@@ -209,7 +208,7 @@ class BilibiliScanner:
         
         return None
     
-    def _parse_search_item(self, item: dict) -> Optional[ContentCandidate]:
+    def _parse_search_item(self, item: dict) -> ContentCandidate | None:
         """Parse a Bilibili video item from search results."""
         try:
             bvid = item.get("bvid", "")

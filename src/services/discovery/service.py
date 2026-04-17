@@ -5,7 +5,7 @@ import datetime
 import os
 import logging
 from sqlalchemy import select
-from typing import List
+from typing import Any
 from .models import ContentCandidate, ViralPattern
 
 # Graceful imports for optional dependencies
@@ -36,16 +36,16 @@ from .duckduckgo_scanner import base_duckduckgo_scanner
 from .trading_scanner import TradingScanner
 from .video_lead_scanner import video_lead_scanner
 from .deconstructor import pattern_deconstructor
-from api.utils.database import async_session_factory
-from api.utils.models import (
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import (
     ContentCandidateDB,
     SystemSettings,
     NicheTrendDB,
     MonitoredNiche,
 )
-from api.config import settings
-from api.utils.vault import get_secret
-from api.utils.celery import celery_app
+from src.api.config import settings
+from src.api.utils.vault import get_secret
+from src.api.utils.celery import celery_app
 from groq import Groq
 
 
@@ -92,14 +92,14 @@ class DiscoveryService:
 
     async def _log(self, message: str, level: str = "INFO"):
         """Broadcasts a discovery log message."""
-        from api.routes.ws import notify_system_log_async
+        from src.api.routes.ws import notify_system_log_async
 
         await notify_system_log_async(message, level=level, module="DISCOVERY")
         # Send log via Redis to avoid circular import
         import json
         import redis
         import datetime
-        from api.config import settings
+        from src.api.config import settings
 
         try:
             r = redis.from_url(settings.REDIS_URL)
@@ -125,10 +125,10 @@ class DiscoveryService:
         min_viral_score: int = 0,
         exclude_shorts: bool = False,
         deep_scan: bool = False,
-    ) -> List[ContentCandidate]:
+    ) -> list[ContentCandidate]:
         import json
         import redis
-        from api.config import settings
+        from src.api.config import settings
 
         # 1. Check Cache (Skip if deep scan)
         redis_url = settings.REDIS_URL
@@ -159,7 +159,7 @@ class DiscoveryService:
 
         # 2. Intelligent/Parallel Scanning
         import asyncio
-        from engines.intelligent_video_workflow import discover_multi_platform
+        from src.engines.intelligent_video_workflow import discover_multi_platform
 
         all_candidates = []
 
@@ -231,7 +231,7 @@ class DiscoveryService:
             logger.info(
                 f"[Discovery] Deep Scan: Auto-triggering analysis for top candidates."
             )
-            from services.discovery.tasks import analyze_viral_pattern_task
+            from src.services.discovery.tasks import analyze_viral_pattern_task
 
             for c in all_candidates[:5]:
                 analyze_viral_pattern_task.delay(c.dict())
@@ -398,7 +398,7 @@ class DiscoveryService:
         return all_candidates
 
     async def _trigger_recursive_expansion(
-        self, niche: str, candidates: List[ContentCandidate]
+        self, niche: str, candidates: list[ContentCandidate]
     ):
         """
         AI identifies related sub-niches and triggers background scans.
@@ -441,12 +441,12 @@ class DiscoveryService:
             logger.error(f"[Discovery] Recursive expansion error: {e}")
 
     async def _rank_candidates_with_ai(
-        self, niche: str, candidates: List[ContentCandidate]
-    ) -> List[ContentCandidate]:
+        self, niche: str, candidates: list[ContentCandidate]
+    ) -> list[ContentCandidate]:
         """
         Uses Groq with parallel batching and high-speed models to rank candidates.
         """
-        from api.utils.vault import get_secret
+        from src.api.utils.vault import get_secret
 
         groq_key = get_secret("groq_api_key")
         if not groq_key:
@@ -552,7 +552,7 @@ class DiscoveryService:
         """
         Processes discovered content to identify top keywords and engagement for a niche.
         """
-        from api.utils.models import NicheTrendDB
+        from src.api.utils.models import NicheTrendDB
         from collections import Counter
         import re
         from sqlalchemy import select
@@ -624,7 +624,7 @@ class DiscoveryService:
         limit: int = 50,
         min_viral_score: int = 0,
         exclude_shorts: bool = False,
-    ) -> List[ContentCandidate]:
+    ) -> list[ContentCandidate]:
         """
         Searches specific viral candidates by keyword (Title or Description).
         Triggers a live scan if local results are insufficient.
@@ -724,12 +724,12 @@ class DiscoveryService:
 
         Args:
             niche: Content niche to search for
-            platforms: List of platforms to search (youtube, tiktok, instagram)
+            platforms: list of platforms to search (youtube, tiktok, instagram)
             min_viral_score: Minimum viral score (0-10)
             max_results: Maximum leads to return
 
         Returns:
-            List of video leads with performance metrics
+            list of video leads with performance metrics
         """
         if platforms is None:
             platforms = ["youtube", "tiktok"]
@@ -774,5 +774,136 @@ class DiscoveryService:
             niche=niche, template_type=template_type, min_samples=min_samples
         )
 
+
+    async def batch_download_videos(self, candidates: list[dict]) -> list[dict]:
+        """
+        High-speed asset procurement bridge.
+        Downloads identified viral leads for the neural production engine.
+        """
+        import os
+        from pathlib import Path
+        
+        raw_dir = Path("local_downloads/raw")
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        
+        downloaded = []
+        logger.info(f"🚚 [Discovery] Procuring {len(candidates)} viral assets for production...")
+        
+        async def _download_asset(c):
+            url = c.get("url")
+            vid_id = c.get("id", "unknown")
+            output_path = raw_dir / f"{vid_id}.mp4"
+            
+            if output_path.exists():
+                logger.info(f"   ✓ Asset {vid_id} already in visual memory.")
+                return {**c, "file_path": str(output_path)}
+
+            try:
+                # Use yt-dlp for reliable multi-platform acquisition
+                # Optimize for H.264/AAC for ffmpeg compatibility
+                cmd = [
+                    "yt-dlp",
+                    "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+                    "--merge-output-format", "mp4",
+                    "-o", str(output_path),
+                    "--no-playlist",
+                    "--quiet",
+                    "--no-check-certificate",
+                    "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                    "--add-header", "Referer:https://www.google.com/",
+                ]
+                
+                if hasattr(settings, "DOWNLOAD_PROXY_URL") and settings.DOWNLOAD_PROXY_URL:
+                    cmd.extend(["--proxy", settings.DOWNLOAD_PROXY_URL])
+                
+                cmd.append(url)
+                
+                process = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await process.communicate()
+                
+                if process.returncode == 0 and output_path.exists():
+                    logger.info(f"   ✓ Procured asset: {vid_id}")
+                    return {**c, "file_path": str(output_path)}
+                else:
+                    error_msg = stderr.decode()
+                    logger.warning(f"   ⚠️ yt-dlp failed for {vid_id}: {error_msg[:100]}")
+                    
+                    # TIER 10 RESILIENCE: Semantic Stock Fallback
+                    import aiohttp
+                    logger.info(f"   🛡️ [Resilience] Triggering Stock Fallback for {vid_id}...")
+                    
+                    # Use title or niche for fallback search
+                    raw_fallback = c.get("title") or "Viral Content"
+                    # Optimization: Remove IDs and split by delimiters
+                    fallback_query = raw_fallback.split("|")[0].split(" - ")[0].split(" -- ")[0].strip()
+                    
+                    # Remove special characters to clean the query
+                    clean_query = "".join(e for e in fallback_query if e.isalnum() or e == " ").strip()
+                    if len(clean_query) < 4:  # If too short, use the niche
+                        clean_query = c.get("niche") or "Space Exploration"
+                    
+                    stock_candidates = await base_public_domain_scanner.scan_trends(clean_query[:50])
+                    
+                    if stock_candidates:
+                        for sc in stock_candidates:
+                            download_url = None
+                            if sc.platform == "Pexels":
+                                video_files = sc.metadata.get("video_files", [])
+                                if video_files: download_url = video_files[0].get("link")
+                            elif sc.platform == "Archive.org":
+                                # Construct direct download link
+                                ident = sc.metadata.get("identifier")
+                                download_url = f"https://archive.org/download/{ident}/{ident}.mp4"
+                            
+                            if download_url:
+                                logger.info(f"   ✨ [Stock] Procuring from {sc.platform}: {sc.id}")
+                                try:
+                                    async with aiohttp.ClientSession() as session:
+                                        async with session.get(download_url, timeout=30) as resp:
+                                            if resp.status == 200:
+                                                with open(output_path, "wb") as f:
+                                                    f.write(await resp.read())
+                                                logger.info(f"   ✓ Procured Stock Fallback for {vid_id} ({sc.platform})")
+                                                return {**c, "file_path": str(output_path), "is_stock_fallback": True}
+                                            elif sc.platform == "Archive.org":
+                                                # Retry Archive.org with _512kb suffix if main fails
+                                                retry_url = f"https://archive.org/download/{ident}/{ident}_512kb.mp4"
+                                                async with session.get(retry_url, timeout=30) as r2:
+                                                    if r2.status == 200:
+                                                        with open(output_path, "wb") as f:
+                                                            f.write(await r2.read())
+                                                        return {**c, "file_path": str(output_path), "is_stock_fallback": True}
+                                except Exception as se:
+                                    logger.error(f"   ⚠️ Stock download failed ({sc.platform}): {str(se)}")
+                    
+                    # FINAL TIER: SAFETY ASSET (Panic Resilience)
+                    safety_path = Path("templates/safety/generic_space.mp4")
+                    if safety_path.exists():
+                        import shutil
+                        shutil.copy(safety_path, output_path)
+                        logger.warning(f"   🚨 [Panic] Using Safety Asset for {vid_id}")
+                        return {**c, "file_path": str(output_path), "is_stock_fallback": True, "is_safety": True}
+                    
+                    logger.error(f"   ❌ All procurement tiers failed for {vid_id}.")
+                    return None
+            except Exception as e:
+                logger.error(f"   ⚠️ Procurement exception: {str(e)}")
+                return None
+
+        # Execute procurement in a throttled swarm
+        tasks = [_download_asset(c) for c in candidates]
+        results = await asyncio.gather(*tasks)
+        
+        downloaded = [r for r in results if r is not None]
+        logger.info(f"✅ [Discovery] Procurement complete. {len(downloaded)} assets ready for fusion.")
+        
+        if not downloaded:
+            raise RuntimeError("CRITICAL: Failed to procure any assets for production.")
+            
+        return downloaded
 
 base_discovery_service = DiscoveryService()

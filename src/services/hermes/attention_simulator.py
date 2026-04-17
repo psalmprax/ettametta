@@ -1,6 +1,6 @@
 import logging
 import random
-from typing import Dict, Any, List
+from typing import Any
 
 logger = logging.getLogger("AttentionSimulator")
 
@@ -10,7 +10,7 @@ class AttentionSimulator:
     Allows for 'Narrative Pruning' before compute is wasted on rendering.
     """
     
-    def simulate_retention(self, blueprint: Dict[str, Any]) -> Dict[str, Any]:
+    def simulate_retention(self, blueprint: dict[str, Any]) -> dict[str, Any]:
         """Heuristic-based Attention Flow Simulation (CPU Optimized)"""
         
         logger.info("[NRM] Simulating Attention Flow for Blueprint...")

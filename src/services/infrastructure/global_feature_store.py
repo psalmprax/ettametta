@@ -2,8 +2,8 @@ import redis.asyncio as redis
 import json
 import logging
 import time
-from typing import Dict, Any, Optional
-from api.config import settings
+from typing import Any
+from src.api.config import settings
 
 logger = logging.getLogger("GlobalFeatureStore")
 
@@ -20,7 +20,7 @@ class GlobalFeatureStore:
         if not self._redis:
             self._redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
 
-    async def set_features(self, topic: str, features: Dict[str, Any], ttl: int = 86400):
+    async def set_features(self, topic: str, features: dict[str, Any], ttl: int = 86400):
         """Stores signal features with a 24h default TTL."""
         await self.connect()
         key = f"{self.prefix}{topic}"
@@ -32,7 +32,7 @@ class GlobalFeatureStore:
         await self._redis.expire(key, ttl)
         logger.info(f"[Features] Shared features for '{topic}' across the cluster.")
 
-    async def get_features(self, topic: str) -> Optional[Dict[str, Any]]:
+    async def get_features(self, topic: str) -> dict[str, Any] | None:
         """Retrieves raw features for a topic from the cluster memory."""
         await self.connect()
         key = f"{self.prefix}{topic}"
@@ -43,7 +43,7 @@ class GlobalFeatureStore:
             
         return json.loads(payload.get("data", "{}"))
 
-    async def get_velocity_vitals(self, topic: str) -> Dict[str, float]:
+    async def get_velocity_vitals(self, topic: str) -> dict[str, float]:
         """Specific helper for high-velocity signal monitoring."""
         features = await self.get_features(topic)
         if not features:

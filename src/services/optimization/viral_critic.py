@@ -1,9 +1,7 @@
 import logging
 import json
-import os
-import httpx
-from typing import Dict, Any, List
-from api.config import settings
+from src.services.llm.intelligence_hub import base_intelligence_hub
+from typing import Any
 
 class ViralCritic:
     """
@@ -13,17 +11,17 @@ class ViralCritic:
     
     def __init__(self):
         self.logger = logging.getLogger("ViralCritic")
-        self.openai_key = os.getenv("OPENAI_API_KEY") or settings.OPENAI_API_KEY
 
     async def review_production(self, 
         title: str, 
-        script: Dict, 
-        video_metadata: Dict
-    ) -> Dict[str, Any]:
+        script: dict, 
+        video_metadata: dict,
+        session_id: str | None = None
+    ) -> dict[str, Any]:
         """
         Performs a deep semantic audit.
         """
-        self.logger.info(f"🧐 [ViralCritic] Starting audit for: {title}")
+        self.logger.info(f"🧐 [ViralCritic] Starting audit for: {title} [ID: {session_id}]")
 
         prompt = f"""
         You are the 'Viral Architect' - an expert critic for YouTube Shorts and TikTok.
@@ -57,38 +55,24 @@ class ViralCritic:
         }}
         """
 
-        if not self.openai_key:
-            self.logger.warning("No API key for ViralCritic. Providing fallback report.")
-            return self._get_fallback_review()
-
         try:
-            async with httpx.AsyncClient(timeout=45) as client:
-                resp = await client.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.openai_key}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": "gpt-4o",
-                        "messages": [
-                            {"role": "system", "content": "You are a professional Viral Content Critic. Output JSON ONLY."},
-                            {"role": "user", "content": prompt}
-                        ],
-                        "response_format": {"type": "json_object"}
-                    }
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    review_data = json.loads(data["choices"][0]["message"]["content"])
-                    self.logger.info(f"✅ Audit Complete: Score {review_data.get('overall_score')}/10")
-                    return review_data
+            result = await base_intelligence_hub.chat(
+                prompt=prompt,
+                system_prompt="You are a professional Viral Content Critic. Output JSON ONLY.",
+                session_id=session_id,
+                json_mode=True
+            )
+            
+            review_data = json.loads(result["response"])
+            self.logger.info(f"✅ Audit Complete ({result['provider'].upper()}): Score {review_data.get('overall_score')}/10")
+            return review_data
+
         except Exception as e:
-            self.logger.error(f"ViralCritic AI failed: {e}")
+            self.logger.error(f"ViralCritic Hub call failed: {e}")
             
         return self._get_fallback_review()
 
-    def _get_fallback_review(self) -> Dict:
+    def _get_fallback_review(self) -> dict:
         return {
             "overall_score": 7.0,
             "report": "Automated baseline review - Production meets safety standards.",

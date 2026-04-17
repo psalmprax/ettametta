@@ -10,7 +10,7 @@ import logging
 import random
 import time
 import json
-from typing import Dict, Any, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class TrendScanner:
     def __init__(self):
         self.monitored_niches = ["AI", "Finance", "Health", "Productivity", "Tech"]
 
-    def calculate_velocity(self, topic: str, samples: List[int]) -> float:
+    def calculate_velocity(self, topic: str, samples: list[int]) -> float:
         """Calculates growth rate of engagement over time"""
         if len(samples) < 2: return 0.0
         # Simplistic velocity: (Latest - Mean) / Mean
@@ -31,7 +31,7 @@ class TrendScanner:
         velocity = (samples[-1] - avg) / avg
         return float(velocity)
 
-    async def scan_for_opportunities(self) -> List[Dict[str, Any]]:
+    async def scan_for_opportunities(self) -> list[dict[str, Any]]:
         """
         Simulates scanning Reddit/X for emergent topics.
         Identifies 'Velocity Spikes'.

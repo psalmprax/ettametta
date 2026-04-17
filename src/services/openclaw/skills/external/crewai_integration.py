@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Any
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -10,7 +10,7 @@ CREWAI_ENABLED = os.getenv("ENABLE_CREWAI", "false").lower() == "true"
 
 class CrewAIService:
     """
-    Optional CrewAI multi-agent orchestration integration.
+    Any CrewAI multi-agent orchestration integration.
     Disabled by default - enable with ENABLE_CREWAI=true
 
     Used for complex workflows requiring multiple specialized agents.
@@ -40,9 +40,9 @@ class CrewAIService:
         role: str,
         goal: str,
         backstory: str,
-        tools: Optional[List[Any]] = None,
+        tools: list[Any] | None = None,
         verbose: bool = False,
-    ) -> Optional[Any]:
+    ) -> Any:
         """Create a CrewAI agent with role and goal."""
         if not self.enabled:
             return None
@@ -60,8 +60,8 @@ class CrewAIService:
             return None
 
     def create_task(
-        self, description: str, agent: Any, expected_output: Optional[str] = None
-    ) -> Optional[Any]:
+        self, description: str, agent: Any, expected_output: str | None = None
+    ) -> Any:
         """Create a task for an agent."""
         if not self.enabled:
             return None
@@ -75,7 +75,7 @@ class CrewAIService:
             return None
 
     async def run_crew(
-        self, agents: List[Any], tasks: List[Any], process: str = "sequential"
+        self, agents: list[Any], tasks: list[Any], process: str = "sequential"
     ) -> str:
         """Run a crew with agents and tasks."""
         if not self.enabled:
@@ -126,7 +126,7 @@ class ViralForgeCrew:
             research_task = Task(
                 description=f"Research trending topics for: {topic}",
                 agent=researcher,
-                expected_output="List of top 5 trending topics with engagement metrics",
+                expected_output="list of top 5 trending topics with engagement metrics",
             )
 
             write_task = Task(
@@ -176,7 +176,7 @@ class ViralForgeCrew:
             researcher_task = Task(
                 description=f"Find top affiliate products for {niche}",
                 agent=researcher,
-                expected_output="List of 5 products with commission rates",
+                expected_output="list of 5 products with commission rates",
             )
 
             promoter_task = Task(

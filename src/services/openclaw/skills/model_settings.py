@@ -3,7 +3,7 @@ Model settings and recommended configurations for OpenCLAW skills.
 Each provider has specific capabilities and recommended parameters.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 from dataclasses import dataclass
 
 
@@ -13,16 +13,16 @@ class ModelSettings:
 
     name: str
     type: str  # "video" or "image"
-    supported_aspect_ratios: List[str]
-    supported_resolutions: List[str]
-    features: List[str]  # image-to-video, animation, etc.
-    recommended_for: List[str]  # use cases
-    max_duration: Optional[int] = None  # seconds
+    supported_aspect_ratios: list[str]
+    supported_resolutions: list[str]
+    features: list[str]  # image-to-video, animation, etc.
+    recommended_for: list[str]  # use cases
+    max_duration: int | None = None  # seconds
     is_free: bool = True
     requires_auth: bool = False
 
 
-MODEL_SETTINGS: Dict[str, ModelSettings] = {
+MODEL_SETTINGS: dict[str, ModelSettings] = {
     # === IMAGE GENERATORS ===
     "perchance": ModelSettings(
         name="Perchance AI",
@@ -257,21 +257,21 @@ MODEL_SETTINGS: Dict[str, ModelSettings] = {
 }
 
 
-def get_model_settings(provider: str) -> Optional[ModelSettings]:
+def get_model_settings(provider: str) -> ModelSettings | None:
     """Get settings for a provider"""
     return MODEL_SETTINGS.get(provider.lower())
 
 
-def get_recommended_settings(provider: str, use_case: str = None) -> Dict[str, Any]:
+def get_recommended_settings(provider: str, use_case: str = None) -> dict[str, Any]:
     """
     Get recommended settings for a provider based on use case.
 
     Args:
         provider: Provider name (e.g., "pixverse", "perchance")
-        use_case: Optional use case - "short_form", "cinematic", "product", etc.
+        use_case: Any use case - "short_form", "cinematic", "product", etc.
 
     Returns:
-        Dict of recommended settings
+        dict of recommended settings
     """
     settings = get_model_settings(provider)
     if not settings:
@@ -314,7 +314,7 @@ def get_recommended_settings(provider: str, use_case: str = None) -> Dict[str, A
 
 def get_image_recommended_settings(
     provider: str, style: str = None, format: str = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get recommended settings for image generation.
 
@@ -324,7 +324,7 @@ def get_image_recommended_settings(
         format: "square", "portrait", "landscape", "story"
 
     Returns:
-        Dict of recommended settings
+        dict of recommended settings
     """
     settings = get_model_settings(provider)
     if not settings or settings.type != "image":
@@ -368,9 +368,9 @@ def get_image_recommended_settings(
 
 def list_providers(
     type: str = None, feature: str = None, use_case: str = None, free_only: bool = False
-) -> List[str]:
+) -> list[str]:
     """
-    List available providers with optional filtering.
+    list available providers with optional filtering.
 
     Args:
         type: "video" or "image"
@@ -379,7 +379,7 @@ def list_providers(
         free_only: Only free providers
 
     Returns:
-        List of provider names
+        list of provider names
     """
     results = []
 

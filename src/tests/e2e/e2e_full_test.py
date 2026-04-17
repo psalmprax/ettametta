@@ -21,8 +21,8 @@ load_dotenv()
 # Ensure DEBUG is explicitly set to boolean
 os.environ["DEBUG"] = "true"
 
-from services.video_engine.downloader import base_video_downloader
-from services.video_engine.transcription import transcription_service
+from src.services.video_engine.downloader import base_video_downloader
+from src.services.video_engine.transcription import base_transcription_service
 
 
 async def test_full_pipeline():
@@ -46,7 +46,7 @@ async def test_full_pipeline():
     # Step 2: Transcribe
     print("\n[2/5] TRANSCRIBING audio...")
     try:
-        transcript = await transcription_service.transcribe_video(test_video)
+        transcript = await base_transcription_service.transcribe_video(test_video)
         if transcript:
             print(f"  ✅ Transcript: {len(transcript)} segments")
             for seg in transcript[:3]:
@@ -60,9 +60,9 @@ async def test_full_pipeline():
     # Step 3: VLM Analysis (if available)
     print("\n[3/5] ANALYZING video content (VLM)...")
     try:
-        from services.video_engine.vlm_service import vlm_service
+        from src.services.video_engine.base_vlm_service import base_vlm_service
 
-        visual_analysis = await vlm_service.analyze_video_content(test_video)
+        visual_analysis = await base_vlm_service.analyze_video_content(test_video)
         if visual_analysis:
             print(f"  ✅ VLM Analysis:")
             print(f"    - Visual mood: {visual_analysis.get('visual_mood', 'unknown')}")
@@ -80,7 +80,7 @@ async def test_full_pipeline():
     # Step 4: Video Processing Pipeline
     print("\n[4/5] PROCESSING video through pipeline...")
     try:
-        from services.video_engine.processor import VideoProcessor
+        from src.services.video_engine.processor import VideoProcessor
 
         processor = VideoProcessor()
         output_name = f"e2e_test_output_{os.path.basename(test_video)}"

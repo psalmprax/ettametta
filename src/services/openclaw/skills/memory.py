@@ -3,7 +3,7 @@ import logging
 import os
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Any
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ DEFAULT_STALENESS_DAYS = {
 
 class MemoryNode:
     def __init__(
-        self, node_id: str, category: str, data: Dict, actor: str = "openclaw"
+        self, node_id: str, category: str, data: dict, actor: str = "openclaw"
     ):
         self.node_id = node_id
         self.category = category
@@ -45,7 +45,7 @@ class MemoryNode:
             category, DEFAULT_STALENESS_DAYS["default"]
         )
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "node_id": self.node_id,
             "category": self.category,
@@ -58,7 +58,7 @@ class MemoryNode:
         }
 
     @staticmethod
-    def from_dict(d: Dict) -> "MemoryNode":
+    def from_dict(d: dict) -> "MemoryNode":
         node = MemoryNode(
             d["node_id"], d["category"], d["data"], d.get("actor", "openclaw")
         )
@@ -79,8 +79,8 @@ class MemoryNode:
 
 class MemoryGraph:
     def __init__(self):
-        self.nodes: Dict[str, MemoryNode] = {}
-        self.edges: List[Dict[str, str]] = []
+        self.nodes: dict[str, MemoryNode] = {}
+        self.edges: list[dict[str, str]] = []
         self._load()
 
     def _load(self):
@@ -117,8 +117,8 @@ class MemoryGraph:
         self._save()
 
     def get_related(
-        self, node_id: str, relation: Optional[str] = None
-    ) -> List[MemoryNode]:
+        self, node_id: str, relation: str | None = None
+    ) -> list[MemoryNode]:
         related_ids = set()
         for edge in self.edges:
             if relation and edge["relation"] != relation:
@@ -129,7 +129,7 @@ class MemoryGraph:
                 related_ids.add(edge["from"])
         return [self.nodes[nid] for nid in related_ids if nid in self.nodes]
 
-    def get_by_category(self, category: str) -> List[MemoryNode]:
+    def get_by_category(self, category: str) -> list[MemoryNode]:
         return [
             n
             for n in self.nodes.values()
@@ -150,7 +150,7 @@ class MemoryGraph:
 
 class EpisodicMemory:
     def __init__(self):
-        self.entries: List[Dict] = []
+        self.entries: list[dict] = []
         self._load()
 
     def _load(self):
@@ -168,9 +168,9 @@ class EpisodicMemory:
     def record(
         self,
         event_type: str,
-        data: Dict,
+        data: dict,
         actor: str = "openclaw",
-        session_id: Optional[str] = None,
+        session_id: str | None = None,
     ):
         entry = {
             "event_type": event_type,
@@ -184,11 +184,11 @@ class EpisodicMemory:
 
     def search(
         self,
-        event_type: Optional[str] = None,
-        actor: Optional[str] = None,
+        event_type: str | None = None,
+        actor: str | None = None,
         limit: int = 10,
-        since_hours: Optional[int] = None,
-    ) -> List[Dict]:
+        since_hours: int | None = None,
+    ) -> list[dict]:
         results = self.entries
         if event_type:
             results = [e for e in results if e["event_type"] == event_type]
@@ -204,7 +204,7 @@ class EpisodicMemory:
 
 class ProceduralMemory:
     def __init__(self):
-        self.workflows: Dict[str, Dict] = {}
+        self.workflows: dict[str, dict] = {}
         self._load()
 
     def _load(self):
@@ -222,9 +222,9 @@ class ProceduralMemory:
     def store_workflow(
         self,
         name: str,
-        steps: List[Dict],
+        steps: list[dict],
         success_rate: float,
-        context: Optional[Dict] = None,
+        context: dict | None = None,
         actor: str = "openclaw",
     ):
         self.workflows[name] = {
@@ -240,10 +240,10 @@ class ProceduralMemory:
         }
         self._save()
 
-    def get_workflow(self, name: str) -> Optional[Dict]:
+    def get_workflow(self, name: str) -> dict | None:
         return self.workflows.get(name)
 
-    def get_all_workflows(self) -> Dict[str, Dict]:
+    def get_all_workflows(self) -> dict[str, dict]:
         return self.workflows
 
     def delete_workflow(self, name: str):
@@ -253,7 +253,7 @@ class ProceduralMemory:
 
 class SemanticMemory:
     def __init__(self):
-        self.facts: Dict[str, Dict] = {}
+        self.facts: dict[str, dict] = {}
         self._load()
 
     def _load(self):
@@ -285,13 +285,13 @@ class SemanticMemory:
         }
         self._save()
 
-    def get_fact(self, key: str) -> Optional[Any]:
+    def get_fact(self, key: str) -> Any:
         fact = self.facts.get(key)
         if fact:
             return fact["value"]
         return None
 
-    def get_by_category(self, category: str) -> Dict[str, Any]:
+    def get_by_category(self, category: str) -> dict[str, Any]:
         return {
             k: v["value"] for k, v in self.facts.items() if v["category"] == category
         }
@@ -311,9 +311,9 @@ class MemorySkill:
     def record_event(
         self,
         event_type: str,
-        data: Dict,
+        data: dict,
         actor: str = "openclaw",
-        session_id: Optional[str] = None,
+        session_id: str | None = None,
     ) -> str:
         self.episodic.record(event_type, data, actor, session_id)
         node_id = f"{event_type}_{int(time.time())}"
@@ -324,9 +324,9 @@ class MemorySkill:
     def store_workflow(
         self,
         name: str,
-        steps: List[Dict],
+        steps: list[dict],
         success_rate: float,
-        context: Optional[Dict] = None,
+        context: dict | None = None,
     ) -> str:
         self.procedural.store_workflow(name, steps, success_rate, context)
         node = MemoryNode(
@@ -358,10 +358,10 @@ class MemorySkill:
 
     def recall_events(
         self,
-        event_type: Optional[str] = None,
-        actor: Optional[str] = None,
+        event_type: str | None = None,
+        actor: str | None = None,
         limit: int = 10,
-        since_hours: Optional[int] = None,
+        since_hours: int | None = None,
     ) -> str:
         entries = self.episodic.search(event_type, actor, limit, since_hours)
         if not entries:
@@ -374,7 +374,7 @@ class MemorySkill:
             )
         return "\n".join(lines)
 
-    def recall_workflows(self, name: Optional[str] = None) -> str:
+    def recall_workflows(self, name: str | None = None) -> str:
         if name:
             wf = self.procedural.get_workflow(name)
             if not wf:
@@ -399,7 +399,7 @@ class MemorySkill:
         return "\n".join(lines)
 
     def recall_facts(
-        self, category: Optional[str] = None, key: Optional[str] = None
+        self, category: str | None = None, key: str | None = None
     ) -> str:
         if key:
             val = self.semantic.get_fact(key)
@@ -416,7 +416,7 @@ class MemorySkill:
             return "\n".join(lines)
         return f"🧠 {len(self.semantic.facts)} facts stored across {len(set(f['category'] for f in self.semantic.facts.values()))} categories"
 
-    def get_related_memories(self, node_id: str, relation: Optional[str] = None) -> str:
+    def get_related_memories(self, node_id: str, relation: str | None = None) -> str:
         related = self.graph.get_related(node_id, relation)
         if not related:
             return f"🧠 No related memories for '{node_id}'"

@@ -1,6 +1,6 @@
+from typing import Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from typing import Optional, List, Dict
 import os
 import sys
 
@@ -8,7 +8,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 )
 
-from services.openclaw.skills.external import (
+from src.services.openclaw.skills.external import (
     popular_skills,
     clawhub_loader,
     langchain_service,
@@ -24,9 +24,9 @@ from services.openclaw.skills.external import (
     metatrader_service,
     binance_service,
 )
-from services.openclaw.skills.research import ResearchSkill
-from services.openclaw.skills.content import ContentSkill
-from services.openclaw.skills.analytics import AnalyticsSkill
+from src.services.openclaw.skills.research import ResearchSkill
+from src.services.openclaw.skills.content import ContentSkill
+from src.services.openclaw.skills.analytics import AnalyticsSkill
 
 social_metrics_skill = AnalyticsSkill()
 
@@ -40,10 +40,10 @@ class ResearchRequest(BaseModel):
 
 class IngestionRequest(BaseModel):
     action: str
-    subreddit: Optional[str] = None
-    feed_url: Optional[str] = None
-    language: Optional[str] = None
-    sources: Optional[List[str]] = None
+    subreddit: str | None = None
+    feed_url: str | None = None
+    language: str | None = None
+    sources: list[str] | None = None
 
 
 class MetricsRequest(BaseModel):
@@ -53,18 +53,18 @@ class MetricsRequest(BaseModel):
 
 class ClawHubSearchRequest(BaseModel):
     query: str
-    category: Optional[str] = None
+    category: str | None = None
 
 
 class PromptTemplateRequest(BaseModel):
     template: str
-    variables: Optional[Dict[str, str]] = None
+    variables: dict[str, str] | None = None
 
 
 class TradingRequest(BaseModel):
     action: str
-    symbol: Optional[str] = None
-    coin_id: Optional[str] = None
+    symbol: str | None = None
+    coin_id: str | None = None
 
 
 class CrewRequest(BaseModel):
@@ -159,7 +159,7 @@ async def use_prompt_template(request: PromptTemplateRequest):
 
 @router.get("/prompt/templates")
 async def list_prompt_templates():
-    """List all available prompt templates"""
+    """list all available prompt templates"""
     return {"templates": prompt_manager.list_templates()}
 
 

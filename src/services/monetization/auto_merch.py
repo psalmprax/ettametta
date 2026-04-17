@@ -2,10 +2,10 @@ import logging
 import httpx
 import random
 import uuid
-from typing import Dict, Any, Optional
-from api.config import settings
-from api.utils.os_worker import ai_worker
-from services.monetization.commerce_service import base_commerce_service
+from typing import Any
+from src.api.config import settings
+from src.api.utils.os_worker import ai_worker
+from src.services.monetization.commerce_service import base_commerce_service
 
 logger = logging.getLogger("AutoMerchService")
 
@@ -17,7 +17,7 @@ class AutoMerchService:
     3. Image PNG -> Print-on-Demand / Shopify (Commerce)
     """
 
-    async def generate_and_publish_merch(self, trend_topic: str) -> Optional[Dict[str, Any]]:
+    async def generate_and_publish_merch(self, trend_topic: str) -> dict[str, Any] | None:
         """
         Orchestrates the entire reverse monetization flow.
         Returns the Shopify/POD product data if successful.
@@ -48,7 +48,7 @@ class AutoMerchService:
             
         return product_data
 
-    async def _generate_design_prompt(self, trend: str) -> Optional[str]:
+    async def _generate_design_prompt(self, trend: str) -> str | None:
         prompt = f"""
         You are a highly skilled merchandise designer. We detected a viral trend: "{trend}".
         Write a hyper-specific, visual prompt for an AI Image Generator (like Midjourney or Flux) 
@@ -62,7 +62,7 @@ class AutoMerchService:
             return response.strip()
         return None
 
-    async def _generate_image(self, design_prompt: str) -> Optional[str]:
+    async def _generate_image(self, design_prompt: str) -> str | None:
         """
         Hits an image generation API. 
         We use pollinations.ai for free, fast prototyping.
@@ -77,7 +77,7 @@ class AutoMerchService:
         
         return image_url
 
-    async def _publish_to_pod(self, title: str, image_url: str) -> Optional[Dict[str, Any]]:
+    async def _publish_to_pod(self, title: str, image_url: str) -> dict[str, Any] | None:
         """
         Publishes the design to Print-on-Demand (POD) via Printful API.
         Enforces "Real-First" policy: No mock products allowed.

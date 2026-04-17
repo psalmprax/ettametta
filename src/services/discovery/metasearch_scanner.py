@@ -1,6 +1,5 @@
 import aiohttp
 import logging
-from typing import List, Optional
 from .models import ContentCandidate
 from .google_trends_scanner import base_google_trends_scanner
 from .google_search_scanner import base_google_search_scanner
@@ -19,7 +18,7 @@ class MetasearchScanner:
     def __init__(self):
         self.platform = "Metasearch (Google)"
         
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Combines Google Trends and Google Search results for comprehensive discovery.
         """

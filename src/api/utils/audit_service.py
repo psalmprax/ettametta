@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
-from typing import Optional, Any
-from api.utils.models import AuditLogDB
-from api.utils.database import async_session_factory
+from typing import Any
+from src.api.utils.models import AuditLogDB
+from src.api.utils.database import async_session_factory
 import json
 
 
@@ -10,13 +10,13 @@ class AuditService:
     @staticmethod
     async def log(
         action: str,
-        user_id: Optional[int] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        details: Optional[dict] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        db: Optional[AsyncSession] = None,
+        user_id: int | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        details: dict | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        db: AsyncSession | None = None,
     ):
         """
         Record an audit log entry.
@@ -43,7 +43,7 @@ class AuditService:
 
     @staticmethod
     async def log_provider_success(
-        provider: str, metadata: dict, db: Optional[AsyncSession] = None
+        provider: str, metadata: dict, db: AsyncSession | None = None
     ):
         """Log successful provider metadata fetch"""
         await AuditService.log(

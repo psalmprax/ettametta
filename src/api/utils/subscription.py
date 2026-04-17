@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, Depends
-from api.utils.database import get_db
-from api.utils.user_models import UserDB, SubscriptionTier
-from api.routes.auth import get_current_user
+from src.api.utils.database import get_db
+from src.api.utils.user_models import UserDB, SubscriptionTier
+from src.api.routes.auth import get_current_user
 from sqlalchemy.ext.asyncio import AsyncSession
 from functools import wraps
 
@@ -38,7 +38,7 @@ async def check_daily_limit(current_user: UserDB, db_session):
     """
     Checks if the user has exceeded their daily video generation limit.
     """
-    from api.utils.models import VideoJobDB
+    from src.api.utils.models import VideoJobDB
     from datetime import datetime, timedelta
     from sqlalchemy import select, func
 
@@ -149,7 +149,7 @@ def credits_required(action: str):
         current_user: UserDB = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
     ):
-        from services.payment.credit_service import credit_service
+        from src.services.payment.credit_service import credit_service
 
         tier = current_user.subscription.value if current_user.subscription else "free"
         cost = credit_service.get_action_cost(action, tier)

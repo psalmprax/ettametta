@@ -1,18 +1,18 @@
 import logging
 import random
-from typing import List, Dict, Any, Optional
+from typing import Any
 from tenacity import retry, stop_after_attempt, wait_exponential
 from sqlalchemy import select
 from .base import BaseMonetizationStrategy
-from api.utils.database import async_session_factory
-from api.utils.models import SystemSettings
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import SystemSettings
 
 class CryptoStrategy(BaseMonetizationStrategy):
     """
     Crypto/Donations strategy - Accept crypto tips or donations
     """
     
-    async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
+    async def get_assets(self, niche: str) -> list[dict[str, Any]]:
         """
         Fetches crypto wallet addresses from database configuration.
         Returns available crypto wallets for donations/tips.
@@ -99,7 +99,7 @@ class CryptoStrategy(BaseMonetizationStrategy):
         wait=wait_exponential(multiplier=1, min=2, max=10),
         reraise=False
     )
-    async def get_balance(self, address: str, symbol: str) -> Optional[float]:
+    async def get_balance(self, address: str, symbol: str) -> float | None:
         """
         Fetches real balance from public blockchain APIs.
         """

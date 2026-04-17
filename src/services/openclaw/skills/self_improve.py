@@ -3,12 +3,12 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from pathlib import Path
 
 import requests
 
-from api.config import settings
+from src.api.config import settings
 try:
     from .memory import memory_skill
 except (ImportError, ValueError):
@@ -37,7 +37,7 @@ class SkillCritic:
             r"__import__",
         ]
 
-    def verify_syntax(self, code: str) -> Optional[str]:
+    def verify_syntax(self, code: str) -> str | None:
         """Check if the provided code is syntactically valid Python."""
         try:
             compile(code, "<string>", "exec")
@@ -47,7 +47,7 @@ class SkillCritic:
         except Exception as e:
             return f"Validation Error: {str(e)}"
 
-    def verify_safety(self, code: str) -> Optional[str]:
+    def verify_safety(self, code: str) -> str | None:
         """Simple heuristic-based safety check for malicious patterns."""
         for pattern in self.unsafe_patterns:
             if re.search(pattern, code):
@@ -56,7 +56,7 @@ class SkillCritic:
 
     async def analyze_improvement(
         self, tool_name: str, code: str, issue: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Critical verification loop: Validates that the code actually addresses the issue
         without introducing regression.
@@ -75,7 +75,7 @@ class SkillCritic:
 
 class SelfImprovementSkill:
     def __init__(self):
-        self.improvement_log: List[Dict] = []
+        self.improvement_log: list[dict] = []
         self.critic = SkillCritic()
         self._load_log()
 
@@ -98,7 +98,7 @@ class SelfImprovementSkill:
         if not recent_failures:
             return "✅ No failures detected in the last {} hours.".format(hours)
 
-        failure_patterns: Dict[str, int] = {}
+        failure_patterns: dict[str, int] = {}
         for entry in recent_failures:
             tool_name = entry["data"].get("tool", "unknown")
             error_msg = entry["data"].get("error", "")
@@ -127,7 +127,7 @@ class SelfImprovementSkill:
 
     def analyze_skill_performance(self) -> str:
         all_events = memory_skill.episodic.search(limit=500)
-        tool_stats: Dict[str, Dict] = {}
+        tool_stats: dict[str, dict] = {}
         for entry in all_events:
             etype = entry["event_type"]
             if etype not in ("tool_call", "tool_error", "tool_success"):
@@ -287,7 +287,7 @@ class SelfImprovementSkill:
         all_events = memory_skill.episodic.search(
             event_type="tool_error", since_hours=24
         )
-        tool_error_counts: Dict[str, int] = {}
+        tool_error_counts: dict[str, int] = {}
         for entry in all_events:
             tool = entry["data"].get("tool", "unknown")
             tool_error_counts[tool] = tool_error_counts.get(tool, 0) + 1

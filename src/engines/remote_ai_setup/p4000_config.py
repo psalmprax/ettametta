@@ -4,9 +4,9 @@ from diffusers.utils import export_to_video
 import os
 import asyncio
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
-async def generate_animatediff_laptop(prompt: str, num_frames: int = 16, height: int = 512, width: int = 512) -> Dict[str, Any]:
+async def generate_animatediff_laptop(prompt: str, num_frames: int = 16, height: int = 512, width: int = 512) -> dict[str, Any]:
     """
     Laptop-optimized AnimateDiff generation with memory management for P4000 8GB GPU.
 
@@ -103,7 +103,7 @@ async def generate_animatediff_laptop(prompt: str, num_frames: int = 16, height:
         print(f"❌ P4000 generation failed: {e}")
         return {"error": str(e)}
 
-def get_p4000_recommendations() -> Dict[str, Any]:
+def get_p4000_recommendations() -> dict[str, Any]:
     """Get P4000-specific recommendations"""
     return {
         "max_resolution": "384x384",

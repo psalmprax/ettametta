@@ -1,15 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.database import get_db
-from api.utils.models import PersonaDB
-from api.routes.auth import get_current_user
+from src.api.utils.database import get_db
+from src.api.utils.models import PersonaDB
+from src.api.routes.auth import get_current_user
 import uuid
 import os
 import requests
-from api.config import settings
+from src.api.config import settings
 from pydantic import BaseModel
-from typing import List
 
 router = APIRouter(prefix="/persona", tags=["Persona Engine"])
 
@@ -24,7 +23,7 @@ class PersonaResponse(BaseModel):
 class PersonaGenerateRequest(BaseModel):
     persona_id: str
     topic: str
-    script: str = None  # Optional override
+    script: str = None  # Any override
 
 
 @router.post("/create", response_model=PersonaResponse)
@@ -39,7 +38,7 @@ async def create_persona(
     Registers a new Persona for deepfake generation.
     Files are uploaded to the configured S3-compatible storage.
     """
-    from api.utils.storage import storage_service
+    from src.api.utils.storage import storage_service
     import tempfile
 
     persona = PersonaDB(name=name, user_id=current_user.id)
@@ -91,10 +90,10 @@ async def generate_persona_video(
     if not persona:
         raise HTTPException(status_code=404, detail="Persona not found")
 
-    from services.video_engine.persona_service import persona_service
+    from src.services.video_engine.base_persona_service import base_persona_service
 
     try:
-        url = await persona_service.animate_persona(
+        url = await base_persona_service.animate_persona(
             persona.reference_image_url, request.topic, request.script
         )
         return {"status": "success", "video_url": url}
@@ -102,7 +101,7 @@ async def generate_persona_video(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/list", response_model=List[PersonaResponse])
+@router.get("/list", response_model=list[PersonaResponse])
 async def list_personas(
     current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
@@ -115,7 +114,7 @@ async def list_personas(
     return personas
 
 
-@router.get("/active", response_model=List[PersonaResponse])
+@router.get("/active", response_model=list[PersonaResponse])
 async def list_active_personas(
     current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):

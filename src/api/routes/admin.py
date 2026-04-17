@@ -5,7 +5,6 @@ import shutil
 import threading
 import time
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Request, status, UploadFile, File
 try:
@@ -13,11 +12,11 @@ try:
 except ImportError:
     load_dotenv = None
 
-from api.utils.database import get_db
-from api.utils.user_models import UserDB, UserRole
-from api.routes.auth import get_current_user
+from src.api.utils.database import get_db
+from src.api.utils.user_models import UserDB, UserRole
+from src.api.routes.auth import get_current_user
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.utils.audit_service import audit_service
+from src.api.utils.audit_service import audit_service
 
 router = APIRouter(prefix="/admin", tags=["Admin Operations"])
 logger = logging.getLogger(__name__)

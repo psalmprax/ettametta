@@ -1,6 +1,5 @@
 import os
 import logging
-from typing import Optional
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -27,7 +26,7 @@ class PayPalService:
             else "https://api-m.paypal.com"
         )
 
-        self._access_token: Optional[str] = None
+        self._access_token: str | None = None
         self._token_expires = 0
 
     async def _get_access_token(self) -> str:
@@ -62,7 +61,7 @@ class PayPalService:
         amount: float,
         currency: str = "USD",
         description: str = "Viral Forge Purchase",
-        idempotency_key: Optional[str] = None,
+        idempotency_key: str | None = None,
     ) -> dict:
         """Create a PayPal order"""
         token = await self._get_access_token()
@@ -116,7 +115,7 @@ class PayPalService:
         return response.json()
 
     async def create_subscription(
-        self, plan_id: str, idempotency_key: Optional[str] = None
+        self, plan_id: str, idempotency_key: str | None = None
     ) -> dict:
         """Create a subscription"""
         token = await self._get_access_token()

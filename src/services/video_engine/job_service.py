@@ -5,10 +5,9 @@ Moves DB operations from routes to service layer (Clean Architecture)
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import Optional, List
 import logging
 
-from api.utils.models import VideoJobDB
+from src.api.utils.models import VideoJobDB
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ class VideoJobService:
         engine: str,
         prompt: str,
         niche: str = "general",
-        style: Optional[str] = None,
+        style: str | None = None,
         status: str = "pending",
     ) -> VideoJobDB:
         """Create a new video job"""
@@ -44,7 +43,7 @@ class VideoJobService:
         await self.db.refresh(job)
         return job
 
-    async def get_user_jobs(self, user_id: str, limit: int = 10) -> List[VideoJobDB]:
+    async def get_user_jobs(self, user_id: str, limit: int = 10) -> list[VideoJobDB]:
         """Get jobs for a user"""
         stmt = (
             select(VideoJobDB)
@@ -55,7 +54,7 @@ class VideoJobService:
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_job_by_id(self, job_id: str, user_id: str) -> Optional[VideoJobDB]:
+    async def get_job_by_id(self, job_id: str, user_id: str) -> VideoJobDB | None:
         """Get a specific job"""
         stmt = select(VideoJobDB).where(
             VideoJobDB.id == job_id, VideoJobDB.user_id == user_id
