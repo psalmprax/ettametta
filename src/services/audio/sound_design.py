@@ -1,5 +1,6 @@
+from typing import Any
 """
-Sound Design Service - Optional Tier 3 Enhancement
+Sound Design Service - Any Tier 3 Enhancement
 
 Adds background music and sound effects to videos.
 Disabled by default - enable via ENABLE_SOUND_DESIGN=true
@@ -8,7 +9,6 @@ Disabled by default - enable via ENABLE_SOUND_DESIGN=true
 import os
 import logging
 import random
-from typing import Optional, Dict, List
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class SoundDesignService:
     """
-    Optional sound design enhancement for video processing.
+    Any sound design enhancement for video processing.
     Adds background music and SFX based on video mood/niche.
     """
 
@@ -51,7 +51,7 @@ class SoundDesignService:
 
         logger.info(f"[SoundDesign] Initialized - Enabled: {self.enabled}")
 
-    def _get_moods_for_niche(self, niche: str) -> List[str]:
+    def _get_moods_for_niche(self, niche: str) -> list[str]:
         """Get appropriate moods for a given niche"""
         niche_lower = niche.lower()
 
@@ -65,10 +65,10 @@ class SoundDesignService:
         self,
         video_path: str,
         niche: str = "default",
-        mood: Optional[str] = None,
+        mood: str | None = None,
         fade_in: float = 1.0,
         fade_out: float = 2.0,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Add background music to a video.
 
@@ -183,15 +183,15 @@ class SoundDesignService:
         self,
         video_path: str,
         sfx_type: str = "transition",
-        timing: Optional[List[float]] = None,
-    ) -> Optional[str]:
+        timing: list[float] | None = None,
+    ) -> str | None:
         """
         Add sound effects to a video.
 
         Args:
             video_path: Path to input video
             sfx_type: Type of SFX (transition, notification, emphasis, ambient)
-            timing: List of timestamps (in seconds) when to play SFX
+            timing: list of timestamps (in seconds) when to play SFX
 
         Returns:
             Path to enhanced video with SFX, or None if disabled
@@ -270,9 +270,9 @@ class SoundDesignService:
     async def mix_audio_tracks(
         self,
         voice_path: str,
-        background_path: Optional[str] = None,
-        sfx_paths: Optional[List[str]] = None,
-    ) -> Optional[str]:
+        background_path: str | None = None,
+        sfx_paths: list[str] | None = None,
+    ) -> str | None:
         """
         Mix multiple audio tracks together.
         """
@@ -341,13 +341,13 @@ class SoundDesignService:
                 voice.close()
             return voice_path  # Fallback to original voiceover
 
-    def get_available_moods(self) -> List[str]:
+    def get_available_moods(self) -> list[str]:
         """Get list of available mood categories"""
         return list(
             set(mood for moods in self.NICHE_MOOD_MAP.values() for mood in moods)
         )
 
-    def get_available_sfx_types(self) -> List[str]:
+    def get_available_sfx_types(self) -> list[str]:
         """Get list of available SFX categories"""
         return list(self.SFX_CATEGORIES.keys())
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Secure Sandbox Runner - Subprocess-Based Isolation
-================================================
-Replaces unsafe exec() with proper subprocess execution.
-Uses restricted environment and resource limits.
+Secure Sandbox Runner - AST-Based Validation & Docker Isolation
+============================================================
+Replaces unsafe regex validation with AST parsing for 'Elite' tier security.
+Supports Docker isolation with subprocess fallback.
 """
 
 import sys
@@ -11,239 +11,134 @@ import json
 import os
 import tempfile
 import subprocess
-import threading
-import time
+import ast
 import shutil
-import re
-from pathlib import Path
+from typing import Any
 
-# Paths that are BLOCKED from user code
-BLOCKED_IMPORTS = [
-    "os",  # File system access
-    "subprocess",  # Command execution
-    "sys",  # System info
-    "shutil",  # File operations
-    "socket",  # Network
-    "requests",  # HTTP
-    "urllib",  # Network
-    "http",  # Network
-    "ftplib",  # Network
-    "telnetlib",  # Network
-    "pty",  # Pseudo terminals
-    "tty",  # Terminal
-    "termios",  # Terminal
-    "fcntl",  # File control
-    "resource",  # Resource limits (would allow raising them)
-    "pwd",  # Password database
-    "grp",  # Group database
-    "crypt",  # Password hashing
-    "spwd",  # Shadow password
-    "grp",  # Groups
-]
+# Blocked modules that should NEVER be imported or used
+BLOCKED_MODULES = {
+    "os", "subprocess", "sys", "shutil", "socket", "requests", "urllib",
+    "http", "ftplib", "telnetlib", "pty", "tty", "termios", "fcntl",
+    "resource", "pwd", "grp", "crypt", "spwd", "posix", "threading", 
+    "multiprocessing", "importlib", "builtins"
+}
 
-# Blocked file paths for open()
-BLOCKED_PATHS = [
-    "/etc/passwd",
-    "/etc/shadow",
-    "/etc/group",
-    "/.ssh/",
-    "/.aws/",
-    ".env",
-    "key",
-    "password",
-    "secret",
-    " credential",
-    "~/.bashrc",
-    "~/.profile",
-    "~/.bash_history",
-]
+# Forbidden function calls for security
+FORBIDDEN_CALLS = {
+    "exec", "eval", "compile", "__import__", "open", "getattr", "setattr",
+    "delattr", "hasattr", "globals", "locals", "vars", "breakpoint", "help"
+}
 
-# Blocked commands/patterns in code
-BLOCKED_PATTERNS = [
-    r"import\s+(os|subprocess|sys|socket|requests|urllib)",
-    r"from\s+(os|subprocess|sys|socket)",
-    r"exec\s*\(",
-    r"eval\s*\(",
-    r"__import__\s*\(",
-    r"compile\s*\(",
-    r"open\s*\([^)]",  # open() - restricted separately
-    r"subprocess\.run",
-    r"subprocess\.call",
-    r"subprocess\.Popen",
-    r"os\.system",
-    r"os\.popen",
-    r"os\.spawn",
-    r"shell\s*=",
-    r"\.write\(",
-    r"\.read\(",
-]
+class SecurityTransformer(ast.NodeVisitor):
+    """
+    AST Walker to detect malicious patterns that regex might miss.
+    """
+    def __init__(self):
+        self.errors = []
 
+    def visit_Import(self, node):
+        for name in node.names:
+            if name.name.split('.')[0] in BLOCKED_MODULES:
+                self.errors.append(f"Forbidden import: {name.name}")
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node):
+        if node.module and node.module.split('.')[0] in BLOCKED_MODULES:
+            self.errors.append(f"Forbidden import from: {node.module}")
+        self.generic_visit(node)
+
+    def visit_Call(self, node):
+        if isinstance(node.func, ast.Name):
+            if node.func.id in FORBIDDEN_CALLS:
+                self.errors.append(f"Forbidden function call: {node.func.id}()")
+        elif isinstance(node.func, ast.Attribute):
+            # Block suspicious attribute access like os.system
+            if isinstance(node.func.value, ast.Name):
+                if node.func.value.id in BLOCKED_MODULES:
+                    self.errors.append(f"Forbidden module access: {node.func.value.id}.{node.func.attr}")
+        self.generic_visit(node)
+
+    def visit_Attribute(self, node):
+        # Prevent access to dunder methods/attributes
+        if node.attr.startswith("__") and node.attr != "__init__":
+            self.errors.append(f"Forbidden attribute access: {node.attr}")
+        self.generic_visit(node)
 
 def validate_code(code: str) -> tuple[bool, str]:
     """
-    Static analysis of code before execution.
-    Returns (is_safe, reason).
+    Performs 'Elite' tier security validation using AST.
     """
-    # Check for blocked imports
-    for blocked in BLOCKED_IMPORTS:
-        pattern = rf"^\s*(import\s+{blocked}|from\s+{blocked}\s+import)"
-        if re.search(pattern, code, re.MULTILINE):
-            return False, f"Blocked import: {blocked}"
+    try:
+        tree = ast.parse(code)
+        transformer = SecurityTransformer()
+        transformer.visit(tree)
+        
+        if transformer.errors:
+            return False, "; ".join(transformer.errors)
+        return True, ""
+    except SyntaxError as e:
+        return False, f"Syntax Error: {e.msg} at line {e.lineno}"
+    except Exception as e:
+        return False, f"Validation Error: {str(e)}"
 
-    # Check for blocked patterns
-    for pattern in BLOCKED_PATTERNS:
-        if re.search(pattern, code, re.IGNORECASE):
-            return False, f"Blocked pattern detected: {pattern}"
-
-    # Check for suspicious open() calls
-    if "open(" in code:
-        # Extract paths from open() calls
-        path_matches = re.findall(r'open\s*\(\s*["\']([^"\']+)["\']', code)
-        for path in path_matches:
-            for blocked in BLOCKED_PATHS:
-                if blocked.lower() in path.lower():
-                    return False, f"Blocked file path: {path}"
-
-    return True, ""
-
-
-def run_subprocess(code: str, timeout: int = 30) -> dict:
-    """
-    Execute code in a restricted subprocess.
-    Returns {"success": bool, "output": str, "error": str}.
-    """
-    # Validate first
+def run_subprocess(code: str, timeout: int = 30) -> dict[str, Any]:
+    """Fallback runner if Docker is unavailable."""
     is_safe, reason = validate_code(code)
     if not is_safe:
         return {"success": False, "output": "", "error": reason, "blocked": True}
 
-    # Create temp file - code runs directly, output captured via subprocess
     with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
         f.write(code + "\n")
-        f.flush()
         temp_path = f.name
 
-    # Restrict environment
-    env = os.environ.copy()
-    env.update(
-        {
-            "PYTHONUNBUFFERED": "1",
-            "PYTHONDONTWRITEBYTECODE": "1",
-            # Disable bytecode
-        }
-    )
-
-    # Remove potentially dangerous env vars
-    for key in ["PYTHONPATH", "LD_PRELOAD", "LD_LIBRARY_PATH"]:
-        env.pop(key, None)
-
     try:
-        # Try to use resource limits on Unix
-        try:
-            import resource
+        env = os.environ.copy()
+        env.update({"PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1"})
+        for key in ["PYTHONPATH", "LD_PRELOAD", "LD_LIBRARY_PATH"]:
+            env.pop(key, None)
 
-            soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-            # 256MB max memory
-            resource.setrlimit(resource.RLIMIT_AS, (256 * 1024 * 1024, hard))
-            use_limits = True
-        except (ImportError, ValueError):
-            use_limits = False
-
-        # Run with subprocess
         result = subprocess.run(
-            [sys.executable, "-u", temp_path],  # -u for unbuffered
+            [sys.executable, "-u", temp_path],
             capture_output=True,
             text=True,
             timeout=timeout,
             env=env,
-            cwd="/tmp",  # Don't run in app directory
-            # Restrict file creation
+            cwd="/tmp"
         )
-
-        # Cleanup
-        os.unlink(temp_path)
-
-        if result.returncode == 0:
-            output = result.stdout + result.stderr
-            return {"success": True, "output": output, "error": ""}
-        else:
-            return {"success": False, "output": result.stdout, "error": result.stderr}
-
-    except subprocess.TimeoutExpired:
+        
         os.unlink(temp_path)
         return {
-            "success": False,
-            "output": "",
-            "error": f"Execution timeout ({timeout}s)",
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr
         }
+    except subprocess.TimeoutExpired:
+        os.unlink(temp_path)
+        return {"success": False, "output": "", "error": f"Execution timeout ({timeout}s)"}
     except Exception as e:
-        try:
-            os.unlink(temp_path)
-        except:
-            pass
+        if os.path.exists(temp_path): os.unlink(temp_path)
         return {"success": False, "output": "", "error": str(e)}
 
+def run_docker(code: str, timeout: int = 30) -> dict[str, Any]:
+    """Preferred Docker-based sandbox isolation."""
+    DOCKER_IMAGE = "ettametta-sandbox"
+    
+    if not shutil.which("docker"):
+        return {"success": False, "error": "Docker not available", "fallback": True}
 
-# Docker configuration
-DOCKER_IMAGE = "ettametta-sandbox"
-DOCKER_ENABLED = os.getenv("SANDBOX_DOCKER", "true").lower() == "true"
+    is_safe, reason = validate_code(code)
+    if not is_safe:
+        return {"success": False, "output": "", "error": reason, "blocked": True}
 
-
-def run_docker(code: str, timeout: int = 30) -> dict:
-    """
-    Run code inside Docker container (preferred).
-    Falls back to subprocess if Docker unavailable.
-    """
     try:
-        # Check docker availability
-        if not shutil.which("docker"):
-            return {
-                "success": False,
-                "output": "",
-                "error": "Docker not available",
-                "fallback": True,
-            }
-
-        # Validate code first
-        is_safe, reason = validate_code(code)
-        if not is_safe:
-            return {"success": False, "output": "", "error": reason, "blocked": True}
-
-        # Pull image if needed (silent)
-        try:
-            subprocess.run(
-                ["docker", "pull", DOCKER_IMAGE],
-                capture_output=True,
-                timeout=30,
-                check=True,
-            )
-        except subprocess.CalledProcessError as e:
-            return {
-                "success": False,
-                "output": "",
-                "error": f"Docker pull failed: {e}",
-                "fallback": True,
-            }
-
-        # Run container with restrictions
+        # Run container with heavy restrictions
         result = subprocess.run(
             [
-                "docker",
-                "run",
-                "--rm",
-                "--network",
-                "none",  # No network
-                "--memory",
-                "256m",  # 256MB max
-                "--cpus",
-                "0.5",  # Half CPU
-                "--pids-limit",
-                "50",  # Max processes
-                "--read-only",  # Read-only except /tmp
-                "--tmpfs",
-                "/tmp:rw,size=64m",  # Writable /tmp
-                "-i",  # Interactive
-                DOCKER_IMAGE,
+                "docker", "run", "--rm", "--network", "none",
+                "--memory", "256m", "--cpus", "0.5",
+                "--pids-limit", "50", "--read-only",
+                "--tmpfs", "/tmp:rw,size=64m",
+                "-i", DOCKER_IMAGE
             ],
             input=code,
             capture_output=True,
@@ -251,45 +146,33 @@ def run_docker(code: str, timeout: int = 30) -> dict:
             timeout=timeout,
         )
 
-        # Parse JSON output
-        try:
-            return json.loads(result.stdout)
-        except json.JSONDecodeError:
-            return {
-                "success": result.returncode == 0,
-                "output": result.stdout,
-                "error": result.stderr,
-            }
-
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr
+        }
     except subprocess.TimeoutExpired:
-        return {"success": False, "output": "", "error": f"Timeout ({timeout}s)"}
+        return {"success": False, "output": "", "error": f"Container timeout ({timeout}s)"}
     except Exception as e:
         return {"success": False, "output": "", "error": str(e), "fallback": True}
 
-
-def run_sandboxed(code: str, timeout: int = 30) -> dict:
-    """
-    Main entry point - runs code with Docker or subprocess.
-    Tries Docker first (more secure), falls back to subprocess.
-    """
-    # Try Docker if enabled
-    if DOCKER_ENABLED:
+def run_sandboxed(code: str, timeout: int = 30) -> dict[str, Any]:
+    """Main entry point for secure code execution."""
+    docker_enabled = os.getenv("SANDBOX_DOCKER", "true").lower() == "true"
+    
+    if docker_enabled:
         result = run_docker(code, timeout)
         if not result.get("fallback"):
             return result
-
-    # Fallback to subprocess
+            
     return run_subprocess(code, timeout)
 
-
-# CLI entry point
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(json.dumps({"success": False, "error": "No code provided"}))
         sys.exit(1)
 
-    code_to_run = sys.argv[1]
-    timeout_val = int(sys.argv[2]) if len(sys.argv) > 2 else 30
-
-    result = run_sandboxed(code_to_run, timeout=timeout_val)
-    print(json.dumps(result))
+    code_input = sys.argv[1]
+    timeout_input = int(sys.argv[2]) if len(sys.argv) > 2 else 30
+    
+    print(json.dumps(run_sandboxed(code_input, timeout_input)))

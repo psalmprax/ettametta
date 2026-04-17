@@ -1,7 +1,6 @@
 import requests
 import logging
-from typing import Optional
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,7 @@ class RepurposeSkill:
         self,
         source_job_id: str,
         target_platforms: list,
-        adaptations: Optional[dict] = None,
+        adaptations: dict | None = None,
     ) -> str:
         try:
             resp = requests.get(

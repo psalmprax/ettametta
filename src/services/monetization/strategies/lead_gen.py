@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Any
+from typing import Any
 from tenacity import retry, stop_after_attempt, wait_exponential
 from .base import BaseMonetizationStrategy
 
@@ -7,11 +7,11 @@ logger = logging.getLogger(__name__)
 
 
 class LeadGenStrategy(BaseMonetizationStrategy):
-    async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
+    async def get_assets(self, niche: str) -> list[dict[str, Any]]:
         """
         Get lead magnet assets for the given niche.
         """
-        from api.config import settings
+        from src.api.config import settings
         return [{
             "id": "newsletter",
             "name": "Weekly Newsletter",
@@ -28,7 +28,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         """
         Subscribes a lead to the configured email marketing service.
         """
-        from api.config import settings
+        from src.api.config import settings
         import httpx
         import hashlib
 
@@ -74,7 +74,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         Generate a call-to-action for lead capture.
         """
         # In a real setup, we would call an AI worker to generate this
-        from api.utils.os_worker import ai_worker
+        from src.api.utils.os_worker import ai_worker
         prompt = f"Generate a short viral video CTA for a {niche} lead magnet. Context: {context}. Max 10 words."
         
         try:

@@ -5,12 +5,12 @@ Handles callbacks from YouTube, TikTok, and other platforms with proper security
 
 from fastapi import APIRouter, Request, HTTPException, Header, Depends
 from pydantic import BaseModel, field_validator
-from typing import Optional, Dict, Any
-from api.utils.database import get_db
+from typing import Any
+from src.api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from api.utils.models import PublishedContentDB, WebhookEventDB
-from api.routes.auth import admin_required
+from src.api.utils.models import PublishedContentDB, WebhookEventDB
+from src.api.routes.auth import admin_required
 from datetime import datetime
 import hashlib
 import hmac
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 
 
-def _verify_signature(payload: bytes, signature: Optional[str], secret: str) -> bool:
+def _verify_signature(payload: bytes, signature: str | None, secret: str) -> bool:
     """Verify webhook signature using HMAC-SHA256"""
     if not signature:
         return False
@@ -63,11 +63,11 @@ def _record_event(db: AsyncSession, event_type: str, external_id: str, platform:
 class YouTubeWebhookPayload(BaseModel):
     video_id: str
     status: str  # processing, ready, failed
-    title: Optional[str] = None
-    description: Optional[str] = None
-    thumbnail_url: Optional[str] = None
-    duration: Optional[int] = None
-    error_message: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    thumbnail_url: str | None = None
+    duration: int | None = None
+    error_message: str | None = None
 
     @field_validator("status")
     @classmethod
@@ -81,14 +81,14 @@ class YouTubeWebhookPayload(BaseModel):
 async def youtube_upload_status(
     payload: YouTubeWebhookPayload,
     request: Request,
-    x_youtube_signature: Optional[str] = Header(None, alias="X-Youtube-Signature"),
+    x_youtube_signature: str | None = Header(None, alias="X-Youtube-Signature"),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Receive upload status updates from YouTube
     Requires signature verification if configured
     """
-    from api.config import settings
+    from src.api.config import settings
 
     body = await request.body()  # raw bytes for HMAC verification
 
@@ -168,11 +168,11 @@ async def youtube_upload_status(
 class TikTokWebhookPayload(BaseModel):
     video_id: str
     status: str  # uploaded, processing, published, failed
-    share_url: Optional[str] = None
-    view_count: Optional[int] = None
-    like_count: Optional[int] = None
-    comment_count: Optional[int] = None
-    error_message: Optional[str] = None
+    share_url: str | None = None
+    view_count: int | None = None
+    like_count: int | None = None
+    comment_count: int | None = None
+    error_message: str | None = None
 
     @field_validator("status")
     @classmethod
@@ -186,13 +186,13 @@ class TikTokWebhookPayload(BaseModel):
 async def tiktok_upload_status(
     payload: TikTokWebhookPayload,
     request: Request,
-    x_tiktok_signature: Optional[str] = Header(None, alias="X-Tiktok-Signature"),
+    x_tiktok_signature: str | None = Header(None, alias="X-Tiktok-Signature"),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Receive upload status updates from TikTok
     """
-    from api.config import settings
+    from src.api.config import settings
 
     body = await request.body()  # raw bytes for HMAC verification
 
@@ -277,7 +277,7 @@ class GenericPlatformWebhookPayload(BaseModel):
     platform: str
     external_id: str
     status: str
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
     @field_validator("platform")
     @classmethod
@@ -299,13 +299,13 @@ class GenericPlatformWebhookPayload(BaseModel):
 async def generic_platform_status(
     payload: GenericPlatformWebhookPayload,
     request: Request,
-    x_platform_signature: Optional[str] = Header(None, alias="X-Platform-Signature"),
+    x_platform_signature: str | None = Header(None, alias="X-Platform-Signature"),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Generic webhook for any platform status updates
     """
-    from api.config import settings
+    from src.api.config import settings
 
     webhook_secret = getattr(
         settings, f"{payload.platform.upper()}_WEBHOOK_SECRET", None
@@ -400,14 +400,14 @@ async def verify_webhook():
 @router.post("/monetization/amazon")
 async def amazon_affiliate_webhook(
     request: Request,
-    x_amz_signature: Optional[str] = Header(None, alias="X-Amz-Signature"),
+    x_amz_signature: str | None = Header(None, alias="X-Amz-Signature"),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Handle Amazon Associates commission webhooks.
     Processes commission payments and updates revenue tracking.
     """
-    from api.utils.models import RevenueLogDB, AffiliateLinkDB
+    from src.api.utils.models import RevenueLogDB, AffiliateLinkDB
 
     body = await request.body()
     data = await request.json()
@@ -461,13 +461,13 @@ async def amazon_affiliate_webhook(
 @router.post("/monetization/impact-radius")
 async def impact_radius_webhook(
     request: Request,
-    authorization: Optional[str] = Header(None),
+    authorization: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Handle Impact Radius affiliate webhooks.
     """
-    from api.utils.models import RevenueLogDB
+    from src.api.utils.models import RevenueLogDB
 
     body = await request.body()
     data = await request.json()
@@ -510,7 +510,7 @@ async def impact_radius_webhook(
 @router.post("/monetization/shareasale")
 async def shareasale_webhook(
     request: Request,
-    x_shareasale_signature: Optional[str] = Header(
+    x_shareasale_signature: str | None = Header(
         None, alias="X-ShareASale-Signature"
     ),
     db: AsyncSession = Depends(get_db),
@@ -518,7 +518,7 @@ async def shareasale_webhook(
     """
     Handle ShareASale affiliate webhooks.
     """
-    from api.utils.models import RevenueLogDB
+    from src.api.utils.models import RevenueLogDB
 
     body = await request.body()
     data = await request.json()
@@ -561,14 +561,14 @@ async def shareasale_webhook(
 @router.post("/monetization/stripe")
 async def stripe_monetization_webhook(
     request: Request,
-    stripe_signature: Optional[str] = Header(None, alias="Stripe-Signature"),
+    stripe_signature: str | None = Header(None, alias="Stripe-Signature"),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Handle Stripe webhooks for subscription payments and one-time purchases.
     This extends the existing Stripe webhook for monetization events.
     """
-    from api.utils.models import RevenueLogDB
+    from src.api.utils.models import RevenueLogDB
     import stripe
 
     body = await request.body()
@@ -656,7 +656,7 @@ async def verify_webhook():
 
 @router.get("/events")
 async def get_webhook_events(
-    platform: Optional[str] = None, 
+    platform: str | None = None, 
     limit: int = 20, 
     offset: int = 0,
     admin=Depends(admin_required),

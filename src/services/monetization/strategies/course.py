@@ -1,20 +1,20 @@
 import logging
 import random
-from typing import List, Dict, Any
+from typing import Any
 from .base import BaseMonetizationStrategy
-from api.utils.models import SystemSettings
+from src.api.utils.models import SystemSettings
 
 class CourseStrategy(BaseMonetizationStrategy):
     """
     Course/Education strategy - Sell online courses and tutorials
     """
     
-    async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
+    async def get_assets(self, niche: str) -> list[dict[str, Any]]:
         """
         Fetches course platform URL from database configuration.
         """
         from sqlalchemy import select
-        from api.utils.database import async_session_factory
+        from src.api.utils.database import async_session_factory
         
         async with async_session_factory() as db:
             stmt = select(SystemSettings).filter(SystemSettings.key == "course_platform_url")

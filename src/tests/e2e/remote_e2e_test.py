@@ -25,7 +25,7 @@ async def test_transcription(video_path: str):
 
     try:
         # Try faster-whisper first
-        from api.utils.os_worker import ai_worker
+        from src.api.utils.os_worker import ai_worker
 
         result = await ai_worker.transcribe(video_path)
 
@@ -47,9 +47,9 @@ async def test_vlm_analysis(video_path: str):
     print(f"\n[STEP 4] VLM ANALYSIS: {video_path}")
 
     try:
-        from services.video_engine.vlm_service import vlm_service
+        from src.services.video_engine.base_vlm_service import base_vlm_service
 
-        result = await vlm_service.analyze_video_content(video_path)
+        result = await base_vlm_service.analyze_video_content(video_path)
 
         if result:
             print(f"  ✅ VLM Analysis:")

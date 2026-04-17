@@ -6,9 +6,8 @@ import time
 import json
 import logging
 import subprocess
+import shutil
 from pathlib import Path
-from bs4 import BeautifulSoup
-import uuid
 
 logger = logging.getLogger("StoryboardService")
 logging.basicConfig(level=logging.INFO)
@@ -18,8 +17,8 @@ class StoryboardService:
         self.api_url = api_url
         self.output_dir = Path("downloads/storyboard")
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        # Bypassing missing ffmpeg python wrappers by using local static binary if needed
-        self.ffmpeg_path = "/home/psalmprax/.local/bin/ffmpeg" if os.path.exists("/home/psalmprax/.local/bin/ffmpeg") else "ffmpeg"
+        # Dynamic FFmpeg discovery for system portability
+        self.ffmpeg_path = shutil.which("ffmpeg") or "ffmpeg"
 
     async def fetch_likeness_image(self, character_name: str) -> str:
         """

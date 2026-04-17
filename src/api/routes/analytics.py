@@ -1,15 +1,14 @@
 from fastapi import APIRouter, HTTPException, Depends
-from services.analytics.service import base_analytics_service
-from services.analytics.models import ContentPerformance
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from typing import List
+from src.services.analytics.service import base_analytics_service
+from src.services.analytics.models import ContentPerformance
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
 import datetime
 from fastapi_cache.decorator import cache
-from api.utils.database import get_db
+from src.api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from api.utils.models import PublishedContentDB, VideoJobDB, NicheTrendDB, ABTestDB
+from src.api.utils.models import PublishedContentDB, VideoJobDB, NicheTrendDB, ABTestDB
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -296,8 +295,8 @@ async def get_stats_summary(
 @cache(expire=3600)
 async def get_storage_stats(current_user: UserDB = Depends(get_current_user)):
     """Get storage usage statistics for the outputs directory."""
-    from services.storage.manager import storage_manager
-    from api.config import settings
+    from src.services.storage.manager import storage_manager
+    from src.api.config import settings
 
     try:
         current_size = storage_manager.get_output_dir_size()

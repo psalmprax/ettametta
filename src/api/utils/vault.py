@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.database import async_session_factory
-from api.utils.models import SystemSettings, UserSetting
-from api.config import settings
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import SystemSettings, UserSetting
+from src.api.config import settings
 import logging
 import asyncio
 
@@ -65,7 +65,7 @@ def get_secret(key: str, default=None, user_id: str = None) -> str:
     Synchronous implementation of get_secret.
     Avoids asyncio issues in Celery workers.
     """
-    from api.utils.database import SessionLocal
+    from src.api.utils.database import SessionLocal
     
     try:
         with SessionLocal() as session:

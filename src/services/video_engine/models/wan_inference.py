@@ -8,9 +8,8 @@ Available: T2V (text-to-video) and V2V (video-to-video)
 import torch
 import os
 import time
-from typing import Tuple, Optional
 from PIL import Image
-from api.config import settings
+from src.api.config import settings
 import requests
 
 # Model cache
@@ -75,7 +74,7 @@ def generate_wan_t2v(
     num_inference_steps: int = 30,
     guidance_scale: float = 5.0,
     output_dir: str = "/workspace/remote_ai_group/outputs",
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """Generate video using Wan 2.2 T2V"""
     start_time = time.time()
     print(f"🎬 Wan 2.2 T2V: '{prompt[:50]}...'", flush=True)
@@ -122,7 +121,7 @@ def generate_wan_v2v(
     num_inference_steps: int = 25,
     guidance_scale: float = 5.0,
     output_dir: str = "/workspace/remote_ai_group/outputs",
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """Transform video using Wan 2.2 V2V"""
     start_time = time.time()
     print(f"🎬 Wan 2.2 V2V: Processing {input_video_path}", flush=True)
@@ -163,7 +162,7 @@ def generate_wan_v2v(
     return job_id, output_path
 
 
-def generate_wan_api(prompt: str, output_dir: str) -> Tuple[str, str]:
+def generate_wan_api(prompt: str, output_dir: str) -> tuple[str, str]:
     """Generate video using real API call to remote GPU node"""
     import json
 

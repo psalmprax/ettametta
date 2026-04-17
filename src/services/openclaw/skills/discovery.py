@@ -1,8 +1,8 @@
 import requests
 import logging
 import json
-from typing import Dict, List, Any, Optional
-from api.config import settings
+from typing import Any
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +200,7 @@ Provide 3 specific trend predictions with reasoning. Format as:
             logger.error(f"Trend prediction error: {e}")
             return f"⚠️ Trend prediction failed: {str(e)}"
 
-    def _analyze_trends(self, trends: List[Dict], topic: str) -> str:
+    def _analyze_trends(self, trends: list[dict], topic: str) -> str:
         """
         Use AI to analyze discovered trends.
         """

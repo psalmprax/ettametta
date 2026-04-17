@@ -7,7 +7,7 @@ and strategic influence patterns.
 """
 
 import logging
-from typing import Dict, Any, List, Set
+from typing import Any, Set
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class TrendGraph:
         self.edges[pair] += weight
         logger.info(f"🧬 [Graph] Link Strength: {topic_a} <-> {topic_b} = {self.edges[pair]:.2f}")
 
-    def detect_cross_platform_cascades(self, current_vitals: Dict[str, Any]) -> List[str]:
+    def detect_cross_platform_cascades(self, current_vitals: dict[str, Any]) -> list[str]:
         """
         Identifies topics that are likely to 'jump' platforms based 
         on established graph influence.
@@ -41,7 +41,7 @@ class TrendGraph:
         
         return list(set(cascades))
 
-    def get_related_clusters(self, topic: str) -> List[str]:
+    def get_related_clusters(self, topic: str) -> list[str]:
         """Returns topics closely linked in the attention graph"""
         related = []
         for (a, b), weight in self.edges.items():

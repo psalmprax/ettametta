@@ -5,28 +5,28 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi.exceptions import RequestValidationError
-from api.utils.database import engine, Base, AsyncSessionLocal
-from api.utils.models import SystemSettings, ContentCandidateDB, MonitoredNiche
-from api.utils.user_models import UserDB
-from api.utils import credit_models  # Import to register credit models with SQLAlchemy
+from src.api.utils.database import engine, Base, AsyncSessionLocal
+from src.api.utils.models import SystemSettings, ContentCandidateDB, MonitoredNiche
+from src.api.utils.user_models import UserDB
+from src.api.utils import credit_models  # Import to register credit models with SQLAlchemy
 from sqlalchemy import select, func
 
 
 # Tables should be managed via Alembic in production.
 
-from services.security.service import base_security_sentinel
-from api.config import settings
+from src.services.security.service import base_security_sentinel
+from src.api.config import settings
 import os
 import time
 import logging
 import asyncio
-from services.infrastructure.chaos_utility import base_chaos_utility
+from src.services.infrastructure.chaos_utility import base_chaos_utility
 import asyncio
-from services.infrastructure.recovery_service import base_recovery_service
-from services.analytics.consistency_sentinel import base_consistency_sentinel
+from src.services.infrastructure.recovery_service import base_recovery_service
+from src.services.analytics.consistency_sentinel import base_consistency_sentinel
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
-from api.utils.limiter import limiter, get_user_rate_limit, get_remote_address
+from src.api.utils.limiter import limiter, get_user_rate_limit, get_remote_address
 
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
@@ -109,7 +109,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(RequestLoggingMiddleware)
 
-from api.routes import (
+from src.api.routes import (
     auth,
     security,
     billing,
@@ -221,7 +221,7 @@ async def value_error_exception_handler(request: Request, exc: ValueError):
 
 
 import traceback
-from api.utils.models import SelfHealingAuditDB
+from src.api.utils.models import SelfHealingAuditDB
 
 
 @app.exception_handler(Exception)
@@ -300,7 +300,7 @@ async def startup_event():
     await seed_monitored_niches()
     
     # Start Hot-Reload Listener
-    from api.utils.hot_reload import start_hot_reload_listener
+    from src.api.utils.hot_reload import start_hot_reload_listener
     asyncio.create_task(start_hot_reload_listener())
     
     # Standard: Stateful Recovery - Distributed System Correctness
@@ -430,7 +430,7 @@ async def clear_all_faults():
 @chaos_router.get("/report")
 async def get_chaos_report():
     """Returns current chaos state, sentinel health, and recovery status."""
-    from services.infrastructure.recovery_service import base_recovery_service
+    from src.services.infrastructure.recovery_service import base_recovery_service
     return {
         "chaos": base_chaos_utility.get_chaos_report(),
         "sentinel": base_consistency_sentinel.get_status(),

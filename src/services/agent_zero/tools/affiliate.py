@@ -1,7 +1,7 @@
 import requests
 import logging
-from typing import Dict, Any, List
-from services.openclaw.config import settings
+from typing import Any
+from src.services.openclaw.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ class AffiliateTool:
     def __init__(self):
         self.api_url = f"{settings.API_URL}/monetization"
 
-    def recommend_links(self, niche: str, script_text: str) -> Dict[str, Any]:
+    def recommend_links(self, niche: str, script_text: str) -> dict[str, Any]:
         """
         Recommends high-converting products/links based on video script.
         """
@@ -29,7 +29,7 @@ class AffiliateTool:
             logger.error(f"AffiliateTool Recommend Error: {e}")
             return {"error": str(e)}
 
-    def create_link(self, product_name: str, niche: str, link: str, cta_text: str = "Check link in bio") -> Dict[str, Any]:
+    def create_link(self, product_name: str, niche: str, link: str, cta_text: str = "Check link in bio") -> dict[str, Any]:
         """
         Registers a new affiliate link in the database.
         """

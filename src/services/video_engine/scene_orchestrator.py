@@ -11,14 +11,14 @@ Orchestrates the complete video production pipeline:
 
 import asyncio
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
 from pathlib import Path
 import os
 import json
 
-from services.discovery.video_lead_scanner import video_lead_scanner
-from services.video_engine.processor import VideoProcessor
-from services.monetization.service import MonetizationEngine
+from src.services.discovery.video_lead_scanner import video_lead_scanner
+from src.services.video_engine.processor import VideoProcessor
+from src.services.monetization.service import MonetizationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -62,17 +62,17 @@ class SceneBasedVideoOrchestrator:
 
     async def produce_scene_based_video(
         self,
-        scenes: List[Dict[str, Any]],
+        scenes: list[dict[str, Any]],
         niche: str,
         target_duration: int = 60,
         audio_script: str = None,
         output_filename: str = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Produce a complete video from scenes with audio overlay.
 
         Args:
-            scenes: List of scene dictionaries
+            scenes: list of scene dictionaries
             niche: Content niche
             target_duration: Target video duration in seconds
             audio_script: Script for voiceover
@@ -178,8 +178,8 @@ class SceneBasedVideoOrchestrator:
         return final_output
 
     async def _execute_video_fusion(
-        self, production_plan: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, production_plan: dict[str, Any]
+    ) -> dict[str, Any]:
         """Execute the actual video fusion based on the production plan with narrative awareness"""
         from .processor import VideoProcessor
         processor = VideoProcessor(output_dir=str(self.output_dir))
@@ -328,8 +328,8 @@ class SceneBasedVideoOrchestrator:
             return {"success": False, "error": str(e)}
 
     async def _add_audio_overlay(
-        self, video_path: str, audio_plan: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, video_path: str, audio_plan: dict[str, Any]
+    ) -> dict[str, Any]:
         """Add audio overlay to the video"""
         try:
             if not audio_plan.get("voice_over", False):
@@ -383,8 +383,8 @@ class SceneBasedVideoOrchestrator:
             return {"success": False, "error": str(e), "video_path": video_path}
 
     async def _finalize_for_upload(
-        self, video_path: str, upload_specs: Dict[str, Any], custom_filename: str = None
-    ) -> Dict[str, Any]:
+        self, video_path: str, upload_specs: dict[str, Any], custom_filename: str = None
+    ) -> dict[str, Any]:
         """Finalize video for upload with proper formatting"""
         try:
             import time
@@ -439,8 +439,8 @@ class SceneBasedVideoOrchestrator:
             return {"success": False, "error": str(e)}
 
     async def _generate_monetization_plan(
-        self, final_result: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, final_result: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate monetization plan for the produced video"""
         try:
             if not final_result.get("success"):
@@ -478,4 +478,4 @@ class SceneBasedVideoOrchestrator:
 
 
 # Global instance
-scene_based_orchestrator = SceneBasedVideoOrchestrator()
+base_scene_based_orchestrator = SceneBasedVideoOrchestrator()

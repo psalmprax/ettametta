@@ -1,14 +1,13 @@
 import logging
 import json
-from typing import Optional, Dict, List
-from api.utils.vault import get_secret
+from src.api.utils.vault import get_secret
 import httpx
 import os
 import asyncio
 import uuid
 import shutil
 from pathlib import Path
-from api.config import settings
+from src.api.config import settings
 import redis
 import time
 from contextlib import asynccontextmanager
@@ -356,7 +355,7 @@ class GenerativeService:
         else:
             self.logger.info("GenerativeService: All dependencies available.")
 
-    def _get_engine_params(self, engine: str) -> Dict:
+    def _get_engine_params(self, engine: str) -> dict:
         """
         Returns optimized inference parameters for each engine following the optimization hierarchy:
         1. Efficient attention (xFormers) - BEST overall
@@ -518,7 +517,7 @@ class GenerativeService:
         style: str = "Cinematic",
         custom_image_url: str = None,
         enhance_quality: bool = False,  # Enable Real-ESRGAN post-processing
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Synthesizes a new video from a text prompt.
         """
@@ -599,9 +598,9 @@ class GenerativeService:
         prompt: str,
         engine: str,
         aspect_ratio: str,
-        params: Dict = None,
+        params: dict = None,
         custom_image_url: str = None,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Internal dispatcher for actual synthesis calls with comprehensive error handling."""
         try:
             if not params:
@@ -721,7 +720,7 @@ class GenerativeService:
 
     async def _synthesize_comfy(
         self, prompt: str, model_type: str, aspect_ratio: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         ComfyUI Self-Hosted Stack: Downloads model, runs workflow, cleans up.
         """
@@ -840,7 +839,7 @@ class GenerativeService:
 
     async def _synthesize_lite_4k(
         self, prompt: str, aspect_ratio: str, custom_image_url: str = None
-    ) -> Optional[str]:
+    ) -> str | None:
         # ... (rest of the code stays same)
         """
         4K Lite Orchestrator: High-res image generation + Cinematic Parallax.
@@ -880,8 +879,8 @@ class GenerativeService:
         return video_path
 
     async def synthesize_scene_batch(
-        self, scenes: List[Dict], engine: str = "veo3", style: str = "Cinematic"
-    ) -> List[Dict]:
+        self, scenes: list[dict], engine: str = "veo3", style: str = "Cinematic"
+    ) -> list[dict]:
         """
         Synthesizes multiple scenes for storytelling.
         Optimized to group by model and prevent redundant model thrashing.
@@ -931,7 +930,7 @@ class GenerativeService:
 
         return synthesized_scenes
 
-    async def _synthesize_veo3(self, prompt: str, aspect_ratio: str) -> Optional[str]:
+    async def _synthesize_veo3(self, prompt: str, aspect_ratio: str) -> str | None:
         """
         Google Veo 3 (Gemini 1.5/Veo API) Integration.
         Falls back to remote GPU node, then to Lite4K image+parallax approach.
@@ -992,7 +991,7 @@ class GenerativeService:
         logging.info("[GenerativeService] Veo3 falling back to Lite4K image+parallax")
         return await self._synthesize_lite_4k(prompt, aspect_ratio)
 
-    async def _synthesize_wan(self, prompt: str, aspect_ratio: str) -> Optional[str]:
+    async def _synthesize_wan(self, prompt: str, aspect_ratio: str) -> str | None:
         """
         Open-Source Synthesis (Wan2.2 via SiliconFlow/Fal.ai or remote GPU).
         Falls back to Lite4K image+parallax.
@@ -1059,7 +1058,7 @@ class GenerativeService:
         logging.info("[GenerativeService] Wan falling back to Lite4K image+parallax")
         return await self._synthesize_lite_4k(prompt, aspect_ratio)
 
-    async def _synthesize_local(self, prompt: str, aspect_ratio: str) -> Optional[str]:
+    async def _synthesize_local(self, prompt: str, aspect_ratio: str) -> str | None:
         """
         Remote/Local GPU Video Synthesis Integration.
         Checks for a RENDER_NODE_URL. If present, proxies the request to the
@@ -1160,7 +1159,7 @@ class GenerativeService:
 
     async def _synthesize_free_provider(
         self, provider: str, prompt: str, aspect_ratio: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Synthesize video using free daily credit providers (ZSky, Kling, PixVerse, etc.)
         """
@@ -1307,8 +1306,8 @@ class GenerativeService:
             return video_path  # Return original if enhancement fails
 
     async def _synthesize_animatediff(
-        self, prompt: str, aspect_ratio: str, params: Dict = None
-    ) -> Optional[str]:
+        self, prompt: str, aspect_ratio: str, params: dict = None
+    ) -> str | None:
         """
         Generate animation using AnimateDiff model.
         Specialized for smooth character animations and motion.
@@ -1392,4 +1391,4 @@ class GenerativeService:
             return None
 
 
-generative_service = GenerativeService()
+base_generative_service = GenerativeService()

@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, validator
-from typing import Optional, List
 import httpx
 import re
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from api.utils.database import get_db
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.api.utils.database import get_db
 
 router = APIRouter(prefix="/trading", tags=["Trading"])
 
@@ -54,7 +53,7 @@ async def get_trading_summary(
     """
     Get trading dashboard summary across all positions.
     """
-    from api.utils.models import TradingPortfolioDB, TradingPositionDB
+    from src.api.utils.models import TradingPortfolioDB, TradingPositionDB
     from sqlalchemy import select, func
 
     try:
@@ -96,7 +95,7 @@ async def get_market_data(
     """
     # Validate and sanitize symbol
     symbol = validate_symbol(symbol)
-    from api.config import settings
+    from src.api.config import settings
     import httpx
 
     if not settings.ALPHA_VANTAGE_API_KEY:
@@ -156,7 +155,7 @@ async def get_crypto_data(
     """
     Get cryptocurrency data using CoinGecko.
     """
-    from api.config import settings
+    from src.api.config import settings
     import httpx
 
     try:
@@ -206,15 +205,15 @@ async def get_trending_crypto(current_user: UserDB = Depends(get_current_user)):
 
 @router.get("/screener")
 async def market_screener(
-    sector: Optional[str] = None,
-    min_market_cap: Optional[int] = None,
+    sector: str | None = None,
+    min_market_cap: int | None = None,
     current_user: UserDB = Depends(get_current_user),
 ):
     """
     Screen stocks using Alpha Vantage TOP_GAINERS_LOSERS and SECTOR PERFORMANCE APIs.
     Falls back to CoinGecko trending crypto if Alpha Vantage is unavailable.
     """
-    from api.config import settings
+    from src.api.config import settings
     import httpx
 
     try:
@@ -317,7 +316,7 @@ async def get_symbol_analysis(
     # Validate and sanitize symbol
     symbol = validate_symbol(symbol)
 
-    from api.config import settings
+    from src.api.config import settings
     from groq import AsyncGroq
     import httpx
 
@@ -359,7 +358,7 @@ async def get_symbol_analysis(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def _fetch_market_data(symbol: str, interval: str, settings) -> Optional[dict]:
+async def _fetch_market_data(symbol: str, interval: str, settings) -> dict | None:
     """Fetch market data without external API dependencies."""
     import httpx
 
@@ -421,7 +420,7 @@ async def get_portfolio(current_user: UserDB = Depends(get_current_user)):
     """
     Get user's trading portfolio with current values.
     """
-    from services.trading.service import trading_service
+    from src.services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
@@ -436,7 +435,7 @@ async def add_portfolio_position(
     """
     Add a buy or sell position to portfolio.
     """
-    from services.trading.service import trading_service
+    from src.services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
@@ -455,7 +454,7 @@ async def get_price_alerts(current_user: UserDB = Depends(get_current_user)):
     """
     Get all price alerts for user.
     """
-    from services.trading.service import trading_service
+    from src.services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
@@ -470,7 +469,7 @@ async def add_price_alert(
     """
     Add a price alert.
     """
-    from services.trading.service import trading_service
+    from src.services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
@@ -485,7 +484,7 @@ async def check_price_alerts(current_user: UserDB = Depends(get_current_user)):
     """
     Check for triggered price alerts.
     """
-    from services.trading.service import trading_service
+    from src.services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
@@ -501,7 +500,7 @@ async def get_symbol_history(
     """
     Get historical price data for a symbol.
     """
-    from services.trading.service import trading_service
+    from src.services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
@@ -516,7 +515,7 @@ async def get_technical_analysis(
     """
     Get technical indicators for a symbol (SMA, RSI, trend).
     """
-    from services.trading.service import trading_service
+    from src.services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
@@ -531,7 +530,7 @@ async def get_watchlist(
     """
     Get user's persistent market watchlist.
     """
-    from api.utils.models import TradingWatchlistDB
+    from src.api.utils.models import TradingWatchlistDB
     from sqlalchemy import select
 
     try:
@@ -552,7 +551,7 @@ async def add_to_watchlist(
     """
     Add a symbol to the user's persistent watchlist.
     """
-    from api.utils.models import TradingWatchlistDB
+    from src.api.utils.models import TradingWatchlistDB
     from sqlalchemy import and_
 
     try:
@@ -585,7 +584,7 @@ async def remove_from_watchlist(
     """
     Remove a symbol from the user's persistent watchlist.
     """
-    from api.utils.models import TradingWatchlistDB
+    from src.api.utils.models import TradingWatchlistDB
     from sqlalchemy import and_, delete
 
     try:

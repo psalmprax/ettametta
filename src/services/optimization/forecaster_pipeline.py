@@ -10,10 +10,10 @@ import logging
 import asyncio
 import torch
 import numpy as np
-from typing import Dict, Any, List, Optional
-from services.analytics.signal_bus import base_signal_bus
-from services.optimization.oracle_predictor import base_neural_oracle
-from services.analytics.ledger import base_performance_ledger
+from typing import Any
+from src.services.analytics.signal_bus import base_signal_bus
+from src.services.optimization.oracle_predictor import base_neural_oracle
+from src.services.analytics.ledger import base_performance_ledger
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class ForecasterPipeline:
         await asyncio.sleep(1) # Simulation
         print("✅ [Forecaster] Neural Model Updated with Real-World Performance.")
 
-    def predict_opportunity(self, topic: str) -> Dict[str, Any]:
+    def predict_opportunity(self, topic: str) -> dict[str, Any]:
         """Predicts the virality probability for a new topic"""
         features = base_signal_bus.get_feature_vector(topic)
         if not features:

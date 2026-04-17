@@ -1,7 +1,7 @@
 import requests
 import logging
-from typing import Dict, Any
-from services.openclaw.config import settings
+from typing import Any
+from src.services.openclaw.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ class PublishTool:
     def __init__(self):
         self.api_url = f"{settings.API_URL}/publish"
 
-    def run(self, video_path: str, platform: str, title: str, description: str = "") -> Dict[str, Any]:
+    def run(self, video_path: str, platform: str, title: str, description: str = "") -> dict[str, Any]:
         """
         Publishes a video file to the specified platform (YouTube, TikTok, Instagram).
         """

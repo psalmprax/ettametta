@@ -1,7 +1,7 @@
 import requests
 import logging
-from typing import Dict, Any
-from services.openclaw.config import settings
+from typing import Any
+from src.services.openclaw.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ class RenderTool:
     def __init__(self):
         self.api_url = f"{settings.API_URL}/remotion/render"
 
-    def run(self, title: str, subtitle: str, video_url: str = "", audio_url: str = "") -> Dict[str, Any]:
+    def run(self, title: str, subtitle: str, video_url: str = "", audio_url: str = "") -> dict[str, Any]:
         """
         Triggers a headless Remotion render with the specified props.
         """

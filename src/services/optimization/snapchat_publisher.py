@@ -6,7 +6,6 @@ Features: Retry logic, rate limiting, file validation, proper logging
 
 import asyncio
 import os
-from typing import Optional
 import httpx
 import logging
 
@@ -34,9 +33,9 @@ class SnapchatPublisher(SocialPublisher):
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Snapchat-specific upload implementation"""
         access_token = await token_manager.get_token(
             "snapchat", user_id=user_id, account_id=account_id
@@ -123,7 +122,7 @@ class SnapchatPublisher(SocialPublisher):
             logger.error(f"[SnapchatPublisher] Spotlight creation failed: {error_msg}")
             return None
 
-    async def _resolve_video_url(self, video_path: str) -> Optional[str]:
+    async def _resolve_video_url(self, video_path: str) -> str | None:
         """Resolve video path to URL - upload to Snapchat's media endpoint"""
         if video_path.startswith(("http://", "https://")):
             return video_path
@@ -155,7 +154,7 @@ class SnapchatPublisher(SocialPublisher):
         self,
         platform_id: str,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
     ) -> dict:
         """Fetch Snapchat Spotlight metrics"""

@@ -7,7 +7,7 @@ Content Category System
 Similar to how niche/trend detection works.
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Any
 import json
 
 
@@ -326,7 +326,7 @@ class CategoryDetector:
 
     async def detect_category(
         self, video_title: str, video_description: str = ""
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Detect which category a video belongs to"""
 
         import httpx
@@ -382,7 +382,7 @@ Return JSON:
 
         return self._simple_detect(video_title, video_description)
 
-    def _simple_detect(self, title: str, description: str) -> Dict[str, Any]:
+    def _simple_detect(self, title: str, description: str) -> dict[str, Any]:
         """Simple keyword-based detection"""
 
         text = f"{title} {description}".lower()
@@ -407,7 +407,7 @@ Return JSON:
             "reasoning": "No match found",
         }
 
-    def get_search_terms(self, category: str) -> List[str]:
+    def get_search_terms(self, category: str) -> list[str]:
         """Get search terms for a category"""
 
         if category in self.categories:
@@ -415,15 +415,15 @@ Return JSON:
 
         return []
 
-    def list_all_categories(self) -> List[str]:
-        """List all available categories"""
+    def list_all_categories(self) -> list[str]:
+        """list all available categories"""
         return list(self.categories.keys())
 
 
 # Standalone function for detection
 async def detect_video_category(
     title: str, description: str = "", api_key: str = ""
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Detect video category - standalone function"""
 
     detector = CategoryDetector(groq_api_key=api_key)
@@ -431,7 +431,7 @@ async def detect_video_category(
 
 
 # Get all categories
-def get_content_categories() -> Dict[str, Dict]:
+def get_content_categories() -> dict[str, dict]:
     """Get all content categories"""
     return CONTENT_CATEGORIES
 

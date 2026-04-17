@@ -14,7 +14,7 @@ class TestConfigSettings:
 
     def test_default_settings_exist(self):
         """Test that default settings are defined"""
-        from api.config import settings
+        from src.api.config import settings
 
         assert settings.APP_NAME == "ettametta API"
         assert settings.ENV == "test"  # Set by conftest.py
@@ -22,7 +22,7 @@ class TestConfigSettings:
 
     def test_video_quality_tiers_disabled_by_default(self):
         """Test that video quality tiers are disabled by default"""
-        from api.config import settings
+        from src.api.config import settings
 
         assert settings.ENABLE_SOUND_DESIGN == True  # Overridden in .env
         assert settings.ENABLE_MOTION_GRAPHICS == True  # Overridden in .env
@@ -31,7 +31,7 @@ class TestConfigSettings:
 
     def test_agent_frameworks_disabled_by_default(self):
         """Test that agent frameworks are disabled by default"""
-        from api.config import settings
+        from src.api.config import settings
 
         assert settings.ENABLE_LANGCHAIN == True  # Overridden in .env
         assert settings.ENABLE_CREWAI == True  # Overridden in .env
@@ -41,21 +41,21 @@ class TestConfigSettings:
 
     def test_storage_defaults(self):
         """Test default storage configuration"""
-        from api.config import settings
+        from src.api.config import settings
 
         assert settings.STORAGE_PROVIDER == "OCI"  # From .env file
         assert settings.STORAGE_REGION == "eu-frankfurt-1"  # From .env file
 
     def test_database_defaults(self):
         """Test default database configuration"""
-        from api.config import settings
+        from src.api.config import settings
 
         assert "sqlite" in settings.DATABASE_URL
         assert "redis" in settings.REDIS_URL
 
     def test_validate_critical_config_no_errors_in_dev(self):
         """Test that validation passes in development"""
-        from api.config import Settings
+        from src.api.config import Settings
 
         with patch.dict(os.environ, {"ENV": "development", "SECRET_KEY": "dev_key"}):
             settings = Settings()
@@ -64,7 +64,7 @@ class TestConfigSettings:
 
     def test_validate_critical_config_errors_in_production(self):
         """Test that validation fails in production without proper config"""
-        from api.config import Settings
+        from src.api.config import Settings
 
         with patch.dict(
             os.environ,
@@ -83,7 +83,7 @@ class TestConfigSettings:
 
     def test_cors_origins_parsing(self):
         """Test that CORS_ORIGINS is parsed correctly in main.py logic"""
-        from api.config import Settings
+        from src.api.config import Settings
 
         settings = Settings()
         settings.CORS_ORIGINS = "http://a.com, http://b.com "
@@ -103,7 +103,7 @@ class TestEnvironmentVariables:
         with patch.dict(
             os.environ, {"ENABLE_LANGCHAIN": "true", "GROQ_API_KEY": "test_key"}
         ):
-            from api.config import Settings
+            from src.api.config import Settings
 
             settings = Settings()
             assert settings.ENABLE_LANGCHAIN == True
@@ -113,7 +113,7 @@ class TestEnvironmentVariables:
         with patch.dict(
             os.environ, {"ENABLE_CREWAI": "true", "GROQ_API_KEY": "test_key"}
         ):
-            from api.config import Settings
+            from src.api.config import Settings
 
             settings = Settings()
             assert settings.ENABLE_CREWAI == True
@@ -121,7 +121,7 @@ class TestEnvironmentVariables:
     def test_ai_video_provider_env(self):
         """Test AI_VIDEO_PROVIDER environment variable"""
         with patch.dict(os.environ, {"AI_VIDEO_PROVIDER": "runway"}):
-            from api.config import Settings
+            from src.api.config import Settings
 
             settings = Settings()
             assert settings.AI_VIDEO_PROVIDER == "runway"
@@ -129,7 +129,7 @@ class TestEnvironmentVariables:
     def test_quality_tier_env(self):
         """Test DEFAULT_QUALITY_TIER environment variable"""
         with patch.dict(os.environ, {"DEFAULT_QUALITY_TIER": "premium"}):
-            from api.config import Settings
+            from src.api.config import Settings
 
             settings = Settings()
             assert settings.DEFAULT_QUALITY_TIER == "premium"

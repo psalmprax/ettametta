@@ -50,6 +50,7 @@ ettametta is an autonomous multi-platform viral content discovery, transformatio
 | OpenClaw Integration | AI agent for notifications and user interaction | Enhanced user experience |
 | FastAPI + Next.js Stack | Modern, scalable full-stack architecture | Development velocity and performance |
 | UUID-v4 Identifiers | Migrate from integer IDs to UUID strings for all entities | Production-grade security, scalability and cross-service ID consistency |
+| Semantic Hardening | Global type normalization, path dynamic lookup, and docstring alignment | Industrial-grade resilience, portability, and type safety |
 
 ## Context
 

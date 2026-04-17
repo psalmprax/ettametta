@@ -1,5 +1,5 @@
-from api.utils.database import async_session_factory
-from api.utils.credit_models import (
+from src.api.utils.database import async_session_factory
+from src.api.utils.credit_models import (
     UserCreditDB,
     CreditTransactionDB,
     CreditPackageDB,
@@ -7,14 +7,14 @@ from api.utils.credit_models import (
     CreditUsageRuleDB,
     SubscriptionCreditDB,
 )
-from api.utils.user_models import UserDB, SubscriptionTier
+from src.api.utils.user_models import UserDB, SubscriptionTier
 from datetime import datetime, timedelta, timezone
 import uuid
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from api.utils.database import get_db
+from src.api.utils.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +185,7 @@ class CreditService:
 
     async def get_transaction_history(
         self, user_id: str, db: AsyncSession, limit: int = 50, offset: int = 0
-    ) -> list:
+    ) -> list[dict[str, Any]]:
         """Get user's credit transaction history"""
         stmt = (
             select(CreditTransactionDB)
@@ -208,7 +208,7 @@ class CreditService:
             for t in transactions
         ]
 
-    async def get_credit_packages(self, db: AsyncSession) -> list:
+    async def get_credit_packages(self, db: AsyncSession) -> list[dict[str, Any]]:
         """Get available credit packages for purchase"""
         stmt = (
             select(CreditPackageDB)
@@ -309,7 +309,7 @@ class CreditService:
             logger.error(f"[CreditService] Error applying referral: {e}")
             return False, str(e)
 
-    async def get_referrals(self, user_id: str, db: AsyncSession) -> list:
+    async def get_referrals(self, user_id: str, db: AsyncSession) -> list[dict[str, Any]]:
         """Get user's referrals"""
         stmt = select(ReferralDB).where(ReferralDB.referrer_id == user_id)
         result = await db.execute(stmt)

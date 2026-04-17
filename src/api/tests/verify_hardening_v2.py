@@ -30,10 +30,10 @@ async def run_audit():
     services = [
         ("OS Worker", "api.utils.os_worker", "ai_worker"),
         ("Video Processor", "services.video_engine.processor", "VideoProcessor"),
-        ("Synthesis Service", "services.video_engine.synthesis_service", "generative_service"),
+        ("Synthesis Service", "services.video_engine.synthesis_service", "base_generative_service"),
         ("Free Providers", "services.video_engine.free_video_providers", "free_video_provider"),
         ("LLM Service", "services.llm.service", "unified_llm_service"),
-        ("OCR Service", "services.video_engine.ocr_service", "ocr_service"),
+        ("OCR Service", "services.video_engine.base_ocr_service", "base_ocr_service"),
     ]
     
     results = []
@@ -65,7 +65,7 @@ async def run_audit():
     print("-" * 50)
     
     try:
-        from services.interpreter.service import interpreter_service
+        from src.services.interpreter.service import interpreter_service
         
         # Test 1: Direct getattr
         payload1 = "getattr(str, 'upper')"

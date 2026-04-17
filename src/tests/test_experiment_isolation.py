@@ -1,8 +1,8 @@
 import pytest
 import asyncio
-from api.utils.database import AsyncSessionLocal
-from api.utils.models import StrategyRegistryDB, ExperimentCohortDB
-from services.distribution.experiment_batcher import base_experiment_batcher
+from src.api.utils.database import AsyncSessionLocal
+from src.api.utils.models import StrategyRegistryDB, ExperimentCohortDB
+from src.services.distribution.experiment_batcher import base_experiment_batcher
 from sqlalchemy import insert
 
 @pytest.mark.asyncio

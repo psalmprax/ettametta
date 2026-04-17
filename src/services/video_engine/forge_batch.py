@@ -11,7 +11,7 @@ import logging
 import concurrent.futures
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class ForgeBatchRenderer:
     def __init__(self, max_workers: int = 4):
         self.max_workers = max_workers
 
-    def _render_single_variant(self, variant_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _render_single_variant(self, variant_data: dict[str, Any]) -> dict[str, Any]:
         """Worker function for parallel variant rendering"""
         video_path = variant_data["output_path"]
         cmd = variant_data["cmd"]
@@ -37,7 +37,7 @@ class ForgeBatchRenderer:
             logger.error(f"Error: {e.stderr}")
             return {"success": False, "error": e.stderr, "variant_id": variant_data.get("variant_id")}
 
-    def render_batch(self, variants: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def render_batch(self, variants: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Parallelizes the rendering of multiple production variants"""
         results = []
         

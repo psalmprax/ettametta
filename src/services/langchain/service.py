@@ -2,7 +2,7 @@ import os
 import logging
 import time
 import json
-from typing import Optional, Dict, Any, List
+from typing import Any
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -60,7 +60,7 @@ except ImportError:
 
 class LangChainService:
     """
-    Optional LangChain enhancement for LLM orchestration.
+    Any LangChain enhancement for LLM orchestration.
     
     Disabled by default - set ENABLE_LANGCHAIN=true to enable.
     Uses existing Groq API as the LLM backend.
@@ -83,7 +83,7 @@ class LangChainService:
             return
         
         # Initialize with Groq
-        from api.config import settings
+        from src.api.config import settings
         
         api_key = settings.GROQ_API_KEY
         if not api_key:
@@ -109,7 +109,7 @@ class LangChainService:
         """Check if service is enabled and available."""
         return self.enabled and self.llm is not None and not self.circuit_breaker.is_open()
     
-    async def analyze_video_vibe(self, niche: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+    async def analyze_video_vibe(self, niche: str, metadata: dict[str, Any]) -> dict[str, Any]:
         """
         Cognitive analysis of video metadata to suggest optimal 'Vibe' and 'Style' overrides.
         Implemented for NexusOrchestrator integration.
@@ -147,8 +147,8 @@ class LangChainService:
     async def chain_prompt(
         self, 
         prompt: str, 
-        context: Optional[Dict[str, Any]] = None,
-        system_message: Optional[str] = None
+        context: dict[str, Any] | None = None,
+        system_message: str | None = None
     ) -> str:
         """
         Use LangChain for structured prompting with context.
@@ -156,7 +156,7 @@ class LangChainService:
         Args:
             prompt: User prompt
             context: Additional context dict
-            system_message: Optional system message
+            system_message: Any system message
             
         Returns:
             LLM response string
@@ -181,14 +181,14 @@ class LangChainService:
     async def chain_with_template(
         self,
         template: str,
-        template_vars: Dict[str, Any]
+        template_vars: dict[str, Any]
     ) -> str:
         """
         Use a prompt template with variables.
         
         Args:
             template: Prompt template string with {var} placeholders
-            template_vars: Dict of variables to fill
+            template_vars: dict of variables to fill
             
         Returns:
             Filled prompt response
@@ -248,8 +248,8 @@ class LangChainService:
         self,
         script_text: str,
         niche: str,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        metadata: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Use LangChain memory and cognitive patterns to predict a script's viral potential.
         Provides a 'Viral Probability' score and improvement tips.
@@ -260,7 +260,7 @@ class LangChainService:
             metadata: Additional context (visuals, duration, etc.)
             
         Returns:
-            Dict containing viral_score, confidence, and feedback
+            dict containing viral_score, confidence, and feedback
         """
         if not self.is_enabled():
             return {"viral_score": 0, "status": "disabled"}

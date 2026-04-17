@@ -6,7 +6,7 @@ Supports: Groq, OpenAI, xAI (Grok), DeepSeek, Anthropic, Google Gemini
 
 import os
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Any
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ class UnifiedLLMService:
 
     def __init__(self, default_provider: LLMProvider = LLMProvider.GROQ):
         self.default_provider = default_provider
-        self._api_keys: Dict[LLMProvider, str] = {}
+        self._api_keys: dict[LLMProvider, str] = {}
         self._load_api_keys()
         
         # Framework integration
@@ -69,13 +69,13 @@ class UnifiedLLMService:
 
     def get_intelligence_report(self):
         """Returns status of agentic frameworks including the new Hermes Skill Engine."""
-        from services.langchain.service import _check_langchain_available
-        from services.crewai.service import _check_crewai_available
-        from services.hermes.service import hermes_service
+        from src.services.langchain.service import _check_langchain_available
+        from src.services.crewai.service import _check_crewai_available
+        from src.services.hermes.service import base_hermes_service
         
         lc_installed = _check_langchain_available()
         ca_installed = _check_crewai_available()
-        h_report = hermes_service.get_intelligence_report()
+        h_report = base_hermes_service.get_intelligence_report()
         
         return {
             "name": "Intelligence Suite",
@@ -118,7 +118,7 @@ class UnifiedLLMService:
         """Check if a provider is available."""
         return provider in self._api_keys
 
-    def get_available_providers(self) -> List[Dict[str, Any]]:
+    def get_available_providers(self) -> list[dict[str, Any]]:
         """Get list of available providers with their models."""
         available = []
         for provider in LLMProvider:
@@ -138,13 +138,13 @@ class UnifiedLLMService:
     async def complete(
         self,
         prompt: str,
-        system_message: Optional[str] = None,
-        provider: Optional[LLMProvider] = None,
-        model: Optional[str] = None,
+        system_message: str | None = None,
+        provider: LLMProvider | None = None,
+        model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 1024,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate completion using specified provider.
         Falls back to available providers if primary fails.
@@ -196,11 +196,11 @@ class UnifiedLLMService:
         provider: LLMProvider,
         model: str,
         prompt: str,
-        system_message: Optional[str],
+        system_message: str | None,
         temperature: float,
         max_tokens: int,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Call the appropriate API based on provider."""
         import httpx
 
@@ -258,10 +258,10 @@ class UnifiedLLMService:
         self,
         api_key: str,
         model: str,
-        messages: List[Dict],
+        messages: list[dict],
         temperature: float,
         max_tokens: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Call Anthropic API (different format)."""
         import httpx
 
@@ -307,10 +307,10 @@ class UnifiedLLMService:
         api_key: str,
         model: str,
         prompt: str,
-        system_message: Optional[str],
+        system_message: str | None,
         temperature: float,
         max_tokens: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Call Google Gemini API."""
         import httpx
 
@@ -352,11 +352,11 @@ class UnifiedLLMService:
 
     async def chat(
         self,
-        messages: List[Dict[str, str]],
-        provider: Optional[LLMProvider] = None,
-        model: Optional[str] = None,
+        messages: list[dict[str, str]],
+        provider: LLMProvider | None = None,
+        model: str | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Chat completion with message history."""
         if not messages:
             return {"error": "No messages provided"}
@@ -385,7 +385,7 @@ unified_llm_service = UnifiedLLMService()
 
 # Helper functions for easy use
 async def generate(
-    prompt: str, provider: Optional[str] = None, model: Optional[str] = None, **kwargs
+    prompt: str, provider: str | None = None, model: str | None = None, **kwargs
 ) -> str:
     """Simple generation function."""
     if provider:
@@ -401,7 +401,7 @@ async def generate(
 
 
 async def chat_with_llm(
-    messages: List[Dict[str, str]], provider: Optional[str] = None, **kwargs
+    messages: list[dict[str, str]], provider: str | None = None, **kwargs
 ) -> str:
     """Chat with LLM using message history."""
     if provider:

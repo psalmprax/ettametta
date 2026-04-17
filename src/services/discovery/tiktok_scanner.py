@@ -1,7 +1,6 @@
 import httpx
 import re
 import json
-from typing import List, Optional
 from .models import ContentCandidate
 import random
 from datetime import datetime
@@ -15,7 +14,7 @@ class TikTokScanner:
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
         ]
 
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Scans TikTok for trending videos in a niche by scraping the public search page.
         This is a cost-free alternative to paid APIs.

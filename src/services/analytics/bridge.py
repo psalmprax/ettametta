@@ -8,11 +8,11 @@ the Hermes Reflection Engine.
 """
 
 import logging
-from typing import Dict, Any, Optional
-from services.hermes.service import hermes_service
-from services.analytics.training_pipeline import base_training_pipeline
-from services.optimization.oracle_predictor import base_oracle
-from services.analytics.ledger import base_performance_ledger
+from typing import Any
+from src.services.hermes.service import base_hermes_service
+from src.services.analytics.training_pipeline import base_training_pipeline
+from src.services.optimization.oracle_predictor import base_neural_oracle
+from src.services.analytics.ledger import base_performance_ledger
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class AnalyticsBridge:
     Triggers evolutionary learning loops.
     """
 
-    async def ingest_performance(self, video_id: str, metrics: Dict[str, Any], production_data: Dict[str, Any]):
+    async def ingest_performance(self, video_id: str, metrics: dict[str, Any], production_data: dict[str, Any]):
         """
         Ingest performance metrics and trigger reflection if thresholds are met.
         
@@ -39,7 +39,7 @@ class AnalyticsBridge:
         # For now, we trigger Hermes directly
         
         # 2. Trigger Hermes Reflection Loop (Heuristic Crystallization)
-        skill = await hermes_service.reflect_and_crystallize(
+        skill = await base_hermes_service.reflect_and_crystallize(
             job_data={**production_data, "job_id": video_id},
             metrics=metrics
         )
@@ -58,7 +58,7 @@ class AnalyticsBridge:
                 video_id=video_id,
                 predicted=predicted,
                 actual=actual,
-                model_mae=base_oracle.accuracy_log[-1] if base_oracle.accuracy_log else 1.0
+                model_mae=base_neural_oracle.accuracy_log[-1] if base_neural_oracle.accuracy_log else 1.0
             )
 
         if skill:

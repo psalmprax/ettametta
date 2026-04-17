@@ -3,13 +3,12 @@ Billing API Routes for ettametta
 """
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
-from typing import Optional
-from api.utils.user_models import UserDB
-from api.routes.auth import get_current_user
-from api.utils.database import get_db
+from src.api.utils.user_models import UserDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.config import settings
+from src.api.config import settings
 
 router = APIRouter(prefix="/billing", tags=["Billing"])
 
@@ -21,7 +20,7 @@ class CreateCheckoutRequest(BaseModel):
 class SubscriptionResponse(BaseModel):
     tier: str
     status: str
-    current_period_end: Optional[str] = None
+    current_period_end: str | None = None
 
 
 @router.post("/create-checkout-session")
@@ -31,7 +30,7 @@ async def create_checkout_session(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a Stripe checkout session for subscription"""
-    from services.payment.stripe_service import get_payment_service, SUBSCRIPTION_TIERS
+    from src.services.payment.stripe_service import get_payment_service, SUBSCRIPTION_TIERS
     
     # Validate tier
     if request.tier not in SUBSCRIPTION_TIERS:
@@ -79,7 +78,7 @@ async def get_subscription(
     db: AsyncSession = Depends(get_db)
 ):
     """Get current user's subscription status"""
-    from services.payment.stripe_service import get_payment_service, SUBSCRIPTION_TIERS
+    from src.services.payment.stripe_service import get_payment_service, SUBSCRIPTION_TIERS
     
     try:
         stmt = select(UserDB).where(UserDB.id == current_user.id)
@@ -124,7 +123,7 @@ async def cancel_subscription(
     db: AsyncSession = Depends(get_db)
 ):
     """Cancel current subscription"""
-    from services.payment.stripe_service import get_payment_service
+    from src.services.payment.stripe_service import get_payment_service
     
     try:
         stmt = select(UserDB).where(UserDB.id == current_user.id)
@@ -159,7 +158,7 @@ async def cancel_subscription(
 @router.post("/webhook")
 async def stripe_webhook(request: Request):
     """Handle Stripe webhook events"""
-    from services.payment.stripe_service import get_payment_service
+    from src.services.payment.stripe_service import get_payment_service
     
     payload = await request.body()
     signature = request.headers.get("stripe-signature")

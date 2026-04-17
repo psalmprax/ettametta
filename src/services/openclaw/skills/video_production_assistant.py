@@ -6,12 +6,12 @@ Generates detailed editing instructions, templates, and guides for manual video 
 Complements the automated scene-based video production system.
 """
 
-from typing import Dict, Any, List
+from typing import Any
 import logging
 import asyncio
 
-from services.video_engine.video_production_assistant import video_production_assistant
-from services.discovery.video_lead_scanner import video_lead_scanner
+from src.services.video_engine.base_video_production_assistant import base_video_production_assistant
+from src.services.discovery.video_lead_scanner import video_lead_scanner
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,10 @@ class VideoProductionAssistantSkill:
     """
 
     def __init__(self):
-        self.name = "video_production_assistant"
+        self.name = "base_video_production_assistant"
         self.description = "Generate detailed editing instructions, templates, and guides for manual video production"
 
-    async def execute(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Execute video production assistance operations.
 
@@ -79,8 +79,8 @@ class VideoProductionAssistantSkill:
             return {"success": False, "error": str(e)}
 
     async def _generate_editing_instructions(
-        self, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, params: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate comprehensive editing instructions"""
         production_plan = params.get("production_plan")
 
@@ -101,7 +101,7 @@ class VideoProductionAssistantSkill:
                     "error": "Either production_plan or (scenes + niche) required",
                 }
 
-        instructions = video_production_assistant.generate_editing_instructions(
+        instructions = base_video_production_assistant.generate_editing_instructions(
             production_plan
         )
 
@@ -115,14 +115,14 @@ class VideoProductionAssistantSkill:
             "message": f"Generated comprehensive editing instructions for {len(production_plan.get('scene_videos', {}))} scenes",
         }
 
-    async def _create_premiere_template(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_premiere_template(self, params: dict[str, Any]) -> dict[str, Any]:
         """Create Adobe Premiere project template"""
         production_plan = params.get("production_plan")
 
         if not production_plan:
             return {"success": False, "error": "production_plan parameter required"}
 
-        template = video_production_assistant.create_premiere_template(production_plan)
+        template = base_video_production_assistant.create_premiere_template(production_plan)
 
         return {
             "success": True,
@@ -133,14 +133,14 @@ class VideoProductionAssistantSkill:
             "message": "Generated Adobe Premiere project template",
         }
 
-    async def _create_capcut_template(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_capcut_template(self, params: dict[str, Any]) -> dict[str, Any]:
         """Create CapCut project template"""
         production_plan = params.get("production_plan")
 
         if not production_plan:
             return {"success": False, "error": "production_plan parameter required"}
 
-        template = video_production_assistant.create_capcut_template(production_plan)
+        template = base_video_production_assistant.create_capcut_template(production_plan)
 
         return {
             "success": True,
@@ -151,14 +151,14 @@ class VideoProductionAssistantSkill:
             "message": "Generated CapCut project template",
         }
 
-    async def _generate_ffmpeg_commands(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _generate_ffmpeg_commands(self, params: dict[str, Any]) -> dict[str, Any]:
         """Generate FFmpeg command sequences"""
         production_plan = params.get("production_plan")
 
         if not production_plan:
             return {"success": False, "error": "production_plan parameter required"}
 
-        commands = video_production_assistant.create_ffmpeg_commands(production_plan)
+        commands = base_video_production_assistant.create_ffmpeg_commands(production_plan)
 
         return {
             "success": True,
@@ -169,14 +169,14 @@ class VideoProductionAssistantSkill:
             "message": f"Generated {len(commands)} FFmpeg commands for video processing",
         }
 
-    async def _create_resolve_script(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_resolve_script(self, params: dict[str, Any]) -> dict[str, Any]:
         """Create DaVinci Resolve automation script"""
         production_plan = params.get("production_plan")
 
         if not production_plan:
             return {"success": False, "error": "production_plan parameter required"}
 
-        script = video_production_assistant.generate_davinci_resolve_script(
+        script = base_video_production_assistant.generate_davinci_resolve_script(
             production_plan
         )
 
@@ -190,8 +190,8 @@ class VideoProductionAssistantSkill:
         }
 
     async def _full_production_assistance(
-        self, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, params: dict[str, Any]
+    ) -> dict[str, Any]:
         """Provide complete production assistance package"""
         production_plan = params.get("production_plan")
 
@@ -199,19 +199,19 @@ class VideoProductionAssistantSkill:
             return {"success": False, "error": "production_plan parameter required"}
 
         # Generate all assistance materials
-        instructions = video_production_assistant.generate_editing_instructions(
+        instructions = base_video_production_assistant.generate_editing_instructions(
             production_plan
         )
-        premiere_template = video_production_assistant.create_premiere_template(
+        premiere_template = base_video_production_assistant.create_premiere_template(
             production_plan
         )
-        capcut_template = video_production_assistant.create_capcut_template(
+        capcut_template = base_video_production_assistant.create_capcut_template(
             production_plan
         )
-        ffmpeg_commands = video_production_assistant.create_ffmpeg_commands(
+        ffmpeg_commands = base_video_production_assistant.create_ffmpeg_commands(
             production_plan
         )
-        resolve_script = video_production_assistant.generate_davinci_resolve_script(
+        resolve_script = base_video_production_assistant.generate_davinci_resolve_script(
             production_plan
         )
 
@@ -234,4 +234,4 @@ class VideoProductionAssistantSkill:
 
 
 # Skill instance
-video_production_assistant_skill = VideoProductionAssistantSkill()
+base_video_production_assistant_skill = VideoProductionAssistantSkill()

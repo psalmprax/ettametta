@@ -23,10 +23,15 @@ var defaultConfig = Config{
 }
 
 func getEnv(key, fallback string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
+	val := os.Getenv(key)
+	if val == "" {
+		if fallback == "" {
+			slog.Error("Missing critical environment variable", slog.String("key", key))
+			os.Exit(1)
+		}
+		return fallback
 	}
-	return fallback
+	return val
 }
 
 // DiscoveryService wraps scanner + bridge with proper logging
@@ -63,8 +68,8 @@ func (s *DiscoveryService) Start(workerCount int) {
 			defer s.wg.Done()
 			slog.Debug("Worker started", slog.Int("worker_id", workerID))
 			for res := range s.resultChan {
-				if err := s.bridge.SendToDeconstructor(res); err != nil {
-					slog.Error("Failed to send to Python deconstructor", slog.Int("worker_id", workerID), slog.Any("error", err))
+				if err := s.bridge.SendToPatternDeconstructor(res); err != nil {
+					slog.Error("Failed to send to Python PatternDeconstructor", slog.Int("worker_id", workerID), slog.Any("error", err))
 				}
 			}
 		}(i)

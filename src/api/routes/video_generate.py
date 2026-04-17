@@ -1,22 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
-from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.utils.database import get_db
-from api.utils.models import VideoJobDB
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB, SubscriptionTier
-from api.utils.subscription import (
+from src.api.utils.database import get_db
+from src.api.utils.models import VideoJobDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB, SubscriptionTier
+from src.api.utils.subscription import (
     subscription_required,
     check_daily_limit,
     engine_access_required,
     credits_required,
 )
-from services.video_engine.tasks import generate_video_task, generate_story_task
-from services.video_engine.synthesis_service import generative_service
-from services.payment.credit_service import credit_service
-from api.utils.limiter import limiter
-from api.utils.audit_service import audit_service
+from src.services.video_engine.tasks import generate_video_task, generate_story_task
+from src.services.video_engine.synthesis_service import base_generative_service
+from src.services.payment.credit_service import credit_service
+from src.api.utils.limiter import limiter
+from src.api.utils.audit_service import audit_service
 import logging
 
 router = APIRouter(prefix="/video", tags=["Video Generation"])
@@ -28,7 +27,7 @@ class GenerationRequest(BaseModel):
     engine: str = "veo3"
     style: str = "Cinematic"
     aspect_ratio: str = "9:16"
-    custom_image_url: Optional[str] = None
+    custom_image_url: str | None = None
 
 
 class StoryRequest(BaseModel):
@@ -52,7 +51,7 @@ async def generate_single_video(
         await engine_access_required(body.engine)(current_user)
         await check_daily_limit(current_user, db)
 
-        from api.config.engine_config import (
+        from src.api.config.engine_config import (
             ENGINE_TO_ACTION,
             get_credit_action,
             DEFAULT_ENGINE,
@@ -88,7 +87,7 @@ async def generate_single_video(
         )
 
         if not success:
-            from api.utils.celery import celery_app
+            from src.api.utils.celery import celery_app
 
             celery_app.control.revoke(task.id, terminate=True)
             raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
@@ -155,7 +154,7 @@ async def start_story_generation(
         )
 
         if not success:
-            from api.utils.celery import celery_app
+            from src.api.utils.celery import celery_app
 
             celery_app.control.revoke(task.id, terminate=True)
             raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
@@ -200,7 +199,7 @@ async def retry_failed_job(
     """
     try:
         # Find the job
-        from api.utils.models import VideoJobDB
+        from src.api.utils.models import VideoJobDB
         from sqlalchemy import select
 
         stmt = select(VideoJobDB).where(
@@ -228,7 +227,7 @@ async def retry_failed_job(
         # Determine which task type to retry
         if "AI Synthesis" in job.title:
             # Retry generate_video_task
-            from services.video_engine.tasks import generate_video_task
+            from src.services.video_engine.tasks import generate_video_task
 
             # We need to extract parameters from the job or use defaults
             # For now, use basic retry with stored parameters if available
@@ -242,7 +241,7 @@ async def retry_failed_job(
             )
         elif "Storytelling" in job.title:
             # Retry generate_story_task
-            from services.video_engine.tasks import generate_story_task
+            from src.services.video_engine.tasks import generate_story_task
 
             task = generate_story_task.delay(
                 prompt="Retried story",
@@ -252,7 +251,7 @@ async def retry_failed_job(
             )
         else:
             # Retry download_and_process_task
-            from services.video_engine.tasks import download_and_process_task
+            from src.services.video_engine.tasks import download_and_process_task
 
             task = download_and_process_task.delay(
                 source_url=job.input_url,

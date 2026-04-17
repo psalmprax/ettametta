@@ -13,9 +13,9 @@ import torch.optim as optim
 import numpy as np
 import logging
 import json
-from typing import Dict, Any, List, Optional
+from typing import Any
 from pathlib import Path
-from services.optimization.model_registry import base_model_registry
+from src.services.optimization.model_registry import base_model_registry
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class NeuralOracle:
     """
     The Scientific Heart of ViralForge: Temporal Deep Learning.
     """
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None):
         if model_path:
             self.model_path = Path(model_path)
         else:
@@ -81,7 +81,7 @@ class NeuralOracle:
         self._load_model()
         logger.info(f"⚡ [Neural] Oracle hot-swapped to new Champion: {self.model_path.name}")
 
-    def predict_curve(self, numerical_features: List[float], clip_embedding: Optional[np.ndarray] = None) -> np.ndarray:
+    def predict_curve(self, numerical_features: list[float], clip_embedding: np.ndarray | None = None) -> np.ndarray:
         """Predicts the full retention curve: [3s, 10s, 30s, 60s]"""
         if clip_embedding is None:
             clip_embedding = np.zeros(self.clip_dim)

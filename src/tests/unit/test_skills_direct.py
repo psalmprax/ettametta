@@ -56,7 +56,7 @@ async def test_content_editor_skill():
 
 
 def test_skills_loaded():
-    """List available skills"""
+    """list available skills"""
     print("\n" + "=" * 50)
     print("Available Skills in OpenCLAW")
     print("=" * 50)
@@ -94,7 +94,7 @@ def test_video_skills():
             print(f"  - {name}: {config.get('free_credits', '?')} credits/day")
     except ImportError:
         print("services.video_engine not available in this container")
-        # List available providers from hardcoded list
+        # list available providers from hardcoded list
         providers = [
             "kling",
             "pika",

@@ -1,4 +1,4 @@
-from api.utils.celery import celery_app
+from src.api.utils.celery import celery_app
 from .manager import storage_manager
 import logging
 import asyncio

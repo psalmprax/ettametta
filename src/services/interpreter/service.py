@@ -1,5 +1,5 @@
 """
-Interpreter Service - Optional Open Interpreter integration
+Interpreter Service - Any Open Interpreter integration
 ============================================================
 Disabled by default. Enable with: ENABLE_INTERPRETER=true
 
@@ -17,7 +17,7 @@ import subprocess
 import tempfile
 import asyncio
 import json
-from typing import Optional, Dict, Any, List
+from typing import Any
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ except ImportError:
 
 class InterpreterService:
     """
-    Optional Open Interpreter for code execution.
+    Any Open Interpreter for code execution.
 
     Disabled by default - set ENABLE_INTERPRETER=true to enable.
 
@@ -74,7 +74,7 @@ class InterpreterService:
         """Check if service is enabled."""
         return self.enabled
 
-    async def execute_code(self, code: str, language: str = "python") -> Dict[str, Any]:
+    async def execute_code(self, code: str, language: str = "python") -> dict[str, Any]:
         """
         Execute code for custom processing using subprocess isolation with enhanced security.
         """
@@ -158,7 +158,7 @@ class InterpreterService:
                 "execution_time": (datetime.utcnow() - start_time).total_seconds(),
             }
 
-    async def _execute_python_sandboxed(self, code: str) -> Dict[str, Any]:
+    async def _execute_python_sandboxed(self, code: str) -> dict[str, Any]:
         """
         Execute Python code in a separate process for isolation.
         """
@@ -202,7 +202,7 @@ class InterpreterService:
         except Exception as e:
             return {"output": "", "error": str(e)}
 
-    async def _execute_javascript(self, code: str) -> Dict[str, Any]:
+    async def _execute_javascript(self, code: str) -> dict[str, Any]:
         """Execute JavaScript code via Node.js."""
         try:
             # Simple JS sandbox wrapper to restrict globals a bit more
@@ -242,8 +242,8 @@ class InterpreterService:
             return {"output": "", "error": str(e)}
 
     async def generate_video_effect(
-        self, effect_name: str, parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, effect_name: str, parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Generate parameters for custom video effects.
         Refactored to delegate to VideoProcessor instead of generating raw code.
@@ -283,7 +283,7 @@ class InterpreterService:
             "message": f"Effect '{effect_name}' initialized using native engine methods.",
         }
 
-    def _validate_code_security(self, code: str, language: str) -> List[str]:
+    def _validate_code_security(self, code: str, language: str) -> list[str]:
         """
         Comprehensive security validation for code execution.
         Returns list of security violations found.

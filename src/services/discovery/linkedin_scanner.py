@@ -3,7 +3,6 @@ import logging
 import json
 import re
 import random
-from typing import List, Optional
 from datetime import datetime
 from .models import ContentCandidate
 
@@ -25,7 +24,7 @@ class LinkedInScanner:
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
         ]
     
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Scans LinkedIn for trending professional content in a niche.
         Uses search and pulse (news) pages.
@@ -60,7 +59,7 @@ class LinkedInScanner:
         logger.info(f"[LinkedInScanner] Found {len(unique)} posts")
         return unique[:15]
     
-    async def _get_feed(self, niche: str) -> List[ContentCandidate]:
+    async def _get_feed(self, niche: str) -> list[ContentCandidate]:
         """Get LinkedIn feed/trending posts."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -99,7 +98,7 @@ class LinkedInScanner:
         
         return candidates
     
-    async def _search_posts(self, niche: str) -> List[ContentCandidate]:
+    async def _search_posts(self, niche: str) -> list[ContentCandidate]:
         """Search LinkedIn for posts."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -138,7 +137,7 @@ class LinkedInScanner:
         
         return candidates
     
-    def _extract_posts_from_json(self, data: dict) -> List[ContentCandidate]:
+    def _extract_posts_from_json(self, data: dict) -> list[ContentCandidate]:
         """Extract post data from LinkedIn JSON."""
         candidates = []
         
@@ -170,7 +169,7 @@ class LinkedInScanner:
         
         return candidates
     
-    def _find_posts_recursive(self, obj, depth=0) -> List[ContentCandidate]:
+    def _find_posts_recursive(self, obj, depth=0) -> list[ContentCandidate]:
         """Recursively search for post objects."""
         candidates = []
         
@@ -196,7 +195,7 @@ class LinkedInScanner:
         
         return candidates
     
-    def _parse_post(self, item: dict) -> Optional[ContentCandidate]:
+    def _parse_post(self, item: dict) -> ContentCandidate | None:
         """Parse a single LinkedIn post."""
         try:
             # Get the post URN/ID

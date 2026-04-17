@@ -1,5 +1,6 @@
+from typing import Any
 """
-Motion Graphics Service - Optional Tier 3 Enhancement
+Motion Graphics Service - Any Tier 3 Enhancement
 
 Adds text animations, overlays, and motion graphics to videos.
 Disabled by default - enable via ENABLE_MOTION_GRAPHICS=true
@@ -8,7 +9,6 @@ Disabled by default - enable via ENABLE_MOTION_GRAPHICS=true
 import os
 import logging
 import random
-from typing import Optional, List, Dict
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class MotionGraphicsService:
     """
-    Optional motion graphics enhancement for video processing.
+    Any motion graphics enhancement for video processing.
     Adds animated text overlays, titles, and motion graphics.
     """
 
@@ -63,11 +63,11 @@ class MotionGraphicsService:
         self,
         video_path: str,
         title: str,
-        subtitle: Optional[str] = None,
-        style: Optional[str] = None,
+        subtitle: str | None = None,
+        style: str | None = None,
         duration: float = 3.0,
         position: str = "center",  # center, top, bottom
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Add animated title sequence to video using Remotion.
         """
@@ -78,7 +78,7 @@ class MotionGraphicsService:
         logger.info(f"[MotionGraphics] Rendering Remotion title - title: {title}")
 
         try:
-            from services.video_engine.remotion_service import remotion_service
+            from src.services.video_engine.base_remotion_service import base_remotion_service
 
             # Prepare props for Remotion
             props = {
@@ -88,7 +88,7 @@ class MotionGraphicsService:
             }
 
             output_name = f"mg_{os.path.basename(video_path)}"
-            rendered_path = await remotion_service.render_video(
+            rendered_path = await base_remotion_service.render_video(
                 composition_id="ViralClip", props=props, output_name=output_name
             )
 
@@ -104,8 +104,8 @@ class MotionGraphicsService:
         text: str,
         animation_style: str = "fade_in",
         position: str = "bottom",
-        timing: Optional[List[float]] = None,
-    ) -> Optional[str]:
+        timing: list[float] | None = None,
+    ) -> str | None:
         """
         Add animated text overlay at specific timestamps.
 
@@ -114,7 +114,7 @@ class MotionGraphicsService:
             text: Overlay text
             animation_style: Type of animation
             position: Screen position (top, bottom, center)
-            timing: List of timestamps when to show overlay
+            timing: list of timestamps when to show overlay
 
         Returns:
             Path to enhanced video with overlay, or None if disabled
@@ -178,7 +178,7 @@ class MotionGraphicsService:
         watermark_text: str = "Created with ettametta",
         opacity: float = 0.3,
         position: str = "bottom_right",
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Add watermark to video.
 
@@ -206,11 +206,11 @@ class MotionGraphicsService:
             logger.error(f"[MotionGraphics] Error adding watermark: {e}")
             return video_path
 
-    def get_available_styles(self) -> List[str]:
+    def get_available_styles(self) -> list[str]:
         """Get list of available animation styles"""
         return self.ANIMATION_STYLES.copy()
 
-    def get_niche_styles(self, niche: str) -> List[str]:
+    def get_niche_styles(self, niche: str) -> list[str]:
         """Get available styles for a specific niche"""
         niche_lower = niche.lower()
 
@@ -222,4 +222,4 @@ class MotionGraphicsService:
 
 
 # Global instance
-motion_graphics_service = MotionGraphicsService()
+base_motion_graphics_service = MotionGraphicsService()

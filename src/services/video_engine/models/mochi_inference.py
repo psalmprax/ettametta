@@ -8,8 +8,7 @@ Requires ~24GB VRAM.
 import torch
 import os
 import time
-from typing import Tuple
-from api.config import settings
+from src.api.config import settings
 import requests
 
 # Model cache
@@ -52,7 +51,7 @@ def generate_mochi(
     num_inference_steps: int = 40,
     guidance_scale: float = 4.5,
     output_dir: str = "/workspace/remote_ai_group/outputs",
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """Generate video using Mochi-1"""
     start_time = time.time()
     print(f"🎬 Mochi-1: '{prompt[:50]}...'", flush=True)
@@ -94,7 +93,7 @@ def generate_mochi(
     return job_id, output_path
 
 
-def generate_mochi_api(prompt: str, output_dir: str) -> Tuple[str, str]:
+def generate_mochi_api(prompt: str, output_dir: str) -> tuple[str, str]:
     """Generate video using Replicate/Fal.ai API or Remote GPU"""
     print(f"☁️ Mochi-1 via API: '{prompt[:50]}...'", flush=True)
 

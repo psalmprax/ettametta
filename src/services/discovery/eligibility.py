@@ -1,11 +1,11 @@
 import logging
 import datetime
 import subprocess
-from typing import Dict, List, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-async def check_content_freshness(url: str, min_days: int = 1, max_days: int = 30) -> Dict[str, Any]:
+async def check_content_freshness(url: str, min_days: int = 1, max_days: int = 30) -> dict[str, Any]:
     """
     Check if content is within the 'Viral Sweet Spot' (1-30 days old).
     Returns a dictionary with freshness metrics.
@@ -41,7 +41,7 @@ async def check_content_freshness(url: str, min_days: int = 1, max_days: int = 3
         
     return {"age_days": -1, "within_range": True, "status": "UNKNOWN"}
 
-async def audit_content_quality(title: str, description: str, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+async def audit_content_quality(title: str, description: str, metadata: dict[str, Any] = None) -> dict[str, Any]:
     """
     Professional content audit based on 30+ quality indicators.
     Returns quality score (0-1) and audit flags.

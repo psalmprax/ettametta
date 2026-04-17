@@ -7,7 +7,7 @@ Professional video editor standards for video selection.
 Each video must pass ALL requirements to be eligible for use.
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Any
 from dataclasses import dataclass, field
 
 
@@ -274,16 +274,16 @@ class VideoEligibilityChecker:
         self.target_audience = target_audience
         self.target_mood = target_mood
 
-    def check_eligibility(self, video_analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def check_eligibility(self, video_analysis: dict[str, Any]) -> dict[str, Any]:
         """
         Check if video meets ALL professional requirements.
 
         Returns:
         {
             "eligible": bool,
-            "rejection_reasons": List[RejectionReason],
-            "warnings": List[RejectionReason],
-            "passed_checks": List[str],
+            "rejection_reasons": list[RejectionReason],
+            "warnings": list[RejectionReason],
+            "passed_checks": list[str],
             "overall_score": float
         }
         """
@@ -413,8 +413,8 @@ class VideoEligibilityChecker:
 
 
 def check_video_requirements(
-    video_data: Dict[str, Any], target_platform: str = "youtube"
-) -> Dict[str, Any]:
+    video_data: dict[str, Any], target_platform: str = "youtube"
+) -> dict[str, Any]:
     """
     Standalone function to check all requirements.
 

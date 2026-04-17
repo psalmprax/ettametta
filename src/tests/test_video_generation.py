@@ -7,12 +7,12 @@ logging.basicConfig(level=logging.INFO)
 
 # Try to import generative service, handle gracefully if dependencies missing
 try:
-    from services.video_engine.synthesis_service import generative_service
+    from src.services.video_engine.synthesis_service import base_generative_service
 
     GENERATIVE_SERVICE_AVAILABLE = True
 except ImportError as e:
     logging.warning(f"Generative service not available: {e}")
-    generative_service = None
+    base_generative_service = None
     GENERATIVE_SERVICE_AVAILABLE = False
 
 # Configure logging to see results
@@ -29,7 +29,7 @@ class TestVideoGeneration:
         """Test Veo3 engine with basic prompt."""
         """Test Veo3 engine with basic prompt."""
         prompt = "A beautiful sunset over mountains"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="veo3", aspect_ratio="16:9", style="Cinematic"
         )
 
@@ -44,7 +44,7 @@ class TestVideoGeneration:
     async def test_wan_generation(self):
         """Test Wan engine."""
         prompt = "A cat playing in a garden"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="wan", aspect_ratio="9:16", style="Cinematic"
         )
 
@@ -59,7 +59,7 @@ class TestVideoGeneration:
     async def test_hunyuan_generation(self):
         """Test Hunyuan engine."""
         prompt = "A futuristic city at night"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="hunyuan", aspect_ratio="9:16", style="Cinematic"
         )
 
@@ -74,7 +74,7 @@ class TestVideoGeneration:
     async def test_ltx_video_generation(self):
         """Test LTX-Video engine."""
         prompt = "Water flowing in a stream"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="ltx-video", aspect_ratio="16:9", style="Cinematic"
         )
 
@@ -89,7 +89,7 @@ class TestVideoGeneration:
     async def test_free_provider_zsky(self):
         """Test free provider ZSky."""
         prompt = "A peaceful lake scene"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="zsky", aspect_ratio="9:16", style="Cinematic"
         )
 
@@ -105,7 +105,7 @@ class TestVideoGeneration:
     async def test_free_provider_kling(self):
         """Test free provider Kling."""
         prompt = "A bird flying in the sky"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="kling", aspect_ratio="9:16", style="Cinematic"
         )
 
@@ -121,7 +121,7 @@ class TestVideoGeneration:
     async def test_lite4k_fallback(self):
         """Test Lite4K fallback engine."""
         prompt = "A simple animation of shapes"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="lite4k", aspect_ratio="1:1", style="Cinematic"
         )
 
@@ -139,7 +139,7 @@ class TestVideoGeneration:
         ratios = ["9:16", "16:9", "1:1"]
 
         for ratio in ratios:
-            result = await generative_service.synthesize_video(
+            result = await base_generative_service.synthesize_video(
                 prompt=prompt, engine="veo3", aspect_ratio=ratio, style="Cinematic"
             )
 
@@ -154,7 +154,7 @@ class TestVideoGeneration:
             pytest.skip("Generative service not available")
         """Test Wan engine."""
         prompt = "A cat playing in a garden"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="wan", aspect_ratio="9:16", style="Cinematic"
         )
 
@@ -171,7 +171,7 @@ class TestVideoGeneration:
             pytest.skip("Generative service not available")
         """Test Hunyuan engine."""
         prompt = "A futuristic city at night"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="hunyuan", aspect_ratio="9:16", style="Cinematic"
         )
 
@@ -188,7 +188,7 @@ class TestVideoGeneration:
             pytest.skip("Generative service not available")
         """Test LTX-Video engine."""
         prompt = "Water flowing in a stream"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="ltx-video", aspect_ratio="16:9", style="Cinematic"
         )
 
@@ -205,7 +205,7 @@ class TestVideoGeneration:
             pytest.skip("Generative service not available")
         """Test free provider ZSky."""
         prompt = "A peaceful lake scene"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="zsky", aspect_ratio="9:16", style="Cinematic"
         )
 
@@ -223,7 +223,7 @@ class TestVideoGeneration:
             pytest.skip("Generative service not available")
         """Test free provider Kling."""
         prompt = "A bird flying in the sky"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="kling", aspect_ratio="9:16", style="Cinematic"
         )
 
@@ -241,7 +241,7 @@ class TestVideoGeneration:
             pytest.skip("Generative service not available")
         """Test Lite4K fallback engine."""
         prompt = "A simple animation of shapes"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt, engine="lite4k", aspect_ratio="1:1", style="Cinematic"
         )
 
@@ -261,7 +261,7 @@ class TestVideoGeneration:
         ratios = ["9:16", "16:9", "1:1"]
 
         for ratio in ratios:
-            result = await generative_service.synthesize_video(
+            result = await base_generative_service.synthesize_video(
                 prompt=prompt, engine="veo3", aspect_ratio=ratio, style="Cinematic"
             )
 
@@ -276,7 +276,7 @@ class TestVideoGeneration:
             pytest.skip("Generative service not available")
         """Test error handling with invalid engine."""
         prompt = "A test prompt"
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt=prompt,
             engine="invalid_engine",
             aspect_ratio="9:16",
@@ -290,7 +290,7 @@ class TestVideoGeneration:
         if not GENERATIVE_SERVICE_AVAILABLE:
             pytest.skip("Generative service not available")
         """Test with empty prompt."""
-        result = await generative_service.synthesize_video(
+        result = await base_generative_service.synthesize_video(
             prompt="", engine="veo3", aspect_ratio="9:16", style="Cinematic"
         )
 
@@ -309,7 +309,7 @@ if __name__ == "__main__":
             print("⚠️ Generative service not available - smoke test skipped")
             return
         try:
-            result = await generative_service.synthesize_video(
+            result = await base_generative_service.synthesize_video(
                 prompt="Test video generation", engine="veo3", aspect_ratio="9:16"
             )
             if result:

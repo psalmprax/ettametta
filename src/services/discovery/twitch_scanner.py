@@ -3,7 +3,6 @@ import logging
 import json
 import re
 import random
-from typing import List, Optional
 from datetime import datetime
 from .models import ContentCandidate
 
@@ -26,7 +25,7 @@ class TwitchScanner:
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         ]
     
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Scans Twitch for top clips in categories related to the niche.
         Uses the directory and search pages for discovery.
@@ -61,7 +60,7 @@ class TwitchScanner:
         logger.info(f"[TwitchScanner] Found {len(unique)} clips")
         return unique[:15]
     
-    async def _browse_categories(self, niche: str) -> List[ContentCandidate]:
+    async def _browse_categories(self, niche: str) -> list[ContentCandidate]:
         """Browse Twitch categories/directory."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -98,7 +97,7 @@ class TwitchScanner:
         
         return candidates
     
-    async def _search_clips(self, niche: str) -> List[ContentCandidate]:
+    async def _search_clips(self, niche: str) -> list[ContentCandidate]:
         """Search Twitch for clips."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -137,7 +136,7 @@ class TwitchScanner:
         
         return candidates
     
-    def _extract_clips_from_json(self, data: dict, niche: str) -> List[ContentCandidate]:
+    def _extract_clips_from_json(self, data: dict, niche: str) -> list[ContentCandidate]:
         """Extract clip data from Twitch JSON."""
         candidates = []
         

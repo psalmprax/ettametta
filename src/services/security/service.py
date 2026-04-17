@@ -5,7 +5,7 @@ import redis
 import logging
 import socket
 import asyncio
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +180,7 @@ class SecuritySentinel:
 
         # Check API key health
         try:
-            from api.config import settings
+            from src.api.config import settings
 
             if not settings.GROQ_API_KEY:
                 penalties += 15
@@ -214,7 +214,7 @@ class SecuritySentinel:
 
         # Check database
         try:
-            from api.utils.database import async_session_factory
+            from src.api.utils.database import async_session_factory
             from sqlalchemy import select
 
             async def check_db():

@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.database import get_db
-from api.utils.models import SystemSettings, BotCodeDB, UserSetting, VideoFilterDB
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from api.utils.notifications import configure_telegram_bot, configure_whatsapp_bot
+from src.api.utils.database import get_db
+from src.api.utils.models import SystemSettings, BotCodeDB, UserSetting, VideoFilterDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.api.utils.notifications import configure_telegram_bot, configure_whatsapp_bot
 from pydantic import BaseModel
-from typing import List, Optional
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
@@ -15,14 +14,14 @@ router = APIRouter(prefix="/settings", tags=["Settings"])
 class SettingUpdateRequest(BaseModel):
     key: str
     value: str
-    category: Optional[str] = "general"
+    category: str | None = "general"
 
 
 class UserSettingsUpdate(BaseModel):
-    telegram_chat_id: Optional[str] = None
-    whatsapp_number: Optional[str] = None
-    api_keys: Optional[dict] = None
-    system_settings: Optional[dict] = None
+    telegram_chat_id: str | None = None
+    whatsapp_number: str | None = None
+    api_keys: dict | None = None
+    system_settings: dict | None = None
 
 
 def admin_required(current_user: UserDB = Depends(get_current_user)):
@@ -38,8 +37,8 @@ def admin_required(current_user: UserDB = Depends(get_current_user)):
 async def get_settings(
     db: AsyncSession = Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
-    from api.config import settings as app_settings
-    from api.utils.models import UserSetting
+    from src.api.config import settings as app_settings
+    from src.api.utils.models import UserSetting
 
     # 1. Fetch system-wide defaults from DB
     stmt_system = select(SystemSettings)
@@ -197,7 +196,7 @@ async def update_setting(
     db: AsyncSession = Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
-    from api.utils.models import UserSetting
+    from src.api.utils.models import UserSetting
 
     # Non-admins can only update their own UserSetting overrides
     # Adms can update SystemSettings via /admin routes, but we'll allow them to have personal overrides too if they use this route.
@@ -229,7 +228,7 @@ async def update_setting(
 @router.get("/monetization/strategies")
 async def get_monetization_strategies(db: AsyncSession = Depends(get_db)):
     """Returns all available monetization strategies with their configuration status"""
-    from api.config import settings as app_settings
+    from src.api.config import settings as app_settings
 
     # Get system settings to check configuration status
     stmt = select(SystemSettings)
@@ -339,8 +338,8 @@ async def update_system_settings(
     
     # Broadcast reload signal to all components
     try:
-        from api.routes.ws import redis
-        from api.config import settings as app_settings
+        from src.api.routes.ws import redis
+        from src.api.config import settings as app_settings
         r = redis.from_url(app_settings.REDIS_URL)
         await r.publish("system_config_reload", "settings_update")
     except Exception as e:
@@ -351,7 +350,7 @@ async def update_system_settings(
 
 @router.post("/bulk")
 async def bulk_update_settings(
-    settings_list: List[SettingUpdateRequest],
+    settings_list: list[SettingUpdateRequest],
     db: AsyncSession = Depends(get_db),
     _admin=Depends(admin_required),
 ):
@@ -374,12 +373,12 @@ async def bulk_update_settings(
 
 @router.post("/user")
 async def bulk_update_user_settings(
-    settings_list: List[SettingUpdateRequest],
+    settings_list: list[SettingUpdateRequest],
     db: AsyncSession = Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     """Bulk update user-specific settings (non-admin users)"""
-    from api.utils.models import UserSetting
+    from src.api.utils.models import UserSetting
 
     for req in settings_list:
         stmt = select(UserSetting).where(
@@ -440,7 +439,7 @@ async def toggle_filter(
         }
 
     # Handle standard video filter toggles
-    from api.utils.models import VideoFilterDB
+    from src.api.utils.models import VideoFilterDB
 
     stmt = select(VideoFilterDB).where(VideoFilterDB.id == filter_id)
     result = await db.execute(stmt)
@@ -464,8 +463,8 @@ async def toggle_filter(
 async def get_available_filters(
     db: AsyncSession = Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
-    from api.utils.models import VideoFilterDB
-    from api.config import settings as app_settings
+    from src.api.utils.models import VideoFilterDB
+    from src.api.config import settings as app_settings
 
     stmt = select(VideoFilterDB)
     result = await db.execute(stmt)
@@ -587,7 +586,7 @@ async def verify_service(
     Performs a real-time handshake/verification of an external service configuration.
     This ensures that saved URLs/keys are functional 'Real Solutions'.
     """
-    from api.utils.models import UserSetting
+    from src.api.utils.models import UserSetting
     import httpx
 
     # Map service_id to setting keys

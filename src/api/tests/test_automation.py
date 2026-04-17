@@ -8,7 +8,7 @@ import pytest
 import os
 import httpx
 from fastapi import status
-from api.config import settings
+from src.api.config import settings
 
 # Markers for E2E and External API tests
 @pytest.mark.e2e

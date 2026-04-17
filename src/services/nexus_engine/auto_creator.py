@@ -1,4 +1,3 @@
-from typing import List, Dict, Optional
 import json
 import logging
 import os
@@ -14,7 +13,7 @@ class AutoCreator:
 
     @property
     def client(self):
-        from api.utils.vault import get_secret
+        from src.api.utils.vault import get_secret
 
         key = get_secret("groq_api_key")
         if not key:
@@ -29,7 +28,7 @@ class AutoCreator:
         self._last_key = key
         return self._client
 
-    async def generate_viral_script(self, topic: str, niche: str) -> List[Dict]:
+    async def generate_viral_script(self, topic: str, niche: str) -> list[dict]:
         """
         Generates a segmented high-retention script for Auto-Creation.
         """
@@ -82,12 +81,12 @@ class AutoCreator:
             ]
 
     async def _source_visual_assets(
-        self, segments: List[Dict], job_id: int, niche: str
-    ) -> List[str]:
+        self, segments: list[dict], job_id: int, niche: str
+    ) -> list[str]:
         """Source real stock video with keyword retry and local fallback."""
         visual_paths = []
         try:
-            from services.video_engine.stock_service import stock_service
+            from src.services.video_engine.base_stock_service import base_stock_service
         except ImportError:
             logger.warning("[AutoCreator] Stock service not available")
             return []
@@ -95,17 +94,17 @@ class AutoCreator:
         for i, seg in enumerate(segments):
             prompt = seg.get("visual_prompt", f"{niche} cinematic footage")
             # 1. Primary Attempt
-            urls = await stock_service.fetch_b_roll(prompt, count=1)
+            urls = await base_stock_service.fetch_b_roll(prompt, count=1)
 
             # 2. Retry with simplified niche keyword if primary fails
             if not urls:
                 logger.info(
                     f"[AutoCreator] Retrying stock fetch for segment {i} with niche: {niche}"
                 )
-                urls = await stock_service.fetch_b_roll(f"{niche} video", count=1)
+                urls = await base_stock_service.fetch_b_roll(f"{niche} video", count=1)
 
             if urls:
-                dl_path = await stock_service.download_stock_video(urls[0])
+                dl_path = await base_stock_service.download_stock_video(urls[0])
                 if dl_path:
                     visual_paths.append(dl_path)
                     continue
@@ -130,14 +129,14 @@ class AutoCreator:
         return visual_paths
 
     async def _generate_voiceovers(
-        self, segments: List[Dict], job_id: int
-    ) -> List[str]:
+        self, segments: list[dict], job_id: int
+    ) -> list[str]:
         """Generate real TTS with provider fallback."""
         voice_paths = []
         os.makedirs("temp/voice", exist_ok=True)
 
         try:
-            from services.voiceover.service import voiceover_service
+            from src.services.voiceover.service import voiceover_service
 
             service = voiceover_service
         except ImportError:
@@ -167,7 +166,7 @@ class AutoCreator:
         """
         Autonomous Script-to-Video Workflow with real-time node instrumentation.
         """
-        from api.routes.ws import notify_nexus_job_update_sync
+        from src.api.routes.ws import notify_nexus_job_update_sync
 
         logger.info(f"[AutoCreator] Launching Cinema Mode: {topic} in {niche}")
 
@@ -202,7 +201,7 @@ class AutoCreator:
         notify("cognition", "COMPLETED", 50)
 
         # 3. Synthesis & Egress: Assembly
-        from services.nexus_engine.orchestrator import base_nexus_orchestrator
+        from src.services.nexus_engine.orchestrator import base_nexus_orchestrator
 
         output_path = await base_nexus_orchestrator.assemble_video(
             job_id=job_id,
