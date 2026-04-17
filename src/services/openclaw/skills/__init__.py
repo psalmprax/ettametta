@@ -50,8 +50,14 @@ from .self_healing import self_healing_skill
 from .luma import luma_skill
 from .video_lead_discovery import video_lead_skill
 from .scene_based_video import scene_based_video_skill
-from .base_video_production_assistant import base_video_production_assistant_skill
-from .intelligent_workflow import intelligent_workflow_skill
+
+# These skills may not exist - use safe imports
+base_video_production_assistant_skill = safe_import_skill(
+    ".base_video_production_assistant", "base_video_production_assistant_skill"
+)
+intelligent_workflow_skill = safe_import_skill(
+    ".intelligent_workflow", "intelligent_workflow_skill"
+)
 
 # Safe imports for dependency-heavy skills (Playwright based)
 perchance_skill = safe_import_skill(".perchance", "perchance_skill")
