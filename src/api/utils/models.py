@@ -61,26 +61,59 @@ class VideoFilterDB(Base):
 
 
 class ContentCandidateDB(Base):
+    """
+    Content database model for discovered trending content.
+    Used by discovery scanners to persist content candidates from various platforms.
+    """
+
     __tablename__ = "content_candidates"
 
+    # Core identifiers
     id = Column(String, primary_key=True, index=True)
     platform = Column(String)
-    url = Column(String)
-    author = Column(String, nullable=True)
+    external_id = Column(
+        String, unique=True, index=True, nullable=True
+    )  # Platform-specific ID
+
+    # Content metadata
     title = Column(String, nullable=True)
     description = Column(String, nullable=True)
-    view_count = Column(Integer, default=0)  # Legacy
+    creator_name = Column(String, nullable=True)  # Channel/author name
+    creator_id = Column(String, nullable=True)  # Channel/author ID
+    url = Column(String)
+    thumbnail_url = Column(String, nullable=True)
+
+    # Timing fields
+    published_at = Column(DateTime, nullable=True)  # When content was published
+    scanned_at = Column(
+        DateTime, default=lambda: datetime.utcnow()
+    )  # When content was discovered
+
+    # Duration and metrics
+    duration_seconds = Column(Float, default=0.0)
+    view_count = Column(Integer, default=0)
+    like_count = Column(Integer, default=0)
+    comment_count = Column(Integer, default=0)
+    share_count = Column(
+        Integer, default=0
+    )  # Legacy - platforms have different share metrics
+
+    # Engagement and viral scoring
     engagement_rate = Column(Float, default=0.0)  # Legacy
     views = Column(Integer, default=0)
     engagement_score = Column(Float, default=0.0)
     viral_score = Column(Integer, default=0)
-    duration_seconds = Column(Float, default=0.0)
-    discovery_date = Column(DateTime, default=lambda: datetime.utcnow())
+
+    # Categorization
     category = Column(String, default="video")  # video, blog, social, news, other
-    tags = Column(JSON, nullable=True)
-    thumbnail_url = Column(String, nullable=True)
-    metadata_json = Column(JSON, default={})
+    tags = Column(JSON, nullable=True)  # Array of strings
     niche = Column(String, index=True, nullable=True)
+
+    # Additional metadata
+    metadata_json = Column(JSON, default={})
+
+    # Legacy compatibility (kept for migration)
+    discovery_date = Column(DateTime, default=lambda: datetime.utcnow())
 
 
 class ViralPatternDB(Base):
@@ -259,7 +292,7 @@ class BlueprintDB(Base):
     id = Column(String, primary_key=True, index=True)
     name = Column(String)
     description = Column(String)
-    nodes = Column(JSON)  # List of node dictionaries
+    nodes = Column(JSON)  # list of node dictionaries
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
 
@@ -483,7 +516,9 @@ class TradingWatchlistDB(Base):
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
     symbol = Column(String, index=True)
     added_at = Column(DateTime, default=lambda: datetime.utcnow())
-    __table_args__ = (UniqueConstraint("user_id", "symbol", name="uix_trading_user_symbol"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "symbol", name="uix_trading_user_symbol"),
+    )
 
 
 class BotCodeDB(Base):
@@ -577,11 +612,15 @@ class ExperimentCohortDB(Base):
 
     __tablename__ = "experiment_cohorts"
 
-    id = Column(String(64), primary_key=True, index=True)  # custom ID like batch_123_strategy
+    id = Column(
+        String(64), primary_key=True, index=True
+    )  # custom ID like batch_123_strategy
     strategy = Column(String, index=True)
     size = Column(Integer)
-    status = Column(String, default="ROLLING_OUT")  # ROLLING_OUT, FULL_WAITING_DATA, COMPLETED
-    participants = Column(JSON, default=list)  # List of video IDs
+    status = Column(
+        String, default="ROLLING_OUT"
+    )  # ROLLING_OUT, FULL_WAITING_DATA, COMPLETED
+    participants = Column(JSON, default=list)  # list of video IDs
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
 
