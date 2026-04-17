@@ -220,3 +220,14 @@ class CrewAIService:
 
 # Singleton instance
 crewai_service = CrewAIService()
+
+
+# Standalone function for module-level imports (e.g., from llm/service.py)
+def _check_crewai_available() -> bool:
+    """Check if CrewAI and required dependencies are available."""
+    try:
+        import crewai
+        from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
+        return True
+    except ImportError:
+        return False
