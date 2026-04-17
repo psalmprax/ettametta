@@ -1,5 +1,5 @@
 from .models import ContentPerformance
-from typing import List, Optional, Dict, Any
+from typing import Any
 import logging
 import redis
 import json
@@ -11,10 +11,10 @@ from tenacity import (
     retry_if_exception_type,
 )
 from googleapiclient.errors import HttpError as GoogleHttpError
-from api.config import settings
-from services.optimization.auth import token_manager
-from services.optimization.oracle_predictor import base_neural_oracle
-from services.analytics.ledger import base_performance_ledger
+from src.api.config import settings
+from src.services.optimization.auth import token_manager
+from src.services.optimization.oracle_predictor import base_neural_oracle
+from src.services.analytics.ledger import base_performance_ledger
 import numpy as np
 
 
@@ -69,8 +69,8 @@ class AnalyticsService:
         reraise=False,
     )
     async def _fetch_youtube_data(
-        self, post_id: str, token_data: Dict
-    ) -> Dict[str, Any]:
+        self, post_id: str, token_data: dict
+    ) -> dict[str, Any]:
         """Fetch YouTube data with retries and circuit breaking"""
         if self.youtube_circuit_breaker.is_open():
             raise RuntimeError("YouTube API circuit breaker is OPEN")
@@ -237,8 +237,8 @@ class AnalyticsService:
         # Fallback: Query local database first before resorting to zeros
         db_views, db_likes, db_shares = 0, 0, 0
         try:
-            from api.utils.database import async_session_factory
-            from api.utils.models import PublishedContentDB
+            from src.api.utils.database import async_session_factory
+            from src.api.utils.models import PublishedContentDB
             from sqlalchemy import select
 
             async with async_session_factory() as db:
@@ -326,7 +326,7 @@ class AnalyticsService:
 
     async def _get_instagram_metrics(self, post_id: str, user_id: int) -> dict:
         """Get Instagram post metrics"""
-        from services.optimization.instagram_publisher import base_instagram_publisher
+        from src.services.optimization.instagram_publisher import base_instagram_publisher
 
         try:
             metrics = await base_instagram_publisher.get_metrics(post_id, user_id)
@@ -356,7 +356,7 @@ class AnalyticsService:
 
     async def _get_x_metrics(self, post_id: str, user_id: int) -> dict:
         """Get X/Twitter metrics"""
-        from services.optimization.x_publisher import base_x_publisher
+        from src.services.optimization.x_publisher import base_x_publisher
 
         try:
             metrics = await base_x_publisher.get_metrics(post_id, user_id)
@@ -375,13 +375,13 @@ class AnalyticsService:
             self.logger.warning(f"[X Analytics] Failed: {e}")
             return self._get_default_metrics()
 
-    async def get_historical_performance(self, post_id: str) -> List[dict]:
+    async def get_historical_performance(self, post_id: str) -> list[dict]:
         """
         Fetches historical performance data points.
         Hardened: Queries real analytics history via PerformanceSnapshotDB.
         """
-        from api.utils.database import async_session_factory
-        from api.utils.models import PerformanceSnapshotDB
+        from src.api.utils.database import async_session_factory
+        from src.api.utils.models import PerformanceSnapshotDB
         from sqlalchemy import select
 
         try:
@@ -418,7 +418,7 @@ class AnalyticsService:
     ) -> str:
         """Generates real performance insights using Groq with retries and circuit breaking."""
         from groq import AsyncGroq
-        from api.config import settings
+        from src.api.config import settings
 
         if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
             return "Strong engagement detected. Recommend consistent posting schedule."
@@ -451,7 +451,7 @@ class AnalyticsService:
             self.logger.warning(f"Groq API failed: {e}")
             return "Metrics show healthy growth. Maintain current content pacing."
 
-    def analyze_retention_dropoff(self, retention_data: List[float]) -> str:
+    def analyze_retention_dropoff(self, retention_data: list[float]) -> str:
         """
         Real calculation to detect steepest retention drop.
         """
@@ -476,12 +476,12 @@ class AnalyticsService:
 
     async def suggest_optimal_monetization(
         self, performance: ContentPerformance, user_id: int, niche: str
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         Hardened: Real monetization suggestions based on user-defined products.
         """
-        from api.utils.database import async_session_factory
-        from api.utils.models import AffiliateLinkDB, DigitalProductDB, MembershipPlanDB
+        from src.api.utils.database import async_session_factory
+        from src.api.utils.models import AffiliateLinkDB, DigitalProductDB, MembershipPlanDB
         from sqlalchemy import select
 
         suggestions = []
@@ -633,8 +633,8 @@ class AnalyticsService:
 
     async def record_snapshot(self, post_id: str, views: int, likes: int, shares: int, comments: int, retention_rate: float = 0.0, avg_duration: float = 0.0):
         """Records a performance snapshot to the database."""
-        from api.utils.database import async_session_factory
-        from api.utils.models import PerformanceSnapshotDB
+        from src.api.utils.database import async_session_factory
+        from src.api.utils.models import PerformanceSnapshotDB
         from sqlalchemy import select
         import datetime
 
@@ -678,8 +678,8 @@ class AnalyticsService:
         """
         import redis
         import datetime
-        from services.optimization.youtube_publisher import base_youtube_publisher
-        from api.config import settings
+        from src.services.optimization.youtube_publisher import base_youtube_publisher
+        from src.api.config import settings
 
         self.logger.info(
             f"[Analytics] Injecting neural pattern into post {post_id} for user {user_id}"

@@ -1,8 +1,8 @@
 import asyncio
 import logging
 import os
-from services.video_engine.processor import base_video_processor
-from services.video_engine.ocr_service import ocr_service
+from src.services.video_engine.processor import base_video_processor
+from src.services.video_engine.base_ocr_service import base_ocr_service
 
 logging.basicConfig(level=logging.INFO)
 
@@ -27,7 +27,7 @@ async def test_high_artistry():
     # For now, we'll just check if the methods exist and can be called
     print("--- TESTING OCR SERVICE ---")
     # (Mock check - requires actual file for full test)
-    print(f"OCR Strategy for non-existent-file: {ocr_service.get_caption_strategy('test.mp4')}")
+    print(f"OCR Strategy for non-existent-file: {base_ocr_service.get_caption_strategy('test.mp4')}")
     
     print("\n--- TESTING VIDEO PROCESSOR METHODS ---")
     print(f"VideoProcessor has inject_b_roll: {hasattr(base_video_processor, 'inject_b_roll')}")

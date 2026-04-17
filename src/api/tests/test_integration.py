@@ -386,7 +386,7 @@ class TestPersonaIntegration:
 
     def test_persona_flow(self, token):
         """Test persona flow"""
-        # List
+        # list
         list_res = requests.get(
             f"{BASE_URL}/api/v1/persona/list",
             headers={"Authorization": f"Bearer {token}"},

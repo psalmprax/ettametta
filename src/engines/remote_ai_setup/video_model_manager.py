@@ -8,7 +8,7 @@ import torch
 import threading
 import time
 import subprocess
-from typing import Optional, Dict, Any
+from typing import Any
 from huggingface_hub import snapshot_download, hf_hub_download
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from hardware_manager import hardware_manager

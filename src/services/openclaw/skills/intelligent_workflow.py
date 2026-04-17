@@ -6,14 +6,14 @@ Enables agents to perform resilient multi-platform discovery and
 produce high-fidelity narrative videos autonomously.
 """
 
-from typing import Dict, Any, List
+from typing import Any
 import logging
 import asyncio
 
-from engines.intelligent_video_workflow import discover_multi_platform
-from services.video_engine.tasks import narrative_fusion_task
-from api.utils.database import async_session_factory
-from api.utils.models import VideoJobDB
+from src.engines.intelligent_video_workflow import discover_multi_platform
+from src.services.video_engine.tasks import narrative_fusion_task
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import VideoJobDB
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class IntelligentWorkflowSkill:
         self.name = "intelligent_video_workflow"
         self.description = "Perform resilient multi-platform discovery and autonomous cinematic video fusion"
 
-    async def execute(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Execute intelligent workflow actions.
 
@@ -61,7 +61,7 @@ class IntelligentWorkflowSkill:
             logger.error(f"Intelligent workflow skill error: {e}")
             return {"success": False, "error": str(e)}
 
-    async def _intelligent_scan(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _intelligent_scan(self, params: dict[str, Any]) -> dict[str, Any]:
         """Perform a resilient multi-platform scan"""
         niche = params.get("niche")
         max_per_platform = params.get("max_per_platform", 3)
@@ -79,7 +79,7 @@ class IntelligentWorkflowSkill:
             "message": f"Discovered {len(results)} viral candidates across multiple platforms for '{niche}'."
         }
 
-    async def _autonomous_fusion(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _autonomous_fusion(self, params: dict[str, Any]) -> dict[str, Any]:
         """Trigger an autonomous narrative fusion production job"""
         niche = params.get("niche")
         duration = params.get("duration", 60)

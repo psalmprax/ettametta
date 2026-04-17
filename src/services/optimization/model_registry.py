@@ -3,8 +3,8 @@ import json
 import time
 import shutil
 import logging
-from typing import Dict, Any, Optional, List
-from api.config import settings
+from typing import Any
+from src.api.config import settings
 
 logger = logging.getLogger("ModelRegistry")
 

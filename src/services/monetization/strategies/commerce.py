@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Any
+from typing import Any
 from .base import BaseMonetizationStrategy
 from ..commerce_service import base_commerce_service
 
@@ -10,7 +10,7 @@ class CommerceStrategy(BaseMonetizationStrategy):
     def __init__(self):
         self.commerce = base_commerce_service
 
-    async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
+    async def get_assets(self, niche: str) -> list[dict[str, Any]]:
         """
         Get commerce/affiliate products for the given niche.
         In production, this should query Shopify or affiliate networks.

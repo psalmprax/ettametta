@@ -15,7 +15,7 @@ import sys
 import os
 import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 
 # Add project root
 sys.path.insert(0, str(Path(__file__).parent))
@@ -223,8 +223,8 @@ async def run_e2e_video_processing_test():
 
 
 async def execute_content_discovery(
-    niche: str, scenes: List[Dict[str, Any]]
-) -> Dict[str, Any]:
+    niche: str, scenes: list[dict[str, Any]]
+) -> dict[str, Any]:
     """Execute content discovery phase"""
     try:
         import time
@@ -232,7 +232,7 @@ async def execute_content_discovery(
         start_time = time.time()
 
         # Import video discovery services
-        from services.discovery.video_lead_scanner import video_lead_scanner
+        from src.services.discovery.video_lead_scanner import video_lead_scanner
 
         # Discover videos for each scene
         all_scene_videos = []
@@ -264,11 +264,11 @@ async def execute_content_discovery(
 
 
 async def execute_scene_planning(
-    scenes: List[Dict[str, Any]], discovery_results: Dict[str, Any]
-) -> Dict[str, Any]:
+    scenes: list[dict[str, Any]], discovery_results: dict[str, Any]
+) -> dict[str, Any]:
     """Execute scene planning phase"""
     try:
-        from services.discovery.video_lead_scanner import video_lead_scanner
+        from src.services.discovery.video_lead_scanner import video_lead_scanner
 
         # Create production plan
         production_plan = await video_lead_scanner.create_scene_based_video(
@@ -295,17 +295,17 @@ async def execute_scene_planning(
         return {"success": False, "error": str(e)}
 
 
-async def execute_video_processing(planning_results: Dict[str, Any]) -> Dict[str, Any]:
+async def execute_video_processing(planning_results: dict[str, Any]) -> dict[str, Any]:
     """Execute video processing orchestration"""
     try:
         import time
 
         start_time = time.time()
 
-        from services.video_engine.scene_orchestrator import scene_based_orchestrator
+        from src.services.video_engine.scene_orchestrator import base_scene_based_orchestrator
 
         # Execute video production
-        production_result = await scene_based_orchestrator.produce_scene_based_video(
+        production_result = await base_scene_based_orchestrator.produce_scene_based_video(
             scenes=planning_results["production_plan"]["scenes"],
             niche=planning_results["production_plan"]["niche"],
             target_duration=50,
@@ -339,8 +339,8 @@ async def execute_video_processing(planning_results: Dict[str, Any]) -> Dict[str
 
 
 async def execute_preview_generation(
-    processing_results: Dict[str, Any],
-) -> Dict[str, Any]:
+    processing_results: dict[str, Any],
+) -> dict[str, Any]:
     """Execute preview generation"""
     try:
         import time
@@ -370,7 +370,7 @@ async def execute_preview_generation(
         return {"success": False, "error": str(e)}
 
 
-async def execute_quality_validation(preview_results: Dict[str, Any]) -> Dict[str, Any]:
+async def execute_quality_validation(preview_results: dict[str, Any]) -> dict[str, Any]:
     """Execute quality validation"""
     try:
         # Simulate comprehensive quality assessment

@@ -1,15 +1,15 @@
+from typing import Any
 import os
 import uuid
 import random
 import logging
 import asyncio
 import subprocess
-from typing import List, Optional, Dict
-from .transcription import transcription_service
-from .ocr_service import ocr_service
-from .stock_service import stock_service
-from .ffmpeg_utils import ffmpeg_transformer
-from api.config import settings
+from .transcription import base_transcription_service
+from .base_ocr_service import base_ocr_service
+from .base_stock_service import base_stock_service
+from .ffmpeg_utils import base_ffmpeg_transformer
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -341,8 +341,8 @@ class VideoProcessor:
         self,
         input_path: str,
         output_name: str,
-        enabled_filters: List[str] = None,
-        strategy: Dict = None,
+        enabled_filters: list[str] = None,
+        strategy: dict = None,
     ) -> str:
         """
         Full video processing pipeline using OpenCV when MoviePy fails.
@@ -428,7 +428,7 @@ class VideoProcessor:
             f"[VideoProcessor] Applying FFmpeg Originality Transformation: {input_path} -> {output_path}"
         )
 
-        success = ffmpeg_transformer.apply_originality(
+        success = base_ffmpeg_transformer.apply_originality(
             input_path=input_path,
             output_path=output_path,
             mirror=True,
@@ -459,7 +459,7 @@ class VideoProcessor:
         transformed.write_videofile(output_path, codec=self.codec, audio_codec="aac")
         return output_path
 
-    def concatenate_highlights(self, clip_paths: List[str], output_name: str) -> str:
+    def concatenate_highlights(self, clip_paths: list[str], output_name: str) -> str:
         """
         Merge multiple clips into one.
         Uses fast FFmpeg concat demuxer (instant) first, falls back to MoviePy.
@@ -469,7 +469,7 @@ class VideoProcessor:
             f"[VideoProcessor] Concatenating {len(clip_paths)} clips to {output_path}"
         )
 
-        success = ffmpeg_transformer.fast_concat(clip_paths, output_path)
+        success = base_ffmpeg_transformer.fast_concat(clip_paths, output_path)
         if success:
             return output_path
 
@@ -484,7 +484,7 @@ class VideoProcessor:
         return output_path
 
     def apply_speed_ramping(
-        self, clip: "VideoFileClip", speed_range: List[float] = [0.95, 1.05]
+        self, clip: "VideoFileClip", speed_range: list[float] = [0.95, 1.05]
     ) -> "VideoFileClip":
         """
         Randomly shifts speed based on AI strategy range to reset algorithm clocks.
@@ -557,7 +557,7 @@ class VideoProcessor:
         )
 
     def apply_vibe_adjustments(
-        self, clip: "VideoFileClip", insights: Dict
+        self, clip: "VideoFileClip", insights: dict
     ) -> "VideoFileClip":
         """
         Maps VLM visual insights (mood, predominant colors) to MoviePy visual effects.
@@ -590,7 +590,7 @@ class VideoProcessor:
         return clip
 
     def trim_to_hooks(
-        self, clip: "VideoFileClip", hooks: List[List[float]]
+        self, clip: "VideoFileClip", hooks: list[list[float]]
     ) -> "VideoFileClip":
         """
         Cuts the video to only the segments identified as high-energy hooks.
@@ -610,7 +610,7 @@ class VideoProcessor:
         return concatenate_videoclips(segments, method="compose")
 
     async def inject_b_roll(
-        self, clip: "VideoFileClip", keywords: List[str]
+        self, clip: "VideoFileClip", keywords: list[str]
     ) -> "VideoFileClip":
         """
         Fetches a stock B-roll clip and overlays it onto the main video.
@@ -623,11 +623,11 @@ class VideoProcessor:
             f"[VideoProcessor] Attempting B-roll injection for keyword: {keyword}"
         )
 
-        urls = await stock_service.fetch_b_roll(keyword, count=1)
+        urls = await base_stock_service.fetch_b_roll(keyword, count=1)
         if not urls:
             return clip
 
-        b_roll_path = await stock_service.download_stock_video(urls[0])
+        b_roll_path = await base_stock_service.download_stock_video(urls[0])
         if not b_roll_path:
             return clip
 
@@ -833,7 +833,7 @@ class VideoProcessor:
 
         return output_path
 
-    async def assemble_story(self, scenes: List[Dict], output_name: str) -> str:
+    async def assemble_story(self, scenes: list[dict], output_name: str) -> str:
         """
         Assembles multi-scene stories with precise voice-visual alignment.
         """
@@ -931,8 +931,8 @@ class VideoProcessor:
         self,
         input_path: str,
         output_name: str,
-        enabled_filters: Optional[List[str]] = None,
-        strategy: Optional[Dict] = None,
+        enabled_filters: list[str] | None = None,
+        strategy: dict | None = None,
     ) -> str:
         """
         High-fidelity video transformation using Remotion.
@@ -943,7 +943,7 @@ class VideoProcessor:
         )
 
         try:
-            from services.video_engine.remotion_service import remotion_service
+            from src.services.video_engine.base_remotion_service import base_remotion_service
 
             # Prepare props for the Remotion ViralClip composition
             props = {
@@ -960,7 +960,7 @@ class VideoProcessor:
             if strategy and strategy.get("voiceover_url"):
                 props["audioUrl"] = strategy["voiceover_url"]
 
-            rendered_path = await remotion_service.render_video(
+            rendered_path = await base_remotion_service.render_video(
                 composition_id="ViralClip", props=props, output_name=output_name
             )
 

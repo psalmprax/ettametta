@@ -1,20 +1,19 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from typing import List, Dict
 import json
 import asyncio
 import logging
 import redis.asyncio as redis
 import redis as redis_sync
-from api.config import settings
-from services.analytics.signal_bus import base_signal_bus
-from services.analytics.drift_monitor import base_drift_monitor
+from src.api.config import settings
+from src.services.analytics.signal_bus import base_signal_bus
+from src.services.analytics.drift_monitor import base_drift_monitor
 
 router = APIRouter(prefix="/ws", tags=["websockets"])
 
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
         self.redis_client = redis.from_url(settings.REDIS_URL)
         self.pubsub_task = None
 
@@ -129,15 +128,15 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
         while True:
             # Generate telemetry from real system state
             try:
-                from api.utils.database import get_db
-                from api.utils.models import (
+                from src.api.utils.database import get_db
+                from src.api.utils.models import (
                     VideoJobDB,
                     PublishedContentDB,
                     ContentCandidateDB,
                 )
                 from sqlalchemy import select, func
                 from sqlalchemy.ext.asyncio import AsyncSession
-                from api.utils.database import async_session_factory
+                from src.api.utils.database import async_session_factory
 
                 async with async_session_factory() as db:
                     stmt_active = select(func.count(VideoJobDB.id)).where(VideoJobDB.status.in_(["Queued", "Rendering"]))
@@ -242,7 +241,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-def notify_job_update_sync(job_data: Dict):
+def notify_job_update_sync(job_data: dict):
     """
     Synchronous utility (for Celery) to publish job updates to Redis.
     """
@@ -256,8 +255,8 @@ def notify_system_log_sync(message: str, level: str = "INFO", module: str = "SYS
     Synchronous utility to publish system logs to Redis and persist to DB.
     """
     # Persist to DB
-    from api.utils.database import async_session_factory
-    from api.utils.models import SystemActivityDB
+    from src.api.utils.database import async_session_factory
+    from src.api.utils.models import SystemActivityDB
     import asyncio
 
     async def _db_log():
@@ -292,8 +291,8 @@ async def notify_system_log_async(message: str, level: str = "INFO", module: str
     """
     import redis.asyncio as redis_async
     import time
-    from api.utils.database import async_session_factory
-    from api.utils.models import SystemActivityDB
+    from src.api.utils.database import async_session_factory
+    from src.api.utils.models import SystemActivityDB
 
     # Persist to DB in background
     try:
@@ -319,7 +318,7 @@ async def notify_system_log_async(message: str, level: str = "INFO", module: str
         logging.error(f"Failed to broadcast system log (async): {e}")
 
 
-def notify_nexus_job_update_sync(job_data: Dict):
+def notify_nexus_job_update_sync(job_data: dict):
     """
     Synchronous utility to publish Nexus specific job updates to Redis.
     """

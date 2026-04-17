@@ -1,8 +1,7 @@
 import os
 import asyncio
-from typing import List
-from api.utils.os_worker import ai_worker
-from .ffmpeg_utils import ffmpeg_transformer
+from src.api.utils.os_worker import ai_worker
+from .ffmpeg_utils import base_ffmpeg_transformer
 
 
 class TranscriptionService:
@@ -11,7 +10,7 @@ class TranscriptionService:
         self.temp_dir = temp_dir
         os.makedirs(temp_dir, exist_ok=True)
 
-    async def transcribe_video(self, video_path: str) -> List[dict]:
+    async def transcribe_video(self, video_path: str) -> list[dict]:
         """
         Transcribes video audio using local Fast-Whisper with explicit audio extraction.
         Returns empty list if transcription fails.
@@ -22,7 +21,7 @@ class TranscriptionService:
         try:
             # 1. Explicit Audio Extraction (Hardening)
             success = await asyncio.to_thread(
-                ffmpeg_transformer.extract_audio, video_path, audio_path
+                base_ffmpeg_transformer.extract_audio, video_path, audio_path
             )
             if not success:
                 print(f"[OS-Transcription] Audio extraction failed for {video_path}")
@@ -46,4 +45,4 @@ class TranscriptionService:
             return []
 
 
-transcription_service = TranscriptionService()
+base_transcription_service = TranscriptionService()

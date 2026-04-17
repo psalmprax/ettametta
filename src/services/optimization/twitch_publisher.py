@@ -6,7 +6,6 @@ Features: Retry logic, rate limiting, file validation, proper logging
 
 import asyncio
 import os
-from typing import Optional
 import httpx
 import logging
 
@@ -34,9 +33,9 @@ class TwitchPublisher(SocialPublisher):
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Twitch-specific upload implementation"""
         access_token = await token_manager.get_token(
             "twitch", user_id=user_id, account_id=account_id
@@ -125,7 +124,7 @@ class TwitchPublisher(SocialPublisher):
 
             return f"https://clips.twitch.tv/{clip_id}"
 
-    async def _resolve_video_url(self, video_path: str) -> Optional[str]:
+    async def _resolve_video_url(self, video_path: str) -> str | None:
         """Resolve video path to URL"""
         if video_path.startswith(("http://", "https://")):
             return video_path
@@ -152,7 +151,7 @@ class TwitchPublisher(SocialPublisher):
         self,
         platform_id: str,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
     ) -> dict:
         """Fetch Twitch clip metrics"""

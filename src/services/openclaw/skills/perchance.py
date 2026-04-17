@@ -3,7 +3,7 @@ import logging
 import os
 import urllib.parse
 from playwright.async_api import async_playwright, Browser, Page
-from typing import Optional, Dict, Any, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +54,8 @@ class PerchanceSkill:
         self.negative_prompt = negative_prompt
         self.seed = seed
         self.batch_size = batch_size
-        self.browser: Optional[Browser] = None
-        self.page: Optional[Page] = None
+        self.browser: Browser | None = None
+        self.page: Page | None = None
 
     async def initialize(self):
         """Initialize stealth browser session"""
@@ -84,13 +84,13 @@ class PerchanceSkill:
     async def generate(
         self,
         prompt: str,
-        generator: Optional[str] = None,
-        resolution: Optional[str] = None,
-        aspect_ratio: Optional[str] = None,
-        negative_prompt: Optional[str] = None,
-        seed: Optional[int] = None,
-        batch_size: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        generator: str | None = None,
+        resolution: str | None = None,
+        aspect_ratio: str | None = None,
+        negative_prompt: str | None = None,
+        seed: int | None = None,
+        batch_size: int | None = None,
+    ) -> dict[str, Any]:
         """
         Generate image(s) using Perchance.
 
@@ -104,7 +104,7 @@ class PerchanceSkill:
             batch_size: Number of variations to generate
 
         Returns:
-            Dict with status, image_urls, error
+            dict with status, image_urls, error
         """
         generator = generator or self.generator
         resolution = resolution or self.resolution
@@ -232,7 +232,7 @@ class PerchanceSkill:
         if await generate_btn.count() > 0:
             await generate_btn.click()
 
-    async def _extract_images(self) -> List[str]:
+    async def _extract_images(self) -> list[str]:
         """Extract generated image URLs"""
         image_urls = []
 
@@ -256,7 +256,7 @@ class PerchanceSkill:
 
         return list(set(image_urls))
 
-    async def generate_simple(self, prompt: str) -> Dict[str, Any]:
+    async def generate_simple(self, prompt: str) -> dict[str, Any]:
         """Simple generation with defaults"""
         return await self.generate(prompt)
 
@@ -266,7 +266,7 @@ class PerchanceSkill:
         style: str = "photo",
         resolution: str = "hd",
         aspect_ratio: str = "9:16",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate with specific style settings"""
         style_map = {
             "photo": "photo",

@@ -1,41 +1,56 @@
 from pydantic_settings import BaseSettings
-from typing import Optional, Dict, Any
+from typing import Any
 import os
+from pathlib import Path
 from .utils.hardware_detector import hardware_detector
 
 
 class Settings(BaseSettings):
+    # Base Directories (Dynamic Portability)
+    BASE_DIR: Path = Path(__file__).parent.parent.parent
+    REMOTION_APP_DIR: Path = Path(__file__).parent.parent.parent / "apps/remotion-studio"
+    OUTPUT_DIR: Path = Path(__file__).parent.parent.parent / "outputs"
+
     # App Settings
     APP_NAME: str = "ettametta API"
     ENV: str = "development"
     DEBUG: bool = True
-    SECRET_KEY: Optional[str] = None  # Must be set via environment variable
+    SECRET_KEY: str | None = None  # Must be set via environment variable
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
-    INTERNAL_API_TOKEN: Optional[str] = None  # Master token for internal services
-    AI_CLUSTER_SECRET: Optional[str] = "psalm_cluster_v1"  # Secret for remote GPU nodes
+    INTERNAL_API_TOKEN: str | None = None  # Master token for internal services
+    AI_CLUSTER_SECRET: str | None = "psalm_cluster_v1"  # Secret for remote GPU nodes
     PORT: int = 8000  # API port
+    
+    # Trading Engine Config
+    NICHE_TICKER_MAP: dict[str, list[str]] = {
+        "technology": ["AAPL", "MSFT", "NVDA", "GOOGL"],
+        "finance": ["GS", "JPM", "V", "MA"],
+        "crypto": ["bitcoin", "ethereum", "solana", "cardano"],
+        "gaming": ["RNTFY", "ATVI", "EA", "TTWO"]
+    }
     
     # Lean Infrastructure (CPU-First Hardening)
     CPU_AUTODETECT_THREADS: bool = True
     RESOURCE_CONSTRAINED_MODE: bool = False # Set to True for small VPS (e.g. 2GB RAM)
+    REMOTION_STUDIO_PATH: str = "apps/remotion-studio"
 
     # AI Settings - Multi-Provider LLM Support
-    GROQ_API_KEY: Optional[str] = None
-    OPENAI_API_KEY: Optional[str] = None
-    XAI_API_KEY: Optional[str] = None  # xAI (Grok)
-    DEEPSEEK_API_KEY: Optional[str] = None
-    ANTHROPIC_API_KEY: Optional[str] = None  # Claude
-    COHERE_API_KEY: Optional[str] = None  # Cohere - 20 RPM, 1K tokens/mo free
-    MISTRAL_API_KEY: Optional[str] = None  # Mistral AI - 1 req/s, 1B tokens/mo free
-    CEREBRAS_API_KEY: Optional[str] = None  # Cerebras - 30 RPM, 14,400 RPD free
-    CLOUDFLARE_API_KEY: Optional[str] = None  # Cloudflare Workers AI
-    CLOUDFLARE_ACCOUNT_ID: Optional[str] = None  # Cloudflare Account ID
-    HUGGING_FACE_API_KEY: Optional[str] = None  # Hugging Face - $0.10/mo free credits
-    OPENROUTER_API_KEY: Optional[str] = None  # OpenRouter - 50 RPD free, 1K with $10
-    NVIDIA_API_KEY: Optional[str] = None  # NVIDIA NIM - 40 RPM free
-    OLLAMA_CLOUD_API_KEY: Optional[str] = None  # Ollama Cloud
-    SILICONFLOW_API_KEY: Optional[str] = None  # SiliconFlow - 1K RPM, 50K TPM free
+    GROQ_API_KEY: str | None = None
+    OPENAI_API_KEY: str | None = None
+    XAI_API_KEY: str | None = None  # xAI (Grok)
+    DEEPSEEK_API_KEY: str | None = None
+    ANTHROPIC_API_KEY: str | None = None  # Claude
+    COHERE_API_KEY: str | None = None  # Cohere - 20 RPM, 1K tokens/mo free
+    MISTRAL_API_KEY: str | None = None  # Mistral AI - 1 req/s, 1B tokens/mo free
+    CEREBRAS_API_KEY: str | None = None  # Cerebras - 30 RPM, 14,400 RPD free
+    CLOUDFLARE_API_KEY: str | None = None  # Cloudflare Workers AI
+    CLOUDFLARE_ACCOUNT_ID: str | None = None  # Cloudflare Account ID
+    HUGGING_FACE_API_KEY: str | None = None  # Hugging Face - $0.10/mo free credits
+    OPENROUTER_API_KEY: str | None = None  # OpenRouter - 50 RPD free, 1K with $10
+    NVIDIA_API_KEY: str | None = None  # NVIDIA NIM - 40 RPM free
+    OLLAMA_CLOUD_API_KEY: str | None = None  # Ollama Cloud
+    SILICONFLOW_API_KEY: str | None = None  # SiliconFlow - 1K RPM, 50K TPM free
     OLLAMA_URL: str = "http://localhost:11434"  # Local Ollama server
     LM_STUDIO_URL: str = "http://localhost:1234"  # Local LM Studio server
     DEFAULT_LLM_PROVIDER: str = "openai"  # groq, openai, xai, deepseek, anthropic, cohere, mistral, cerebras, cloudflare, huggingface, openrouter, nvidia, ollama_cloud, siliconflow, ollama, lm_studio
@@ -43,65 +58,63 @@ class Settings(BaseSettings):
     USE_OS_MODELS: bool = True
 
     # Neural Asset Keys
-    ELEVENLABS_API_KEY: Optional[str] = None
+    ELEVENLABS_API_KEY: str | None = None
     FISH_SPEECH_ENDPOINT: str = "http://voiceover:8080"
     VOICE_ENGINE: str = "fish_speech"  # Options: elevenlabs, fish_speech
     MONETIZATION_MODE: str = "selective"  # Options: selective, all
-    PEXELS_API_KEY: Optional[str] = None
-    GOOGLE_API_KEY: Optional[str] = None
-    GOOGLE_SEARCH_CX: Optional[str] = None  # Custom Search Engine ID for Google Search
+    PEXELS_API_KEY: str | None = None
+    GOOGLE_API_KEY: str | None = None
+    GOOGLE_SEARCH_CX: str | None = None  # Custom Search Engine ID for Google Search
     DEFAULT_VLM_MODEL: str = "gemini-1.5-flash"
 
     # Video Generation
     FONT_PATH: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
     # Social API Keys
-    YOUTUBE_API_KEY: Optional[str] = None
-    TIKTOK_API_KEY: Optional[str] = None
+    YOUTUBE_API_KEY: str | None = None
+    TIKTOK_API_KEY: str | None = None
+    DOWNLOAD_PROXY_URL: str | None = None  # Resilient Proxy Gateway
 
     # Payment Processing
-    STRIPE_SECRET_KEY: Optional[str] = None
-    STRIPE_WEBHOOK_SECRET: Optional[str] = None
+    STRIPE_SECRET_KEY: str | None = None
+    STRIPE_WEBHOOK_SECRET: str | None = None
 
     # OAuth Credentials
-    GOOGLE_CLIENT_ID: Optional[str] = None
-    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
 
     # TikTok keys might be loaded from env with slightly different names in some setups,
     # but we standardize here.
-    TIKTOK_CLIENT_KEY: Optional[str] = None
-    TIKTOK_CLIENT_SECRET: Optional[str] = None
+    TIKTOK_CLIENT_KEY: str | None = None
+    TIKTOK_CLIENT_SECRET: str | None = None
 
     # Webhook Signatures
-    YOUTUBE_WEBHOOK_SECRET: Optional[str] = None
-    TIKTOK_WEBHOOK_SECRET: Optional[str] = None
-    INSTAGRAM_WEBHOOK_SECRET: Optional[str] = None
-    FACEBOOK_WEBHOOK_SECRET: Optional[str] = None
-    LINKEDIN_WEBHOOK_SECRET: Optional[str] = None
-    X_WEBHOOK_SECRET: Optional[str] = None
+    YOUTUBE_WEBHOOK_SECRET: str | None = None
+    TIKTOK_WEBHOOK_SECRET: str | None = None
+    INSTAGRAM_WEBHOOK_SECRET: str | None = None
+    FACEBOOK_WEBHOOK_SECRET: str | None = None
+    LINKEDIN_WEBHOOK_SECRET: str | None = None
+    X_WEBHOOK_SECRET: str | None = None
 
     # Telegram Configuration
-    TELEGRAM_BOT_TOKEN: Optional[str] = None
+    TELEGRAM_BOT_TOKEN: str | None = None
     TELEGRAM_ADMIN_ID: int = 0
 
     # Shopify Configuration
-    SHOPIFY_SHOP_URL: Optional[str] = None
-    SHOPIFY_ACCESS_TOKEN: Optional[str] = None
+    SHOPIFY_SHOP_URL: str | None = None
+    SHOPIFY_ACCESS_TOKEN: str | None = None
 
     # Scraper Cookies (Bypass Bot Detection)
-    YOUTUBE_COOKIES_PATH: Optional[str] = "cookies/youtube_cookies.txt"
-    TIKTOK_COOKIES_PATH: Optional[str] = "cookies/tiktok_cookies.txt"
+    YOUTUBE_COOKIES_PATH: str | None = "cookies/youtube_cookies.txt"
+    TIKTOK_COOKIES_PATH: str | None = "cookies/tiktok_cookies.txt"
 
     # Infrastructure
     PRODUCTION_DOMAIN: str = "http://localhost:8000"
     API_URL: str = "http://api:8000"  # Internal service URL
-    INTERNAL_API_TOKEN: Optional[str] = (
-        None  # Token for internal service-to-service auth
-    )
     CORS_ORIGINS: str = (
         "http://localhost:3000,http://localhost:8080"  # Comma-separated list
     )
-    RENDER_NODE_URL: Optional[str] = None  # Colab/Remote GPU Node URL
+    RENDER_NODE_URL: str | None = None  # Colab/Remote GPU Node URL
 
     # ComfyUI Self-Hosting
     COMFYUI_URL: str = "http://220.135.0.171:8188"
@@ -115,26 +128,26 @@ class Settings(BaseSettings):
     )
     GPU_QUEUE_TIMEOUT: int = 300  # Seconds to wait for a slot
     GPU_OPTIMIZATION_LEVEL: str = "safe"  # safe, medium, extreme - affects VRAM usage
-    GPU_FORCE_VRAM_GB: Optional[int] = (
+    GPU_FORCE_VRAM_GB: int | None = (
         None  # Override auto-detected VRAM (for testing or manual config)
     )
 
     # Video Provider Credentials (for browser automation)
-    PIXVERSE_EMAIL: Optional[str] = None
-    PIXVERSE_PASSWORD: Optional[str] = None
-    KLING_EMAIL: Optional[str] = None
-    KLING_PASSWORD: Optional[str] = None
-    HAIPER_EMAIL: Optional[str] = None
-    HAIPER_PASSWORD: Optional[str] = None
-    LUMA_EMAIL: Optional[str] = None
-    LUMA_PASSWORD: Optional[str] = None
-    RUNWAY_EMAIL: Optional[str] = None
-    RUNWAY_PASSWORD: Optional[str] = None
-    PIKA_EMAIL: Optional[str] = None
-    PIKA_PASSWORD: Optional[str] = None
+    PIXVERSE_EMAIL: str | None = None
+    PIXVERSE_PASSWORD: str | None = None
+    KLING_EMAIL: str | None = None
+    KLING_PASSWORD: str | None = None
+    HAIPER_EMAIL: str | None = None
+    HAIPER_PASSWORD: str | None = None
+    LUMA_EMAIL: str | None = None
+    LUMA_PASSWORD: str | None = None
+    RUNWAY_EMAIL: str | None = None
+    RUNWAY_PASSWORD: str | None = None
+    PIKA_EMAIL: str | None = None
+    PIKA_PASSWORD: str | None = None
 
     # Hardware detection (auto-populated)
-    _detected_gpu_info: Dict[str, Any] = hardware_detector.get_gpu_info()
+    _detected_gpu_info: dict[str, Any] = hardware_detector.get_gpu_info()
 
     # Rate Limiting (Requests per hour)
     LIMIT_FREE: int = 5
@@ -142,7 +155,7 @@ class Settings(BaseSettings):
     LIMIT_SOVEREIGN: int = 500
 
     @property
-    def DETECTED_GPU_VRAM_GB(self) -> Optional[int]:
+    def DETECTED_GPU_VRAM_GB(self) -> int | None:
         """Returns GPU VRAM (forced override or auto-detected)."""
         return self.GPU_FORCE_VRAM_GB or hardware_detector.vram_gb
 
@@ -194,10 +207,10 @@ class Settings(BaseSettings):
 
     # Multi-Cloud Storage Engine
     STORAGE_PROVIDER: str = "LOCAL"  # Options: AWS, OCI, GCP, AZURE, CUSTOM, LOCAL
-    STORAGE_ENDPOINT: Optional[str] = None
+    STORAGE_ENDPOINT: str | None = None
     STORAGE_BUCKET: str = ""
-    STORAGE_ACCESS_KEY: Optional[str] = None
-    STORAGE_SECRET_KEY: Optional[str] = None
+    STORAGE_ACCESS_KEY: str | None = None
+    STORAGE_SECRET_KEY: str | None = None
     STORAGE_REGION: str = "us-east-1"
 
     # Sound Design (Tier 3 Enhancement)
@@ -215,18 +228,18 @@ class Settings(BaseSettings):
         "none"  # none, zsky, kling, pixverse, replicate, runway, pika, stability
     )
     AI_VIDEO_FALLBACKS: str = ""
-    RUNWAY_API_KEY: Optional[str] = None
-    PIKA_API_KEY: Optional[str] = None
-    ZSKY_API_KEY: Optional[str] = None  # ~50 credits/day
-    KLING_API_KEY: Optional[str] = None  # ~100 credits/day
-    PIXVERSE_API_KEY: Optional[str] = None  # ~20 credits/day
-    REPLICATE_API_KEY: Optional[str] = None  # Free trial credits
-    STABILITY_API_KEY: Optional[str] = None  # ~25 credits/day
+    RUNWAY_API_KEY: str | None = None
+    PIKA_API_KEY: str | None = None
+    ZSKY_API_KEY: str | None = None  # ~50 credits/day
+    KLING_API_KEY: str | None = None  # ~100 credits/day
+    PIXVERSE_API_KEY: str | None = None  # ~20 credits/day
+    REPLICATE_API_KEY: str | None = None  # Free trial credits
+    STABILITY_API_KEY: str | None = None  # ~25 credits/day
 
     # Video Quality Tier (default processing level)
     DEFAULT_QUALITY_TIER: str = "standard"  # standard, enhanced, premium
 
-    # Agent Frameworks (Optional - disabled by default)
+    # Agent Frameworks (Any - disabled by default)
     ENABLE_LANGCHAIN: bool = False
     ENABLE_CREWAI: bool = False
     ENABLE_INTERPRETER: bool = False
@@ -239,28 +252,28 @@ class Settings(BaseSettings):
     OPENCLI_SESSIONS_DIR: str = "/tmp/opencli_sessions"  # Per-user session storage
 
     # Affiliate API Keys
-    AMAZON_ASSOCIATES_TAG: Optional[str] = None
-    AMAZON_PAAPI_KEY: Optional[str] = None
-    AMAZON_PAAPI_TAG: Optional[str] = None
-    IMPACT_RADIUS_API_KEY: Optional[str] = None
-    SHAREASALE_API_KEY: Optional[str] = None
+    AMAZON_ASSOCIATES_TAG: str | None = None
+    AMAZON_PAAPI_KEY: str | None = None
+    AMAZON_PAAPI_TAG: str | None = None
+    IMPACT_RADIUS_API_KEY: str | None = None
+    SHAREASALE_API_KEY: str | None = None
 
     # Trading API Keys
-    ALPHA_VANTAGE_API_KEY: Optional[str] = None
-    COINGECKO_API_KEY: Optional[str] = None
+    ALPHA_VANTAGE_API_KEY: str | None = None
+    COINGECKO_API_KEY: str | None = None
 
     # Twilio/WhatsApp Configuration
-    TWILIO_ACCOUNT_SID: Optional[str] = None
-    TWILIO_AUTH_TOKEN: Optional[str] = None
-    TWILIO_WHATSAPP_NUMBER: Optional[str] = None
+    TWILIO_ACCOUNT_SID: str | None = None
+    TWILIO_AUTH_TOKEN: str | None = None
+    TWILIO_WHATSAPP_NUMBER: str | None = None
 
     # Print-on-Demand
-    PRINTFUL_API_KEY: Optional[str] = None
+    PRINTFUL_API_KEY: str | None = None
 
     # Email Marketing
-    MAILCHIMP_API_KEY: Optional[str] = None
-    MAILCHIMP_LIST_ID: Optional[str] = None
-    CONVERTKIT_API_KEY: Optional[str] = None
+    MAILCHIMP_API_KEY: str | None = None
+    MAILCHIMP_LIST_ID: str | None = None
+    CONVERTKIT_API_KEY: str | None = None
 
     # LangChain Settings
     LANGCHAIN_MODEL: str = "llama-3.3-70b-versatile"
@@ -270,10 +283,10 @@ class Settings(BaseSettings):
     CREWAI_AGENTS: str = "researcher,writer,editor"
 
     # Deprecated (Keeping for backward sync during migration)
-    AWS_ACCESS_KEY_ID: Optional[str] = None
-    AWS_SECRET_ACCESS_KEY: Optional[str] = None
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
     AWS_REGION: str = "us-east-1"
-    AWS_STORAGE_BUCKET_NAME: Optional[str] = None
+    AWS_STORAGE_BUCKET_NAME: str | None = None
 
     # Database & Redis
     DATABASE_URL: str = "sqlite:///./data/db/ettametta.db"
@@ -285,7 +298,6 @@ class Settings(BaseSettings):
         Runs a mission-critical check of environment variables.
         Returns a dict with 'errors' (blocking) and 'warnings' (non-blocking).
         """
-        from typing import Dict, List
 
         result = {"errors": [], "warnings": [], "info": []}
 
@@ -370,7 +382,7 @@ class Settings(BaseSettings):
                     "TIKTOK_CLIENT_KEY not set - TikTok OAuth will not work"
                 )
 
-        # Optional service warnings
+        # Any service warnings
         if not self.ELEVENLABS_API_KEY and self.VOICE_ENGINE == "elevenlabs":
             result["warnings"].append(
                 "ELEVENLABS_API_KEY not set - ElevenLabs voice engine unavailable"

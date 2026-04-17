@@ -14,8 +14,7 @@ import torch
 import os
 import time
 import requests
-from typing import Tuple, Optional
-from api.config import settings
+from src.api.config import settings
 
 # Model cache
 _cogvideo_pipe = None
@@ -76,7 +75,7 @@ def generate_cogvideo(
     guidance_scale: float = 6.0,
     model_size: str = "2b",
     output_dir: str = "outputs",
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """Generate video using CogVideoX (480p)"""
     # Enforce 480p Maximum
     height = min(height, 480)
@@ -127,7 +126,7 @@ def generate_cogvideo_api(
     height: int = 480,
     width: int = 720,
     model_size: str = "2b",
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """Generate video using CogVideoX API on Remote GPU"""
     job_id = f"cogx_api_{int(time.time())}"
     output_path = os.path.join(output_dir, f"{job_id}.mp4")
@@ -171,7 +170,7 @@ def generate_cogvideo_api(
     )
 
 
-def generate_cogvideo_dummy(output_dir: str) -> Tuple[str, str]:
+def generate_cogvideo_dummy(output_dir: str) -> tuple[str, str]:
     """Raise error instead of generating garbage output"""
     raise RuntimeError(
         "CogVideoX generation failed: neither remote GPU node nor local model available. "

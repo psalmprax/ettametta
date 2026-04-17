@@ -11,7 +11,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 
 # Add project root
 sys.path.insert(0, str(Path(__file__).parent))
@@ -87,7 +87,7 @@ async def test_production_pipeline():
 
     try:
         # Test video lead discovery (this works without heavy deps)
-        from services.discovery.video_lead_scanner import VideoLeadScanner
+        from src.services.discovery.video_lead_scanner import VideoLeadScanner
 
         scanner = VideoLeadScanner()
 

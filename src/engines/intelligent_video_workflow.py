@@ -11,7 +11,7 @@ import json
 import re
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,79 +19,46 @@ load_dotenv()
 import httpx
 
 
-async def expand_query_intelligently(query: str) -> List[str]:
+from src.services.llm.intelligence_hub import base_intelligence_hub
+
+async def expand_query_intelligently(query: str, session_id: str | None = None) -> list[str]:
     """Use LLM to expand a base query into high-converting viral variations with resilient fallback."""
     print(f"  🧠 Expanding query intelligently: {query}")
     
-    groq_key = os.getenv("GROQ_API_KEY")
-    openai_key = os.getenv("OPENAI_API_KEY")
-
-    if not groq_key and not openai_key:
-        return [query]
-
-    # Decide order (default Groq -> OpenAI)
-    providers = []
-    if groq_key:
-        providers.append(("groq", groq_key, "llama-3.3-70b-versatile", "https://api.groq.com/openai/v1/chat/completions"))
-    if openai_key:
-        providers.append(("openai", openai_key, "gpt-4o", "https://api.openai.com/v1/chat/completions"))
-
     import datetime
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    jitter = " (Make it slightly more experimental and controversial)" if datetime.datetime.now().microsecond % 2 == 0 else ""
 
-    for name, key, model, url in providers:
-        try:
-            print(f"    -> Trying {name}...")
-            async with httpx.AsyncClient(timeout=15) as client:
-                # Add stochastic jitter to prompt for variety
-                jitter = " (Make it slightly more experimental and controversial)" if datetime.datetime.now().microsecond % 2 == 0 else ""
-                
-                resp = await client.post(
-                    url,
-                    headers={
-                        "Authorization": f"Bearer {key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": model,
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": "You are a professional viral content strategist. Generate high-intent search queries."
-                            },
-                            {
-                                "role": "user",
-                                "content": f"""Take this topic: "{query}"
+    prompt = f"""Take this topic: "{query}"
 Generate 5 highly different, viral search variations that people actually use to find trending content in 2024.
-Avoid generic terms. Use click-driven, value-heavy hooks.
+Avoid generic terms. Use click-driven, value-heavy hooks.{jitter}
 Ensure these variations are different from previous searches by incorporating the context of {now_str}.
-Return ONLY a JSON list of strings.""",
-                            },
-                        ],
-                        "max_tokens": 150,
-                        "response_format": {"type": "json_object"},
-                    },
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    content = data["choices"][0]["message"]["content"]
-                    parsed = json.loads(content)
-                    variations = parsed if isinstance(parsed, list) else list(parsed.values())[0]
-                    
-                    if isinstance(variations, list):
-                        unique_variations = list(set([query] + variations[:4]))
-                        print(f"  ✨ Query swarm generated ({name}): {unique_variations}")
-                        return unique_variations
-                
-                print(f"  ⚠️ {name.upper()} expansion failed ({resp.status_code}). Checking fallback...")
-        except Exception as e:
-            print(f"  ⚠️ {name.upper()} expansion failed: {str(e)[:50]}")
+Return ONLY a JSON list of strings."""
 
-    print("  🛑 All LLM providers failed for expansion. Using literal search.")
+    try:
+        result = await base_intelligence_hub.chat(
+            prompt=prompt,
+            system_prompt="You are a professional viral content strategist. Generate high-intent search queries. Return ONLY a JSON list of strings.",
+            session_id=session_id,
+            json_mode=True
+        )
+        
+        parsed = json.loads(result["response"])
+        variations = parsed if isinstance(parsed, list) else list(parsed.values())[0]
+        
+        if isinstance(variations, list):
+            unique_variations = list(set([query] + variations[:4]))
+            print(f"  ✨ Query swarm generated ({result['provider'].upper()}): {unique_variations}")
+            return unique_variations
+            
+    except Exception as e:
+        print(f"  ⚠️ Intelligent expansion failed: {str(e)[:50]}")
+
+    print("  🛑 Intelligence fallback enabled. Using literal search.")
     return [query]
 
 
-def curl_youtube(query: str, max_results: int = 2) -> List[Dict]:
+def curl_youtube(query: str, max_results: int = 2) -> list[dict]:
     """Use yt-dlp for YouTube extraction"""
     print(f"  🔍 YouTube (yt-dlp): {query}")
 
@@ -136,7 +103,7 @@ def curl_youtube(query: str, max_results: int = 2) -> List[Dict]:
 
 def search_by_date_youtube(
     query: str, max_results: int = 2, date_filter: str = "today"
-) -> List[Dict]:
+) -> list[dict]:
     """Search YouTube by nearest date - prioritize newest content"""
     print(f"  🔍 YouTube ({date_filter}): {query}")
 
@@ -197,7 +164,7 @@ def search_by_date_youtube(
     return videos
 
 
-async def scrape_youtube(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_youtube(query: str, max_results: int = 2) -> list[dict]:
     """Scrape YouTube - prioritize newest content"""
     print(f"  🔍 YouTube (thisweek): {query}")
 
@@ -269,7 +236,7 @@ async def scrape_youtube(query: str, max_results: int = 2) -> List[Dict]:
     return videos
 
 
-async def scrape_tiktok(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_tiktok(query: str, max_results: int = 2) -> list[dict]:
     """Scrape TikTok using yt-dlp"""
     print(f"  🔍 TikTok: {query}")
 
@@ -308,7 +275,7 @@ async def scrape_tiktok(query: str, max_results: int = 2) -> List[Dict]:
     return videos
 
 
-async def scrape_reddit(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_reddit(query: str, max_results: int = 2) -> list[dict]:
     """Scrape Reddit using yt-dlp"""
     print(f"  🔍 Reddit: {query}")
 
@@ -347,7 +314,7 @@ async def scrape_reddit(query: str, max_results: int = 2) -> List[Dict]:
     return posts
 
 
-async def scrape_google(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_google(query: str, max_results: int = 2) -> list[dict]:
     """Scrape Google using yt-dlp"""
     print(f"  🔍 Google: {query}")
 
@@ -386,7 +353,7 @@ async def scrape_google(query: str, max_results: int = 2) -> List[Dict]:
     return results
 
 
-async def scrape_x(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_x(query: str, max_results: int = 2) -> list[dict]:
     """Scrape X (Twitter) - yt-dlp doesn't support, use YouTube as fallback"""
     print(f"  🔍 X (Twitter): {query}")
 
@@ -425,7 +392,7 @@ async def scrape_x(query: str, max_results: int = 2) -> List[Dict]:
     return posts
 
 
-async def scrape_trending_topic(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_trending_topic(query: str, max_results: int = 2) -> list[dict]:
     """Scrape Google Trends using yt-dlp"""
     print(f"  🔍 Trends: {query}")
 
@@ -464,7 +431,7 @@ async def scrape_trending_topic(query: str, max_results: int = 2) -> List[Dict]:
     return results
 
 
-async def scrape_rumble(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_rumble(query: str, max_results: int = 2) -> list[dict]:
     """Scrape Rumble using yt-dlp"""
     print(f"  🔍 Rumble: {query}")
 
@@ -503,7 +470,7 @@ async def scrape_rumble(query: str, max_results: int = 2) -> List[Dict]:
     return videos
 
 
-async def scrape_bilibili(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_bilibili(query: str, max_results: int = 2) -> list[dict]:
     """Scrape Bilibili using yt-dlp"""
     print(f"  🔍 Bilibili: {query}")
 
@@ -542,7 +509,7 @@ async def scrape_bilibili(query: str, max_results: int = 2) -> List[Dict]:
     return videos
 
 
-async def scrape_pinterest(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_pinterest(query: str, max_results: int = 2) -> list[dict]:
     """Scrape Pinterest using yt-dlp"""
     print(f"  🔍 Pinterest: {query}")
 
@@ -581,7 +548,7 @@ async def scrape_pinterest(query: str, max_results: int = 2) -> List[Dict]:
     return videos
 
 
-async def scrape_facebook(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_facebook(query: str, max_results: int = 2) -> list[dict]:
     """Scrape Facebook using yt-dlp"""
     print(f"  🔍 Facebook: {query}")
 
@@ -620,7 +587,7 @@ async def scrape_facebook(query: str, max_results: int = 2) -> List[Dict]:
     return videos
 
 
-async def scrape_instagram(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_instagram(query: str, max_results: int = 2) -> list[dict]:
     """Scrape Instagram using yt-dlp"""
     print(f"  🔍 Instagram: {query}")
 
@@ -659,7 +626,7 @@ async def scrape_instagram(query: str, max_results: int = 2) -> List[Dict]:
     return videos
 
 
-async def scrape_twitch(query: str, max_results: int = 2) -> List[Dict]:
+async def scrape_twitch(query: str, max_results: int = 2) -> list[dict]:
     """Scrape Twitch using yt-dlp"""
     print(f"  🔍 Twitch: {query}")
 
@@ -698,13 +665,13 @@ async def scrape_twitch(query: str, max_results: int = 2) -> List[Dict]:
     return videos
 
 
-async def discover_multi_platform(query: str, max_per_platform: int = 2) -> List[Dict]:
+async def discover_multi_platform(query: str, max_per_platform: int = 2, session_id: str | None = None) -> list[dict]:
     """Discover content from 15+ platforms using an intelligent Query Swarm."""
-    print(f"\n🌐 AUTONOMOUS INTELLIGENT DISCOVERY: {query}")
+    print(f"\n🌐 AUTONOMOUS INTELLIGENT DISCOVERY: {query} [ID: {session_id}]")
     print("=" * 60)
 
     # Wave 1: Expand Query Intelligently
-    search_swarm = await expand_query_intelligently(query)
+    search_swarm = await expand_query_intelligently(query, session_id=session_id)
     all_results = []
     seen_ids = set()
 
@@ -764,39 +731,10 @@ async def discover_multi_platform(query: str, max_per_platform: int = 2) -> List
     return all_results
 
 
-async def analyze_content_type(video: Dict) -> Dict:
+async def analyze_content_type(video: dict, session_id: str | None = None) -> dict:
     """Analyze content type and narrative patterns using LLM with resilient fallback."""
-    groq_key = os.getenv("GROQ_API_KEY")
-    openai_key = os.getenv("OPENAI_API_KEY")
-
-    if not groq_key and not openai_key:
-        return {"content_type": "unknown", "usable": True, "reason": "No LLM key"}
-
-    providers = []
-    if groq_key:
-        providers.append(("groq", groq_key, "llama-3.3-70b-versatile", "https://api.groq.com/openai/v1/chat/completions"))
-    if openai_key:
-        providers.append(("openai", openai_key, "gpt-4o", "https://api.openai.com/v1/chat/completions"))
-
-    for name, key, model, url in providers:
-        try:
-            async with httpx.AsyncClient(timeout=15) as client:
-                resp = await client.post(
-                    url,
-                    headers={
-                        "Authorization": f"Bearer {key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": model,
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": "You are a Viral Narrative Analyst. Your job is to classify content and filter out low-quality/off-topic videos.",
-                            },
-                            {
-                                "role": "user",
-                                "content": f"""Analyze this content candidate:
+    
+    prompt = f"""Analyze this content candidate:
 Title: "{video.get("title", "")}"
 Platform: {video.get("platform", "unknown")}
 
@@ -807,33 +745,34 @@ Evaluate for:
 4. Eligibility: Is it a Vlog, Live Stream, or Music Video? (Reject these as usable=false)
 5. Sentiment: Positive/Neutral/Urgent
 
-Reply with JSON ONLY: {{"hook_strength": N, "category": "string", "pattern": "string", "sentiment": "string", "reason": "string", "usable": true|false}}""",
-                            }
-                        ],
-                        "max_tokens": 200,
-                        "response_format": {"type": "json_object"},
-                    },
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    analysis = json.loads(data["choices"][0]["message"]["content"])
-                    return {
-                        "category": analysis.get("category", "other"),
-                        "content_type": analysis.get("pattern", "unknown"),
-                        "usable": analysis.get("usable", True),
-                        "score": analysis.get("hook_strength", 5.0),
-                        "reason": f"AI ({name}): {analysis.get('reason', 'Analyzed')}",
-                        "sentiment": analysis.get("sentiment"),
-                    }
-                
-                print(f"  ⚠️ {name.upper()} analysis failed ({resp.status_code}). Checking fallback...")
-        except Exception as e:
-            print(f"  ⚠️ {name.upper()} analysis skipped: {str(e)[:50]}")
+Reply with JSON ONLY: {{"hook_strength": N, "category": "string", "pattern": "string", "sentiment": "string", "reason": "string", "usable": true|false}}"""
 
-    return {"content_type": "unknown", "usable": True, "score": 7.0, "reason": "all fallbacks failed"}
+    try:
+        result = await base_intelligence_hub.chat(
+            prompt=prompt,
+            system_prompt="You are a Viral Narrative Analyst. Your job is to classify content and filter out low-quality/off-topic videos. Return ONLY valid JSON.",
+            session_id=session_id,
+            json_mode=True
+        )
+        
+        analysis = json.loads(result["response"])
+        print(f"  🎬 Analysis ({result['provider'].upper()}): {analysis.get('pattern')} (Score: {analysis.get('hook_strength')}/10)")
+        
+        return {
+            "category": analysis.get("category", "other"),
+            "content_type": analysis.get("pattern", "unknown"),
+            "usable": analysis.get("usable", True),
+            "score": analysis.get("hook_strength", 5.0),
+            "reason": f"AI ({result['provider'].upper()}): {analysis.get('reason', 'Analyzed')}",
+            "sentiment": analysis.get("sentiment"),
+        }
+
+    except Exception as e:
+        print(f"  ⚠️ Analysis failed: {str(e)[:50]}")
+        return {"content_type": "unknown", "usable": True, "score": 7.0, "reason": "Intelligence fallback"}
 
 
-def check_content_freshness(video: Dict, max_days: int = 30) -> Dict:
+def check_content_freshness(video: dict, max_days: int = 30) -> dict:
     """Check if content is within 0-30 days old (0 = today, allow new content)"""
     import time
 
@@ -880,7 +819,7 @@ def check_content_freshness(video: Dict, max_days: int = 30) -> Dict:
     return {"fresh": True, "age_days": -1, "within_range": True}
 
 
-async def check_eligibility(video: Dict) -> Dict:
+async def check_eligibility(video: dict) -> dict:
     """Check 30+ professional rejection reasons including freshness"""
 
     rejection_reasons = []

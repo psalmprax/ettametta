@@ -9,7 +9,7 @@ This complements the automated discovery and planning system.
 
 import json
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any
 import os
 
 
@@ -21,8 +21,8 @@ class VideoProductionAssistant:
         self.templates_dir.mkdir(parents=True, exist_ok=True)
 
     def generate_editing_instructions(
-        self, production_plan: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, production_plan: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate detailed step-by-step editing instructions"""
 
         fusion_plan = production_plan.get("fusion_plan", {})
@@ -43,7 +43,7 @@ class VideoProductionAssistant:
 
         return instructions
 
-    def create_premiere_template(self, production_plan: Dict[str, Any]) -> str:
+    def create_premiere_template(self, production_plan: dict[str, Any]) -> str:
         """Generate Adobe Premiere project template structure"""
 
         fusion_plan = production_plan.get("fusion_plan", {})
@@ -68,7 +68,7 @@ class VideoProductionAssistant:
 
         return json.dumps(template, indent=2)
 
-    def create_capcut_template(self, production_plan: Dict[str, Any]) -> str:
+    def create_capcut_template(self, production_plan: dict[str, Any]) -> str:
         """Generate CapCut project template"""
 
         fusion_plan = production_plan.get("fusion_plan", {})
@@ -94,7 +94,7 @@ class VideoProductionAssistant:
 
         return json.dumps(template, indent=2)
 
-    def generate_davinci_resolve_script(self, production_plan: Dict[str, Any]) -> str:
+    def generate_davinci_resolve_script(self, production_plan: dict[str, Any]) -> str:
         """Generate DaVinci Resolve Lua script for automation"""
 
         fusion_plan = production_plan.get("fusion_plan", {})
@@ -127,7 +127,7 @@ class VideoProductionAssistant:
 
         return "\n".join(script_lines)
 
-    def create_ffmpeg_commands(self, production_plan: Dict[str, Any]) -> List[str]:
+    def create_ffmpeg_commands(self, production_plan: dict[str, Any]) -> list[str]:
         """Generate FFmpeg commands for video processing"""
 
         fusion_plan = production_plan.get("fusion_plan", {})
@@ -169,8 +169,8 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
         return commands
 
     def _create_production_overview(
-        self, production_plan: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, production_plan: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create production overview"""
         return {
             "niche": production_plan.get("niche", "Unknown"),
@@ -194,8 +194,8 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
         }
 
     def _create_step_by_step_guide(
-        self, fusion_plan: Dict[str, Any], audio_plan: Dict[str, Any]
-    ) -> List[str]:
+        self, fusion_plan: dict[str, Any], audio_plan: dict[str, Any]
+    ) -> list[str]:
         """Create detailed step-by-step editing guide"""
         steps = [
             "1. Gather all source videos based on the scene assignments",
@@ -214,7 +214,25 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
 
         return steps
 
-    def _create_technical_specs(self, upload_specs: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_critic_report_to_actions(self, critic_report: dict[str, Any]) -> list[str]:
+        """CONVERTS AI CRITIQUE INTO ACTIONABLE EDITING COMMANDS (Tier 10)"""
+        actions = []
+        suggestions = critic_report.get("improvement_suggestions", [])
+        
+        for suggestion in suggestions:
+            if "hook" in suggestion.lower():
+                actions.append(f"RE-SEQUENCE: Move highest energy clip to 0:01 (Direct Response to: {suggestion})")
+            elif "shorten" in suggestion.lower():
+                actions.append(f"TRIM: Apply 15% aggressive cut to segments (Direct Response to: {suggestion})")
+            elif "cta" in suggestion.lower() or "call to action" in suggestion.lower():
+                actions.append(f"ENHANCE: Add high-contrast text overlay in last 3s (Direct Response to: {suggestion})")
+            else:
+                actions.append(f"ADJUST: {suggestion}")
+                
+        return actions
+
+
+    def _create_technical_specs(self, upload_specs: dict[str, Any]) -> dict[str, Any]:
         """Create technical specifications for editing"""
         return {
             "video_format": "MP4",
@@ -228,7 +246,7 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
             "audio_channels": "Stereo",
         }
 
-    def _create_quality_checklist(self) -> List[str]:
+    def _create_quality_checklist(self) -> list[str]:
         """Create quality assurance checklist"""
         return [
             "Video resolution matches target specifications",
@@ -243,7 +261,7 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
             "Title and description are optimized for SEO",
         ]
 
-    def _create_export_settings(self, upload_specs: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_export_settings(self, upload_specs: dict[str, Any]) -> dict[str, Any]:
         """Create platform-specific export settings"""
         return {
             "youtube": {
@@ -270,7 +288,7 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
             },
         }
 
-    def _create_troubleshooting_guide(self) -> Dict[str, Any]:
+    def _create_troubleshooting_guide(self) -> dict[str, Any]:
         """Create troubleshooting guide for common issues"""
         return {
             "common_issues": {
@@ -288,7 +306,7 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
             },
         }
 
-    def _create_premiere_tracks(self, segments: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _create_premiere_tracks(self, segments: list[dict[str, Any]]) -> dict[str, Any]:
         """Create Premiere track structure"""
         return {
             "video_tracks": [
@@ -312,8 +330,8 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
         }
 
     def _create_media_list(
-        self, segments: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, segments: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Create media file list for Premiere"""
         return [
             {
@@ -324,15 +342,15 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
             for i, segment in enumerate(segments)
         ]
 
-    def _create_effect_list(self, fusion_plan: Dict[str, Any]) -> List[str]:
+    def _create_effect_list(self, fusion_plan: dict[str, Any]) -> list[str]:
         """Create effects list for Premiere"""
         return fusion_plan.get(
             "effects", ["color_grading", "text_overlays", "cinematic_filters"]
         )
 
     def _create_capcut_video_tracks(
-        self, fusion_plan: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, fusion_plan: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Create CapCut video track structure"""
         segments = fusion_plan.get("segments", [])
         return [
@@ -352,8 +370,8 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
         ]
 
     def _create_capcut_audio_tracks(
-        self, audio_plan: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, audio_plan: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Create CapCut audio track structure"""
         audio_segments = audio_plan.get("audio_segments", [])
         return [
@@ -374,4 +392,4 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
 
 
 # Global instance
-video_production_assistant = VideoProductionAssistant()
+base_video_production_assistant = VideoProductionAssistant()

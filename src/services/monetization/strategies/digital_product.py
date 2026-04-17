@@ -1,15 +1,15 @@
 import logging
 import random
-from typing import List, Dict, Any
+from typing import Any
 from sqlalchemy import select
 from .base import BaseMonetizationStrategy
-from api.utils.database import async_session_factory
-from api.utils.models import DigitalProductDB
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import DigitalProductDB
 
 logger = logging.getLogger(__name__)
 
 class DigitalProductStrategy(BaseMonetizationStrategy):
-    async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
+    async def get_assets(self, niche: str) -> list[dict[str, Any]]:
         """
         Get digital product assets for the given niche from DigitalProductDB.
         """

@@ -12,7 +12,7 @@ import traceback
 import uuid
 from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 app = FastAPI(title="AI Cluster Gateway")
 
@@ -53,7 +53,7 @@ class JobStore:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("INSERT OR REPLACE INTO jobs (job_id, node_url) VALUES (?, ?)", (job_id, node_url))
 
-    def get_node(self, job_id: str) -> Optional[str]:
+    def get_node(self, job_id: str) -> str | None:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("SELECT node_url FROM jobs WHERE job_id = ?", (job_id,))
             row = cursor.fetchone()
@@ -77,7 +77,7 @@ class JobStore:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("UPDATE nodes SET status = ?, last_seen = CURRENT_TIMESTAMP WHERE url = ?", (status, url))
 
-    def get_nodes(self) -> List[Dict[str, Any]]:
+    def get_nodes(self) -> list[dict[str, Any]]:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("SELECT url, status, last_seen FROM nodes")
             return [{"url": row[0], "status": row[1], "last_seen": row[2]} for row in cursor.fetchall()]
@@ -99,7 +99,7 @@ for node in env_nodes:
     if clean_node:
         job_store.add_node(clean_node)
 
-NODE_HEALTH: Dict[str, Dict[str, Any]] = {}
+NODE_HEALTH: dict[str, dict[str, Any]] = {}
 LOCK = threading.Lock()
 
 async def update_node_health():
@@ -158,7 +158,7 @@ async def startup_event():
     nodes = job_store.get_nodes()
     print(f"🚀 AI Gateway started with {len(nodes)} nodes registered.", flush=True)
 
-def select_best_node(requested_model: Optional[str] = None) -> str:
+def select_best_node(requested_model: str | None = None) -> str:
     """Smart routing: Least-busy + Model-aware preference"""
     with LOCK:
         available_nodes = [n for n, h in NODE_HEALTH.items() if h.get("online")]
@@ -197,8 +197,8 @@ class ProvisionNodeRequest(BaseModel):
 class HeartbeatRequest(BaseModel):
     url: str
     busy: bool
-    current_model: Optional[str]
-    hardware: Dict[str, Any]
+    current_model: str | None
+    hardware: dict[str, Any]
     status: str = "ready"
 
 async def verify_admin(x_admin_token: str = Header(None)):

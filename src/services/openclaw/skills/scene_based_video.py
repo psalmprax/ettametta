@@ -6,11 +6,11 @@ Creates complete videos from scene descriptions with automatic video discovery,
 fusion, and audio overlay for upload-ready content.
 """
 
-from typing import Dict, Any, List
+from typing import Any
 import logging
 import asyncio
 
-from services.video_engine.scene_orchestrator import scene_based_orchestrator
+from src.services.video_engine.scene_orchestrator import base_scene_based_orchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class SceneBasedVideoSkill:
         self.name = "scene_based_video_production"
         self.description = "Create complete videos from scene descriptions with automatic video discovery, fusion, and audio overlay"
 
-    async def execute(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Execute scene-based video production.
 
@@ -37,7 +37,7 @@ class SceneBasedVideoSkill:
         Args:
             params: Parameters for video production
                 - action: Action to perform
-                - scenes: List of scene descriptions
+                - scenes: list of scene descriptions
                 - niche: Content niche
                 - target_duration: Target video duration (seconds)
                 - audio_script: Script for voiceover (optional)
@@ -66,7 +66,7 @@ class SceneBasedVideoSkill:
             logger.error(f"Scene-based video skill error: {e}")
             return {"success": False, "error": str(e)}
 
-    async def _produce_complete_video(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _produce_complete_video(self, params: dict[str, Any]) -> dict[str, Any]:
         """Produce a complete video from scene descriptions"""
         scenes = params.get("scenes", [])
         niche = params.get("niche", "")
@@ -85,7 +85,7 @@ class SceneBasedVideoSkill:
         )
 
         # Produce the video
-        result = await scene_based_orchestrator.produce_scene_based_video(
+        result = await base_scene_based_orchestrator.produce_scene_based_video(
             scenes=scenes,
             niche=niche,
             target_duration=target_duration,
@@ -118,7 +118,7 @@ class SceneBasedVideoSkill:
                 "scenes_requested": len(scenes),
             }
 
-    async def _find_scene_videos(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _find_scene_videos(self, params: dict[str, Any]) -> dict[str, Any]:
         """Find videos for specific scenes"""
         scenes = params.get("scenes", [])
         niche = params.get("niche", "")
@@ -135,7 +135,7 @@ class SceneBasedVideoSkill:
 
         # Find videos for scenes
         scene_videos = (
-            await scene_based_orchestrator.video_scanner.find_videos_for_scenes(
+            await base_scene_based_orchestrator.video_scanner.find_videos_for_scenes(
                 scenes=scenes,
                 niche=niche,
                 platforms=platforms,
@@ -157,7 +157,7 @@ class SceneBasedVideoSkill:
             "message": f"Found {total_videos_found} videos across {len(scene_videos)} scenes",
         }
 
-    async def _create_production_plan(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def _create_production_plan(self, params: dict[str, Any]) -> dict[str, Any]:
         """Create a production plan without executing video production"""
         scenes = params.get("scenes", [])
         niche = params.get("niche", "")
@@ -176,7 +176,7 @@ class SceneBasedVideoSkill:
 
         # Create production plan
         production_plan = (
-            await scene_based_orchestrator.video_scanner.create_scene_based_video(
+            await base_scene_based_orchestrator.video_scanner.create_scene_based_video(
                 scenes=scenes,
                 niche=niche,
                 target_duration=target_duration,

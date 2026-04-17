@@ -28,7 +28,7 @@ async def demonstrate_video_editor_capabilities():
     print("-" * 40)
 
     try:
-        from services.discovery.video_lead_scanner import VideoLeadScanner
+        from src.services.discovery.video_lead_scanner import VideoLeadScanner
 
         scanner = VideoLeadScanner()
 
@@ -211,7 +211,7 @@ async def demonstrate_video_editor_capabilities():
     print("-" * 39)
 
     try:
-        from services.monetization.service import MonetizationEngine
+        from src.services.monetization.service import MonetizationEngine
 
         engine = MonetizationEngine()
 

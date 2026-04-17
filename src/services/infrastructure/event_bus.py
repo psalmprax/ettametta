@@ -3,8 +3,8 @@ import json
 import logging
 import asyncio
 import time
-from typing import Dict, Any, Optional, Callable, Awaitable
-from api.config import settings
+from typing import Any, Awaitable, Callable
+from src.api.config import settings
 
 logger = logging.getLogger("DistributedEventBus")
 
@@ -30,7 +30,7 @@ class DistributedEventBus:
             except redis.exceptions.ResponseError:
                 pass # Already exists
 
-    async def emit(self, topic: str, payload: Dict[str, Any]):
+    async def emit(self, topic: str, payload: dict[str, Any]):
         """Emits an event into the global stream."""
         await self.connect()
         event_body = {
@@ -41,7 +41,7 @@ class DistributedEventBus:
         await self._redis.xadd(self.stream_name, event_body)
         logger.info(f"[Bus] Emitted {topic} to global stream.")
 
-    async def subscribe(self, topic_filter: str, callback: Callable[[Dict[str, Any]], Awaitable[None]]):
+    async def subscribe(self, topic_filter: str, callback: Callable[[dict[str, Any]], Awaitable[None]]):
         """
         Subscribes a worker to a specific topic within the distributed group.
         Implements at-least-once delivery with XACK.
@@ -95,7 +95,7 @@ class DistributedEventBus:
                 logger.error(f"[Bus] Subscription loop error: {e}")
                 await asyncio.sleep(2)
 
-    async def _move_to_dlq(self, topic: str, payload: Dict[str, Any], error: str):
+    async def _move_to_dlq(self, topic: str, payload: dict[str, Any], error: str):
         """Moves unrecoverable events to the Dead Letter Queue."""
         dlq_event = {
             "topic": topic,

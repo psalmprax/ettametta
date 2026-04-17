@@ -1,5 +1,5 @@
 """
-Semantic Vision Service for Elite Cinematic Fusion
+Neural Vision Service for Elite Cinematic Fusion
 ===================================================
 
 Uses CLIP (Contrastive Language-Image Pre-training) to understand 
@@ -10,7 +10,7 @@ import os
 import logging
 import sqlite3
 import json
-from typing import List, Dict, Any, Optional
+from typing import Any
 import numpy as np
 import faiss
 from PIL import Image
@@ -26,7 +26,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-class SemanticVision:
+class NeuralVisionAnalyzer:
     """
     Handles visual understanding and semantic matching.
     """
@@ -47,6 +47,7 @@ class SemanticVision:
     def _init_db(self):
         """Initialize the Visual Memory database"""
         conn = sqlite3.connect(self.db_path)
+        # 10/10 Production: Resilient Schema Enforcement
         conn.execute("""
             CREATE TABLE IF NOT EXISTS visual_index (
                 id TEXT PRIMARY KEY,
@@ -57,6 +58,12 @@ class SemanticVision:
                 motion_score REAL
             )
         """)
+        # Ensure motion_score column exists for legacy databases
+        try:
+            conn.execute("ALTER TABLE visual_index ADD COLUMN motion_score REAL")
+        except sqlite3.OperationalError:
+            pass # Column already exists
+            
         conn.commit()
         conn.close()
 
@@ -99,7 +106,7 @@ class SemanticVision:
             except Exception as e:
                 logger.error(f"[Vision] Failed to load CLIP model: {e}")
 
-    def get_text_embedding(self, text: str) -> Optional[np.ndarray]:
+    def get_text_embedding(self, text: str) -> np.ndarray | None:
         """Generates an embedding vector for a piece of text"""
         self._load_model()
         if not self.model or not self.processor: return None
@@ -108,14 +115,19 @@ class SemanticVision:
             inputs = self.processor(text=[text], return_tensors="pt", padding=True)
             with torch.no_grad():
                 text_features = self.model.get_text_features(**inputs)
-            # Normalize and convert to numpy
-            embedding = text_features.numpy()[0]
+            # Normalize and convert to numpy — handle both tensor and model output types
+            if hasattr(text_features, 'detach'):
+                embedding = text_features.detach().cpu().numpy()[0]
+            elif hasattr(text_features, 'pooler_output'):
+                embedding = text_features.pooler_output.detach().cpu().numpy()[0]
+            else:
+                embedding = np.array(text_features[0]).flatten()[:512].astype('float32')
             return embedding / np.linalg.norm(embedding)
         except Exception as e:
             logger.error(f"[Vision] Text embedding failed: {e}")
             return None
 
-    def analyze_scene(self, clip_path: str, thumbnail: Image.Image, timestamp: float = 0.0, motion_frame: Image.Image = None) -> Dict[str, Any]:
+    def analyze_scene(self, clip_path: str, thumbnail: Image.Image, timestamp: float = 0.0, motion_frame: Image.Image = None) -> dict[str, Any]:
         """Analyzes a scene's semantics and motion energy"""
         self._load_model()
         if not self.model or not self.processor: return {}
@@ -126,7 +138,13 @@ class SemanticVision:
             with torch.no_grad():
                 image_features = self.model.get_image_features(**inputs)
             
-            embedding = image_features.numpy()[0]
+            # Handle both tensor and model output types
+            if hasattr(image_features, 'detach'):
+                embedding = image_features.detach().cpu().numpy()[0]
+            elif hasattr(image_features, 'pooler_output'):
+                embedding = image_features.pooler_output.detach().cpu().numpy()[0]
+            else:
+                embedding = np.array(image_features[0]).flatten()[:512].astype('float32')
             embedding = embedding / np.linalg.norm(embedding)
             
             # 2. Motion Density (Ascension Tier)
@@ -158,7 +176,7 @@ class SemanticVision:
             logger.error(f"[Vision] Scene analysis failed: {e}")
             return {}
 
-    def find_top_k_matches(self, query: str, k: int = 5, candidate_paths: List[str] = None) -> List[Dict[str, Any]]:
+    def find_top_k_matches(self, query: str, k: int = 5, candidate_paths: list[str] = None) -> list[dict[str, Any]]:
         """
         Finds the Top K matches in memory using FAISS.
         """
@@ -206,10 +224,10 @@ class SemanticVision:
         conn.close()
         return results
 
-    def find_best_match(self, query: str, candidate_paths: List[str] = None) -> Optional[Dict[str, Any]]:
+    def find_best_match(self, query: str, candidate_paths: list[str] = None) -> dict[str, Any] | None:
         """Finds the single best match using FAISS results"""
         results = self.find_top_k_matches(query, k=1, candidate_paths=candidate_paths)
         return results[0] if results else None
 
 # Singleton instance
-base_semantic_vision = SemanticVision()
+base_neural_vision = NeuralVisionAnalyzer()

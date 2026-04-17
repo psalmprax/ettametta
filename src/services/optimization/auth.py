@@ -2,13 +2,12 @@ import os
 import datetime
 import base64
 import logging
-from typing import Dict, Optional
 from cryptography.fernet import Fernet
-from api.utils.database import get_db, async_session_factory
+from src.api.utils.database import get_db, async_session_factory
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.models import SocialAccount
-from api.config import settings
+from src.api.utils.models import SocialAccount
+from src.api.config import settings
 from .cookie_manager import cookie_manager
 
 logger = logging.getLogger(__name__)
@@ -38,8 +37,8 @@ class TokenManager:
             return None
 
     async def get_token(
-        self, platform: str, user_id: str, account_id: Optional[str] = None
-    ) -> Optional[str]:
+        self, platform: str, user_id: str, account_id: str | None = None
+    ) -> str | None:
         """Returns the decrypted access token for a platform/user."""
         async with async_session_factory() as db:
             stmt = select(SocialAccount).where(
@@ -52,7 +51,7 @@ class TokenManager:
             account = result.scalar_one_or_none()
             return self._decrypt(account.access_token) if account else None
 
-    async def get_auth_headers(self, platform: str, user_id: str, account_id: Optional[str] = None) -> Dict[str, str]:
+    async def get_auth_headers(self, platform: str, user_id: str, account_id: str | None = None) -> dict[str, str]:
         """
         Unified helper to get authentication headers.
         Returns either Authorization: Bearer ... or Cookie: ...
@@ -72,8 +71,8 @@ class TokenManager:
         return {}
 
     async def get_token_data(
-        self, platform: str, user_id: str, account_id: Optional[str] = None
-    ) -> Optional[Dict]:
+        self, platform: str, user_id: str, account_id: str | None = None
+    ) -> dict | None:
         """Returns the full decrypted token data dict."""
         async with async_session_factory() as db:
             stmt = select(SocialAccount).where(
@@ -95,7 +94,7 @@ class TokenManager:
                 "expiry": account.expiry,
             }
 
-    async def store_token(self, platform: str, user_id: str, token_data: Dict):
+    async def store_token(self, platform: str, user_id: str, token_data: dict):
         """Stores encrypted token data in the DB with user association."""
         async with async_session_factory() as db:
             username = token_data.get("username")
@@ -134,14 +133,14 @@ class TokenManager:
                 f"[TokenManager] Encrypted and persisted token for {platform} (User: {user_id})"
             )
 
-    async def has_auth(self, platform: str, user_id: str, account_id: Optional[str] = None) -> bool:
+    async def has_auth(self, platform: str, user_id: str, account_id: str | None = None) -> bool:
         """Checks if either a token or cookies exist for the platform."""
         if await self.get_token(platform, user_id, account_id):
             return True
         return cookie_manager.has_cookies(platform)
 
     async def ensure_valid_token(
-        self, platform: str, user_id: str, account_id: Optional[str] = None
+        self, platform: str, user_id: str, account_id: str | None = None
     ) -> bool:
         """
         Public helper to ensure a token is valid, triggering refresh if needed.
@@ -151,7 +150,7 @@ class TokenManager:
         return True
 
     async def refresh_token(
-        self, platform: str, user_id: str, account_id: Optional[str] = None
+        self, platform: str, user_id: str, account_id: str | None = None
     ) -> bool:
         """
         Triggers a refresh flow for a specific platform/user.
@@ -164,7 +163,7 @@ class TokenManager:
             return False
 
         import httpx
-        from api.utils.vault import get_secret
+        from src.api.utils.vault import get_secret
 
         try:
             if platform == "youtube":
@@ -238,7 +237,7 @@ class TokenManager:
             return False
 
     async def is_token_expired(
-        self, platform: str, user_id: str, account_id: Optional[str] = None
+        self, platform: str, user_id: str, account_id: str | None = None
     ) -> bool:
         async with async_session_factory() as db:
             stmt = select(SocialAccount).where(

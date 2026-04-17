@@ -17,7 +17,6 @@ from diffusers import (
     MotionAdapter
 )
 from diffusers.utils import export_to_video
-from typing import Optional, Tuple
 
 # Model cache
 _sdxl_pipe = None
@@ -145,7 +144,7 @@ def generate_animatediff_video(
     width: int = 1024,
     model_type: str = "sdxl",  # "sdxl" or "sd15"
     output_dir: str = "/workspace/remote_ai_group/outputs"
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """
     Generate animated video using AnimateDiff
     
@@ -213,7 +212,7 @@ def generate_from_image_animatediff(
     guidance_scale: float = 7.5,
     strength: float = 0.8,
     output_dir: str = "/workspace/remote_ai_group/outputs"
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """
     Animate a static image using AnimateDiff
     

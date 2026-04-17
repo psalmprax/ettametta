@@ -1,15 +1,15 @@
 import json
 import logging
-from typing import Dict, Any, List
+from typing import Any
 from groq import AsyncGroq
-from api.config import settings
+from src.api.config import settings
 
 class HookValidator:
     def __init__(self):
         self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
         self.model = "llama-3.3-70b-versatile"
 
-    async def validate_hook(self, hook_text: str) -> Dict[str, Any]:
+    async def validate_hook(self, hook_text: str) -> dict[str, Any]:
         """
         Analyzes a script hook and provides a 'Kill-Switch' score + alternatives.
         """

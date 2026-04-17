@@ -1,9 +1,9 @@
 import logging
 import asyncio
 import json
-from typing import List, Dict, Any
+from typing import Any
 from groq import Groq
-from api.config import settings
+from src.api.config import settings
 from .tools.discovery import discovery_tool
 from .tools.render import render_tool
 from .tools.publish import publish_tool
@@ -11,8 +11,8 @@ from .tools.affiliate import affiliate_tool
 from .tools.market_screener import market_screener_tool
 from .tools.paperclip_kpi import paperclip_kpi
 from .tools.remotion_render import remotion_tool
-from services.optimization.ab_testing_automation import ab_testing_automation
-from api.routes.ws import notify_system_log_async
+from src.services.optimization.ab_testing_automation import ab_testing_automation
+from src.api.routes.ws import notify_system_log_async
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +88,8 @@ class AgentZero:
         await self._log("Iteration Started: Scouting for market trends...")
 
         # 1. Fetch monitored niches from DB
-        from api.utils.database import async_session_factory
-        from api.utils.models import MonitoredNiche
+        from src.api.utils.database import async_session_factory
+        from src.api.utils.models import MonitoredNiche
         from sqlalchemy import select
         import random
 
@@ -150,7 +150,7 @@ class AgentZero:
         self.latest_insights = strategy
 
         # Real-First Affiliate Integration: Query User's AffiliateLinkDB first
-        from api.utils.models import AffiliateLinkDB
+        from src.api.utils.models import AffiliateLinkDB
         
         selected_link = "https://viralforge.ai/monetize"
         user_affiliate_found = False
@@ -279,7 +279,7 @@ class AgentZero:
         if "Trending" in perf_report:
             await self._log(f"Viral Anchor Detected! {perf_report}", "SUCCESS")
 
-    async def _brainstorm(self, trend: Dict, analysis: Dict) -> Dict:
+    async def _brainstorm(self, trend: dict, analysis: dict) -> dict:
         """Uses LLM to decide on video title, hooks, and product alignment."""
         prompt = f"""
         Act as a Viral Content Strategist and Elite Affiliate Marketer.

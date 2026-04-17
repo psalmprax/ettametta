@@ -1,6 +1,5 @@
 import os
 import logging
-from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +10,7 @@ class CookieManager:
     def __init__(self, cookies_dir: str = "cookies"):
         self.cookies_dir = cookies_dir
 
-    def parse_netscape_cookies(self, file_path: str) -> Dict[str, str]:
+    def parse_netscape_cookies(self, file_path: str) -> dict[str, str]:
         """
         Parses standard Netscape/Curl cookie file format.
         Format: domain  flag  path  secure  expiration  name  value
@@ -39,7 +38,7 @@ class CookieManager:
             
         return cookies
 
-    def get_cookies_for_platform(self, platform: str) -> Dict[str, str]:
+    def get_cookies_for_platform(self, platform: str) -> dict[str, str]:
         """
         Returns a dictionary of cookies for a specific platform.
         Expects files like cookies/tiktok_cookies.txt

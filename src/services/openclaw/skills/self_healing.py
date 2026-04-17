@@ -2,7 +2,6 @@ import psutil
 import logging
 import subprocess
 import time
-from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 from .notifications import notification_skill
 from .memory import memory_skill
@@ -12,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 class SelfHealingSkill:
     def __init__(self):
-        self.monitored_processes: Dict[str, Dict] = {}
-        self.health_checks: Dict[str, Dict] = {}
+        self.monitored_processes: dict[str, dict] = {}
+        self.health_checks: dict[str, dict] = {}
         self.auto_restart_enabled = True
         self.last_health_check = datetime.now()
 
@@ -45,7 +44,7 @@ class SelfHealingSkill:
             logger.error(f"Failed to start process '{name}': {e}")
             return f"❌ Failed to start '{name}': {str(e)}"
 
-    def check_process_health(self, name: str) -> Dict:
+    def check_process_health(self, name: str) -> dict:
         """Check health of a monitored process"""
         if name not in self.monitored_processes:
             return {"status": "not_monitored", "healthy": False}

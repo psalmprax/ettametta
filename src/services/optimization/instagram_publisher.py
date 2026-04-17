@@ -5,7 +5,6 @@ Features: Retry logic, rate limiting, file validation, proper logging
 """
 
 import asyncio
-from typing import Optional
 import httpx
 import logging
 
@@ -33,9 +32,9 @@ class InstagramPublisher(SocialPublisher):
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Instagram-specific upload implementation"""
         access_token = await token_manager.get_token(
             "instagram", user_id=user_id, account_id=account_id
@@ -117,7 +116,7 @@ class InstagramPublisher(SocialPublisher):
             logger.error(f"[InstagramPublisher] Publish failed: {error_msg}")
             return None
 
-    async def _resolve_video_url(self, video_path: str) -> Optional[str]:
+    async def _resolve_video_url(self, video_path: str) -> str | None:
         """Resolve video path to URL - return if already URL, otherwise handle local file"""
         import os
 
@@ -152,7 +151,7 @@ class InstagramPublisher(SocialPublisher):
         self,
         platform_id: str,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
     ) -> dict:
         """Fetch Instagram media insights"""

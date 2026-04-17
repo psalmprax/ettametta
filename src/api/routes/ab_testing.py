@@ -6,12 +6,11 @@ Provides statistical A/B testing with proper significance testing
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.database import get_db
-from api.utils.models import ABTestDB
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
+from src.api.utils.database import get_db
+from src.api.utils.models import ABTestDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
 from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
 import math
 
@@ -22,9 +21,9 @@ class ABTestCreate(BaseModel):
     content_id: str
     variant_a_title: str
     variant_b_title: str
-    variant_a_description: Optional[str] = None
-    variant_b_description: Optional[str] = None
-    target_metric: Optional[str] = "views"  # views, clicks, engagement
+    variant_a_description: str | None = None
+    variant_b_description: str | None = None
+    target_metric: str | None = "views"  # views, clicks, engagement
 
 
 class ABTestVariantEvent(BaseModel):
@@ -35,8 +34,8 @@ class ABTestVariantEvent(BaseModel):
 class StatisticalResult(BaseModel):
     significant: bool
     confidence_level: float
-    winner: Optional[str]
-    p_value: Optional[float]
+    winner: str | None
+    p_value: float | None
     effect_size: float
 
 

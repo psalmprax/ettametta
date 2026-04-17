@@ -10,7 +10,7 @@ from diffusers.utils import export_to_video
 import os
 import asyncio
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 async def generate_p4000_video(
     prompt: str,
@@ -18,7 +18,7 @@ async def generate_p4000_video(
     num_frames: int = 8,
     height: int = 384,
     width: int = 384
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     P4000-optimized video generation for multiple model types.
     Extremely aggressive memory optimizations for 8GB VRAM.
@@ -70,7 +70,7 @@ async def generate_p4000_video(
         print(f"❌ P4000 generation failed: {e}")
         return {"error": str(e)}
 
-async def generate_ltx_p4000(prompt: str, num_frames: int = 6, height: int = 320, width: int = 320) -> Dict[str, Any]:
+async def generate_ltx_p4000(prompt: str, num_frames: int = 6, height: int = 320, width: int = 320) -> dict[str, Any]:
     """Ultra-aggressive LTX optimization for P4000"""
     try:
         # Use minimal settings for P4000
@@ -108,7 +108,7 @@ async def generate_ltx_p4000(prompt: str, num_frames: int = 6, height: int = 320
     except Exception as e:
         return {"error": f"LTX P4000 failed: {e}"}
 
-async def generate_zeroscope_p4000(prompt: str, num_frames: int = 6, height: int = 320, width: int = 320) -> Dict[str, Any]:
+async def generate_zeroscope_p4000(prompt: str, num_frames: int = 6, height: int = 320, width: int = 320) -> dict[str, Any]:
     """Ultra-aggressive ZeroScope optimization for P4000"""
     try:
         from diffusers import VideoToVideoSDPipeline
@@ -144,7 +144,7 @@ async def generate_zeroscope_p4000(prompt: str, num_frames: int = 6, height: int
     except Exception as e:
         return {"error": f"ZeroScope P4000 failed: {e}"}
 
-async def generate_lite4k_p4000(prompt: str, num_frames: int = 4, height: int = 256, width: int = 256) -> Dict[str, Any]:
+async def generate_lite4k_p4000(prompt: str, num_frames: int = 4, height: int = 256, width: int = 256) -> dict[str, Any]:
     """Ultra-aggressive Lite4K optimization for P4000"""
     try:
         # Use a lightweight model
@@ -196,7 +196,7 @@ def cleanup_p4000_memory(pipe):
         torch.cuda.empty_cache()
         torch.cuda.synchronize()
 
-def get_p4000_available_models() -> Dict[str, Dict[str, Any]]:
+def get_p4000_available_models() -> dict[str, dict[str, Any]]:
     """Get all models that can run on P4000"""
     return {
         "animatediff": {

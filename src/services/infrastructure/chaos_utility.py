@@ -16,10 +16,10 @@ import random
 import asyncio
 import logging
 import time
-from typing import Dict, Any, List, Optional
+from typing import Any
 from datetime import datetime
-from api.utils.redis import get_redis
-from services.infrastructure.resilience_metrics import (
+from src.api.utils.redis import get_redis
+from src.services.infrastructure.resilience_metrics import (
     chaos_faults_injected,
     chaos_scenarios_run,
     chaos_active,
@@ -36,9 +36,9 @@ class ChaosUtility:
     """
 
     def __init__(self):
-        self.active_faults: Dict[str, Any] = {}
-        self.injection_history: List[Dict[str, Any]] = []
-        self._continuous_task: Optional[asyncio.Task] = None
+        self.active_faults: dict[str, Any] = {}
+        self.injection_history: list[dict[str, Any]] = []
+        self._continuous_task: asyncio.Task | None = None
         self._stop_continuous = asyncio.Event()
 
     # ─── Individual Fault Injection ───────────────────────────────
@@ -92,7 +92,7 @@ class ChaosUtility:
         chaos_active.set(0)
         logger.info(f"🧹 [Chaos] Cleared {len(keys)} active faults.")
 
-    async def check_faults(self, service_name: str) -> Optional[str]:
+    async def check_faults(self, service_name: str) -> str | None:
         """Utility for services to check if they are under chaos interference."""
         redis = await get_redis()
         latency = await redis.get(f"chaos:latency:{service_name}")
@@ -107,7 +107,7 @@ class ChaosUtility:
 
     # ─── Orchestrated Scenarios (Killer Combos) ───────────────────
 
-    async def run_scenario(self, scenario_name: str) -> Dict[str, Any]:
+    async def run_scenario(self, scenario_name: str) -> dict[str, Any]:
         """
         Executes a named multi-fault scenario.
         Returns a report of what was injected and when.
@@ -144,7 +144,7 @@ class ChaosUtility:
         self._record_injection("scenario", report)
         return report
 
-    async def _scenario_blackout(self) -> List[Dict[str, Any]]:
+    async def _scenario_blackout(self) -> list[dict[str, Any]]:
         """
         THE BLACKOUT: Simultaneous multi-system failure.
         Redis hot state invalidation + API exhaustion + global latency spike.
@@ -171,7 +171,7 @@ class ChaosUtility:
 
         return events
 
-    async def _scenario_cascade(self) -> List[Dict[str, Any]]:
+    async def _scenario_cascade(self) -> list[dict[str, Any]]:
         """
         THE CASCADE: Sequential degradation over 15 seconds.
         Simulates a real-world failure where one system going down
@@ -200,7 +200,7 @@ class ChaosUtility:
 
         return events
 
-    async def _scenario_storm(self) -> List[Dict[str, Any]]:
+    async def _scenario_storm(self) -> list[dict[str, Any]]:
         """
         THE STORM: Randomized burst of all fault types over 30s window.
         Each fault fires at a random offset to simulate unpredictable chaos.
@@ -242,7 +242,7 @@ class ChaosUtility:
 
     async def start_continuous_chaos(
         self, intensity: str = "medium", duration_minutes: int = 30
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Starts a background loop that randomly injects faults at the given intensity.
         intensity: "low" (every 60s), "medium" (every 30s), "high" (every 10s)
@@ -269,7 +269,7 @@ class ChaosUtility:
             "duration_minutes": duration_minutes,
         }
 
-    async def stop_continuous_chaos(self) -> Dict[str, Any]:
+    async def stop_continuous_chaos(self) -> dict[str, Any]:
         """Stops the continuous chaos loop and clears all active faults."""
         self._stop_continuous.set()
         if self._continuous_task:
@@ -307,7 +307,7 @@ class ChaosUtility:
 
     # ─── Reporting ────────────────────────────────────────────────
 
-    def get_chaos_report(self) -> Dict[str, Any]:
+    def get_chaos_report(self) -> dict[str, Any]:
         """Returns current chaos state and recent injection history."""
         recent = self.injection_history[-20:]
         return {
@@ -320,7 +320,7 @@ class ChaosUtility:
             "recent_injections": recent,
         }
 
-    def _record_injection(self, fault_type: str, details: Dict[str, Any]):
+    def _record_injection(self, fault_type: str, details: dict[str, Any]):
         """Appends an injection event to the history buffer."""
         entry = {
             "type": fault_type,

@@ -1,10 +1,9 @@
 import aiohttp
 import logging
 import json
-from typing import List, Optional
 from .models import ContentCandidate
 from datetime import datetime
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +20,8 @@ class GoogleSearchScanner:
         self.cx = getattr(settings, "GOOGLE_SEARCH_CX", "")  # Custom Search Engine ID
 
     async def scan_trends(
-        self, niche: str, published_after: Optional[datetime] = None
-    ) -> List[ContentCandidate]:
+        self, niche: str, published_after: datetime | None = None
+    ) -> list[ContentCandidate]:
         """
         Searches Google for trending products, affiliate opportunities, and monetization ideas.
         Uses Google Custom Search API.
@@ -91,7 +90,7 @@ class GoogleSearchScanner:
 
         return await self._scan_with_scrape(niche)
 
-    async def _scan_with_scrape(self, niche: str) -> List[ContentCandidate]:
+    async def _scan_with_scrape(self, niche: str) -> list[ContentCandidate]:
         """
         Fallback: Try to scrape Google Shopping/Trends results directly.
         Note: This is fragile and may break. For production, use the API.

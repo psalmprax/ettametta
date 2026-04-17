@@ -1,7 +1,7 @@
 import time
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class BaseMonetizationStrategy(ABC):
         self.circuit_breaker = CircuitBreaker()
 
     @abstractmethod
-    async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
+    async def get_assets(self, niche: str) -> list[dict[str, Any]]:
         """
         Fetches relevant products, links, or lead magnets for the given niche.
         """

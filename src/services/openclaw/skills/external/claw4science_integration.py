@@ -1,8 +1,8 @@
 import logging
 import requests
-from typing import Dict, Any, List
+from typing import Any
 from groq import Groq
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 

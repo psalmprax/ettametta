@@ -9,12 +9,11 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from api.config import settings
+from src.api.config import settings
 from agent import OpenClawAgent
 from dispatcher import dispatcher
 import uvicorn
 from fastapi import FastAPI, BackgroundTasks, Request, Response
-from typing import Dict, List, Optional
 from pydantic import BaseModel
 import time
 from tenacity import (
@@ -65,10 +64,10 @@ class CircuitBreaker:
 
 class BotManager:
     def __init__(self):
-        self.apps: Dict[int, any] = {}
+        self.apps: dict[int, any] = {}
         self._starting_ids: set = set()
         self.api_circuit_breaker = CircuitBreaker()
-        self.http_client: Optional[httpx.AsyncClient] = None
+        self.http_client: httpx.AsyncClient | None = None
 
     @property
     def http(self) -> httpx.AsyncClient:
@@ -82,7 +81,7 @@ class BotManager:
         retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError)),
         reraise=True,
     )
-    async def _fetch_users_with_bots(self) -> List[Dict]:
+    async def _fetch_users_with_bots(self) -> list[dict]:
         """Fetch users with async HTTP client and circuit breaking"""
         if self.api_circuit_breaker.is_open():
             logger.warning("API circuit breaker is OPEN - skipping user fetch")
@@ -289,7 +288,7 @@ async def whatsapp_webhook(request: Request):
 
 
 class BroadcastRequest(BaseModel):
-    user_ids: List[str]
+    user_ids: list[str]
     message: str
     platform_hint: str = None
 

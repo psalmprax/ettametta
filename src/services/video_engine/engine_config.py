@@ -3,10 +3,10 @@ Engine Configuration for Video Generation
 Externalized mappings - loaded from services to avoid import issues
 """
 
-from typing import Dict, Set
+from typing import Set
 
 # Engine to audit action mapping
-ENGINE_ACTION_MAP: Dict[str, str] = {
+ENGINE_ACTION_MAP: dict[str, str] = {
     "ltx-video": "video_generation_ltx",
     "hunyuan": "video_generation_hunyuan",
     "veo3": "video_generation_veo3",

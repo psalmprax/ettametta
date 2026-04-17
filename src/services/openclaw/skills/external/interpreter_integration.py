@@ -1,9 +1,11 @@
 import os
 import logging
-from typing import Optional, Dict, Any
+from typing import Any
 import subprocess
 import tempfile
 import shutil
+
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ class OpenInterpreterService:
         self.enabled = OPENINTERPRETER_ENABLED
         self.allowed_dirs = [
             "/tmp/viral_forge",
-            "/home/psalmprax/ALL_PROJECTS/viral_forge",
+            str(settings.BASE_DIR),
         ]
 
         for d in self.allowed_dirs:
@@ -33,7 +35,7 @@ class OpenInterpreterService:
 
     def execute_code(
         self, code: str, language: str = "python", timeout: int = 60
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute code in a sandboxed environment.
 
@@ -43,7 +45,7 @@ class OpenInterpreterService:
             timeout: Execution timeout in seconds
 
         Returns:
-            Dict with output, error, and execution info
+            dict with output, error, and execution info
         """
         if not self.enabled:
             return {
@@ -74,7 +76,7 @@ class OpenInterpreterService:
                 "execution_time": 0,
             }
 
-    def _run_python(self, code: str, timeout: int) -> Dict[str, Any]:
+    def _run_python(self, code: str, timeout: int) -> dict[str, Any]:
         """Execute Python code."""
         import time
 
@@ -107,7 +109,7 @@ class OpenInterpreterService:
             except:
                 pass
 
-    def _run_javascript(self, code: str, timeout: int) -> Dict[str, Any]:
+    def _run_javascript(self, code: str, timeout: int) -> dict[str, Any]:
         """Execute JavaScript code."""
         import time
 
@@ -140,7 +142,7 @@ class OpenInterpreterService:
             except:
                 pass
 
-    def generate_video_script(self, topic: str) -> Dict[str, Any]:
+    def generate_video_script(self, topic: str) -> dict[str, Any]:
         """Generate a video processing script for the topic."""
         code = f'''
 import random
@@ -172,7 +174,7 @@ class CodeExecutor:
     """
 
     @staticmethod
-    def run_script(script_type: str, **kwargs) -> Dict[str, Any]:
+    def run_script(script_type: str, **kwargs) -> dict[str, Any]:
         """Run predefined scripts."""
         if script_type == "video_thumbnail":
             return OpenInterpreterService().execute_code(

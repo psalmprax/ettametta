@@ -7,7 +7,7 @@ maximum psychological impact and hook retention.
 """
 
 import logging
-from typing import Dict, Any, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class ViralStrategist:
             "the_curiosity_gap": "Opens a mystery that can only be solved by watching until the end."
         }
 
-    async def select_best_angle(self, topic: str, niche: str) -> Dict[str, Any]:
+    async def select_best_angle(self, topic: str, niche: str) -> dict[str, Any]:
         """
         Uses LLM context (simulated) to pick the framing with the 
         highest predicted viral ROI for the current trend velocity.

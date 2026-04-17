@@ -1,7 +1,6 @@
 import aiohttp
 import logging
 import json
-from typing import List, Optional
 from .models import ContentCandidate
 from datetime import datetime
 
@@ -18,7 +17,7 @@ class GoogleTrendsScanner:
         self.platform = "Google Trends"
         self.base_url = "https://trends.google.com/trends/api"
         
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Fetches trending searches related to the niche from Google Trends.
         Uses the free daily trends endpoint - no API key required.

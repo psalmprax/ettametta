@@ -2,7 +2,7 @@ import os
 import subprocess
 import json
 import logging
-from typing import Dict, Any
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -12,13 +12,13 @@ class RemotionTool:
     """
     
     def __init__(self):
-        self.remotion_path = "/home/psalmprax/ALL_PROJECTS/viral_forge/services/video_engine/remotion_app"
+        self.remotion_path = str(settings.REMOTION_APP_DIR)
         
     def render(self, composition: str, text: str, theme: str = "dark") -> str:
         """
         Render a specific composition with text and theme props.
         """
-        output_file = f"/home/psalmprax/ALL_PROJECTS/viral_forge/outputs/agent_zero_{composition}.mp4"
+        output_file = str(settings.OUTPUT_DIR / f"agent_zero_{composition}.mp4")
         props = {
             "title": text,
             "theme": theme,

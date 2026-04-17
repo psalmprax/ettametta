@@ -1,8 +1,8 @@
 import logging
 import json
-from typing import Dict, Any
+from typing import Any
 from groq import Groq
-from services.openclaw.config import settings
+from src.services.openclaw.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ class MarketScreenerTool:
         self.client = Groq(api_key=settings.GROQ_API_KEY)
         self.model = settings.MODEL
 
-    def run(self, raw_trend_data: str) -> Dict[str, Any]:
+    def run(self, raw_trend_data: str) -> dict[str, Any]:
         """
         Screens raw trend data for sentiment and conversion potential.
         """

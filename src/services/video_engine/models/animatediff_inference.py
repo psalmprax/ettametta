@@ -7,7 +7,6 @@ Supports SDXL and SD 1.5 with various motion adapters.
 import torch
 import os
 import time
-from typing import Tuple, Optional
 from PIL import Image
 from diffusers import (
     StableDiffusionXLPipeline,
@@ -108,7 +107,7 @@ def generate_animatediff(
     guidance_scale: float = 7.5,
     model_type: str = "sdxl",  # "sdxl" or "sd15"
     output_dir: str = "/workspace/remote_ai_group/outputs"
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """Generate animated video using AnimateDiff"""
     print(f"🎬 AnimateDiff ({model_type}): '{prompt[:50]}...'", flush=True)
     start_time = time.time()
@@ -154,7 +153,7 @@ def generate_from_image_animatediff(
     guidance_scale: float = 7.5,
     strength: float = 0.8,
     output_dir: str = "/workspace/remote_ai_group/outputs"
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """Animate a static image"""
     print(f"🎬 AnimateDiff Image Animation: {image_path}", flush=True)
     start_time = time.time()

@@ -1,6 +1,6 @@
 import logging
-from typing import Dict, Any
-from services.interpreter.service import interpreter_service
+from typing import Any
+from src.services.interpreter.service import interpreter_service
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ class InterpreterTool:
     def __init__(self):
         self.service = interpreter_service
 
-    async def run(self, code: str, language: str = "python") -> Dict[str, Any]:
+    async def run(self, code: str, language: str = "python") -> dict[str, Any]:
         """
         Executes code securely in a sandboxed environment.
         """

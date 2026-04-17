@@ -1,10 +1,10 @@
 import logging
 import asyncio
 import numpy as np
-from typing import List, Optional, Dict, Any
-from services.optimization.oracle_predictor import base_neural_oracle
-from services.infrastructure.event_bus import base_event_bus
-from services.optimization.model_registry import base_model_registry
+from typing import Any
+from src.services.optimization.oracle_predictor import base_neural_oracle
+from src.services.infrastructure.event_bus import base_event_bus
+from src.services.optimization.model_registry import base_model_registry
 
 logger = logging.getLogger("InferenceGateway")
 
@@ -18,7 +18,7 @@ class InferenceGateway:
         self.bus = base_event_bus
         self.registry = base_model_registry
 
-    async def predict_retention(self, numerical_features: List[float], clip_embedding: Optional[np.ndarray] = None) -> np.ndarray:
+    async def predict_retention(self, numerical_features: list[float], clip_embedding: np.ndarray | None = None) -> np.ndarray:
         """
         Request a prediction from the Neural Oracle.
         In a multi-node setup, this could be an RPC call or an event on the bus.
@@ -48,7 +48,7 @@ class InferenceGateway:
             "target": "ALL_NODES"
         })
 
-    def get_system_vitals(self) -> Dict[str, Any]:
+    def get_system_vitals(self) -> dict[str, Any]:
         """Returns the vitals of the distributed intelligence layer."""
         with open(self.registry.registry_file, "r") as f:
             data = json.load(f)

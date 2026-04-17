@@ -11,9 +11,9 @@ import asyncio
 import json
 import os
 import random
-from typing import Dict, Any, List
-from services.analytics.bridge import base_analytics_bridge
-from services.analytics.causal_analyst import base_causal_analyst
+from typing import Any
+from src.services.analytics.bridge import base_analytics_bridge
+from src.services.analytics.causal_analyst import base_causal_analyst
 
 logger = logging.getLogger(__name__)
 

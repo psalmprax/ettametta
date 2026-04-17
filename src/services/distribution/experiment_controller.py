@@ -1,6 +1,6 @@
 import random
 import logging
-from typing import Dict, Any, List
+from typing import Any
 
 logger = logging.getLogger("ExperimentController")
 
@@ -14,7 +14,7 @@ class ExperimentController:
     def __init__(self, epsilon: float = 0.2):
         self.epsilon = epsilon # 20% exploration by default
 
-    def classify_mission(self) -> Dict[str, Any]:
+    def classify_mission(self) -> dict[str, Any]:
         """Classifies the next content mission."""
         
         is_experiment = random.random() < self.epsilon

@@ -6,7 +6,6 @@ Features: Retry logic, rate limiting, file validation, proper logging
 
 import asyncio
 import os
-from typing import Optional
 import httpx
 import logging
 
@@ -34,9 +33,9 @@ class XPublisher(SocialPublisher):
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
-    ) -> Optional[str]:
+    ) -> str | None:
         """X-specific upload implementation using chunked media upload"""
         if not headers:
             logger.error(f"[XPublisher] No authentication for user {user_id}")
@@ -167,7 +166,7 @@ class XPublisher(SocialPublisher):
             )
             return None
 
-    async def _load_video_data(self, video_path: str) -> tuple[Optional[bytes], int]:
+    async def _load_video_data(self, video_path: str) -> tuple[bytes | None, int]:
         """Load video data from path or URL"""
         if os.path.isfile(video_path):
             total_bytes = os.path.getsize(video_path)
@@ -201,7 +200,7 @@ class XPublisher(SocialPublisher):
         self,
         platform_id: str,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
     ) -> dict:
         """Fetch X tweet metrics"""

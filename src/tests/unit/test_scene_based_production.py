@@ -77,7 +77,7 @@ async def test_scene_based_video_production():
     print("-" * 40)
 
     try:
-        from services.discovery.video_lead_scanner import video_lead_scanner
+        from src.services.discovery.video_lead_scanner import video_lead_scanner
 
         print(f"🔎 Discovering videos for {len(test_scenes)} scenes in '{test_niche}' niche...")
 
@@ -150,13 +150,13 @@ async def test_scene_based_video_production():
     print("-" * 43)
 
     try:
-        from services.video_engine.scene_orchestrator import scene_based_orchestrator
+        from src.services.video_engine.scene_orchestrator import base_scene_based_orchestrator
 
         print("TEST: Attempting complete video production...")
 
         # Check capabilities
-        can_process = scene_based_orchestrator.can_process_video
-        can_audio = scene_based_orchestrator.can_add_audio
+        can_process = base_scene_based_orchestrator.can_process_video
+        can_audio = base_scene_based_orchestrator.can_add_audio
 
         print(f"   • Video processing available: {'✅' if can_process else '❌'}")
         print(f"   • Audio processing available: {'✅' if can_audio else '❌'}")
@@ -180,7 +180,7 @@ async def test_scene_based_video_production():
             }
         else:
             # Attempt real production
-            production_result = await scene_based_orchestrator.produce_scene_based_video(
+            production_result = await base_scene_based_orchestrator.produce_scene_based_video(
                 scenes=test_scenes,
                 niche=test_niche,
                 target_duration=60,
@@ -215,7 +215,7 @@ async def test_scene_based_video_production():
     print("-" * 40)
 
     try:
-        from services.openclaw.skills.scene_based_video import scene_based_video_skill
+        from src.services.openclaw.skills.scene_based_video import scene_based_video_skill
 
         print("🎭 Testing OpenClaw scene-based video skill...")
 

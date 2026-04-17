@@ -8,7 +8,7 @@ Provides common functionality for all social platform publishers including:
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import Any
 from pydantic import BaseModel
 from .models import PostMetadata
 from .auth import token_manager
@@ -72,9 +72,9 @@ class SocialPublisher(ABC):
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int],
-        headers: Dict[str, str],
-    ) -> Optional[str]:
+        account_id: int | None,
+        headers: dict[str, str],
+    ) -> str | None:
         """Platform-specific upload implementation. Returns post URL or None."""
         pass
 
@@ -83,8 +83,8 @@ class SocialPublisher(ABC):
         self,
         platform_id: str,
         user_id: int,
-        account_id: Optional[int],
-        headers: Dict[str, str],
+        account_id: int | None,
+        headers: dict[str, str],
     ) -> dict:
         """Platform-specific metrics fetching implementation."""
         pass
@@ -125,7 +125,7 @@ class SocialPublisher(ABC):
 
     async def _download_video(
         self, url: str, timeout: float = 120.0
-    ) -> tuple[Optional[bytes], str]:
+    ) -> tuple[bytes | None, str]:
         """Download video from URL with validation"""
         import httpx
 
@@ -165,7 +165,7 @@ class SocialPublisher(ABC):
 
     async def _execute_with_retry(
         self, operation, *args, **kwargs
-    ) -> tuple[Optional[Any], Optional[str]]:
+    ) -> tuple[Any, str | None]:
         """Execute operation with retry logic and rate limit handling"""
         last_error = None
 
@@ -223,8 +223,8 @@ class SocialPublisher(ABC):
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int] = None,
-    ) -> Optional[str]:
+        account_id: int | None = None,
+    ) -> str | None:
         """
         Uploads video to platform with validation and retry logic.
         Returns post URL on success, None on failure.
@@ -257,7 +257,7 @@ class SocialPublisher(ABC):
         self,
         platform_id: str,
         user_id: int,
-        account_id: Optional[int] = None,
+        account_id: int | None = None,
     ) -> dict:
         """Fetches live engagement metrics for a post"""
         headers = await token_manager.get_auth_headers(
@@ -280,7 +280,7 @@ class SocialPublisher(ABC):
         """Verifies API credentials and connectivity"""
         pass
 
-    async def ensure_valid_token(self, user_id: int, account_id: Optional[int] = None):
+    async def ensure_valid_token(self, user_id: int, account_id: int | None = None):
         """Token validation and refresh"""
         return await token_manager.ensure_valid_token(
             self.platform_name, user_id=user_id, account_id=account_id

@@ -1,7 +1,7 @@
 import logging
-from typing import List, Dict, Any
+from typing import Any
 import httpx
-from api.utils.vault import get_secret
+from src.api.utils.vault import get_secret
 
 
 class StockMediaService:
@@ -14,7 +14,7 @@ class StockMediaService:
 
     async def search_videos(
         self, query: str, per_page: int = 5
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Searches for vertical stock videos on Pexels.
         """

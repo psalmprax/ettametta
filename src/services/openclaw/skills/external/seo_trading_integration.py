@@ -2,7 +2,7 @@ import os
 import logging
 import requests
 import aiohttp
-from typing import Optional, List, Dict, Any
+from typing import Any
 from datetime import datetime
 import random
 
@@ -22,7 +22,7 @@ class BlogSEOService:
 
     async def generate_seo_content(
         self, topic: str, content_type: str = "blog", word_count: int = 500
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate SEO-optimized content for a topic using Groq.
 
@@ -32,9 +32,9 @@ class BlogSEOService:
             word_count: Target word count
 
         Returns:
-            Dict with title, content, meta description, keywords
+            dict with title, content, meta description, keywords
         """
-        from api.config import settings
+        from src.api.config import settings
 
         keywords = self._generate_keywords(topic)
         title = self._generate_title(topic, content_type)
@@ -115,7 +115,7 @@ Format as:
             "generated_at": datetime.now().isoformat(),
         }
 
-    def _generate_keywords(self, topic: str) -> List[str]:
+    def _generate_keywords(self, topic: str) -> list[str]:
         """Generate SEO keywords for topic."""
         base = topic.lower().strip()
         keywords = [
@@ -175,7 +175,7 @@ Format as:
 
         return "\n\n".join(sections[:4])
 
-    def _generate_headings(self, topic: str) -> List[str]:
+    def _generate_headings(self, topic: str) -> list[str]:
         """Generate section headings."""
         return [
             f"What is {topic}?",
@@ -197,9 +197,9 @@ class TradingViewService:
         self._cache = {}
         self._cache_time = {}
 
-    async def get_market_overview(self) -> Dict[str, Any]:
+    async def get_market_overview(self) -> dict[str, Any]:
         """Get comprehensive market overview using Alpha Vantage and CoinGecko."""
-        from api.config import settings
+        from src.api.config import settings
 
         overview = {
             "us_market": {"status": "available", "indices": []},
@@ -266,7 +266,7 @@ class BacktestService:
 
     async def run_backtest(
         self, symbol: str, strategy: str, start_date: str, end_date: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run a backtest on historical data.
 
@@ -276,7 +276,7 @@ class BacktestService:
             start_date: Start date (YYYY-MM-DD)
             end_date: End date (YYYY-MM-DD)
         """
-        from services.trading.service import trading_service
+        from src.services.trading.service import trading_service
         from datetime import datetime
 
         # Get historical data
@@ -304,7 +304,7 @@ class BacktestService:
         else:
             return {"error": f"Unknown strategy: {strategy}"}
 
-    def _backtest_ma(self, closes: List[float], data: List[Dict]) -> Dict[str, Any]:
+    def _backtest_ma(self, closes: list[float], data: list[dict]) -> dict[str, Any]:
         """Backtest simple moving average crossover strategy."""
         initial_balance = 10000
         position = 0
@@ -392,8 +392,8 @@ class BacktestService:
         }
 
     def _backtest_momentum(
-        self, closes: List[float], data: List[Dict]
-    ) -> Dict[str, Any]:
+        self, closes: list[float], data: list[dict]
+    ) -> dict[str, Any]:
         """Backtest momentum strategy."""
         initial_balance = 10000
         position = 0
@@ -441,8 +441,8 @@ class BacktestService:
         }
 
     def _backtest_mean_reversion(
-        self, closes: List[float], data: List[Dict]
-    ) -> Dict[str, Any]:
+        self, closes: list[float], data: list[dict]
+    ) -> dict[str, Any]:
         """Backtest mean reversion strategy."""
         initial_balance = 10000
         position = 0

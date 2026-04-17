@@ -1,12 +1,12 @@
 import pytest
 import asyncio
 from sqlalchemy import select
-from api.utils.database import AsyncSessionLocal
-from api.utils.models import DriftHistoryDB, ExperimentCohortDB, StrategyRegistryDB
-from services.analytics.drift_detector import base_drift_detector
-from services.distribution.experiment_batcher import base_experiment_batcher
-from services.analytics.success_model import SuccessModel
-from services.infrastructure.recovery_service import base_recovery_service
+from src.api.utils.database import AsyncSessionLocal
+from src.api.utils.models import DriftHistoryDB, ExperimentCohortDB, StrategyRegistryDB
+from src.services.analytics.drift_detector import base_drift_detector
+from src.services.distribution.experiment_batcher import base_experiment_batcher
+from src.services.analytics.success_model import SuccessModel
+from src.services.infrastructure.recovery_service import base_recovery_service
 
 @pytest.mark.asyncio
 async def test_drift_detector_persistence():
@@ -50,7 +50,7 @@ async def test_experiment_batcher_persistence():
 async def test_recovery_service_logic():
     """Verify that RecoveryService reconstructs in-memory memory from the DB."""
     # 1. Setup a fresh detector and clear history
-    from services.analytics.drift_detector import DriftDetector
+    from src.services.analytics.drift_detector import DriftDetector
     local_detector = DriftDetector()
     local_detector.drift_history = []
     

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from api.utils.database import get_db
-from api.utils.auth import (
+from src.api.utils.database import get_db
+from src.api.utils.auth import (
     verify_password,
     get_password_hash,
     create_access_token,
@@ -11,8 +11,7 @@ from api.utils.auth import (
     verify_oauth_state,
 )
 from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional, List
-from api.config import settings
+from src.api.config import settings
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
@@ -21,7 +20,7 @@ from authlib.integrations.base_client import OAuthError
 import secrets
 import redis
 import redis.asyncio as redis_async
-from api.utils.user_models import UserDB, SubscriptionTier
+from src.api.utils.user_models import UserDB, SubscriptionTier
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -68,10 +67,10 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None
-    telegram_chat_id: Optional[str] = None
-    telegram_token: Optional[str] = None
-    whatsapp_number: Optional[str] = None
+    email: EmailStr | None = None
+    telegram_chat_id: str | None = None
+    telegram_token: str | None = None
+    whatsapp_number: str | None = None
 
 
 class PasswordChange(BaseModel):
@@ -82,7 +81,7 @@ class PasswordChange(BaseModel):
 class UserResponse(BaseModel):
     id: str
     email: str
-    subscription: Optional[SubscriptionTier] = None
+    subscription: SubscriptionTier | None = None
 
     class Config:
         from_attributes = True
@@ -95,7 +94,7 @@ class Token(BaseModel):
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.database import get_db
+from src.api.utils.database import get_db
 
 
 @router.post("/register", response_model=UserResponse)
@@ -171,7 +170,7 @@ async def get_current_user(
 
 
 def admin_required(current_user: UserDB = Depends(get_current_user)):
-    from api.utils.user_models import UserRole
+    from src.api.utils.user_models import UserRole
 
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
         raise HTTPException(
@@ -216,8 +215,8 @@ async def logout(token: str = Depends(oauth2_scheme)):
 @router.get("/callback/google")
 async def google_auth_callback(
     request: Request,
-    code: Optional[str] = None,
-    state: Optional[str] = None,
+    code: str | None = None,
+    state: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     """
