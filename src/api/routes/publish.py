@@ -1121,15 +1121,45 @@ async def get_scheduled_posts(
         stmt = stmt.order_by(ScheduledPostDB.scheduled_time.asc())
         result = await db.execute(stmt)
         scheduled = result.scalars().all()
-        return scheduled
+        return [
+            {
+                "id": p.id,
+                "video_path": p.video_path,
+                "platform": p.platform,
+                "scheduled_time": p.scheduled_time,
+                "status": p.status,
+                "parallel_allowed": p.parallel_allowed,
+                "engagement_prediction": p.engagement_prediction,
+                "optimal_rank": p.optimal_rank,
+                "user_timezone": p.user_timezone,
+                "error_message": p.error_message
+            }
+            for p in scheduled
+        ]
     finally:
         pass
 
+
+
+@router.get("/schedule/suggested-times")
+async def get_suggested_times(
+    count: int = Query(3, ge=1, le=10),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Returns AI-suggested optimal posting windows."""
+    try:
+        suggestions = smart_scheduler.calculate_n_optimal_windows(str(current_user.id), count)
+        return {"suggestions": suggestions}
+    except Exception as e:
+        logger.error(f"Error getting suggested times: {e}")
+        raise HTTPException(status_code=500, detail="Failed to calculate optimal windows")
 
 @router.post("/schedule")
 async def schedule_post(
     request: PublishRequest,
     scheduled_time: datetime.datetime,
+    parallel_allowed: bool = False,
+    user_timezone: str = "UTC",
     current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     credits_cost: int = Depends(credits_required("social_publish")),
@@ -1140,6 +1170,7 @@ async def schedule_post(
     from src.api.utils.models import ScheduledPostDB
 
     try:
+        prediction = smart_scheduler.predict_engagement(str(current_user.id), scheduled_time)
         # Consume credits
         await credit_service.consume_credits(
             user_id=current_user.id,
@@ -1159,7 +1190,13 @@ async def schedule_post(
             platform=request.platform,
             scheduled_time=scheduled_time,
             status="PENDING",
-            metadata_json=metadata.dict(),
+            parallel_allowed=parallel_allowed,
+            user_timezone=user_timezone,
+            engagement_prediction=prediction,
+            metadata_json=metadata.dict() if hasattr(metadata, "dict") else metadata,
+            account_id=request.account_id,
+            user_id=current_user.id
+        )
             account_id=request.account_id,
             user_id=current_user.id,
         )
