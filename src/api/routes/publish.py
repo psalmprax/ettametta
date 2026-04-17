@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, Depends, status
+from fastapi import APIRouter, HTTPException, Request, Depends, status, Query
 from fastapi.responses import RedirectResponse
 from src.services.optimization.service import base_optimization_service
 from src.services.optimization.youtube_publisher import base_youtube_publisher
