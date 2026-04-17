@@ -347,6 +347,15 @@ class ScheduledPostDB(Base):
     published_at = Column(DateTime, nullable=True)  # When actually published
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
+    # Multi-window scheduling support
+    parallel_allowed = Column(Boolean, default=False)  # Allow parallel posts
+    user_timezone = Column(String(50), nullable=True)  # User's timezone
+    engagement_prediction = Column(Float, nullable=True)  # Predicted engagement %
+    optimal_rank = Column(
+        Integer, nullable=True
+    )  # Which optimal window (1st, 2nd, etc.)
+    last_retry_at = Column(DateTime, nullable=True)  # Last retry timestamp
+
 
 class AuditLogDB(Base):
     __tablename__ = "audit_logs"
