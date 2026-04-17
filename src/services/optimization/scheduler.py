@@ -150,5 +150,36 @@ class SmartScheduler:
         hours_apart = (scheduled_time - last_post_time).total_seconds() / 3600
         return hours_apart >= 4
 
+    def predict_engagement(self, user_id: str, scheduled_time: datetime) -> float:
+        """
+        Predicts engagement percentage for a given scheduled time.
+
+        Args:
+            user_id: User ID for personalized predictions
+            scheduled_time: The time to predict engagement for
+
+        Returns:
+            Predicted engagement percentage (0-100)
+        """
+        import asyncio
+
+        hour = scheduled_time.hour
+
+        # Get windows and find position
+        try:
+            windows = asyncio.run(self._get_peak_windows_from_db(user_id))
+        except Exception:
+            windows = self.default_windows
+
+        # Find which window this hour falls into
+        for i, window in enumerate(windows):
+            if window["start"] <= hour < window["end"]:
+                # Within a peak window - higher prediction
+                base = 85 - (i * 10) if i > 0 else 85
+                return float(max(base - 5, 50))  # Slight penalty for exact match
+
+        # Outside peak window - lower prediction
+        return 45.0
+
 
 smart_scheduler = SmartScheduler()
