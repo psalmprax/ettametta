@@ -1,3 +1,4 @@
+from typing import Any
 from src.api.utils.database import async_session_factory
 from src.api.utils.credit_models import (
     UserCreditDB,
@@ -309,7 +310,9 @@ class CreditService:
             logger.error(f"[CreditService] Error applying referral: {e}")
             return False, str(e)
 
-    async def get_referrals(self, user_id: str, db: AsyncSession) -> list[dict[str, Any]]:
+    async def get_referrals(
+        self, user_id: str, db: AsyncSession
+    ) -> list[dict[str, Any]]:
         """Get user's referrals"""
         stmt = select(ReferralDB).where(ReferralDB.referrer_id == user_id)
         result = await db.execute(stmt)
