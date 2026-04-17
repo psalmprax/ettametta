@@ -21,7 +21,7 @@ load_dotenv()
 # Ensure DEBUG is explicitly set to boolean
 os.environ["DEBUG"] = "true"
 
-from services.video_engine.downloader import base_video_downloader
+from src.services.video_engine.downloader import base_video_downloader
 
 
 async def test_download():

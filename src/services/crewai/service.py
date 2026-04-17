@@ -1,21 +1,15 @@
 import os
 import logging
 import time
-from typing import Optional, Dict, Any, List
+import json
+from typing import Any
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-def _check_crewai_available():
-    try:
-        import crewai
-        return True
-    except ImportError:
-        return False
-
 class CircuitBreaker:
     """Simple circuit breaker to prevent cascading failures"""
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120): # Longer timeout for agents
+    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120):
         self.failure_count = 0
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
@@ -41,288 +35,188 @@ class CircuitBreaker:
             self.state = "OPEN"
             logger.warning("[CrewAI] Circuit opened due to agent execution failures")
 
-
-# Lazy import - check availability dynamically
-def _check_crewai_available() -> bool:
-    global _crewai_available
-    if _crewai_available is None:
-        try:
-            import crewai
-
-            _crewai_available = True
-        except ImportError:
-            _crewai_available = False
-            logger.warning("CrewAI not installed")
-    return _crewai_available
-
-
-_crewai_available = None  # Will be checked on first use
-
-
 class CrewAIService:
     """
-    Optional CrewAI multi-agent orchestration.
-
-    Disabled by default - set ENABLE_CREWAI=true to enable.
-    Uses Groq as the LLM backend for agents.
+    Elite CrewAI multi-agent orchestration.
+    Uses dynamic task generation to tailor agent missions to specific topics.
     """
 
     def __init__(self):
+        self._available = None
+        self.enabled = False
+        self.llm = None
+        self.search_tool = None
+        self.circuit_breaker = CircuitBreaker()
         self.hot_reload()
+
+    def _check_crewai_available(self) -> bool:
+        """Dynamically check if CrewAI and required deps are installed."""
+        if self._available is None:
+            try:
+                import crewai
+                from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
+                self._available = True
+            except ImportError:
+                self._available = False
+                logger.warning("[CrewAI] CrewAI or dependencies not installed")
+        return self._available
 
     def hot_reload(self):
         """Re-initialize service from current environment/settings."""
-        self.enabled = os.getenv("ENABLE_CREWAI", "false").lower() == "true"
-        self.agents_config = self._parse_agents_config()
-        self.llm = None
+        from src.api.config import settings
         
+        self.enabled = settings.ENABLE_CREWAI
         if not self.enabled:
             return
             
-        # Check crewai availability
-        if not _check_crewai_available():
-            logger.error("CrewAI not installed. Cannot enable service.")
-            self.enabled = False
-            return
-        
-        # Initialize - Try Groq first, then OpenAI
-        from api.config import settings
-
-        # Check crewai availability
-        if not _check_crewai_available():
-            logger.error("CrewAI not installed. Cannot enable service.")
+        if not self._check_crewai_available():
+            logger.error("[CrewAI] Service enabled but dependencies missing. Disabling.")
             self.enabled = False
             return
 
-        # Initialize - Try Groq first, then OpenAI
-        from api.config import settings
-
-        # Try Groq first
+        # Initialize LLM - Try Groq first, then OpenAI
         groq_key = settings.GROQ_API_KEY
         openai_key = settings.OPENAI_API_KEY
 
-        if groq_key and not groq_key.startswith("gsk_"):
-            groq_key = None  # Invalid key
-
-        if groq_key:
+        if groq_key and groq_key.startswith("gsk_"):
             try:
-                from langchain_community.chat_models import ChatGroq
-
+                from langchain_groq import ChatGroq
                 self.llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=groq_key)
-                logger.info("CrewAI initialized with Groq")
+                logger.info("[CrewAI] Initialized with Groq (Elite Model)")
             except Exception as e:
-                logger.warning(f"Groq failed: {e}, trying OpenAI...")
-                groq_key = None
+                logger.warning(f"[CrewAI] Groq initialization failed: {e}")
+                self.llm = None
 
-        # Fallback to OpenAI if Groq not available
         if not self.llm and openai_key:
             try:
                 from langchain_openai import ChatOpenAI
-
                 self.llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key)
-                logger.info("CrewAI initialized with OpenAI")
+                logger.info("[CrewAI] Initialized with OpenAI fallback")
             except Exception as e:
-                logger.error(f"Failed to initialize CrewAI with OpenAI: {e}")
+                logger.error(f"[CrewAI] Failed fallback to OpenAI: {e}")
                 self.enabled = False
                 return
-        elif not self.llm:
-            logger.error("No valid LLM key (GROQ_API_KEY or OPENAI_API_KEY)")
+
+        if not self.llm:
+            logger.error("[CrewAI] No valid LLM keys configured")
             self.enabled = False
             return
 
         try:
             from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
             self.search_tool = DuckDuckGoSearchRun()
-            logger.info("CrewAI service hot-reloaded successfully")
         except Exception as e:
-            logger.warning(f"Search tool failed during reload: {e}")
-
-    def _parse_agents_config(self) -> List[str]:
-        """Parse CREWAI_AGENTS from config."""
-        from api.config import settings
-
-        agents_str = settings.CREWAI_AGENTS
-        return [a.strip() for a in agents_str.split(",") if a.strip()]
+            logger.warning(f"[CrewAI] Search tool unavailable: {e}")
 
     def is_enabled(self) -> bool:
-        """Check if service is enabled and available."""
         return self.enabled and self.llm is not None
 
-    def _create_researcher_agent(self):
-        """Create researcher agent."""
-        from crewai import Agent
-
-        return Agent(
-            llm=self.llm,
-            role="Researcher",
-            goal="Find trending topics, viral content patterns, and audience interests",
-            backstory="""You are an expert content researcher with deep knowledge 
-            of social media trends, viral content patterns, and audience psychology.
-            You excel at identifying emerging topics that resonate with target audiences.""",
-            tools=[self.search_tool],
-            verbose=True,
-        )
-
-    def _create_writer_agent(self):
-        """Create writer agent."""
-        from crewai import Agent
-
-        return Agent(
-            llm=self.llm,
-            role="Writer",
-            goal="Create engaging scripts and content based on research findings",
-            backstory="""You are a professional content writer specializing in 
-            short-form video scripts. You know how to hook viewers in the first 
-            3 seconds and keep them engaged until the end.""",
-            verbose=True,
-        )
-
-    def _create_fact_checker_agent(self):
-        """Create fact checker agent."""
-        from crewai import Agent
-
-        return Agent(
-            llm=self.llm,
-            role="Fact Checker",
-            goal="Verify all quantitative and qualitative claims for accuracy and reputability",
-            backstory="""You are a meticulous fact-checker. You ensure that 
-            any news, numbers, or claims in the content are accurate and 
-            backed by reputable sources. You protect the brand's integrity.""",
-            tools=[self.search_tool],
-            verbose=True,
-        )
-
-    def _create_editor_agent(self):
-        """Create editor agent."""
-        from crewai import Agent
-
-        return Agent(
-            llm=self.llm,
-            role="Editor",
-            goal="Review, refine, and improve content quality",
-            backstory="""You are an expert editor with years of experience in 
-            video content. You ensure scripts are polished, engaging, and 
-            optimized for the platform.""",
-            verbose=True,
-        )
-
-    def _create_publisher_agent(self):
-        """Create publisher agent."""
-        from crewai import Agent
-
-        return Agent(
-            llm=self.llm,
-            role="Publisher",
-            goal="Format content for specific platforms and schedule optimally",
-            backstory="""You are a social media publishing expert. You know the 
-            best times to post, optimal hashtags, and platform-specific formatting.""",
-            verbose=True,
-        )
-
-    async def run_content_team(
-        self, topic: str, platform: str = "youtube"
-    ) -> Dict[str, Any]:
+    async def _generate_dynamic_tasks(self, topic: str, platform: str) -> list[dict[str, str]]:
         """
-        Run content creation team workflow with fact-checking.
+        Uses an LLM to generate specific tasks for the crew based on the topic.
+        This ensures 'Elite' tier dynamism over static stubs.
         """
-        if not self.is_enabled():
-            raise RuntimeError("CrewAI service is not enabled")
+        prompt = f"""
+        You are the ViralForge Strategy Architect.
+        Generate a set of tasks for a content creation crew working on: '{topic}' for {platform}.
+        
+        CREW ROLES: Researcher, Fact Checker, Writer, Editor.
+        
+        OUTPUT FORMAT (JSON list of Task Objects):
+        [
+            {{
+                "role": "Researcher",
+                "description": "...",
+                "expected_output": "..."
+            }},
+            ...
+        ]
+        """
+        
+        try:
+            # For dynamic task generation, we use the initialized LLM
+            response = self.llm.invoke(prompt)
+            content = getattr(response, 'content', str(response))
+            # Basic cleanup if LLM wraps in code blocks
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+                
+            return json.loads(content)
+        except Exception as e:
+            logger.warning(f"[CrewAI] Dynamic task generation failed, using fallback: {e}")
+            return self._get_fallback_tasks(topic, platform)
 
-        # Create agents based on config
-        agents = []
-        if "researcher" in self.agents_config:
-            agents.append(self._create_researcher_agent())
-        if "fact_checker" in self.agents_config or True: # Force fact checker for ROI
-            agents.append(self._create_fact_checker_agent())
-        if "writer" in self.agents_config:
-            agents.append(self._create_writer_agent())
-        if "editor" in self.agents_config:
-            agents.append(self._create_editor_agent())
-        if "publisher" in self.agents_config:
-            agents.append(self._create_publisher_agent())
+    def _get_fallback_tasks(self, topic: str, platform: str) -> list[dict[str, str]]:
+        return [
+            {"role": "Researcher", "description": f"Find trending patterns for {topic}", "expected_output": "Viral angles list"},
+            {"role": "Fact Checker", "description": "Verify claims and data", "expected_output": "Verification report"},
+            {"role": "Writer", "description": f"Write a {platform} script", "expected_output": "Complete script"},
+            {"role": "Editor", "description": "Polish and optimize for virality", "expected_output": "Final script"}
+        ]
 
-        # If no agents configured, use defaults
-        if not agents:
-            agents = [
-                self._create_researcher_agent(),
-                self._create_fact_checker_agent(),
-                self._create_writer_agent(),
-                self._create_editor_agent(),
-            ]
-
-        # Create tasks
-        from crewai import Task, Crew
-
-        tasks = []
-
-        if any(a.role == "Researcher" for a in agents):
-            research_task = Task(
-                description=f"Research trending content about: {topic}. Find 3-5 key angles that would work well on {platform}.",
-                agent=next(a for a in agents if a.role == "Researcher"),
-                expected_output="A list of trending angles and hook ideas",
-            )
-            tasks.append(research_task)
-
-        if any(a.role == "Fact Checker" for a in agents):
-            fc_task = Task(
-                description="Verify the research findings. Ensure all claims about trending events or data are accurate.",
-                agent=next(a for a in agents if a.role == "Fact Checker"),
-                expected_output="Verified fact report or corrections",
-            )
-            tasks.append(fc_task)
-
-        if any(a.role == "Writer" for a in agents):
-            writer = next(a for a in agents if a.role == "Writer")
-            write_task = Task(
-                description=f"Write a short-form video script about {topic}. Target 60-90 seconds. Include hooks and calls to action.",
-                agent=writer,
-                expected_output="A complete video script with hook, body, and CTA",
-            )
-            tasks.append(write_task)
-
-        if any(a.role == "Editor" for a in agents):
-            editor = next(a for a in agents if a.role == "Editor")
-            edit_task = Task(
-                description="Review and improve the script. Ensure it's engaging, properly formatted, and platform-optimized.",
-                agent=editor,
-                expected_output="Refined and polished script",
-            )
-            tasks.append(edit_task)
-
-        # Create and run crew
-        crew = Crew(agents=agents, tasks=tasks, verbose=True)
-
-        result = crew.kickoff()
-
-        return {
-            "topic": topic,
-            "platform": platform,
-            "crew_result": str(result),
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-
-    async def run_research_only(self, topic: str) -> Dict[str, Any]:
-        """Run just the research agent for trend discovery."""
-        if not self.is_enabled():
-            raise RuntimeError("CrewAI service is not enabled")
-
-        researcher = self._create_researcher_agent()
-
-        task = Task(
-            description=f"Research the following topic and find trending angles: {topic}",
-            agent=researcher,
-            expected_output="Comprehensive research findings",
+    def _create_agent(self, role: str, goal: str, backstory: str, tools: list = None):
+        """Generic agent factory."""
+        from crewai import Agent
+        return Agent(
+            llm=self.llm,
+            role=role,
+            goal=goal,
+            backstory=backstory,
+            tools=tools or [],
+            verbose=True
         )
 
-        crew = Crew(agents=[researcher], tasks=[task])
-        result = crew.kickoff()
+    async def run_content_team(self, topic: str, platform: str = "youtube") -> dict[str, Any]:
+        """Execute the content team workflow with dynamic tasks."""
+        if not self.is_enabled():
+            raise RuntimeError("CrewAI service is disabled")
 
-        return {
-            "topic": topic,
-            "research": str(result),
-            "timestamp": datetime.utcnow().isoformat(),
-        }
+        if self.circuit_breaker.is_open():
+            raise RuntimeError("CrewAI circuit breaker is OPEN")
 
+        try:
+            from crewai import Crew, Task, Agent
+            
+            # 1. Generate dynamic tasks
+            task_specs = await self._generate_dynamic_tasks(topic, platform)
+            
+            # 2. Build Agent definitions (Elite patterns)
+            agents_map = {
+                "Researcher": self._create_agent("Researcher", f"Find viral {topic} hooks", "Expert trend hunter", [self.search_tool] if self.search_tool else []),
+                "Fact Checker": self._create_agent("Fact Checker", "Ensure 100% accuracy", "Meticulous verification expert", [self.search_tool] if self.search_tool else []),
+                "Writer": self._create_agent("Writer", "Write high-retention scripts", "Viral scriptwriting master"),
+                "Editor": self._create_agent("Editor", "Polish for maximum engagement", "Elite platform editor")
+            }
+            
+            # 3. Assemble Tasks
+            tasks = []
+            for spec in task_specs:
+                role = spec.get("role")
+                if role in agents_map:
+                    tasks.append(Task(
+                        description=spec["description"],
+                        expected_output=spec["expected_output"],
+                        agent=agents_map[role]
+                    ))
+            
+            # 4. Run Crew
+            crew = Crew(agents=list(agents_map.values()), tasks=tasks, verbose=True)
+            result = crew.kickoff()
+            
+            self.circuit_breaker.record_success()
+            return {
+                "topic": topic,
+                "platform": platform,
+                "result": str(result),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            self.circuit_breaker.record_failure()
+            logger.error(f"[CrewAI] Workflow failed: {e}")
+            raise
 
 # Singleton instance
 crewai_service = CrewAIService()

@@ -3,7 +3,6 @@ import logging
 import json
 import re
 import random
-from typing import List, Optional
 from datetime import datetime
 from .models import ContentCandidate
 
@@ -26,7 +25,7 @@ class FacebookScanner:
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         ]
     
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Scans Facebook Watch for trending video content in a niche.
         Uses the watch page and search to find trending videos.
@@ -61,7 +60,7 @@ class FacebookScanner:
         logger.info(f"[FacebookScanner] Found {len(unique_candidates)} videos")
         return unique_candidates[:15]
     
-    async def _get_watch_trending(self, niche: str) -> List[ContentCandidate]:
+    async def _get_watch_trending(self, niche: str) -> list[ContentCandidate]:
         """Get trending videos from Facebook Watch page."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -126,7 +125,7 @@ class FacebookScanner:
         
         return candidates
     
-    async def _search_videos(self, niche: str) -> List[ContentCandidate]:
+    async def _search_videos(self, niche: str) -> list[ContentCandidate]:
         """Search Facebook for videos in a niche."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -175,7 +174,7 @@ class FacebookScanner:
         
         return candidates
     
-    def _extract_videos_from_json(self, data: dict) -> List[ContentCandidate]:
+    def _extract_videos_from_json(self, data: dict) -> list[ContentCandidate]:
         """Extract video info from JSON data."""
         candidates = []
         
@@ -221,7 +220,7 @@ class FacebookScanner:
         
         return candidates
     
-    def _extract_videos_from_schema(self, data: dict) -> List[ContentCandidate]:
+    def _extract_videos_from_schema(self, data: dict) -> list[ContentCandidate]:
         """Extract video info from schema.org JSON-LD."""
         candidates = []
         

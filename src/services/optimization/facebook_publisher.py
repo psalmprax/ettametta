@@ -4,7 +4,6 @@ Handles video uploads to Facebook via Meta Graph API
 Features: Retry logic, rate limiting, file validation, proper logging
 """
 
-from typing import Optional
 import httpx
 import logging
 
@@ -32,9 +31,9 @@ class FacebookPublisher(SocialPublisher):
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Facebook-specific upload implementation"""
         access_token = await token_manager.get_token(
             "facebook", user_id=user_id, account_id=account_id
@@ -144,7 +143,7 @@ class FacebookPublisher(SocialPublisher):
             logger.info(f"[FacebookPublisher] Published successfully: {video_id}")
             return f"https://www.facebook.com/watch/?v={video_id}"
 
-    async def _resolve_video_url(self, video_path: str) -> Optional[str]:
+    async def _resolve_video_url(self, video_path: str) -> str | None:
         """Resolve video path to URL"""
         import os
 
@@ -165,7 +164,7 @@ class FacebookPublisher(SocialPublisher):
         self,
         platform_id: str,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
     ) -> dict:
         """Fetch Facebook video insights"""

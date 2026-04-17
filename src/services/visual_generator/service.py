@@ -1,15 +1,14 @@
 import httpx
 import logging
 import os
-from typing import Optional
-from api.config import settings
+from src.api.config import settings
 
 class VisualGenerator:
     def __init__(self):
         self.api_key = settings.OPENAI_API_KEY
         self.base_url = "https://api.openai.com/v1/images/generations"
 
-    async def generate_image(self, prompt: str) -> Optional[str]:
+    async def generate_image(self, prompt: str) -> str | None:
         """
         Generates a high-impact image. Attempts OpenAI DALL-E 3 first, fallbacks to Pollinations.ai.
         """

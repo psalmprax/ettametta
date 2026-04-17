@@ -9,8 +9,8 @@ and manages the hand-off to social media platforms.
 import logging
 import json
 import asyncio
-from typing import Dict, Any, List
-from services.script_generator.service import base_script_generator
+from typing import Any
+from src.services.script_generator.service import base_script_generator
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class DeploymentGateway:
     def __init__(self):
         self.platforms = ["tiktok", "youtube_shorts", "instagram_reels"]
 
-    async def generate_production_package(self, production_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate_production_package(self, production_data: dict[str, Any]) -> dict[str, Any]:
         """Crafts a complete distribution package with captions and tags"""
         title = production_data.get("title", "Universal Viral Variant")
         
@@ -47,7 +47,7 @@ class DeploymentGateway:
             "timestamp": production_data.get("timestamp")
         }
 
-    async def distribute_to_world(self, package: Dict[str, Any]):
+    async def distribute_to_world(self, package: dict[str, Any]):
         """Simulation: Pushing content to platforms"""
         for platform, data in package["platforms"].items():
             logger.info(f"🚀 [Gateway] Pushing to {platform.upper()}...")

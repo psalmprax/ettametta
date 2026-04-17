@@ -1,5 +1,5 @@
 import asyncio
-from api.utils.database import async_session_factory
+from src.api.utils.database import async_session_factory
 from sqlalchemy import text
 
 async def verify_async():

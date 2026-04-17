@@ -1,12 +1,12 @@
 import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from api.utils.models import SocialAccount, PublishedContentDB, VideoJobDB
-from typing import List, Dict, Any
+from src.api.utils.models import SocialAccount, PublishedContentDB, VideoJobDB
+from typing import Any
 
 
 class EmpireService:
-    def get_empire_metrics(self, db: Session, user_id: int) -> Dict[str, Any]:
+    def get_empire_metrics(self, db: Session, user_id: int) -> dict[str, Any]:
         """
         Aggregates real cross-account performance metrics with growth velocity.
         """
@@ -82,7 +82,7 @@ class EmpireService:
             "total_growth": total_growth,
         }
 
-    def get_network_graph(self, db: Session, user_id: int) -> Dict[str, List[Any]]:
+    def get_network_graph(self, db: Session, user_id: int) -> dict[str, list[Any]]:
         """
         Generates a D3-compatible network graph of the user's empire.
         Queries real data from PublishedContentDB and monitored niches.
@@ -95,7 +95,7 @@ class EmpireService:
         )
 
         # Fetch monitored niches for the user
-        from api.utils.models import MonitoredNiche
+        from src.api.utils.models import MonitoredNiche
 
         niches = (
             db.query(MonitoredNiche)
@@ -165,11 +165,11 @@ class EmpireService:
 
         return {"nodes": nodes, "links": links}
 
-    def get_winning_blueprints(self, db: Session, user_id: int) -> List[Dict[str, Any]]:
+    def get_winning_blueprints(self, db: Session, user_id: int) -> list[dict[str, Any]]:
         """
         Fetches proven patterns from A/B test winners to serve as "blueprints".
         """
-        from api.utils.models import ABTestDB
+        from src.api.utils.models import ABTestDB
 
         # Query A/B tests with confirmed winners
         winning_tests = (
@@ -231,7 +231,7 @@ class EmpireService:
         - Any user settings that are niche-specific (key = niche:*)
         Returns True if successful.
         """
-        from api.utils.models import MonitoredNiche, AffiliateLinkDB, UserSetting
+        from src.api.utils.models import MonitoredNiche, AffiliateLinkDB, UserSetting
         import datetime
 
         logging.info(
@@ -271,7 +271,7 @@ class EmpireService:
                 )
                 db.add(target_monitored)
             else:
-                # Optionally activate if was inactive
+                # Anyly activate if was inactive
                 target_monitored.is_active = True
 
             # 3. Copy affiliate links from source niche to target niche
@@ -352,13 +352,13 @@ class EmpireService:
 
     async def get_activity_stream(
         self, db: Session, user_id: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Aggregates real system and monetization events into a single timeline.
         Transitions from simulation to real telemetry.
         """
         import datetime
-        from api.utils.models import (
+        from src.api.utils.models import (
             PublishedContentDB,
             AffiliateLinkDB,
             RevenueLogDB,

@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 from playwright.async_api import async_playwright, Browser, Page
-from typing import Optional, Dict, Any
+from typing import Any
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class LeiaPixSkill:
 
     async def generate(
         self, image_url: str, motion_intensity: int = 5
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Convert image to motion video using LeiaPix
         """

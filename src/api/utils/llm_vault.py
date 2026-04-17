@@ -1,4 +1,4 @@
-from api.utils.vault import get_secret
+from src.api.utils.vault import get_secret
 import logging
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def get_llm_setting(key: str, user_id: str = None, default=None):
     return get_secret(key, user_id=user_id) or default
 
 
-def get_all_llm_providers() -> list:
+def get_all_llm_providers() -> list[str]:
     """Get list of available LLM providers that have valid API keys"""
     available = []
     for provider in LLM_API_KEYS.keys():

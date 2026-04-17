@@ -8,14 +8,14 @@ Finds trending videos, analyzes performance patterns, and identifies repurposing
 import logging
 import asyncio
 import httpx
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Any
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import re
 import json
 
-from api.utils.vault import get_secret
-from api.config import settings
+from src.api.utils.vault import get_secret
+from src.api.config import settings
 from groq import Groq
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class VideoLead:
     upload_date: datetime
     thumbnail_url: str
     description: str
-    tags: List[str]
+    tags: list[str]
     engagement_rate: float
     viral_score: float
     niche: str
@@ -88,21 +88,21 @@ class VideoLeadScanner:
     async def discover_video_leads(
         self,
         niche: str,
-        platforms: List[str] = None,
+        platforms: list[str] = None,
         min_viral_score: float = 7.0,
         max_results: int = 20,
-    ) -> List[VideoLead]:
+    ) -> list[VideoLead]:
         """
         Discover high-performing video content leads across platforms.
 
         Args:
             niche: Content niche to search for
-            platforms: List of platforms to search (youtube, tiktok, instagram)
+            platforms: list of platforms to search (youtube, tiktok, instagram)
             min_viral_score: Minimum viral score (0-10)
             max_results: Maximum leads to return
 
         Returns:
-            List of VideoLead objects sorted by viral score
+            list of VideoLead objects sorted by viral score
         """
         if platforms is None:
             platforms = ["youtube", "tiktok"]
@@ -174,7 +174,7 @@ class VideoLeadScanner:
 
     async def analyze_video_performance(
         self, video_url: str, niche: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Deep analysis of a specific video's performance and viral potential.
 
@@ -215,7 +215,7 @@ class VideoLeadScanner:
 
     async def find_video_templates(
         self, niche: str, template_type: str = "viral", min_samples: int = 10
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Find successful video templates and patterns in a niche.
 
@@ -244,7 +244,7 @@ class VideoLeadScanner:
             "recommended_structure": self._generate_recommended_structure(patterns),
         }
 
-    async def _scan_youtube(self, niche: str) -> List[VideoLead]:
+    async def _scan_youtube(self, niche: str) -> list[VideoLead]:
         """Scan YouTube for video leads"""
         if not self.youtube_api_key:
             logger.warning("YouTube API key not configured")
@@ -306,17 +306,17 @@ class VideoLeadScanner:
 
     async def find_videos_for_scenes(
         self,
-        scenes: List[Dict[str, Any]],
+        scenes: list[dict[str, Any]],
         niche: str,
-        platforms: List[str] = None,
+        platforms: list[str] = None,
         quality_threshold: int = 7,
-    ) -> Dict[str, List[VideoLead]]:
+    ) -> dict[str, list[VideoLead]]:
         """
         Find high-quality videos for each scene based on content analysis.
         Works with or without AI models using keyword-based matching.
 
         Args:
-            scenes: List of scene dictionaries with 'description', 'visual_prompt', etc.
+            scenes: list of scene dictionaries with 'description', 'visual_prompt', etc.
             niche: Content niche for context
             platforms: Platforms to search (youtube, tiktok, etc.)
             quality_threshold: Minimum quality score (1-10)
@@ -355,7 +355,7 @@ class VideoLeadScanner:
 
         return scene_videos
 
-    def _extract_scene_keywords(self, scene: Dict[str, Any], niche: str) -> List[str]:
+    def _extract_scene_keywords(self, scene: dict[str, Any], niche: str) -> list[str]:
         """Extract search keywords from scene description and visual prompts"""
         keywords = []
 
@@ -440,8 +440,8 @@ class VideoLeadScanner:
         return list(set(keywords))[:10]  # Limit to 10 keywords
 
     async def _find_videos_by_keywords(
-        self, keywords: List[str], platforms: List[str], min_quality: int = 7
-    ) -> List[VideoLead]:
+        self, keywords: list[str], platforms: list[str], min_quality: int = 7
+    ) -> list[VideoLead]:
         """Find videos matching keywords across platforms"""
         all_videos = []
 
@@ -504,8 +504,8 @@ class VideoLeadScanner:
         return quality_videos
 
     def _rank_videos_for_scene(
-        self, videos: List[VideoLead], scene: Dict[str, Any]
-    ) -> List[VideoLead]:
+        self, videos: list[VideoLead], scene: dict[str, Any]
+    ) -> list[VideoLead]:
         """Rank videos by relevance to specific scene"""
         if not videos:
             return []
@@ -524,7 +524,7 @@ class VideoLeadScanner:
         return ranked_videos
 
     def _calculate_scene_relevance(
-        self, video: VideoLead, scene_keywords: List[str]
+        self, video: VideoLead, scene_keywords: list[str]
     ) -> float:
         """Calculate how relevant a video is to a scene"""
         relevance = 0.0
@@ -556,11 +556,11 @@ class VideoLeadScanner:
 
     async def create_scene_based_video(
         self,
-        scenes: List[Dict[str, Any]],
+        scenes: list[dict[str, Any]],
         niche: str,
         target_duration: int = 60,
         audio_script: str = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a complete video production plan with scene-matched videos.
         Includes fusion strategy and upload specifications.
@@ -591,8 +591,8 @@ class VideoLeadScanner:
         }
 
     def _create_fusion_strategy(
-        self, scene_videos: Dict[str, List[VideoLead]], target_duration: int, scenes: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, scene_videos: dict[str, list[VideoLead]], target_duration: int, scenes: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Create video fusion strategy from scene videos"""
         total_duration = 0
         fusion_segments = []
@@ -629,8 +629,8 @@ class VideoLeadScanner:
         }
 
     def _create_audio_overlay_plan(
-        self, audio_script: str, fusion_plan: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, audio_script: str, fusion_plan: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create audio overlay plan for the video"""
         segments = fusion_plan.get("segments", [])
 
@@ -670,8 +670,8 @@ class VideoLeadScanner:
         }
 
     def _create_upload_specifications(
-        self, fusion_plan: Dict[str, Any], audio_plan: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, fusion_plan: dict[str, Any], audio_plan: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create upload specifications for various platforms"""
         return {
             "platforms": {
@@ -707,7 +707,7 @@ class VideoLeadScanner:
         }
 
     def _calculate_overall_quality(
-        self, scene_videos: Dict[str, List[VideoLead]], fusion_plan: Dict[str, Any]
+        self, scene_videos: dict[str, list[VideoLead]], fusion_plan: dict[str, Any]
     ) -> float:
         """Calculate overall production quality score"""
         if not scene_videos:
@@ -740,22 +740,22 @@ class VideoLeadScanner:
 
         return min(overall_score, 10.0)
 
-    def _generate_seo_tags(self, fusion_plan: Dict[str, Any]) -> List[str]:
+    def _generate_seo_tags(self, fusion_plan: dict[str, Any]) -> list[str]:
         """Generate SEO tags for the video"""
         return ["viral", "content", "tutorial", "guide", "tips", "howto"]
 
-    def _generate_hashtags(self, fusion_plan: Dict[str, Any]) -> List[str]:
+    def _generate_hashtags(self, fusion_plan: dict[str, Any]) -> list[str]:
         """Generate relevant hashtags"""
         return ["#viral", "#content", "#tutorial", "#guide", "#tips"]
 
-    async def _scan_tiktok(self, niche: str) -> List[VideoLead]:
+    async def _scan_tiktok(self, niche: str) -> list[VideoLead]:
         """Scan TikTok for video leads"""
         # TikTok scanning would require their API
         # For now, return empty list with note
         logger.info("TikTok scanning requires API integration")
         return []
 
-    async def _scan_with_ytdlp(self, query: str, platform: str, max_results: int = 5) -> List[VideoLead]:
+    async def _scan_with_ytdlp(self, query: str, platform: str, max_results: int = 5) -> list[VideoLead]:
         """Generic yt-dlp scraper for multi-platform support."""
         self.logger.info(f"Scraping {platform} for: {query}")
         leads = []
@@ -845,24 +845,24 @@ class VideoLeadScanner:
             
         return leads
 
-    async def _scan_youtube_scraper(self, niche: str) -> List[VideoLead]:
+    async def _scan_youtube_scraper(self, niche: str) -> list[VideoLead]:
         return await self._scan_with_ytdlp(niche, "youtube")
 
-    async def _scan_tiktok_scraper(self, niche: str) -> List[VideoLead]:
+    async def _scan_tiktok_scraper(self, niche: str) -> list[VideoLead]:
         return await self._scan_with_ytdlp(niche, "tiktok")
 
-    async def _scan_rumble_scraper(self, niche: str) -> List[VideoLead]:
+    async def _scan_rumble_scraper(self, niche: str) -> list[VideoLead]:
         return await self._scan_with_ytdlp(niche, "rumble")
 
-    async def _scan_reddit_scraper(self, niche: str) -> List[VideoLead]:
+    async def _scan_reddit_scraper(self, niche: str) -> list[VideoLead]:
         return await self._scan_with_ytdlp(niche, "reddit")
 
-    async def _scan_instagram_scraper(self, niche: str) -> List[VideoLead]:
+    async def _scan_instagram_scraper(self, niche: str) -> list[VideoLead]:
         return await self._scan_with_ytdlp(niche, "instagram")
 
     async def _create_youtube_lead(
-        self, video_data: Dict, niche: str
-    ) -> Optional[VideoLead]:
+        self, video_data: dict, niche: str
+    ) -> VideoLead | None:
         """Create VideoLead from YouTube API data"""
         try:
             stats = video_data.get("statistics", {})
@@ -962,7 +962,7 @@ class VideoLeadScanner:
         }
         return transitions.get(scene_type, "crossfade")
 
-    async def _analyze_video_patterns(self, leads: List[VideoLead]) -> List[Dict[str, Any]]:
+    async def _analyze_video_patterns(self, leads: list[VideoLead]) -> list[dict[str, Any]]:
         """Analyze common patterns in successful videos"""
         if not leads:
             return {}
@@ -1002,14 +1002,14 @@ class VideoLeadScanner:
             logger.error(f"Pattern analysis error: {e}")
             return {}
 
-    def _count_content_types(self, leads: List[VideoLead]) -> Dict[str, int]:
+    def _count_content_types(self, leads: list[VideoLead]) -> dict[str, int]:
         """Count occurrences of each content type"""
         counts = {}
         for lead in leads:
             counts[lead.content_type] = counts.get(lead.content_type, 0) + 1
         return counts
 
-    def _parse_video_url(self, url: str) -> Tuple[str, str]:
+    def _parse_video_url(self, url: str) -> tuple[str, str]:
         """Parse video URL to extract platform and video ID"""
         if "youtube.com" in url or "youtu.be" in url:
             platform = "youtube"
@@ -1032,34 +1032,34 @@ class VideoLeadScanner:
 
         return "unknown", ""
 
-    async def _get_video_data(self, platform: str, video_id: str) -> Dict[str, Any]:
+    async def _get_video_data(self, platform: str, video_id: str) -> dict[str, Any]:
         """Get detailed video data from platform API"""
         # Implementation would call platform APIs
         return {}
 
-    def _analyze_engagement_patterns(self, video_data: Dict) -> Dict[str, Any]:
+    def _analyze_engagement_patterns(self, video_data: dict) -> dict[str, Any]:
         """Analyze engagement patterns over time"""
         return {}
 
-    async def _identify_viral_factors(self, video_data: Dict, niche: str) -> List[str]:
+    async def _identify_viral_factors(self, video_data: dict, niche: str) -> list[str]:
         """Identify factors that made this video viral"""
         return []
 
     async def _generate_repurposing_suggestions(
-        self, video_data: Dict, niche: str
-    ) -> List[str]:
+        self, video_data: dict, niche: str
+    ) -> list[str]:
         """Generate suggestions for repurposing this content"""
         return []
 
-    def _extract_content_template(self, video_data: Dict) -> Dict[str, Any]:
+    def _extract_content_template(self, video_data: dict) -> dict[str, Any]:
         """Extract reusable content template"""
         return {}
 
-    def _extract_success_factors(self, leads: List[VideoLead]) -> List[str]:
+    def _extract_success_factors(self, leads: list[VideoLead]) -> list[str]:
         """Extract common success factors"""
         return []
 
-    def _generate_recommended_structure(self, patterns: Dict) -> Dict[str, Any]:
+    def _generate_recommended_structure(self, patterns: dict) -> dict[str, Any]:
         """Generate recommended video structure"""
         return {}
 

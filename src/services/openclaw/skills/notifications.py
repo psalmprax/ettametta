@@ -2,8 +2,7 @@ import json
 import logging
 import requests
 from datetime import datetime
-from typing import Dict, List, Optional
-from api.config import settings
+from src.api.config import settings
 from .memory import memory_skill
 
 logger = logging.getLogger(__name__)
@@ -12,9 +11,9 @@ logger = logging.getLogger(__name__)
 class NotificationSkill:
     def __init__(self):
         self.api_url = f"{settings.API_URL}"
-        self.notification_log: List[Dict] = []
-        self.webhooks: Dict[str, str] = {}
-        self.alert_rules: List[Dict] = []
+        self.notification_log: list[dict] = []
+        self.webhooks: dict[str, str] = {}
+        self.alert_rules: list[dict] = []
 
     def _get_headers(self):
         headers = {}
@@ -27,7 +26,7 @@ class NotificationSkill:
         channel: str,
         message: str,
         priority: str = "normal",
-        metadata: Optional[Dict] = None,
+        metadata: dict | None = None,
     ) -> str:
         notification = {
             "channel": channel,
@@ -87,7 +86,7 @@ class NotificationSkill:
         except Exception as e:
             return f"⚠️ Telegram Error: {e}"
 
-    def _send_webhook(self, message: str, metadata: Optional[Dict] = None) -> str:
+    def _send_webhook(self, message: str, metadata: dict | None = None) -> str:
         if not self.webhooks:
             return "⚠️ No webhooks configured. Use /notify webhook-add <url>"
 
@@ -107,7 +106,7 @@ class NotificationSkill:
 
         return "📡 **Webhook Results**:\n" + "\n".join(results)
 
-    def _send_email(self, message: str, metadata: Optional[Dict] = None) -> str:
+    def _send_email(self, message: str, metadata: dict | None = None) -> str:
         return "⚠️ Email notifications not yet configured. Set up SMTP in .env"
 
     def _send_dashboard(self, message: str, priority: str = "normal") -> str:
@@ -141,11 +140,11 @@ class NotificationSkill:
             lines.append(f"• {name}: {url}")
         return "\n".join(lines)
 
-    def add_alert_rule(self, rule: Dict) -> str:
+    def add_alert_rule(self, rule: dict) -> str:
         self.alert_rules.append(rule)
         return f"✅ Alert rule added: {rule.get('name', 'unnamed')}"
 
-    def check_alert_rules(self, data: Dict) -> List[str]:
+    def check_alert_rules(self, data: dict) -> list[str]:
         triggered = []
         for rule in self.alert_rules:
             condition = rule.get("condition", {})

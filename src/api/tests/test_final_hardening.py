@@ -19,11 +19,11 @@ sys.modules["google_auth_oauthlib.flow"] = MagicMock()
 sys.modules["email_validator"] = MagicMock()
 
 import pytest
-from services.openclaw.agent import OpenClawAgent
-from services.discovery.service import DiscoveryService
-from services.langchain.service import langchain_service, LangChainService
-from services.crewai.service import crewai_service
-from services.openclaw.skills.self_improve import self_improve_skill
+from src.services.openclaw.agent import OpenClawAgent
+from src.services.discovery.service import DiscoveryService
+from src.services.langchain.service import langchain_service, LangChainService
+from src.services.crewai.service import crewai_service
+from src.services.openclaw.skills.self_improve import self_improve_skill
 
 @pytest.mark.asyncio
 async def test_self_improvement_critic():

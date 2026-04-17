@@ -1,8 +1,8 @@
 import logging
-from typing import List, Dict, Any, Optional
-from api.utils.database import async_session_factory
+from typing import Any
+from src.api.utils.database import async_session_factory
 from sqlalchemy import select
-from api.utils.models import SystemSettings
+from src.api.utils.models import SystemSettings
 from .strategies.commerce import CommerceStrategy
 from .strategies.affiliate import AffiliateStrategy
 from .strategies.lead_gen import LeadGenStrategy
@@ -90,7 +90,7 @@ class MonetizationOrchestrator:
             # Selective mode: Only monetize high-potential content
             return viral_score >= 85
 
-    async def get_monetization_assets(self, niche: str, viral_score: int = 0) -> List[Dict[str, Any]]:
+    async def get_monetization_assets(self, niche: str, viral_score: int = 0) -> list[dict[str, Any]]:
         if not await self.should_monetize(viral_score):
             return []
         return await self._execute_with_failover("get_assets", niche)

@@ -1,5 +1,5 @@
-from api.utils.celery import celery_app
-from services.security.service import base_security_sentinel
+from src.api.utils.celery import celery_app
+from src.services.security.service import base_security_sentinel
 import asyncio
 
 @celery_app.task(name="security.system_audit")

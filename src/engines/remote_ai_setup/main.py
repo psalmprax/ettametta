@@ -969,7 +969,7 @@ from video_model_manager import model_manager, VIDEO_MODELS
 
 @app.get("/models")
 async def list_models(x_worker_token: str = Header(None)):
-    """List all available video models"""
+    """list all available video models"""
     await verify_worker_token(x_worker_token)
     return {
         "models": VIDEO_MODELS,

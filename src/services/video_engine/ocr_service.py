@@ -1,6 +1,5 @@
 import os
 import logging
-from typing import List, Dict, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +65,7 @@ class OCRService:
             "healthy": e_available and c_available
         }
 
-    def detect_text_regions(self, video_path: str, sample_rate: int = 30) -> List[Dict]:
+    def detect_text_regions(self, video_path: str, sample_rate: int = 30) -> list[dict]:
         """
         Samples frames from a video and detects bounding boxes of text.
         Returns a list of regions found.
@@ -158,4 +157,4 @@ class OCRService:
         
         return "top" if best_zone == 0 else "bottom"
 
-ocr_service = OCRService()
+base_ocr_service = OCRService()

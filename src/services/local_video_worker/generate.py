@@ -23,7 +23,7 @@ def init_pipeline():
         logging.info(f"Loading DiffusionPipeline: {MODEL_ID}")
         try:
             pipe = DiffusionPipeline.from_pretrained(MODEL_ID)
-            # Optional: pipe.to("cuda") if not handled automatically
+            # Any: pipe.to("cuda") if not handled automatically
         except Exception as e:
             logging.error(f"Failed to load diffusion pipeline: {e}")
 

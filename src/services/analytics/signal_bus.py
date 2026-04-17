@@ -10,7 +10,7 @@ import logging
 import json
 import time
 import sqlite3
-from typing import Dict, Any, List, Optional
+from typing import Any
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class SignalBus:
                 )
             """)
 
-    def ingest_signal(self, topic: str, platform: str, raw_metrics: Dict[str, Any]):
+    def ingest_signal(self, topic: str, platform: str, raw_metrics: dict[str, Any]):
         """Normalizes and persists a social signal"""
         # 1. Calculation Logic (Simplified for CPU-first logic)
         velocity = raw_metrics.get("growth_rate", 0.0)
@@ -66,7 +66,7 @@ class SignalBus:
             if not prev: return 0.0
             return current_velocity - prev[0]
 
-    def get_feature_vector(self, topic: str) -> Optional[List[float]]:
+    def get_feature_vector(self, topic: str) -> list[float]:
         """Returns the full temporal feature vector for the Forecaster"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
@@ -74,7 +74,7 @@ class SignalBus:
                 (topic,)
             )
             row = cursor.fetchone()
-            return list(row) if row else None
+            return list(row) if row else []
 
 # Singleton Instance
 base_signal_bus = SignalBus()

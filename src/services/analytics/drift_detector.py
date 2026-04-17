@@ -1,10 +1,10 @@
 import logging
 import numpy as np
-from typing import Dict, Any, List
+from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
-from api.utils.database import AsyncSessionLocal
-from api.utils.models import DriftHistoryDB
+from src.api.utils.database import AsyncSessionLocal
+from src.api.utils.models import DriftHistoryDB
 
 logger = logging.getLogger("DriftDetector")
 

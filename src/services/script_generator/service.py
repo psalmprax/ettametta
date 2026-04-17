@@ -2,9 +2,9 @@ import os
 import json
 import logging
 import time
-from typing import Dict, Any, List, Optional
-from groq import AsyncGroq
-from api.config import settings
+from typing import Any
+from src.services.llm.intelligence_hub import base_intelligence_hub
+from src.api.config import settings
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -12,89 +12,36 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-class CircuitBreaker:
-    """Simple circuit breaker to prevent cascading failures"""
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 60):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"
-
-    def is_open(self) -> bool:
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return False
-            return True
-        return False
-
-    def record_success(self):
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
-
 class ScriptGenerator:
     def __init__(self):
         self.logger = logging.getLogger("ScriptGenerator")
-        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-        self.model = "llama-3.3-70b-versatile"
-        self.circuit_breaker = CircuitBreaker()
+        self.circuit_breaker = self._SimpleCircuitBreaker()
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type((Exception)),
-        reraise=True
-    )
-    async def _call_ai(self, prompt: str) -> str:
-        if self.circuit_breaker.is_open():
-            raise Exception("Circuit breaker is OPEN")
-        
-        groq_key = settings.GROQ_API_KEY
-        openai_key = os.getenv("OPENAI_API_KEY")
+    class _SimpleCircuitBreaker:
+        """Lightweight circuit breaker for AI call protection."""
+        def __init__(self, failure_threshold: int = 5):
+            self._failures = 0
+            self._threshold = failure_threshold
+        def is_open(self) -> bool:
+            return self._failures >= self._threshold
+        def record_failure(self):
+            self._failures += 1
+        def record_success(self):
+            self._failures = 0
 
-        providers = []
-        if groq_key:
-            providers.append(("groq", groq_key, "llama-3.3-70b-versatile", "https://api.groq.com/openai/v1/chat/completions"))
-        if openai_key:
-            providers.append(("openai", openai_key, "gpt-4o", "https://api.openai.com/v1/chat/completions"))
-
-        import httpx
-        for name, key, model, url in providers:
-            try:
-                async with httpx.AsyncClient(timeout=30) as client:
-                    resp = await client.post(
-                        url,
-                        headers={
-                            "Authorization": f"Bearer {key}",
-                            "Content-Type": "application/json"
-                        },
-                        json={
-                            "model": model,
-                            "messages": [
-                                {"role": "system", "content": "You are a Viral Content Narrator. You bridge and narrate relationships between videos for high-retention content. Output JSON ONLY."},
-                                {"role": "user", "content": prompt}
-                            ],
-                            "response_format": {"type": "json_object"},
-                        }
-                    )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        self.circuit_breaker.record_success()
-                        return data["choices"][0]["message"]["content"]
-                    
-                    self.logger.warning(f"  ⚠️ {name.upper()} script generation failed ({resp.status_code}). Checking fallback...")
-            except Exception as e:
-                self.logger.error(f"  ⚠️ {name.upper()} script generation failed: {str(e)[:50]}")
-
-        self.circuit_breaker.record_failure()
-        raise Exception("All AI providers failed for script generation")
+    async def _call_ai(self, prompt: str, session_id: str | None = None) -> str:
+        """Centralized AI call through IntelligenceHub"""
+        try:
+            result = await base_intelligence_hub.chat(
+                prompt=prompt,
+                system_prompt="You are a Viral Content Narrator. You bridge and narrate relationships between videos for high-retention content. Output JSON ONLY.",
+                session_id=session_id,
+                json_mode=True
+            )
+            return result["response"]
+        except Exception as e:
+            self.logger.error(f"  ⚠️ Hub script generation failed: {str(e)[:50]}")
+            raise Exception("IntelligenceHub failed for script generation")
 
     async def generate_script(
         self, 
@@ -102,16 +49,17 @@ class ScriptGenerator:
         niche: str, 
         duration_sec: int = 60, 
         style: str = "story",
-        clips: List[Dict] = None
-    ) -> Dict[str, Any]:
+        clips: list[dict] = None,
+        session_id: str | None = None
+    ) -> dict[str, Any]:
         """
         Generates a structured script for a faceless video with Asset-Aware Narration.
         """
         # 1. Fetch crystallized winning patterns from Hermes
         hermes_context = ""
         try:
-            from services.hermes.service import hermes_service
-            skills = hermes_service.get_winning_context(niche)
+            from src.services.hermes.service import base_hermes_service
+            skills = base_hermes_service.get_winning_context(niche)
             if skills:
                 patterns = [f"- {s['skill_name']}: {s['abstracted_pattern']}" for s in skills]
                 hermes_context = "\n".join(patterns)
@@ -178,37 +126,20 @@ class ScriptGenerator:
         if self.circuit_breaker.is_open():
             return ""
 
-        providers = []
-        groq_key = settings.GROQ_API_KEY
-        openai_key = os.getenv("OPENAI_API_KEY")
-        if groq_key: 
-            providers.append(("groq", groq_key, "llama-3.3-70b-versatile", "https://api.groq.com/openai/v1/chat/completions"))
-        if openai_key:
-            providers.append(("openai", openai_key, "gpt-4o", "https://api.openai.com/v1/chat/completions"))
-        
-        import httpx
-        for name, key, model, url in providers:
-            try:
-                async with httpx.AsyncClient(timeout=20) as client:
-                    resp = await client.post(
-                        url,
-                        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                        json={
-                            "model": model,
-                            "messages": [
-                                {"role": "system", "content": system_prompt},
-                                {"role": "user", "content": prompt}
-                            ],
-                            "max_tokens": 50
-                        }
-                    )
-                    if resp.status_code == 200:
-                        return resp.json()["choices"][0]["message"]["content"].strip()
-            except Exception:
-                continue
-        return ""
+        try:
+            result = await base_intelligence_hub.chat(
+                prompt=prompt,
+                system_prompt=system_prompt
+            )
+            self.circuit_breaker.record_success()
+            return result.get("response", "")
+        except Exception as e:
+            self.circuit_breaker.record_failure()
+            self.logger.warning(f"Complete() failed: {e}")
+            return ""
 
-    def _get_fallback_script(self, topic: str, niche: str, clips: List[Dict] = None) -> Dict[str, Any]:
+
+    def _get_fallback_script(self, topic: str, niche: str, clips: list[dict] = None) -> dict[str, Any]:
         """Returns a script that tries to bridge clips if available."""
         clip_ref = clips[0].get("id") if clips else "stock"
         return {

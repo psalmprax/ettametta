@@ -1,8 +1,7 @@
 import os
 import httpx
 import logging
-from typing import Optional
-from api.utils.vault import get_secret
+from src.api.utils.vault import get_secret
 
 class VoiceoverService:
     @property
@@ -25,7 +24,7 @@ class VoiceoverService:
         self.elevenlabs_url = "https://api.elevenlabs.io/v1"
         self.default_voice_id = "21m00Tcm4TlvDq8ikWAM" # Rachel
 
-    async def generate_voiceover(self, text: str, voice_id: Optional[str] = None) -> Optional[str]:
+    async def generate_voiceover(self, text: str, voice_id: str | None = None) -> str | None:
         """
         Synthesizes text to speech using the selected engine.
         """

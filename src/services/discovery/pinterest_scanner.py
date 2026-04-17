@@ -3,7 +3,6 @@ import logging
 import json
 import re
 import random
-from typing import List, Optional
 from datetime import datetime
 from .models import ContentCandidate
 
@@ -25,7 +24,7 @@ class PinterestScanner:
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         ]
     
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Scans Pinterest for trending pins in a niche.
         Uses the search functionality to find popular content.
@@ -60,7 +59,7 @@ class PinterestScanner:
         logger.info(f"[PinterestScanner] Found {len(unique)} pins")
         return unique[:15]
     
-    async def _search_pins(self, query: str) -> List[ContentCandidate]:
+    async def _search_pins(self, query: str) -> list[ContentCandidate]:
         """Search Pinterest for pins."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -109,7 +108,7 @@ class PinterestScanner:
         
         return candidates
     
-    async def _get_trending(self) -> List[ContentCandidate]:
+    async def _get_trending(self) -> list[ContentCandidate]:
         """Get trending pins from Pinterest."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -133,7 +132,7 @@ class PinterestScanner:
         
         return candidates
     
-    def _extract_pins_from_json(self, data: dict) -> List[ContentCandidate]:
+    def _extract_pins_from_json(self, data: dict) -> list[ContentCandidate]:
         """Extract pin data from Pinterest JSON."""
         candidates = []
         
@@ -173,7 +172,7 @@ class PinterestScanner:
         
         return candidates
     
-    def _find_pins_recursive(self, obj, depth=0) -> List[ContentCandidate]:
+    def _find_pins_recursive(self, obj, depth=0) -> list[ContentCandidate]:
         """Recursively search for pin objects."""
         candidates = []
         
@@ -199,7 +198,7 @@ class PinterestScanner:
         
         return candidates
     
-    def _parse_pin_item(self, item: dict) -> Optional[ContentCandidate]:
+    def _parse_pin_item(self, item: dict) -> ContentCandidate | None:
         """Parse a single pin item."""
         try:
             pin_id = item.get("id", "")

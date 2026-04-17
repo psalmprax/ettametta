@@ -1,10 +1,10 @@
 import logging
 import random
-from typing import List, Dict, Any
+from typing import Any
 from sqlalchemy import select
 from .base import BaseMonetizationStrategy
-from api.utils.database import async_session_factory
-from api.utils.models import MembershipPlanDB, SystemSettings
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import MembershipPlanDB, SystemSettings
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ class MembershipStrategy(BaseMonetizationStrategy):
     Patreon/Membership strategy - Recurring revenue through supporter tiers
     """
     
-    async def get_assets(self, niche: str) -> List[Dict[str, Any]]:
+    async def get_assets(self, niche: str) -> list[dict[str, Any]]:
         """
         Fetches membership tiers from database configuration.
         Returns available membership programs for the given niche.

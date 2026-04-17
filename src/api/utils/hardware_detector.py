@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Optional, Dict, Any
+from typing import Any
 
 try:
     import torch
@@ -67,7 +67,7 @@ class HardwareDetector:
             return "Microsoft/DirectML"
         return "Generic/CPU"
 
-    def _detect_vram_gb(self) -> Optional[int]:
+    def _detect_vram_gb(self) -> int | None:
         """Detects available GPU VRAM in GB."""
         if not TORCH_AVAILABLE:
             return None
@@ -97,7 +97,7 @@ class HardwareDetector:
         # For other devices, try environment variable override
         return None
 
-    def get_gpu_info(self) -> Dict[str, Any]:
+    def get_gpu_info(self) -> dict[str, Any]:
         """Returns comprehensive GPU information."""
         # Check if VRAM was originally detected vs overridden
         originally_detected = self._detect_vram_gb() is not None

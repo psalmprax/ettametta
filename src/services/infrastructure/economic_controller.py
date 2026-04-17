@@ -2,7 +2,7 @@ import logging
 import json
 import os
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
 
 logger = logging.getLogger("EconomicController")
 
@@ -18,7 +18,7 @@ class EconomicController:
         os.makedirs(os.path.dirname(data_path), exist_ok=True)
         self.state = self._load_state()
 
-    def _load_state(self) -> Dict[str, Any]:
+    def _load_state(self) -> dict[str, Any]:
         if not os.path.exists(self.data_path):
             return {"date": str(datetime.now().date()), "credits_spent": 0.0}
         try:
@@ -45,7 +45,7 @@ class EconomicController:
         logger.info(f"💰 [Treasury] Authorized '{action}' (Cost: {amount}). Total Spent: {self.state['credits_spent']}/{self.daily_budget}")
         return True
 
-    def get_vitals(self) -> Dict[str, Any]:
+    def get_vitals(self) -> dict[str, Any]:
         return {
             "daily_budget": self.daily_budget,
             "spent": self.state["credits_spent"],

@@ -18,7 +18,7 @@ import os
 import json
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any
 import time
 
 # Add project root to path
@@ -54,7 +54,7 @@ class AutomatedVideoEditorTest:
         self.discovered_videos = []
         self.processed_content = {}
 
-    async def run_complete_test(self) -> Dict[str, Any]:
+    async def run_complete_test(self) -> dict[str, Any]:
         """Run the complete automated video editor test"""
 
         print("🎬 AUTOMATED VIRALFORGE VIDEO EDITOR TEST")
@@ -114,7 +114,7 @@ class AutomatedVideoEditorTest:
         """Test content-based video discovery capabilities"""
         try:
             # Import video lead scanner
-            from services.discovery.video_lead_scanner import video_lead_scanner
+            from src.services.discovery.video_lead_scanner import video_lead_scanner
 
             print(f"🔍 Discovering videos for niche: '{self.test_data['niche']}'")
 
@@ -308,7 +308,7 @@ class AutomatedVideoEditorTest:
             print(f"❌ End-to-end workflow test failed: {e}")
             return False
 
-    def _simulate_video_discovery(self) -> List[Dict[str, Any]]:
+    def _simulate_video_discovery(self) -> list[dict[str, Any]]:
         """Simulate video discovery for testing"""
         return [
             {
@@ -352,7 +352,7 @@ class AutomatedVideoEditorTest:
             }
         ]
 
-    def _analyze_video_content(self, video: Dict[str, Any]) -> Dict[str, Any]:
+    def _analyze_video_content(self, video: dict[str, Any]) -> dict[str, Any]:
         """Simulate AI-powered content analysis"""
         return {
             "video_id": video["video_id"],
@@ -366,7 +366,7 @@ class AutomatedVideoEditorTest:
             "fusion_suitability": 8.7
         }
 
-    def _select_best_content(self, analyzed_content: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _select_best_content(self, analyzed_content: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Select best content for fusion based on analysis"""
         # Sort by fusion suitability and pick top 2
         sorted_content = sorted(
@@ -376,7 +376,7 @@ class AutomatedVideoEditorTest:
         )
         return sorted_content[:2]
 
-    def _plan_fusion_strategy(self, selected_videos: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _plan_fusion_strategy(self, selected_videos: list[dict[str, Any]]) -> dict[str, Any]:
         """Plan video fusion strategy"""
         return {
             "fusion_type": "sequential_montage",
@@ -388,7 +388,7 @@ class AutomatedVideoEditorTest:
             "frame_rate": 30
         }
 
-    def _simulate_video_fusion(self, videos: List[Dict[str, Any]], strategy: Dict[str, Any]) -> Dict[str, Any]:
+    def _simulate_video_fusion(self, videos: list[dict[str, Any]], strategy: dict[str, Any]) -> dict[str, Any]:
         """Simulate video fusion process"""
         total_duration = sum(video.get("duration", 0) for video in videos)
         estimated_final_duration = min(total_duration * 0.7, strategy["target_duration"])
@@ -404,7 +404,7 @@ class AutomatedVideoEditorTest:
             "resolution": "1080x1920"
         }
 
-    def _simulate_upload_optimization(self, fused_video: Dict[str, Any]) -> Dict[str, Any]:
+    def _simulate_upload_optimization(self, fused_video: dict[str, Any]) -> dict[str, Any]:
         """Simulate upload optimization"""
         original_size = fused_video.get("duration", 60) * 50  # Rough estimate: 50MB per minute
         optimized_size = original_size * 0.6  # 40% compression
@@ -421,7 +421,7 @@ class AutomatedVideoEditorTest:
             "upload_ready": True
         }
 
-    def _measure_video_quality(self, optimized_video: Dict[str, Any]) -> Dict[str, Any]:
+    def _measure_video_quality(self, optimized_video: dict[str, Any]) -> dict[str, Any]:
         """Simulate automated quality measurement"""
         # Simulate quality analysis
         technical_score = 8.5  # Video encoding, compression, format
@@ -485,7 +485,7 @@ class AutomatedVideoEditorTest:
         except Exception:
             return False
 
-    def _generate_report(self) -> Dict[str, Any]:
+    def _generate_report(self) -> dict[str, Any]:
         """Generate comprehensive test report"""
         passed_tests = sum(self.test_results.values())
         total_tests = len(self.test_results)

@@ -5,9 +5,8 @@ import logging
 import json
 import httpx
 import base64
-from typing import List, Dict, Optional
-from api.utils.vault import get_secret
-from api.config import settings
+from src.api.utils.vault import get_secret
+from src.api.config import settings
 
 class VLMService:
     def __init__(self):
@@ -31,7 +30,7 @@ class VLMService:
         else:
             self.groq_client = None
 
-    def _sample_keyframes(self, video_path: str, num_frames: int = 5) -> List[str]:
+    def _sample_keyframes(self, video_path: str, num_frames: int = 5) -> list[str]:
         """Samples keyframes and returns paths."""
         temp_dir = "temp_frames"
         os.makedirs(temp_dir, exist_ok=True)
@@ -53,7 +52,7 @@ class VLMService:
         cap.release()
         return frame_paths
 
-    async def analyze_video_content(self, video_path: str) -> Dict:
+    async def analyze_video_content(self, video_path: str) -> dict:
         """Orchestrates VLM analysis: Groq -> Local -> Gemini."""
         frame_paths = self._sample_keyframes(video_path)
         if not frame_paths: return {}
@@ -81,7 +80,7 @@ class VLMService:
             
         return {}
 
-    async def _analyze_groq(self, frame_paths: List[str]) -> Optional[Dict]:
+    async def _analyze_groq(self, frame_paths: list[str]) -> dict | None:
         """Analyzes using Groq Vision."""
         try:
             # Groq Vision usually handles 1 image well, for multiple we sample the best one
@@ -107,7 +106,7 @@ class VLMService:
             logging.warning(f"[VLMService] Groq Vision failed: {e}")
             return None
 
-    async def _analyze_local(self, frame_paths: List[str]) -> Optional[Dict]:
+    async def _analyze_local(self, frame_paths: list[str]) -> dict | None:
         """Analyzes using Moondream2 on the remote inference node."""
         render_node_url = os.getenv("RENDER_NODE_URL")
         if not render_node_url: return None
@@ -133,7 +132,7 @@ class VLMService:
             logging.warning(f"[VLMService] Local VLM failed: {e}")
         return None
 
-    async def _analyze_gemini(self, frame_paths: List[str]) -> Optional[Dict]:
+    async def _analyze_gemini(self, frame_paths: list[str]) -> dict | None:
         """Analyzes using Gemini Multimodal."""
         try:
             from PIL import Image
@@ -149,4 +148,4 @@ class VLMService:
             logging.error(f"[VLMService] Gemini failed: {e}")
             return None
 
-vlm_service = VLMService()
+base_vlm_service = VLMService()

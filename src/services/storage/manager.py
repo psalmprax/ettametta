@@ -3,10 +3,9 @@ import logging
 import shutil
 import time
 from datetime import datetime, timedelta
-from typing import List, Dict
 from sqlalchemy.orm import Session
-from api.config import settings
-from api.utils.models import VideoJobDB, NexusJobDB, ScheduledPostDB
+from src.api.config import settings
+from src.api.utils.models import VideoJobDB, NexusJobDB, ScheduledPostDB
 from sqlalchemy.ext.asyncio import AsyncSession
 from .service import base_storage_service
 
@@ -49,7 +48,7 @@ class StorageManager:
             bytes_to_liberate = current_size - (self.threshold_bytes * 0.8)
             bytes_liberated = 0
 
-            from api.utils.database import async_session_factory
+            from src.api.utils.database import async_session_factory
             async with async_session_factory() as db:
                 for file_path, _ in files:
                     if bytes_liberated >= bytes_to_liberate:
@@ -134,7 +133,7 @@ class StorageManager:
                             logging.info(f"[StorageManager] Deleting expired cloud object: {obj['Key']}")
                             client.delete_object(Bucket=bucket, Key=obj['Key'])
                             
-                            # Optional: Clean up DB references if we want to mark them as 'purged'
+                            # Any: Clean up DB references if we want to mark them as 'purged'
                             # This is complex because we don't want to break the UI, just show 'Asset Expired'
                             
         except Exception as e:

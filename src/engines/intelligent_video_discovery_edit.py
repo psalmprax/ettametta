@@ -15,7 +15,7 @@ import json
 import base64
 from pathlib import Path
 import httpx
-from typing import List, Dict, Any
+from typing import Any
 
 # Add project root
 sys.path.insert(0, str(Path(__file__).parent))
@@ -42,7 +42,7 @@ class VideoContentAnalyzer:
 
     async def analyze_video_content(
         self, video_path: str = "", video_url: str = ""
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyze video to determine content type.
 
@@ -85,7 +85,7 @@ class VideoContentAnalyzer:
 
         return result
 
-    async def _extract_key_frames(self, video_source: str) -> List[str]:
+    async def _extract_key_frames(self, video_source: str) -> list[str]:
         """Extract 5 key frames at 10%, 30%, 50%, 70%, 90% of video"""
 
         frames_dir = Path("temp/video_frames")
@@ -145,7 +145,7 @@ class VideoContentAnalyzer:
 
         return extracted
 
-    async def _analyze_frames(self, frames: List[str]) -> List[Dict]:
+    async def _analyze_frames(self, frames: list[str]) -> list[dict]:
         """Use LLM vision to analyze each frame"""
 
         analyses = []
@@ -170,7 +170,7 @@ class VideoContentAnalyzer:
 CRITICAL: 
 - "demonstrating"/"concept_explaining" = USABLE (has visual + educational value)
 - "speaking_to_camera" = REJECT (only talking, no visual demonstration)
-- Tutorial videos ARE usable - checking person ACTIVITY not just presence""
+- Tutorial videos ARE usable - checking person ACTIVITY not just presence"""
 
         for frame_path in frames[:5]:
             try:
@@ -218,7 +218,7 @@ CRITICAL:
 
         return analyses
 
-    def _compile_analysis(self, analyses: List[Dict]) -> Dict[str, Any]:
+    def _compile_analysis(self, analyses: list[dict]) -> dict[str, Any]:
         """Compile frame analyses into content classification"""
 
         if not analyses:
@@ -328,7 +328,7 @@ CRITICAL:
             "usable": content_type != "talking_head",
         }
 
-    async def check_coherence(self, videos: List[Dict], topic: str) -> Dict[str, Any]:
+    async def check_coherence(self, videos: list[dict], topic: str) -> dict[str, Any]:
         """Check if video selection is coherent (not random mix of unrelated topics)"""
 
         video_list = "\n".join(
@@ -389,8 +389,8 @@ class VideoEditorAssistant:
         self.groq_api_key = os.getenv("GROQ_API_KEY")
 
     async def prepare_editor_options(
-        self, topic: str, found_videos: List[Dict], audience_data: Dict = None
-    ) -> Dict[str, Any]:
+        self, topic: str, found_videos: list[dict], audience_data: dict = None
+    ) -> dict[str, Any]:
         """
         Prepare 3-5 EDITOR CHOICES, not just one result.
 
@@ -433,7 +433,7 @@ For each option, provide:
 5. **WHY THIS WORKS** (reasoning)
 6. **SUGGESTED STYLE** (fast-paced/calm/educational/entertaining)
 
-Return as JSON array with these fields.
+Return as JSON array with these fields."""
 
         try:
             async with httpx.AsyncClient(timeout=90) as client:
@@ -469,7 +469,7 @@ Return as JSON array with these fields.
 
         return {"options": [], "topic": topic}
 
-    def _analyze_audience(self, audience_data: Dict) -> str:
+    def _analyze_audience(self, audience_data: dict) -> str:
         """Extract audience insights from data"""
 
         if not audience_data:
@@ -488,8 +488,8 @@ Return as JSON array with these fields.
         return "AUDIENCE: " + " | ".join(insights)
 
     async def score_with_reasoning(
-        self, videos: List[Dict], criteria: Dict[str, float] = None
-    ) -> List[Dict]:
+        self, videos: list[dict], criteria: dict[str, float] = None
+    ) -> list[dict]:
         """
         Score videos WITH EXPLANATIONS - not just numbers.
 
@@ -578,7 +578,7 @@ Return as JSON array with these fields.
 
         return scored
 
-    def _generate_reasoning(self, video: Dict, score: float, criteria: Dict) -> str:
+    def _generate_reasoning(self, video: dict, score: float, criteria: dict) -> str:
         """Generate human-readable reasoning for score"""
 
         reasoning_parts = []
@@ -599,7 +599,7 @@ Return as JSON array with these fields.
 
         return "; ".join(reasoning_parts)
 
-    def _generate_considerations(self, video: Dict) -> List[str]:
+    def _generate_considerations(self, video: dict) -> list[str]:
         """Generate considerations for the editor"""
 
         considerations = []
@@ -628,7 +628,7 @@ Return as JSON array with these fields.
 
     async def get_audience_analytics(
         self, niche: str, platform: str = "youtube"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get audience analytics for niche - helps editor understand what works.
         """
@@ -684,8 +684,8 @@ JSON format:
         }
 
     async def suggest_with_reasoning(
-        self, context: Dict, question: str
-    ) -> Dict[str, Any]:
+        self, context: dict, question: str
+    ) -> dict[str, Any]:
         """
         Answer editor questions WITH reasoning.
 
@@ -753,8 +753,8 @@ class IntelligentVideoResearcher:
         self.pixabay_api_key = None  # Not configured
 
     async def research_content_videos(
-        self, topic: str, scene_requirements: List[Dict]
-    ) -> Dict[str, Any]:
+        self, topic: str, scene_requirements: list[dict]
+    ) -> dict[str, Any]:
         """Research and find videos for each scene requirement"""
 
         print(f"🔍 RESEARCHING: {topic}")
@@ -785,7 +785,7 @@ class IntelligentVideoResearcher:
 
         return research_results
 
-    def _generate_search_terms(self, scene: Dict, topic: str) -> List[str]:
+    def _generate_search_terms(self, scene: dict, topic: str) -> list[str]:
         """Generate human-like search terms for the scene"""
 
         base_terms = []
@@ -825,7 +825,7 @@ class IntelligentVideoResearcher:
 
         return search_terms[:5]  # Return top 5 search terms
 
-    async def _intelligent_scene_search(self, scene: Dict, topic: str) -> List[Dict]:
+    async def _intelligent_scene_search(self, scene: dict, topic: str) -> list[dict]:
         """Perform intelligent search for scene-specific videos"""
 
         search_terms = self._generate_search_terms(scene, topic)
@@ -847,7 +847,7 @@ class IntelligentVideoResearcher:
         # Return top 4-8 videos
         return unique_videos[:8]
 
-    async def _search_youtube(self, query: str, max_results: int = 5) -> List[Dict]:
+    async def _search_youtube(self, query: str, max_results: int = 5) -> list[dict]:
         """Search YouTube using API"""
 
         url = "https://www.googleapis.com/youtube/v3/search"
@@ -887,7 +887,7 @@ class IntelligentVideoResearcher:
 
         return videos
 
-    def _deduplicate_and_rank(self, videos: List[Dict], scene: Dict) -> List[Dict]:
+    def _deduplicate_and_rank(self, videos: list[dict], scene: dict) -> list[dict]:
         """Remove duplicates and rank videos by relevance to scene"""
 
         # Remove duplicates by video ID
@@ -933,8 +933,8 @@ class ProfessionalVideoEditor:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     async def create_professional_edit(
-        self, research_results: Dict, content_topic: str, audio_script: str
-    ) -> Dict[str, Any]:
+        self, research_results: dict, content_topic: str, audio_script: str
+    ) -> dict[str, Any]:
         """Create a professionally edited video from research results"""
 
         print("\n🎬 PROFESSIONAL EDITING WORKFLOW")
@@ -951,7 +951,7 @@ class ProfessionalVideoEditor:
 
         return final_video
 
-    def _select_best_videos(self, research_results: Dict) -> Dict[str, List[Dict]]:
+    def _select_best_videos(self, research_results: dict) -> dict[str, list[dict]]:
         """Select the best 1-2 videos for each scene"""
 
         selected = {}
@@ -967,8 +967,8 @@ class ProfessionalVideoEditor:
         return selected
 
     def _create_editing_plan(
-        self, selected_videos: Dict, content_topic: str
-    ) -> Dict[str, Any]:
+        self, selected_videos: dict, content_topic: str
+    ) -> dict[str, Any]:
         """Create a professional editing plan"""
 
         scenes = list(selected_videos.keys())
@@ -996,8 +996,8 @@ class ProfessionalVideoEditor:
         return plan
 
     async def _execute_professional_edit(
-        self, editing_plan: Dict, audio_script: str
-    ) -> Dict[str, Any]:
+        self, editing_plan: dict, audio_script: str
+    ) -> dict[str, Any]:
         """Execute the professional editing process"""
 
         print("🎯 EXECUTING PROFESSIONAL EDIT")
@@ -1038,7 +1038,7 @@ class ProfessionalVideoEditor:
 
         return result
 
-    def _generate_production_notes(self, editing_plan: Dict, audio_script: str) -> str:
+    def _generate_production_notes(self, editing_plan: dict, audio_script: str) -> str:
         """Generate detailed production notes"""
 
         notes = f"""

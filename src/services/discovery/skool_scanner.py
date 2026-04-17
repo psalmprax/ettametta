@@ -2,9 +2,8 @@ import httpx
 import logging
 import json
 from bs4 import BeautifulSoup
-from typing import List, Optional
 from datetime import datetime
-from services.discovery.models import ContentCandidate
+from src.services.discovery.models import ContentCandidate
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +23,8 @@ class SkoolScanner:
         ]
 
     async def scan_trends(
-        self, niche: Optional[str] = None, published_after: Optional[datetime] = None
-    ) -> List[ContentCandidate]:
+        self, niche: str | None = None, published_after: datetime | None = None
+    ) -> list[ContentCandidate]:
         """
         Scrapes the discovery page. If a niche is provided, it tries to search or filter.
         Otherwise, it grabs the top trending communities globally.
@@ -126,8 +125,8 @@ class SkoolScanner:
             return []
 
     def _parse_json_state(
-        self, script_content: str, niche: Optional[str]
-    ) -> List[ContentCandidate]:
+        self, script_content: str, niche: str | None
+    ) -> list[ContentCandidate]:
         """
         Extracts community data from the hydrated JSON state.
         This is a robust extraction logic for modern JS-heavy platforms.

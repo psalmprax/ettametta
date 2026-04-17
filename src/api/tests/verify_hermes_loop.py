@@ -20,12 +20,12 @@ async def verify_hermes_loop():
     print("💎 VIRALFORGE HERMES SELF-IMPROVEMENT LOOP VERIFICATION")
     print("-" * 60)
     
-    from services.hermes.service import hermes_service
-    from services.openclaw.skills.external.paperclip_integration import paperclip_skill
-    from services.script_generator.service import base_script_generator
+    from src.services.hermes.service import base_hermes_service
+    from src.services.openclaw.skills.external.paperclip_integration import paperclip_skill
+    from src.services.script_generator.service import base_script_generator
     
     # 1. Mock the LLM reflection in Hermes to avoid real API calls
-    hermes_service.client = AsyncMock()
+    base_hermes_service.client = AsyncMock()
     mock_reflection_response = MagicMock()
     mock_reflection_response.choices = [
         MagicMock(message=MagicMock(content=json.dumps({
@@ -36,31 +36,31 @@ async def verify_hermes_loop():
             "confidence_score": 0.98
         })))
     ]
-    hermes_service.client.chat.completions.create.return_return_value = mock_reflection_response
-    hermes_service.client.chat.completions.create.side_effect = None
-    hermes_service.client.chat.completions.create.return_value = mock_reflection_response
+    base_hermes_service.client.chat.completions.create.return_return_value = mock_reflection_response
+    base_hermes_service.client.chat.completions.create.side_effect = None
+    base_hermes_service.client.chat.completions.create.return_value = mock_reflection_response
 
     # 2. Simulate a VIRAL HIT detection via Paperclip
     print("STEP 1: Simulating Viral Hit Detection...")
     job_id = "viral_123"
     metrics = {"views": 5000, "likes": 200, "shares": 50}
     
-    # This triggers asyncio.create_task(hermes_service.reflect_and_crystallize)
+    # This triggers asyncio.create_task(base_hermes_service.reflect_and_crystallize)
     paperclip_skill.track_organic_performance(job_id, "tiktok", metrics)
     
     # Give it a moment to run the task
     await asyncio.sleep(1)
     
     # Verify skill was saved
-    skills = hermes_service.get_winning_context("trading")
+    skills = base_hermes_service.get_winning_context("trading")
     if skills:
         print(f"✅ Success: Hermes crystallized new skill: {skills[0]['skill_name']}")
     else:
         # If it failed to run as task, call it directly for verification
         print("   - Calling crystallization directly for verification...")
         mock_job = {"job_id": job_id, "niche": "trading", "script": {"segments": []}}
-        await hermes_service.reflect_and_crystallize(mock_job, metrics)
-        skills = hermes_service.get_winning_context("trading")
+        await base_hermes_service.reflect_and_crystallize(mock_job, metrics)
+        skills = base_hermes_service.get_winning_context("trading")
         if skills:
             print(f"✅ Success: Hermes crystallized new skill: {skills[0]['skill_name']}")
         else:
@@ -89,7 +89,7 @@ async def verify_hermes_loop():
     print("✅ Success: Script generator fetched and injected Hermes skills.")
 
     # 4. Final Health Check
-    from services.llm.service import unified_llm_service
+    from src.services.llm.service import unified_llm_service
     report = unified_llm_service.get_intelligence_report()
     hermes_fw = next((fw for fw in report['frameworks'] if fw['name'] == "Hermes Skill Engine"), None)
     

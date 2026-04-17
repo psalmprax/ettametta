@@ -8,7 +8,7 @@ or narration to allow rhythmic synchronization of visual cuts.
 
 import os
 import logging
-from typing import List, Dict, Any
+from typing import Any
 import numpy as np
 
 try:
@@ -29,7 +29,7 @@ class RhythmEngine:
         if not LIBROSA_AVAILABLE:
             logger.warning("[Rhythm] librosa not installed. Rhythmic sync will be disabled.")
 
-    def get_beat_markers(self, audio_path: str, sr: int = 22050) -> Dict[str, Any]:
+    def get_beat_markers(self, audio_path: str, sr: int = 22050) -> dict[str, Any]:
         """
         Extracts beat timestamps and onset strength from an audio file.
 
@@ -38,7 +38,7 @@ class RhythmEngine:
             sr: Sample rate for analysis
 
         Returns:
-            Dict containing 'bpm', 'beats' (list of seconds), and 'onsets' (energy peak indices)
+            dict containing 'bpm', 'beats' (list of seconds), and 'onsets' (energy peak indices)
         """
         if not LIBROSA_AVAILABLE or not os.path.exists(audio_path):
             return {"bpm": 0, "beats": [], "onsets": []}
@@ -73,7 +73,7 @@ class RhythmEngine:
             logger.error(f"[Rhythm] Analysis failed: {e}")
             return {"bpm": 0, "beats": [], "onsets": [], "error": str(e)}
 
-    def find_nearest_beat(self, timestamp: float, beat_markers: List[float], tolerance: float = 0.5) -> float:
+    def find_nearest_beat(self, timestamp: float, beat_markers: list[float], tolerance: float = 0.5) -> float:
         """
         Finds the beat marker closest to a target timestamp.
         Used to "snap" video cuts to the nearest beat.

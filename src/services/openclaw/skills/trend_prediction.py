@@ -2,8 +2,7 @@ import json
 import logging
 import requests
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
-from api.config import settings
+from src.api.config import settings
 from .memory import memory_skill
 
 logger = logging.getLogger(__name__)
@@ -12,7 +11,7 @@ logger = logging.getLogger(__name__)
 class TrendPredictionSkill:
     def __init__(self):
         self.api_url = f"{settings.API_URL}"
-        self.prediction_history: List[Dict] = []
+        self.prediction_history: list[dict] = []
 
     def _get_headers(self):
         headers = {}
@@ -102,7 +101,7 @@ class TrendPredictionSkill:
             return f"⚠️ Prediction Error: {e}"
 
     def _build_prediction_prompt(
-        self, niche: str, current_trends: List, recent_memories: List, horizon_days: int
+        self, niche: str, current_trends: list, recent_memories: list, horizon_days: int
     ) -> str:
         prompt = f"Predict viral trends for niche '{niche}' over the next {horizon_days} days.\n\n"
 

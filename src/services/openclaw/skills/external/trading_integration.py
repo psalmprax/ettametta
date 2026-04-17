@@ -1,7 +1,7 @@
 import os
 import logging
 import requests
-from typing import Optional, Dict, Any, List
+from typing import Any
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ class TradingService:
     """
     Trading and market data integration.
     Uses Alpha Vantage for stocks/forex and CoinGecko for crypto.
-    Optional - requires API keys for full functionality.
+    Any - requires API keys for full functionality.
     """
 
     def __init__(self):
@@ -144,7 +144,7 @@ class MarketAnalysisService:
     """
 
     @staticmethod
-    def analyze_niche_market(niche: str) -> Dict[str, Any]:
+    def analyze_niche_market(niche: str) -> dict[str, Any]:
         """Analyze market conditions for a niche."""
         return {
             "niche": niche,
@@ -155,7 +155,7 @@ class MarketAnalysisService:
         }
 
     @staticmethod
-    def get_content_opportunities() -> List[Dict]:
+    def get_content_opportunities() -> list[dict]:
         """Get content opportunities based on market data."""
         return [
             {

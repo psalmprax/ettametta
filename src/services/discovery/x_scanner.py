@@ -3,7 +3,6 @@ import logging
 import json
 import re
 import random
-from typing import List, Optional
 from datetime import datetime
 from .models import ContentCandidate
 
@@ -26,7 +25,7 @@ class XScanner:
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         ]
     
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Scans X (Twitter) for trending tweets with media in a niche.
         Uses the search page to find relevant tweets.
@@ -61,7 +60,7 @@ class XScanner:
         logger.info(f"[XScanner] Found {len(unique_candidates)} unique tweets")
         return unique_candidates[:15]
     
-    async def _search_tweets(self, query: str) -> List[ContentCandidate]:
+    async def _search_tweets(self, query: str) -> list[ContentCandidate]:
         """Search X for tweets matching the query."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -113,7 +112,7 @@ class XScanner:
         
         return candidates
     
-    def _extract_tweets_from_json(self, data: dict, query: str) -> List[ContentCandidate]:
+    def _extract_tweets_from_json(self, data: dict, query: str) -> list[ContentCandidate]:
         """Extract tweet data from X's JSON structure."""
         candidates = []
         
@@ -152,7 +151,7 @@ class XScanner:
         
         return candidates
     
-    def _parse_tweet_entry(self, entry: dict) -> Optional[ContentCandidate]:
+    def _parse_tweet_entry(self, entry: dict) -> ContentCandidate | None:
         """Parse a single tweet from a timeline entry."""
         try:
             # Get content from entry
@@ -255,7 +254,7 @@ class XScanner:
         
         return None
     
-    async def _get_trending(self) -> List[ContentCandidate]:
+    async def _get_trending(self) -> list[ContentCandidate]:
         """Get trending topics from X (fallback)."""
         headers = {
             "User-Agent": random.choice(self.user_agents),

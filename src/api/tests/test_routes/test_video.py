@@ -266,7 +266,7 @@ class TestRemotion:
         
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
     
-    @patch("services.video_engine.remotion_service.render_composition")
+    @patch("services.video_engine.base_remotion_service.render_composition")
     def test_remotion_render(self, mock_render, client: TestClient, auth_token):
         """Test Remotion composition rendering."""
         mock_render.return_value = AsyncMock()()

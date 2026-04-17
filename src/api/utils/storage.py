@@ -1,7 +1,6 @@
 import os
 import boto3
 from botocore.exceptions import NoCredentialsError
-from typing import Optional
 
 class StorageService:
     def __init__(self):
@@ -13,7 +12,7 @@ class StorageService:
         )
         self.bucket_name = os.getenv('AWS_STORAGE_BUCKET_NAME')
 
-    async def upload_asset(self, local_path: str, remote_name: str) -> Optional[str]:
+    async def upload_asset(self, local_path: str, remote_name: str) -> str | None:
         """Uploads a local file to S3 and returns the URL."""
         if not self.bucket_name:
             print("[StorageService] WARNING: No bucket name provided, skipping upload.")

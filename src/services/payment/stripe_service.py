@@ -5,10 +5,10 @@ Stripe Payment Service for ettametta Subscriptions
 import stripe
 import logging
 import asyncio
-from typing import Optional, Dict, Any
+from typing import Any
 from datetime import datetime
 from sqlalchemy import select
-from api.utils.database import async_session_factory
+from src.api.utils.database import async_session_factory
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class PaymentService:
 
     async def create_customer(
         self, email: str, user_id: int, idempotency_key: str = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a Stripe customer for a user"""
         try:
             create_params = {"email": email, "metadata": {"user_id": str(user_id)}}
@@ -90,9 +90,9 @@ class PaymentService:
         success_url: str = None,
         cancel_url: str = None,
         idempotency_key: str = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a checkout session for subscription"""
-        from api.config import settings
+        from src.api.config import settings
 
         # Use provided URLs or default to production domain settings
         if success_url is None:
@@ -139,7 +139,7 @@ class PaymentService:
             logger.error(f"[PaymentService] Failed to create subscription: {e}")
             raise
 
-    async def get_subscription(self, subscription_id: str) -> Dict[str, Any]:
+    async def get_subscription(self, subscription_id: str) -> dict[str, Any]:
         """Get subscription details from Stripe"""
         try:
             sub = stripe.Subscription.retrieve(subscription_id)
@@ -153,7 +153,7 @@ class PaymentService:
             logger.error(f"[PaymentService] Failed to get subscription: {e}")
             raise
 
-    async def cancel_subscription(self, subscription_id: str) -> Dict[str, Any]:
+    async def cancel_subscription(self, subscription_id: str) -> dict[str, Any]:
         """Cancel a subscription at period end"""
         try:
             sub = stripe.Subscription.modify(subscription_id, cancel_at_period_end=True)
@@ -169,7 +169,7 @@ class PaymentService:
 
     async def handle_webhook(
         self, payload: bytes, signature: str, webhook_secret: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Handle Stripe webhook events"""
         try:
             # construct_event is relatively fast but handles signature verification
@@ -181,7 +181,7 @@ class PaymentService:
             logger.error(f"[PaymentService] Invalid signature: {e}")
             raise
 
-        from api.utils.user_models import UserDB, SubscriptionTier
+        from src.api.utils.user_models import UserDB, SubscriptionTier
 
         # Handle events
         if event["type"] == "checkout.session.completed":
@@ -196,7 +196,7 @@ class PaymentService:
                 user_id = metadata.get("user_id")
                 credits = int(metadata.get("credits", 0))
                 if user_id and credits > 0:
-                    from services.payment.credit_service import credit_service
+                    from src.services.payment.credit_service import credit_service
 
                     # Assuming add_credits is now async or we wrap it
                     await credit_service.add_credits(
@@ -320,7 +320,7 @@ class PaymentService:
 
 # Initialize with API key from settings
 def get_payment_service() -> PaymentService:
-    from api.config import settings
+    from src.api.config import settings
 
     if not settings.STRIPE_SECRET_KEY:
         raise ValueError(

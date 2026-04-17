@@ -4,8 +4,8 @@ import requests
 import asyncio
 import time
 from groq import Groq
-from api.config import settings
-from typing import Dict, Any, Optional, List
+from src.api.config import settings
+from typing import Any
 import httpx
 
 from .utils import is_package_available
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 try:
-    from api.utils.llm_vault import get_llm_api_key
+    from src.api.utils.llm_vault import get_llm_api_key
 
     VAULT_AVAILABLE = True
 except ImportError:
@@ -89,7 +89,7 @@ class OpenClawAgent:
         self._init_llm_clients()
         self.model = self._get_model_name()
 
-    def get_dependency_status(self) -> Dict[str, bool]:
+    def get_dependency_status(self) -> dict[str, bool]:
         """Check availability of optional heavy dependencies."""
         return {
             "playwright": is_package_available("playwright"),
@@ -98,7 +98,7 @@ class OpenClawAgent:
             "openai": is_package_available("openai"),
         }
 
-    def get_dependency_report(self) -> Dict[str, Any]:
+    def get_dependency_report(self) -> dict[str, Any]:
         """Generate a detailed report of missing dependencies and their impact."""
         status = self.get_dependency_status()
         missing = [pkg for pkg, installed in status.items() if not installed]
@@ -542,7 +542,7 @@ class OpenClawAgent:
         }
         return model_map.get(self.llm_provider, "llama3")
 
-    async def _call_llm(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_llm(self, messages: list, **kwargs) -> dict[str, Any]:
         """
         Unified LLM calling method that supports multiple providers
         """
@@ -592,7 +592,7 @@ class OpenClawAgent:
             logger.error(f"[OpenClaw] LLM call failed for {self.llm_provider}: {e}")
             return await self._try_fallback_llm(messages, **kwargs)
 
-    async def _try_fallback_llm(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _try_fallback_llm(self, messages: list, **kwargs) -> dict[str, Any]:
         """Try fallback LLM providers if primary fails"""
         fallback_providers = [
             "groq",
@@ -626,7 +626,7 @@ class OpenClawAgent:
 
         return {"content": "All LLM providers failed - please check configuration"}
 
-    async def _call_groq(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_groq(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call Groq API"""
         client = self.clients.get("groq")
         if not client:
@@ -640,7 +640,7 @@ class OpenClawAgent:
         )
         return {"content": response.choices[0].message.content}
 
-    async def _call_openai(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_openai(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call OpenAI API"""
         client = self.clients.get("openai")
         if not client:
@@ -654,7 +654,7 @@ class OpenClawAgent:
         )
         return {"content": response.choices[0].message.content}
 
-    async def _call_anthropic(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_anthropic(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call Anthropic API"""
         client = self.clients.get("anthropic")
         if not client:
@@ -679,7 +679,7 @@ class OpenClawAgent:
         )
         return {"content": response.content[0].text}
 
-    async def _call_xai(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_xai(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call xAI API"""
         client = self.clients.get("xai")
         if not client:
@@ -693,7 +693,7 @@ class OpenClawAgent:
         )
         return {"content": response.choices[0].message.content}
 
-    async def _call_deepseek(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_deepseek(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call DeepSeek API"""
         client = self.clients.get("deepseek")
         if not client:
@@ -707,7 +707,7 @@ class OpenClawAgent:
         )
         return {"content": response.choices[0].message.content}
 
-    async def _call_gemini(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_gemini(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call Google Gemini API"""
         model = self.clients.get("gemini")
         if not model:
@@ -722,7 +722,7 @@ class OpenClawAgent:
         response = model.generate_content(gemini_messages)
         return {"content": response.text}
 
-    async def _call_ollama(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_ollama(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call Ollama (local LLM)"""
         config = self.clients.get("ollama")
         if not config:
@@ -748,7 +748,7 @@ class OpenClawAgent:
             else:
                 raise Exception(f"Ollama API error: {response.status_code}")
 
-    async def _call_lm_studio(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_lm_studio(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call LM Studio (local LLM)"""
         config = self.clients.get("lm_studio")
         if not config:
@@ -773,7 +773,7 @@ class OpenClawAgent:
             else:
                 raise Exception(f"LM Studio API error: {response.status_code}")
 
-    async def _call_cohere(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_cohere(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call Cohere API - 20 RPM, 1K tokens/mo free"""
         client = self.clients.get("cohere")
         if not client:
@@ -797,7 +797,7 @@ class OpenClawAgent:
         )
         return {"content": response.text}
 
-    async def _call_mistral(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_mistral(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call Mistral AI API - 1 req/s, 1B tokens/mo free"""
         client = self.clients.get("mistral")
         if not client:
@@ -811,7 +811,7 @@ class OpenClawAgent:
         )
         return {"content": response.choices[0].message.content}
 
-    async def _call_cerebras(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_cerebras(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call Cerebras API - 30 RPM, 14,400 RPD free"""
         client = self.clients.get("cerebras")
         if not client:
@@ -825,7 +825,7 @@ class OpenClawAgent:
         )
         return {"content": response.choices[0].message.content}
 
-    async def _call_cloudflare(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_cloudflare(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call Cloudflare Workers AI - 10K neurons/day free"""
         config = self.clients.get("cloudflare")
         if not config:
@@ -850,7 +850,7 @@ class OpenClawAgent:
             else:
                 raise Exception(f"Cloudflare API error: {response.status_code}")
 
-    async def _call_huggingface(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_huggingface(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call Hugging Face Inference API - $0.10/mo free credits"""
         config = self.clients.get("huggingface")
         if not config:
@@ -878,7 +878,7 @@ class OpenClawAgent:
             else:
                 raise Exception(f"HuggingFace API error: {response.status_code}")
 
-    async def _call_openrouter(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_openrouter(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call OpenRouter API - 50 RPD free, 1K with $10"""
         client = self.clients.get("openrouter")
         if not client:
@@ -892,7 +892,7 @@ class OpenClawAgent:
         )
         return {"content": response.choices[0].message.content}
 
-    async def _call_nvidia(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_nvidia(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call NVIDIA NIM API - 40 RPM free"""
         client = self.clients.get("nvidia")
         if not client:
@@ -906,7 +906,7 @@ class OpenClawAgent:
         )
         return {"content": response.choices[0].message.content}
 
-    async def _call_ollama_cloud(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_ollama_cloud(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call Ollama Cloud API - light usage free"""
         config = self.clients.get("ollama_cloud")
         if not config:
@@ -930,7 +930,7 @@ class OpenClawAgent:
             else:
                 raise Exception(f"Ollama Cloud API error: {response.status_code}")
 
-    async def _call_siliconflow(self, messages: list, **kwargs) -> Dict[str, Any]:
+    async def _call_siliconflow(self, messages: list, **kwargs) -> dict[str, Any]:
         """Call SiliconFlow API - 1K RPM, 50K TPM free"""
         client = self.clients.get("siliconflow")
         if not client:
@@ -1097,7 +1097,7 @@ class OpenClawAgent:
             logger.error(f"Error processing message: {e}")
             return f"⚠️ Agent Error: {str(e)}"
 
-    async def execute_tool(self, tool_call: Dict[str, Any]) -> str:
+    async def execute_tool(self, tool_call: dict[str, Any]) -> str:
         """
         Execute the identified tool.
         """

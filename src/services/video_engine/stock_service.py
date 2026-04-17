@@ -2,8 +2,7 @@ import httpx
 import os
 import logging
 import random
-from typing import List, Optional
-from api.utils.vault import get_secret
+from src.api.utils.vault import get_secret
 
 class StockService:
     def __init__(self):
@@ -11,7 +10,7 @@ class StockService:
         self.base_url = "https://api.pexels.com/videos"
         self.headers = {"Authorization": self.api_key} if self.api_key else {}
 
-    async def fetch_b_roll(self, keyword: str, count: int = 1) -> List[str]:
+    async def fetch_b_roll(self, keyword: str, count: int = 1) -> list[str]:
         """
         Searches Pexels for a video matching the keyword and returns the download URL.
         """
@@ -59,7 +58,7 @@ class StockService:
             logging.error(f"[StockService] Error fetching B-roll for '{keyword}': {e}")
             return []
 
-    async def download_stock_video(self, url: str, output_dir: str = "temp") -> Optional[str]:
+    async def download_stock_video(self, url: str, output_dir: str = "temp") -> str | None:
         """
         Downloads a stock video file to a local path.
         """
@@ -81,4 +80,4 @@ class StockService:
             logging.error(f"[StockService] Error downloading {url}: {e}")
             return None
 
-stock_service = StockService()
+base_stock_service = StockService()

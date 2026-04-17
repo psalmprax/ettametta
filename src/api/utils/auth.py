@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
-from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from api.config import settings
+from src.api.config import settings
 from authlib.integrations.base_client import OAuthError
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 import redis
@@ -29,7 +28,7 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -82,7 +81,7 @@ def sign_oauth_state(state: str) -> str:
     return base64.b64encode(signed_state.encode("utf-8")).decode("utf-8")
 
 
-def verify_oauth_state(signed_state: str) -> Optional[str]:
+def verify_oauth_state(signed_state: str) -> str | None:
     """Verify and extract original state from signed state parameter."""
     try:
         decoded = base64.b64decode(signed_state.encode("utf-8")).decode("utf-8")

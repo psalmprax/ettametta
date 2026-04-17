@@ -5,7 +5,7 @@ Centralized error response schemas for consistent API error handling
 """
 
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import Any
 from datetime import datetime
 from enum import Enum
 
@@ -54,8 +54,8 @@ class ErrorResponse(BaseModel):
     error_code: ErrorCode
     message: str
     timestamp: datetime = datetime.utcnow()
-    details: Optional[Dict[str, Any]] = None
-    request_id: Optional[str] = None
+    details: dict[str, Any] | None = None
+    request_id: str | None = None
     
     class Config:
         use_enum_values = True
@@ -63,7 +63,7 @@ class ErrorResponse(BaseModel):
 
 class ValidationErrorResponse(ErrorResponse):
     """Validation error response with field-level details."""
-    field_errors: List[FieldError] = []
+    field_errors: list[FieldError] = []
     
     def __init__(self, **data):
         super().__init__(**data)
@@ -98,7 +98,7 @@ class ErrorHandler:
         )
     
     @staticmethod
-    def validation_error(message: str, field_errors: List[FieldError] = None) -> ValidationErrorResponse:
+    def validation_error(message: str, field_errors: list[FieldError] = None) -> ValidationErrorResponse:
         """Create a validation error."""
         return ValidationErrorResponse(
             error_code=ErrorCode.VALIDATION_ERROR,

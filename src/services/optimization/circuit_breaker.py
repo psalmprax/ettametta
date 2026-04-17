@@ -8,7 +8,7 @@ import asyncio
 import logging
 import time
 from enum import Enum
-from typing import Callable, Optional, Any
+from typing import Any, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from functools import wraps
@@ -58,7 +58,7 @@ class CircuitBreaker:
     _state: CircuitState = field(default=CircuitState.CLOSED, init=False)
     _failure_count: int = field(default=0, init=False)
     _success_count: int = field(default=0, init=False)
-    _last_failure_time: Optional[float] = field(default=None, init=False)
+    _last_failure_time: float | None = field(default=None, init=False)
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False)
     
     @property

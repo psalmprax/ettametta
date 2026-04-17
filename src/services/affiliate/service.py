@@ -1,5 +1,5 @@
 """
-Affiliate Service - Optional affiliate API integration
+Affiliate Service - Any affiliate API integration
 =====================================================
 Disabled by default. Enable with: ENABLE_AFFILIATE_API=true
 
@@ -17,7 +17,7 @@ import asyncio
 import uuid
 import hashlib
 import json
-from typing import Optional, Dict, Any, List
+from typing import Any
 from datetime import datetime
 import aiohttp
 import httpx
@@ -64,7 +64,7 @@ logger = logging.getLogger(__name__)
 
 class AffiliateService:
     """
-    Optional affiliate API integration.
+    Any affiliate API integration.
 
     Disabled by default - set ENABLE_AFFILIATE_API=true to enable.
     Supports Amazon Associates, Impact Radius, and ShareASale.
@@ -75,7 +75,7 @@ class AffiliateService:
         self.logger = logging.getLogger("AffiliateService")
         self.enabled = os.getenv("ENABLE_AFFILIATE_API", "false").lower() == "true"
 
-        from api.config import settings
+        from src.api.config import settings
 
         self.amazon_tag = settings.AMAZON_ASSOCIATES_TAG
         self.impact_api_key = settings.IMPACT_RADIUS_API_KEY
@@ -85,7 +85,7 @@ class AffiliateService:
         self.amazon_circuit_breaker = CircuitBreaker()
         self.impact_circuit_breaker = CircuitBreaker()
         self.sharesale_circuit_breaker = CircuitBreaker()
-        self.http_client: Optional[httpx.AsyncClient] = None
+        self.http_client: httpx.AsyncClient | None = None
 
         if not self.enabled:
             self.logger.info(
@@ -115,7 +115,7 @@ class AffiliateService:
 
     async def search_amazon_products(
         self, query: str, category: str = "all", max_results: int = 10
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search Amazon products via Associates API (PA-API 5.0).
 
@@ -124,7 +124,7 @@ class AffiliateService:
         if not self.enabled:
             raise RuntimeError("Affiliate service is not enabled")
 
-        from api.config import settings
+        from src.api.config import settings
 
         amazon_api_key = getattr(settings, "AMAZON_PAAPI_KEY", None)
         amazon_api_tag = getattr(settings, "AMAZON_PAAPI_TAG", None)
@@ -147,7 +147,7 @@ class AffiliateService:
     )
     async def _search_paapi(
         self, api_key: str, api_tag: str, query: str, category: str, max_results: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Use Amazon Product Advertising API 5.0 with AWS SigV4 signing.
         Uses botocore for request signing.
@@ -201,7 +201,7 @@ class AffiliateService:
         # We assume api_key is the Access Key ID. But PA-API also requires Secret Key. Where do we get it?
         # Usually PA-API uses Access Key ID and Secret Key (not the tag). The tag is the associate tag.
         # We need to fetch secret from config.
-        from api.config import settings
+        from src.api.config import settings
 
         amazon_secret_key = getattr(settings, "AMAZON_PAAPI_SECRET", None)
         if not amazon_secret_key:
@@ -278,7 +278,7 @@ class AffiliateService:
     )
     async def get_impact_products(
         self, campaign_id: str, query: str = ""
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get products from Impact Radius API.
         Returns empty list if service disabled or no credentials.
@@ -298,7 +298,7 @@ class AffiliateService:
         try:
             # Impact API requires Account SID and Auth Token
             # Expect IMPACT_ACCOUNT_SID in config
-            from api.config import settings
+            from src.api.config import settings
 
             impact_account_sid = getattr(settings, "IMPACT_ACCOUNT_SID", None)
             if not impact_account_sid:
@@ -351,8 +351,8 @@ class AffiliateService:
         reraise=False,
     )
     async def get_sharesale_products(
-        self, query: str, merchant_id: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, query: str, merchant_id: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get products from ShareASale API.
         Returns empty list if disabled or no credentials.
@@ -437,17 +437,17 @@ class AffiliateService:
             return []
 
     async def search_products(
-        self, niche: str, networks: List[str] = None
-    ) -> Dict[str, List[Dict[str, Any]]]:
+        self, niche: str, networks: list[str] = None
+    ) -> dict[str, list[dict[str, Any]]]:
         """
         Search products across all configured networks.
 
         Args:
             niche: Product niche/category
-            networks: List of networks to search (amazon, impact, sharesale)
+            networks: list of networks to search (amazon, impact, sharesale)
 
         Returns:
-            Dict mapping network names to product lists
+            dict mapping network names to product lists
         """
         if networks is None:
             networks = []

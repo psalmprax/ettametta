@@ -3,7 +3,6 @@ import logging
 import json
 import re
 import random
-from typing import List, Optional
 from datetime import datetime
 from .models import ContentCandidate
 
@@ -29,7 +28,7 @@ class InstagramScanner:
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
         ]
     
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Scans Instagram for trending Reels in a niche.
         Uses the explore page and hashtag search to find trending content.
@@ -70,7 +69,7 @@ class InstagramScanner:
         logger.info(f"[InstagramScanner] Found {len(unique_candidates)} unique Reels")
         return unique_candidates[:15]
     
-    async def _search_hashtag(self, query: str, niche: str) -> List[ContentCandidate]:
+    async def _search_hashtag(self, query: str, niche: str) -> list[ContentCandidate]:
         """Search Instagram for a hashtag and extract Reels."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -128,7 +127,7 @@ class InstagramScanner:
         
         return candidates
     
-    def _extract_posts_from_json(self, data: dict) -> List[ContentCandidate]:
+    def _extract_posts_from_json(self, data: dict) -> list[ContentCandidate]:
         """Extract post data from Instagram's JSON structure."""
         candidates = []
         
@@ -234,7 +233,7 @@ class InstagramScanner:
         
         return candidates
     
-    async def _scrape_explore(self, niche: str) -> List[ContentCandidate]:
+    async def _scrape_explore(self, niche: str) -> list[ContentCandidate]:
         """
         Fallback: Scrape Instagram Explore page.
         This is less reliable as the explore page is personalized.

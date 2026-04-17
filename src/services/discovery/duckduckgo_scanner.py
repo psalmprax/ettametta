@@ -1,6 +1,5 @@
 import aiohttp
 import logging
-from typing import List, Optional
 from .models import ContentCandidate
 from datetime import datetime
 
@@ -16,7 +15,7 @@ class DuckDuckGoScanner:
     def __init__(self):
         self.platform = "DuckDuckGo"
         
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Searches DuckDuckGo for trending videos and content in the niche.
         Free alternative to YouTube API when quota is exceeded.
@@ -49,7 +48,7 @@ class DuckDuckGoScanner:
         logger.info(f"[DuckDuckGo] Found {len(unique_candidates)} unique results")
         return unique_candidates[:10]
     
-    async def _search_ddg(self, query: str, niche: str) -> List[ContentCandidate]:
+    async def _search_ddg(self, query: str, niche: str) -> list[ContentCandidate]:
         """Search DuckDuckGo HTML for results."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -72,7 +71,7 @@ class DuckDuckGoScanner:
             logger.error(f"[DuckDuckGo] Request error: {e}")
             return []
     
-    def _parse_results(self, html: str, niche: str) -> List[ContentCandidate]:
+    def _parse_results(self, html: str, niche: str) -> list[ContentCandidate]:
         """Parse DuckDuckGo HTML results."""
         candidates = []
         

@@ -24,7 +24,7 @@ func NewAIBridge() *AIBridge {
 	return &AIBridge{PythonAPIURL: url}
 }
 
-func (b *AIBridge) SendToDeconstructor(candidate ScanResult) error {
+func (b *AIBridge) SendToPatternDeconstructor(candidate ScanResult) error {
 	// Skip if no URL (empty result from API)
 	if candidate.URL == "" {
 		slog.Warn("Skipping - no results from YouTube API", slog.String("niche", candidate.Niche))
@@ -52,7 +52,7 @@ func (b *AIBridge) SendToDeconstructor(candidate ScanResult) error {
 		},
 	})
 
-	resp, err := http.Post(fmt.Sprintf("%s/discovery/analyze", b.PythonAPIURL), "application/json", bytes.NewBuffer(payload))
+	resp, err := b.sendWithRetry(payload)
 	if err != nil {
 		return err
 	}
@@ -62,6 +62,28 @@ func (b *AIBridge) SendToDeconstructor(candidate ScanResult) error {
 		return fmt.Errorf("Python API returned status: %s", resp.Status)
 	}
 
-	slog.Info("Successfully sent to Python deconstructor", slog.String("niche", candidate.Niche))
+	slog.Info("Successfully sent to Python PatternDeconstructor", slog.String("niche", candidate.Niche))
 	return nil
+}
+
+func (b *AIBridge) sendWithRetry(payload []byte) (*http.Response, error) {
+	maxRetries := 3
+	baseDelay := 100 * time.Millisecond
+
+	var lastErr error
+	for i := 0; i <= maxRetries; i++ {
+		if i > 0 {
+			delay := baseDelay * (1 << uint(i-1))
+			slog.Warn("Retrying Python API call", slog.Int("attempt", i), slog.Duration("delay", delay))
+			time.Sleep(delay)
+		}
+
+		resp, err := http.Post(fmt.Sprintf("%s/discovery/analyze", b.PythonAPIURL), "application/json", bytes.NewBuffer(payload))
+		if err == nil {
+			return resp, nil
+		}
+		lastErr = err
+		slog.Error("Python API call failed", slog.Int("attempt", i+1), slog.Any("error", err))
+	}
+	return nil, fmt.Errorf("all retries failed: %w", lastErr)
 }

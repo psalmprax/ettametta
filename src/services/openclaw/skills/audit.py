@@ -2,8 +2,7 @@ import json
 import logging
 import requests
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
-from api.config import settings
+from src.api.config import settings
 from .memory import memory_skill
 
 logger = logging.getLogger(__name__)
@@ -94,10 +93,10 @@ class AuditSkill:
             logger.error(f"{platform} Audit Error: {e}")
             return f"⚠️ {platform} Audit Error: {e}"
 
-    def _get_user_token(self, platform: str, user_id: int) -> Optional[str]:
+    def _get_user_token(self, platform: str, user_id: int) -> str | None:
         """Get user's OAuth token for specified platform."""
         try:
-            from services.optimization.auth import token_manager
+            from src.services.optimization.auth import token_manager
 
             token = token_manager.get_token(platform, user_id=user_id)
             return token
@@ -107,7 +106,7 @@ class AuditSkill:
 
     def _fetch_platform_data(
         self, platform: str, access_token: str, user_id: int
-    ) -> Dict:
+    ) -> dict:
         """Fetch account data for any platform."""
         if platform == "youtube":
             return self._fetch_youtube_data(access_token)
@@ -128,8 +127,8 @@ class AuditSkill:
         return {}
 
     def _analyze_monetization_readiness(
-        self, platform: str, account_data: Dict
-    ) -> Dict:
+        self, platform: str, account_data: dict
+    ) -> dict:
         """Analyze monetization readiness for any platform."""
         if platform == "youtube":
             return self._analyze_youtube_monetization(account_data)
@@ -152,9 +151,9 @@ class AuditSkill:
     def _generate_growth_strategy(
         self,
         platform: str,
-        account_data: Dict,
-        monetization: Dict,
-        recent_content: List[Dict],
+        account_data: dict,
+        monetization: dict,
+        recent_content: list[dict],
     ) -> str:
         """Generate AI-powered growth strategy for any platform."""
         try:
@@ -233,8 +232,8 @@ class AuditSkill:
     def _format_audit_report(
         self,
         platform: str,
-        account_data: Dict,
-        monetization: Dict,
+        account_data: dict,
+        monetization: dict,
         growth_strategy: str,
     ) -> str:
         """Format audit report for any platform."""
@@ -421,7 +420,7 @@ class AuditSkill:
         )
 
     # Platform-specific data fetching methods
-    def _fetch_youtube_data(self, access_token: str) -> Dict:
+    def _fetch_youtube_data(self, access_token: str) -> dict:
         """Fetch YouTube channel data."""
         from googleapiclient.discovery import build
         from google.oauth2.credentials import Credentials
@@ -446,7 +445,7 @@ class AuditSkill:
             logger.error(f"Error fetching YouTube data: {e}")
             return {}
 
-    def _fetch_tiktok_data(self, access_token: str) -> Dict:
+    def _fetch_tiktok_data(self, access_token: str) -> dict:
         """Fetch TikTok account data."""
         try:
             # TikTok API integration would go here
@@ -463,7 +462,7 @@ class AuditSkill:
             logger.error(f"Error fetching TikTok data: {e}")
             return {}
 
-    def _fetch_instagram_data(self, access_token: str) -> Dict:
+    def _fetch_instagram_data(self, access_token: str) -> dict:
         """Fetch Instagram account data."""
         try:
             # Instagram Graph API integration would go here
@@ -479,24 +478,24 @@ class AuditSkill:
             logger.error(f"Error fetching Instagram data: {e}")
             return {}
 
-    def _fetch_facebook_data(self, access_token: str) -> Dict:
+    def _fetch_facebook_data(self, access_token: str) -> dict:
         return {}
 
-    def _fetch_x_data(self, access_token: str) -> Dict:
+    def _fetch_x_data(self, access_token: str) -> dict:
         return {}
 
-    def _fetch_linkedin_data(self, access_token: str) -> Dict:
+    def _fetch_linkedin_data(self, access_token: str) -> dict:
         return {}
 
-    def _fetch_snapchat_data(self, access_token: str) -> Dict:
+    def _fetch_snapchat_data(self, access_token: str) -> dict:
         return {}
 
-    def _fetch_twitch_data(self, access_token: str) -> Dict:
+    def _fetch_twitch_data(self, access_token: str) -> dict:
         return {}
 
     def _fetch_recent_content(
         self, platform: str, access_token: str, account_id: str, limit: int = 10
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Fetch recent content for any platform."""
         if platform == "youtube":
             return self._fetch_youtube_videos(access_token, account_id, limit)
@@ -508,7 +507,7 @@ class AuditSkill:
 
     def _fetch_youtube_videos(
         self, access_token: str, channel_id: str, limit: int = 10
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Fetch recent YouTube videos."""
         from googleapiclient.discovery import build
         from google.oauth2.credentials import Credentials
@@ -550,7 +549,7 @@ class AuditSkill:
 
     def _fetch_tiktok_videos(
         self, access_token: str, open_id: str, limit: int = 10
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Fetch recent TikTok videos."""
         try:
             # TikTok API integration would go here
@@ -561,7 +560,7 @@ class AuditSkill:
 
     def _fetch_instagram_posts(
         self, access_token: str, account_id: str, limit: int = 10
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Fetch recent Instagram posts."""
         try:
             # Instagram Graph API integration would go here
@@ -571,7 +570,7 @@ class AuditSkill:
             return []
 
     # Monetization analysis methods
-    def _analyze_youtube_monetization(self, account_data: Dict) -> Dict:
+    def _analyze_youtube_monetization(self, account_data: dict) -> dict:
         """Analyze YouTube monetization readiness."""
         stats = account_data.get("statistics", {})
         subscribers = int(stats.get("subscriberCount", 0))
@@ -608,7 +607,7 @@ class AuditSkill:
 
         return readiness
 
-    def _analyze_tiktok_monetization(self, account_data: Dict) -> Dict:
+    def _analyze_tiktok_monetization(self, account_data: dict) -> dict:
         """Analyze TikTok monetization readiness."""
         followers = account_data.get("follower_count", 0)
         total_views = account_data.get("total_views", 0)
@@ -640,7 +639,7 @@ class AuditSkill:
 
         return readiness
 
-    def _analyze_instagram_monetization(self, account_data: Dict) -> Dict:
+    def _analyze_instagram_monetization(self, account_data: dict) -> dict:
         """Analyze Instagram monetization readiness."""
         followers = account_data.get("followers_count", 0)
         total_views = account_data.get("total_views", 0)
@@ -672,23 +671,23 @@ class AuditSkill:
 
         return readiness
 
-    def _analyze_facebook_monetization(self, account_data: Dict) -> Dict:
+    def _analyze_facebook_monetization(self, account_data: dict) -> dict:
         return {}
 
-    def _analyze_x_monetization(self, account_data: Dict) -> Dict:
+    def _analyze_x_monetization(self, account_data: dict) -> dict:
         return {}
 
-    def _analyze_linkedin_monetization(self, account_data: Dict) -> Dict:
+    def _analyze_linkedin_monetization(self, account_data: dict) -> dict:
         return {}
 
-    def _analyze_snapchat_monetization(self, account_data: Dict) -> Dict:
+    def _analyze_snapchat_monetization(self, account_data: dict) -> dict:
         return {}
 
-    def _analyze_twitch_monetization(self, account_data: Dict) -> Dict:
+    def _analyze_twitch_monetization(self, account_data: dict) -> dict:
         return {}
 
     # Helper methods for data extraction
-    def _extract_account_name(self, platform: str, data: Dict) -> str:
+    def _extract_account_name(self, platform: str, data: dict) -> str:
         """Extract account name from platform data."""
         if platform == "youtube":
             return data.get("snippet", {}).get("title", "Unknown")
@@ -698,7 +697,7 @@ class AuditSkill:
             return data.get("name", "Unknown")
         return "Unknown"
 
-    def _extract_followers(self, platform: str, data: Dict) -> int:
+    def _extract_followers(self, platform: str, data: dict) -> int:
         """Extract follower count from platform data."""
         if platform == "youtube":
             return int(data.get("statistics", {}).get("subscriberCount", 0))
@@ -708,7 +707,7 @@ class AuditSkill:
             return data.get("followers_count", 0)
         return 0
 
-    def _extract_total_views(self, platform: str, data: Dict) -> int:
+    def _extract_total_views(self, platform: str, data: dict) -> int:
         """Extract total views from platform data."""
         if platform == "youtube":
             return int(data.get("statistics", {}).get("viewCount", 0))
@@ -718,7 +717,7 @@ class AuditSkill:
             return data.get("total_views", 0)
         return 0
 
-    def _extract_content_count(self, platform: str, data: Dict) -> int:
+    def _extract_content_count(self, platform: str, data: dict) -> int:
         """Extract content count from platform data."""
         if platform == "youtube":
             return int(data.get("statistics", {}).get("videoCount", 0))
@@ -728,13 +727,13 @@ class AuditSkill:
             return data.get("media_count", 0)
         return 0
 
-    def _extract_created_date(self, platform: str, data: Dict) -> str:
+    def _extract_created_date(self, platform: str, data: dict) -> str:
         """Extract account creation date from platform data."""
         if platform == "youtube":
             return data.get("snippet", {}).get("publishedAt", "Unknown")
         return "Unknown"
 
-    def _calculate_avg_engagement(self, platform: str, content: List[Dict]) -> float:
+    def _calculate_avg_engagement(self, platform: str, content: list[dict]) -> float:
         """Calculate average engagement rate from recent content."""
         if not content:
             return 0.0
@@ -756,7 +755,7 @@ class AuditSkill:
 
         return total_engagement / len(content) if content else 0.0
 
-    def _calculate_avg_views(self, platform: str, content: List[Dict]) -> float:
+    def _calculate_avg_views(self, platform: str, content: list[dict]) -> float:
         """Calculate average views from recent content."""
         if not content:
             return 0.0
@@ -779,7 +778,7 @@ class AuditSkill:
         Compare user's account with a competitor and generate gap analysis.
         """
         try:
-            from services.openclaw.skills.competitor import CompetitorSkill
+            from src.services.openclaw.skills.competitor import CompetitorSkill
 
             competitor_skill = CompetitorSkill()
             competitor_analysis = competitor_skill.analyze_competitor(

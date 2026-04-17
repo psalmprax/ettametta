@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from api.utils.database import get_db
-from api.utils.models import VideoJobDB, AuditLogDB
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from api.utils.audit_service import audit_service
-from services.payment.credit_service import credit_service
+from src.api.utils.database import get_db
+from src.api.utils.models import VideoJobDB, AuditLogDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.api.utils.audit_service import audit_service
+from src.services.payment.credit_service import credit_service
 from datetime import datetime, timedelta
 import logging
 
@@ -42,8 +42,8 @@ async def abort_job(
     """
     Abort a running video processing job.
     """
-    from api.utils.celery import celery_app
-    from api.routes.ws import notify_job_update_sync
+    from src.api.utils.celery import celery_app
+    from src.api.routes.ws import notify_job_update_sync
 
     try:
         stmt = select(VideoJobDB).where(VideoJobDB.id == job_id)
@@ -136,7 +136,7 @@ async def get_video_metadata(
 
         # Calculate cost information
         engine = metadata["generation_details"].get("engine", "unknown")
-        from api.utils.subscription import get_provider_quota_info
+        from src.api.utils.subscription import get_provider_quota_info
         
         # Simple cost mapping (consistent with original)
         cost_mapping = {
@@ -171,7 +171,7 @@ async def retry_job(
     """
     Retry a failed video processing job.
     """
-    from services.video_engine.tasks import (
+    from src.services.video_engine.tasks import (
         download_and_process_task,
         generate_video_task,
         generate_story_task,
@@ -257,7 +257,7 @@ async def get_video_quotas(
     """
     Get current user's video generation quotas and usage.
     """
-    from api.utils.subscription import get_user_subscription_tier
+    from src.api.utils.subscription import get_user_subscription_tier
 
     try:
         tier = await get_user_subscription_tier(current_user, db)

@@ -8,15 +8,15 @@ Each user provides their own Chrome cookies via the opencli Chrome extension.
 
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from api.utils.database import get_db
+from typing import Any
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.models import OpenCLISessionDB
-from api.config import settings
-from services.opencli.service import opencli_service
+from src.api.utils.models import OpenCLISessionDB
+from src.api.config import settings
+from src.services.opencli.service import opencli_service
 from datetime import datetime
 import logging
 
@@ -33,7 +33,7 @@ class CookieUpload(BaseModel):
 class PostRequest(BaseModel):
     platform: str
     content: str
-    media_url: Optional[str] = None
+    media_url: str | None = None
 
 
 class InteractRequest(BaseModel):
@@ -53,7 +53,7 @@ class SearchRequest(BaseModel):
 
 @router.get("/platforms")
 async def list_supported_platforms():
-    """List all platforms supported by opencli-rs with their capabilities."""
+    """list all platforms supported by opencli-rs with their capabilities."""
     if not await opencli_service.is_available():
         raise HTTPException(
             status_code=503,

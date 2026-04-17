@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
-from typing import Optional, Any, Dict, List
+from typing import Any
 from datetime import datetime
 import logging
 
@@ -15,8 +15,8 @@ class APIError(Exception):
         message: str,
         code: str = "INTERNAL_ERROR",
         status_code: int = 500,
-        details: Optional[Dict[str, Any]] = None,
-        field: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        field: str | None = None,
     ):
         self.message = message
         self.code = code
@@ -29,7 +29,7 @@ class APIError(Exception):
 class ValidationError(APIError):
     """Input validation error."""
 
-    def __init__(self, message: str, field: str, details: Optional[Dict] = None):
+    def __init__(self, message: str, field: str, details: dict | None = None):
         super().__init__(
             message=message,
             code="VALIDATION_ERROR",
@@ -92,7 +92,7 @@ class ExternalServiceError(APIError):
 class ConflictError(APIError):
     """Resource conflict error."""
 
-    def __init__(self, message: str, resource_id: Optional[str] = None):
+    def __init__(self, message: str, resource_id: str | None = None):
         super().__init__(
             message=message,
             code="CONFLICT",
@@ -103,8 +103,8 @@ class ConflictError(APIError):
 
 def api_error_response(
     error: APIError,
-    request_path: Optional[str] = None,
-    request_method: Optional[str] = None,
+    request_path: str | None = None,
+    request_method: str | None = None,
 ) -> JSONResponse:
     """Convert APIError to JSONResponse."""
 
@@ -173,7 +173,7 @@ class Paginator:
     def limit(self) -> int:
         return self.page_size
 
-    def paginate_response(self, items: List[Any], total: int) -> Dict[str, Any]:
+    def paginate_response(self, items: list[Any], total: int) -> dict[str, Any]:
         """Create paginated response."""
         total_pages = (total + self.page_size - 1) // self.page_size
 
@@ -202,13 +202,13 @@ from pydantic import BaseModel
 
 
 class PaginatedResponse(BaseModel):
-    data: List[Any]
-    pagination: Dict[str, Any]
+    data: list[Any]
+    pagination: dict[str, Any]
 
 
 def paginate_list(
-    items: List[Any], page: int = 1, page_size: int = 20, max_page_size: int = 100
-) -> Dict[str, Any]:
+    items: list[Any], page: int = 1, page_size: int = 20, max_page_size: int = 100
+) -> dict[str, Any]:
     """Standalone pagination helper."""
     paginator = Paginator(page, page_size, max_page_size)
     total = len(items)
@@ -218,8 +218,8 @@ def paginate_list(
 
 
 def success_response(
-    data: Any = None, message: Optional[str] = None, meta: Optional[Dict] = None
-) -> Dict[str, Any]:
+    data: Any = None, message: str | None = None, meta: dict | None = None
+) -> dict[str, Any]:
     """Standard success response format."""
     response = {"success": True, "timestamp": datetime.utcnow().isoformat() + "Z"}
 
@@ -236,7 +236,7 @@ def success_response(
 
 
 def error_response(
-    code: str, message: str, status_code: int = 400, details: Optional[Dict] = None
+    code: str, message: str, status_code: int = 400, details: dict | None = None
 ) -> JSONResponse:
     """Quick error response creation."""
     return JSONResponse(

@@ -1,5 +1,6 @@
+from typing import Any
 """
-AI Video Generation Service - Optional Tier 3 Enhancement
+AI Video Generation Service - Any Tier 3 Enhancement
 
 Integrates with AI video generation APIs (Runway, Pika) for creating clips.
 Disabled by default - enable via AI_VIDEO_PROVIDER=runway or AI_VIDEO_PROVIDER=pika
@@ -8,7 +9,6 @@ Disabled by default - enable via AI_VIDEO_PROVIDER=runway or AI_VIDEO_PROVIDER=p
 import os
 import logging
 import asyncio
-from typing import Optional, List, Dict
 from pathlib import Path
 import uuid
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class AIVideoGeneratorService:
     """
-    Optional AI video generation service.
+    Any AI video generation service.
     Integrates with Runway ML and Pika Labs APIs.
     """
 
@@ -46,7 +46,7 @@ class AIVideoGeneratorService:
             f"[AIGenerator] Initialized - Provider: {self.provider}, Enabled: {self.enabled}"
         )
 
-    def _get_api_key(self) -> Optional[str]:
+    def _get_api_key(self) -> str | None:
         """Get API key for current provider"""
         if self.provider == "runway":
             return self.runway_key
@@ -59,8 +59,8 @@ class AIVideoGeneratorService:
         prompt: str,
         duration: int = 5,
         aspect_ratio: str = "9:16",
-        style: Optional[str] = None,
-    ) -> Optional[str]:
+        style: str | None = None,
+    ) -> str | None:
         """
         Generate AI video clip from text prompt.
 
@@ -68,7 +68,7 @@ class AIVideoGeneratorService:
             prompt: Text description of desired video
             duration: Video length in seconds
             aspect_ratio: Video aspect ratio (9:16, 16:9, 1:1)
-            style: Optional style preset
+            style: Any style preset
 
         Returns:
             URL to generated video, or None if disabled/error
@@ -107,7 +107,7 @@ class AIVideoGeneratorService:
 
     async def _generate_runway(
         self, prompt: str, duration: int, aspect_ratio: str, api_key: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate video using Runway ML API"""
         import httpx
 
@@ -156,7 +156,7 @@ class AIVideoGeneratorService:
 
     async def _poll_runway_job(
         self, job_id: str, api_key: str, max_attempts: int = 60, delay: int = 5
-    ) -> Optional[str]:
+    ) -> str | None:
         """Poll Runway generation job until completion"""
         import httpx
 
@@ -200,7 +200,7 @@ class AIVideoGeneratorService:
 
     async def _generate_pika(
         self, prompt: str, duration: int, aspect_ratio: str, api_key: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate video using Pika Labs API"""
         import httpx
 
@@ -247,7 +247,7 @@ class AIVideoGeneratorService:
 
     async def _poll_pika_job(
         self, job_id: str, api_key: str, max_attempts: int = 60, delay: int = 5
-    ) -> Optional[str]:
+    ) -> str | None:
         """Poll Pika generation job until completion"""
         import httpx
 
@@ -289,21 +289,21 @@ class AIVideoGeneratorService:
             )
             return None
 
-    async def generate_intro(self, topic: str, duration: int = 3) -> Optional[str]:
+    async def generate_intro(self, topic: str, duration: int = 3) -> str | None:
         """Generate intro clip for a topic"""
         prompt = f"Professional intro for {topic} video, cinematic, high quality"
         return await self.generate_clip(prompt, duration)
 
     async def generate_Outro(
         self, call_to_action: str = "Subscribe for more"
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate outro clip with CTA"""
         prompt = (
             f"Professional outro with text '{call_to_action}', cinematic, high quality"
         )
         return await self.generate_clip(prompt, duration=3)
 
-    def get_provider_info(self) -> Dict:
+    def get_provider_info(self) -> dict:
         """Get information about current provider"""
         return {
             "provider": self.provider,
@@ -314,4 +314,4 @@ class AIVideoGeneratorService:
 
 
 # Global instance
-ai_generator_service = AIVideoGeneratorService()
+base_ai_generator_service = AIVideoGeneratorService()

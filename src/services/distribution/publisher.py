@@ -9,7 +9,7 @@ and manages the A/B testing variants in the wild.
 import logging
 import asyncio
 from datetime import datetime, timedelta
-from typing import Dict, Any, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,9 @@ class Publisher:
     """
 
     def __init__(self):
-        self.flight_plan = [] # List of videos waiting for metrics
+        self.flight_plan = [] # list of videos waiting for metrics
 
-    async def schedule_production_package(self, production_data: Dict[str, Any]):
+    async def schedule_production_package(self, production_data: dict[str, Any]):
         """Schedules a video or variant for upload"""
         video_path = production_data.get("video_path")
         title = production_data.get("title")
@@ -45,7 +45,7 @@ class Publisher:
         
         return {"status": "published", "publish_time": publish_time}
 
-    async def get_active_flight_ids(self) -> List[str]:
+    async def get_active_flight_ids(self) -> list[str]:
         """Returns IDs of videos currently in the wild waiting for data"""
         return [f["video_id"] for f in self.flight_plan]
 

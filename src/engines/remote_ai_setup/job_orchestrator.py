@@ -6,7 +6,7 @@ import threading
 import time
 import uuid
 import traceback
-from typing import List, Dict, Any, Optional
+from typing import Any
 from video_model_manager import model_manager, VIDEO_MODELS
 import ai_actions
 
@@ -28,8 +28,8 @@ class AIJob:
 
 class AIJobOrchestrator:
     def __init__(self):
-        self.pending_jobs: List[AIJob] = []
-        self.completed_jobs: Dict[str, AIJob] = {}
+        self.pending_jobs: list[AIJob] = []
+        self.completed_jobs: dict[str, AIJob] = {}
         self.lock = threading.Lock()
         self.max_jumps = 3  # Anti-starvation limit
         self.is_running = True
@@ -47,7 +47,7 @@ class AIJobOrchestrator:
             print(f"📥 [Orchestrator] Job {job_id} queued ({model_key})", flush=True)
         return job_id
 
-    def get_job_status(self, job_id: str) -> Dict[str, Any]:
+    def get_job_status(self, job_id: str) -> dict[str, Any]:
         with self.lock:
             # Check pending
             for i, job in enumerate(self.pending_jobs):

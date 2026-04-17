@@ -1,7 +1,6 @@
 import logging
-from typing import List, Optional
 from datetime import datetime
-from services.trading.service import trading_service
+from src.services.trading.service import trading_service
 from .models import ContentCandidate
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,7 @@ class TradingScanner:
     def __init__(self):
         self.platform = "market_news"
 
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         if not trading_service.is_enabled():
             return []
 

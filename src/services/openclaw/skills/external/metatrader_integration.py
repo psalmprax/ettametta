@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Any
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class MetaTraderService:
                 logger.warning("MetaTrader5 package not installed")
                 self.enabled = False
 
-    def get_account_info(self) -> Dict[str, Any]:
+    def get_account_info(self) -> dict[str, Any]:
         """Get account information."""
         if not self.enabled or not self.mt5:
             return {"error": "MetaTrader not enabled. Set ENABLE_META_TRADER=true"}
@@ -60,7 +60,7 @@ class MetaTraderService:
             logger.error(f"Error getting account info: {e}")
             return {"error": str(e)}
 
-    def get_symbols(self) -> List[str]:
+    def get_symbols(self) -> list[str]:
         """Get available trading symbols."""
         if not self.enabled or not self.mt5:
             return ["MetaTrader not enabled"]
@@ -72,7 +72,7 @@ class MetaTraderService:
             logger.error(f"Error getting symbols: {e}")
             return []
 
-    def get_symbol_price(self, symbol: str) -> Dict[str, Any]:
+    def get_symbol_price(self, symbol: str) -> dict[str, Any]:
         """Get current price for a symbol."""
         if not self.enabled or not self.mt5:
             return {"error": "MetaTrader not enabled"}
@@ -98,10 +98,10 @@ class MetaTraderService:
         symbol: str,
         order_type: str,
         volume: float,
-        price: Optional[float] = None,
-        stop_loss: Optional[float] = None,
-        take_profit: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        price: float | None = None,
+        stop_loss: float | None = None,
+        take_profit: float | None = None,
+    ) -> dict[str, Any]:
         """Place a trade order."""
         if not self.enabled or not self.mt5:
             return {"error": "MetaTrader not enabled"}
@@ -143,7 +143,7 @@ class MetaTraderService:
 
         return {"order_id": result.order, "result": "Order placed successfully"}
 
-    def get_positions(self) -> List[Dict]:
+    def get_positions(self) -> list[dict]:
         """Get open positions."""
         if not self.enabled or not self.mt5:
             return []
@@ -161,7 +161,7 @@ class MetaTraderService:
             for p in positions
         ]
 
-    def close_position(self, ticket: int) -> Dict[str, Any]:
+    def close_position(self, ticket: int) -> dict[str, Any]:
         """Close an open position."""
         if not self.enabled or not self.mt5:
             return {"error": "MetaTrader not enabled"}
@@ -201,7 +201,7 @@ class BinanceService:
     def __init__(self):
         self.base_url = "https://api.binance.com"
 
-    def get_ticker_price(self, symbol: str = "BTCUSDT") -> Dict[str, Any]:
+    def get_ticker_price(self, symbol: str = "BTCUSDT") -> dict[str, Any]:
         """Get current ticker price."""
         try:
             import requests
@@ -220,7 +220,7 @@ class BinanceService:
 
     def get_klines(
         self, symbol: str = "BTCUSDT", interval: str = "1h", limit: int = 100
-    ) -> List:
+    ) -> list[list[Any]]:
         """Get candlestick/kline data."""
         try:
             import requests

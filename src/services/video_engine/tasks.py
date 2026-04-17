@@ -1,13 +1,13 @@
-from api.utils.celery import celery_app
+from src.api.utils.celery import celery_app
 
 from .processor import VideoProcessor
 from .downloader import base_video_downloader
-from services.optimization.youtube_publisher import base_youtube_publisher
-from services.optimization.service import base_optimization_service
+from src.services.optimization.youtube_publisher import base_youtube_publisher
+from src.services.optimization.service import base_optimization_service
 import asyncio
 import logging
 import os
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -75,11 +75,11 @@ def download_and_process_task(
     - enhanced: Tier 2 + sound design
     - premium: Tier 3 full processing (sound + motion graphics)
     """
-    from api.utils.database import get_async_db_url, AsyncSession
-    from api.utils.models import VideoJobDB
+    from src.api.utils.database import get_async_db_url, AsyncSession
+    from src.api.utils.models import VideoJobDB
     from sqlalchemy import select
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-    from api.config import settings
+    from src.api.config import settings
     import uuid
     import asyncio
 
@@ -114,7 +114,7 @@ def download_and_process_task(
                     await db.commit()
 
                     # Real-time WebSocket Notification
-                    from api.routes.ws import notify_job_update_sync
+                    from src.api.routes.ws import notify_job_update_sync
 
                     notification = {
                         "id": task_id,
@@ -159,19 +159,19 @@ def download_and_process_task(
 
         # B. Analyze Visuals via Gemini (VLM)
         update_job(status="Analyzing Visuals", progress=35)
-        from .vlm_service import vlm_service
+        from .base_vlm_service import base_vlm_service
 
-        visual_insights = run_async(vlm_service.analyze_video_content(video_path))
+        visual_insights = run_async(base_vlm_service.analyze_video_content(video_path))
 
         # C. Generate Strategy via Groq (Integrated Scraper + VLM Intelligence)
         update_job(status="Strategizing", progress=40)
-        from services.decision_engine.service import base_strategy_service
+        from src.services.decision_engine.service import base_strategy_service
 
         # Extract transcript from video if available
-        from .transcription import transcription_service
+        from .transcription import base_transcription_service
 
         transcript_segments = run_async(
-            transcription_service.transcribe_video(video_path)
+            base_transcription_service.transcribe_video(video_path)
         )
         transcript = (
             " ".join(seg.get("text", "") for seg in transcript_segments)
@@ -200,7 +200,7 @@ def download_and_process_task(
         processor = VideoProcessor()
         output_name = f"{uuid.uuid4()}.mp4"
 
-        from api.utils.models import VideoFilterDB
+        from src.api.utils.models import VideoFilterDB
         from sqlalchemy import select
 
         async def get_filters():
@@ -220,11 +220,11 @@ def download_and_process_task(
             )
         )
 
-        # ===== TIER 3 ENHANCEMENTS (Optional) =====
+        # ===== TIER 3 ENHANCEMENTS (Any) =====
         # Sound Design: enabled by explicit flag OR quality_tier
         if sound_design or quality_tier in ("enhanced", "premium"):
             update_job(status="Adding Sound Design", progress=55)
-            from services.audio.sound_design import sound_design_service
+            from src.services.audio.sound_design import sound_design_service
 
             enhanced_path = run_async(
                 sound_design_service.add_background_music(processed_path, niche=niche)
@@ -236,11 +236,11 @@ def download_and_process_task(
         # Motion Graphics: enabled by explicit flag OR premium tier
         if motion_graphics or quality_tier == "premium":
             update_job(status="Adding Motion Graphics", progress=60)
-            from services.video_engine.motion_graphics import motion_graphics_service
+            from src.services.video_engine.motion_graphics import base_motion_graphics_service
 
             title = f"{niche} Secrets" if niche else "Viral Content"
             mg_path = run_async(
-                motion_graphics_service.add_title_sequence(
+                base_motion_graphics_service.add_title_sequence(
                     processed_path, title=title, style="cinematic"
                 )
             )
@@ -255,7 +255,7 @@ def download_and_process_task(
         )
 
         # 3.5 Storage (Upload to S3 or prepare local URL)
-        from services.storage.service import base_storage_service
+        from src.services.storage.service import base_storage_service
 
         # Upload
         storage_key = base_storage_service.upload_file(processed_path)
@@ -285,7 +285,7 @@ def download_and_process_task(
             )
         elif platform == "TikTok":
             # Use Real TikTok Publisher
-            from services.optimization.tiktok_publisher import base_tiktok_publisher
+            from src.services.optimization.tiktok_publisher import base_tiktok_publisher
 
             update_job(status="TikTok Upload", progress=90)
             url = run_async(
@@ -378,10 +378,10 @@ def generate_video_task(
     Background task for AI Video Synthesis (T2V).
     Simplified sync version for demo.
     """
-    from api.utils.models import VideoJobDB
-    from api.utils.database import async_session_factory
-    from services.storage.service import base_storage_service
-    from .synthesis_service import generative_service
+    from src.api.utils.models import VideoJobDB
+    from src.api.utils.database import async_session_factory
+    from src.services.storage.service import base_storage_service
+    from .synthesis_service import base_generative_service
     import uuid
 
     task_id = self.request.id
@@ -404,7 +404,7 @@ def generate_video_task(
                     await db.commit()
 
                     # Real-time WebSocket Notification
-                    from api.routes.ws import notify_job_update_sync
+                    from src.api.routes.ws import notify_job_update_sync
 
                     notification = {
                         "id": task_id,
@@ -426,7 +426,7 @@ def generate_video_task(
         # For E2E test: try real synthesis, fallback to mock for demo
         try:
             video_url = run_async(
-                generative_service.synthesize_video(
+                base_generative_service.synthesize_video(
                     prompt,
                     engine=engine,
                     aspect_ratio=aspect_ratio,
@@ -544,12 +544,12 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
     """
     Orchestrates the synthesis of a multi-scene narrative story.
     """
-    from api.utils.database import async_session_factory
-    from api.utils.models import VideoJobDB
+    from src.api.utils.database import async_session_factory
+    from src.api.utils.models import VideoJobDB
     from sqlalchemy import select
-    from services.decision_engine.service import base_strategy_service
-    from services.video_engine.synthesis_service import generative_service
-    from services.video_engine.voiceover import base_voiceover_service
+    from src.services.decision_engine.service import base_strategy_service
+    from src.services.video_engine.synthesis_service import base_generative_service
+    from src.services.video_engine.voiceover import base_voiceover_service
     import uuid
     import asyncio
 
@@ -572,7 +572,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
                         job.error_message = error_message
                     await db.commit()
 
-                    from api.routes.ws import notify_job_update_sync
+                    from src.api.routes.ws import notify_job_update_sync
 
                     notification = {
                         "id": task_id,
@@ -607,7 +607,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
                 )
 
             # Parallel Visuals
-            visual_task = generative_service.synthesize_scene_batch(
+            visual_task = base_generative_service.synthesize_scene_batch(
                 scenes, engine=engine, style=style
             )
 
@@ -633,7 +633,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
         )
 
         # 4. Storage & Finalization
-        from services.storage.service import base_storage_service
+        from src.services.storage.service import base_storage_service
 
         storage_key = base_storage_service.upload_file(final_video_path)
         public_url = base_storage_service.get_public_url(storage_key)
@@ -699,11 +699,11 @@ def narrative_fusion_task(
     Tier 10 Autonomous Narrative Fusion task.
     Discovers multiple assets from 15+ platforms and fuses them into a cinematic narrative.
     """
-    from api.utils.database import async_session_factory
-    from api.utils.models import VideoJobDB
+    from src.api.utils.database import async_session_factory
+    from src.api.utils.models import VideoJobDB
     from sqlalchemy import select
-    from engines.real_video_fusion_engine import RealVideoFusionEngine
-    from engines.intelligent_video_workflow import (
+    from src.engines.real_video_fusion_engine import RealVideoFusionEngine
+    from src.engines.intelligent_video_workflow import (
         discover_multi_platform,
         analyze_content_type,
     )
@@ -769,7 +769,7 @@ def narrative_fusion_task(
 
         if result.get("success"):
             # Phase 4: Storage
-            from services.storage.service import base_storage_service
+            from src.services.storage.service import base_storage_service
 
             storage_key = base_storage_service.upload_file(result["video_path"])
             public_url = base_storage_service.get_public_url(storage_key)

@@ -1,6 +1,6 @@
 import logging
 import random
-from typing import Dict, Any, List
+from typing import Any
 from datetime import datetime
 
 
@@ -10,14 +10,14 @@ class AlgorithmSentinel:
     Currently uses probabilistic modeling based on recent viral trends.
     """
 
-    async def get_sync_status(self) -> Dict[str, Any]:
+    async def get_sync_status(self) -> dict[str, Any]:
         """
         Returns the 'Algorithm Sync' score and potential risks.
         Tries to generate real-time metrics, falling back to probabilistic models on error.
         """
         try:
             from groq import AsyncGroq
-            from api.config import settings
+            from src.api.config import settings
             import json
             import logging
             import asyncio

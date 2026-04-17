@@ -1,12 +1,12 @@
 import asyncio
 import logging
 import os
-from typing import Optional, Dict, Any
+from typing import Any
 import uuid
 
 logger = logging.getLogger(__name__)
 
-# Optional dependency
+# Any dependency
 try:
     from playwright.async_api import async_playwright
     PLAYWRIGHT_AVAILABLE = True
@@ -24,7 +24,7 @@ class LumaSkill:
     def __init__(self):
         self.base_url = "https://lumalabs.ai/dream-machine"
 
-    async def generate(self, prompt: str, aspect_ratio: str = "9:16") -> Dict[str, Any]:
+    async def generate(self, prompt: str, aspect_ratio: str = "9:16") -> dict[str, Any]:
         """
         Generate video from prompt using Luma Dream Machine
         """

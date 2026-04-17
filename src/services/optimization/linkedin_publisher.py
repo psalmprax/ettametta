@@ -5,7 +5,6 @@ Features: Retry logic, rate limiting, file validation, proper logging
 """
 
 import os
-from typing import Optional
 import httpx
 import logging
 
@@ -33,9 +32,9 @@ class LinkedInPublisher(SocialPublisher):
         video_path: str,
         metadata: PostMetadata,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
-    ) -> Optional[str]:
+    ) -> str | None:
         """LinkedIn-specific upload implementation"""
         if not headers:
             logger.error(f"[LinkedInPublisher] No authentication for user {user_id}")
@@ -146,7 +145,7 @@ class LinkedInPublisher(SocialPublisher):
 
     async def _load_video_data(
         self, video_path: str, client: httpx.AsyncClient
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         """Load video data from path or URL"""
         if os.path.isfile(video_path):
             with open(video_path, "rb") as f:
@@ -177,7 +176,7 @@ class LinkedInPublisher(SocialPublisher):
         self,
         platform_id: str,
         user_id: int,
-        account_id: Optional[int],
+        account_id: int | None,
         headers: dict,
     ) -> dict:
         """Fetch LinkedIn post metrics"""

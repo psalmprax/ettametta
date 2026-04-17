@@ -3,7 +3,6 @@ import logging
 import json
 import re
 import random
-from typing import List, Optional
 from datetime import datetime
 from .models import ContentCandidate
 
@@ -26,7 +25,7 @@ class RumbleScanner:
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         ]
     
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Scans Rumble for trending videos in a niche.
         Uses the trending page and search functionality.
@@ -61,7 +60,7 @@ class RumbleScanner:
         logger.info(f"[RumbleScanner] Found {len(unique)} videos")
         return unique[:15]
     
-    async def _get_trending(self) -> List[ContentCandidate]:
+    async def _get_trending(self) -> list[ContentCandidate]:
         """Get Rumble trending videos."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -108,7 +107,7 @@ class RumbleScanner:
         
         return candidates
     
-    async def _search_videos(self, query: str) -> List[ContentCandidate]:
+    async def _search_videos(self, query: str) -> list[ContentCandidate]:
         """Search Rumble for videos."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -147,7 +146,7 @@ class RumbleScanner:
         
         return candidates
     
-    def _extract_videos_from_json(self, data: dict) -> List[ContentCandidate]:
+    def _extract_videos_from_json(self, data: dict) -> list[ContentCandidate]:
         """Extract video data from Rumble JSON."""
         candidates = []
         
@@ -185,7 +184,7 @@ class RumbleScanner:
         
         return candidates
     
-    def _parse_video_item(self, item: dict) -> Optional[ContentCandidate]:
+    def _parse_video_item(self, item: dict) -> ContentCandidate | None:
         """Parse a Rumble video item."""
         try:
             # Get video ID

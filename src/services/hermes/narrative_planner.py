@@ -1,8 +1,8 @@
 import json
 import logging
-from typing import Dict, Any, List, Optional
-from groq import AsyncGroq
-from api.config import settings
+from typing import Any
+import os
+from src.services.llm.intelligence_hub import base_intelligence_hub
 
 logger = logging.getLogger("NarrativePlanner")
 
@@ -12,10 +12,10 @@ class NarrativePlanner:
     Decomposes topics into story-driven components before editing begins.
     """
     def __init__(self):
-        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-        self.model = "llama-3.3-70b-versatile"
+        # We now use the unified IntelligenceHub for multi-provider resilience
+        pass
 
-    async def plan_story(self, topic: str, niche: str, duration_sec: int = 60) -> Dict[str, Any]:
+    async def plan_story(self, topic: str, niche: str, duration_sec: int = 60, session_id: str | None = None) -> dict[str, Any]:
         """Creates a high-level Narrative Blueprint for the attention economy."""
         
         logger.info(f"🧠 [NRM] Designing Narrative Blueprint for: {topic}")
@@ -50,23 +50,22 @@ class NarrativePlanner:
         """
         
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a Story-Driven Attention Optimization Engine. You prioritize narrative tension over simple facts."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={"type": "json_object"}
+            result = await base_intelligence_hub.chat(
+                prompt=prompt,
+                system_prompt="You are a Story-Driven Attention Optimization Engine. Return ONLY valid JSON.",
+                session_id=session_id,
+                json_mode=True
             )
             
-            blueprint = json.loads(response.choices[0].message.content)
-            logger.info("✨ [NRM] Narrative Blueprint Crystallized.")
+            blueprint = json.loads(result["response"])
+            logger.info(f"✨ [NRM] Narrative Blueprint Crystallized via {result['provider'].upper()}.")
             return blueprint
+
         except Exception as e:
             logger.error(f"[NRM] Blueprint Generation Failed: {e}")
             return self._get_fallback_blueprint(topic)
 
-    def _get_fallback_blueprint(self, topic: str) -> Dict[str, Any]:
+    def _get_fallback_blueprint(self, topic: str) -> dict[str, Any]:
         return {
             "core_claim": f"Why {topic} matters now.",
             "narrative_conflict": "Information vs Ignorance.",

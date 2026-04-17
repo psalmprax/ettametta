@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import Any
 import asyncio
 import logging
 import uuid
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from api.utils.limiter import limiter
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.api.utils.limiter import limiter
 from fastapi import Request
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ def get_groq_client():
     """Get or create Groq client singleton"""
     global _groq_client
     if _groq_client is None:
-        from api.config import settings
+        from src.api.config import settings
 
         if settings.GROQ_API_KEY:
             from groq import AsyncGroq
@@ -32,18 +32,18 @@ def get_groq_client():
 
 class ChatMessage(BaseModel):
     message: str
-    context: Optional[Dict[str, Any]] = None
+    context: dict[str, Any] | None = None
 
 
 class AgentRequest(BaseModel):
     task: str
-    agents: Optional[List[str]] = None
-    context: Optional[Dict[str, Any]] = None
+    agents: list[str] | None = None
+    context: dict[str, Any] | None = None
 
 
 class CodeRequest(BaseModel):
     code: str
-    language: Optional[str] = "python"
+    language: str | None = "python"
 
 
 @router.post("/chat")
@@ -55,7 +55,7 @@ async def chat_with_agent(
     """
     Chat with AI agent. Supports both Groq and OpenAI.
     """
-    from api.config import settings
+    from src.api.config import settings
 
     # Add correlation ID for tracing
     correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
@@ -183,7 +183,7 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
 
         # Get model settings for auto-recommendation
         try:
-            from services.openclaw.skills.model_settings import (
+            from src.services.openclaw.skills.model_settings import (
                 get_model_settings,
                 get_recommended_settings,
                 get_image_recommended_settings,
@@ -315,7 +315,7 @@ async def crew_task(
     """
     Execute a task using CrewAI if enabled, otherwise falls back to Groq multi-step execution.
     """
-    from api.config import settings
+    from src.api.config import settings
 
     # Add correlation ID for tracing
     correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
@@ -323,7 +323,7 @@ async def crew_task(
 
     if settings.ENABLE_CREWAI:
         try:
-            from services.crewai.service import crewai_service
+            from src.services.crewai.service import crewai_service
 
             # Check if service is enabled
             if not crewai_service.is_enabled():
@@ -445,7 +445,7 @@ async def crew_task(
 class AccountAuditRequest(BaseModel):
     action: str = "audit"
     platform: str = "youtube"
-    competitor_url: Optional[str] = None
+    competitor_url: str | None = None
 
 
 @router.post("/account-audit")
@@ -460,8 +460,8 @@ async def account_audit(
     Generates a 2-week sprint plan to reach monetization eligibility.
     Supported platforms: youtube, tiktok, instagram, facebook, x, linkedin, snapchat, twitch
     """
-    from api.config import settings
-    from services.openclaw.skills.audit import audit_skill
+    from src.api.config import settings
+    from src.services.openclaw.skills.audit import audit_skill
 
     if not settings.GROQ_API_KEY:
         raise HTTPException(status_code=503, detail="AI backend not configured")
@@ -517,11 +517,11 @@ async def execute_code(
     Execute code using Code Interpreter if enabled, otherwise uses Groq for code analysis/generation.
     Does NOT execute arbitrary code server-side — returns AI-generated code and explanation.
     """
-    from api.config import settings
+    from src.api.config import settings
 
     if settings.ENABLE_INTERPRETER:
         try:
-            from services.interpreter.service import interpreter_service
+            from src.services.interpreter.service import interpreter_service
 
             result = await interpreter_service.execute(request.code)
             return {"result": result, "status": "success", "agent": "interpreter"}
@@ -576,8 +576,8 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
     """
     Get available agent capabilities with real status.
     """
-    from api.config import settings
-    from services.openclaw.agent import openclaw_agent
+    from src.api.config import settings
+    from src.services.openclaw.agent import openclaw_agent
 
     report = openclaw_agent.get_dependency_report()
     cb_status = openclaw_agent.circuit_breaker.state  # "closed", "open", "half-open"

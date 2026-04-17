@@ -3,17 +3,16 @@ import re
 import requests
 import asyncio
 import logging
-from typing import Optional, Dict
-from services.optimization.auth import token_manager
+from src.services.optimization.auth import token_manager
 
 logger = logging.getLogger(__name__)
 
 
 async def get_youtube_streaming_url(
     video_id: str, 
-    api_key: Optional[str] = None, 
-    user_id: Optional[int] = None
-) -> Optional[str]:
+    api_key: str | None = None, 
+    user_id: int | None = None
+) -> str | None:
     """
     Get video streaming URL using YouTube Data API.
     Supports both Public (API Key) and Private (OAuth) access.
@@ -92,7 +91,7 @@ async def get_youtube_streaming_url(
         return None
 
 
-def extract_video_id_from_url(url: str) -> Optional[str]:
+def extract_video_id_from_url(url: str) -> str | None:
     """Extract video ID from various YouTube URL formats."""
     if not url:
         return None

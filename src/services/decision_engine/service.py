@@ -1,21 +1,21 @@
 import json
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
 from groq import AsyncGroq
-from api.config import settings
-from api.utils.vault import get_secret
+from src.api.config import settings
+from src.api.utils.vault import get_secret
 from pydantic import BaseModel
 
 
 class VideoStrategy(BaseModel):
-    speed_range: List[float] = [0.98, 1.02]
+    speed_range: list[float] = [0.98, 1.02]
     jitter_intensity: float = 1.0
-    recommended_filters: List[str] = []
-    hook_points: List[List[float]] = []  # [ [start, end], [start, end] ]
-    b_roll_keywords: List[str] = []
+    recommended_filters: list[str] = []
+    hook_points: list[list[float]] = []  # [ [start, end], [start, end] ]
+    b_roll_keywords: list[str] = []
     vibe: str = "Neutral"
     explanation: str = ""
-    visual_insights: Optional[Dict] = None
+    visual_insights: dict | None = None
 
 
 class StoryScene(BaseModel):
@@ -28,7 +28,7 @@ class StoryScene(BaseModel):
 
 class StoryScript(BaseModel):
     title: str
-    scenes: List[StoryScene]
+    scenes: list[StoryScene]
     vibe_summary: str
     target_duration: float
 
@@ -43,7 +43,7 @@ class StrategyService:
         self, prompt: str, style: str = "Cinematic"
     ) -> StoryScript:
         # Check if CrewAI is enabled for multi-agent strategy
-        from services.crewai.service import crewai_service
+        from src.services.crewai.service import crewai_service
         if crewai_service.is_enabled():
             logging.info(f"[StrategyService] Delegating screenplay to CrewAI Team for: {prompt}")
             try:
@@ -133,11 +133,11 @@ class StrategyService:
 
     async def generate_visual_strategy(
         self,
-        transcript: List[Dict],
+        transcript: list[dict],
         niche: str,
         style: str = "Default",
-        visual_insights: Optional[Dict] = None,
-        analysis_data: Optional[Dict] = None,
+        visual_insights: dict | None = None,
+        analysis_data: dict | None = None,
     ) -> VideoStrategy:
         """
         Analyzes transcript content, user-selected style, and VLM visual insights to decide on video editing parameters.

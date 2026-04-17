@@ -1,6 +1,5 @@
 import logging
 import asyncio
-from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,7 @@ class PaperclipOrganicSkill:
         self.kpi_data = {}
         self.threshold_viral = 1000 # Minimum views to consider "scaling"
         
-    def track_organic_performance(self, job_id: str, platform: str, metrics: Dict[str, int]) -> str:
+    def track_organic_performance(self, job_id: str, platform: str, metrics: dict[str, int]) -> str:
         """
         Record performance of an organic post.
         """
@@ -36,7 +35,7 @@ class PaperclipOrganicSkill:
             status = "🔥 VIRAL DETECTED"
             # TRIGGER HERMES REFLECTION
             try:
-                from services.hermes.service import hermes_service
+                from src.services.hermes.service import base_hermes_service
                 # In a real system, we'd fetch the job_data from DB here
                 # Mocking minimal job_data for reflection
                 mock_job_data = {
@@ -45,7 +44,7 @@ class PaperclipOrganicSkill:
                     "platform": platform,
                     "metrics": metrics
                 }
-                asyncio.create_task(hermes_service.reflect_and_crystallize(mock_job_data, metrics))
+                asyncio.create_task(base_hermes_service.reflect_and_crystallize(mock_job_data, metrics))
                 logger.info(f"💎 [Paperclip] Triggered Hermes Reflection for Job {job_id}")
             except Exception as e:
                 logger.error(f"Failed to trigger Hermes reflection: {e}")
@@ -73,7 +72,7 @@ class PaperclipOrganicSkill:
             
         return suggestion
 
-    def get_autonomous_decision(self) -> Dict:
+    def get_autonomous_decision(self) -> dict:
         """
         Returns a decision for the Master Controller to act upon.
         """

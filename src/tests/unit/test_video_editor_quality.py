@@ -17,26 +17,71 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 # Mock heavy dependencies to avoid import errors
-class MockMoviePy:
-    class VideoFileClip:
-        def __init__(self, path):
-            self.path = path
-            self.duration = 60.0
-            self.w, self.h = 1920, 1080
-
-
 class MockTorch:
-    pass
+    float32 = "float32"
+    
+    class nn:
+        class Module: pass
+        def Linear(*args, **kwargs): return MagicMock()
+        def ReLU(*args, **kwargs): return MagicMock()
+        def Sequential(*args, **kwargs): return MagicMock()
+        def Dropout(*args, **kwargs): return MagicMock()
+        def Sigmoid(*args, **kwargs): return MagicMock()
+        def MSELoss(*args, **kwargs): return MagicMock()
+
+    class optim:
+        def Adam(*args, **kwargs): return MagicMock()
+
+    class cuda:
+        @staticmethod
+        def is_available(): return False
+
+    class backends:
+        class cudnn:
+            enabled = False
+            benchmark = False
+
+    @staticmethod
+    def device(name): return name
+    
+    @staticmethod
+    def load_state_dict(*args, **kwargs): return MagicMock()
+    
+    @staticmethod
+    def save(*args, **kwargs): return True
+    
+    @staticmethod
+    def set_num_threads(*args, **kwargs): pass
+    
+    @staticmethod
+    def manual_seed(*args, **kwargs): pass
+
+    @staticmethod
+    def FloatTensor(*args, **kwargs): return MagicMock()
 
 
 class MockCV2:
-    pass
+    COLOR_BGR2RGB = 4
+    INTER_AREA = 3
+    def cvtColor(self, frame, code): return frame
+    def resize(self, frame, size, interpolation): return frame
 
 
 # Apply mocks
-sys.modules["moviepy"] = MockMoviePy()
+from unittest.mock import MagicMock
+sys.modules["moviepy"] = MagicMock()
+sys.modules["moviepy.editor"] = MagicMock()
 sys.modules["torch"] = MockTorch()
+sys.modules["torch.nn"] = MockTorch.nn
+sys.modules["torch.optim"] = MockTorch.optim
 sys.modules["cv2"] = MockCV2()
+
+# Mock Database and Vault
+sys.modules["api.utils.vault"] = MagicMock()
+sys.modules["api.utils.db"] = MagicMock()
+sys.modules["sqlalchemy"] = MagicMock()
+sys.modules["sqlalchemy.ext.asyncio"] = MagicMock()
+sys.modules["psycopg2"] = MagicMock()
 
 
 async def test_video_editor_quality():
@@ -59,7 +104,7 @@ async def test_video_editor_quality():
     print("-" * 40)
 
     try:
-        from services.video_engine.processor import VideoProcessor
+        from src.services.video_engine.processor import VideoProcessor
 
         processor = VideoProcessor()
 
@@ -86,7 +131,7 @@ async def test_video_editor_quality():
         # Create scanner with mock API keys
         os.environ["GROQ_API_KEY"] = "mock_key_for_testing"
 
-        from services.discovery.video_lead_scanner import VideoLeadScanner
+        from src.services.discovery.video_lead_scanner import VideoLeadScanner
 
         scanner = VideoLeadScanner()
 
@@ -137,7 +182,7 @@ async def test_video_editor_quality():
     print("-" * 40)
 
     try:
-        from services.discovery.service import DiscoveryService
+        from src.services.discovery.service import DiscoveryService
 
         service = DiscoveryService()
 
@@ -160,7 +205,7 @@ async def test_video_editor_quality():
     print("-" * 40)
 
     try:
-        from services.monetization.service import MonetizationEngine
+        from src.services.monetization.service import MonetizationEngine
 
         engine = MonetizationEngine()
 
@@ -182,7 +227,7 @@ async def test_video_editor_quality():
     print("-" * 40)
 
     try:
-        from services.openclaw.skills.video_lead_discovery import VideoLeadSkill
+        from src.services.openclaw.skills.video_lead_discovery import VideoLeadSkill
 
         skill = VideoLeadSkill()
 
@@ -210,7 +255,7 @@ async def test_video_editor_quality():
     print("-" * 40)
 
     try:
-        from services.discovery.video_lead_scanner import VideoLeadScanner
+        from src.services.discovery.video_lead_scanner import VideoLeadScanner
 
         # Test template extraction logic with mock data
         scanner = VideoLeadScanner()

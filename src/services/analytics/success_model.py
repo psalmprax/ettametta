@@ -1,9 +1,9 @@
 import logging
-from typing import Dict, Any, List
+from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from api.utils.database import AsyncSessionLocal
-from api.utils.models import StrategyRegistryDB
+from src.api.utils.database import AsyncSessionLocal
+from src.api.utils.models import StrategyRegistryDB
 
 logger = logging.getLogger("SuccessModel")
 
@@ -27,7 +27,7 @@ class SuccessModel:
         score = (retention * 0.5) + (view_score * 0.3) + (ctr * 0.2)
         return round(score, 4)
 
-    async def evaluate_strategy_survival(self, strategy_name: str, cohort_scores: List[float]):
+    async def evaluate_strategy_survival(self, strategy_name: str, cohort_scores: list[float]):
         """
         Decides if a narrative strategy should live or be rolled back.
         Persists outcome to StrategyRegistryDB.
@@ -58,7 +58,7 @@ class SuccessModel:
 
     async def _kill_strategy(self, strategy_name: str, avg_score: float):
         """Communicates with Hermes and persists the forbidden status."""
-        from services.hermes.service import hermes_service
+        from src.services.hermes.service import base_hermes_service
         
         # 1. Update Database (Source of Truth)
         async with AsyncSessionLocal() as db:

@@ -1,9 +1,9 @@
 import logging
 import json
 import time
-from typing import List, Dict, Any, Optional
+from typing import Any
 from groq import AsyncGroq
-from api.config import settings
+from src.api.config import settings
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -43,59 +43,40 @@ class CircuitBreaker:
             self.state = "OPEN"
 
 
+from src.services.llm.intelligence_hub import base_intelligence_hub
+
 class MonetizationEngine:
     def __init__(self):
         self.logger = logging.getLogger("MonetizationEngine")
-        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY, timeout=15.0)
         self.orchestrator = base_monetization_orchestrator
-        self.model = "llama-3.3-70b-versatile"
-        self.groq_circuit_breaker = CircuitBreaker()
+
+    async def _call_hub(self, prompt: str, session_id: str | None = None) -> str | None:
+        """Call IntelligenceHub with resilient fallback"""
+        try:
+            result = await base_intelligence_hub.chat(
+                prompt=prompt,
+                system_prompt="You are a professional Monetization Strategist. Output JSON ONLY.",
+                session_id=session_id,
+                json_mode=True
+            )
+            return result["response"]
+        except Exception as e:
+            self.logger.warning(f"  ⚠️ Hub monetization call failed: {e}")
+            return None
 
     async def recommend_products(
         self, niche: str, script_text: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Delegates product recommendation to the active strategy.
         """
         return await self.orchestrator.get_monetization_assets(niche)
 
-    @retry(
-        stop=stop_after_attempt(2),
-        wait=wait_exponential(multiplier=1, min=1, max=5),
-        retry=retry_if_exception_type(
-            (TimeoutError, ConnectionError, json.JSONDecodeError)
-        ),
-        reraise=False,
-    )
-    async def _call_groq(self, prompt: str, **kwargs) -> Optional[str]:
-        """Call Groq API with circuit breaking and retries"""
-        if self.groq_circuit_breaker.is_open():
-            self.logger.warning("Groq API circuit breaker is OPEN - using fallback")
-            return None
-
-        if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
-            return None
-
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                timeout=30.0,
-                **kwargs,
-            )
-            self.groq_circuit_breaker.record_success()
-            return response.choices[0].message.content
-        except Exception as e:
-            self.groq_circuit_breaker.record_failure()
-            self.logger.warning(f"Groq API call failed: {e}")
-            return None
-
     async def match_viral_to_product(
-        self, niche: str, viral_title: str
-    ) -> Optional[Dict[str, Any]]:
+        self, niche: str, viral_title: str, session_id: str | None = None
+    ) -> dict[str, Any] | None:
         """
         Matches a specific viral trend to the most relevant asset from the active strategy.
-        Production-grade with circuit breaking and retries.
         """
         assets = await self.orchestrator.get_monetization_assets(niche)
         if not assets:
@@ -114,13 +95,13 @@ class MonetizationEngine:
         """
 
         try:
-            content = await self._call_groq(
-                prompt, response_format={"type": "json_object"}
+            content = await self._call_hub(
+                prompt, session_id=session_id
             )
 
             if not content:
                 self.logger.warning(
-                    "Groq call failed, returning first asset as fallback"
+                    "Hub call failed, returning first asset as fallback"
                 )
                 return assets[0] if assets else None
 
@@ -132,8 +113,8 @@ class MonetizationEngine:
             return assets[0] if assets else None
 
     async def auto_insert_links(
-        self, video_path: str, niche: str, script_content: str = ""
-    ) -> Dict[str, Any]:
+        self, video_path: str, niche: str, script_content: str = "", session_id: str | None = None
+    ) -> dict[str, Any]:
         """
         Automatically inserts affiliate links into video content via overlays or voiceover.
         This is the missing "auto-insertion into videos" functionality.
@@ -174,11 +155,10 @@ class MonetizationEngine:
             return {"status": "error", "message": str(e)}
 
     async def _plan_link_insertion(
-        self, script_content: str, assets: List[Dict]
-    ) -> Dict[str, Any]:
+        self, script_content: str, assets: list[dict], session_id: str | None = None
+    ) -> dict[str, Any]:
         """
         Uses AI to plan where and how to insert affiliate links in video content.
-        Production-grade with retries and circuit breaking.
         """
         asset_text = "\n".join(
             [f"- {a['name']}: {a['cta_text']} -> {a['link']}" for a in assets]
@@ -212,8 +192,8 @@ class MonetizationEngine:
         """
 
         try:
-            content = await self._call_groq(
-                prompt, response_format={"type": "json_object"}
+            content = await self._call_hub(
+                prompt, session_id=session_id
             )
 
             if not content:
@@ -225,7 +205,7 @@ class MonetizationEngine:
             return {"insertions": []}
 
     async def process_video_with_links(
-        self, video_path: str, insertion_plan: Dict[str, Any]
+        self, video_path: str, insertion_plan: dict[str, Any]
     ) -> str:
         """
         Actually processes the video file to add affiliate link insertions.

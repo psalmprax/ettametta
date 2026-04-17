@@ -1,4 +1,3 @@
-from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -11,6 +10,6 @@ class ContentPerformance(BaseModel):
     shares: int
     comments: int
     follows_gained: int
-    retention_data: List[int] = []
-    optimization_insight: Optional[str] = None
+    retention_data: list[int] = []
+    optimization_insight: str | None = None
     timestamp: datetime = datetime.utcnow()

@@ -1,6 +1,6 @@
 import requests
 import logging
-from typing import List, Dict, Any
+from typing import Any
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
@@ -153,7 +153,7 @@ class DataIngestionSkill:
             logger.error(f"YouTube Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
-    def ingest_multi_source(self, sources: List[str]) -> str:
+    def ingest_multi_source(self, sources: list[str]) -> str:
         """
         Ingest data from multiple sources.
         Expected format: ["reddit:technology", "rss:https://.../", "github:python"]

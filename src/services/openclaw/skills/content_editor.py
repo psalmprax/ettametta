@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 import re
-from typing import Optional, Dict, Any, List
+from typing import Any
 from playwright.async_api import async_playwright, Browser, Page
 
 logger = logging.getLogger(__name__)
@@ -25,8 +25,8 @@ class ContentEditorSkill:
     """
 
     def __init__(self):
-        self.browser: Optional[Browser] = None
-        self.page: Optional[Page] = None
+        self.browser: Browser | None = None
+        self.page: Page | None = None
 
     async def initialize(self):
         """Initialize stealth browser session"""
@@ -58,7 +58,7 @@ class ContentEditorSkill:
         query: str = "",
         niche: str = "motivation",
         limit: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Step 1: Content Sourcing
 
@@ -167,7 +167,7 @@ class ContentEditorSkill:
         self,
         url: str,
         output_path: str = "/tmp",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Step 2: Download video using yt-dlp
 
@@ -209,7 +209,7 @@ class ContentEditorSkill:
         video_path: str,
         num_clips: int = 3,
         method: str = "auto",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Step 3: AI Clip Selection
 
@@ -241,7 +241,7 @@ class ContentEditorSkill:
         except Exception as e:
             return {"status": "failed", "error": str(e)}
 
-    def _detect_best_moments_auto(self, video_path: str, num_clips: int) -> List[Dict]:
+    def _detect_best_moments_auto(self, video_path: str, num_clips: int) -> list[dict]:
         """Detect best moments using AI heuristics"""
         clips = []
 
@@ -257,7 +257,7 @@ class ContentEditorSkill:
 
         return clips
 
-    def _detect_keywords(self, video_path: str, num_clips: int) -> List[Dict]:
+    def _detect_keywords(self, video_path: str, num_clips: int) -> list[dict]:
         """Detect keyword moments"""
         clips = []
 
@@ -275,7 +275,7 @@ class ContentEditorSkill:
 
         return clips
 
-    def _manual_selection(self, video_path: str, num_clips: int) -> List[Dict]:
+    def _manual_selection(self, video_path: str, num_clips: int) -> list[dict]:
         """Manual clip selection template"""
         clips = []
 
@@ -294,10 +294,10 @@ class ContentEditorSkill:
     async def edit_video(
         self,
         video_path: str,
-        clips: List[Dict],
+        clips: list[dict],
         output_path: str = "/tmp/edited.mp4",
-        operations: List[str] = None,
-    ) -> Dict[str, Any]:
+        operations: list[str] = None,
+    ) -> dict[str, Any]:
         """
         Step 4: Video Editing Engine (FFmpeg)
 
@@ -344,7 +344,7 @@ class ContentEditorSkill:
         except Exception as e:
             return {"status": "failed", "error": str(e)}
 
-    def _build_clip_filter(self, clips: List[Dict]) -> str:
+    def _build_clip_filter(self, clips: list[dict]) -> str:
         """Build FFmpeg filter for clip cutting"""
         return "trim=start=5:end=15,setpts=PTS-STARTPTS"
 
@@ -352,8 +352,8 @@ class ContentEditorSkill:
         self,
         video_path: str,
         output_path: str = "/tmp/moviepy_edited.mp4",
-        operations: Dict = None,
-    ) -> Dict[str, Any]:
+        operations: dict = None,
+    ) -> dict[str, Any]:
         """
         Alternative: Edit using MoviePy (more Pythonic, better for text overlays)
 
@@ -415,8 +415,8 @@ class ContentEditorSkill:
         self,
         video_path: str,
         output_path: str = "/tmp/opencv_edited.mp4",
-        operations: Dict = None,
-    ) -> Dict[str, Any]:
+        operations: dict = None,
+    ) -> dict[str, Any]:
         """
         Alternative: Edit using OpenCV (fast, great for motion detection)
 
@@ -474,7 +474,7 @@ class ContentEditorSkill:
         video_path: str,
         styled: bool = True,
         output_path: str = "/tmp/captioned.mp4",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Step 5: Add Captions
 
@@ -518,9 +518,9 @@ class ContentEditorSkill:
     async def add_effects(
         self,
         video_path: str,
-        effects: List[str] = None,
+        effects: list[str] = None,
         output_path: str = "/tmp/effects.mp4",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Step 6: Add Effects
 
@@ -578,7 +578,7 @@ class ContentEditorSkill:
         music_path: str = None,
         beat_sync: bool = True,
         output_path: str = "/tmp/synced.mp4",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Step 7: Audio Sync
 
@@ -624,7 +624,7 @@ class ContentEditorSkill:
         format: str = "9:16",
         duration: int = 30,
         output_path: str = "/tmp/tiktok.mp4",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Step 8: Export for TikTok/Reels
 
@@ -681,7 +681,7 @@ class ContentEditorSkill:
         url_or_query: str,
         niche: str = "motivation",
         style: str = "fast",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Full Pipeline: Find → Cut → Sync → Enhance → Export
 
@@ -744,9 +744,9 @@ class ContentEditorSkill:
         self,
         video_path: str,
         composition: str = "CinematicMinimal",
-        props: Dict = None,
+        props: dict = None,
         output_path: str = "/tmp/remotion_polished.mp4",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Step 9 (Final): Polish with Remotion
 
@@ -762,8 +762,8 @@ class ContentEditorSkill:
         """
         try:
             import subprocess
-
-            remotion_path = "/home/psalmprax/ALL_PROJECTS/viral_forge/services/video_engine/remotion_app"
+            from src.api.config import settings
+            remotion_path = str(settings.REMOTION_APP_DIR)
             props = props or {}
 
             cmd = [
@@ -806,7 +806,7 @@ class ContentEditorSkill:
         niche: str = "motivation",
         add_cta: bool = True,
         add_title: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Full Pipeline using Remotion for polish:
 

@@ -84,7 +84,7 @@ async def demonstrate_video_editor_quality():
 
     try:
         # Check service separation and modularity
-        from services.discovery.video_lead_scanner import VideoLead
+        from src.services.discovery.video_lead_scanner import VideoLead
 
         # Test data structure quality
         lead = VideoLead(

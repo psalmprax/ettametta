@@ -1,7 +1,7 @@
 import requests
 import logging
 import re
-from typing import Dict, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ class SocialMetricsSkill:
             logger.error(f"GitHub Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
-    def get_multi_platform(self, handles: Dict[str, str]) -> str:
+    def get_multi_platform(self, handles: dict[str, str]) -> str:
         """
         Get metrics for multiple platforms.
         Expected format: {"x": "username", "reddit": "subreddit", "github": "username"}

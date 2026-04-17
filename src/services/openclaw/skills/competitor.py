@@ -2,8 +2,7 @@ import json
 import logging
 import requests
 from datetime import datetime
-from typing import Dict, List, Optional
-from api.config import settings
+from src.api.config import settings
 from .memory import memory_skill
 
 logger = logging.getLogger(__name__)
@@ -247,7 +246,7 @@ class CompetitorSkill:
         except Exception as e:
             return f"⚠️ Analysis Error: {e}"
 
-    def compare_competitors(self, competitors: List[Dict]) -> str:
+    def compare_competitors(self, competitors: list[dict]) -> str:
         if len(competitors) < 2:
             return "⚠️ Provide at least 2 competitors to compare. Format: [{name, platform}, ...]"
 

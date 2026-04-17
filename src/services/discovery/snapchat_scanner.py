@@ -3,7 +3,6 @@ import logging
 import json
 import re
 import random
-from typing import List, Optional
 from datetime import datetime
 from .models import ContentCandidate
 
@@ -26,7 +25,7 @@ class SnapchatScanner:
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         ]
     
-    async def scan_trends(self, niche: str, published_after: Optional[datetime] = None) -> List[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
         """
         Scans Snapchat for trending Spotlight content in a niche.
         Note: Snapchat has limited public discovery via web.
@@ -61,7 +60,7 @@ class SnapchatScanner:
         logger.info(f"[SnapchatScanner] Found {len(unique)} snaps")
         return unique[:15]
     
-    async def _get_spotlight(self, niche: str) -> List[ContentCandidate]:
+    async def _get_spotlight(self, niche: str) -> list[ContentCandidate]:
         """Get Snapchat Spotlight trending content."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -100,7 +99,7 @@ class SnapchatScanner:
         
         return candidates
     
-    async def _get_discover(self) -> List[ContentCandidate]:
+    async def _get_discover(self) -> list[ContentCandidate]:
         """Get Snapchat Discover/Explore content."""
         headers = {
             "User-Agent": random.choice(self.user_agents),
@@ -139,7 +138,7 @@ class SnapchatScanner:
         
         return candidates
     
-    def _extract_snaps_from_json(self, data: dict, niche: str) -> List[ContentCandidate]:
+    def _extract_snaps_from_json(self, data: dict, niche: str) -> list[ContentCandidate]:
         """Extract snap/video data from Snapchat JSON."""
         candidates = []
         
@@ -174,7 +173,7 @@ class SnapchatScanner:
         
         return candidates
     
-    def _find_snaps_recursive(self, obj, depth=0) -> List[ContentCandidate]:
+    def _find_snaps_recursive(self, obj, depth=0) -> list[ContentCandidate]:
         """Recursively search for snap objects."""
         candidates = []
         
@@ -200,7 +199,7 @@ class SnapchatScanner:
         
         return candidates
     
-    def _parse_snap_item(self, item: dict, niche: str) -> Optional[ContentCandidate]:
+    def _parse_snap_item(self, item: dict, niche: str) -> ContentCandidate | None:
         """Parse a single Snapchat item."""
         try:
             snap_id = item.get("id", "") or item.get("snapId", "")

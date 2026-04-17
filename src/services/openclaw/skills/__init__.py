@@ -50,7 +50,7 @@ from .self_healing import self_healing_skill
 from .luma import luma_skill
 from .video_lead_discovery import video_lead_skill
 from .scene_based_video import scene_based_video_skill
-from .video_production_assistant import video_production_assistant_skill
+from .base_video_production_assistant import base_video_production_assistant_skill
 from .intelligent_workflow import intelligent_workflow_skill
 
 # Safe imports for dependency-heavy skills (Playwright based)
@@ -101,6 +101,6 @@ __all__ = [
     "luma_skill",
     "video_lead_skill",
     "scene_based_video_skill",
-    "video_production_assistant_skill",
+    "base_video_production_assistant_skill",
     "intelligent_workflow_skill",
 ]

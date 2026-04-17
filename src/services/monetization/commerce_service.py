@@ -1,17 +1,17 @@
 import logging
 import httpx
-from typing import List, Dict, Any, Optional
-from api.config import settings
-from api.utils.database import async_session_factory
+from typing import Any
+from src.api.config import settings
+from src.api.utils.database import async_session_factory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.utils.models import SystemSettings, AffiliateLinkDB
+from src.api.utils.models import SystemSettings, AffiliateLinkDB
 
 class CommerceService:
     def __init__(self):
         self.logger = logging.getLogger("CommerceService")
 
-    async def _get_shopify_creds(self, db: AsyncSession) -> Dict[str, str]:
+    async def _get_shopify_creds(self, db: AsyncSession) -> dict[str, str]:
         """Fetches Shopify credentials from DB settings."""
         stmt = select(SystemSettings).where(SystemSettings.key == "shopify_shop_url")
         result = await db.execute(stmt)
@@ -26,7 +26,7 @@ class CommerceService:
             "token": access_token.value if access_token else None
         }
 
-    async def get_relevant_products(self, niche: str) -> List[Dict[str, Any]]:
+    async def get_relevant_products(self, niche: str) -> list[dict[str, Any]]:
         """
         Fetches products from Shopify. Falls back to database affiliate links if store is unavailable.
         """
@@ -53,7 +53,7 @@ class CommerceService:
                 "source": "affiliate"
             } for a in affiliates]
 
-    async def _fetch_from_shopify(self, shop_url: str, token: str, niche: str) -> List[Dict[str, Any]]:
+    async def _fetch_from_shopify(self, shop_url: str, token: str, niche: str) -> list[dict[str, Any]]:
         """Calls Shopify Admin API to get products."""
         # Clean URL
         shop_url = shop_url.replace("https://", "").replace("http://", "").split("/")[0]

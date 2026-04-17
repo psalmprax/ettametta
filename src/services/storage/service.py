@@ -1,5 +1,4 @@
-from api.utils.vault import get_secret
-from typing import Optional
+from src.api.utils.vault import get_secret
 import os
 import logging
 import mimetypes
@@ -81,7 +80,7 @@ class StorageService:
             logging.error(f"[StorageService] Failed to initialize cloud client: {e}")
             return None
 
-    def upload_file(self, file_path: str, object_name: Optional[str] = None) -> str:
+    def upload_file(self, file_path: str, object_name: str | None = None) -> str:
         """
         Uploads a file to the configured provider.
         Returns the object key (Cloud) or absolute file path (Local).
@@ -103,8 +102,8 @@ class StorageService:
             return os.path.abspath(file_path)
 
     def upload_to_cloud(
-        self, file_path: str, object_name: Optional[str] = None
-    ) -> Optional[str]:
+        self, file_path: str, object_name: str | None = None
+    ) -> str | None:
         """Forces an upload to the cloud provider, regardless of self.provider setting."""
         s3_client = self._get_client()
         if not s3_client:
@@ -163,7 +162,7 @@ class StorageService:
         else:
             # Local fallback logic
             filename = os.path.basename(object_key_or_path)
-            from api.config import settings
+            from src.api.config import settings
 
             return f"{get_secret('production_domain', settings.PRODUCTION_DOMAIN)}/static/outputs/{filename}"
 

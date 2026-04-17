@@ -24,7 +24,7 @@ import asyncio
 import logging
 import subprocess
 import time
-from typing import Optional, Dict, List, Any
+from typing import Any
 from pathlib import Path
 from datetime import datetime
 from tenacity import (
@@ -34,7 +34,7 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +180,7 @@ class OpenCLIService:
             return False
         return await asyncio.to_thread(self._check_binary)
 
-    async def get_supported_platforms(self) -> List[Dict[str, Any]]:
+    async def get_supported_platforms(self) -> list[dict[str, Any]]:
         """Return list of supported platforms with their capabilities."""
         return [
             {
@@ -220,11 +220,11 @@ class OpenCLIService:
             logger.error(f"[OpenCLI] Failed to save cookies: {e}")
             return False
 
-    async def verify_user_session(self, user_id: int, platform: str) -> Dict[str, Any]:
+    async def verify_user_session(self, user_id: int, platform: str) -> dict[str, Any]:
         """Verify if a user's session for a platform is valid.
 
         Returns:
-            Dict with status, platform, capabilities, last_verified
+            dict with status, platform, capabilities, last_verified
         """
         platform = platform.lower()
         cookie_path = self._cookie_path(user_id, platform)
@@ -271,7 +271,7 @@ class OpenCLIService:
                 "message": str(e),
             }
 
-    async def get_user_sessions(self, user_id: int) -> List[Dict[str, Any]]:
+    async def get_user_sessions(self, user_id: int) -> list[dict[str, Any]]:
         """Get all platform session statuses for a user."""
         sessions = []
         user_dir = self._user_session_dir(user_id)
@@ -319,9 +319,9 @@ class OpenCLIService:
         user_id: int,
         platform: str,
         command: str,
-        params: Optional[Dict[str, str]] = None,
+        params: dict[str, str] | None = None,
         timeout: int = 30,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Execute an opencli-rs command with circuit breaking and retries."""
         if self.circuit_breaker.is_open():
             logger.warning("[OpenCLI] Circuit breaker is OPEN - skipping execution")
@@ -397,7 +397,7 @@ class OpenCLIService:
         platform: str,
         query: str,
         limit: int = 20,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search a platform using the user's Chrome session.
 
         Returns results in ContentCandidate-compatible format.
@@ -451,7 +451,7 @@ class OpenCLIService:
         platform: str,
         feed_type: str = "feed",
         limit: int = 20,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get feed/trending content from a platform.
 
         Args:
@@ -509,20 +509,20 @@ class OpenCLIService:
         user_id: int,
         platform: str,
         content: str,
-        media_url: Optional[str] = None,
-        extra_params: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        media_url: str | None = None,
+        extra_params: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """Post content to a platform using the user's session.
 
         Args:
             user_id: User ID
             platform: Target platform
             content: Text content to post
-            media_url: Optional media URL to attach
+            media_url: Any media URL to attach
             extra_params: Additional platform-specific parameters
 
         Returns:
-            Dict with success status and post URL
+            dict with success status and post URL
         """
         params = {"content": content}
         if media_url:
@@ -551,7 +551,7 @@ class OpenCLIService:
         platform: str,
         action: str,
         content_url: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform an interaction on platform content (like, comment, follow, etc.).
 
         Args:
@@ -596,7 +596,7 @@ class OpenCLIService:
         except ValueError:
             return 0
 
-    async def get_user_platforms_status(self, user_id: int) -> Dict[str, Any]:
+    async def get_user_platforms_status(self, user_id: int) -> dict[str, Any]:
         """Get a summary of all platform connections for a user."""
         sessions = await self.get_user_sessions(user_id)
         connected = [s for s in sessions if s["status"] == "connected"]

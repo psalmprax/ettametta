@@ -2,9 +2,9 @@ import asyncio
 import logging
 import os
 from playwright.async_api import async_playwright, Browser, Page
-from typing import Optional, Dict, Any
+from typing import Any
 import uuid
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +17,8 @@ class PixVerseSkill:
 
     def __init__(self):
         self.base_url = "https://pixverse.ai"
-        self.browser: Optional[Browser] = None
-        self.page: Optional[Page] = None
+        self.browser: Browser | None = None
+        self.page: Page | None = None
 
     async def initialize(self):
         """Initialize stealth browser session"""
@@ -70,7 +70,7 @@ class PixVerseSkill:
         # Add stealth delays
         self.page.set_default_timeout(120000)
 
-    async def generate(self, prompt: str, aspect_ratio: str = "9:16") -> Dict[str, Any]:
+    async def generate(self, prompt: str, aspect_ratio: str = "9:16") -> dict[str, Any]:
         """
         Generate video from prompt using PixVerse
         Returns: { status: success/failed, video_url: str, error: str }
