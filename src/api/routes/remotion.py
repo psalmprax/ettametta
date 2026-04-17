@@ -1,8 +1,11 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Any
-from src.services.video_engine.base_remotion_service import base_remotion_service
+from src.services.video_engine.remotion_service import RemotionService
 import logging
+
+# Backward compatibility
+base_remotion_service = RemotionService()
 import uuid
 from src.api.routes.auth import get_current_user
 
@@ -21,7 +24,9 @@ async def run_render_task(composition_id: str, props: dict[str, Any], job_id: st
     """Background task to execute Remotion render."""
     try:
         output_name = f"render_{job_id}.mp4"
-        result = await base_remotion_service.render_video(composition_id, props, output_name)
+        result = await base_remotion_service.render_video(
+            composition_id, props, output_name
+        )
         if result:
             logger.info(f"Successfully rendered video for job {job_id}")
         else:
