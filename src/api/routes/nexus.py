@@ -20,10 +20,10 @@ router = APIRouter(prefix="/nexus", tags=["Nexus Composition"])
 class NexusComposeRequest(BaseModel):
     niche: str
     topic: str | None = None
-    visual_paths: list[str]] = [ | None
-    voiceover_paths: list[str]] = [ | None
+    visual_paths: list[str] | None = None
+    voiceover_paths: list[str] | None = None
     music_path: str | None = None
-    script_segments: list[dict]] = [ | None
+    script_segments: list[dict] | None = None
     generate_thumbnail: bool = False
     cinema_mode: bool = False
     blueprint_id: str | None = "viral-reskin"
@@ -32,7 +32,10 @@ class NexusComposeRequest(BaseModel):
 async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
     from src.services.nexus_engine.thumbnail_service import base_thumbnail_generator
     from src.services.nexus_engine.auto_creator import base_auto_creator
-    from src.services.nexus_engine.blueprints import execute_blueprint, get_blueprint_by_id
+    from src.services.nexus_engine.blueprints import (
+        execute_blueprint,
+        get_blueprint_by_id,
+    )
     from src.api.routes.ws import notify_nexus_job_update_sync
 
     async with async_session_factory() as db:
@@ -400,38 +403,46 @@ async def get_nexus_telemetry(
 
     # 3. Dynamic Hardware Signals (Live Reports)
     node_id = os.getenv("NEXUS_NODE_ID", socket.gethostname())
-    
+
     # Lazily import services to avoid circular dependencies
     from src.services.video_engine.synthesis_service import base_generative_service
     from src.services.llm.service import unified_llm_service
-    
+
     gen_report = base_generative_service.get_dependency_report()
     llm_report = unified_llm_service.get_intelligence_report()
-    
+
     signals = []
-    
+
     # Synthesis & GPU Signals
-    signals.append({
-        "id": "GPU_Cluster",
-        "status": gen_report.get("circuit_status", "CLOSED"),
-        "offset": f"{db_query_time_ms}ms"
-    })
-    
+    signals.append(
+        {
+            "id": "GPU_Cluster",
+            "status": gen_report.get("circuit_status", "CLOSED"),
+            "offset": f"{db_query_time_ms}ms",
+        }
+    )
+
     # Driver-level signals (Sample 2 key ones)
     for driver in gen_report.get("drivers", [])[:2]:
-        signals.append({
-            "id": driver["name"].replace(" ", "_"),
-            "status": "HEALTHY" if driver.get("status") == "Healthy" or driver.get("installed") else "DEGRADED",
-            "offset": "0ms"
-        })
-        
+        signals.append(
+            {
+                "id": driver["name"].replace(" ", "_"),
+                "status": "HEALTHY"
+                if driver.get("status") == "Healthy" or driver.get("installed")
+                else "DEGRADED",
+                "offset": "0ms",
+            }
+        )
+
     # Intelligence Framework Signals
     for fw in llm_report.get("frameworks", []):
-        signals.append({
-            "id": f"Neural_{fw['name']}",
-            "status": fw["status"].upper(),
-            "offset": "1ms"
-        })
+        signals.append(
+            {
+                "id": f"Neural_{fw['name']}",
+                "status": fw["status"].upper(),
+                "offset": "1ms",
+            }
+        )
 
     return {
         "status": "OPERATIONAL" if gen_report["healthy"] else "DEGRADED",
