@@ -5,6 +5,7 @@ from src.services.optimization.youtube_publisher import base_youtube_publisher
 from src.services.optimization.tiktok_publisher import base_tiktok_publisher
 from src.services.optimization.models import PostMetadata
 from src.services.optimization.auth import token_manager
+from src.services.optimization.scheduler import smart_scheduler
 from pydantic import BaseModel
 from google_auth_oauthlib.flow import Flow
 from src.api.config import settings
@@ -386,7 +387,9 @@ async def retry_publish(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "facebook":
-            from src.services.optimization.facebook_publisher import base_facebook_publisher
+            from src.services.optimization.facebook_publisher import (
+                base_facebook_publisher,
+            )
 
             url = await base_facebook_publisher.upload_video(
                 video_path, metadata, user_id=current_user.id
@@ -398,7 +401,9 @@ async def retry_publish(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "linkedin":
-            from src.services.optimization.linkedin_publisher import base_linkedin_publisher
+            from src.services.optimization.linkedin_publisher import (
+                base_linkedin_publisher,
+            )
 
             url = await base_linkedin_publisher.upload_video(
                 video_path, metadata, user_id=current_user.id
@@ -1132,13 +1137,12 @@ async def get_scheduled_posts(
                 "engagement_prediction": p.engagement_prediction,
                 "optimal_rank": p.optimal_rank,
                 "user_timezone": p.user_timezone,
-                "error_message": p.error_message
+                "error_message": p.error_message,
             }
             for p in scheduled
         ]
     finally:
         pass
-
 
 
 @router.get("/schedule/suggested-times")
@@ -1148,11 +1152,16 @@ async def get_suggested_times(
 ):
     """Returns AI-suggested optimal posting windows."""
     try:
-        suggestions = smart_scheduler.calculate_n_optimal_windows(str(current_user.id), count)
+        suggestions = smart_scheduler.calculate_n_optimal_windows(
+            str(current_user.id), count
+        )
         return {"suggestions": suggestions}
     except Exception as e:
         logger.error(f"Error getting suggested times: {e}")
-        raise HTTPException(status_code=500, detail="Failed to calculate optimal windows")
+        raise HTTPException(
+            status_code=500, detail="Failed to calculate optimal windows"
+        )
+
 
 @router.post("/schedule")
 async def schedule_post(
@@ -1170,7 +1179,9 @@ async def schedule_post(
     from src.api.utils.models import ScheduledPostDB
 
     try:
-        prediction = smart_scheduler.predict_engagement(str(current_user.id), scheduled_time)
+        prediction = smart_scheduler.predict_engagement(
+            str(current_user.id), scheduled_time
+        )
         # Consume credits
         await credit_service.consume_credits(
             user_id=current_user.id,
@@ -1194,9 +1205,6 @@ async def schedule_post(
             user_timezone=user_timezone,
             engagement_prediction=prediction,
             metadata_json=metadata.dict() if hasattr(metadata, "dict") else metadata,
-            account_id=request.account_id,
-            user_id=current_user.id
-        )
             account_id=request.account_id,
             user_id=current_user.id,
         )
@@ -1424,7 +1432,9 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "facebook":
-            from src.services.optimization.facebook_publisher import base_facebook_publisher
+            from src.services.optimization.facebook_publisher import (
+                base_facebook_publisher,
+            )
 
             url = await base_facebook_publisher.upload_video(
                 request.video_path,
@@ -1442,7 +1452,9 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "linkedin":
-            from src.services.optimization.linkedin_publisher import base_linkedin_publisher
+            from src.services.optimization.linkedin_publisher import (
+                base_linkedin_publisher,
+            )
 
             url = await base_linkedin_publisher.upload_video(
                 request.video_path,
