@@ -23,7 +23,7 @@ from tenacity import (
 )
 from src.services.video_engine.processor import base_video_processor
 from src.services.nexus_engine.audio_mixer import base_audio_mixer
-from typing import list, dict, Any, Any
+from typing import Any
 
 
 class CircuitBreaker:
@@ -90,7 +90,9 @@ class NexusOrchestrator:
             reraise=True,
         )
         async def _render():
-            from src.services.video_engine.base_remotion_service import base_remotion_service
+            from src.services.video_engine.base_remotion_service import (
+                base_remotion_service,
+            )
 
             try:
                 result = await asyncio.wait_for(
