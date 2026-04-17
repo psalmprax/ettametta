@@ -5,11 +5,16 @@ import random
 import logging
 import asyncio
 import subprocess
-from .transcription import base_transcription_service
-from .base_ocr_service import base_ocr_service
-from .base_stock_service import base_stock_service
-from .ffmpeg_utils import base_ffmpeg_transformer
+from .transcription import TranscriptionService
+from .ocr_service import check_easyocr_available
+from .stock_service import StockService
+from .ffmpeg_utils import FFmpegTransformer
 from src.api.config import settings
+
+# Backward compatibility aliases
+base_transcription_service = TranscriptionService()
+base_stock_service = StockService()
+base_ffmpeg_transformer = FFmpegTransformer()
 
 logger = logging.getLogger(__name__)
 
@@ -943,7 +948,9 @@ class VideoProcessor:
         )
 
         try:
-            from src.services.video_engine.base_remotion_service import base_remotion_service
+            from src.services.video_engine.base_remotion_service import (
+                base_remotion_service,
+            )
 
             # Prepare props for the Remotion ViralClip composition
             props = {
