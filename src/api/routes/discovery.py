@@ -10,6 +10,7 @@ import json
 from src.services.discovery.service import base_discovery_service
 from src.services.discovery.models import ContentCandidate, ViralPattern
 from src.services.discovery.search_service import search_content, get_trending
+from src.services.discovery.analysis_service import analyze_content, get_analysis
 from fastapi_cache.decorator import cache
 
 
@@ -48,6 +49,7 @@ from src.api.utils.subscription import credits_required
 from src.services.payment.credit_service import credit_service
 from src.api.config import settings
 from src.api.utils.database import get_db
+from src.api.utils.models import ContentCandidateDB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -704,3 +706,63 @@ async def record_interaction(
     except Exception as e:
         logger.error(f"Interaction record failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to record interaction")
+
+
+# ─── Content Analysis Endpoints ───────────────────────────────────────────────
+
+
+class AnalysisResponse(BaseModel):
+    content_id: str
+    analysis_results: dict
+    analyzed_at: Optional[datetime.datetime] = None
+
+
+@router.get("/{content_id}/analysis", response_model=AnalysisResponse)
+async def get_content_analysis(
+    content_id: str,
+    user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    force: bool = False,
+):
+    """
+    Get analysis for a content item.
+
+    If analysis doesn't exist, it will be performed automatically.
+    Set force=true to re-analyze already analyzed content.
+    """
+    try:
+        # First try to get existing analysis
+        existing_analysis = await get_analysis(content_id, db)
+
+        if existing_analysis and not force:
+            # Return existing analysis
+            stmt = select(ContentCandidateDB).filter(
+                ContentCandidateDB.id == content_id
+            )
+            result = await db.execute(stmt)
+            content = result.scalar_one_or_none()
+            return AnalysisResponse(
+                content_id=content_id,
+                analysis_results=existing_analysis,
+                analyzed_at=content.analyzed_at if content else None,
+            )
+
+        # Perform new analysis
+        analysis_results = await analyze_content(content_id, db, force=force)
+
+        # Get the updated content for timestamp
+        stmt = select(ContentCandidateDB).filter(ContentCandidateDB.id == content_id)
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
+
+        return AnalysisResponse(
+            content_id=content_id,
+            analysis_results=analysis_results,
+            analyzed_at=content.analyzed_at if content else None,
+        )
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
