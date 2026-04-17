@@ -112,6 +112,12 @@ class ContentCandidateDB(Base):
     # Additional metadata
     metadata_json = Column(JSON, default={})
 
+    # Analysis fields for viral pattern detection
+    analysis_results = Column(
+        JSON, nullable=True
+    )  # topics, sentiment, viral_potential, keywords
+    analyzed_at = Column(DateTime, nullable=True)  # When content was analyzed
+
     # Legacy compatibility (kept for migration)
     discovery_date = Column(DateTime, default=lambda: datetime.utcnow())
 
