@@ -63,7 +63,9 @@ async def _check_and_post_scheduled_internal(task_self):
             result = await db.execute(stmt)
             pending_posts = result.scalars().all()
 
-            logger.info(f"[Scheduler] Found {len(pending_posts)} pending posts to process")
+            logger.info(
+                f"[Scheduler] Found {len(pending_posts)} pending posts to process"
+            )
 
             for post in pending_posts:
                 try:
@@ -78,7 +80,9 @@ async def _check_and_post_scheduled_internal(task_self):
 
                     metadata = PostMetadata(**meta_dict)
 
-                    user_tokens = await token_manager.get_token_data(post.platform, post.user_id)
+                    user_tokens = await token_manager.get_token_data(
+                        post.platform, post.user_id
+                    )
                     if not user_tokens:
                         logger.error(
                             f"[Scheduler] No tokens for user {post.user_id} on platform {post.platform}"
@@ -102,8 +106,9 @@ async def _check_and_post_scheduled_internal(task_self):
 
                     # Adjust to nearest peak window
                     import asyncio
+
                     peak_windows = await self._get_peak_windows_from_db(post.user_id)
-                    
+
                     url = await publisher.upload_video(
                         post.video_path,
                         metadata,
@@ -113,7 +118,9 @@ async def _check_and_post_scheduled_internal(task_self):
 
                     if url:
                         post.status = "PUBLISHED"
-                        post.published_at = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+                        post.published_at = datetime.datetime.now(
+                            datetime.timezone.utc
+                        ).replace(tzinfo=None)
 
                         history = PublishedContentDB(
                             title=metadata.title,
@@ -140,9 +147,9 @@ async def _check_and_post_scheduled_internal(task_self):
                     post.status = "FAILED"
                     post.error_message = str(e)[:500]
                     failed += 1
-                    # In a real async task, we'd handle retries differently, 
+                    # In a real async task, we'd handle retries differently,
                     # but for now we follow the existing pattern of flagging as FAILED.
-                
+
                 await db.commit()
                 processed += 1
 
@@ -201,6 +208,7 @@ async def _retry_failed_posts_internal():
             logger.error(f"[Scheduler] Retry internal error: {e}")
             return {"error": str(e), "status": "failed"}
 
+
 @celery_app.task(name="optimization.retry_failed_posts")
 def retry_failed_posts():
     """
@@ -209,13 +217,92 @@ def retry_failed_posts():
     return asyncio.run(_retry_failed_posts_internal())
 
 
+async def _retry_missed_schedules_internal():
+    """Retry missed scheduled posts - posts that passed their scheduled time"""
+    from src.services.optimization.scheduler import smart_scheduler
+
+    async with async_session_factory() as db:
+        retried = 0
+        skipped = 0
+        try:
+            now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+            # Find posts that missed their scheduled time
+            stmt = select(ScheduledPostDB).where(
+                ScheduledPostDB.status == "PENDING",
+                ScheduledPostDB.scheduled_time < now,
+            )
+            result = await db.execute(stmt)
+            missed_posts = result.scalars().all()
+
+            for post in missed_posts:
+                retry_count = getattr(post, "retry_count", 0) or 0
+                max_retries = 3
+
+                if retry_count >= max_retries:
+                    post.status = "FAILED"
+                    post.error_message = "Max retries exceeded"
+                    await db.commit()
+                    logger.warning(f"[Scheduler] Post {post.id} failed - max retries")
+                    continue
+
+                # Check parallel spacing rules
+                parallel_allowed = getattr(post, "parallel_allowed", False)
+
+                if not parallel_allowed:
+                    # Get last post time to check spacing
+                    stmt_last = (
+                        select(ScheduledPostDB)
+                        .where(
+                            ScheduledPostDB.user_id == post.user_id,
+                            ScheduledPostDB.status == "PUBLISHED",
+                        )
+                        .order_by(ScheduledPostDB.published_at.desc())
+                        .limit(1)
+                    )
+                    result_last = await db.execute(stmt_last)
+                    last_post = result_last.scalar_one_or_none()
+
+                    if last_post and not smart_scheduler.is_parallel_allowed(
+                        now, last_post.published_at
+                    ):
+                        # Skip this iteration, not enough spacing
+                        skipped += 1
+                        continue
+
+                # Retry immediately
+                post.status = "PENDING"
+                post.retry_count = retry_count + 1
+                post.last_retry_at = now
+                await db.commit()
+                retried += 1
+                logger.info(
+                    f"[Scheduler] Retrying missed post {post.id} (attempt {retry_count + 1})"
+                )
+
+            return {"retried": retried, "skipped": skipped, "status": "completed"}
+        except Exception as e:
+            logger.error(f"[Scheduler] Retry missed internal error: {e}")
+            return {"error": str(e), "status": "failed"}
+
+
+@celery_app.task(name="optimization.retry_missed_schedules")
+def retry_missed_schedules():
+    """
+    Retry posts that missed their scheduled time.
+    """
+    return asyncio.run(_retry_missed_schedules_internal())
+
+
 async def _cleanup_pending_videos_internal():
     """Internal async logic for cleaning up pending videos"""
     async with async_session_factory() as db:
         deleted_count = 0
         try:
             now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-            stmt = select(PublishedContentDB).where(PublishedContentDB.status == "PENDING_AUTH")
+            stmt = select(PublishedContentDB).where(
+                PublishedContentDB.status == "PENDING_AUTH"
+            )
             result = await db.execute(stmt)
             pending_videos = result.scalars().all()
 
@@ -240,7 +327,9 @@ async def _cleanup_pending_videos_internal():
                                     os.remove(video_path)
                                     logger.info(f"[Cleanup] Deleted file: {video_path}")
                                 except Exception as e:
-                                    logger.error(f"[Cleanup] Failed to delete file: {e}")
+                                    logger.error(
+                                        f"[Cleanup] Failed to delete file: {e}"
+                                    )
 
                             video.status = "EXPIRED"
                             metadata["deleted_at"] = now.isoformat()
@@ -249,13 +338,16 @@ async def _cleanup_pending_videos_internal():
 
                             deleted_count += 1
                     except Exception as e:
-                        logger.error(f"[Cleanup] Error processing video {video.id}: {e}")
+                        logger.error(
+                            f"[Cleanup] Error processing video {video.id}: {e}"
+                        )
 
             await db.commit()
             return {"deleted": deleted_count, "status": "completed"}
         except Exception as e:
             logger.error(f"[Cleanup] Critical internal error: {e}")
             return {"error": str(e), "status": "failed"}
+
 
 @celery_app.task(name="optimization.cleanup_pending_videos")
 def cleanup_pending_videos():
@@ -270,7 +362,9 @@ async def _cleanup_old_scheduled_internal():
     async with async_session_factory() as db:
         deleted = 0
         try:
-            cutoff = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - datetime.timedelta(days=7)
+            cutoff = datetime.datetime.now(datetime.timezone.utc).replace(
+                tzinfo=None
+            ) - datetime.timedelta(days=7)
             stmt = select(ScheduledPostDB).where(
                 ScheduledPostDB.status == "PENDING",
                 ScheduledPostDB.scheduled_time < cutoff,
@@ -288,6 +382,7 @@ async def _cleanup_old_scheduled_internal():
         except Exception as e:
             logger.error(f"[Cleanup] Old scheduled internal error: {e}")
             return {"error": str(e), "status": "failed"}
+
 
 @celery_app.task(name="optimization.cleanup_old_scheduled")
 def cleanup_old_scheduled():

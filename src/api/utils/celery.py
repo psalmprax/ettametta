@@ -39,6 +39,10 @@ celery_app.conf.update(
             "task": "optimization.check_and_post_scheduled",
             "schedule": 300.0,  # Every 5 minutes
         },
+        "retry-missed-schedules-5m": {
+            "task": "optimization.retry_missed_schedules",
+            "schedule": 300.0,  # Every 5 minutes
+        },
         "system-security-audit-daily": {
             "task": "security.system_audit",
             "schedule": 86400.0,  # Every 24 hours
