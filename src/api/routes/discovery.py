@@ -7,13 +7,18 @@ import logging
 import datetime
 import json
 
-from src.services.discovery.service import base_discovery_service
-from src.services.discovery.models import ContentCandidate, ViralPattern
-from src.services.discovery.search_service import search_content, get_trending
-from src.services.discovery.analysis_service import analyze_content, get_analysis
+from services.discovery.service import base_discovery_service
+from services.discovery.models import ContentCandidate, ViralPattern
+from services.discovery.search_service import search_content, get_trending
+from services.discovery.analysis_service import analyze_content, get_analysis
 from fastapi_cache.decorator import cache
+from api.utils.api_responses import success_response, Paginator, paginate_list
+
+logger = logging.getLogger(__name__)
 
 
+# NOTE: ContentSearchResult is deprecated. Use ContentCandidate (from services.discovery.models) for all endpoints.
+# Keeping for backward compatibility during transition.
 class ContentSearchResult(BaseModel):
     id: str
     platform: str
@@ -22,7 +27,7 @@ class ContentSearchResult(BaseModel):
     description: Optional[str] = None
     creator_name: Optional[str] = None
     creator_id: Optional[str] = None
-    url: str
+    source_url: str
     thumbnail_url: Optional[str] = None
     published_at: Optional[datetime.datetime] = None
     scanned_at: Optional[datetime.datetime] = None
@@ -43,24 +48,25 @@ router = APIRouter(prefix="/discovery", tags=["Discovery"])
 
 DISCOVERY_GO_URL = os.getenv("DISCOVERY_GO_URL", "http://discovery-go:8080")
 
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
-from src.api.utils.subscription import credits_required
-from src.services.payment.credit_service import credit_service
-from src.api.config import settings
-from src.api.utils.database import get_db
-from src.api.utils.models import ContentCandidateDB
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB
+from api.utils.subscription import credits_required
+from services.payment.credit_service import credit_service
+from api.config import settings
+from api.utils.database import get_db
+from shared.enums import SystemJobStatus
+from api.utils.models import ContentCandidateDB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 
-@router.get("/trends", response_model=list[ContentCandidate])
+@router.get("/trends")
 @cache(expire=60)
 async def get_trends(
     niche: str = "Motivation",
     horizon: str = "30d",
     page: int = 1,
-    size: int = 20,
+    limit: int = 20,
     min_viral_score: int = 0,
     exclude_shorts: bool = False,
     user: UserDB = Depends(get_current_user),
@@ -69,21 +75,16 @@ async def get_trends(
         trends = await base_discovery_service.find_trending_content(
             niche,
             horizon=horizon,
-            tier=user.subscription.value
-            if hasattr(user.subscription, "value")
-            else "free",
+            tier=getattr(user.subscription, "value", "free"),
             min_viral_score=min_viral_score,
             exclude_shorts=exclude_shorts,
         )
-        # Apply pagination
-        start = (page - 1) * size
-        end = start + size
-        return trends[start:end]
+        return success_response(data=paginate_list(trends, page=page, page_size=limit))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/search", response_model=list[ContentSearchResult])
+@router.get("/search")
 async def search_discovery(
     platform: Optional[List[str]] = None,
     min_views: Optional[int] = None,
@@ -110,12 +111,12 @@ async def search_discovery(
             limit=limit,
             offset=offset,
         )
-        return results
+        return success_response(data=results)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/trending", response_model=list[ContentSearchResult])
+@router.get("/trending")
 async def get_trending_endpoint(
     limit: int = 50,
     min_viral_score: Optional[float] = None,
@@ -123,7 +124,7 @@ async def get_trending_endpoint(
 ):
     try:
         results = await get_trending(limit=limit, min_viral_score=min_viral_score)
-        return results
+        return success_response(data=results)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -140,7 +141,8 @@ class NicheWatchRequest(BaseModel):
 @router.post("/scan")
 async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_user)):
     """
-    Triggers a discovery scan. If 'deep' is true, performs an exhaustive AI-powered scan.
+    Asynchronously triggers a discovery scan. If 'deep' is true, dispatches a Celery task.
+    Returns a task ID for UI status tracking.
     """
     import logging
 
@@ -149,21 +151,21 @@ async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_
     try:
         if request.deep:
             # Run deep scan as background task to avoid blocking
-            from src.services.discovery.tasks import deep_scan_task
+            from services.discovery.tasks import deep_scan_task
 
             task = deep_scan_task.delay(
                 niches=request.niches,
-                tier=user.subscription.value
-                if hasattr(user.subscription, "value")
-                else "free",
+                tier=user.subscription.value if user.subscription else "free",
             )
 
-            return {
-                "status": "Deep Scan Queued",
-                "task_id": task.id,
-                "niches": request.niches,
-                "message": "Deep scan started in background. Poll /analyze/{task_id} for results.",
-            }
+            return success_response(
+                data={
+                    "status": "Deep Scan Queued",
+                    "task_id": task.id,
+                    "niches": request.niches,
+                    "message": "Deep scan started in background. Poll /analyze/{task_id} for results.",
+                }
+            )
         else:
             # Proxies regular scan requests to the high-concurrency Go engine
             try:
@@ -174,7 +176,7 @@ async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_
                         timeout=300.0,
                     )
                     resp.raise_for_status()
-                    return resp.json()
+                    return success_response(data=resp.json())
             except (httpx.ConnectError, httpx.TimeoutException) as e:
                 logger.warning(
                     f"[Discovery] Go engine unavailable: {e}, falling back to Python service"
@@ -187,7 +189,7 @@ async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_
                             niche,
                             horizon="30d",
                             tier=user.subscription.value
-                            if hasattr(user.subscription, "value")
+                            if user.subscription
                             else "free",
                         )
                         all_results.extend(results)
@@ -196,13 +198,15 @@ async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_
                             f"[Discovery] Fallback scan failed for {niche}: {inner_e}"
                         )
 
-                return {
-                    "status": "scan_completed",
-                    "niches": request.niches,
-                    "candidates": all_results[:50],
-                    "count": len(all_results),
-                    "source": "fallback_python",
-                }
+                return success_response(
+                    data={
+                        "status": "scan_completed",
+                        "niches": request.niches,
+                        "candidates": all_results[:50],
+                        "count": len(all_results),
+                        "source": "fallback_python",
+                    }
+                )
     except Exception as e:
         import traceback
 
@@ -221,7 +225,7 @@ async def analyze_candidate(
     Asynchronous deconstruction: Dispatches deep AI analysis to Celery
     and returns a task ID for UI polling.
     """
-    from src.services.discovery.tasks import analyze_viral_pattern_task
+    from services.discovery.tasks import analyze_viral_pattern_task
 
     # Consume credits
     await credit_service.consume_credits(
@@ -233,12 +237,14 @@ async def analyze_candidate(
     )
 
     task = analyze_viral_pattern_task.delay(candidate.dict())
-    return {
-        "status": "Task Dispatched",
-        "task_id": task.id,
-        "candidate_id": candidate.id,
-        "message": "AI Deconstruction in progress...",
-    }
+    return success_response(
+        data={
+            "status": "Task Dispatched",
+            "task_id": task.id,
+            "candidate_id": candidate.id,
+            "message": "AI Deconstruction in progress...",
+        }
+    )
 
 
 @router.get("/niche-trends/{niche}")
@@ -248,25 +254,23 @@ async def get_niche_trends(niche: str, user: UserDB = Depends(get_current_user))
         trend = await base_discovery_service.aggregate_niche_trends(niche)
         if not trend:
             # If no data yet, try to scan first
-            tier_value = (
-                user.subscription.value
-                if hasattr(user.subscription, "value")
-                else "free"
-            )
+            tier_value = user.subscription.value if user.subscription else "free"
             await base_discovery_service.find_trending_content(niche, tier=tier_value)
             trend = await base_discovery_service.aggregate_niche_trends(niche)
             if not trend:
-                return {"niche": niche, "top_keywords": [], "avg_engagement": 0.0}
-        return trend
+                return success_response(
+                    data={"niche": niche, "top_keywords": [], "avg_engagement": 0.0}
+                )
+        return success_response(data=trend)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/niches", response_model=list[str])
+@router.get("/niches")
 async def list_monitored_niches(
     user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    from src.api.utils.models import MonitoredNiche
+    from api.utils.models import MonitoredNiche
 
     try:
         stmt = select(MonitoredNiche.niche).filter(MonitoredNiche.is_active == True)
@@ -276,7 +280,7 @@ async def list_monitored_niches(
 
         result = await db.execute(stmt)
         niches = result.all()
-        return [n[0] for n in niches]
+        return success_response(data=[n[0] for n in niches])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -290,7 +294,7 @@ async def watch_niche(
     """
     Persistently watch/monitor a niche for this user.
     """
-    from src.api.utils.models import MonitoredNiche
+    from api.utils.models import MonitoredNiche
     from sqlalchemy import and_
 
     try:
@@ -307,7 +311,9 @@ async def watch_niche(
             if not existing.is_active:
                 existing.is_active = True
                 await db.commit()
-            return {"status": "Already Watching", "niche": request.niche}
+            return success_response(
+                data={"status": "Already Watching", "niche": request.niche}
+            )
 
         # Create new monitor
         new_monitor = MonitoredNiche(
@@ -316,7 +322,9 @@ async def watch_niche(
         db.add(new_monitor)
         await db.commit()
 
-        return {"status": "Niche Watch Established", "niche": request.niche}
+        return success_response(
+            data={"status": "Niche Watch Established", "niche": request.niche}
+        )
     except Exception as e:
         await db.rollback()
         raise HTTPException(
@@ -333,7 +341,7 @@ async def unwatch_niche(
     """
     Stop watching a niche for this user.
     """
-    from src.api.utils.models import MonitoredNiche
+    from api.utils.models import MonitoredNiche
     from sqlalchemy import and_
 
     try:
@@ -348,9 +356,11 @@ async def unwatch_niche(
         if existing:
             existing.is_active = False
             await db.commit()
-            return {"status": "Niche Unwatched", "niche": request.niche}
+            return success_response(
+                data={"status": "Niche Unwatched", "niche": request.niche}
+            )
 
-        return {"status": "Not Watching", "niche": request.niche}
+        return success_response(data={"status": "Not Watching", "niche": request.niche})
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to unwatch: {str(e)}")
@@ -363,7 +373,7 @@ async def list_categories(
     """
     Alias for /niches - returns list of monitored content categories.
     """
-    from src.api.utils.models import MonitoredNiche
+    from api.utils.models import MonitoredNiche
 
     try:
         stmt = (
@@ -373,7 +383,7 @@ async def list_categories(
         )
         result = await db.execute(stmt)
         niches = result.all()
-        return [n[0] for n in niches]
+        return success_response(data=[n[0] for n in niches])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -383,8 +393,8 @@ async def get_analysis_status(task_id: str, user: UserDB = Depends(get_current_u
     """
     Get the status of an analysis task and return results when complete.
     """
-    from src.api.utils.celery import celery_app
-    from src.services.discovery.tasks import analyze_viral_pattern_task
+    from api.utils.celery import celery_app
+    from services.discovery.tasks import analyze_viral_pattern_task
 
     try:
         # Get task result
@@ -392,23 +402,29 @@ async def get_analysis_status(task_id: str, user: UserDB = Depends(get_current_u
 
         if result.ready():
             if result.successful():
-                return {
-                    "status": "completed",
-                    "task_id": task_id,
-                    "result": result.result,
-                }
+                return success_response(
+                    data={
+                        "status": "completed",
+                        "task_id": task_id,
+                        "result": result.result,
+                    }
+                )
             else:
-                return {
-                    "status": "failed",
-                    "task_id": task_id,
-                    "error": str(result.info),
-                }
+                return success_response(
+                    data={
+                        "status": "failed",
+                        "task_id": task_id,
+                        "error": str(result.info),
+                    }
+                )
         else:
-            return {
-                "status": "pending",
-                "task_id": task_id,
-                "message": "Analysis in progress...",
-            }
+            return success_response(
+                data={
+                    "status": "pending",
+                    "task_id": task_id,
+                    "message": "Analysis in progress...",
+                }
+            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -432,9 +448,9 @@ async def create_video_from_analysis(
     """
     Create a video transformation from completed analysis.
     """
-    from src.api.utils.celery import celery_app
-    from src.services.video_engine.tasks import download_and_process_task
-    from src.api.utils.models import VideoJobDB
+    from api.utils.celery import celery_app
+    from services.video_engine.tasks import download_and_process_task
+    from api.utils.models import VideoJobDB
 
     try:
         # Check if task is complete
@@ -450,12 +466,7 @@ async def create_video_from_analysis(
 
         # Get analysis result
         analysis = result.result
-        candidate_url = analysis.get("candidate_id", "")
-
-        # If we have the URL from pattern, use it
-        if "pattern" in analysis:
-            pattern = analysis.get("pattern", {})
-            candidate_url = pattern.get("source_url", "")
+        candidate_url = analysis.get("source_url") or analysis.get("candidate_id", "")
 
         if not candidate_url:
             raise HTTPException(
@@ -485,29 +496,33 @@ async def create_video_from_analysis(
         )
 
         if not success:
-            from src.api.utils.celery import celery_app
+            from api.utils.celery import celery_app
 
             celery_app.control.revoke(task.id, terminate=True)
-            raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
+            raise HTTPException(
+                status_code=402, detail="Insufficient credits for this operation"
+            )
 
         # Create job record
         new_job = VideoJobDB(
             id=task.id,
             title=f"From Analysis - {request.niche}",
-            status="Queued",
+            status=SystemJobStatus.QUEUED,
             progress=0,
-            input_url=candidate_url,
+            source_url=candidate_url,
             user_id=user.id,
         )
         db.add(new_job)
         await db.commit()
 
-        return {
-            "status": "video_creation_started",
-            "task_id": task.id,
-            "analysis_task_id": task_id,
-            "message": "Video transformation started from analysis",
-        }
+        return success_response(
+            data={
+                "status": "video_creation_started",
+                "task_id": task.id,
+                "analysis_task_id": task_id,
+                "message": "Video transformation started from analysis",
+            }
+        )
 
     except HTTPException:
         raise
@@ -524,7 +539,7 @@ class InsightResponse(BaseModel):
     alpha_status: bool = True
 
 
-@router.get("/insights/{niche}", response_model=InsightResponse)
+@router.get("/insights/{niche}")
 @cache(expire=3600)
 async def get_niche_insights(niche: str, user: UserDB = Depends(get_current_user)):
     """
@@ -532,7 +547,7 @@ async def get_niche_insights(niche: str, user: UserDB = Depends(get_current_user
     Uses Groq Llama-3 to generate high-fidelity, real-time advice based on the niche.
     """
     from groq import Groq
-    from src.api.config import settings
+    from api.config import settings
     import json
 
     # Default fallback data
@@ -570,13 +585,15 @@ async def get_niche_insights(niche: str, user: UserDB = Depends(get_current_user
 
             logging.error(f"[Discovery] Groq Insight Failure: {e}")
 
-    return InsightResponse(
-        niche=niche,
-        recommendation=recommendation,
-        confidence=confidence,
-        filters_suggested=filters,
-        target_regions=["US", "GB", "DE"],
-        alpha_status=False,  # No longer alpha, it's real
+    return success_response(
+        data=InsightResponse(
+            niche=niche,
+            recommendation=recommendation,
+            confidence=confidence,
+            filters_suggested=filters,
+            target_regions=["US", "GB", "DE"],
+            alpha_status=False,  # No longer alpha, it's real
+        )
     )
 
 
@@ -598,8 +615,8 @@ async def opencli_search(
     can connect their own platform sessions via the /opencli/sessions
     endpoints, then use this to search with their authenticated session.
     """
-    from src.api.config import settings
-    from src.services.opencli.scanner import OpenCLIScanner
+    from api.config import settings
+    from services.opencli.scanner import OpenCLIScanner
 
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
@@ -608,7 +625,7 @@ async def opencli_search(
     candidates = await scanner.scan_trends(query, platforms=[platform.lower()])
 
     # Limit results
-    return candidates[:limit]
+    return success_response(data=candidates[:limit])
 
 
 @router.get("/opencli/feed/{platform}")
@@ -622,8 +639,8 @@ async def opencli_feed(
 
     feed_type options: feed, trending, hot, top, explore
     """
-    from src.api.config import settings
-    from src.services.opencli.scanner import OpenCLIScanner
+    from api.config import settings
+    from services.opencli.scanner import OpenCLIScanner
 
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
@@ -631,7 +648,7 @@ async def opencli_feed(
     scanner = OpenCLIScanner(user.id)
     candidates = await scanner.get_platform_feed(platform.lower(), feed_type, limit)
 
-    return candidates
+    return success_response(data=candidates)
 
 
 @router.post("/opencli/scan")
@@ -645,8 +662,8 @@ async def opencli_scan(
     This merges opencli-rs results with the standard discovery pipeline,
     giving the user content discovered through their own authenticated sessions.
     """
-    from src.api.config import settings
-    from src.services.opencli.scanner import OpenCLIScanner
+    from api.config import settings
+    from services.opencli.scanner import OpenCLIScanner
 
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
@@ -655,12 +672,14 @@ async def opencli_scan(
     p = [p.lower() for p in platforms] if platforms else None
     candidates = await scanner.scan_trends(niche, platforms=p)
 
-    return {
-        "candidates": candidates,
-        "count": len(candidates),
-        "source": "opencli-rs",
-        "platforms_scanned": p or "all_connected",
-    }
+    return success_response(
+        data={
+            "candidates": candidates,
+            "count": len(candidates),
+            "source": "opencli-rs",
+            "platforms_scanned": p or "all_connected",
+        }
+    )
 
 
 class InteractionRequest(BaseModel):
@@ -678,7 +697,7 @@ async def record_interaction(
     """
     Records a UI interaction with a discovery candidate.
     """
-    from src.api.utils.models import DiscoveryInteractionDB
+    from api.utils.models import DiscoveryInteractionDB
     import datetime
 
     try:
@@ -696,13 +715,15 @@ async def record_interaction(
         await db.commit()
         await db.refresh(new_interaction)
 
-        return {
-            "status": "Handshake Established",
-            "candidate_id": request.candidate_id,
-            "interaction_id": new_interaction.id,
-            "timestamp": new_interaction.created_at.isoformat(),
-            "message": "Protocol established with target node.",
-        }
+        return success_response(
+            data={
+                "status": "Handshake Established",
+                "candidate_id": request.candidate_id,
+                "interaction_id": new_interaction.id,
+                "timestamp": new_interaction.created_at.isoformat(),
+                "message": "Protocol established with target node.",
+            }
+        )
     except Exception as e:
         logger.error(f"Interaction record failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to record interaction")
@@ -717,7 +738,7 @@ class AnalysisResponse(BaseModel):
     analyzed_at: Optional[datetime.datetime] = None
 
 
-@router.get("/{content_id}/analysis", response_model=AnalysisResponse)
+@router.get("/{content_id}/analysis")
 async def get_content_analysis(
     content_id: str,
     user: UserDB = Depends(get_current_user),
@@ -741,10 +762,12 @@ async def get_content_analysis(
             )
             result = await db.execute(stmt)
             content = result.scalar_one_or_none()
-            return AnalysisResponse(
-                content_id=content_id,
-                analysis_results=existing_analysis,
-                analyzed_at=content.analyzed_at if content else None,
+            return success_response(
+                data=AnalysisResponse(
+                    content_id=content_id,
+                    analysis_results=existing_analysis,
+                    analyzed_at=content.analyzed_at if content else None,
+                )
             )
 
         # Perform new analysis
@@ -755,10 +778,12 @@ async def get_content_analysis(
         result = await db.execute(stmt)
         content = result.scalar_one_or_none()
 
-        return AnalysisResponse(
-            content_id=content_id,
-            analysis_results=analysis_results,
-            analyzed_at=content.analyzed_at if content else None,
+        return success_response(
+            data=AnalysisResponse(
+                content_id=content_id,
+                analysis_results=analysis_results,
+                analyzed_at=content.analyzed_at if content else None,
+            )
         )
 
     except ValueError as e:

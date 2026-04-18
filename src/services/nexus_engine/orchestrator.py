@@ -21,8 +21,8 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type,
 )
-from src.services.video_engine.processor import base_video_processor
-from src.services.nexus_engine.audio_mixer import base_audio_mixer
+from services.video_engine.processor import base_video_processor
+from services.nexus_engine.audio_mixer import base_audio_mixer
 from typing import Any
 
 
@@ -90,9 +90,7 @@ class NexusOrchestrator:
             reraise=True,
         )
         async def _render():
-            from src.services.video_engine.base_remotion_service import (
-                base_remotion_service,
-            )
+            from services.video_engine.remotion_service import base_remotion_service
 
             try:
                 result = await asyncio.wait_for(
@@ -124,24 +122,34 @@ class NexusOrchestrator:
         visual_paths: list[str],
         music_path: str | None = None,
         blueprint_id: str = "viral-reskin",
+        user_id: str | int | None = None,
     ) -> str:
         """
         High-fidelity video assembly using Remotion React engine with node-level tracking.
         Production-grade with retries, circuit breaking, timeouts, and telemetry.
+        
+        Args:
+            job_id: Unique job identifier
+            niche: Target niche for the video
+            script_segments: List of script segments with timing
+            voiceover_paths: List of voiceover audio file paths
+            visual_paths: List of visual/video file paths
+            music_path: Optional background music path
+            blueprint_id: Blueprint identifier for rendering
+            user_id: User ID for brand lookup (optional, for brand identity)
         """
-        from src.api.routes.ws import notify_nexus_job_update_sync
-        from src.services.nexus_engine.blueprints import get_blueprint_by_id
+        from api.routes.ws import notify_nexus_job_update_sync
+        from services.nexus_engine.blueprints import get_blueprint_by_id
 
         # Need to use async session here for get_blueprint_by_id
-        from src.api.utils.database import async_session_factory
+        from api.utils.database import async_session_factory
 
         start_time = time.time()
         self.logger.info(f"[Nexus] Starting assembly for Job {job_id}")
 
-        try:
-            async with async_session_factory() as db:
-                blueprint = await get_blueprint_by_id(db, blueprint_id)
-
+        # Use a single db session for the entire operation to keep it in scope
+        async with async_session_factory() as db:
+            blueprint = await get_blueprint_by_id(db, blueprint_id)
             self.logger.info(
                 f"[Nexus] Using blueprint: {blueprint['name']} for Job {job_id}"
             )
@@ -190,7 +198,7 @@ class NexusOrchestrator:
 
             # Cognitive Vibe Check (LangChain Integration)
             vibe_data = {}
-            from src.services.langchain.service import langchain_service
+            from services.langchain.service import langchain_service
 
             if langchain_service.is_enabled():
                 self.logger.info(f"[Nexus] Performing Cognitive Vibe Check for {niche}")
@@ -258,9 +266,24 @@ class NexusOrchestrator:
                 cta_props = {
                     "showCtaOverlay": True,
                     "ctaType": cta_segment.get("type"),
-                    "ctaText": cta_segment.get("text", "")[
-                        :50
-                    ],  # Keep it short for overlay
+                    "ctaText": cta_segment.get("text", "")[:50],
+                }
+
+            # Fetch active Brand Identity (only if user_id provided)
+            from services.branding.service import base_branding_service
+            brand_identity = None
+            brand_props = {}
+            if user_id:
+                try:
+                    brand_identity = await base_branding_service.get_active_brand(user_id, niche, db)
+                except Exception as e:
+                    self.logger.warning(f"[Nexus] Brand lookup failed: {e}")
+            
+            if brand_identity:
+                brand_props = {
+                    "trademarkUrl": brand_identity.logo_url,
+                    "brandName": brand_identity.brand_name,
+                    "primaryColor": brand_identity.primary_color
                 }
 
             audio_url = voiceover_paths[0] if voiceover_paths else music_path
@@ -273,6 +296,7 @@ class NexusOrchestrator:
                 "audioUrl": audio_url,
                 "jobId": job_id,
                 **cta_props,
+                **brand_props,
             }
 
             output_filename = f"nexus_{job_id}_{niche.replace(' ', '_')}.mp4"

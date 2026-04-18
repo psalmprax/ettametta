@@ -6,11 +6,11 @@ Handles callbacks from YouTube, TikTok, and other platforms with proper security
 from fastapi import APIRouter, Request, HTTPException, Header, Depends
 from pydantic import BaseModel, field_validator
 from typing import Any
-from src.api.utils.database import get_db
+from api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from src.api.utils.models import PublishedContentDB, WebhookEventDB
-from src.api.routes.auth import admin_required
+from api.utils.models import PublishedContentDB, WebhookEventDB
+from api.routes.auth import admin_required
 from datetime import datetime
 import hashlib
 import hmac
@@ -30,22 +30,23 @@ def _verify_signature(payload: bytes, signature: str | None, secret: str) -> boo
     return hmac.compare_digest(signature, expected)
 
 
-async def _check_idempotency(db: AsyncSession, event_type: str, external_id: str, platform: str) -> bool:
+async def _check_idempotency(
+    db: AsyncSession, event_type: str, external_id: str, platform: str
+) -> bool:
     """Check if this event was already processed"""
-    stmt = (
-        select(WebhookEventDB)
-        .where(
-            WebhookEventDB.event_type == event_type,
-            WebhookEventDB.external_id == external_id,
-            WebhookEventDB.platform == platform,
-            WebhookEventDB.processed_at.isnot(None),
-        )
+    stmt = select(WebhookEventDB).where(
+        WebhookEventDB.event_type == event_type,
+        WebhookEventDB.external_id == external_id,
+        WebhookEventDB.platform == platform,
+        WebhookEventDB.processed_at.isnot(None),
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none() is not None
 
 
-def _record_event(db: AsyncSession, event_type: str, external_id: str, platform: str, payload: dict):
+def _record_event(
+    db: AsyncSession, event_type: str, external_id: str, platform: str, payload: dict
+):
     """Record webhook event for idempotency"""
     event = WebhookEventDB(
         event_type=event_type,
@@ -88,7 +89,7 @@ async def youtube_upload_status(
     Receive upload status updates from YouTube
     Requires signature verification if configured
     """
-    from src.api.config import settings
+    from api.config import settings
 
     body = await request.body()  # raw bytes for HMAC verification
 
@@ -100,18 +101,24 @@ async def youtube_upload_status(
             raise HTTPException(status_code=401, detail="Invalid signature")
 
     try:
-        if await _check_idempotency(db, "youtube_upload_status", payload.video_id, "youtube"):
+        if await _check_idempotency(
+            db, "youtube_upload_status", payload.video_id, "youtube"
+        ):
             logger.info(
                 f"[Webhooks] YouTube event {payload.video_id} already processed (idempotency)"
             )
             return {"status": "already_processed", "message": "Event already handled"}
 
-        stmt = select(PublishedContentDB).where(PublishedContentDB.external_video_id == payload.video_id)
+        stmt = select(PublishedContentDB).where(
+            PublishedContentDB.external_video_id == payload.video_id
+        )
         result = await db.execute(stmt)
         content = result.scalar_one_or_none()
 
         if not content and payload.title:
-            stmt = select(PublishedContentDB).where(PublishedContentDB.title.ilike(f"%{payload.title}%"))
+            stmt = select(PublishedContentDB).where(
+                PublishedContentDB.title.ilike(f"%{payload.title}%")
+            )
             result = await db.execute(stmt)
             content = result.scalar_one_or_none()
 
@@ -192,7 +199,7 @@ async def tiktok_upload_status(
     """
     Receive upload status updates from TikTok
     """
-    from src.api.config import settings
+    from api.config import settings
 
     body = await request.body()  # raw bytes for HMAC verification
 
@@ -204,16 +211,24 @@ async def tiktok_upload_status(
             raise HTTPException(status_code=401, detail="Invalid signature")
 
     try:
-        if await _check_idempotency(db, "tiktok_upload_status", payload.video_id, "tiktok"):
+        if await _check_idempotency(
+            db, "tiktok_upload_status", payload.video_id, "tiktok"
+        ):
             logger.info(f"[Webhooks] TikTok event {payload.video_id} already processed")
             return {"status": "already_processed", "message": "Event already handled"}
 
-        stmt = select(PublishedContentDB).where(PublishedContentDB.external_video_id == payload.video_id)
+        stmt = select(PublishedContentDB).where(
+            PublishedContentDB.external_video_id == payload.video_id
+        )
         result = await db.execute(stmt)
         content = result.scalar_one_or_none()
 
         if not content:
-            stmt = select(PublishedContentDB).where(PublishedContentDB.platform == "tiktok").order_by(PublishedContentDB.created_at.desc())
+            stmt = (
+                select(PublishedContentDB)
+                .where(PublishedContentDB.platform == "tiktok")
+                .order_by(PublishedContentDB.created_at.desc())
+            )
             result = await db.execute(stmt)
             content = result.scalars().first()
 
@@ -227,7 +242,7 @@ async def tiktok_upload_status(
                 content.status = "failed"
 
             if payload.share_url:
-                content.url = payload.share_url
+                content.source_url = payload.share_url
 
             metrics = content.metrics or {}
             if payload.view_count is not None:
@@ -305,7 +320,7 @@ async def generic_platform_status(
     """
     Generic webhook for any platform status updates
     """
-    from src.api.config import settings
+    from api.config import settings
 
     webhook_secret = getattr(
         settings, f"{payload.platform.upper()}_WEBHOOK_SECRET", None
@@ -322,7 +337,9 @@ async def generic_platform_status(
 
     try:
         event_key = f"{payload.platform}_{payload.status}"
-        if await _check_idempotency(db, event_key, payload.external_id, payload.platform):
+        if await _check_idempotency(
+            db, event_key, payload.external_id, payload.platform
+        ):
             return {"status": "already_processed", "message": "Event already handled"}
 
         stmt = select(PublishedContentDB).where(
@@ -407,7 +424,7 @@ async def amazon_affiliate_webhook(
     Handle Amazon Associates commission webhooks.
     Processes commission payments and updates revenue tracking.
     """
-    from src.api.utils.models import RevenueLogDB, AffiliateLinkDB
+    from api.utils.models import RevenueLogDB, AffiliateLinkDB
 
     body = await request.body()
     data = await request.json()
@@ -467,7 +484,7 @@ async def impact_radius_webhook(
     """
     Handle Impact Radius affiliate webhooks.
     """
-    from src.api.utils.models import RevenueLogDB
+    from api.utils.models import RevenueLogDB
 
     body = await request.body()
     data = await request.json()
@@ -510,15 +527,13 @@ async def impact_radius_webhook(
 @router.post("/monetization/shareasale")
 async def shareasale_webhook(
     request: Request,
-    x_shareasale_signature: str | None = Header(
-        None, alias="X-ShareASale-Signature"
-    ),
+    x_shareasale_signature: str | None = Header(None, alias="X-ShareASale-Signature"),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Handle ShareASale affiliate webhooks.
     """
-    from src.api.utils.models import RevenueLogDB
+    from api.utils.models import RevenueLogDB
 
     body = await request.body()
     data = await request.json()
@@ -568,7 +583,7 @@ async def stripe_monetization_webhook(
     Handle Stripe webhooks for subscription payments and one-time purchases.
     This extends the existing Stripe webhook for monetization events.
     """
-    from src.api.utils.models import RevenueLogDB
+    from api.utils.models import RevenueLogDB
     import stripe
 
     body = await request.body()
@@ -656,8 +671,8 @@ async def verify_webhook():
 
 @router.get("/events")
 async def get_webhook_events(
-    platform: str | None = None, 
-    limit: int = 20, 
+    platform: str | None = None,
+    limit: int = 20,
     offset: int = 0,
     admin=Depends(admin_required),
     db: AsyncSession = Depends(get_db),
@@ -677,7 +692,9 @@ async def get_webhook_events(
         total = res_count.scalar() or 0
 
         # Results
-        stmt = stmt.order_by(WebhookEventDB.created_at.desc()).offset(offset).limit(limit)
+        stmt = (
+            stmt.order_by(WebhookEventDB.created_at.desc()).offset(offset).limit(limit)
+        )
         result = await db.execute(stmt)
         events = result.scalars().all()
 
@@ -688,7 +705,9 @@ async def get_webhook_events(
                     "platform": e.platform,
                     "event_type": e.event_type,
                     "external_id": e.external_id,
-                    "processed_at": e.processed_at.isoformat() if e.processed_at else None,
+                    "processed_at": e.processed_at.isoformat()
+                    if e.processed_at
+                    else None,
                     "created_at": e.created_at.isoformat(),
                 }
                 for e in events
