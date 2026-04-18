@@ -2,6 +2,7 @@ import aiohttp
 import logging
 from .models import ContentCandidate
 from datetime import datetime
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -11,43 +12,63 @@ class DuckDuckGoScanner:
     DuckDuckGo search scanner for discovering trending content.
     Free, no API key required - uses HTML scraping.
     """
-    
+
     def __init__(self):
         self.platform = "DuckDuckGo"
-        
-    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
+        self.current_year = datetime.now().year
+        self.current_month = datetime.now().strftime("%B")
+
+    def _build_queries(self, niche: str) -> list[str]:
+        """Build dynamic search queries based on niche and current time."""
+        base_templates = [
+            f"trending {niche} videos {self.current_year}",
+            f"viral {niche} shorts",
+            f"best {niche} videos this week",
+            f"top {niche} content {self.current_month} {self.current_year}",
+            f"popular {niche} clips",
+            f"{niche} trending now",
+            f"viral {niche} content {self.current_year}",
+            f"hot {niche} videos",
+            f"{niche} most watched",
+            f"famous {niche} creators",
+        ]
+
+        # Select 3 random queries for variety
+        selected = random.sample(base_templates, min(3, len(base_templates)))
+        return selected
+
+    async def scan_trends(
+        self, niche: str, published_after: datetime | None = None
+    ) -> list[ContentCandidate]:
         """
         Searches DuckDuckGo for trending videos and content in the niche.
         Free alternative to YouTube API when quota is exceeded.
         """
         logger.info(f"[DuckDuckGo] Searching for trending {niche} content")
-        
-        search_queries = [
-            f"trending {niche} videos 2024",
-            f"viral {niche} shorts",
-            f"best {niche} videos this week"
-        ]
-        
+
+        # Use dynamic query builder for fresh, relevant results
+        search_queries = self._build_queries(niche)
+
         all_candidates = []
-        
-        for query in search_queries[:2]:
+
+        for query in search_queries:
             try:
                 candidates = await self._search_ddg(query, niche)
                 all_candidates.extend(candidates)
             except Exception as e:
                 logger.warning(f"[DuckDuckGo] Search failed for '{query}': {e}")
-        
+
         # Remove duplicates by URL
         seen = set()
         unique_candidates = []
         for c in all_candidates:
-            if c.url not in seen:
-                seen.add(c.url)
+            if c.source_url not in seen:
+                seen.add(c.source_url)
                 unique_candidates.append(c)
-        
+
         logger.info(f"[DuckDuckGo] Found {len(unique_candidates)} unique results")
         return unique_candidates[:10]
-    
+
     async def _search_ddg(self, query: str, niche: str) -> list[ContentCandidate]:
         """Search DuckDuckGo HTML for results."""
         try:
@@ -57,99 +78,115 @@ class DuckDuckGoScanner:
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                     "Accept-Language": "en-US,en;q=0.5",
                 }
-                
+
                 url = f"https://html.duckduckgo.com/html/?q={query.replace(' ', '+')}"
-                
-                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as response:
+
+                async with session.get(
+                    url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)
+                ) as response:
                     if response.status != 200:
                         return []
-                    
+
                     html = await response.text()
                     return self._parse_results(html, niche)
-                    
+
         except Exception as e:
             logger.error(f"[DuckDuckGo] Request error: {e}")
             return []
-    
+
     def _parse_results(self, html: str, niche: str) -> list[ContentCandidate]:
         """Parse DuckDuckGo HTML results."""
         candidates = []
-        
+
         try:
             from bs4 import BeautifulSoup
             from urllib.parse import unquote
-            soup = BeautifulSoup(html, 'html.parser')
-            
-            for result in soup.select('.result__body')[:10]:
+
+            soup = BeautifulSoup(html, "html.parser")
+
+            for result in soup.select(".result__body")[:10]:
                 try:
-                    link_elem = result.select_one('.result__a')
+                    link_elem = result.select_one(".result__a")
                     if not link_elem:
                         continue
-                    
-                    url = link_elem.get('href', '')
+
+                    url = link_elem.get("href", "")
                     title = link_elem.get_text(strip=True)
-                    
+
                     # Handle DuckDuckGo redirect URLs
                     # Format: //duckduckgo.com/l/?uddg=actual_url
-                    if url.startswith('//duckduckgo.com/l/'):
+                    if url.startswith("//duckduckgo.com/l/"):
                         # Extract the actual URL from the uddg parameter
                         import urllib.parse
+
                         parsed = urllib.parse.urlparse(url)
                         query_params = urllib.parse.parse_qs(parsed.query)
-                        if 'uddg' in query_params:
-                            url = unquote(query_params['uddg'][0])
-                    
+                        if "uddg" in query_params:
+                            url = unquote(query_params["uddg"][0])
+
                     # Skip if still not a valid URL
-                    if not url or url.startswith('/') or 'duckduckgo' in url:
+                    if not url or url.startswith("/") or "duckduckgo" in url:
                         continue
-                    
+
                     # Extract snippet
-                    snippet_elem = result.select_one('.result__snippet')
-                    description = snippet_elem.get_text(strip=True) if snippet_elem else ""
-                    
+                    snippet_elem = result.select_one(".result__snippet")
+                    description = (
+                        snippet_elem.get_text(strip=True) if snippet_elem else ""
+                    )
+
                     # Determine platform from URL
                     platform = self._detect_platform(url)
-                    
+
                     # STRICTOR PATH VALIDATION: Ensure it's a direct video link, not a landing page
                     category = self._classify_url(url.lower(), platform)
                     if category == "skip":
-                         continue
+                        continue
 
-                    candidates.append(ContentCandidate(
-                        id=f"ddg_{hash(url) % 100000}",
-                        platform=platform,
-                        category=category,
-                        url=url,
-                        author="",
-                        title=title,
-                        description=description,
-                        view_count=5000,  # Estimated
-                        engagement_rate=0.03,
-                        viral_score=86,  # Give high score to pass threshold
-                        discovery_date=datetime.now(),
-                        tags=[niche, "search", "trending"],
-                        metadata={
-                            "source": "duckduckgo",
-                            "search_niche": niche
-                        }
-                    ))
-                    
+                    candidates.append(
+                        ContentCandidate(
+                            id=f"ddg_{hash(url) % 100000}",
+                            platform=platform,
+                            category=category,
+                            source_url=url,
+                            creator_name="",
+                            title=title,
+                            description=description,
+                            view_count=5000,  # Estimated
+                            like_count=150,
+                            comment_count=15,
+                            share_count=5,
+                            engagement_score=0.03,
+                            viral_score=86,  # Give high score to pass threshold
+                            tags=[niche, "search", "trending"],
+                            metadata={},
+                        )
+                    )
+
                 except Exception as e:
                     continue
-                    
+
         except ImportError:
-            logger.warning("[DuckDuckGo] BeautifulSoup not installed. Install: pip install beautifulsoup4")
+            logger.warning(
+                "[DuckDuckGo] BeautifulSoup not installed. Install: pip install beautifulsoup4"
+            )
         except Exception as e:
             logger.error(f"[DuckDuckGo] Parse error: {e}")
-        
+
         return candidates
-    
+
     def _classify_url(self, url: str, platform: str) -> str:
         """Determines the content category and platform-specific directness."""
         # Common "ignore" patterns (search results, settings, etc.)
         ignore_patterns = [
-            "/search", "/results", "/trending", "/explore", "/hashtag/",
-            "/groups/", "/marketplace/", "/events/", "/settings",
+            "/search",
+            "/results",
+            "/trending",
+            "/explore",
+            "/hashtag/",
+            "/groups/",
+            "/marketplace/",
+            "/events/",
+            "/settings",
         ]
 
         if any(pattern in url for pattern in ignore_patterns):
@@ -160,7 +197,7 @@ class DuckDuckGoScanner:
             if any(p in url for p in ["/watch?v=", "/shorts/", "youtu.be/"]):
                 return "video"
             return "skip"
-        
+
         if platform == "TikTok":
             if any(p in url for p in ["/video/", "/v/", "vt.tiktok.com/"]):
                 return "video"
@@ -171,16 +208,32 @@ class DuckDuckGoScanner:
 
         # 2. BLOGS / ARTICLES
         blog_patterns = [
-            "medium.com", "substack.com", "linkedin.com/pulse", "ghost.io", "wordpress.com",
-            "blogger.com", "dev.to", "hashnode.com", "/blog/", "/article/", "/posts/",
+            "medium.com",
+            "substack.com",
+            "linkedin.com/pulse",
+            "ghost.io",
+            "wordpress.com",
+            "blogger.com",
+            "dev.to",
+            "hashnode.com",
+            "/blog/",
+            "/article/",
+            "/posts/",
         ]
         if any(pattern in url for pattern in blog_patterns):
             return "blog"
 
         # 3. NEWS
         news_domains = [
-            "cnn.com", "bbc.com", "reuters.com", "nytimes.com", "theguardian.com",
-            "news.google.com", "forbes.com", "bloomberg.com", "techcrunch.com",
+            "cnn.com",
+            "bbc.com",
+            "reuters.com",
+            "nytimes.com",
+            "theguardian.com",
+            "news.google.com",
+            "forbes.com",
+            "bloomberg.com",
+            "techcrunch.com",
         ]
         if any(domain in url for domain in news_domains):
             return "news"
@@ -201,19 +254,19 @@ class DuckDuckGoScanner:
     def _detect_platform(self, url: str) -> str:
         """Detect platform from URL."""
         url_lower = url.lower()
-        if 'youtube.com' in url_lower or 'youtu.be' in url_lower:
+        if "youtube.com" in url_lower or "youtu.be" in url_lower:
             return "YouTube"
-        elif 'tiktok.com' in url_lower:
+        elif "tiktok.com" in url_lower:
             return "TikTok"
-        elif 'instagram.com' in url_lower:
+        elif "instagram.com" in url_lower:
             return "Instagram"
-        elif 'twitter.com' in url_lower or 'x.com' in url_lower:
+        elif "twitter.com" in url_lower or "x.com" in url_lower:
             return "X"
-        elif 'reddit.com' in url_lower:
+        elif "reddit.com" in url_lower:
             return "Reddit"
-        elif 'facebook.com' in url_lower or 'fb.watch' in url_lower:
+        elif "facebook.com" in url_lower or "fb.watch" in url_lower:
             return "Facebook"
-        elif 'rumble.com' in url_lower:
+        elif "rumble.com" in url_lower:
             return "Rumble"
         else:
             return "Web"

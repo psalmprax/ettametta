@@ -1,9 +1,10 @@
 import aiohttp
 import logging
 import json
+import random
 from .models import ContentCandidate
 from datetime import datetime
-from src.api.config import settings
+from api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,19 @@ class GoogleSearchScanner:
         self.platform = "Google Search"
         self.api_key = getattr(settings, "GOOGLE_API_KEY", "")
         self.cx = getattr(settings, "GOOGLE_SEARCH_CX", "")  # Custom Search Engine ID
+        self.current_year = datetime.now().year
+        self.current_month = datetime.now().strftime("%B")
+
+    def _build_queries(self, niche: str) -> list[str]:
+        """Build dynamic search queries based on niche and current time."""
+        templates = [
+            f"best {niche} products {self.current_year} trending",
+            f"top {niche} {self.current_year}",
+            f"{niche} affiliate programs",
+            f"trending {niche} {self.current_month} {self.current_year}",
+            f"popular {niche} items",
+        ]
+        return random.sample(templates, min(3, len(templates)))
 
     async def scan_trends(
         self, niche: str, published_after: datetime | None = None
@@ -28,6 +42,14 @@ class GoogleSearchScanner:
         """
         logger.info(
             f"[GoogleSearch] Searching for monetization opportunities in: {niche}"
+        )
+
+        # Build dynamic queries for fresh results
+        queries = self._build_queries(niche)
+        primary_query = (
+            queries[0]
+            if queries
+            else f"best {niche} products {self.current_year} trending"
         )
 
         if not self.api_key or not self.cx:
@@ -42,7 +64,7 @@ class GoogleSearchScanner:
                 params = {
                     "key": self.api_key,
                     "cx": self.cx,
-                    "q": f"best {niche} products 2024 trending",
+                    "q": primary_query,
                     "num": 10,
                 }
 
@@ -64,13 +86,15 @@ class GoogleSearchScanner:
                             ContentCandidate(
                                 id=f"gs_{hash(item.get('link', '')) % 100000}",
                                 platform=self.platform,
-                                url=item.get("link", ""),
-                                author=item.get("displayLink", ""),
+                                source_url=item.get("link", ""),
+                                creator_name=item.get("displayLink", ""),
                                 title=item.get("title", ""),
-                                description=item.get("snippet", ""),
                                 view_count=10000,  # Estimate
-                                engagement_rate=0.05,
-                                discovery_date=datetime.now(),
+                                like_count=0,
+                                comment_count=0,
+                                share_count=0,
+                                engagement_score=0.05,
+                                thumbnail_url=None,
                                 tags=[niche, "search", "monetization"],
                                 metadata={
                                     "source": "google_search",
@@ -104,11 +128,7 @@ class GoogleSearchScanner:
                 }
 
                 # Search for trending products in niche
-                search_queries = [
-                    f"trending {niche} products",
-                    f"best {niche} 2024",
-                    f"{niche} affiliate programs",
-                ]
+                search_queries = self._build_queries(niche)
 
                 all_results = []
                 for query in search_queries[:2]:  # Limit searches
@@ -155,7 +175,6 @@ class GoogleSearchScanner:
                                                     "title": title,
                                                     "price": price,
                                                     "url": href,
-                                                    "source": "google_shopping",
                                                 }
                                             )
                             elif response.status == 429:
@@ -168,7 +187,24 @@ class GoogleSearchScanner:
                             f"[GoogleSearch] Scrape error for '{query}': {scrape_err}"
                         )
 
-                return all_results[:10]
+                candidates = []
+                for res in all_results:
+                    candidates.append(
+                        ContentCandidate(
+                            id=f"gs_scrape_{hash(res['url']) % 100000}",
+                            platform=self.platform,
+                            source_url=res["url"],
+                            creator_name="Google Shopping",
+                            title=res["title"],
+                            view_count=5000,
+                            like_count=0,
+                            comment_count=0,
+                            share_count=0,
+                            engagement_score=0.03,
+                            metadata={"price": res["price"]},
+                        )
+                    )
+                return candidates[:10]
 
         except Exception as e:
             logger.error(f"[GoogleSearch] Scrape error: {e}")

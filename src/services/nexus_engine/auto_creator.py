@@ -13,7 +13,7 @@ class AutoCreator:
 
     @property
     def client(self):
-        from src.api.utils.vault import get_secret
+        from api.utils.vault import get_secret
 
         key = get_secret("groq_api_key")
         if not key:
@@ -86,7 +86,7 @@ class AutoCreator:
         """Source real stock video with keyword retry and local fallback."""
         visual_paths = []
         try:
-            from src.services.video_engine.base_stock_service import base_stock_service
+            from services.video_engine.stock_service import base_stock_service
         except ImportError:
             logger.warning("[AutoCreator] Stock service not available")
             return []
@@ -136,7 +136,7 @@ class AutoCreator:
         os.makedirs("temp/voice", exist_ok=True)
 
         try:
-            from src.services.voiceover.service import voiceover_service
+            from services.voiceover.service import voiceover_service
 
             service = voiceover_service
         except ImportError:
@@ -166,7 +166,7 @@ class AutoCreator:
         """
         Autonomous Script-to-Video Workflow with real-time node instrumentation.
         """
-        from src.api.routes.ws import notify_nexus_job_update_sync
+        from api.routes.ws import notify_nexus_job_update_sync
 
         logger.info(f"[AutoCreator] Launching Cinema Mode: {topic} in {niche}")
 
@@ -201,7 +201,7 @@ class AutoCreator:
         notify("cognition", "COMPLETED", 50)
 
         # 3. Synthesis & Egress: Assembly
-        from src.services.nexus_engine.orchestrator import base_nexus_orchestrator
+        from services.nexus_engine.orchestrator import base_nexus_orchestrator
 
         output_path = await base_nexus_orchestrator.assemble_video(
             job_id=job_id,
