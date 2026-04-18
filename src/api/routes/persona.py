@@ -1,14 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.api.utils.database import get_db
-from src.api.utils.models import PersonaDB
-from src.api.routes.auth import get_current_user
+from api.utils.database import get_db
+from api.utils.models import PersonaDB
+from api.routes.auth import get_current_user
 import uuid
 import os
 import requests
-from src.api.config import settings
+from api.config import settings
 from pydantic import BaseModel
+from api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/persona", tags=["Persona Engine"])
 
@@ -19,6 +20,9 @@ class PersonaResponse(BaseModel):
     reference_image_url: str | None = None
     voice_clone_id: str | None = None
 
+    class Config:
+        from_attributes = True
+
 
 class PersonaGenerateRequest(BaseModel):
     persona_id: str
@@ -26,7 +30,7 @@ class PersonaGenerateRequest(BaseModel):
     script: str = None  # Any override
 
 
-@router.post("/create", response_model=PersonaResponse)
+@router.post("/create")
 async def create_persona(
     name: str,
     image: UploadFile = File(None),
@@ -38,7 +42,7 @@ async def create_persona(
     Registers a new Persona for deepfake generation.
     Files are uploaded to the configured S3-compatible storage.
     """
-    from src.api.utils.storage import storage_service
+    from api.utils.storage import storage_service
     import tempfile
 
     persona = PersonaDB(name=name, user_id=current_user.id)
@@ -69,7 +73,7 @@ async def create_persona(
     await db.commit()
     await db.refresh(persona)
 
-    return persona
+    return success_response(data=PersonaResponse.model_validate(persona).model_dump())
 
 
 @router.post("/generate")
@@ -90,18 +94,18 @@ async def generate_persona_video(
     if not persona:
         raise HTTPException(status_code=404, detail="Persona not found")
 
-    from src.services.video_engine.base_persona_service import base_persona_service
+    from services.video_engine.persona_service import base_persona_service
 
     try:
         url = await base_persona_service.animate_persona(
             persona.reference_image_url, request.topic, request.script
         )
-        return {"status": "success", "video_url": url}
+        return success_response(data={"status": "success", "video_url": url})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/list", response_model=list[PersonaResponse])
+@router.get("/list")
 async def list_personas(
     current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
@@ -111,10 +115,12 @@ async def list_personas(
     stmt = select(PersonaDB).where(PersonaDB.user_id == current_user.id)
     result = await db.execute(stmt)
     personas = result.scalars().all()
-    return personas
+    return success_response(
+        data=[PersonaResponse.model_validate(p).model_dump() for p in personas]
+    )
 
 
-@router.get("/active", response_model=list[PersonaResponse])
+@router.get("/active")
 async def list_active_personas(
     current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
@@ -124,4 +130,6 @@ async def list_active_personas(
     stmt = select(PersonaDB).where(PersonaDB.user_id == current_user.id)
     result = await db.execute(stmt)
     personas = result.scalars().all()
-    return personas
+    return success_response(
+        data=[PersonaResponse.model_validate(p).model_dump() for p in personas]
+    )
