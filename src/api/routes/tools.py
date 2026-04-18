@@ -2,13 +2,14 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 import os
+from api.utils.api_responses import success_response
 import sys
 
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 )
 
-from src.services.openclaw.skills.external import (
+from services.openclaw.skills.external import (
     popular_skills,
     clawhub_loader,
     langchain_service,
@@ -24,9 +25,10 @@ from src.services.openclaw.skills.external import (
     metatrader_service,
     binance_service,
 )
-from src.services.openclaw.skills.research import ResearchSkill
-from src.services.openclaw.skills.content import ContentSkill
-from src.services.openclaw.skills.analytics import AnalyticsSkill
+from services.openclaw.skills.research import ResearchSkill, research_skill
+from services.openclaw.skills.content import ContentSkill
+from services.openclaw.skills.analytics import AnalyticsSkill
+from services.openclaw.skills.ingestion import data_ingestion_skill
 
 social_metrics_skill = AnalyticsSkill()
 
@@ -75,7 +77,9 @@ class CrewRequest(BaseModel):
 @router.post("/research")
 async def search_academic_papers(request: ResearchRequest):
     """Search academic papers via OpenAlex API (free, no API key)"""
-    return {"result": research_skill.search_papers(request.query, request.limit)}
+    return success_response(
+        data={"result": research_skill.search_papers(request.query, request.limit)}
+    )
 
 
 @router.post("/ingestion")
@@ -84,20 +88,32 @@ async def ingest_data(request: IngestionRequest):
     action = request.action
 
     if action == "reddit":
-        return {
-            "result": data_ingestion_skill.reddit_hot(
-                request.subreddit or "technology", 5
-            )
-        }
+        return success_response(
+            data={
+                "result": data_ingestion_skill.reddit_hot(
+                    request.subreddit or "technology", 5
+                )
+            }
+        )
     elif action == "rss":
-        return {"result": data_ingestion_skill.fetch_rss(request.feed_url or "")}
+        return success_response(
+            data={"result": data_ingestion_skill.fetch_rss(request.feed_url or "")}
+        )
     elif action == "github":
-        return {"result": data_ingestion_skill.github_trending(request.language or "")}
+        return success_response(
+            data={
+                "result": data_ingestion_skill.github_trending(request.language or "")
+            }
+        )
     elif action == "multi":
-        return {
-            "result": data_ingestion_skill.ingest_multi_source(request.sources or [])
-        }
-    return {"error": f"Unknown action: {action}"}
+        return success_response(
+            data={
+                "result": data_ingestion_skill.ingest_multi_source(
+                    request.sources or []
+                )
+            }
+        )
+    return success_response(data={"error": f"Unknown action: {action}"})
 
 
 @router.post("/metrics")
@@ -107,38 +123,48 @@ async def get_social_metrics(request: MetricsRequest):
     handle = request.handle
 
     if platform == "x":
-        return {"result": social_metrics_skill.get_x_followers(handle)}
+        return success_response(
+            data={"result": social_metrics_skill.get_x_followers(handle)}
+        )
     elif platform == "reddit":
-        return {"result": social_metrics_skill.get_reddit_stats(handle)}
+        return success_response(
+            data={"result": social_metrics_skill.get_reddit_stats(handle)}
+        )
     elif platform == "github":
-        return {"result": social_metrics_skill.get_github_stats(handle)}
+        return success_response(
+            data={"result": social_metrics_skill.get_github_stats(handle)}
+        )
     elif platform == "instagram":
-        return {"result": social_metrics_skill.get_instagram_profile(handle)}
-    return {"error": f"Unknown platform: {platform}"}
+        return success_response(
+            data={"result": social_metrics_skill.get_instagram_profile(handle)}
+        )
+    return success_response(data={"error": f"Unknown platform: {platform}"})
 
 
 @router.get("/skills/popular")
 async def get_popular_skills():
     """Get popular ClawHub skills relevant to viral_forge"""
-    return {
-        "skills": popular_skills.get_all_skills(),
-        "high_priority": popular_skills.get_skills_by_priority("high"),
-        "enabled": os.getenv("ENABLE_CREWAI", "false").lower() == "true",
-    }
+    return success_response(
+        data={
+            "skills": popular_skills.get_all_skills(),
+            "high_priority": popular_skills.get_skills_by_priority("high"),
+            "enabled": os.getenv("ENABLE_CREWAI", "false").lower() == "true",
+        }
+    )
 
 
 @router.post("/skills/search")
 async def search_clawhub_skills(request: ClawHubSearchRequest):
     """Search skills from ClawHub GitHub repository"""
     results = clawhub_loader.search_skills(request.query, request.category)
-    return {"results": results, "count": len(results)}
+    return success_response(data={"results": results, "count": len(results)})
 
 
 @router.get("/skills/categories")
 async def get_skill_categories():
     """Get available skill categories from ClawHub"""
     categories = clawhub_loader.list_categories()
-    return {"categories": categories}
+    return success_response(data={"categories": categories})
 
 
 @router.post("/prompt/template")
@@ -150,28 +176,32 @@ async def use_prompt_template(request: PromptTemplateRequest):
 
     variables = request.variables or {}
     rendered = prompt_manager.render_template(request.template, **variables)
-    return {
-        "template": request.template,
-        "system": rendered["system"],
-        "human": rendered["human"],
-    }
+    return success_response(
+        data={
+            "template": request.template,
+            "system": rendered["system"],
+            "human": rendered["human"],
+        }
+    )
 
 
 @router.get("/prompt/templates")
 async def list_prompt_templates():
     """list all available prompt templates"""
-    return {"templates": prompt_manager.list_templates()}
+    return success_response(data={"templates": prompt_manager.list_templates()})
 
 
 @router.get("/langchain/status")
 async def langchain_status():
     """Check LangChain integration status"""
-    return {
-        "enabled": langchain_service.enabled,
-        "message": "LangChain integration active"
-        if langchain_service.enabled
-        else "Set ENABLE_LANGCHAIN=true to enable",
-    }
+    return success_response(
+        data={
+            "enabled": langchain_service.enabled,
+            "message": "LangChain integration active"
+            if langchain_service.enabled
+            else "Set ENABLE_LANGCHAIN=true to enable",
+        }
+    )
 
 
 @router.post("/crew/run")
@@ -184,18 +214,20 @@ async def run_crewai_crew(request: CrewRequest):
     else:
         return {"error": f"Unknown crew type: {request.crew_type}"}
 
-    return {"result": result, "crew_type": request.crew_type}
+    return success_response(data={"result": result, "crew_type": request.crew_type})
 
 
 @router.get("/crewai/status")
 async def crewai_status():
     """Check CrewAI integration status"""
-    return {
-        "enabled": crewai_service.enabled,
-        "message": "CrewAI integration active"
-        if crewai_service.enabled
-        else "Set ENABLE_CREWAI=true to enable",
-    }
+    return success_response(
+        data={
+            "enabled": crewai_service.enabled,
+            "message": "CrewAI integration active"
+            if crewai_service.enabled
+            else "Set ENABLE_CREWAI=true to enable",
+        }
+    )
 
 
 @router.post("/trading/quote")
@@ -204,19 +236,25 @@ async def get_trading_quote(request: TradingRequest):
     action = request.action
 
     if action == "stock":
-        return {"result": trading_service.get_stock_quote(request.symbol or "AAPL")}
+        return success_response(
+            data={"result": trading_service.get_stock_quote(request.symbol or "AAPL")}
+        )
     elif action == "crypto":
-        return {
-            "result": trading_service.get_crypto_price(request.coin_id or "bitcoin")
-        }
+        return success_response(
+            data={
+                "result": trading_service.get_crypto_price(request.coin_id or "bitcoin")
+            }
+        )
     elif action == "top_coins":
-        return {"result": trading_service.get_top_coins()}
+        return success_response(data={"result": trading_service.get_top_coins()})
     elif action == "sentiment":
-        return {
-            "result": trading_service.get_market_sentiment(request.symbol or "AAPL")
-        }
+        return success_response(
+            data={
+                "result": trading_service.get_market_sentiment(request.symbol or "AAPL")
+            }
+        )
 
-    return {"error": f"Unknown action: {action}"}
+    return success_response(data={"error": f"Unknown action: {action}"})
 
 
 @router.get("/trading/status")
@@ -225,35 +263,41 @@ async def trading_status():
     alpha_enabled = bool(os.getenv("ALPHA_VANTAGE_API_KEY"))
     coingecko_enabled = True  # CoinGecko has free tier
 
-    return {
-        "alpha_vantage": {
-            "enabled": alpha_enabled,
-            "message": "Alpha Vantage configured"
-            if alpha_enabled
-            else "Set ALPHA_VANTAGE_API_KEY for stock data",
-        },
-        "coingecko": {
-            "enabled": coingecko_enabled,
-            "message": "CoinGecko free tier available",
-        },
-    }
+    return success_response(
+        data={
+            "alpha_vantage": {
+                "enabled": alpha_enabled,
+                "message": "Alpha Vantage configured"
+                if alpha_enabled
+                else "Set ALPHA_VANTAGE_API_KEY for stock data",
+            },
+            "coingecko": {
+                "enabled": coingecko_enabled,
+                "message": "CoinGecko free tier available",
+            },
+        }
+    )
 
 
 @router.get("/market/opportunities")
 async def get_market_opportunities():
     """Get content opportunities based on market data"""
-    return {"opportunities": market_analysis.get_content_opportunities()}
+    return success_response(
+        data={"opportunities": market_analysis.get_content_opportunities()}
+    )
 
 
 @router.get("/interpreter/status")
 async def interpreter_status():
     """Check Open Interpreter status"""
-    return {
-        "enabled": interpreter_service.enabled,
-        "message": "Open Interpreter active"
-        if interpreter_service.enabled
-        else "Set ENABLE_INTERPRETER=true to enable",
-    }
+    return success_response(
+        data={
+            "enabled": interpreter_service.enabled,
+            "message": "Open Interpreter active"
+            if interpreter_service.enabled
+            else "Set ENABLE_INTERPRETER=true to enable",
+        }
+    )
 
 
 @router.post("/interpreter/execute")
@@ -264,7 +308,7 @@ async def execute_code(request: dict):
     timeout = request.get("timeout", 60)
 
     result = interpreter_service.execute_code(code, language, timeout)
-    return result
+    return success_response(data=result)
 
 
 @router.post("/seo/content")
@@ -275,13 +319,13 @@ async def generate_seo_content(request: dict):
     word_count = request.get("word_count", 500)
 
     result = blog_seo_service.generate_seo_content(topic, content_type, word_count)
-    return result
+    return success_response(data=result)
 
 
 @router.get("/tradingview/status")
 async def tradingview_status():
     """Check TradingView integration status"""
-    return await tradingview_service.get_market_overview()
+    return success_response(data=await tradingview_service.get_market_overview())
 
 
 class BacktestRequest(BaseModel):
@@ -300,43 +344,45 @@ async def run_backtest(request: BacktestRequest):
     result = await backtest_service.run_backtest(
         request.symbol, request.strategy, request.start_date, request.end_date
     )
-    return result
+    return success_response(data=result)
 
 
 @router.get("/metatrader/status")
 async def metatrader_status():
     """Check MetaTrader status"""
-    return {
-        "enabled": metatrader_service.enabled,
-        "message": "MetaTrader 5 connected"
-        if metatrader_service.enabled
-        else "Set ENABLE_META_TRADER=true and install MetaTrader5 package",
-    }
+    return success_response(
+        data={
+            "enabled": metatrader_service.enabled,
+            "message": "MetaTrader 5 connected"
+            if metatrader_service.enabled
+            else "Set ENABLE_META_TRADER=true and install MetaTrader5 package",
+        }
+    )
 
 
 @router.get("/metatrader/account")
 async def get_mt_account():
     """Get MetaTrader account info"""
-    return metatrader_service.get_account_info()
+    return success_response(data=metatrader_service.get_account_info())
 
 
 @router.get("/metatrader/symbols")
 async def get_mt_symbols():
     """Get available MetaTrader symbols"""
-    return {"symbols": metatrader_service.get_symbols()}
+    return success_response(data={"symbols": metatrader_service.get_symbols()})
 
 
 @router.get("/metatrader/positions")
 async def get_mt_positions():
     """Get open MetaTrader positions"""
-    return {"positions": metatrader_service.get_positions()}
+    return success_response(data={"positions": metatrader_service.get_positions()})
 
 
 @router.post("/binance/price")
 async def get_binance_price(request: dict):
     """Get Binance price for symbol"""
     symbol = request.get("symbol", "BTCUSDT")
-    return binance_service.get_ticker_price(symbol)
+    return success_response(data=binance_service.get_ticker_price(symbol))
 
 
 @router.get("/binance/klines")
@@ -344,4 +390,6 @@ async def get_binance_klines(
     symbol: str = "BTCUSDT", interval: str = "1h", limit: int = 100
 ):
     """Get Binance candlestick data"""
-    return {"klines": binance_service.get_klines(symbol, interval, limit)}
+    return success_response(
+        data={"klines": binance_service.get_klines(symbol, interval, limit)}
+    )

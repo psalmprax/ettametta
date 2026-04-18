@@ -1,4 +1,5 @@
 from typing import Any
+
 """
 Motion Graphics Service - Any Tier 3 Enhancement
 
@@ -78,7 +79,7 @@ class MotionGraphicsService:
         logger.info(f"[MotionGraphics] Rendering Remotion title - title: {title}")
 
         try:
-            from src.services.video_engine.base_remotion_service import base_remotion_service
+            from services.video_engine.remotion_service import base_remotion_service
 
             # Prepare props for Remotion
             props = {

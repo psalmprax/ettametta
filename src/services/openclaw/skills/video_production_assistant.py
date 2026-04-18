@@ -10,8 +10,10 @@ from typing import Any
 import logging
 import asyncio
 
-from src.services.video_engine.base_video_production_assistant import base_video_production_assistant
-from src.services.discovery.video_lead_scanner import video_lead_scanner
+from services.video_engine.video_production_assistant import (
+    base_video_production_assistant,
+)
+from services.discovery.video_lead_scanner import video_lead_scanner
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +124,9 @@ class VideoProductionAssistantSkill:
         if not production_plan:
             return {"success": False, "error": "production_plan parameter required"}
 
-        template = base_video_production_assistant.create_premiere_template(production_plan)
+        template = base_video_production_assistant.create_premiere_template(
+            production_plan
+        )
 
         return {
             "success": True,
@@ -140,7 +144,9 @@ class VideoProductionAssistantSkill:
         if not production_plan:
             return {"success": False, "error": "production_plan parameter required"}
 
-        template = base_video_production_assistant.create_capcut_template(production_plan)
+        template = base_video_production_assistant.create_capcut_template(
+            production_plan
+        )
 
         return {
             "success": True,
@@ -158,7 +164,9 @@ class VideoProductionAssistantSkill:
         if not production_plan:
             return {"success": False, "error": "production_plan parameter required"}
 
-        commands = base_video_production_assistant.create_ffmpeg_commands(production_plan)
+        commands = base_video_production_assistant.create_ffmpeg_commands(
+            production_plan
+        )
 
         return {
             "success": True,
@@ -211,8 +219,10 @@ class VideoProductionAssistantSkill:
         ffmpeg_commands = base_video_production_assistant.create_ffmpeg_commands(
             production_plan
         )
-        resolve_script = base_video_production_assistant.generate_davinci_resolve_script(
-            production_plan
+        resolve_script = (
+            base_video_production_assistant.generate_davinci_resolve_script(
+                production_plan
+            )
         )
 
         return {

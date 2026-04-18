@@ -9,7 +9,7 @@ from .transcription import TranscriptionService
 from .ocr_service import check_easyocr_available
 from .stock_service import StockService
 from .ffmpeg_utils import FFmpegTransformer
-from src.api.config import settings
+from api.config import settings
 
 # Backward compatibility aliases
 base_transcription_service = TranscriptionService()
@@ -948,9 +948,7 @@ class VideoProcessor:
         )
 
         try:
-            from src.services.video_engine.base_remotion_service import (
-                base_remotion_service,
-            )
+            from services.video_engine.remotion_service import base_remotion_service
 
             # Prepare props for the Remotion ViralClip composition
             props = {

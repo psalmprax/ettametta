@@ -1,13 +1,14 @@
-from src.api.utils.celery import celery_app
+from api.utils.celery import celery_app
 
 from .processor import VideoProcessor
 from .downloader import base_video_downloader
-from src.services.optimization.youtube_publisher import base_youtube_publisher
-from src.services.optimization.service import base_optimization_service
+from services.optimization.youtube_publisher import base_youtube_publisher
+from services.optimization.service import base_optimization_service
+from shared.enums import SystemJobStatus
 import asyncio
 import logging
 import os
-from src.api.config import settings
+from api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -75,11 +76,11 @@ def download_and_process_task(
     - enhanced: Tier 2 + sound design
     - premium: Tier 3 full processing (sound + motion graphics)
     """
-    from src.api.utils.database import get_async_db_url, AsyncSession
-    from src.api.utils.models import VideoJobDB
+    from api.utils.database import get_async_db_url, AsyncSession
+    from api.utils.models import VideoJobDB
     from sqlalchemy import select
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-    from src.api.config import settings
+    from api.config import settings
     import uuid
     import asyncio
 
@@ -114,7 +115,7 @@ def download_and_process_task(
                     await db.commit()
 
                     # Real-time WebSocket Notification
-                    from src.api.routes.ws import notify_job_update_sync
+                    from api.routes.ws import notify_job_update_sync
 
                     notification = {
                         "id": task_id,
@@ -131,11 +132,11 @@ def download_and_process_task(
 
     try:
         # 1. Download
-        update_job(status="Validating", progress=5)
+        update_job(status=SystemJobStatus.VALIDATING, progress=5)
         is_valid = run_async(base_video_downloader.verify_video_asset(source_url))
         if not is_valid:
             update_job(
-                status="Failed - Invalid Input",
+                status=SystemJobStatus.FAILED_INVALID_INPUT,
                 progress=0,
                 error_message="Asset validation failed: Source appears to be audio-only or invalid.",
             )
@@ -146,11 +147,11 @@ def download_and_process_task(
                 "message": "Asset validation failed: Source appears to be audio-only or invalid.",
             }
 
-        update_job(status="Downloading", progress=10)
+        update_job(status=SystemJobStatus.DOWNLOADING, progress=10)
         video_path = run_async(base_video_downloader.download_video(source_url))
         if not video_path:
             update_job(
-                status="Failed - Download Error",
+                status=SystemJobStatus.FAILED_DOWNLOAD_ERROR,
                 progress=0,
                 error_message="Video download failed",
             )
@@ -158,14 +159,14 @@ def download_and_process_task(
             raise Exception("Download failed - retryable")
 
         # B. Analyze Visuals via Gemini (VLM)
-        update_job(status="Analyzing Visuals", progress=35)
-        from .base_vlm_service import base_vlm_service
+        update_job(status=SystemJobStatus.ANALYZING_VISUALS, progress=35)
+        from .vlm_service import base_vlm_service
 
         visual_insights = run_async(base_vlm_service.analyze_video_content(video_path))
 
         # C. Generate Strategy via Groq (Integrated Scraper + VLM Intelligence)
-        update_job(status="Strategizing", progress=40)
-        from src.services.decision_engine.service import base_strategy_service
+        update_job(status=SystemJobStatus.STRATEGIZING, progress=40)
+        from services.decision_engine.service import base_strategy_service
 
         # Extract transcript from video if available
         from .transcription import base_transcription_service
@@ -194,13 +195,13 @@ def download_and_process_task(
         if visual_insights.get("visual_mood"):
             logging.info(f"[Task] VLM Intuition: {visual_insights['visual_mood']}")
 
-        update_job(status="Rendering", progress=50)
+        update_job(status=SystemJobStatus.RENDERING, progress=50)
 
         # C. Render with Full Pipeline
         processor = VideoProcessor()
         output_name = f"{uuid.uuid4()}.mp4"
 
-        from src.api.utils.models import VideoFilterDB
+        from api.utils.models import VideoFilterDB
         from sqlalchemy import select
 
         async def get_filters():
@@ -223,8 +224,8 @@ def download_and_process_task(
         # ===== TIER 3 ENHANCEMENTS (Any) =====
         # Sound Design: enabled by explicit flag OR quality_tier
         if sound_design or quality_tier in ("enhanced", "premium"):
-            update_job(status="Adding Sound Design", progress=55)
-            from src.services.audio.sound_design import sound_design_service
+            update_job(status=SystemJobStatus.ADDING_SOUND_DESIGN, progress=55)
+            from services.audio.sound_design import sound_design_service
 
             enhanced_path = run_async(
                 sound_design_service.add_background_music(processed_path, niche=niche)
@@ -235,8 +236,10 @@ def download_and_process_task(
 
         # Motion Graphics: enabled by explicit flag OR premium tier
         if motion_graphics or quality_tier == "premium":
-            update_job(status="Adding Motion Graphics", progress=60)
-            from src.services.video_engine.motion_graphics import base_motion_graphics_service
+            update_job(status=SystemJobStatus.ADDING_MOTION_GRAPHICS, progress=60)
+            from services.video_engine.motion_graphics import (
+                base_motion_graphics_service,
+            )
 
             title = f"{niche} Secrets" if niche else "Viral Content"
             mg_path = run_async(
@@ -249,13 +252,13 @@ def download_and_process_task(
                 logger.info(f"[Task] Motion graphics applied")
 
         # 3. Generate SEO metadata/package (USING REAL SERVICE)
-        update_job(status="Optimizing", progress=70)
+        update_job(status=SystemJobStatus.OPTIMIZING, progress=70)
         metadata = run_async(
             base_optimization_service.generate_viral_package(task_id, niche, platform)
         )
 
         # 3.5 Storage (Upload to S3 or prepare local URL)
-        from src.services.storage.service import base_storage_service
+        from services.storage.service import base_storage_service
 
         # Upload
         storage_key = base_storage_service.upload_file(processed_path)
@@ -263,7 +266,9 @@ def download_and_process_task(
         public_url = base_storage_service.get_public_url(storage_key)
 
         if preview_only:
-            update_job(status="Completed", progress=100, output_path=public_url)
+            update_job(
+                status=SystemJobStatus.COMPLETED, progress=100, output_path=public_url
+            )
             # Cleanup local artifacts (ONLY if cloud storage is active)
             if settings.STORAGE_PROVIDER != "LOCAL":
                 cleanup_local_files(video_path, processed_path)
@@ -277,7 +282,7 @@ def download_and_process_task(
             }
 
         # 4. Upload to Social Platform
-        update_job(status="Uploading", progress=85)
+        update_job(status=SystemJobStatus.UPLOADING, progress=85)
         url = ""
         if platform == "YouTube Shorts":
             url = run_async(
@@ -285,9 +290,9 @@ def download_and_process_task(
             )
         elif platform == "TikTok":
             # Use Real TikTok Publisher
-            from src.services.optimization.tiktok_publisher import base_tiktok_publisher
+            from services.optimization.tiktok_publisher import base_tiktok_publisher
 
-            update_job(status="TikTok Upload", progress=90)
+            update_job(status=SystemJobStatus.TIKTOK_UPLOAD, progress=90)
             url = run_async(
                 base_tiktok_publisher.upload_video(processed_path, metadata)
             )
@@ -296,7 +301,9 @@ def download_and_process_task(
         else:
             url = "platform_not_supported_yet"
 
-        update_job(status="Completed", progress=100, output_path=public_url)
+        update_job(
+            status=SystemJobStatus.COMPLETED, progress=100, output_path=public_url
+        )
 
         # 5. Cleanup local artifacts (ONLY if cloud storage is active)
         if settings.STORAGE_PROVIDER != "LOCAL":
@@ -328,12 +335,12 @@ def download_and_process_task(
         )
 
         if not is_retryable or self.request.retries >= self.max_retries:
-            status = "Failed"
+            status = SystemJobStatus.FAILED
             logging.error(f"[Celery Task] Non-retryable ERROR: {e}")
             # Mark as non-retryable to prevent further retries
             self.request.retries = self.max_retries
         else:
-            status = "Retrying"
+            status = SystemJobStatus.RETRYING
             logging.warning(
                 f"[Celery Task] Retryable ERROR (attempt {self.request.retries + 1}/{self.max_retries + 1}): {e}"
             )
@@ -378,9 +385,9 @@ def generate_video_task(
     Background task for AI Video Synthesis (T2V).
     Simplified sync version for demo.
     """
-    from src.api.utils.models import VideoJobDB
-    from src.api.utils.database import async_session_factory
-    from src.services.storage.service import base_storage_service
+    from api.utils.models import VideoJobDB
+    from api.utils.database import async_session_factory
+    from services.storage.service import base_storage_service
     from .synthesis_service import base_generative_service
     import uuid
 
@@ -404,7 +411,7 @@ def generate_video_task(
                     await db.commit()
 
                     # Real-time WebSocket Notification
-                    from src.api.routes.ws import notify_job_update_sync
+                    from api.routes.ws import notify_job_update_sync
 
                     notification = {
                         "id": task_id,
@@ -421,7 +428,7 @@ def generate_video_task(
 
     try:
         # 1. Synthesis
-        update_job(status="Synthesizing", progress=10)
+        update_job(status=SystemJobStatus.SYNTHESIZING, progress=10)
 
         # For E2E test: try real synthesis, fallback to mock for demo
         try:
@@ -462,14 +469,14 @@ def generate_video_task(
 
         if not video_url:
             update_job(
-                status="Failed - Synthesis Error",
+                status=SystemJobStatus.FAILED_SYNTHESIS_ERROR,
                 progress=0,
                 error_message="Video synthesis failed",
             )
             return {"status": "error", "message": "Synthesis failed"}
 
         # 2. Download generated asset (if it's a URL)
-        update_job(status="Downloading Asset", progress=40)
+        update_job(status=SystemJobStatus.DOWNLOADING_ASSET, progress=40)
         if video_url.startswith("http"):
             local_video_path = run_async(
                 base_video_downloader.download_video(video_url)
@@ -478,13 +485,15 @@ def generate_video_task(
             local_video_path = video_url
 
         # 3. Skip heavy post-processing for demo
-        update_job(status="Complete", progress=90)
+        update_job(status=SystemJobStatus.COMPLETED, progress=90)
 
         # 4. Storage
         storage_key = base_storage_service.upload_file(local_video_path)
         public_url = base_storage_service.get_public_url(storage_key)
 
-        update_job(status="Completed", progress=100, output_path=public_url)
+        update_job(
+            status=SystemJobStatus.COMPLETED, progress=100, output_path=public_url
+        )
 
         # Cleanup
         if local_video_path != video_url and settings.STORAGE_PROVIDER != "LOCAL":
@@ -510,11 +519,11 @@ def generate_video_task(
         )
 
         if not is_retryable or self.request.retries >= self.max_retries:
-            status = "Failed"
+            status = SystemJobStatus.FAILED
             logging.error(f"[Synthesis Task] Non-retryable ERROR: {e}")
             self.request.retries = self.max_retries
         else:
-            status = "Retrying"
+            status = SystemJobStatus.RETRYING
             logging.warning(
                 f"[Synthesis Task] Retryable ERROR (attempt {self.request.retries + 1}/{self.max_retries + 1}): {e}"
             )
@@ -544,12 +553,12 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
     """
     Orchestrates the synthesis of a multi-scene narrative story.
     """
-    from src.api.utils.database import async_session_factory
-    from src.api.utils.models import VideoJobDB
+    from api.utils.database import async_session_factory
+    from api.utils.models import VideoJobDB
     from sqlalchemy import select
-    from src.services.decision_engine.service import base_strategy_service
-    from src.services.video_engine.synthesis_service import base_generative_service
-    from src.services.video_engine.voiceover import base_voiceover_service
+    from services.decision_engine.service import base_strategy_service
+    from services.video_engine.synthesis_service import base_generative_service
+    from services.video_engine.voiceover import base_voiceover_service
     import uuid
     import asyncio
 
@@ -572,7 +581,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
                         job.error_message = error_message
                     await db.commit()
 
-                    from src.api.routes.ws import notify_job_update_sync
+                    from api.routes.ws import notify_job_update_sync
 
                     notification = {
                         "id": task_id,
@@ -589,14 +598,14 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
 
     try:
         # 1. Scripting Agent
-        update_job(status="Scripting narrative", progress=5)
+        update_job(status=SystemJobStatus.SCRIPTING, progress=5)
         story_script = run_async(
             base_strategy_service.generate_screenplay(prompt, style=style)
         )
         scenes = [scene.dict() for scene in story_script.scenes]
 
         # 2. Parallel Synthesis: Voiceover + Visuals
-        update_job(status="Synthesizing story components", progress=20)
+        update_job(status=SystemJobStatus.SYNTHESIZING_STORY, progress=20)
 
         async def synthesize_full_scenes():
             # Parallel Voiceover
@@ -624,7 +633,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
         fully_synthesized_scenes = run_async(synthesize_full_scenes())
 
         # 3. Precision Assembly
-        update_job(status="Assembling cinematic reel", progress=70)
+        update_job(status=SystemJobStatus.ASSEMBLING, progress=70)
         processor = VideoProcessor()
         output_name = f"story_{uuid.uuid4()}.mp4"
 
@@ -633,12 +642,14 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
         )
 
         # 4. Storage & Finalization
-        from src.services.storage.service import base_storage_service
+        from services.storage.service import base_storage_service
 
         storage_key = base_storage_service.upload_file(final_video_path)
         public_url = base_storage_service.get_public_url(storage_key)
 
-        update_job(status="Completed", progress=100, output_path=public_url)
+        update_job(
+            status=SystemJobStatus.COMPLETED, progress=100, output_path=public_url
+        )
 
         # 5. Cleanup local video file if not using local storage
         if settings.STORAGE_PROVIDER != "LOCAL":
@@ -665,11 +676,11 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
         )
 
         if not is_retryable or self.request.retries >= self.max_retries:
-            status = "Failed"
+            status = SystemJobStatus.FAILED
             logging.error(f"[Story Task] Non-retryable ERROR: {e}")
             self.request.retries = self.max_retries
         else:
-            status = "Retrying"
+            status = SystemJobStatus.RETRYING
             logging.warning(
                 f"[Story Task] Retryable ERROR (attempt {self.request.retries + 1}/{self.max_retries + 1}): {e}"
             )
@@ -699,11 +710,11 @@ def narrative_fusion_task(
     Tier 10 Autonomous Narrative Fusion task.
     Discovers multiple assets from 15+ platforms and fuses them into a cinematic narrative.
     """
-    from src.api.utils.database import async_session_factory
-    from src.api.utils.models import VideoJobDB
+    from api.utils.database import async_session_factory
+    from api.utils.models import VideoJobDB
     from sqlalchemy import select
-    from src.engines.real_video_fusion_engine import RealVideoFusionEngine
-    from src.engines.intelligent_video_workflow import (
+    from engines.real_video_fusion_engine import RealVideoFusionEngine
+    from engines.intelligent_video_workflow import (
         discover_multi_platform,
         analyze_content_type,
     )
@@ -732,7 +743,7 @@ def narrative_fusion_task(
 
     try:
         # Phase 1: Intelligent Discovery
-        update_job(status="Intelligent Discovery", progress=10)
+        update_job(status=SystemJobStatus.INTELLIGENT_DISCOVERY, progress=10)
         max_per_platform = max(2, int(duration_sec / 30))
         discovered = run_async(
             discover_multi_platform(niche, max_per_platform=max_per_platform)
@@ -740,12 +751,13 @@ def narrative_fusion_task(
 
         if not discovered:
             update_job(
-                status="Failed", error_message="No assets found across platforms"
+                status=SystemJobStatus.FAILED,
+                error_message="No assets found across platforms",
             )
             return {"status": "error", "message": "No assets found"}
 
         # Phase 2: Parallel Analysis
-        update_job(status="Narrative Analysis", progress=30)
+        update_job(status=SystemJobStatus.NARRATIVE_ANALYSIS, progress=30)
 
         async def _analyze():
             tasks = [analyze_content_type(v) for v in discovered]
@@ -759,7 +771,7 @@ def narrative_fusion_task(
                 eligible_clips.append(v)
 
         # Phase 3: Real Video Fusion
-        update_job(status="Cinematic Fusion", progress=50)
+        update_job(status=SystemJobStatus.CINEMATIC_FUSION, progress=50)
         fusion_engine = RealVideoFusionEngine()
         result = run_async(
             fusion_engine.create_real_video_content(
@@ -769,12 +781,14 @@ def narrative_fusion_task(
 
         if result.get("success"):
             # Phase 4: Storage
-            from src.services.storage.service import base_storage_service
+            from services.storage.service import base_storage_service
 
             storage_key = base_storage_service.upload_file(result["video_path"])
             public_url = base_storage_service.get_public_url(storage_key)
 
-            update_job(status="Completed", progress=100, output_path=public_url)
+            update_job(
+                status=SystemJobStatus.COMPLETED, progress=100, output_path=public_url
+            )
             return {
                 "status": "success",
                 "video_url": public_url,
@@ -783,10 +797,11 @@ def narrative_fusion_task(
             }
         else:
             update_job(
-                status="Failed", error_message=result.get("error", "Fusion failed")
+                status=SystemJobStatus.FAILED,
+                error_message=result.get("error", "Fusion failed"),
             )
             return {"status": "error", "message": result.get("error")}
 
     except Exception as e:
-        update_job(status="Failed", error_message=str(e))
+        update_job(status=SystemJobStatus.FAILED, error_message=str(e))
         raise

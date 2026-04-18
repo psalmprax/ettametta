@@ -1,27 +1,28 @@
 from fastapi import APIRouter, HTTPException, Request, Depends, status, Query
 from fastapi.responses import RedirectResponse
-from src.services.optimization.service import base_optimization_service
-from src.services.optimization.youtube_publisher import base_youtube_publisher
-from src.services.optimization.tiktok_publisher import base_tiktok_publisher
-from src.services.optimization.models import PostMetadata
-from src.services.optimization.auth import token_manager
-from src.services.optimization.scheduler import smart_scheduler
+from services.optimization.service import base_optimization_service
+from services.optimization.youtube_publisher import base_youtube_publisher
+from services.optimization.tiktok_publisher import base_tiktok_publisher
+from services.optimization.models import PostMetadata
+from services.optimization.auth import token_manager
+from services.optimization.scheduler import smart_scheduler
 from pydantic import BaseModel
 from google_auth_oauthlib.flow import Flow
-from src.api.config import settings
-from src.api.routes.auth import get_current_user
-from src.api.utils.vault import get_secret, get_secret_async
-from src.api.utils.user_models import UserDB
+from api.config import settings
+from api.routes.auth import get_current_user
+from api.utils.vault import get_secret, get_secret_async
+from api.utils.user_models import UserDB, UserRole
 
-# from src.api.utils.user_models import UserDB # Deprecated import
-from src.api.utils.database import get_db
+# from api.utils.user_models import UserDB, UserRole # Deprecated import
+from api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.api.utils.models import SocialAccount, PublishedContentDB
-from src.api.utils.subscription import credits_required
-from src.services.payment.credit_service import credit_service
+from api.utils.models import SocialAccount, PublishedContentDB
+from api.utils.subscription import credits_required
+from services.payment.credit_service import credit_service
 import datetime
 import uuid
+from api.utils.api_responses import success_response
 import logging
 import os
 
@@ -101,7 +102,9 @@ SUPPORTED_PLATFORMS = {
 @router.get("/platforms")
 async def get_supported_platforms():
     """Get list of all supported platforms for publishing"""
-    return {"platforms": SUPPORTED_PLATFORMS, "count": len(SUPPORTED_PLATFORMS)}
+    return success_response(
+        data={"platforms": SUPPORTED_PLATFORMS, "count": len(SUPPORTED_PLATFORMS)}
+    )
 
 
 # OAuth Scopes for YouTube
@@ -156,7 +159,7 @@ async def auth_youtube(current_user: UserDB = Depends(get_current_user)):
     authorization_url, _ = flow.authorization_url(
         access_type="offline", include_granted_scopes="true", state=state
     )
-    return {"url": authorization_url}
+    return success_response(data={"url": authorization_url})
 
 
 @router.get("/auth/youtube/callback")
@@ -262,19 +265,21 @@ async def list_accounts(
 ):
     try:
         stmt = select(SocialAccount)
-        if current_user.role != "admin":
+        if current_user.role != UserRole.ADMIN:
             stmt = stmt.where(SocialAccount.user_id == current_user.id)
         result = await db.execute(stmt)
         accounts = result.scalars().all()
-        return [
-            {
-                "id": a.id,
-                "platform": a.platform,
-                "username": a.username,
-                "updated_at": a.updated_at,
-            }
-            for a in accounts
-        ]
+        return success_response(
+            data=[
+                {
+                    "id": a.id,
+                    "platform": a.platform,
+                    "username": a.username,
+                    "updated_at": a.updated_at,
+                }
+                for a in accounts
+            ]
+        )
     finally:
         pass
 
@@ -294,14 +299,16 @@ async def delete_account(
             raise HTTPException(status_code=404, detail="Account not found")
 
         # Isolation check
-        if account.user_id != current_user.id and current_user.role != "admin":
+        if account.user_id != current_user.id and current_user.role != UserRole.ADMIN:
             raise HTTPException(
                 status_code=403, detail="Not authorized to delete this account"
             )
 
         await db.delete(account)
         await db.commit()
-        return {"status": "success", "message": "Account unlinked"}
+        return success_response(
+            data={"status": "success", "message": "Account unlinked"}
+        )
     finally:
         pass
 
@@ -316,8 +323,8 @@ async def retry_publish(
     Retry publishing a video that was pending authentication.
     Called after user has authenticated the platform.
     """
-    from src.api.utils.models import PublishedContentDB
-    from src.services.optimization.service import base_optimization_service
+    from api.utils.models import PublishedContentDB
+    from services.optimization.service import base_optimization_service
 
     try:
         # Get the pending content
@@ -348,7 +355,7 @@ async def retry_publish(
             )
 
         # Check if now authenticated
-        from src.services.optimization.auth import token_manager
+        from services.optimization.auth import token_manager
 
         has_auth = (
             await token_manager.get_token(platform_key, user_id=current_user.id)
@@ -373,13 +380,13 @@ async def retry_publish(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "tiktok":
-            from src.services.optimization.tiktok_publisher import base_tiktok_publisher
+            from services.optimization.tiktok_publisher import base_tiktok_publisher
 
             url = await base_tiktok_publisher.upload_video(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "instagram":
-            from src.services.optimization.instagram_publisher import (
+            from services.optimization.instagram_publisher import (
                 base_instagram_publisher,
             )
 
@@ -387,7 +394,7 @@ async def retry_publish(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "facebook":
-            from src.services.optimization.facebook_publisher import (
+            from services.optimization.facebook_publisher import (
                 base_facebook_publisher,
             )
 
@@ -395,13 +402,13 @@ async def retry_publish(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "x":
-            from src.services.optimization.x_publisher import base_x_publisher
+            from services.optimization.x_publisher import base_x_publisher
 
             url = await base_x_publisher.upload_video(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "linkedin":
-            from src.services.optimization.linkedin_publisher import (
+            from services.optimization.linkedin_publisher import (
                 base_linkedin_publisher,
             )
 
@@ -411,7 +418,7 @@ async def retry_publish(
 
         # Update status
         content.status = "Published" if url else "Failed"
-        content.url = url
+        content.source_url = url
         content.published_at = datetime.datetime.utcnow() if url else None
 
         # Clear retention metadata
@@ -422,13 +429,15 @@ async def retry_publish(
 
         await db.commit()
 
-        return {
-            "status": "success" if url else "failed",
-            "url": url,
-            "message": "Video published successfully"
-            if url
-            else "Failed to publish video",
-        }
+        return success_response(
+            data={
+                "status": "success" if url else "failed",
+                "source_url": url,
+                "message": "Video published successfully"
+                if url
+                else "Failed to publish video",
+            }
+        )
 
     except HTTPException:
         raise
@@ -471,7 +480,7 @@ async def auth_tiktok(current_user: UserDB = Depends(get_current_user)):
 
     query_string = urllib.parse.urlencode(params)
     auth_url = f"https://www.tiktok.com/v2/auth/authorize?{query_string}"
-    return {"url": auth_url}
+    return success_response(data={"url": auth_url})
 
 
 @router.get("/auth/tiktok/callback")
@@ -527,11 +536,13 @@ async def auth_tiktok_callback(code: str, state: str):
                 },
             )
 
-            return {
-                "status": "success",
-                "message": "TikTok authenticated successfully",
-                "user_id": user_id,
-            }
+            return success_response(
+                data={
+                    "status": "success",
+                    "message": "TikTok authenticated successfully",
+                    "user_id": user_id,
+                }
+            )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Token exchange failed: {str(e)}")
@@ -572,7 +583,7 @@ async def auth_instagram(current_user: UserDB = Depends(get_current_user)):
 
     query_string = urllib.parse.urlencode(params)
     auth_url = f"https://api.instagram.com/oauth/authorize?{query_string}"
-    return {"url": auth_url}
+    return success_response(data={"url": auth_url})
 
 
 @router.get("/auth/instagram/callback")
@@ -622,11 +633,13 @@ async def auth_instagram_callback(code: str, state: str):
                 },
             )
 
-            return {
-                "status": "success",
-                "message": "Instagram authenticated successfully",
-                "user_id": user_id,
-            }
+            return success_response(
+                data={
+                    "status": "success",
+                    "message": "Instagram authenticated successfully",
+                    "user_id": user_id,
+                }
+            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Token exchange failed: {str(e)}")
 
@@ -665,7 +678,7 @@ async def auth_x(current_user: UserDB = Depends(get_current_user)):
 
     query_string = urllib.parse.urlencode(params)
     auth_url = f"https://twitter.com/i/oauth2/authorize?{query_string}"
-    return {"url": auth_url}
+    return success_response(data={"url": auth_url})
 
 
 @router.get("/auth/x/callback")
@@ -716,11 +729,13 @@ async def auth_x_callback(code: str, state: str):
                 },
             )
 
-            return {
-                "status": "success",
-                "message": "X authenticated successfully",
-                "user_id": user_id,
-            }
+            return success_response(
+                data={
+                    "status": "success",
+                    "message": "X authenticated successfully",
+                    "user_id": user_id,
+                }
+            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Token exchange failed: {str(e)}")
 
@@ -759,7 +774,7 @@ async def auth_linkedin(current_user: UserDB = Depends(get_current_user)):
 
     query_string = urllib.parse.urlencode(params)
     auth_url = f"https://www.linkedin.com/oauth/v2/authorization?{query_string}"
-    return {"url": auth_url}
+    return success_response(data={"url": auth_url})
 
 
 @router.get("/auth/linkedin/callback")
@@ -809,11 +824,13 @@ async def auth_linkedin_callback(code: str, state: str):
                 },
             )
 
-            return {
-                "status": "success",
-                "message": "LinkedIn authenticated successfully",
-                "user_id": user_id,
-            }
+            return success_response(
+                data={
+                    "status": "success",
+                    "message": "LinkedIn authenticated successfully",
+                    "user_id": user_id,
+                }
+            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Token exchange failed: {str(e)}")
 
@@ -822,7 +839,7 @@ class PublishRequest(BaseModel):
     video_path: str
     niche: str
     platform: str = "YouTube Shorts"
-    account_id: int | None = None
+    account_id: str | None = None  # UUID as string
     inject_monetization: bool = False
     # A/B Testing Fields
     variant_b_title: str | None = None
@@ -835,7 +852,7 @@ class MultiPlatformPublishRequest(BaseModel):
     video_path: str
     niche: str
     platforms: list[str]  # list of platforms to publish to
-    account_id: int | None = None
+    account_id: str | None = None  # UUID as string
     inject_monetization: bool = False
     variant_b_title: str | None = None
     variant_b_description: str | None = None
@@ -853,7 +870,7 @@ async def generate_package(
         package = await base_optimization_service.generate_viral_package(
             content_id, niche, platform
         )
-        return package
+        return success_response(data=package)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -879,7 +896,7 @@ async def get_content_comments(
         if not content:
             raise HTTPException(status_code=404, detail="Post not found")
 
-        if not content.url:
+        if not content.source_url:
             raise HTTPException(
                 status_code=400, detail="Post has no URL (not published yet)"
             )
@@ -889,12 +906,12 @@ async def get_content_comments(
         platform_key = content.platform.lower()
 
         # YouTube Extraction
-        if "youtube.com" in content.url or "youtu.be" in content.url:
-            if "youtu.be" in content.url:
-                platform_id = content.url.split("/")[-1].split("?")[0]
+        if "youtube.com" in content.source_url or "youtu.be" in content.source_url:
+            if "youtu.be" in content.source_url:
+                platform_id = content.source_url.split("/")[-1].split("?")[0]
             else:
                 # Handle various YouTube URL formats
-                url_parts = content.url.split("/")
+                url_parts = content.source_url.split("/")
                 for i, part in enumerate(url_parts):
                     if part == "watch" and i + 1 < len(url_parts):
                         platform_id = url_parts[i + 1].split("&")[0].split("?")[0]
@@ -907,8 +924,8 @@ async def get_content_comments(
             platform_key = "youtube"
 
         # TikTok Extraction - handle multiple URL formats
-        elif "tiktok.com" in content.url:
-            url_clean = content.url.split("?")[0]  # Remove query params
+        elif "tiktok.com" in content.source_url:
+            url_clean = content.source_url.split("?")[0]  # Remove query params
             url_parts = url_clean.split("/")
 
             # Handle different TikTok URL patterns:
@@ -943,12 +960,14 @@ async def get_content_comments(
             # YouTube comments would need separate implementation
             comments = []
 
-        return {
-            "platform": platform_key,
-            "video_id": platform_id,
-            "comments": comments,
-            "total_count": len(comments),
-        }
+        return success_response(
+            data={
+                "platform": platform_key,
+                "video_id": platform_id,
+                "comments": comments,
+                "total_count": len(comments),
+            }
+        )
 
     finally:
         pass
@@ -974,7 +993,7 @@ async def sync_content_metrics(
         if not content:
             raise HTTPException(status_code=404, detail="Post not found")
 
-        if not content.url:
+        if not content.source_url:
             raise HTTPException(
                 status_code=400, detail="Post has no URL (not published yet)"
             )
@@ -984,12 +1003,12 @@ async def sync_content_metrics(
         platform_key = content.platform.lower()
 
         # YouTube Extraction
-        if "youtube.com" in content.url or "youtu.be" in content.url:
-            if "youtu.be" in content.url:
-                platform_id = content.url.split("/")[-1].split("?")[0]
+        if "youtube.com" in content.source_url or "youtu.be" in content.source_url:
+            if "youtu.be" in content.source_url:
+                platform_id = content.source_url.split("/")[-1].split("?")[0]
             else:
                 # Handle various YouTube URL formats
-                url_parts = content.url.split("/")
+                url_parts = content.source_url.split("/")
                 for i, part in enumerate(url_parts):
                     if part == "watch" and i + 1 < len(url_parts):
                         platform_id = url_parts[i + 1].split("&")[0].split("?")[0]
@@ -1002,8 +1021,8 @@ async def sync_content_metrics(
             platform_key = "youtube"
 
         # TikTok Extraction - handle multiple URL formats
-        elif "tiktok.com" in content.url:
-            url_clean = content.url.split("?")[0]  # Remove query params
+        elif "tiktok.com" in content.source_url:
+            url_clean = content.source_url.split("?")[0]  # Remove query params
             url_parts = url_clean.split("/")
 
             # Handle different TikTok URL patterns:
@@ -1042,12 +1061,12 @@ async def sync_content_metrics(
         # Update Database
         old_views = content.view_count or 0
         content.view_count = metrics.get("views", 0)
-        content.likes = metrics.get("likes", 0)
-        content.comments = metrics.get("comments", 0)
-        content.shares = metrics.get("shares", 0)
+        content.like_count = metrics.get("likes", 0)
+        content.comment_count = metrics.get("comments", 0)
+        content.share_count = metrics.get("shares", 0)
 
         # Record A/B test events if this post is part of an A/B test
-        from src.api.utils.models import ABTestDB
+        from api.utils.models import ABTestDB
 
         stmt_ab = select(ABTestDB).where(ABTestDB.content_id == str(content.id))
         result_ab = await db.execute(stmt_ab)
@@ -1069,9 +1088,9 @@ async def sync_content_metrics(
 
                 # Record conversion events based on engagement
                 engagement_score = (
-                    (content.likes or 0)
-                    + (content.comments or 0)
-                    + (content.shares or 0)
+                    (content.like_count or 0)
+                    + (content.comment_count or 0)
+                    + (content.share_count or 0)
                 )
                 if engagement_score > 0:
                     # Simple heuristic: treat engagement as conversions
@@ -1085,7 +1104,7 @@ async def sync_content_metrics(
                     ) + conversions_b
 
         await db.commit()
-        return {"status": "success", "metrics": metrics}
+        return success_response(data={"status": "success", "metrics": metrics})
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -1099,13 +1118,13 @@ async def get_publish_history(
 ):
     try:
         stmt = select(PublishedContentDB)
-        if current_user.role != "admin":
+        if current_user.role != UserRole.ADMIN:
             stmt = stmt.where(PublishedContentDB.user_id == current_user.id)
 
         stmt = stmt.order_by(PublishedContentDB.published_at.desc())
         result = await db.execute(stmt)
         history = result.scalars().all()
-        return history
+        return success_response(data=history)
     finally:
         pass
 
@@ -1115,7 +1134,7 @@ async def get_scheduled_posts(
     current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """Get scheduled posts waiting for publish."""
-    from src.api.utils.models import ScheduledPostDB
+    from api.utils.models import ScheduledPostDB
     import datetime
 
     try:
@@ -1176,7 +1195,7 @@ async def schedule_post(
     """
     Schedules a video for later publishing.
     """
-    from src.api.utils.models import ScheduledPostDB
+    from api.utils.models import ScheduledPostDB
 
     try:
         prediction = smart_scheduler.predict_engagement(
@@ -1210,7 +1229,9 @@ async def schedule_post(
         )
         db.add(new_schedule)
         await db.commit()
-        return {"status": "success", "message": f"Scheduled for {scheduled_time}"}
+        return success_response(
+            data={"status": "success", "message": f"Scheduled for {scheduled_time}"}
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1225,7 +1246,7 @@ async def publish_video(
     db: AsyncSession = Depends(get_db),
     credits_cost: int = Depends(credits_required("social_publish")),
 ):
-    from src.api.utils.models import PublishedContentDB, ABTestDB
+    from api.utils.models import PublishedContentDB, ABTestDB
 
     try:
         # Consume credits
@@ -1245,8 +1266,8 @@ async def publish_video(
 
         # 2. Affiliate Injection
         if request.inject_monetization:
-            from src.api.utils.models import AffiliateLinkDB
-            from src.services.monetization.service import base_monetization_engine
+            from api.utils.models import AffiliateLinkDB
+            from services.monetization.service import base_monetization_engine
 
             # First, try AI-powered recommendations
             try:
@@ -1346,7 +1367,7 @@ async def publish_video(
             }
 
         # === CHECK PLATFORM AUTHENTICATION ===
-        from src.services.optimization.auth import token_manager
+        from services.optimization.auth import token_manager
 
         has_auth = (
             await token_manager.get_token(
@@ -1412,7 +1433,7 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "tiktok":
-            from src.services.optimization.tiktok_publisher import base_tiktok_publisher
+            from services.optimization.tiktok_publisher import base_tiktok_publisher
 
             url = await base_tiktok_publisher.upload_video(
                 request.video_path,
@@ -1421,7 +1442,7 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "instagram":
-            from src.services.optimization.instagram_publisher import (
+            from services.optimization.instagram_publisher import (
                 base_instagram_publisher,
             )
 
@@ -1432,7 +1453,7 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "facebook":
-            from src.services.optimization.facebook_publisher import (
+            from services.optimization.facebook_publisher import (
                 base_facebook_publisher,
             )
 
@@ -1443,7 +1464,7 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "x":
-            from src.services.optimization.x_publisher import base_x_publisher
+            from services.optimization.x_publisher import base_x_publisher
 
             url = await base_x_publisher.upload_video(
                 request.video_path,
@@ -1452,7 +1473,7 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "linkedin":
-            from src.services.optimization.linkedin_publisher import (
+            from services.optimization.linkedin_publisher import (
                 base_linkedin_publisher,
             )
 
@@ -1500,11 +1521,13 @@ async def publish_video(
             logger.info(f"[A/B Testing] Initialized test for post {new_post.id}")
 
             # Record initial view event for variant A (assuming it gets shown first)
-            from src.api.routes.ab_testing import router as ab_router
+            from api.routes.ab_testing import router as ab_router
             # We'll use the existing event recording endpoint
             # For now, just initialize the counters - real tracking would need frontend integration
 
-        return {"status": "success", "url": url, "metadata": metadata}
+        return success_response(
+            data={"status": "success", "url": url, "metadata": metadata}
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1523,9 +1546,9 @@ async def publish_multi_platform(
     - Authenticated platforms will be published immediately
     - Unauthenticated platforms will be stored as PENDING_AUTH (deleted after 3 hours)
     """
-    from src.api.utils.models import PublishedContentDB
-    from src.services.optimization.service import base_optimization_service
-    from src.services.optimization.auth import token_manager
+    from api.utils.models import PublishedContentDB
+    from services.optimization.service import base_optimization_service
+    from services.optimization.auth import token_manager
 
     try:
         results = {"published": [], "pending_auth": [], "failed": []}
@@ -1589,7 +1612,7 @@ async def publish_multi_platform(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "tiktok":
-                            from src.services.optimization.tiktok_publisher import (
+                            from services.optimization.tiktok_publisher import (
                                 base_tiktok_publisher,
                             )
 
@@ -1597,7 +1620,7 @@ async def publish_multi_platform(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "instagram":
-                            from src.services.optimization.instagram_publisher import (
+                            from services.optimization.instagram_publisher import (
                                 base_instagram_publisher,
                             )
 
@@ -1605,7 +1628,7 @@ async def publish_multi_platform(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "facebook":
-                            from src.services.optimization.facebook_publisher import (
+                            from services.optimization.facebook_publisher import (
                                 base_facebook_publisher,
                             )
 
@@ -1613,7 +1636,7 @@ async def publish_multi_platform(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "x":
-                            from src.services.optimization.x_publisher import (
+                            from services.optimization.x_publisher import (
                                 base_x_publisher,
                             )
 
@@ -1621,7 +1644,7 @@ async def publish_multi_platform(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "linkedin":
-                            from src.services.optimization.linkedin_publisher import (
+                            from services.optimization.linkedin_publisher import (
                                 base_linkedin_publisher,
                             )
 
@@ -1742,8 +1765,8 @@ async def opencli_post(
     This is an alternative to OAuth-based publishing. The user must have
     a connected session for the platform via /opencli/sessions/connect.
     """
-    from src.api.config import settings
-    from src.services.opencli.service import opencli_service
+    from api.config import settings
+    from services.opencli.service import opencli_service
 
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
@@ -1755,7 +1778,7 @@ async def opencli_post(
 
     if result.get("success"):
         # Record in DB
-        from src.api.utils.database import async_session_factory
+        from api.utils.database import async_session_factory
 
         async with async_session_factory() as db:
             try:
@@ -1783,8 +1806,8 @@ async def opencli_post_multi(
     current_user: UserDB = Depends(get_current_user),
 ):
     """Post to multiple platforms using the user's Chrome sessions."""
-    from src.api.config import settings
-    from src.services.opencli.service import opencli_service
+    from api.config import settings
+    from services.opencli.service import opencli_service
 
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")

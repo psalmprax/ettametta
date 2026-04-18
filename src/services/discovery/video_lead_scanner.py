@@ -14,8 +14,8 @@ from datetime import datetime, timedelta
 import re
 import json
 
-from src.api.utils.vault import get_secret
-from src.api.config import settings
+from api.utils.vault import get_secret
+from api.config import settings
 from groq import Groq
 
 logger = logging.getLogger(__name__)
@@ -30,12 +30,12 @@ class VideoLead:
     title: str
     creator: str
     url: str
-    views: int
-    likes: int
-    comments: int
-    shares: int
-    duration: int  # seconds
-    upload_date: datetime
+    view_count: int
+    like_count: int
+    comment_count: int
+    share_count: int
+    duration_seconds: int  # seconds
+    published_at: datetime
     thumbnail_url: str
     description: str
     tags: list[str]
@@ -128,34 +128,39 @@ class VideoLeadScanner:
         # FALLBACK: If we have no leads (e.g. Quota Exceeded), try DuckDuckGo Scraping
         # ---------------------------------------------------------
         if not all_leads:
-            self.logger.info("NO LEADS FOUND. Failing back to DuckDuckGo search (Quota/Network issue)")
+            self.logger.info(
+                "NO LEADS FOUND. Failing back to DuckDuckGo search (Quota/Network issue)"
+            )
             try:
                 from .duckduckgo_scanner import base_duckduckgo_scanner
+
                 ddg_candidates = await base_duckduckgo_scanner.scan_trends(niche)
                 self.logger.info(f"DuckDuckGo found {len(ddg_candidates)} candidates")
-                
+
                 for c in ddg_candidates:
                     if c.category == "video":
                         lead = VideoLead(
                             video_id=c.id,
                             platform=c.platform.lower(),
                             title=c.title,
-                            creator=c.author or "Unknown",
-                            url=c.url,
-                            views=c.view_count,
-                            likes=0,
-                            comments=0,
-                            shares=0,
-                            duration=30,
-                            upload_date=c.discovery_date,
+                            creator=c.creator_name or "Unknown",
+                            url=c.source_url,
+                            view_count=c.view_count,
+                            like_count=0,
+                            comment_count=0,
+                            share_count=0,
+                            duration_seconds=30,
+                            published_at=c.discovery_date,
                             thumbnail_url="",
                             description=c.description,
                             tags=c.tags,
                             engagement_rate=c.engagement_rate,
-                            viral_score=c.viral_score / 10.0 if c.viral_score > 10 else c.viral_score,
+                            viral_score=c.viral_score / 10.0
+                            if c.viral_score > 10
+                            else c.viral_score,
                             niche=niche,
                             content_type="general",
-                            monetization_potential="medium"
+                            monetization_potential="medium",
                         )
                         all_leads.append(lead)
                         print(f"DEBUG: Added DDG lead: {lead.title}")
@@ -268,13 +273,19 @@ class VideoLeadScanner:
 
                 response = await client.get(search_url, params=params)
                 search_data = response.json()
-                
+
                 if response.status_code != 200:
-                    logger.error(f"YouTube Search API Error {response.status_code}: {search_data}")
-                    print(f"DEBUG: YouTube API Error: {search_data.get('error', {}).get('message', 'Unknown')}. Falling back to scraper.")
+                    logger.error(
+                        f"YouTube Search API Error {response.status_code}: {search_data}"
+                    )
+                    print(
+                        f"DEBUG: YouTube API Error: {search_data.get('error', {}).get('message', 'Unknown')}. Falling back to scraper."
+                    )
                     return await self._scan_youtube_scraper(niche)
                 else:
-                    print(f"DEBUG: YouTube Search found {len(search_data.get('items', []))} items")
+                    print(
+                        f"DEBUG: YouTube Search found {len(search_data.get('items', []))} items"
+                    )
 
                 video_ids = [
                     item["id"]["videoId"]
@@ -463,41 +474,48 @@ class VideoLeadScanner:
         # FALLBACK: If we have no videos (e.g. Quota Exceeded), try DuckDuckGo
         # ---------------------------------------------------------
         if not all_videos:
-            print(f"DEBUG: Falling back to DuckDuckGo search for keywords: {search_query}")
+            print(
+                f"DEBUG: Falling back to DuckDuckGo search for keywords: {search_query}"
+            )
             from .duckduckgo_scanner import base_duckduckgo_scanner
+
             ddg_candidates = await base_duckduckgo_scanner.scan_trends(search_query)
             print(f"DEBUG: DuckDuckGo found {len(ddg_candidates)} candidates")
-            
+
             for c in ddg_candidates:
                 if c.category == "video":
                     print(f"DEBUG: Mapping DDG video: {c.title}")
-                    all_videos.append(VideoLead(
-                        video_id=c.id,
-                        platform=c.platform.lower(),
-                        title=c.title,
-                        creator=c.author or "Unknown",
-                        url=c.url,
-                        views=c.view_count,
-                        likes=0,
-                        comments=0,
-                        shares=0,
-                        duration=30,
-                        upload_date=c.discovery_date,
-                        thumbnail_url="",
-                        description=c.description,
-                        tags=c.tags,
-                        engagement_rate=c.engagement_rate,
-                        viral_score=c.viral_score / 10.0 if c.viral_score > 10 else c.viral_score,
-                        niche=keywords[0] if keywords else "general",
-                        content_type="general",
-                        monetization_potential="medium"
-                    ))
+                    all_videos.append(
+                        VideoLead(
+                            video_id=c.id,
+                            platform=c.platform.lower(),
+                            title=c.title,
+                            creator=c.creator_name or "Unknown",
+                            url=c.source_url,
+                            view_count=c.view_count,
+                            like_count=0,
+                            comment_count=0,
+                            share_count=0,
+                            duration_seconds=30,
+                            published_at=c.discovery_date,
+                            thumbnail_url="",
+                            description=c.description,
+                            tags=c.tags,
+                            engagement_rate=c.engagement_rate,
+                            viral_score=c.viral_score / 10.0
+                            if c.viral_score > 10
+                            else c.viral_score,
+                            niche=keywords[0] if keywords else "general",
+                            content_type="general",
+                            monetization_potential="medium",
+                        )
+                    )
 
         # Filter by quality
         quality_videos = [
             video
             for video in all_videos
-            if self._calculate_viral_score(video.views, video.engagement_rate)
+            if self._calculate_viral_score(video.view_count, video.engagement_rate)
             >= min_quality
         ]
 
@@ -549,7 +567,9 @@ class VideoLeadScanner:
                     relevance += 0.4
 
         # Quality bonus
-        quality_score = self._calculate_viral_score(video.views, video.engagement_rate)
+        quality_score = self._calculate_viral_score(
+            video.view_count, video.engagement_rate
+        )
         relevance += (quality_score / 10) * 0.1  # 10% weight for quality
 
         return min(relevance, 1.0)  # Cap at 1.0
@@ -571,7 +591,9 @@ class VideoLeadScanner:
         )
 
         # Create fusion strategy
-        fusion_plan = self._create_fusion_strategy(scene_videos, target_duration, scenes)
+        fusion_plan = self._create_fusion_strategy(
+            scene_videos, target_duration, scenes
+        )
 
         # Add audio overlay plan
         audio_plan = self._create_audio_overlay_plan(audio_script, fusion_plan)
@@ -591,7 +613,10 @@ class VideoLeadScanner:
         }
 
     def _create_fusion_strategy(
-        self, scene_videos: dict[str, list[VideoLead]], target_duration: int, scenes: list[dict[str, Any]]
+        self,
+        scene_videos: dict[str, list[VideoLead]],
+        target_duration: int,
+        scenes: list[dict[str, Any]],
     ) -> dict[str, Any]:
         """Create video fusion strategy from scene videos"""
         total_duration = 0
@@ -601,18 +626,24 @@ class VideoLeadScanner:
             if videos:
                 best_video = videos[0]  # Use highest-ranked video
                 segment_duration = min(
-                    best_video.duration, target_duration // len(scene_videos)
+                    best_video.duration_seconds, target_duration // len(scene_videos)
                 )
 
                 fusion_segments.append(
                     {
                         "scene": scene_key,
-                        "type": scenes[i].get("type", "content") if i < len(scenes) else "content",
+                        "type": scenes[i].get("type", "content")
+                        if i < len(scenes)
+                        else "content",
                         "video_id": best_video.video_id,
                         "platform": best_video.platform,
                         "duration": segment_duration,
                         "start_time": total_duration,
-                        "transition": self._get_transition_for_type(scenes[i].get("type", "content")) if i < len(scenes) else "fade",
+                        "transition": self._get_transition_for_type(
+                            scenes[i].get("type", "content")
+                        )
+                        if i < len(scenes)
+                        else "fade",
                     }
                 )
 
@@ -721,7 +752,7 @@ class VideoLeadScanner:
             if videos:
                 best_video = videos[0]
                 quality = self._calculate_viral_score(
-                    best_video.views, best_video.engagement_rate
+                    best_video.view_count, best_video.engagement_rate
                 )
                 total_quality += quality
                 total_videos += 1
@@ -755,11 +786,13 @@ class VideoLeadScanner:
         logger.info("TikTok scanning requires API integration")
         return []
 
-    async def _scan_with_ytdlp(self, query: str, platform: str, max_results: int = 5) -> list[VideoLead]:
+    async def _scan_with_ytdlp(
+        self, query: str, platform: str, max_results: int = 5
+    ) -> list[VideoLead]:
         """Generic yt-dlp scraper for multi-platform support."""
         self.logger.info(f"Scraping {platform} for: {query}")
         leads = []
-        
+
         # Mapping platforms to yt-dlp search prefixes
         search_prefixes = {
             "youtube": f"ytsearch{max_results}:",
@@ -771,78 +804,89 @@ class VideoLeadScanner:
             "facebook": f"ytsearch{max_results}:facebook ",
             "twitch": f"ytsearch{max_results}:twitch ",
             "pinterest": f"ytsearch{max_results}:pinterest ",
-            "trends": f"ytsearch{max_results}:trending 2024 ",
+            "trends": f"ytsearch{max_results}:trending {datetime.now().year} ",
         }
-        
+
         prefix = search_prefixes.get(platform, f"ytsearch{max_results}:")
         sep = "##SEP##"
-        
+
         cmd = [
             "yt-dlp",
-            "--print", f"%(id)s{sep}%(title)s{sep}%(uploader)s{sep}%(view_count)s{sep}%(webpage_url)s{sep}%(duration)s{sep}%(upload_date)s{sep}%(description)s",
+            "--print",
+            f"%(id)s{sep}%(title)s{sep}%(uploader)s{sep}%(view_count)s{sep}%(webpage_url)s{sep}%(duration)s{sep}%(upload_date)s{sep}%(description)s",
             "--flat-playlist",
             "--no-download",
-            f"{prefix}{query}"
+            f"{prefix}{query}",
         ]
-        
+
         try:
             import asyncio
+
             process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
             stdout, stderr = await process.communicate()
-            
+
             if process.returncode != 0:
                 self.logger.error(f"ytdlp {platform} search failed: {stderr.decode()}")
                 return []
-                
+
             output = stdout.decode().strip()
             if not output:
                 return []
-                
-            for line in output.split('\n'):
-                if sep not in line: continue
+
+            for line in output.split("\n"):
+                if sep not in line:
+                    continue
                 parts = line.split(sep)
                 if len(parts) >= 5:
                     v_id, v_title, v_uploader, v_views, v_url = parts[:5]
                     v_dur_val = parts[5].strip() if len(parts) > 5 else "30"
-                    v_dur = float(v_dur_val) if v_dur_val and v_dur_val != 'None' else 30.0
-                    v_date_str = parts[6].strip() if len(parts) > 6 else datetime.now().strftime("%Y%m%d")
+                    v_dur = (
+                        float(v_dur_val) if v_dur_val and v_dur_val != "None" else 30.0
+                    )
+                    v_date_str = (
+                        parts[6].strip()
+                        if len(parts) > 6
+                        else datetime.now().strftime("%Y%m%d")
+                    )
                     v_desc = parts[7] if len(parts) > 7 else ""
-                    
+
                     try:
                         v_date = datetime.strptime(v_date_str, "%Y%m%d")
                     except:
                         v_date = datetime.now()
 
                     views = int(v_views) if v_views and v_views.isdigit() else 10000
-                    
-                    leads.append(VideoLead(
-                        video_id=v_id,
-                        platform=platform,
-                        title=v_title,
-                        creator=v_uploader or "Unknown",
-                        url=v_url,
-                        views=views,
-                        likes=int(views * 0.05),
-                        comments=int(views * 0.01),
-                        shares=int(views * 0.005),
-                        duration=int(v_dur),
-                        upload_date=v_date,
-                        thumbnail_url="",
-                        description=v_desc,
-                        tags=[],
-                        engagement_rate=0.065,
-                        viral_score=float(self._calculate_viral_score(views, 0.065)),
-                        niche=query,
-                        content_type="video",
-                        monetization_potential="high"
-                    ))
+
+                    leads.append(
+                        VideoLead(
+                            video_id=v_id,
+                            platform=platform,
+                            title=v_title,
+                            creator=v_uploader or "Unknown",
+                            url=v_url,
+                            view_count=views,
+                            like_count=int(views * 0.05),
+                            comment_count=int(views * 0.01),
+                            share_count=int(views * 0.005),
+                            duration_seconds=int(v_dur),
+                            published_at=v_date,
+                            thumbnail_url="",
+                            description=v_desc,
+                            tags=[],
+                            engagement_rate=0.065,
+                            viral_score=float(
+                                self._calculate_viral_score(views, 0.065)
+                            ),
+                            niche=query,
+                            content_type="video",
+                            monetization_potential="high",
+                        )
+                    )
         except Exception as e:
             self.logger.error(f"ytdlp {platform} scraper exception: {e}")
-            
+
         return leads
 
     async def _scan_youtube_scraper(self, niche: str) -> list[VideoLead]:
@@ -889,12 +933,12 @@ class VideoLeadScanner:
                 title=snippet.get("title", ""),
                 creator=snippet.get("channelTitle", ""),
                 url=f"https://youtube.com/watch?v={video_data['id']}",
-                views=views,
-                likes=likes,
-                comments=comments,
-                shares=0,  # YouTube API doesn't provide shares
-                duration=duration,
-                upload_date=self._parse_youtube_date(snippet.get("publishedAt", "")),
+                view_count=views,
+                like_count=likes,
+                comment_count=comments,
+                share_count=0,  # YouTube API doesn't provide shares
+                duration_seconds=duration,
+                published_at=self._parse_youtube_date(snippet.get("publishedAt", "")),
                 thumbnail_url=snippet.get("thumbnails", {})
                 .get("high", {})
                 .get("url", ""),
@@ -958,11 +1002,13 @@ class VideoLeadScanner:
             "hook": "crossfade",
             "content": "crossfade",
             "cta": "fade",
-            "conclusion": "fade"
+            "conclusion": "fade",
         }
         return transitions.get(scene_type, "crossfade")
 
-    async def _analyze_video_patterns(self, leads: list[VideoLead]) -> list[dict[str, Any]]:
+    async def _analyze_video_patterns(
+        self, leads: list[VideoLead]
+    ) -> list[dict[str, Any]]:
         """Analyze common patterns in successful videos"""
         if not leads:
             return {}
