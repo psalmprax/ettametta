@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def safe_import_skill(module_path: str, skill_name: str):
     """Safely import a skill, returning None if dependencies are missing."""
     try:
@@ -13,9 +14,7 @@ def safe_import_skill(module_path: str, skill_name: str):
             module = importlib.import_module(module_path)
         return getattr(module, skill_name)
     except (ImportError, ModuleNotFoundError, AttributeError) as e:
-        logger.warning(
-            f"Skill '{skill_name}' at '{module_path}' disabled: {e}"
-        )
+        logger.warning(f"Skill '{skill_name}' at '{module_path}' disabled: {e}")
         return None
 
 
@@ -97,7 +96,9 @@ leonardo_skill = safe_import_skill(".leonardo", "leonardo_skill")
 invideo_skill = safe_import_skill(".invideo", "invideo_skill")
 fliki_skill = safe_import_skill(".fliki", "fliki_skill")
 content_editor_skill = safe_import_skill(".content_editor", "content_editor_skill")
-base_video_production_assistant_skill = safe_import_skill(".video_production_assistant", "base_video_production_assistant_skill")
+base_video_production_assistant_skill = safe_import_skill(
+    ".video_production_assistant", "base_video_production_assistant_skill"
+)
 
 # Render and Agent Zero skills (must exist or be handled gracefully)
 render_skill = safe_import_skill(".render", "render_skill")
@@ -105,18 +106,24 @@ agent_zero_skill = safe_import_skill(".agent_zero", "agent_zero_skill")
 
 # Ensure render_skill has a fallback if import fails
 if render_skill is None:
+    from .base_skill import OpenClawBaseSkill
 
-    class FallbackRenderSkill:
-        def render_clip(self, **params):
-            return "⚠️ Render service unavailable"
+    class FallbackRenderSkill(OpenClawBaseSkill):
+        """Fallback skill when render module is unavailable"""
+
+        def execute(self, action: str = "render", **kwargs) -> str:
+            return "⚠️ Render service unavailable - please install render dependencies"
 
     render_skill = FallbackRenderSkill()
 
 if agent_zero_skill is None:
+    from .base_skill import OpenClawBaseSkill
 
-    class FallbackAgentZeroSkill:
-        def control_agent(self, **params):
-            return "⚠️ Agent Zero service unavailable"
+    class FallbackAgentZeroSkill(OpenClawBaseSkill):
+        """Fallback skill when agent zero module is unavailable"""
+
+        def execute(self, action: str = "status", **kwargs) -> str:
+            return "⚠️ Agent Zero service unavailable - please install agent-zero dependencies"
 
     agent_zero_skill = FallbackAgentZeroSkill()
 

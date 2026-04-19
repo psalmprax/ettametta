@@ -1,17 +1,20 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Any
 
 
 class ContentCandidate(BaseModel):
     """Unified content candidate model covering both discovery and search results.
     Spans fields from ContentCandidateDB and additional metadata.
+
+    Note: Uses 'metadata' as alias for 'metadata_json' to maintain consistency
+    with ContentCandidateDB field name via model_config.
     """
 
     id: str
     platform: str
     source_url: str
-    
+
     # Creator fields
     creator_name: Optional[str] = None
     creator_id: Optional[str] = None
@@ -42,7 +45,14 @@ class ContentCandidate(BaseModel):
     # Misc
     external_id: Optional[str] = None
     discovery_date: datetime = Field(default_factory=datetime.utcnow)
-    metadata: dict = {}
+    # Use metadata_json to match DB field name, with 'metadata' as alias for convenience
+    metadata_json: dict = Field(default_factory=dict)
+
+    class Config:
+        populate_by_name = True
+        fields = {
+            "metadata_json": "metadata",
+        }
 
 
 class ViralPattern(BaseModel):

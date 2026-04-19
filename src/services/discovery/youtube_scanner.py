@@ -153,9 +153,8 @@ class YouTubeShortsScanner(DiscoveryScannerBase):
 
     def identify_viral_velocity(self, candidate: ContentCandidate) -> float:
         # Better velocity: views per hour since publication
-        pub_date_str = (
-            candidate.metadata.get("published_at") if candidate.metadata else None
-        )
+        candidate_metadata = candidate.metadata_json or {}
+        pub_date_str = candidate_metadata.get("published_at")
         if not pub_date_str:
             return candidate.view_count / 24  # Fallback
 
