@@ -104,7 +104,7 @@ services:
 
   discovery-go:
     build: 
-      context: ./sr./src/services/discovery-go
+      context: ./src/services/discovery-go
       dockerfile: ../../../infra/docker/discovery-go.Dockerfile
     ports:
       - "7205:8080"
