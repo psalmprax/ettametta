@@ -11,9 +11,6 @@ from api.utils.database import async_session_factory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.utils.models import ABTestDB
-from api.routes.ab_testing import calculate_statistics
-from api.routes.ws import notify_system_log_async
-from services.analytics.service import base_analytics_service
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +47,7 @@ class ABTestingAutomation:
 
     async def _log(self, message: str, level: str = "INFO"):
         """Broadcast a log message"""
+        from api.routes.ws import notify_system_log_async
         await notify_system_log_async(message, level=level, module="AB_TESTING")
 
     async def _check_active_tests(self):
@@ -74,7 +72,7 @@ class ABTestingAutomation:
         """Evaluate a single A/B test for winner determination"""
         try:
             # Calculate current metrics
-            total_views = test.variant_a_views + test.variant_b_views
+            total_views = test.variant_a_view_count + test.variant_b_view_count
 
             # Need minimum sample size for statistical significance
             if total_views < 30:
@@ -83,8 +81,8 @@ class ABTestingAutomation:
             # Check if we have enough data for both variants
             min_views_per_variant = 15
             if (
-                test.variant_a_views < min_views_per_variant
-                or test.variant_b_views < min_views_per_variant
+                test.variant_a_view_count < min_views_per_variant
+                or test.variant_b_view_count < min_views_per_variant
             ):
                 return  # Need more data
 
@@ -93,10 +91,10 @@ class ABTestingAutomation:
 
             # For views-based tests, use views as conversions
             stats = calculate_statistics(
-                test.variant_a_views,
-                test.variant_b_views,
-                test.variant_a_views,
-                test.variant_b_views,  # Using views as conversions for simplicity
+                test.variant_a_view_count,
+                test.variant_b_view_count,
+                test.variant_a_view_count,
+                test.variant_b_view_count,  # Using views as conversions for simplicity
             )
 
             # Check if statistically significant

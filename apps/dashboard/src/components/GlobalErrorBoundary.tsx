@@ -47,7 +47,7 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
         body: JSON.stringify({
           message: error.message,
           stack: error.stack,
-          componentStack: errorInfo.componentStack,
+          component_stack: errorInfo.componentStack,
           timestamp: new Date().toISOString(),
         }),
       });

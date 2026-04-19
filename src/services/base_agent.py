@@ -4,7 +4,6 @@ import json
 import requests
 from typing import Any, Dict, Optional, List
 from api.config import settings
-from api.routes.ws import notify_system_log_async
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +26,7 @@ class BaseEttamettaAgent:
     async def _log(self, message: str, level: str = "INFO"):
         """Broadcasts a log message to the UI console and local logger."""
         try:
+            from api.routes.ws import notify_system_log_async
             await notify_system_log_async(message, level=level, module=self.agent_name)
         except Exception:
             pass # Handle cases where event loop isn't running or WS is down

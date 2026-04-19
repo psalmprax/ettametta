@@ -364,14 +364,14 @@ async def get_ab_results(
                 status_code=404, detail="A/B test not found for this content"
             )
 
-        winner = "A" if test.variant_a_views > test.variant_b_views else "B"
+        winner = "A" if test.variant_a_view_count > test.variant_b_view_count else "B"
         return success_response(
             data={
                 "test_id": test.id,
                 "variant_a_title": test.variant_a_title,
                 "variant_b_title": test.variant_b_title,
-                "variant_a_views": test.variant_a_views,
-                "variant_b_views": test.variant_b_views,
+                "variant_a_view_count": test.variant_a_view_count,
+                "variant_b_view_count": test.variant_b_view_count,
                 "winner": winner,
                 "created_at": test.created_at,
             }

@@ -84,6 +84,8 @@ from services.openclaw.skills import (
     fliki_skill,
     content_editor_skill,
     base_video_production_assistant_skill,
+    video_lead_skill,
+    scene_based_video_skill,
 )
 
 

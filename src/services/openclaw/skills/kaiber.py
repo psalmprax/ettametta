@@ -2,6 +2,9 @@ import asyncio
 import logging
 import os
 from typing import Any
+
+logger = logging.getLogger(__name__)
+
 try:
     from playwright.async_api import async_playwright, Browser, Page
     PLAYWRIGHT_AVAILABLE = True
@@ -10,8 +13,6 @@ except ImportError:
     logger.warning("[Kaiber] Playwright not installed. Browser automation disabled.")
 
 from .base_skill import OpenClawBaseSkill
-
-logger = logging.getLogger(__name__)
 
 
 class KaiberSkill(OpenClawBaseSkill):

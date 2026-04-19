@@ -1,3 +1,4 @@
+import React from 'react';
 import { Composition } from 'remotion';
 import { ViralClip, viralClipSchema } from './Composition';
 import { CinematicMinimal, cinematicMinimalSchema } from './templates/CinematicMinimal';
@@ -17,7 +18,7 @@ export const RemotionRoot: React.FC = () => {
                 defaultProps={{
                     title: 'Your Viral Hook Here',
                     subtitle: 'Captivating content follows...',
-                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
                 }}
             />
             <Composition
@@ -43,7 +44,7 @@ export const RemotionRoot: React.FC = () => {
                 schema={hormoziStyleSchema}
                 defaultProps={{
                     text: 'WORK HARDER THAN EVERYONE ELSE UNTIL YOU WIN',
-                    highlightColor: '#00ff00'
+                    highlight_color: '#00ff00'
                 }}
             />
         </>

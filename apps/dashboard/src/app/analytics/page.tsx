@@ -60,8 +60,8 @@ interface ABResult {
     test_id: number;
     variant_a_title: string;
     variant_b_title: string;
-    variant_a_views: number;
-    variant_b_views: number;
+    variant_a_view_count: number;
+    variant_b_view_count: number;
     winner: string | null;
     created_at: string;
 }
@@ -242,9 +242,9 @@ export default function AnalyticsPage() {
             const token = getAuthToken();
             if (!token) return;
             for (const test of activeTests) {
-                const totalViews = (test.variant_a_views || 0) + (test.variant_b_views || 0);
+                const totalViews = (test.variant_a_view_count || 0) + (test.variant_b_view_count || 0);
                 // Threshold: 100 views per variant roughly
-                if (totalViews >= 200 && test.variant_a_views > 50 && test.variant_b_views > 50) {
+                if (totalViews >= 200 && test.variant_a_view_count > 50 && test.variant_b_view_count > 50) {
                     await withRealFallback<any>(
                         () => fetch(`${API_BASE}/ab-testing/ab/test/${test.id}/determine-winner`, {
                             method: "POST",
@@ -665,10 +665,10 @@ export default function AnalyticsPage() {
                                         <div className="space-y-2">
                                             <div className="flex justify-between text-[10px] font-bold text-zinc-400">
                                                 <span>Reach</span>
-                                                <span className="text-white">{(abResults.variant_a_views || 0).toLocaleString()}</span>
+                                                <span className="text-white">{(abResults.variant_a_view_count || 0).toLocaleString()}</span>
                                             </div>
                                             <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden">
-                                                <div className="h-full bg-zinc-500" style={{ width: `${(abResults.variant_a_views / (abResults.variant_a_views + abResults.variant_b_views || 1)) * 100}%` }} />
+                                                <div className="h-full bg-zinc-500" style={{ width: `${(abResults.variant_a_view_count / (abResults.variant_a_view_count + abResults.variant_b_view_count || 1)) * 100}%` }} />
                                             </div>
                                         </div>
                                     </div>
@@ -681,11 +681,11 @@ export default function AnalyticsPage() {
                                         <h4 className="text-2xl font-black text-primary tracking-tighter uppercase truncate">{abResults.variant_b_title}</h4>
                                         <div className="space-y-2">
                                             <div className="flex justify-between text-[10px] font-bold text-zinc-400">
-                                                <span className="text-white">{(abResults.variant_b_views || 0).toLocaleString()}</span>
+                                                <span className="text-white">{(abResults.variant_b_view_count || 0).toLocaleString()}</span>
                                                 <span>Reach</span>
                                             </div>
                                             <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden flex justify-end">
-                                                <div className="h-full bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" style={{ width: `${(abResults.variant_b_views / (abResults.variant_a_views + abResults.variant_b_views || 1)) * 100}%` }} />
+                                                <div className="h-full bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" style={{ width: `${(abResults.variant_b_view_count / (abResults.variant_a_view_count + abResults.variant_b_view_count || 1)) * 100}%` }} />
                                             </div>
                                         </div>
                                     </div>
@@ -972,7 +972,7 @@ export default function AnalyticsPage() {
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <div className="text-[10px] text-zinc-400">
-                                            <span className="text-white font-bold">{test.variant_a_views || 0}</span> vs <span className="text-primary font-bold">{test.variant_b_views || 0}</span>
+                                            <span className="text-white font-bold">{test.variant_a_view_count || 0}</span> vs <span className="text-primary font-bold">{test.variant_b_view_count || 0}</span>
                                         </div>
                                         <button
                                             onClick={async () => {
@@ -1027,8 +1027,8 @@ export default function AnalyticsPage() {
                     {completedTests.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {completedTests.map((test: any) => {
-                                const total = (test.variant_a_views || 0) + (test.variant_b_views || 0);
-                                const winRate = total > 0 ? (test.winner_variant === 'A' ? test.variant_a_views / total : test.variant_b_views / total) : 0;
+                                const total = (test.variant_a_view_count || 0) + (test.variant_b_view_count || 0);
+                                const winRate = total > 0 ? (test.winner_variant === 'A' ? test.variant_a_view_count / total : test.variant_b_view_count / total) : 0;
                                 return (
                                     <div key={test.id} className="p-5 rounded-2xl bg-zinc-950/40 border border-white/5 flex items-center justify-between group hover:border-amber-500/30 transition-all">
                                         <div className="space-y-1">
@@ -1084,11 +1084,11 @@ export default function AnalyticsPage() {
                                     <div className="pt-4 border-t border-white/5 flex justify-between items-end">
                                         <div>
                                             <p className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Engagement</p>
-                                            <p className="text-2xl font-black text-white">{lastWinner.variant_a_views + lastWinner.variant_b_views}</p>
+                                            <p className="text-2xl font-black text-white">{lastWinner.variant_a_view_count + lastWinner.variant_b_view_count}</p>
                                         </div>
                                         <div className="text-right">
                                             <p className="text-[10px] text-zinc-500 font-bold uppercase mb-1">Performance Lift</p>
-                                            <p className="text-2xl font-black text-emerald-500">+{Math.round((Math.max(lastWinner.variant_a_views, lastWinner.variant_b_views) / (lastWinner.variant_a_views + lastWinner.variant_b_views) - 0.5) * 200)}%</p>
+                                            <p className="text-2xl font-black text-emerald-500">+{Math.round((Math.max(lastWinner.variant_a_view_count, lastWinner.variant_b_view_count) / (lastWinner.variant_a_view_count + lastWinner.variant_b_view_count) - 0.5) * 200)}%</p>
                                         </div>
                                     </div>
                                 </div>
