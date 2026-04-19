@@ -1,4 +1,4 @@
-from src.api.utils.vault import get_secret
+from api.utils.vault import get_secret
 import os
 import logging
 import mimetypes
@@ -162,7 +162,7 @@ class StorageService:
         else:
             # Local fallback logic
             filename = os.path.basename(object_key_or_path)
-            from src.api.config import settings
+            from api.config import settings
 
             return f"{get_secret('production_domain', settings.PRODUCTION_DOMAIN)}/static/outputs/{filename}"
 

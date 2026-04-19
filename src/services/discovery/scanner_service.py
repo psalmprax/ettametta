@@ -13,10 +13,10 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from src.api.utils.celery import celery_app
-from src.api.utils.database import async_session_factory
-from src.api.utils.models import ContentCandidateDB, MonitoredNiche
-from src.api.utils.vault import get_secret
+from api.utils.celery import celery_app
+from api.utils.database import async_session_factory
+from api.utils.models import ContentCandidateDB, MonitoredNiche
+from api.utils.vault import get_secret
 
 from .youtube_scanner import YouTubeShortsScanner
 from .youtube_long_scanner import YouTubeLongScanner
@@ -101,7 +101,7 @@ class ScannerService:
 
                         if existing:
                             # Update existing record with fresh metrics
-                            existing.views = candidate.views
+                            existing.view_count = candidate.view_count
                             existing.engagement_score = candidate.engagement_score
                             existing.viral_score = candidate.viral_score
                             existing.scanned_at = datetime.utcnow()
@@ -113,17 +113,15 @@ class ScannerService:
                                 external_id=external_id,
                                 title=candidate.title,
                                 description=candidate.description,
-                                creator_name=candidate.author,
-                                url=candidate.url,
+                                creator_name=candidate.creator_name,
+                                source_url=candidate.source_url,
+                                url=candidate.source_url,  # Legacy field maintenance
                                 thumbnail_url=candidate.thumbnail_url,
                                 duration_seconds=candidate.duration_seconds,
-                                views=candidate.views,
-                                like_count=candidate.metadata.get("likeCount", 0)
-                                if candidate.metadata
-                                else 0,
-                                comment_count=candidate.metadata.get("commentCount", 0)
-                                if candidate.metadata
-                                else 0,
+                                view_count=candidate.view_count,
+                                like_count=candidate.like_count,
+                                comment_count=candidate.comment_count,
+                                share_count=candidate.share_count,
                                 engagement_score=candidate.engagement_score,
                                 viral_score=candidate.viral_score,
                                 category=candidate.category,

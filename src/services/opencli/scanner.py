@@ -12,7 +12,7 @@ and this scanner will use their session to search/fetch content.
 
 import logging
 from typing import Any
-from src.services.discovery.models import ContentCandidate
+from services.discovery.models import ContentCandidate
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +35,8 @@ class OpenCLIScanner:
             niche: Search query / niche keyword
             platforms: Specific platforms to search (None = all connected)
         """
-        from src.services.opencli.service import opencli_service
-        from src.api.config import settings
+        from services.opencli.service import opencli_service
+        from api.config import settings
 
         if not settings.ENABLE_OPENCLI:
             return []
@@ -81,11 +81,15 @@ class OpenCLIScanner:
             for item in result:
                 try:
                     candidate = ContentCandidate(
+                        id=f"oc_{hash(item.get('url', '')) % 100000}",
                         platform=item.get("platform", "unknown"),
-                        url=item.get("url", ""),
+                        source_url=item.get("url", ""),
+                        creator_name=item.get("author", ""),
                         title=item.get("title", ""),
-                        author=item.get("author", ""),
-                        views=item.get("views", 0),
+                        view_count=item.get("views", 0),
+                        like_count=0,
+                        comment_count=0,
+                        share_count=0,
                         engagement_score=item.get("engagement_score", 0.0),
                         viral_score=item.get("viral_score", 0),
                         duration_seconds=item.get("duration_seconds", 0.0),
@@ -109,7 +113,7 @@ class OpenCLIScanner:
         limit: int = 20,
     ) -> list[ContentCandidate]:
         """Get feed/trending from a specific platform for the user."""
-        from src.services.opencli.service import opencli_service
+        from services.opencli.service import opencli_service
 
         results = await opencli_service.get_platform_feed(
             self.user_id, platform, feed_type, limit
@@ -119,11 +123,15 @@ class OpenCLIScanner:
         for item in results:
             try:
                 candidate = ContentCandidate(
+                    id=f"oc_feed_{hash(item.get('url', '')) % 100000}",
                     platform=item.get("platform", platform),
-                    url=item.get("url", ""),
+                    source_url=item.get("url", ""),
+                    creator_name=item.get("author", ""),
                     title=item.get("title", ""),
-                    author=item.get("author", ""),
-                    views=item.get("views", 0),
+                    view_count=item.get("views", 0),
+                    like_count=0,
+                    comment_count=0,
+                    share_count=0,
                     engagement_score=item.get("engagement_score", 0.0),
                     viral_score=item.get("viral_score", 0),
                     duration_seconds=item.get("duration_seconds", 0.0),

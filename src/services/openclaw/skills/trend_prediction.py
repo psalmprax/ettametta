@@ -2,22 +2,37 @@ import json
 import logging
 import requests
 from datetime import datetime, timedelta
-from src.api.config import settings
+from api.config import settings
 from .memory import memory_skill
+
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class TrendPredictionSkill:
+class TrendPredictionSkill(OpenClawBaseSkill):
     def __init__(self):
+        super().__init__()
         self.api_url = f"{settings.API_URL}"
         self.prediction_history: list[dict] = []
 
-    def _get_headers(self):
-        headers = {}
-        if settings.INTERNAL_API_TOKEN:
-            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-        return headers
+    def execute(
+        self, action: str = "predict", niche: str = "Motivation", **kwargs
+    ) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "predict":
+            return self.predict_viral_trends(niche, kwargs.get("horizon", 7))
+        elif action == "velocity":
+            return self.get_trend_velocity(kwargs.get("topic", niche))
+        elif action == "signal":
+            return self.get_cross_platform_signals(kwargs.get("topic", niche))
+        elif action == "history":
+            return self.get_prediction_history()
+
+        return f"⚠️ Unknown action for TrendPrediction: {action}"
+
 
     def predict_trend(self, niche: str = "general", horizon_days: int = 7) -> str:
         try:
@@ -29,7 +44,10 @@ class TrendPredictionSkill:
 
             current_trends = []
             if resp.status_code == 200:
-                data = resp.json()
+                raw_data = resp.json()
+                data = (
+                    raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
+                )
                 if isinstance(data, list):
                     current_trends = data[:10]
                 elif isinstance(data, dict):
@@ -128,7 +146,7 @@ class TrendPredictionSkill:
         try:
             resp = requests.get(
                 f"{self.api_url}/discovery/search",
-                params={"q": topic, "platform": "all", "limit": 20},
+                params={"query": topic, "platform": "all", "limit": 20},
                 headers=self._get_headers(),
                 timeout=10,
             )
@@ -136,7 +154,10 @@ class TrendPredictionSkill:
             if resp.status_code != 200:
                 return f"⚠️ Could not fetch trend data: {resp.status_code}"
 
-            results = resp.json()
+            raw_data = resp.json()
+            results = (
+                raw_data.get("data", []) if isinstance(raw_data, dict) else raw_data
+            )
             if not results:
                 return f"📉 No data found for '{topic}'."
 
@@ -196,12 +217,17 @@ class TrendPredictionSkill:
             try:
                 resp = requests.get(
                     f"{self.api_url}/discovery/search",
-                    params={"q": topic, "platform": platform, "limit": 5},
+                    params={"query": topic, "platform": platform, "limit": 5},
                     headers=self._get_headers(),
                     timeout=8,
                 )
                 if resp.status_code == 200:
-                    data = resp.json()
+                    raw_data = resp.json()
+                    data = (
+                        raw_data.get("data", [])
+                        if isinstance(raw_data, dict)
+                        else raw_data
+                    )
                     results[platform] = len(data) if isinstance(data, list) else 1
                 else:
                     results[platform] = 0

@@ -4,8 +4,8 @@ from typing import Any
 from tenacity import retry, stop_after_attempt, wait_exponential
 from sqlalchemy import select
 from .base import BaseMonetizationStrategy
-from src.api.utils.database import async_session_factory
-from src.api.utils.models import SystemSettings
+from api.utils.database import async_session_factory
+from api.utils.models import SystemSettings
 
 class CryptoStrategy(BaseMonetizationStrategy):
     """

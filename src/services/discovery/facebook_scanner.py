@@ -53,8 +53,8 @@ class FacebookScanner:
         seen = set()
         unique_candidates = []
         for c in candidates:
-            if c.url not in seen:
-                seen.add(c.url)
+            if c.source_url not in seen:
+                seen.add(c.source_url)
                 unique_candidates.append(c)
         
         logger.info(f"[FacebookScanner] Found {len(unique_candidates)} videos")
@@ -197,12 +197,15 @@ class FacebookScanner:
                         candidates.append(ContentCandidate(
                             id=f"fb_{hash(url) % 1000000}",
                             platform="Facebook Watch",
-                            url=url,
-                            author=author,
+                            source_url=url,
+                            creator_name=author,
                             title=title[:100],
                             view_count=views,
-                            engagement_rate=0.05,  # Default estimate
-                            metadata=video_data
+                            like_count=0,
+                            comment_count=0,
+                            share_count=0,
+                            engagement_score=0.05,  # Default estimate
+                            metadata={}
                         ))
                 
                 # Recurse into nested objects
@@ -242,13 +245,16 @@ class FacebookScanner:
                         candidates.append(ContentCandidate(
                             id=f"fb_{hash(url) % 1000000}",
                             platform="Facebook Watch",
-                            url=url,
-                            author=item.get("author", {}).get("name", "Unknown") if isinstance(item.get("author"), dict) else "Unknown",
+                            source_url=url,
+                            creator_name=item.get("author", {}).get("name", "Unknown") if isinstance(item.get("author"), dict) else "Unknown",
                             title=title[:100] if title else description,
                             view_count=views,
-                            engagement_rate=0.05,
+                            like_count=0,
+                            comment_count=0,
+                            share_count=0,
+                            engagement_score=0.05,
                             thumbnail_url=item.get("thumbnailUrl"),
-                            metadata=item
+                            metadata={}
                         ))
                         
         except Exception as e:

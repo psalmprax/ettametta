@@ -8,7 +8,7 @@ import asyncio
 from typing import Any
 from datetime import datetime
 from sqlalchemy import select
-from src.api.utils.database import async_session_factory
+from api.utils.database import async_session_factory
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class PaymentService:
         idempotency_key: str = None,
     ) -> dict[str, Any]:
         """Create a checkout session for subscription"""
-        from src.api.config import settings
+        from api.config import settings
 
         # Use provided URLs or default to production domain settings
         if success_url is None:
@@ -181,7 +181,7 @@ class PaymentService:
             logger.error(f"[PaymentService] Invalid signature: {e}")
             raise
 
-        from src.api.utils.user_models import UserDB, SubscriptionTier
+        from api.utils.user_models import UserDB, SubscriptionTier
 
         # Handle events
         if event["type"] == "checkout.session.completed":
@@ -196,7 +196,7 @@ class PaymentService:
                 user_id = metadata.get("user_id")
                 credits = int(metadata.get("credits", 0))
                 if user_id and credits > 0:
-                    from src.services.payment.credit_service import credit_service
+                    from services.payment.credit_service import credit_service
 
                     # Assuming add_credits is now async or we wrap it
                     await credit_service.add_credits(
@@ -320,7 +320,7 @@ class PaymentService:
 
 # Initialize with API key from settings
 def get_payment_service() -> PaymentService:
-    from src.api.config import settings
+    from api.config import settings
 
     if not settings.STRIPE_SECRET_KEY:
         raise ValueError(

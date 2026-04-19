@@ -1,7 +1,7 @@
 import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from src.api.utils.models import SocialAccount, PublishedContentDB, VideoJobDB
+from api.utils.models import SocialAccount, PublishedContentDB, VideoJobDB
 from typing import Any
 
 
@@ -95,7 +95,7 @@ class EmpireService:
         )
 
         # Fetch monitored niches for the user
-        from src.api.utils.models import MonitoredNiche
+        from api.utils.models import MonitoredNiche
 
         niches = (
             db.query(MonitoredNiche)
@@ -169,7 +169,7 @@ class EmpireService:
         """
         Fetches proven patterns from A/B test winners to serve as "blueprints".
         """
-        from src.api.utils.models import ABTestDB
+        from api.utils.models import ABTestDB
 
         # Query A/B tests with confirmed winners
         winning_tests = (
@@ -231,7 +231,7 @@ class EmpireService:
         - Any user settings that are niche-specific (key = niche:*)
         Returns True if successful.
         """
-        from src.api.utils.models import MonitoredNiche, AffiliateLinkDB, UserSetting
+        from api.utils.models import MonitoredNiche, AffiliateLinkDB, UserSetting
         import datetime
 
         logging.info(
@@ -358,7 +358,7 @@ class EmpireService:
         Transitions from simulation to real telemetry.
         """
         import datetime
-        from src.api.utils.models import (
+        from api.utils.models import (
             PublishedContentDB,
             AffiliateLinkDB,
             RevenueLogDB,

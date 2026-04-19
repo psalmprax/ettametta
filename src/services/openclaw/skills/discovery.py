@@ -2,18 +2,20 @@ import requests
 import logging
 import json
 from typing import Any
-from src.api.config import settings
+from api.config import settings
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class DiscoverySkill:
+class DiscoverySkill(OpenClawBaseSkill):
     """
     Enhanced Discovery Skill for OpenClaw agents.
     Can perform intelligent discovery, trend analysis, and content ideation.
     """
 
     def __init__(self):
+        super().__init__()
         self.api_url = f"{settings.API_URL}/discovery"
         self.groq_client = None
         try:
@@ -23,18 +25,46 @@ class DiscoverySkill:
         except:
             logger.warning("Groq client not available for discovery analysis")
 
-    def _get_headers(self):
-        headers = {}
-        if settings.INTERNAL_API_TOKEN:
-            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-        return headers
+    def execute(
+        self,
+        action: str = "search",
+        topic: str = "general",
+        niche: str = None,
+        **kwargs,
+    ) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        target = topic if topic != "general" else (niche or "general")
+
+        if action == "search":
+            return self.search_trends(target, analyze=kwargs.get("analyze", False))
+        elif action == "trends":
+            return self.get_trending_content(
+                target, min_viral_score=kwargs.get("min_viral_score", 75)
+            )
+        elif action == "scan":
+            return self.scan_for_opportunities(target, deep=kwargs.get("deep", False))
+        elif action == "predict":
+            return self.predict_trends(
+                target, timeframe=kwargs.get("timeframe", "1week")
+            )
+        elif action == "ideas":
+            return self.generate_content_ideas(
+                target, num_ideas=kwargs.get("num_ideas", 5)
+            )
+        elif action == "analyze":
+            return self.analyze_competitor_strategy(kwargs.get("url", ""))
+
+        return f"⚠️ Unknown discovery action: {action}"
+
 
     def search_trends(self, topic: str, limit: int = 5, analyze: bool = False) -> str:
         """
         Enhanced search with optional AI analysis.
         """
         try:
-            payload = {"q": topic, "size": limit}
+            payload = {"query": topic, "limit": limit}
             response = requests.get(
                 f"{self.api_url}/search",
                 params=payload,
@@ -43,9 +73,12 @@ class DiscoverySkill:
             )
 
             if response.status_code == 200:
-                results = response.json()
+                raw_data = response.json()
+                results = (
+                    raw_data.get("data", []) if isinstance(raw_data, dict) else raw_data
+                )
 
-                if not isinstance(results, list) or not results:
+                if not results:
                     return f"No trends found for '{topic}'."
 
                 summary = f"🔎 **Discovery Results for '{topic}':**\n"
@@ -75,7 +108,7 @@ class DiscoverySkill:
         Get trending content for a specific niche.
         """
         try:
-            payload = {"niche": niche, "min_viral_score": min_viral_score, "size": 10}
+            payload = {"niche": niche, "min_viral_score": min_viral_score, "limit": 10}
             response = requests.get(
                 f"{self.api_url}/trends",
                 params=payload,
@@ -84,7 +117,10 @@ class DiscoverySkill:
             )
 
             if response.status_code == 200:
-                results = response.json()
+                raw_data = response.json()
+                results = (
+                    raw_data.get("data", []) if isinstance(raw_data, dict) else raw_data
+                )
 
                 if not results:
                     return f"No trending content found for '{niche}' with viral score > {min_viral_score}."
@@ -96,9 +132,9 @@ class DiscoverySkill:
                     title = item.get("title", "No Title")
                     platform = item.get("platform", "Unknown")
                     viral_score = item.get("viral_score", 0)
-                    views = item.get("views", 0)
+                    view_count = item.get("view_count", 0)
                     url = item.get("url", "#")
-                    summary += f"{i}. [{title}]({url}) - {platform} (Viral: {viral_score}, Views: {views:,})\n"
+                    summary += f"{i}. [{title}]({url}) - {platform} (Viral: {viral_score}, Views: {view_count:,})\n"
 
                 return summary
             else:
@@ -122,8 +158,15 @@ class DiscoverySkill:
             )
 
             if response.status_code == 200:
-                result = response.json()
-                task_id = result.get("task_id", "unknown")
+                raw_data = response.json()
+                result = (
+                    raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
+                )
+                task_id = (
+                    result.get("task_id", "unknown")
+                    if isinstance(result, dict)
+                    else "unknown"
+                )
 
                 if deep:
                     return f"🔬 **Deep Discovery Scan Started for '{niche}'**\nTask ID: {task_id}\nThis will analyze trends, competitors, and monetization opportunities using AI."
@@ -155,8 +198,15 @@ class DiscoverySkill:
             )
 
             if response.status_code == 200:
-                result = response.json()
-                return f"🎯 **Competitor Analysis:** {result.get('result', 'Analysis in progress...')}"
+                raw_data = response.json()
+                result = (
+                    raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
+                )
+                return (
+                    f"🎯 **Competitor Analysis:** {result.get('result', 'Analysis in progress...')}"
+                    if isinstance(result, dict)
+                    else f"🎯 **Competitor Analysis:** {raw_data.get('result', 'Analysis in progress...')}"
+                )
             else:
                 return f"⚠️ Competitor analysis failed: {response.status_code}"
 

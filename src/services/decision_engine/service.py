@@ -2,8 +2,8 @@ import json
 import logging
 from typing import Any
 from groq import AsyncGroq
-from src.api.config import settings
-from src.api.utils.vault import get_secret
+from api.config import settings
+from api.utils.vault import get_secret
 from pydantic import BaseModel
 
 
@@ -43,7 +43,7 @@ class StrategyService:
         self, prompt: str, style: str = "Cinematic"
     ) -> StoryScript:
         # Check if CrewAI is enabled for multi-agent strategy
-        from src.services.crewai.service import crewai_service
+        from services.crewai.service import crewai_service
         if crewai_service.is_enabled():
             logging.info(f"[StrategyService] Delegating screenplay to CrewAI Team for: {prompt}")
             try:

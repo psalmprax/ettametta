@@ -45,14 +45,16 @@ class RedditScanner:
                                 id=f"reddit_{post_data.get('id')}",
                                 platform="Reddit",
                                 thumbnail_url=post_data.get('thumbnail') if post_data.get('thumbnail', '').startswith('http') else None,
-                                url=post_data.get("url"),
-                                author=post_data.get("author"),
+                                source_url=post_data.get("url"),
+                                creator_name=post_data.get("author"),
                                 title=post_data.get("title"),
-                                view_count=post_data.get("ups", 0), # Using upvotes as view/traction proxy
-                                engagement_rate=post_data.get("upvote_ratio", 0.0),
+                                view_count=post_data.get("ups", 0) * 10, # Upvotes as view proxy
+                                like_count=post_data.get("ups", 0),
+                                comment_count=post_data.get("num_comments", 0),
+                                share_count=0,
+                                engagement_score=post_data.get("upvote_ratio", 0.0),
                                 metadata={
                                     "subreddit": sub,
-                                    "num_comments": post_data.get("num_comments"),
                                     "award_count": post_data.get("total_awards_received", 0)
                                 }
                             )

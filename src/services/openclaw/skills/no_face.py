@@ -1,19 +1,26 @@
+from api.config import settings
 import requests
 import logging
-from src.api.config import settings
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class NoFaceSkill:
+class NoFaceSkill(OpenClawBaseSkill):
     def __init__(self):
+        super().__init__()
         self.api_url = f"{settings.API_URL}/no-face"
 
-    def _get_headers(self):
-        headers = {}
-        if settings.INTERNAL_API_TOKEN:
-            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-        return headers
+    def execute(
+        self, action: str = "script", topic: str = "General advice", **kwargs
+    ) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "hook":
+            return self.generate_hook(topic)
+        return self.generate_script(topic)
+
 
     def generate_script(self, topic: str) -> str:
         """
@@ -29,8 +36,15 @@ class NoFaceSkill:
             )
 
             if response.status_code == 200:
-                data = response.json()
-                script = data.get("script", "No script returned")
+                raw_data = response.json()
+                data = (
+                    raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
+                )
+                script = (
+                    data.get("script", "No script returned")
+                    if isinstance(data, dict)
+                    else "No script returned"
+                )
                 # Telegram has message length limits, so we truncate if necessary
                 if len(script) > 3000:
                     script = script[:3000] + "...\n[Script truncated]"
@@ -56,9 +70,12 @@ class NoFaceSkill:
             )
 
             if response.status_code == 200:
-                data = response.json()
-                score = data.get("score", 0)
-                feedback = data.get("feedback", "")
+                raw_data = response.json()
+                data = (
+                    raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
+                )
+                score = data.get("score", 0) if isinstance(data, dict) else 0
+                feedback = data.get("feedback", "") if isinstance(data, dict) else ""
                 return f"🪝 **Hook Analysis for '{topic}'**:\nExpected Score: {score}/100\nFeedback: {feedback}"
             else:
                 return f"⚠️ **Hook Generation Failed**: {response.status_code}"

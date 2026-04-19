@@ -9,10 +9,10 @@ when drift is detected. Records recovery timing via Prometheus.
 import asyncio
 import logging
 import time
-from src.services.analytics.drift_detector import base_drift_detector
-from src.services.distribution.experiment_batcher import base_experiment_batcher
-from src.api.utils.redis import get_redis
-from src.services.infrastructure.resilience_metrics import recovery_duration
+from services.analytics.drift_detector import base_drift_detector
+from services.distribution.experiment_batcher import base_experiment_batcher
+from api.utils.redis import get_redis
+from services.infrastructure.resilience_metrics import recovery_duration
 
 logger = logging.getLogger("RecoveryService")
 

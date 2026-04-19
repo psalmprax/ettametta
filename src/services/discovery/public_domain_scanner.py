@@ -2,7 +2,7 @@ import aiohttp
 import logging
 from typing import Any
 from .models import ContentCandidate
-from src.api.config import settings
+from api.config import settings
 
 
 class PublicDomainScanner:
@@ -57,11 +57,14 @@ class PublicDomainScanner:
                                     ContentCandidate(
                                         id=f"pexels_{v['id']}",
                                         platform="Pexels",
-                                        url=v["url"],
-                                        author=v["user"]["name"],
+                                        source_url=v["url"],
+                                        creator_name=v["user"]["name"],
                                         title=f"Stock: {niche}",
                                         view_count=0,
-                                        engagement_rate=quality_score,
+                                        like_count=0,
+                                        comment_count=0,
+                                        share_count=0,
+                                        engagement_score=quality_score,
                                         metadata={"video_files": v["video_files"]},
                                     )
                                 )
@@ -90,13 +93,16 @@ class PublicDomainScanner:
                                 ContentCandidate(
                                     id=f"archive_{doc['identifier']}",
                                     platform="Archive.org",
-                                    url=f"https://archive.org/details/{doc['identifier']}",
-                                    author=", ".join(doc.get("creator", ["Public Domain"])) 
+                                    source_url=f"https://archive.org/details/{doc['identifier']}",
+                                    creator_name=", ".join(doc.get("creator", ["Public Domain"])) 
                                            if isinstance(doc.get("creator"), list) 
                                            else doc.get("creator", "Public Domain"),
                                     title=doc.get("title", "Historical Footage"),
                                     view_count=downloads,
-                                    engagement_rate=engagement,
+                                    like_count=0,
+                                    comment_count=0,
+                                    share_count=0,
+                                    engagement_score=engagement,
                                     metadata={"identifier": doc["identifier"]},
                                 )
                             )

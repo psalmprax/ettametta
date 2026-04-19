@@ -1,9 +1,9 @@
 import pytest
 import httpx
 from httpx import AsyncClient, ASGITransport
-from src.api.main import app
+from api.main import app
 from unittest.mock import patch, MagicMock
-from src.api.routes.discovery import DISCOVERY_GO_URL
+from api.routes.discovery import DISCOVERY_GO_URL
 
 @pytest.mark.integration
 class TestDiscoveryGoBridge:

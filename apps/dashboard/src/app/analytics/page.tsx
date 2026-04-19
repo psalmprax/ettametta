@@ -35,21 +35,22 @@ import { toast } from "sonner";
 const GlobalPulseGlobe = dynamic(() => import("@/components/ui/GlobalPulseGlobe"), { ssr: false });
 
 interface SocialPost {
-    id: number;
+    id: string; // Unified UUID
     title: string;
     platform: string;
     status: string;
-    url: string | null;
+    source_url: string | null;
     published_at: string;
 }
 
 interface AnalyticsReport {
     post_id: string;
-    views: number;
+    view_count: number;
     watch_time: number;
     retention_rate: number;
-    likes: number;
-    shares: number;
+    like_count: number;
+    share_count: number;
+    comment_count: number;
     follows_gained: number;
     retention_data: number[];
     optimization_insight: string;
@@ -174,11 +175,12 @@ export default function AnalyticsPage() {
             {
                 fallback: {
                     post_id: selectedPostId,
-                    views: 0,
+                    view_count: 0,
                     watch_time: 0,
                     retention_rate: 0,
-                    likes: 0,
-                    shares: 0,
+                    like_count: 0,
+                    share_count: 0,
+                    comment_count: 0,
                     follows_gained: 0,
                     retention_data: [],
                     optimization_insight: "Real-time metrics unavailable."
@@ -312,10 +314,11 @@ export default function AnalyticsPage() {
     });
 
     const metrics = report || {
-        views: 0,
+        view_count: 0,
         watch_time: 0,
-        likes: 0,
-        shares: 0,
+        like_count: 0,
+        share_count: 0,
+        comment_count: 0,
         retention_rate: 0
     };
 
@@ -328,7 +331,7 @@ export default function AnalyticsPage() {
     const [activeChartPoint, setActiveChartPoint] = useState<any>(null);
 
     // Hardened Velocity Curve (Real-First)
-    const velocityData = getVelocityPoints(history, metrics.views);
+    const velocityData = getVelocityPoints(history, metrics.view_count);
 
     const handleAutoApply = async () => setIsConfirmingApply(true);
 
@@ -358,10 +361,10 @@ export default function AnalyticsPage() {
     };
 
     const performanceData = [
-        { label: "Viral Velocity", score: telemetry?.metrics?.global_velocity * 10 || Math.min(Math.round((metrics.views / 200000) * 100), 100), status: metrics.views > 100000 ? "Peak" : "High" },
+        { label: "Viral Velocity", score: telemetry?.metrics?.global_velocity * 10 || Math.min(Math.round((metrics.view_count / 200000) * 100), 100), status: metrics.view_count > 100000 ? "Peak" : "High" },
         { label: "Hook Retention", score: Math.round(metrics.retention_rate * 100), status: metrics.retention_rate > 0.7 ? "High" : "Medium" },
-        { label: "Share Ratio", score: Math.min(Math.round((metrics.shares / metrics.views) * 1000), 100), status: "Growing" },
-        { label: "Engagement Score", score: Math.min(Math.round((metrics.likes / metrics.views) * 100), 100), status: "Medium" },
+        { label: "Share Ratio", score: Math.min(Math.round((metrics.share_count / metrics.view_count) * 1000), 100), status: "Growing" },
+        { label: "Engagement Score", score: Math.min(Math.round((metrics.like_count / metrics.view_count) * 100), 100), status: "Medium" },
     ];
 
     return (
@@ -515,7 +518,7 @@ export default function AnalyticsPage() {
                              <TelemetryTile title="Network Bitrate" value={`${telemetry?.metrics?.bitrate || "000.0"} Mb/s`} icon={<Zap className="h-6 w-6 text-primary" />} label="Signal Bandwidth" subtext={`${telemetry?.metrics?.latency || "00.0"} ms Latency`} />
                              <TelemetryTile title="Prediction Accuracy" value={`${Math.round((1 - (telemetry?.real_stats?.oracle_mae || 0.1)) * 100)}%`} icon={<Target className="h-6 w-6 text-primary" />} label="Oracle Honesty" subtext={`MAE: ${telemetry?.real_stats?.oracle_mae?.toFixed(3) || "0.000"}`} />
                              <TelemetryTile title="Signal Strength" value={`${Math.round((telemetry?.metrics?.signal_strength || 0) * 100)}%`} icon={<BarChart3 className="h-6 w-6 text-primary" />} label="Connection Quality" subtext="Sync Locked" />
-                             <TelemetryTile title="Global Reach" value={metrics.views.toLocaleString()} icon={<Play className="h-6 w-6 text-primary" />} label="Network Ripple" subtext={`${telemetry?.metrics?.global_velocity || "0.0"}x Velocity`} />
+                             <TelemetryTile title="Global Reach" value={metrics.view_count.toLocaleString()} icon={<Play className="h-6 w-6 text-primary" />} label="Network Ripple" subtext={`${telemetry?.metrics?.global_velocity || "0.0"}x Velocity`} />
                         </>
                     )}
                 </div>
@@ -631,7 +634,7 @@ export default function AnalyticsPage() {
                                             <Users className="h-8 w-8" />
                                         </div>
                                         <div className="space-y-1">
-                                            <h4 className="text-2xl font-black text-white tracking-tighter">{(metrics.likes * 0.1).toFixed(1)}k</h4>
+                                            <h4 className="text-2xl font-black text-white tracking-tighter">{(metrics.like_count * 0.1).toFixed(1)}k</h4>
                                             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">New Followers Predicted</p>
                                         </div>
                                     </div>

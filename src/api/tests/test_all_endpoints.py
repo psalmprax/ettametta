@@ -5,8 +5,8 @@ Tests both existing and new endpoints we added/fixed
 
 import pytest
 from fastapi.testclient import TestClient
-from src.api.main import app
-from src.api.routes.auth import get_current_user
+from api.main import app
+from api.routes.auth import get_current_user
 from unittest.mock import patch, MagicMock
 
 client = TestClient(app)

@@ -2,8 +2,8 @@ import logging
 from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from src.api.utils.database import AsyncSessionLocal
-from src.api.utils.models import StrategyRegistryDB
+from api.utils.database import AsyncSessionLocal
+from api.utils.models import StrategyRegistryDB
 
 logger = logging.getLogger("SuccessModel")
 
@@ -58,7 +58,7 @@ class SuccessModel:
 
     async def _kill_strategy(self, strategy_name: str, avg_score: float):
         """Communicates with Hermes and persists the forbidden status."""
-        from src.services.hermes.service import base_hermes_service
+        from services.hermes.service import base_hermes_service
         
         # 1. Update Database (Source of Truth)
         async with AsyncSessionLocal() as db:

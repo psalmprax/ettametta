@@ -9,7 +9,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from src.api.config import settings
+from api.config import settings
 from agent import OpenClawAgent
 from dispatcher import dispatcher
 import uvicorn
@@ -319,6 +319,32 @@ async def broadcast_message(
         }
     except Exception as e:
         logger.error(f"Broadcast Error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+class ToolRequest(BaseModel):
+    tool: str
+    params: dict = {}
+    internal_token: str | None = None
+
+
+@app.post("/execute-tool")
+async def execute_tool(request: ToolRequest):
+    """
+    Execute an OpenClaw tool directly (Internal Only).
+    """
+    # Verify internal token
+    if settings.INTERNAL_API_TOKEN and request.internal_token != settings.INTERNAL_API_TOKEN:
+        return {"status": "error", "message": "Unauthorized internal call"}
+    
+    try:
+        result = await agent.execute_tool({
+            "tool": request.tool,
+            "params": request.params
+        })
+        return {"status": "success", "result": result}
+    except Exception as e:
+        logger.error(f"Tool Execution Error: {e}")
         return {"status": "error", "message": str(e)}
 
 

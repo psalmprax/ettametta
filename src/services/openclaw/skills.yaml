@@ -1,0 +1,201 @@
+skills:
+  - name: DISCOVERY
+    description: "Advanced trend discovery and analysis."
+    params:
+      action: "search|trends|scan|predict|ideas|analyze"
+      topic: "string"
+      niche: "string"
+      deep: "boolean"
+  - name: NOFACE
+    description: "Generate viral scripts or assess hooks purely in text."
+    params:
+      action: "script|hook"
+      topic: "string"
+  - name: ANALYTICS
+    description: "Get dashboard summary, revenue, or recent posts."
+    params:
+      action: "summary|revenue|posts"
+  - name: SYSTEM
+    description: "Check platform health/uptime."
+    params: {}
+  - name: CONTENT
+    description: "Create new video content."
+    params:
+      action: "transform|generate|story"
+      niche: "string"
+      platform: "YouTube Shorts|TikTok"
+      source_url: "string"
+      prompt: "string"
+      engine: "string"
+  - name: COMPETITOR
+    description: "Analyze competitor strategies."
+    params:
+      url: "competitor_url"
+  - name: PUBLISH
+    description: "Publish a completed job."
+    params:
+      job_id: "string"
+      platform: "YouTube Shorts|TikTok"
+      niche: "string"
+  - name: NICHE
+    description: "Manage niches."
+    params:
+      action: "add|trends|auto_merch"
+      niche: "string"
+  - name: OUTREACH
+    description: "Blast a message to a specific user via their connected channels."
+    params:
+      target_identifier: "string"
+      message: "string"
+      channel: "email|whatsapp|social"
+  - name: PERSONA
+    description: "Generate a deepfake video using the user's uploaded persona/avatar."
+    params:
+      action: "generate"
+      persona_id: "int"
+      topic: "string"
+  - name: SECURITY
+    description: "Emergency lockdown."
+    params:
+      action: "panic|status"
+  - name: STORAGE
+    description: "Check video storage usage and cloud status."
+    params: {}
+  - name: RENDER
+    description: "Trigger a cinematic programmatic video render."
+    params:
+      title: "string"
+      subtitle: "string"
+      video_url: "string"
+  - name: ZERO
+    description: "Control the Agent Zero autonomous director."
+    params:
+      action: "start|stop|status"
+  - name: RESEARCH
+    description: "Search academic papers (free, no API key)."
+    params:
+      action: "search|trends"
+      topic: "string"
+      limit: "int"
+  - name: INGESTION
+    description: "Multi-source data (Reddit, RSS, GitHub)."
+    params:
+      action: "reddit|rss|github|multi"
+      subreddit: "string"
+      feed_url: "string"
+      language: "string"
+      sources: []
+  - name: METRICS
+    description: "Social media metrics (X, Reddit, GitHub, Instagram)."
+    params:
+      platform: "x|reddit|github|instagram"
+      handle: "string"
+  - name: PAPERCLIP
+    description: "KPI-driven organic scaling and performance tracking."
+    params:
+      action: "track|scale"
+      job_id: "string"
+      platform: "string"
+      views: "int"
+      likes: "int"
+      niche: "string"
+  - name: SCIENTIFIC
+    description: "Transforms technical/academic data into viral 'Science-Pop' scripts."
+    params:
+      action: "convert|trends"
+      raw_data: "string"
+      topic: "string"
+  - name: REMOTION
+    description: "Programmatic React-based video rendering for pixel-perfect overlays."
+    params:
+      composition: "string"
+      props: "dict"
+      output_name: "string"
+  - name: MEMORY
+    description: "Manage persistent data across sessions."
+    params:
+      action: "store|retrieve|list"
+      key: "string"
+      value: "string"
+  - name: NOTIFICATIONS
+    description: "Send alerts via configured channels."
+    params:
+      channel: "telegram|webhook|all"
+      message: "string"
+      priority: "normal|high|critical"
+  - name: WORKFLOW
+    description: "Create and execute automated workflows."
+    params:
+      action: "create|execute|status"
+      name: "string"
+      steps: []
+  - name: BROWSER
+    description: "Advanced browser automation for web scraping."
+    params:
+      action: "navigate|click|extract"
+      url: "string"
+      selector: "string"
+  - name: DOCUMENT
+    description: "Process PDF/DOCX/PPTX files."
+    params:
+      type: "pdf|docx|pptx"
+      action: "extract|analyze"
+      file_url: "string"
+  - name: ACCOUNT_AUDIT
+    description: "Audit YOUR account on any platform for growth and monetization."
+    params:
+      action: "audit|compare"
+      platform: "youtube|tiktok|instagram|..."
+      competitor_url: "string"
+  - name: SEO_AUDIT
+    description: "Analyze metadata, titles, and descriptions for SEO performance."
+    params:
+      url: "string"
+      target_keyword: "string"
+  - name: REPUTATION
+    description: "Scan comments and mentions for sentiment and revenue leaks."
+    params:
+      action: "scan|draft"
+      platform: "string"
+      target_identifier: "string"
+  - name: CHAT_SALES
+    description: "Handle 2-way conversational sales via Social DMs and WhatsApp."
+    params:
+      platform: "string"
+      target_identifier: "string"
+      context: "string"
+  - name: LANDING_PAGE
+    description: "Draft conversion-optimized landing page structure."
+    params:
+      product_name: "string"
+      target_audience: "string"
+      key_benefits: ["string"]
+  - name: SCRAPE
+    description: "Unified scraping capability."
+    params:
+      url: "string"
+      extract_fields: ["string"]
+  - name: BRANDING
+    description: "Generate automated brand identity assets."
+    params:
+      niche: "string"
+  - name: SELF_IMPROVE
+    description: "Autonomous self-improvement loop for script generation."
+    params:
+      action: "reflect|improve"
+  - name: HEALING
+    description: "Self-healing infrastructure monitoring."
+    params:
+      action: "status|repair"
+  - name: PIXVERSE
+    description: "Generate high-fidelity AI video via Pixverse."
+    params:
+      prompt: "string"
+  - name: LUMA
+    description: "Generate cinematic AI video via Luma Dream Machine."
+    params:
+      prompt: "string"
+  - name: PERCHANCE
+    description: "Scrape content from Perchance."
+    params:
+      url: "string"

@@ -8,10 +8,10 @@ from typing import Optional, Dict, Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.utils.models import ContentCandidateDB
+from api.utils.models import ContentCandidateDB
 
 
-async def analyze_content(
+async def extract_content_patterns(
     content_id: str,
     db: AsyncSession,
     force: bool = False,
@@ -48,7 +48,7 @@ async def analyze_content(
 
     # Basic text analysis (placeholder for full AI integration)
     # In production, this would call an LLM or NLP service
-    analysis_results = _perform_text_analysis(text_to_analyze, content)
+    analysis_results = _perform_pattern_analysis(text_to_analyze, content)
 
     # Update content with analysis results
     content.analysis_results = analysis_results
@@ -60,7 +60,7 @@ async def analyze_content(
     return analysis_results
 
 
-def _perform_text_analysis(text: str, content: ContentCandidateDB) -> Dict[str, Any]:
+def _perform_pattern_analysis(text: str, content: ContentCandidateDB) -> Dict[str, Any]:
     """
     Perform text analysis to extract topics, sentiment, viral potential, and keywords.
 
@@ -194,7 +194,7 @@ def _perform_text_analysis(text: str, content: ContentCandidateDB) -> Dict[str, 
     }
 
 
-async def get_analysis(
+async def get_persisted_analysis_report(
     content_id: str,
     db: AsyncSession,
 ) -> Optional[Dict[str, Any]]:

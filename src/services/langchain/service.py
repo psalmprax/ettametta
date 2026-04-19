@@ -83,7 +83,7 @@ class LangChainService:
             return
         
         # Initialize with Groq
-        from src.api.config import settings
+        from api.config import settings
         
         api_key = settings.GROQ_API_KEY
         if not api_key:

@@ -2,17 +2,18 @@ import json
 import logging
 import requests
 from datetime import datetime
-from src.api.config import settings
+from api.config import settings
 from .memory import memory_skill
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class AuditSkill:
+class AuditSkill(OpenClawBaseSkill):
     """Platform-agnostic audit skill for analyzing user accounts across social platforms."""
 
     def __init__(self):
-        self.api_url = f"{settings.API_URL}"
+        super().__init__()
         # Platform monetization requirements
         self.monetization_requirements = {
             "youtube": {
@@ -57,11 +58,17 @@ class AuditSkill:
             },
         }
 
-    def _get_headers(self):
-        headers = {}
-        if settings.INTERNAL_API_TOKEN:
-            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-        return headers
+    def execute(self, action: str = "audit", platform: str = "youtube", user_id: int = 1, competitor_url: str = None, **kwargs) -> str:
+        """
+        Standardized mission execution.
+        Routes to audit or compare based on action.
+        """
+        # Ensure we have a valid user_id (could be passed in kwargs as well)
+        uid = kwargs.get("user_id", user_id)
+        
+        if action == "compare" and competitor_url:
+            return self.compare_with_competitor(uid, competitor_url, platform)
+        return self.audit_account(uid, platform)
 
     def audit_account(self, user_id: int, platform: str = "youtube") -> str:
         """
@@ -96,7 +103,7 @@ class AuditSkill:
     def _get_user_token(self, platform: str, user_id: int) -> str | None:
         """Get user's OAuth token for specified platform."""
         try:
-            from src.services.optimization.auth import token_manager
+            from services.optimization.auth import token_manager
 
             token = token_manager.get_token(platform, user_id=user_id)
             return token
@@ -166,7 +173,7 @@ class AuditSkill:
             content_count = self._extract_content_count(platform, account_data)
 
             # Calculate averages from recent content
-            avg_engagement = self._calculate_avg_engagement(platform, recent_content)
+            avg_engagement_score = self._calculate_avg_engagement_score(platform, recent_content)
             avg_views = self._calculate_avg_views(platform, recent_content)
 
             payload = {
@@ -193,7 +200,7 @@ class AuditSkill:
                             f"Content Count: {content_count}\n\n"
                             f"Recent Content Performance:\n"
                             f"- Average views per post: {avg_views:,.0f}\n"
-                            f"- Average engagement rate: {avg_engagement:.1f}%\n"
+                            f"- Average engagement score: {avg_engagement_score:.1f}%\n"
                             f"- Posts analyzed: {len(recent_content)}\n\n"
                             f"Monetization Requirements for {requirements.get('program', 'Platform Monetization')}:\n"
                             + "\n".join(
@@ -733,8 +740,8 @@ class AuditSkill:
             return data.get("snippet", {}).get("publishedAt", "Unknown")
         return "Unknown"
 
-    def _calculate_avg_engagement(self, platform: str, content: list[dict]) -> float:
-        """Calculate average engagement rate from recent content."""
+    def _calculate_avg_engagement_score(self, platform: str, content: list[dict]) -> float:
+        """Calculate average engagement score from recent content."""
         if not content:
             return 0.0
 
@@ -778,7 +785,7 @@ class AuditSkill:
         Compare user's account with a competitor and generate gap analysis.
         """
         try:
-            from src.services.openclaw.skills.competitor import CompetitorSkill
+            from skills.competitor import CompetitorSkill
 
             competitor_skill = CompetitorSkill()
             competitor_analysis = competitor_skill.analyze_competitor(
@@ -832,19 +839,3 @@ class AuditSkill:
 audit_skill = AuditSkill()
 
 
-def run(action: str, **kwargs) -> str:
-    """
-    Entry point for Audit skill execution.
-    """
-    if action == "audit":
-        return audit_skill.audit_account(
-            kwargs.get("user_id"),
-            kwargs.get("platform", "youtube"),
-        )
-    elif action == "compare":
-        return audit_skill.compare_with_competitor(
-            kwargs.get("user_id"),
-            kwargs.get("competitor_url"),
-            kwargs.get("platform", "youtube"),
-        )
-    return f"Unknown action for Audit skill: {action}"

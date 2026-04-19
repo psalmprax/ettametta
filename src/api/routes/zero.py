@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
-from src.services.agent_zero.agent import base_agent_zero
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB
+from services.agent_zero.agent import base_agent_zero
 from typing import Any
 
 router = APIRouter(prefix="/zero", tags=["Agent Zero"])

@@ -7,7 +7,7 @@ Verifies the VideoProcessor pipeline and synthesis task routing.
 import pytest
 import os
 from unittest.mock import patch, MagicMock
-from src.services.video_engine.processor import VideoProcessor
+from services.video_engine.processor import VideoProcessor
 
 @pytest.mark.integration
 class TestVideoIntegration:
@@ -63,7 +63,7 @@ class TestVideoIntegration:
                 mock_run.return_value = {"status": "success", "file": "test.mp4"}
                 
                 # We hit the route but mock the celery .delay() or .run()
-                from src.services.video_engine.tasks import generate_video_task
+                from services.video_engine.tasks import generate_video_task
                 
                 result = generate_video_task.run(
                     prompt="Test prompt",
@@ -79,7 +79,7 @@ class TestCeleryTaskConnectivity:
     
     def test_task_registration(self):
         """Check if core tasks are registered in the Celery app."""
-        from src.api.utils.celery import celery_app
+        from api.utils.celery import celery_app
         registered_tasks = celery_app.tasks.keys()
         
         assert "discovery.sentinel_watcher" in registered_tasks

@@ -9,7 +9,7 @@ import torch
 import os
 import time
 from PIL import Image
-from src.api.config import settings
+from api.config import settings
 import requests
 
 # Model cache

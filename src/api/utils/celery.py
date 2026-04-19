@@ -1,7 +1,7 @@
 from celery import Celery
 import os
 
-from src.api.config import settings
+from api.config import settings
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", settings.REDIS_URL)
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", settings.REDIS_URL)
@@ -17,6 +17,7 @@ celery_app = Celery(
         "services.optimization.scheduler_tasks",
         "services.security.tasks",
         "services.storage.tasks",
+        "services.openclaw.tasks",
     ],
 )
 
@@ -50,6 +51,10 @@ celery_app.conf.update(
         "storage-lifecycle-manager-daily": {
             "task": "storage.manage_lifecycle",
             "schedule": 86400.0,  # Every 24 hours
+        },
+        "cashclaw-job-polling-10m": {
+            "task": "openclaw.cashclaw_polling",
+            "schedule": 600.0,  # Every 10 minutes
         },
     },
 )

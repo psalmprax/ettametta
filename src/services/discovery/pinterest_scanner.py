@@ -52,8 +52,8 @@ class PinterestScanner:
         seen = set()
         unique = []
         for c in candidates:
-            if c.url not in seen:
-                seen.add(c.url)
+            if c.source_url not in seen:
+                seen.add(c.source_url)
                 unique.append(c)
         
         logger.info(f"[PinterestScanner] Found {len(unique)} pins")
@@ -242,18 +242,21 @@ class PinterestScanner:
             # Estimate views
             views = repins * 25  # Rough estimate
             engagement = repins + comments + likes
-            engagement_rate = engagement / max(views, 1) if views else 0.05
+            engagement_score = engagement / max(views, 1) if views else 0.05
             
             return ContentCandidate(
                 id=f"pin_{pin_id}",
                 platform="Pinterest",
-                url=link,
-                author=author,
+                source_url=link,
+                creator_name=author,
                 title=title[:100],
                 view_count=views,
-                engagement_rate=engagement_rate,
+                like_count=likes,
+                comment_count=comments,
+                share_count=repins,
+                engagement_score=engagement_score,
                 thumbnail_url=thumbnail,
-                metadata={"repins": repins, "comments": comments, "likes": likes}
+                metadata={}
             )
             
         except Exception as e:

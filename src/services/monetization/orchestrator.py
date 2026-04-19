@@ -1,8 +1,8 @@
 import logging
 from typing import Any
-from src.api.utils.database import async_session_factory
+from api.utils.database import async_session_factory
 from sqlalchemy import select
-from src.api.utils.models import SystemSettings
+from api.utils.models import SystemSettings
 from .strategies.commerce import CommerceStrategy
 from .strategies.affiliate import AffiliateStrategy
 from .strategies.lead_gen import LeadGenStrategy

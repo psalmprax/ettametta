@@ -102,7 +102,7 @@ async def demonstrate_video_editor_quality():
             thumbnail_url="https://example.com/thumb.jpg",
             description="Test description",
             tags=["test", "video"],
-            engagement_rate=6.0,
+            engagement_score=6.0,
             viral_score=8.5,
             niche="Tech",
             content_type="educational",

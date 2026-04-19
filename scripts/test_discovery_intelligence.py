@@ -18,9 +18,9 @@ async def test_discovery():
     for i, c in enumerate(candidates[:10]):
         duration = c.metadata.get("duration", "N/A")
         print(f"Rank {i+1} [{c.platform}] ({duration}): {c.title}")
-        print(f"   URL: {c.url}")
-        print(f"   Author: {c.author}")
-        print(f"   Engagement: {c.engagement_rate:.2%}")
+        print(f"   URL: {c.source_url}")
+        print(f"   Author: {c.creator_name}")
+        print(f"   Engagement: {c.engagement_score:.2%}")
         print("-" * 30)
 
 if __name__ == "__main__":

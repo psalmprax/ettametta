@@ -1,15 +1,15 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Any
-from src.services.script_generator.service import base_script_generator
-from src.services.decision_engine.hook_validator import base_hook_validator
-from src.services.voiceover.service import base_voiceover_service
-from src.services.stock_media.service import base_stock_service
-from src.services.visual_generator.service import base_visual_generator
-from src.services.multiplatform.translator import base_global_adapter
-from src.services.scheduler.empire_mode import base_empire_scheduler
-from src.services.sentinel.algorithm_tracker import base_algorithm_sentinel
-from src.api.routes.auth import get_current_user
+from services.script_generator.service import base_script_generator
+from services.decision_engine.hook_validator import base_hook_validator
+from services.voiceover.service import base_voiceover_service
+from services.stock_media.service import base_stock_service
+from services.visual_generator.service import base_visual_generator
+from services.multiplatform.translator import base_global_adapter
+from services.scheduler.empire_mode import base_empire_scheduler
+from services.sentinel.algorithm_tracker import base_algorithm_sentinel
+from api.routes.auth import get_current_user
 
 router = APIRouter(prefix="/no-face", tags=["No-Face Monetization"])
 

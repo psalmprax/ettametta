@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, Depends
-from src.api.utils.database import get_db
-from src.api.utils.user_models import UserDB, SubscriptionTier
-from src.api.routes.auth import get_current_user
+from api.utils.database import get_db
+from api.utils.user_models import UserDB, SubscriptionTier
+from api.routes.auth import get_current_user
 from sqlalchemy.ext.asyncio import AsyncSession
 from functools import wraps
 
@@ -38,7 +38,7 @@ async def check_daily_limit(current_user: UserDB, db_session):
     """
     Checks if the user has exceeded their daily video generation limit.
     """
-    from src.api.utils.models import VideoJobDB
+    from api.utils.models import VideoJobDB
     from datetime import datetime, timedelta
     from sqlalchemy import select, func
 
@@ -72,7 +72,7 @@ async def check_daily_limit(current_user: UserDB, db_session):
         window_name = "monthly" if config["window"] == "month" else "daily"
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"{window_name.capitalize()} limit reached for {current_user.subscription.value} tier ({quota} videos/{config['window']}).",
+            detail=f"{window_name.capitalize()} limit reached for {get_subscription_tier_value(current_user)} tier ({quota} videos/{config['window']}).",
         )
 
 
@@ -149,9 +149,9 @@ def credits_required(action: str):
         current_user: UserDB = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
     ):
-        from src.services.payment.credit_service import credit_service
+        from services.payment.credit_service import credit_service
 
-        tier = current_user.subscription.value if current_user.subscription else "free"
+        tier = get_subscription_tier_value(current_user)
         cost = credit_service.get_action_cost(action, tier)
 
         if not await credit_service.has_sufficient_credits(current_user.id, cost, db):
@@ -170,7 +170,26 @@ async def get_user_subscription_tier(user: UserDB, db: AsyncSession) -> str:
     Get user's current subscription tier as a string.
     """
     # Simply use the enum's value
-    return user.subscription.value if user.subscription else "free"
+    return get_subscription_tier_value(user)
+
+
+def get_subscription_tier_value(user) -> str:
+    """
+    Safely get subscription tier value from user object.
+    Handles both SubscriptionTier enum and None cases.
+    """
+    if user is None:
+        return "free"
+    if user.subscription is None:
+        return "free"
+    # Handle SubscriptionTier enum - has .value attribute
+    if hasattr(user.subscription, "value"):
+        return user.subscription.value
+    # Handle string subscription directly
+    if isinstance(user.subscription, str):
+        return user.subscription
+    # Fallback to string conversion
+    return str(user.subscription)
 
 
 def get_provider_quota_info(engine: str) -> dict:

@@ -6,7 +6,7 @@ import time
 import httpx
 from typing import Any
 from uuid import uuid4
-from src.api.config import settings
+from api.config import settings
 
 # Configure Structured Logging (Standard 2.22)
 logging.basicConfig(level=logging.INFO)

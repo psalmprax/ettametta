@@ -5,8 +5,8 @@ LLM Routes - Unified Multi-Provider LLM API
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Any
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB
 
 router = APIRouter(prefix="/llm", tags=["LLM - Multi-Provider"])
 
@@ -37,7 +37,7 @@ class ChatRequest(BaseModel):
 @router.get("/providers")
 async def list_providers(current_user: UserDB = Depends(get_current_user)):
     """Get available LLM providers and their status."""
-    from src.services.llm.service import unified_llm_service
+    from services.llm.service import unified_llm_service
 
     return {
         "default_provider": unified_llm_service.default_provider.value,
@@ -67,7 +67,7 @@ async def complete(
     Generate a completion using any available LLM provider.
     Falls back to alternate providers if primary fails.
     """
-    from src.services.llm.service import unified_llm_service, LLMProvider
+    from services.llm.service import unified_llm_service, LLMProvider
 
     provider = None
     if request.provider:
@@ -104,7 +104,7 @@ async def chat(request: ChatRequest, current_user: UserDB = Depends(get_current_
     """
     Chat completion using message history with any LLM provider.
     """
-    from src.services.llm.service import unified_llm_service, LLMProvider
+    from services.llm.service import unified_llm_service, LLMProvider
 
     provider = None
     if request.provider:
@@ -148,7 +148,7 @@ async def create_embedding(
     """
     Create embeddings using available provider.
     """
-    from src.services.llm.service import LLMProvider, unified_llm_service
+    from services.llm.service import LLMProvider, unified_llm_service
 
     # Use OpenAI for embeddings (most compatible)
     if not unified_llm_service.is_available(LLMProvider.OPENAI):
@@ -157,7 +157,7 @@ async def create_embedding(
         )
 
     import httpx
-    from src.api.config import settings
+    from api.config import settings
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:

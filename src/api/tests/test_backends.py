@@ -30,7 +30,7 @@ class TestLLMService:
 
     def test_llm_provider_enum(self):
         """Test LLMProvider enum values"""
-        from src.services.llm.service import LLMProvider
+        from services.llm.service import LLMProvider
 
         assert LLMProvider.GROQ.value == "groq"
         assert LLMProvider.OPENAI.value == "openai"
@@ -42,14 +42,14 @@ class TestLLMService:
     def test_unified_llm_service_init(self):
         """Test UnifiedLLMService initialization"""
         with patch.dict(os.environ, {"GROQ_API_KEY": "test_key"}, clear=False):
-            from src.services.llm.service import UnifiedLLMService, LLMProvider
+            from services.llm.service import UnifiedLLMService, LLMProvider
 
             service = UnifiedLLMService()
             assert service.default_provider == LLMProvider.GROQ
 
     def test_provider_keys_config(self):
         """Test provider API key mapping"""
-        from src.services.llm.service import UnifiedLLMService
+        from services.llm.service import UnifiedLLMService
 
         assert "GROQ_API_KEY" in UnifiedLLMService.PROVIDER_KEYS.values()
         assert "OPENAI_API_KEY" in UnifiedLLMService.PROVIDER_KEYS.values()
@@ -58,7 +58,7 @@ class TestLLMService:
     async def test_is_available_checks_provider(self):
         """Test provider availability check"""
         with patch.dict(os.environ, {"GROQ_API_KEY": "test_key"}, clear=False):
-            from src.services.llm.service import UnifiedLLMService, LLMProvider
+            from services.llm.service import UnifiedLLMService, LLMProvider
 
             service = UnifiedLLMService()
             assert service.is_available(LLMProvider.GROQ) == True
@@ -68,7 +68,7 @@ class TestLLMService:
     async def test_complete_with_fallback(self):
         """Test LLM complete with fallback chain"""
         with patch.dict(os.environ, {"GROQ_API_KEY": "test_key"}, clear=False):
-            from src.services.llm.service import UnifiedLLMService, LLMProvider
+            from services.llm.service import UnifiedLLMService, LLMProvider
 
             service = UnifiedLLMService()
 
@@ -92,7 +92,7 @@ class TestScriptGeneratorService:
         """Test ScriptGenerator initialization"""
         with patch.dict(os.environ, {"GROQ_API_KEY": "test_key"}, clear=False):
             try:
-                from src.services.script_generator.service import ScriptGenerator
+                from services.script_generator.service import ScriptGenerator
 
                 generator = ScriptGenerator()
                 assert generator is not None
@@ -105,7 +105,7 @@ class TestScriptGeneratorService:
         """Test script generation returns proper structure"""
         with patch.dict(os.environ, {"GROQ_API_KEY": "test_key"}, clear=False):
             try:
-                from src.services.script_generator.service import ScriptGenerator
+                from services.script_generator.service import ScriptGenerator
 
                 generator = ScriptGenerator()
                 generator.client = AsyncMock()
@@ -129,7 +129,7 @@ class TestScriptGeneratorService:
         """Test fallback script generation"""
         with patch.dict(os.environ, {"GROQ_API_KEY": "test_key"}, clear=False):
             try:
-                from src.services.script_generator.service import ScriptGenerator
+                from services.script_generator.service import ScriptGenerator
 
                 generator = ScriptGenerator()
                 fallback = generator._get_fallback_script("AI", "Tech")
@@ -147,7 +147,7 @@ class TestDecisionEngineService:
     def test_decision_engine_pydantic_models(self):
         """Test Pydantic models exist"""
         try:
-            from src.services.decision_engine.service import (
+            from services.decision_engine.service import (
                 VideoStrategy,
                 StoryScene,
                 StoryScript,
@@ -175,7 +175,7 @@ class TestDecisionEngineService:
         """Test screenplay generation"""
         with patch.dict(os.environ, {}, clear=False):
             try:
-                from src.services.decision_engine.service import StrategyService
+                from services.decision_engine.service import StrategyService
 
                 service = StrategyService()
                 service.client = AsyncMock()
@@ -201,7 +201,7 @@ class TestDecisionEngineService:
         """Test visual strategy generation"""
         with patch.dict(os.environ, {}, clear=False):
             try:
-                from src.services.decision_engine.service import StrategyService
+                from services.decision_engine.service import StrategyService
 
                 service = StrategyService()
                 service.client = AsyncMock()
@@ -229,7 +229,7 @@ class TestMonetizationService:
     def test_monetization_engine_init(self):
         """Test MonetizationEngine initialization"""
         try:
-            from src.services.monetization.service import MonetizationEngine
+            from services.monetization.service import MonetizationEngine
 
             engine = MonetizationEngine()
             assert engine is not None
@@ -241,7 +241,7 @@ class TestMonetizationService:
     async def test_plan_affiliate_insertions(self):
         """Test affiliate insertion planning"""
         try:
-            from src.services.monetization.service import MonetizationEngine
+            from services.monetization.service import MonetizationEngine
 
             engine = MonetizationEngine()
             engine._call_groq = AsyncMock(return_value='{"insertions": []}')
@@ -256,7 +256,7 @@ class TestMonetizationService:
     def test_calculate_epm(self):
         """Test EPM calculation"""
         try:
-            from src.services.monetization.service import MonetizationEngine
+            from services.monetization.service import MonetizationEngine
 
             engine = MonetizationEngine()
             epm = engine.calculate_epm(100.0, 10000)
@@ -273,7 +273,7 @@ class TestPublisherBase:
 
     def test_retry_config(self):
         """Test RetryConfig"""
-        from src.services.optimization.publisher_base import RetryConfig
+        from services.optimization.publisher_base import RetryConfig
 
         config = RetryConfig()
         assert config.max_retries == 3
@@ -283,7 +283,7 @@ class TestPublisherBase:
 
     def test_rate_limit_config(self):
         """Test RateLimitConfig"""
-        from src.services.optimization.publisher_base import RateLimitConfig
+        from services.optimization.publisher_base import RateLimitConfig
 
         config = RateLimitConfig()
         assert config.max_retries == 5
@@ -291,8 +291,8 @@ class TestPublisherBase:
 
     def test_social_publisher_validate_video(self):
         """Test video validation"""
-        from src.services.optimization.publisher_base import SocialPublisher
-        from src.services.optimization.models import PostMetadata
+        from services.optimization.publisher_base import SocialPublisher
+        from services.optimization.models import PostMetadata
 
         # Create a mock publisher
         class MockPublisher(SocialPublisher):
@@ -321,7 +321,7 @@ class TestPublisherBase:
 
     def test_calculate_delay(self):
         """Test exponential backoff calculation"""
-        from src.services.optimization.publisher_base import SocialPublisher
+        from services.optimization.publisher_base import SocialPublisher
 
         class MockPublisher(SocialPublisher):
             async def _upload_impl(
@@ -354,7 +354,7 @@ class TestNexusOrchestrator:
 
     def test_circuit_breaker_states(self):
         """Test CircuitBreaker state transitions"""
-        from src.services.nexus_engine.orchestrator import CircuitBreaker
+        from services.nexus_engine.orchestrator import CircuitBreaker
 
         cb = CircuitBreaker(failure_threshold=3, recovery_timeout=1)
 
@@ -378,7 +378,7 @@ class TestNexusOrchestrator:
     def test_nexus_orchestrator_init(self):
         """Test NexusOrchestrator initialization"""
         try:
-            from src.services.nexus_engine.orchestrator import NexusOrchestrator
+            from services.nexus_engine.orchestrator import NexusOrchestrator
 
             orchestrator = NexusOrchestrator(output_dir="/tmp/test_nexus")
             assert orchestrator.output_dir == "/tmp/test_nexus"
@@ -393,7 +393,7 @@ class TestAnalyticsService:
     def test_analytics_circuit_breaker(self):
         """Test Analytics circuit breaker"""
         try:
-            from src.services.analytics.service import AnalyticsService
+            from services.analytics.service import AnalyticsService
 
             service = AnalyticsService()
             assert hasattr(service, "youtube_circuit_breaker")
@@ -404,7 +404,7 @@ class TestAnalyticsService:
     def test_retention_dropoff_analysis(self):
         """Test retention dropoff detection"""
         try:
-            from src.services.analytics.service import AnalyticsService
+            from services.analytics.service import AnalyticsService
 
             service = AnalyticsService()
 
@@ -427,8 +427,8 @@ class TestAnalyticsService:
     def test_suggest_optimal_monetization(self):
         """Test monetization suggestions"""
         try:
-            from src.services.analytics.service import AnalyticsService
-            from src.services.analytics.models import ContentPerformance
+            from services.analytics.service import AnalyticsService
+            from services.analytics.models import ContentPerformance
 
             service = AnalyticsService()
 
@@ -441,7 +441,7 @@ class TestAnalyticsService:
 
     def test_monetization_orchestrator_failover(self):
         """Test monetization orchestrator failover logic"""
-        from src.services.monetization.orchestrator import MonetizationOrchestrator
+        from services.monetization.orchestrator import MonetizationOrchestrator
 
         orchestrator = MonetizationOrchestrator()
         assert len(orchestrator.strategies) >= 8  # Should have 8+ strategies
@@ -449,7 +449,7 @@ class TestAnalyticsService:
 
     def test_empire_metrics_calculation(self):
         """Test empire service metrics"""
-        from src.services.monetization.empire_service import EmpireService
+        from services.monetization.empire_service import EmpireService
         from unittest.mock import MagicMock
 
         # Mock database session
@@ -467,7 +467,7 @@ class TestAnalyticsService:
     @pytest.mark.asyncio
     async def test_affiliate_service_link_generation(self):
         """Test affiliate link generation"""
-        from src.services.affiliate.service import AffiliateService
+        from services.affiliate.service import AffiliateService
 
         service = AffiliateService()
         link = await service.generate_affiliate_link(
@@ -478,7 +478,7 @@ class TestAnalyticsService:
 
     def test_security_sentinel_audit(self):
         """Test security sentinel system audit"""
-        from src.services.security.service import SecuritySentinel
+        from services.security.service import SecuritySentinel
         from unittest.mock import MagicMock
 
         sentinel = SecuritySentinel()
@@ -493,7 +493,7 @@ class TestAnalyticsService:
 
     def test_voiceover_service_initialization(self):
         """Test voiceover service engines"""
-        from src.services.voiceover.service import VoiceoverService
+        from services.voiceover.service import VoiceoverService
 
         service = VoiceoverService()
         assert hasattr(service, "elevenlabs_key")
@@ -503,7 +503,7 @@ class TestAnalyticsService:
     @pytest.mark.asyncio
     async def test_stock_media_search(self):
         """Test stock media search"""
-        from src.services.stock_media.service import StockMediaService
+        from services.stock_media.service import StockMediaService
 
         service = StockMediaService()
         # Test without API key (should return empty list)
@@ -512,7 +512,7 @@ class TestAnalyticsService:
 
     def test_visual_generator_prompt_handling(self):
         """Test visual generator prompt enhancement"""
-        from src.services.visual_generator.service import VisualGenerator
+        from services.visual_generator.service import VisualGenerator
 
         generator = VisualGenerator()
         # Test prompt enhancement logic
@@ -523,7 +523,7 @@ class TestAnalyticsService:
     @pytest.mark.asyncio
     async def test_interpreter_process_isolation(self):
         """Test interpreter process isolation"""
-        from src.services.interpreter.service import InterpreterService
+        from services.interpreter.service import InterpreterService
         import os
 
         # Force enable for testing
@@ -547,7 +547,7 @@ class TestAnalyticsService:
 
     def test_discovery_service_caching(self):
         """Test discovery service scanner initialization"""
-        from src.services.discovery.service import DiscoveryService
+        from services.discovery.service import DiscoveryService
 
         service = DiscoveryService()
         # Test scanner initialization
@@ -558,7 +558,7 @@ class TestAnalyticsService:
 
     def test_nexus_pipeline_stages(self):
         """Test nexus orchestrator pipeline stages"""
-        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+        from services.nexus_engine.orchestrator import NexusOrchestrator
 
         orchestrator = NexusOrchestrator()
         # Test pipeline stage definitions
@@ -567,7 +567,7 @@ class TestAnalyticsService:
 
     def test_publisher_rate_limiting(self):
         """Test publisher rate limiting logic"""
-        from src.services.optimization.publisher_base import RateLimitConfig
+        from services.optimization.publisher_base import RateLimitConfig
 
         config = RateLimitConfig()
         assert config.max_retries >= 3
@@ -575,7 +575,7 @@ class TestAnalyticsService:
 
     def test_script_generator_templates(self):
         """Test script generator fallback templates"""
-        from src.services.script_generator.service import ScriptGenerator
+        from services.script_generator.service import ScriptGenerator
 
         generator = ScriptGenerator()
         template = generator._get_fallback_script("Tech", "Educational")
@@ -585,7 +585,7 @@ class TestAnalyticsService:
 
     def test_opencli_platform_matrix(self):
         """Test OpenCLI platform capabilities matrix"""
-        from src.services.opencli.service import PLATFORM_CAPABILITIES, PLATFORM_MAP
+        from services.opencli.service import PLATFORM_CAPABILITIES, PLATFORM_MAP
 
         assert "youtube" in PLATFORM_CAPABILITIES
         assert "tiktok" in PLATFORM_CAPABILITIES
@@ -594,7 +594,7 @@ class TestAnalyticsService:
 
     def test_decision_engine_model_validation(self):
         """Test decision engine Pydantic models"""
-        from src.services.decision_engine.service import (
+        from services.decision_engine.service import (
             VideoStrategy,
             StoryScene,
             StoryScript,
@@ -614,7 +614,7 @@ class TestAnalyticsService:
 
     def test_video_lead_scanner_initialization(self):
         """Test video lead scanner initializes properly"""
-        from src.services.discovery.video_lead_scanner import VideoLeadScanner
+        from services.discovery.video_lead_scanner import VideoLeadScanner
 
         scanner = VideoLeadScanner()
         assert hasattr(scanner, "platform_configs")
@@ -623,7 +623,7 @@ class TestAnalyticsService:
 
     def test_video_lead_data_structure(self):
         """Test VideoLead dataclass structure"""
-        from src.services.discovery.video_lead_scanner import VideoLead
+        from services.discovery.video_lead_scanner import VideoLead
         from datetime import datetime
 
         lead = VideoLead(
@@ -641,7 +641,7 @@ class TestAnalyticsService:
             thumbnail_url="https://example.com/thumb.jpg",
             description="Test description",
             tags=["test", "video"],
-            engagement_rate=6.0,
+            engagement_score=6.0,
             viral_score=8.5,
             niche="Tech",
             content_type="educational",
@@ -654,7 +654,7 @@ class TestAnalyticsService:
 
     def test_video_lead_viral_score_calculation(self):
         """Test viral score calculation logic"""
-        from src.services.discovery.video_lead_scanner import VideoLeadScanner
+        from services.discovery.video_lead_scanner import VideoLeadScanner
 
         scanner = VideoLeadScanner()
 
@@ -670,7 +670,7 @@ class TestAnalyticsService:
 
     def test_video_content_type_classification(self):
         """Test content type classification from titles"""
-        from src.services.discovery.video_lead_scanner import VideoLeadScanner
+        from services.discovery.video_lead_scanner import VideoLeadScanner
 
         scanner = VideoLeadScanner()
 
@@ -687,7 +687,7 @@ class TestAnalyticsService:
 
     def test_video_url_parsing(self):
         """Test video URL parsing for different platforms"""
-        from src.services.discovery.video_lead_scanner import VideoLeadScanner
+        from services.discovery.video_lead_scanner import VideoLeadScanner
 
         scanner = VideoLeadScanner()
 
@@ -708,7 +708,7 @@ class TestAnalyticsService:
 
     def test_monetization_potential_assessment(self):
         """Test monetization potential assessment"""
-        from src.services.discovery.video_lead_scanner import VideoLeadScanner
+        from services.discovery.video_lead_scanner import VideoLeadScanner
 
         scanner = VideoLeadScanner()
 
@@ -723,7 +723,7 @@ class TestAnalyticsService:
 
     def test_discovery_service_video_lead_integration(self):
         """Test discovery service video lead integration"""
-        from src.services.discovery.service import DiscoveryService
+        from services.discovery.service import DiscoveryService
 
         service = DiscoveryService()
         assert hasattr(service, "video_lead_scanner")
@@ -733,7 +733,7 @@ class TestAnalyticsService:
 
     def test_video_lead_skill_structure(self):
         """Test video lead skill has proper structure"""
-        from src.services.openclaw.skills.video_lead_discovery import VideoLeadSkill
+        from services.openclaw.skills.video_lead_discovery import VideoLeadSkill
 
         skill = VideoLeadSkill()
         assert skill.name == "video_lead_discovery"
@@ -743,7 +743,7 @@ class TestAnalyticsService:
     def test_video_lead_skill_actions(self):
         """Test video lead skill supports expected actions"""
         import asyncio
-        from src.services.openclaw.skills.video_lead_discovery import VideoLeadSkill
+        from services.openclaw.skills.video_lead_discovery import VideoLeadSkill
 
         skill = VideoLeadSkill()
 
@@ -754,7 +754,7 @@ class TestAnalyticsService:
 
     def test_youtube_duration_parsing(self):
         """Test YouTube duration string parsing"""
-        from src.services.discovery.video_lead_scanner import VideoLeadScanner
+        from services.discovery.video_lead_scanner import VideoLeadScanner
 
         scanner = VideoLeadScanner()
 
@@ -765,7 +765,7 @@ class TestAnalyticsService:
 
     def test_video_lead_scanner_platform_support(self):
         """Test video lead scanner platform configurations"""
-        from src.services.discovery.video_lead_scanner import VideoLeadScanner
+        from services.discovery.video_lead_scanner import VideoLeadScanner
 
         scanner = VideoLeadScanner()
 
@@ -781,7 +781,7 @@ class TestAnalyticsService:
 
     def test_video_lead_discovery_workflow(self):
         """Test the complete video lead discovery workflow"""
-        from src.services.discovery.service import DiscoveryService
+        from services.discovery.service import DiscoveryService
 
         service = DiscoveryService()
 
@@ -828,7 +828,7 @@ class TestAnalyticsService:
 
     def test_monetization_strategy_count(self):
         """Test monetization orchestrator has expected strategies"""
-        from src.services.monetization.orchestrator import MonetizationOrchestrator
+        from services.monetization.orchestrator import MonetizationOrchestrator
 
         orchestrator = MonetizationOrchestrator()
         # Should have at least 8 monetization strategies
@@ -839,7 +839,7 @@ class TestAnalyticsService:
 
     def test_llm_provider_fallback_chain(self):
         """Test LLM service has proper fallback configuration"""
-        from src.services.llm.service import UnifiedLLMService
+        from services.llm.service import UnifiedLLMService
 
         service = UnifiedLLMService()
         # Should have fallback providers configured
@@ -850,7 +850,7 @@ class TestAnalyticsService:
 
     def test_video_processor_basic_setup(self):
         """Test video processor has basic setup"""
-        from src.services.video_engine.processor import VideoProcessor
+        from services.video_engine.processor import VideoProcessor
 
         processor = VideoProcessor()
         assert hasattr(processor, "output_dir")
@@ -858,7 +858,7 @@ class TestAnalyticsService:
 
     def test_nexus_orchestrator_initialization(self):
         """Test nexus orchestrator initializes properly"""
-        from src.services.nexus_engine.orchestrator import NexusOrchestrator
+        from services.nexus_engine.orchestrator import NexusOrchestrator
 
         orchestrator = NexusOrchestrator()
         assert hasattr(orchestrator, "remotion_circuit_breaker")
@@ -871,7 +871,7 @@ class TestOpenCLIService:
 
     def test_platform_capabilities(self):
         """Test platform capabilities matrix"""
-        from src.services.opencli.service import PLATFORM_CAPABILITIES, PLATFORM_MAP
+        from services.opencli.service import PLATFORM_CAPABILITIES, PLATFORM_MAP
 
         assert "youtube" in PLATFORM_CAPABILITIES
         assert "tiktok" in PLATFORM_CAPABILITIES
@@ -882,7 +882,7 @@ class TestOpenCLIService:
         """Test OpenCLIService initialization"""
         with patch.dict(os.environ, {"ENABLE_OPENCLI": "true"}, clear=False):
             try:
-                from src.services.opencli.service import OpenCLIService
+                from services.opencli.service import OpenCLIService
 
                 service = OpenCLIService()
                 assert hasattr(service, "enabled")
@@ -893,7 +893,7 @@ class TestOpenCLIService:
 
     def test_parse_count_utility(self):
         """Test count parsing utility"""
-        from src.services.opencli.service import OpenCLIService
+        from services.opencli.service import OpenCLIService
 
         assert OpenCLIService._parse_count(1000) == 1000
         assert OpenCLIService._parse_count("1.5K") == 1500

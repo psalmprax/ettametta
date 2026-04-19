@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.api.utils.database import get_db
-from src.api.utils.models import SystemSettings, BotCodeDB, UserSetting, VideoFilterDB
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
-from src.api.utils.notifications import configure_telegram_bot, configure_whatsapp_bot
+from api.utils.database import get_db
+from api.utils.models import SystemSettings, BotCodeDB, UserSetting, VideoFilterDB
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB, UserRole
+from api.utils.notifications import configure_telegram_bot, configure_whatsapp_bot
+from api.utils.api_responses import success_response
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
@@ -25,7 +26,7 @@ class UserSettingsUpdate(BaseModel):
 
 
 def admin_required(current_user: UserDB = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Administrative access required",
@@ -37,8 +38,8 @@ def admin_required(current_user: UserDB = Depends(get_current_user)):
 async def get_settings(
     db: AsyncSession = Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
-    from src.api.config import settings as app_settings
-    from src.api.utils.models import UserSetting
+    from api.config import settings as app_settings
+    from api.utils.models import UserSetting
 
     # 1. Fetch system-wide defaults from DB
     stmt_system = select(SystemSettings)
@@ -187,7 +188,7 @@ async def get_settings(
 
     # Cascade: Config -> System -> User (User wins)
     merged = {**config_dict, **system_dict, **user_dict}
-    return merged
+    return success_response(data=merged)
 
 
 @router.post("/")
@@ -196,7 +197,7 @@ async def update_setting(
     db: AsyncSession = Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
-    from src.api.utils.models import UserSetting
+    from api.utils.models import UserSetting
 
     # Non-admins can only update their own UserSetting overrides
     # Adms can update SystemSettings via /admin routes, but we'll allow them to have personal overrides too if they use this route.
@@ -222,13 +223,13 @@ async def update_setting(
 
     await db.commit()
     await db.refresh(setting)
-    return {"status": "success", "key": setting.key, "scope": "user"}
+    return success_response(data={"status": "success", "key": setting.key, "scope": "user"})
 
 
 @router.get("/monetization/strategies")
 async def get_monetization_strategies(db: AsyncSession = Depends(get_db)):
     """Returns all available monetization strategies with their configuration status"""
-    from src.api.config import settings as app_settings
+    from api.config import settings as app_settings
 
     # Get system settings to check configuration status
     stmt = select(SystemSettings)
@@ -299,10 +300,12 @@ async def get_monetization_strategies(db: AsyncSession = Depends(get_db)):
         },
     ]
 
-    return {
-        "strategies": strategies,
-        "active_strategies": [s["id"] for s in strategies if s["configured"]],
-    }
+    return success_response(
+        data={
+            "strategies": strategies,
+            "active_strategies": [s["id"] for s in strategies if s["configured"]],
+        }
+    )
 
 
 @router.get("/system")
@@ -314,7 +317,7 @@ async def get_system_settings(
     result = await db.execute(stmt)
     db_items = result.scalars().all()
     system_dict = {s.key: s.value for s in db_items}
-    return system_dict
+    return success_response(data=system_dict)
 
 
 @router.post("/system")
@@ -338,14 +341,14 @@ async def update_system_settings(
     
     # Broadcast reload signal to all components
     try:
-        from src.api.routes.ws import redis
-        from src.api.config import settings as app_settings
+        from api.routes.ws import redis
+        from api.config import settings as app_settings
         r = redis.from_url(app_settings.REDIS_URL)
         await r.publish("system_config_reload", "settings_update")
     except Exception as e:
         logger.error(f"Failed to broadcast settings reload: {e}")
 
-    return {"status": "success", "updated_count": len(settings_dict)}
+    return success_response(data={"status": "success", "updated_count": len(settings_dict)})
 
 
 @router.post("/bulk")
@@ -368,7 +371,7 @@ async def bulk_update_settings(
             db.add(setting)
 
     await db.commit()
-    return {"status": "success"}
+    return success_response(data={"status": "success"})
 
 
 @router.post("/user")
@@ -378,7 +381,7 @@ async def bulk_update_user_settings(
     current_user: UserDB = Depends(get_current_user),
 ):
     """Bulk update user-specific settings (non-admin users)"""
-    from src.api.utils.models import UserSetting
+    from api.utils.models import UserSetting
 
     for req in settings_list:
         stmt = select(UserSetting).where(
@@ -400,7 +403,7 @@ async def bulk_update_user_settings(
             db.add(setting)
 
     await db.commit()
-    return {"status": "success", "updated_count": len(settings_list)}
+    return success_response(data={"status": "success", "updated_count": len(settings_list)})
 
 
 @router.post("/filters/{filter_id}/toggle")
@@ -426,20 +429,22 @@ async def toggle_filter(
             db.add(SystemSettings(key=env_key, value=new_value, category="engine"))
         await db.commit()
 
-        return {
-            "id": filter_id,
-            "name": "Sound Design Engine"
-            if filter_id == "sound_design"
-            else "Motion Graphics Engine",
-            "enabled": new_value.lower() == "true",
-            "description": "Auto background music & SFX"
-            if filter_id == "sound_design"
-            else "Animated text overlays & titles",
-            "type": "service",
-        }
+        return success_response(
+            data={
+                "id": filter_id,
+                "name": "Sound Design Engine"
+                if filter_id == "sound_design"
+                else "Motion Graphics Engine",
+                "enabled": new_value.lower() == "true",
+                "description": "Auto background music & SFX"
+                if filter_id == "sound_design"
+                else "Animated text overlays & titles",
+                "type": "service",
+            }
+        )
 
     # Handle standard video filter toggles
-    from src.api.utils.models import VideoFilterDB
+    from api.utils.models import VideoFilterDB
 
     stmt = select(VideoFilterDB).where(VideoFilterDB.id == filter_id)
     result = await db.execute(stmt)
@@ -450,21 +455,23 @@ async def toggle_filter(
     filter_item.enabled = not filter_item.enabled
     await db.commit()
     await db.refresh(filter_item)
-    return {
-        "id": filter_item.id,
-        "name": filter_item.name,
-        "enabled": filter_item.enabled,
-        "description": filter_item.description,
-        "type": "video_filter",
-    }
+    return success_response(
+        data={
+            "id": filter_item.id,
+            "name": filter_item.name,
+            "enabled": filter_item.enabled,
+            "description": filter_item.description,
+            "type": "video_filter",
+        }
+    )
 
 
 @router.get("/filters")
 async def get_available_filters(
     db: AsyncSession = Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
-    from src.api.utils.models import VideoFilterDB
-    from src.api.config import settings as app_settings
+    from api.utils.models import VideoFilterDB
+    from api.config import settings as app_settings
 
     stmt = select(VideoFilterDB)
     result = await db.execute(stmt)
@@ -573,7 +580,7 @@ async def get_available_filters(
         }
     )
 
-    return result
+    return success_response(data=result)
 
 
 @router.post("/verify/{service_id}")
@@ -586,7 +593,7 @@ async def verify_service(
     Performs a real-time handshake/verification of an external service configuration.
     This ensures that saved URLs/keys are functional 'Real Solutions'.
     """
-    from src.api.utils.models import UserSetting
+    from api.utils.models import UserSetting
     import httpx
 
     # Map service_id to setting keys
@@ -630,14 +637,18 @@ async def verify_service(
             async with httpx.AsyncClient() as client:
                 resp = await client.get(url, timeout=5.0)
                 if resp.status_code < 400:
-                    return {
-                        "status": "success",
-                        "message": f"Connection verified for {url}",
+                    return success_response(
+                        data={
+                            "status": "success",
+                            "message": f"Connection verified for {url}",
+                        }
+                    )
+                return success_response(
+                    data={
+                        "status": "error",
+                        "message": f"Shopify returned {resp.status_code}",
                     }
-                return {
-                    "status": "error",
-                    "message": f"Shopify returned {resp.status_code}",
-                }
+                )
 
         elif service_id in ("membership", "course", "crypto"):
             key = keys[0]
@@ -940,7 +951,7 @@ async def update_user_settings(
     if request.whatsapp_number:
         await configure_whatsapp_bot(current_user.id, request.whatsapp_number)
 
-    return {"status": "success"}
+    return success_response(data={"status": "success"})
 
 
 @router.post("/generate-bot-code")

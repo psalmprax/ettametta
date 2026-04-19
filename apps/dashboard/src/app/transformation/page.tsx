@@ -90,7 +90,7 @@ function TransformationPageContent() {
                         Authorization: `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        input_url: newJobUrl,
+                        source_url: newJobUrl,
                         platform: targetPlatform,
                         niche: currentNiche,
                         generate_thumbnail: generateThumbnail,

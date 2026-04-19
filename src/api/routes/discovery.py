@@ -9,8 +9,10 @@ import json
 
 from services.discovery.service import base_discovery_service
 from services.discovery.models import ContentCandidate, ViralPattern
-from services.discovery.search_service import search_content, get_trending
-from services.discovery.analysis_service import analyze_content, get_analysis
+from services.discovery.analysis_service import (
+    extract_content_patterns,
+    get_persisted_analysis_report,
+)
 from fastapi_cache.decorator import cache
 from api.utils.api_responses import success_response, Paginator, paginate_list
 
@@ -18,30 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 # NOTE: ContentSearchResult is deprecated. Use ContentCandidate (from services.discovery.models) for all endpoints.
-# Keeping for backward compatibility during transition.
-class ContentSearchResult(BaseModel):
-    id: str
-    platform: str
-    external_id: Optional[str] = None
-    title: Optional[str] = None
-    description: Optional[str] = None
-    creator_name: Optional[str] = None
-    creator_id: Optional[str] = None
-    source_url: str
-    thumbnail_url: Optional[str] = None
-    published_at: Optional[datetime.datetime] = None
-    scanned_at: Optional[datetime.datetime] = None
-    duration_seconds: float
-    view_count: int
-    like_count: int
-    comment_count: int
-    share_count: int
-    engagement_score: float
-    viral_score: int
-    category: Optional[str] = None
-    tags: List[str] = []
-    niche: Optional[str] = None
-    metadata: dict = {}
 
 
 router = APIRouter(prefix="/discovery", tags=["Discovery"])
@@ -50,7 +28,7 @@ DISCOVERY_GO_URL = os.getenv("DISCOVERY_GO_URL", "http://discovery-go:8080")
 
 from api.routes.auth import get_current_user
 from api.utils.user_models import UserDB
-from api.utils.subscription import credits_required
+from api.utils.subscription import credits_required, get_subscription_tier_value
 from services.payment.credit_service import credit_service
 from api.config import settings
 from api.utils.database import get_db
@@ -63,7 +41,7 @@ from sqlalchemy import select
 @router.get("/trends")
 @cache(expire=60)
 async def get_trends(
-    niche: str = "Motivation",
+    niche: Optional[str] = None,
     horizon: str = "30d",
     page: int = 1,
     limit: int = 20,
@@ -72,13 +50,20 @@ async def get_trends(
     user: UserDB = Depends(get_current_user),
 ):
     try:
-        trends = await base_discovery_service.find_trending_content(
-            niche,
-            horizon=horizon,
-            tier=getattr(user.subscription, "value", "free"),
-            min_viral_score=min_viral_score,
-            exclude_shorts=exclude_shorts,
-        )
+        if niche:
+            trends = await base_discovery_service.find_trending_content(
+                niche,
+                horizon=horizon,
+                tier=get_subscription_tier_value(user),
+                min_viral_score=min_viral_score,
+                exclude_shorts=exclude_shorts,
+            )
+        else:
+            # Fallback to global trending if no niche specified
+            trends = await base_discovery_service.get_global_trending(
+                limit=limit * page, min_viral_score=float(min_viral_score)
+            )
+
         return success_response(data=paginate_list(trends, page=page, page_size=limit))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -86,6 +71,7 @@ async def get_trends(
 
 @router.get("/search")
 async def search_discovery(
+    query: Optional[str] = None,
     platform: Optional[List[str]] = None,
     min_views: Optional[int] = None,
     min_viral_score: Optional[float] = None,
@@ -96,11 +82,13 @@ async def search_discovery(
     sort_by: str = "viral_score",
     limit: int = 50,
     offset: int = 0,
+    page: int = 1,
     user: UserDB = Depends(get_current_user),
 ):
     try:
-        results = await search_content(
-            platform=platform,
+        results = await base_discovery_service.search_content(
+            query=query,
+            platforms=platform,
             min_views=min_views,
             min_viral_score=min_viral_score,
             creator=creator,
@@ -111,20 +99,7 @@ async def search_discovery(
             limit=limit,
             offset=offset,
         )
-        return success_response(data=results)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/trending")
-async def get_trending_endpoint(
-    limit: int = 50,
-    min_viral_score: Optional[float] = None,
-    user: UserDB = Depends(get_current_user),
-):
-    try:
-        results = await get_trending(limit=limit, min_viral_score=min_viral_score)
-        return success_response(data=results)
+        return success_response(data=paginate_list(results, page=page, page_size=limit))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -155,7 +130,7 @@ async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_
 
             task = deep_scan_task.delay(
                 niches=request.niches,
-                tier=user.subscription.value if user.subscription else "free",
+                tier=get_subscription_tier_value(user),
             )
 
             return success_response(
@@ -168,27 +143,37 @@ async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_
             )
         else:
             # Proxies regular scan requests to the high-concurrency Go engine
+            # with improved timeout and graceful fallback
             try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
+                async with httpx.AsyncClient(timeout=30.0) as client:
                     resp = await client.post(
                         f"{DISCOVERY_GO_URL}/scan",
                         json={"niches": request.niches},
-                        timeout=300.0,
+                        timeout=60.0,
                     )
                     resp.raise_for_status()
                     return success_response(data=resp.json())
-            except (httpx.ConnectError, httpx.TimeoutException) as e:
+            except (
+                httpx.ConnectError,
+                httpx.TimeoutException,
+                httpx.HTTPStatusError,
+            ) as e:
                 logger.warning(
                     f"[Discovery] Go engine unavailable: {e}, falling back to Python service"
                 )
                 # Fallback to Python service if Go engine unavailable
                 all_results = []
+                failed_niches = []
+
+                # Process niches with individual error handling for resilience
                 for niche in request.niches:
                     try:
                         results = await base_discovery_service.find_trending_content(
                             niche,
                             horizon="30d",
-                            tier=user.subscription.value
+                            tier=getattr(
+                                user.subscription, "value", str(user.subscription)
+                            )
                             if user.subscription
                             else "free",
                         )
@@ -197,6 +182,59 @@ async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_
                         logger.error(
                             f"[Discovery] Fallback scan failed for {niche}: {inner_e}"
                         )
+                        failed_niches.append(niche)
+
+                # If we have at least some results, return them
+                if all_results:
+                    return success_response(
+                        data={
+                            "status": "scan_completed",
+                            "niches": request.niches,
+                            "candidates": all_results[:50],
+                            "count": len(all_results),
+                            "source": "fallback_python",
+                            "failed_niches": failed_niches,
+                        }
+                    )
+
+                # Ultimate fallback: Use video lead scanner for any failed niches
+                if failed_niches:
+                    logger.warning(
+                        f"[Discovery] Primary scanners failed. Deploying Video Lead Scanner for {failed_niches}"
+                    )
+                    for niche in failed_niches:
+                        try:
+                            swarm_results = await base_discovery_service.video_lead_scanner.scan_for_video_leads(
+                                niche=niche,
+                                platforms=["youtube", "tiktok", "rumble"],
+                                min_viral_score=0,
+                                max_results=10,
+                            )
+                            all_results.extend(
+                                [
+                                    ContentCandidate(
+                                        id=r.video_id,
+                                        platform=r.platform,
+                                        source_url=r.url,
+                                        creator_name=r.creator,
+                                        title=r.title,
+                                        description=r.description,
+                                        thumbnail_url=r.thumbnail_url,
+                                        view_count=r.view_count,
+                                        engagement_score=r.engagement_score,
+                                        viral_score=int(r.viral_score),
+                                        duration_seconds=float(r.duration_seconds),
+                                        category=r.content_type,
+                                        niche=niche,
+                                        metadata={"source": "video_lead_scanner"},
+                                    )
+                                    for r in swarm_results
+                                ]
+                            )
+                        except Exception as swarm_e:
+                            logger.error(
+                                f"[Discovery] Video Lead Scanner failed for {niche}: {swarm_e}"
+                            )
 
                 return success_response(
                     data={
@@ -254,12 +292,16 @@ async def get_niche_trends(niche: str, user: UserDB = Depends(get_current_user))
         trend = await base_discovery_service.aggregate_niche_trends(niche)
         if not trend:
             # If no data yet, try to scan first
-            tier_value = user.subscription.value if user.subscription else "free"
+            tier_value = get_subscription_tier_value(user)
             await base_discovery_service.find_trending_content(niche, tier=tier_value)
             trend = await base_discovery_service.aggregate_niche_trends(niche)
             if not trend:
                 return success_response(
-                    data={"niche": niche, "top_keywords": [], "avg_engagement": 0.0}
+                    data={
+                        "niche": niche,
+                        "top_keywords": [],
+                        "avg_engagement_score": 0.0,
+                    }
                 )
         return success_response(data=trend)
     except Exception as e:
@@ -530,6 +572,104 @@ async def create_video_from_analysis(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ─── Auto-Pipeline Endpoints ───────────────────────────────────────────
+
+
+class AutoTransformRequest(BaseModel):
+    niche: str = "Motivation"
+    platform: str = "YouTube Shorts"
+    style: str | None = "Default"
+    quality_tier: str | None = "standard"
+    min_viral_score: int = 7
+
+
+@router.post("/auto-transform")
+async def auto_transform(
+    request: AutoTransformRequest,
+    user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    One-shot pipeline: Discover best content → Analyze → Create video transformation.
+    Combines 3 steps into 1 call for autonomous operation.
+    """
+    from api.utils.celery import celery_app
+    from services.video_engine.tasks import download_and_process_task
+    from api.utils.models import VideoJobDB
+    from shared.enums import SystemJobStatus
+
+    credits_needed = 2  # 分析 + video creation
+
+    try:
+        # Step 1: Discover top content for the niche
+        await logger.info(
+            f"[Auto-Transform] Discovering content for niche: {request.niche}"
+        )
+        candidates = await base_discovery_service.find_trending_content(
+            request.niche,
+            horizon="7d",
+            tier=get_subscription_tier_value(user),
+            min_viral_score=request.min_viral_score,
+        )
+
+        if not candidates:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No suitable content found for niche '{request.niche}'. Try lowering min_viral_score.",
+            )
+
+        # Select the top candidate
+        best = candidates[0]
+        source_url = best.source_url or ""
+
+        if not source_url:
+            raise HTTPException(
+                status_code=400, detail="Selected content has no source URL"
+            )
+
+        # Step 2: Dispatch video creation directly
+        # (Skip analysis - use the discovery scores directly)
+        await logger.info(f"[Auto-Transform] Creating video from: {best.title}")
+
+        task = download_and_process_task.delay(
+            source_url=source_url,
+            niche=request.niche,
+            platform=request.platform,
+            style=request.style,
+            quality_tier=request.quality_tier,
+        )
+
+        # Create job record
+        new_job = VideoJobDB(
+            id=task.id,
+            title=f"Auto-Transform: {best.title[:50]}",
+            status=SystemJobStatus.QUEUED,
+            progress=0,
+            source_url=source_url,
+            user_id=user.id,
+        )
+        db.add(new_job)
+        await db.commit()
+
+        return success_response(
+            data={
+                "status": "auto_transform_started",
+                "task_id": task.id,
+                "source_title": best.title,
+                "source_platform": best.platform,
+                "source_viral_score": best.viral_score,
+                "pipeline": "discover→create",
+                "message": f"Auto-transform pipeline started for '{best.title[:30]}...'",
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Auto-Transform] Pipeline failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class InsightResponse(BaseModel):
     niche: str
     recommendation: str
@@ -753,7 +893,7 @@ async def get_content_analysis(
     """
     try:
         # First try to get existing analysis
-        existing_analysis = await get_analysis(content_id, db)
+        existing_analysis = await get_persisted_analysis_report(content_id, db)
 
         if existing_analysis and not force:
             # Return existing analysis
@@ -771,7 +911,7 @@ async def get_content_analysis(
             )
 
         # Perform new analysis
-        analysis_results = await analyze_content(content_id, db, force=force)
+        analysis_results = await extract_content_patterns(content_id, db, force=force)
 
         # Get the updated content for timestamp
         stmt = select(ContentCandidateDB).filter(ContentCandidateDB.id == content_id)
@@ -791,3 +931,540 @@ async def get_content_analysis(
     except Exception as e:
         logger.error(f"Analysis failed: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+# ─── Velocity & Reupload Tracking Endpoints ───────────────────────────────────
+
+
+@router.get("/{content_id}/velocity")
+async def get_content_velocity(
+    content_id: str,
+    user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get viral velocity score for a specific content item.
+    Calculates real-time velocity based on view count and age.
+    """
+    from services.discovery.scanner_base import DiscoveryScannerBase
+
+    try:
+        # Get content from database
+        stmt = select(ContentCandidateDB).filter(ContentCandidateDB.id == content_id)
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
+
+        if not content:
+            raise HTTPException(
+                status_code=404, detail=f"Content '{content_id}' not found"
+            )
+
+        # Create a candidate from DB
+        candidate = ContentCandidate(
+            id=content.id,
+            platform=content.platform,
+            source_url=content.source_url or "",
+            creator_name=content.creator_name or "Unknown",
+            title=content.title or "",
+            description=content.description or "",
+            thumbnail_url=content.thumbnail_url or "",
+            view_count=content.view_count or 0,
+            engagement_score=content.engagement_score or 0.0,
+            viral_score=content.viral_score or 0,
+            duration_seconds=content.duration_seconds or 0.0,
+            published_at=content.published_at,
+            scanned_at=content.scanned_at,
+            metadata=content.metadata_json or {},
+        )
+
+        # Calculate velocity using base scanner default
+        scanner = DiscoveryScannerBase()
+        velocity = scanner.identify_viral_velocity(candidate)
+        viral_score = scanner.calculate_viral_score(candidate)
+
+        return success_response(
+            data={
+                "content_id": content_id,
+                "title": content.title,
+                "platform": content.platform,
+                "view_count": content.view_count,
+                "velocity": round(velocity, 2),
+                "viral_score": viral_score,
+                "hours_since_published": (
+                    (
+                        datetime.datetime.now(datetime.timezone.utc)
+                        - content.published_at
+                    ).total_seconds()
+                    / 3600
+                    if content.published_at
+                    else None
+                ),
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Velocity calculation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{content_id}/reuploads")
+async def get_content_reuploads(
+    content_id: str,
+    user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    limit: int = 20,
+):
+    """
+    Find cross-platform reuploads of the same content.
+    Uses title similarity to match content across platforms.
+    """
+    try:
+        # Get content from database
+        stmt = select(ContentCandidateDB).filter(ContentCandidateDB.id == content_id)
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
+
+        if not content:
+            raise HTTPException(
+                status_code=404, detail=f"Content '{content_id}' not found"
+            )
+
+        # Use service to find reuploads
+        reuploads = await base_discovery_service.find_reuploads(
+            content_id=content_id,
+            source_platform=content.platform,
+        )
+
+        # Limit results
+        reuploads = reuploads[:limit]
+
+        return success_response(
+            data={
+                "original_id": content_id,
+                "original_title": content.title,
+                "original_platform": content.platform,
+                "reuploads": [
+                    {
+                        "id": r.id,
+                        "platform": r.platform,
+                        "title": r.title,
+                        "source_url": r.source_url,
+                        "view_count": r.view_count,
+                        "viral_score": r.viral_score,
+                        "similarity_score": r.metadata.get("similarity_score", 0),
+                    }
+                    for r in reuploads
+                ],
+                "count": len(reuploads),
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Reupload search failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Refresh Endpoints ───────────────────────────────────────────────────────
+
+
+class RefreshRequest(BaseModel):
+    niches: list[str] | None = None
+    clear_cache: bool = False
+
+
+@router.post("/refresh")
+async def refresh_discovery(
+    request: RefreshRequest,
+    user: UserDB = Depends(get_current_user),
+):
+    """
+    Refresh discovery cache for specified niches.
+    If no niches specified, refreshes all cached niches.
+    Clears Redis cache and triggers new scans.
+    """
+    import redis
+    from api.config import settings
+
+    try:
+        # Connect to Redis
+        redis_url = settings.REDIS_URL
+        if "localhost" in redis_url:
+            redis_url = redis_url.replace("localhost", "redis")
+        r = redis.from_url(redis_url)
+
+        refreshed_niches = []
+
+        if request.clear_cache:
+            # Clear all cache if requested
+            keys = r.keys("discovery:trends:*")
+            if keys:
+                r.delete(*keys)
+                logger.info(f"[Discovery] Cleared {len(keys)} cache keys")
+
+        # Determine niches to refresh
+        niches_to_refresh = request.niches if request.niches else [None]
+
+        for niche in niches_to_refresh:
+            actual_niche = niche or "global"
+
+            # Delete cache for this niche
+            cache_key = f"discovery:trends:{actual_niche}:30d"
+            r.delete(cache_key)
+            refreshed_niches.append(actual_niche)
+
+            # Trigger background scan
+            logger.info(f"[Discovery] Triggering refresh scan for: {actual_niche}")
+
+        return success_response(
+            data={
+                "status": "refresh_queued",
+                "niches": refreshed_niches,
+                "message": f"Cache cleared and refresh triggered for {len(refreshed_niches)} niche(s)",
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Refresh failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Export Endpoints ───────────────────────────────────────────────────────────
+
+
+class ExportRequest(BaseModel):
+    niche: str | None = None
+    format: str = "json"  # json or csv
+    limit: int = 100
+
+
+@router.post("/export")
+async def export_discovery(
+    request: ExportRequest,
+    user: UserDB = Depends(get_current_user),
+):
+    """
+    Export discovery results as JSON or CSV.
+    Useful for bulk analysis and reporting.
+    """
+    import csv
+    import io
+
+    try:
+        # Get content
+        candidates = []
+        if request.niche:
+            candidates = await base_discovery_service.find_trending_content(
+                request.niche,
+                horizon="30d",
+                tier="free",
+                min_viral_score=0,
+            )
+
+        candidates = candidates[: request.limit]
+
+        if request.format == "csv":
+            # Convert to CSV
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow(
+                [
+                    "id",
+                    "title",
+                    "platform",
+                    "creator",
+                    "views",
+                    "viral_score",
+                    "engagement",
+                    "url",
+                ]
+            )
+            for c in candidates:
+                writer.writerow(
+                    [
+                        c.id,
+                        c.title,
+                        c.platform,
+                        c.creator_name,
+                        c.view_count,
+                        c.viral_score,
+                        c.engagement_score,
+                        c.source_url,
+                    ]
+                )
+
+            csv_content = output.getvalue()
+            return success_response(
+                data={
+                    "format": "csv",
+                    "count": len(candidates),
+                    "content": csv_content,
+                }
+            )
+        else:
+            # JSON format
+            return success_response(
+                data={
+                    "format": "json",
+                    "count": len(candidates),
+                    "candidates": [
+                        {
+                            "id": c.id,
+                            "title": c.title,
+                            "platform": c.platform,
+                            "creator": c.creator_name,
+                            "views": c.view_count,
+                            "viral_score": c.viral_score,
+                            "engagement": c.engagement_score,
+                            "url": c.source_url,
+                        }
+                        for c in candidates
+                    ],
+                }
+            )
+
+    except Exception as e:
+        logger.error(f"Export failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Niche Alert Endpoints ────────────────���──────────────────────────────────────
+
+
+class NicheAlertRequest(BaseModel):
+    niche: str
+    threshold: int = 7  # viral_score threshold
+    enabled: bool = True
+
+
+@router.get("/alerts")
+async def get_niche_alerts(
+    user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get user's niche alerts."""
+    from api.utils.models import DiscoveryAlertDB
+
+    try:
+        stmt = select(DiscoveryAlertDB).filter(
+            DiscoveryAlertDB.user_id == user.id,
+            DiscoveryAlertDB.is_active == True,
+        )
+        result = await db.execute(stmt)
+        alerts = result.scalars().all()
+
+        return success_response(
+            data={
+                "alerts": [
+                    {
+                        "id": a.id,
+                        "niche": a.niche,
+                        "threshold": a.threshold,
+                        "enabled": a.is_active,
+                    }
+                    for a in alerts
+                ]
+            }
+        )
+    except Exception as e:
+        logger.error(f"Get alerts failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/alerts")
+async def create_niche_alert(
+    request: NicheAlertRequest,
+    user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create an alert for when new trending content is found in a niche."""
+    from api.utils.models import DiscoveryAlertDB
+
+    try:
+        alert = DiscoveryAlertDB(
+            user_id=user.id,
+            niche=request.niche,
+            threshold=request.threshold,
+            is_active=request.enabled,
+        )
+        db.add(alert)
+        await db.commit()
+        await db.refresh(alert)
+
+        return success_response(
+            data={
+                "status": "alert_created",
+                "alert_id": alert.id,
+                "niche": request.niche,
+                "threshold": request.threshold,
+            }
+        )
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Create alert failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/alerts/{alert_id}")
+async def delete_niche_alert(
+    alert_id: int,
+    user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a niche alert."""
+    from api.utils.models import DiscoveryAlertDB
+
+    try:
+        alert = await db.get(DiscoveryAlertDB, alert_id)
+        if not alert or alert.user_id != user.id:
+            raise HTTPException(status_code=404, detail="Alert not found")
+
+        await db.delete(alert)
+        await db.commit()
+
+        return success_response(data={"status": "alert_deleted", "alert_id": alert_id})
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Delete alert failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Bulk Favorites Endpoints ──────────────────────────────────────────────
+
+
+class BulkFavoriteRequest(BaseModel):
+    candidate_ids: list[str]
+    action: str = "add"  # add or remove
+
+
+@router.post("/favorites/bulk")
+async def bulk_favorites(
+    request: BulkFavoriteRequest,
+    user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Add or remove multiple candidates from favorites."""
+    from api.utils.models import DiscoveryFavoriteDB
+
+    try:
+        added = 0
+        removed = 0
+
+        for candidate_id in request.candidate_ids:
+            # Check if exists
+            existing = await db.get(DiscoveryFavoriteDB, candidate_id)
+
+            if request.action == "add" and not existing:
+                fav = DiscoveryFavoriteDB(
+                    id=candidate_id,
+                    user_id=user.id,
+                )
+                db.add(fav)
+                added += 1
+            elif request.action == "remove" and existing:
+                await db.delete(existing)
+                removed += 1
+
+        await db.commit()
+
+        return success_response(
+            data={
+                "status": "bulk_complete",
+                "action": request.action,
+                "added": added,
+                "removed": removed,
+            }
+        )
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Bulk favorite failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/favorites")
+async def get_favorites(
+    user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    limit: int = 50,
+):
+    """Get user's favorite content."""
+    from api.utils.models import DiscoveryFavoriteDB
+
+    try:
+        stmt = (
+            select(ContentCandidateDB)
+            .join(DiscoveryFavoriteDB, DiscoveryFavoriteDB.id == ContentCandidateDB.id)
+            .where(DiscoveryFavoriteDB.user_id == user.id)
+            .order_by(ContentCandidateDB.viral_score.desc())
+            .limit(limit)
+        )
+        result = await db.execute(stmt)
+        favorites = result.scalars().all()
+
+        return success_response(
+            data={
+                "favorites": [
+                    {
+                        "id": f.id,
+                        "title": f.title,
+                        "platform": f.platform,
+                        "viral_score": f.viral_score,
+                        "source_url": f.source_url,
+                    }
+                    for f in favorites
+                ],
+                "count": len(favorites),
+            }
+        )
+    except Exception as e:
+        logger.error(f"Get favorites failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Scan History Endpoints ──────────────────────────────────────────────
+
+
+@router.get("/history")
+async def get_scan_history(
+    user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    limit: int = 20,
+):
+    """Get scan history for the user."""
+    from api.utils.models import ScanHistoryDB
+
+    try:
+        stmt = (
+            select(ScanHistoryDB)
+            .where(ScanHistoryDB.user_id == user.id)
+            .order_by(ScanHistoryDB.created_at.desc())
+            .limit(limit)
+        )
+        result = await db.execute(stmt)
+        history = result.scalars().all()
+
+        return success_response(
+            data={
+                "history": [
+                    {
+                        "id": h.id,
+                        "niche": h.niche,
+                        "status": h.status,
+                        "results_count": h.results_count,
+                        "created_at": h.created_at.isoformat()
+                        if h.created_at
+                        else None,
+                    }
+                    for h in history
+                ],
+                "count": len(history),
+            }
+        )
+    except Exception as e:
+        logger.error(f"Get history failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

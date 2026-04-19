@@ -8,7 +8,7 @@ import pytest
 import os
 import httpx
 from fastapi import status
-from src.api.config import settings
+from api.config import settings
 
 # Markers for E2E and External API tests
 @pytest.mark.e2e
@@ -60,7 +60,7 @@ class TestAutomationE2E:
             response = await client.post(
                 f"{base_url}/video/transform",
                 json={
-                    "input_url": sample_url,
+                    "source_url": sample_url,
                     "niche": "Security",
                     "platform": "YouTube Shorts",
                     "quality_tier": "standard"

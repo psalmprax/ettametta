@@ -1,22 +1,43 @@
 import asyncio
 import logging
 import os
-from playwright.async_api import async_playwright, Browser, Page
 from typing import Any
+try:
+    from playwright.async_api import async_playwright, Browser, Page
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+    logger.warning("[Kaiber] Playwright not installed. Browser automation disabled.")
+
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class KaiberSkill:
+class KaiberSkill(OpenClawBaseSkill):
     """
     Kaiber browser automation skill - Tier 1 easy platform
     Clean UI, straightforward text-to-video generation
     """
 
     def __init__(self):
+        super().__init__()
         self.base_url = "https://kaiber.ai"
         self.browser: Browser | None = None
         self.page: Page | None = None
+
+    async def execute(self, action: str = "generate", prompt: str = "", aspect_ratio: str = "16:9", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        p = prompt or kwargs.get("prompt") or kwargs.get("topic", "")
+        if not p:
+            return "⚠️ Kaiber failed: Missing prompt"
+            
+        res = await self.generate(p, aspect_ratio or kwargs.get("aspect_ratio", "16:9"))
+        if res.get("status") == "success":
+            return f"🎬 **Kaiber Video Generated!**\nURL: {res['video_url']}"
+        return f"⚠️ Kaiber failed: {res.get('error')}"
 
     async def initialize(self):
         """Initialize stealth browser session"""
@@ -47,6 +68,12 @@ class KaiberSkill:
         Generate video from prompt using Kaiber
         Returns: { status: success/failed, video_url: str, error: str }
         """
+        if not PLAYWRIGHT_AVAILABLE:
+            return {
+                "status": "failed",
+                "error": "Playwright is not installed. Run 'pip install playwright && playwright install chromium' to enable browser-based AI skills.",
+                "engine": "kaiber",
+            }
 
         try:
             await self.initialize()

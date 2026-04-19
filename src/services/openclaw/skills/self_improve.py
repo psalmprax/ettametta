@@ -8,7 +8,8 @@ from pathlib import Path
 
 import requests
 
-from src.api.config import settings
+from api.config import settings
+from .base_skill import OpenClawBaseSkill
 try:
     from .memory import memory_skill
 except (ImportError, ValueError):
@@ -37,7 +38,7 @@ class SkillCritic:
             r"__import__",
         ]
 
-    def verify_syntax(self, code: str) -> str | None:
+    async def verify_syntax(self, code: str) -> str | None:
         """Check if the provided code is syntactically valid Python."""
         try:
             compile(code, "<string>", "exec")
@@ -47,7 +48,7 @@ class SkillCritic:
         except Exception as e:
             return f"Validation Error: {str(e)}"
 
-    def verify_safety(self, code: str) -> str | None:
+    async def verify_safety(self, code: str) -> str | None:
         """Simple heuristic-based safety check for malicious patterns."""
         for pattern in self.unsafe_patterns:
             if re.search(pattern, code):
@@ -73,13 +74,26 @@ class SkillCritic:
         return {"valid": True, "reason": "Verification passed (Syntax + Safety)"}
 
 
-class SelfImprovementSkill:
+class SelfImprovementSkill(OpenClawBaseSkill):
     def __init__(self):
+        super().__init__()
         self.improvement_log: list[dict] = []
         self.critic = SkillCritic()
         self._load_log()
 
-    def _load_log(self):
+    async def execute(self, action: str = "suggest", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "suggest":
+            return self.suggest_improvements(kwargs.get("niche", "General"))
+        elif action == "optimize":
+            return self.optimize_codebase(kwargs.get("target", "skills"))
+        elif action == "log":
+            return self.get_improvement_summary()
+        return f"⚠️ Unknown action for SelfImprovement: {action}"
+
+    async def _load_log(self):
         if SELF_IMPROVE_LOG.exists():
             try:
                 with open(SELF_IMPROVE_LOG, "r") as f:
@@ -87,11 +101,11 @@ class SelfImprovementSkill:
             except Exception:
                 self.improvement_log = []
 
-    def _save_log(self):
+    async def _save_log(self):
         with open(SELF_IMPROVE_LOG, "w") as f:
             json.dump(self.improvement_log[-200:], f, indent=2)
 
-    def detect_failures(self, hours: int = 24) -> str:
+    async def detect_failures(self, hours: int = 24) -> str:
         recent_failures = memory_skill.episodic.search(
             event_type="tool_error", since_hours=hours
         )
@@ -125,7 +139,7 @@ class SelfImprovementSkill:
         )
         return "\n".join(lines)
 
-    def analyze_skill_performance(self) -> str:
+    async def analyze_skill_performance(self) -> str:
         all_events = memory_skill.episodic.search(limit=500)
         tool_stats: dict[str, dict] = {}
         for entry in all_events:
@@ -176,7 +190,7 @@ class SelfImprovementSkill:
         )
         return "\n".join(lines)
 
-    def generate_skill_improvement(self, tool_name: str, issue_description: str) -> str:
+    async def generate_skill_improvement(self, tool_name: str, issue_description: str) -> str:
         existing_skill_path = SKILLS_DIR / f"{tool_name.lower()}.py"
         backup_path = None
 
@@ -259,7 +273,7 @@ class SelfImprovementSkill:
         except Exception as e:
             return f"❌ **Failed to apply improvement**: {e}"
 
-    def get_improvement_history(self, limit: int = 10) -> str:
+    async def get_improvement_history(self, limit: int = 10) -> str:
         if not self.improvement_log:
             return "📋 No improvements recorded yet."
 
@@ -280,7 +294,7 @@ class SelfImprovementSkill:
             lines.append(f"{icon} [{ts}] `{tool}` ({status}): {issue}")
         return "\n".join(lines)
 
-    def auto_detect_and_suggest(self) -> str:
+    async def auto_detect_and_suggest(self) -> str:
         failures_report = self.detect_failures(hours=24)
         performance_report = self.analyze_skill_performance()
 
@@ -308,7 +322,7 @@ class SelfImprovementSkill:
         lines.append("Use `/self-improve suggest <tool>` to generate a fix.")
         return "\n".join(lines)
 
-    def suggest_improvement(self, tool_name: str) -> str:
+    async def suggest_improvement(self, tool_name: str) -> str:
         errors = memory_skill.episodic.search(event_type="tool_error", limit=50)
         tool_errors = [e for e in errors if e["data"].get("tool") == tool_name]
 

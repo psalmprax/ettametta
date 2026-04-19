@@ -1,14 +1,21 @@
 from fastapi import APIRouter, HTTPException, Depends
-from src.services.analytics.service import base_analytics_service
-from src.services.analytics.models import ContentPerformance
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
+from services.analytics.service import base_analytics_service
+from services.analytics.models import ContentPerformance
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB, UserRole
 import datetime
 from fastapi_cache.decorator import cache
-from src.api.utils.database import get_db
+from api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from src.api.utils.models import PublishedContentDB, VideoJobDB, NicheTrendDB, ABTestDB
+from shared.enums import SystemJobStatus
+from api.utils.api_responses import success_response, Paginator, paginate_list
+from api.utils.models import (
+    PublishedContentDB,
+    VideoJobDB,
+    NicheTrendDB,
+    ABTestDB,
+)
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -24,19 +31,26 @@ async def list_analytics_posts(
         stmt = select(PublishedContentDB).where(
             PublishedContentDB.status == "Published"
         )
-        if current_user.role != "admin":
+        if current_user.role != UserRole.ADMIN:
             stmt = stmt.where(PublishedContentDB.user_id == current_user.id)
 
-        stmt = (
-            stmt.order_by(PublishedContentDB.published_at.desc())
-            .offset((page - 1) * size)
-            .limit(size)
-        )
+        stmt = stmt.order_by(PublishedContentDB.published_at.desc())
+        
+        # Execute query first to get total count
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_result = await db.execute(count_stmt)
+        total_items = total_result.scalar() or 0
+
+        # Apply pagination using Paginator values
+        paginator = Paginator(page=page, page_size=size)
+        stmt = stmt.offset(paginator.offset).limit(paginator.limit)
+        
         result = await db.execute(stmt)
         posts = result.scalars().all()
-        return posts
-    finally:
-        pass
+        
+        return success_response(data=paginator.paginate_response(posts, total_items))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/report")
@@ -66,22 +80,24 @@ async def get_analytics_report(
 
     # Total likes
     likes_result = await db.execute(
-        select(func.sum(PublishedContentDB.likes)).where(
+        select(func.sum(PublishedContentDB.like_count)).where(
             PublishedContentDB.user_id == current_user.id
         )
     )
     total_likes = likes_result.scalar() or 0
 
-    return {
-        "total_posts": total_posts,
-        "total_views": int(total_views or 0),
-        "total_likes": int(total_likes or 0),
-        "avg_views": int(total_views / total_posts) if total_posts > 0 else 0,
-        "avg_likes": int(total_likes / total_posts) if total_posts > 0 else 0,
-    }
+    return success_response(
+        data={
+            "total_posts": total_posts,
+            "total_views": int(total_views or 0),
+            "total_likes": int(total_likes or 0),
+            "avg_views": int(total_views / total_posts) if total_posts > 0 else 0,
+            "avg_likes": int(total_likes / total_posts) if total_posts > 0 else 0,
+        }
+    )
 
 
-@router.get("/report/{post_id}", response_model=ContentPerformance)
+@router.get("/report/{post_id}")
 @cache(expire=600)
 async def get_report(
     post_id: str,
@@ -97,36 +113,41 @@ async def get_report(
 
         if not content:
             raise HTTPException(status_code=404, detail="Content not found")
-        if content.user_id != current_user.id and current_user.role != "admin":
+        if content.user_id != current_user.id and current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Access denied")
 
         report = await base_analytics_service.get_performance_report(
             post_id, current_user.id, platform
         )
-        
+
         # Real-First: Record a snapshot for history tracking whenever a report is viewed
         import asyncio
-        asyncio.create_task(base_analytics_service.record_snapshot(
-            post_id, 
-            report.views, 
-            report.likes, 
-            report.shares, 
-            report.comments,
-            report.retention_rate,
-            getattr(report, "avg_duration", 0.0)
-        ))
-        
+
+        asyncio.create_task(
+            base_analytics_service.record_snapshot(
+                post_id,
+                report.view_count,
+                report.like_count,
+                report.share_count,
+                report.comment_count,
+                report.retention_rate,
+                getattr(report, "avg_duration", 0.0),
+            )
+        )
+
         # Hardened: If retention_data is empty, compute a realistic decay curve from avg_duration
         if not report.retention_data or sum(report.retention_data) == 0:
-            avg_dur = getattr(report, "avg_duration", 0) or (report.views / 10 if report.views > 0 else 0) # Fake but proportional if missing
+            avg_dur = getattr(report, "avg_duration", 0) or (
+                report.view_count / 10 if report.view_count > 0 else 0
+            )  # Fake but proportional if missing
             # Simple decay model: Start at 100, end near 20 based on avg_dur
             points = []
             for i in range(12):
-                decay = 100 * (0.9 ** i)
+                decay = 100 * (0.9**i)
                 points.append(round(max(decay, 10 if i > 6 else 30), 1))
             report.retention_data = points
 
-        return report
+        return success_response(data=report)
     except HTTPException:
         raise
     except Exception as e:
@@ -149,7 +170,7 @@ async def get_insights(
 
         if not content:
             raise HTTPException(status_code=404, detail="Content not found")
-        if content.user_id != current_user.id and current_user.role != "admin":
+        if content.user_id != current_user.id and current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Access denied")
 
         report = await base_analytics_service.get_performance_report(
@@ -157,7 +178,7 @@ async def get_insights(
             current_user.id,
             "youtube",  # Explicitly default to youtube for insights
         )
-        return {"insight": report.optimization_insight}
+        return success_response(data={"insight": report.optimization_insight})
     except HTTPException:
         raise
     except Exception as e:
@@ -181,7 +202,7 @@ async def get_monetization_suggestions(
 
         if not content:
             raise HTTPException(status_code=404, detail="Content not found")
-        if content.user_id != current_user.id and current_user.role != "admin":
+        if content.user_id != current_user.id and current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Access denied")
 
         report = await base_analytics_service.get_performance_report(
@@ -192,7 +213,7 @@ async def get_monetization_suggestions(
         suggestions = await base_analytics_service.suggest_optimal_monetization(
             report, current_user.id, niche
         )
-        return {"report": report, "suggestions": suggestions}
+        return success_response(data={"report": report, "suggestions": suggestions})
     except HTTPException:
         raise
     except Exception as e:
@@ -215,7 +236,7 @@ async def get_stats_summary(
         job_stmt = select(VideoJobDB)
 
         # User isolation
-        if current_user.role != "admin":
+        if current_user.role != UserRole.ADMIN:
             post_stmt = post_stmt.where(PublishedContentDB.user_id == current_user.id)
             job_stmt = job_stmt.where(VideoJobDB.user_id == current_user.id)
 
@@ -234,14 +255,14 @@ async def get_stats_summary(
 
         # Get total views from DB
         stmt_views = select(func.sum(PublishedContentDB.view_count))
-        if current_user.role != "admin":
+        if current_user.role != UserRole.ADMIN:
             stmt_views = stmt_views.where(PublishedContentDB.user_id == current_user.id)
         result = await db.execute(stmt_views)
         total_views = result.scalar() or 0
 
         # Get total engagement
-        stmt_likes = select(func.sum(PublishedContentDB.likes))
-        if current_user.role != "admin":
+        stmt_likes = select(func.sum(PublishedContentDB.like_count))
+        if current_user.role != UserRole.ADMIN:
             stmt_likes = stmt_likes.where(PublishedContentDB.user_id == current_user.id)
         result = await db.execute(stmt_likes)
         total_likes = result.scalar() or 0
@@ -266,9 +287,14 @@ async def get_stats_summary(
         result = await db.execute(stmt_recent)
         recent_count = result.scalar() or 0
 
-        # Calculate engine load
         stmt_pending = select(func.count(VideoJobDB.id)).where(
-            VideoJobDB.status.in_(["Queued", "Transcribing", "Rendering"])
+            VideoJobDB.status.in_(
+                [
+                    SystemJobStatus.QUEUED,
+                    SystemJobStatus.PROCESSING,
+                    SystemJobStatus.RENDERING,
+                ]
+            )
         )
         result = await db.execute(stmt_pending)
         pending_jobs = result.scalar() or 0
@@ -278,15 +304,17 @@ async def get_stats_summary(
             int((pending_jobs / MAX_CAPACITY) * 100) if MAX_CAPACITY > 0 else 0
         )
 
-        return {
-            "active_trends": active_trends_count,
-            "videos_processed": total_jobs,
-            "total_reach": reach_formatted,
-            "success_rate": f"{success_rate:.1f}%",
-            "recent_discovery_count": recent_count,
-            "engine_load": f"{engine_load}%",
-            "velocity": "High" if recent_count > 5 else "Nominal",
-        }
+        return success_response(
+            data={
+                "active_trends": active_trends_count,
+                "videos_processed": total_jobs,
+                "total_reach": reach_formatted,
+                "success_rate": f"{success_rate:.1f}%",
+                "recent_discovery_count": recent_count,
+                "engine_load": f"{engine_load}%",
+                "velocity": "High" if recent_count > 5 else "Nominal",
+            }
+        )
     finally:
         pass
 
@@ -295,26 +323,28 @@ async def get_stats_summary(
 @cache(expire=3600)
 async def get_storage_stats(current_user: UserDB = Depends(get_current_user)):
     """Get storage usage statistics for the outputs directory."""
-    from src.services.storage.manager import storage_manager
-    from src.api.config import settings
+    from services.storage.manager import storage_manager
+    from api.config import settings
 
     try:
         current_size = storage_manager.get_output_dir_size()
         threshold_bytes = storage_manager.threshold_bytes
 
-        return {
-            "current_size_gb": round(current_size / (1024**3), 2),
-            "threshold_gb": storage_manager.threshold_gb,
-            "usage_percent": round((current_size / threshold_bytes) * 100, 1)
-            if threshold_bytes > 0
-            else 0,
-            "status": "Healthy"
-            if current_size < threshold_bytes * 0.9
-            else "Warning"
-            if current_size < threshold_bytes
-            else "Critical",
-            "provider": settings.STORAGE_PROVIDER,
-        }
+        return success_response(
+            data={
+                "current_size_gb": round(current_size / (1024**3), 2),
+                "threshold_gb": storage_manager.threshold_gb,
+                "usage_percent": round((current_size / threshold_bytes) * 100, 1)
+                if threshold_bytes > 0
+                else 0,
+                "status": "Healthy"
+                if current_size < threshold_bytes * 0.9
+                else "Warning"
+                if current_size < threshold_bytes
+                else "Critical",
+                "provider": settings.STORAGE_PROVIDER,
+            }
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -335,15 +365,17 @@ async def get_ab_results(
             )
 
         winner = "A" if test.variant_a_views > test.variant_b_views else "B"
-        return {
-            "test_id": test.id,
-            "variant_a_title": test.variant_a_title,
-            "variant_b_title": test.variant_b_title,
-            "variant_a_views": test.variant_a_views,
-            "variant_b_views": test.variant_b_views,
-            "winner": winner,
-            "created_at": test.created_at,
-        }
+        return success_response(
+            data={
+                "test_id": test.id,
+                "variant_a_title": test.variant_a_title,
+                "variant_b_title": test.variant_b_title,
+                "variant_a_views": test.variant_a_views,
+                "variant_b_views": test.variant_b_views,
+                "winner": winner,
+                "created_at": test.created_at,
+            }
+        )
     finally:
         pass
 
@@ -360,7 +392,7 @@ async def get_report_history(
     # In a real-first system, this queries PerformanceSnapshotDB.
     try:
         history = await base_analytics_service.get_historical_performance(post_id)
-        return history
+        return success_response(data=history)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -379,12 +411,12 @@ async def inject_pattern(
 
         if not content:
             raise HTTPException(status_code=404, detail="Content not found")
-        if content.user_id != current_user.id and current_user.role != "admin":
+        if content.user_id != current_user.id and current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Access denied")
 
         # Delegate to service
         result = await base_analytics_service.inject_pattern(post_id, current_user.id)
-        return result
+        return success_response(data=result)
     except HTTPException:
         raise
     except Exception as e:
@@ -405,7 +437,7 @@ async def export_analytics(
         stmt = select(PublishedContentDB).where(
             PublishedContentDB.status == "Published"
         )
-        if current_user.role != "admin":
+        if current_user.role != UserRole.ADMIN:
             stmt = stmt.where(PublishedContentDB.user_id == current_user.id)
 
         stmt = stmt.order_by(PublishedContentDB.published_at.desc())
@@ -418,6 +450,7 @@ async def export_analytics(
             ["Post ID", "Platform", "Title", "Views", "Likes", "Shares", "Published At"]
         )
 
+
         for post in posts:
             writer.writerow(
                 [
@@ -425,8 +458,8 @@ async def export_analytics(
                     post.platform,
                     post.title,
                     post.view_count,
-                    post.likes,
-                    post.shares,
+                    post.like_count,
+                    post.share_count,
                     post.published_at.isoformat() if post.published_at else "",
                 ]
             )

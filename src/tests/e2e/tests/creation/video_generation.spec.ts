@@ -11,13 +11,13 @@ test.describe('Video Generation - Transform Existing Video', () => {
 
     test('should display transformation form', async ({ page }) => {
         await page.goto('/creation');
-        await expect(page.locator('input[name="input_url"]')).toBeVisible();
+        await expect(page.locator('input[name="source_url"]')).toBeVisible();
         await expect(page.locator('select[name="niche"]')).toBeVisible();
     });
 
     test('should transform video with face blur', async ({ page }) => {
         await page.goto('/creation');
-        await page.fill('input[name="input_url"]', 'https://youtube.com/watch?v=test123');
+        await page.fill('input[name="source_url"]', 'https://youtube.com/watch?v=test123');
         await page.selectOption('select[name="niche"]', 'Technology');
         await page.check('input[name="face_blur"]');
         await page.click('button[type="submit"]');
@@ -26,7 +26,7 @@ test.describe('Video Generation - Transform Existing Video', () => {
 
     test('should transform video with speed ramp', async ({ page }) => {
         await page.goto('/creation');
-        await page.fill('input[name="input_url"]', 'https://youtube.com/watch?v=test456');
+        await page.fill('input[name="source_url"]', 'https://youtube.com/watch?v=test456');
         await page.selectOption('select[name="niche"]', 'Motivation');
         await page.check('input[name="speed_ramp"]');
         await page.click('button[type="submit"]');
@@ -35,7 +35,7 @@ test.describe('Video Generation - Transform Existing Video', () => {
 
     test('should validate URL format', async ({ page }) => {
         await page.goto('/creation');
-        await page.fill('input[name="input_url"]', 'invalid-url');
+        await page.fill('input[name="source_url"]', 'invalid-url');
         await page.selectOption('select[name="niche"]', 'Technology');
         await page.click('button[type="submit"]');
         await expect(page.locator('[data-testid="error-message"]')).toContainText(/valid url/i);

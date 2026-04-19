@@ -6,51 +6,43 @@ Finds trending videos, analyzes performance, and identifies repurposing opportun
 
 from typing import Any
 import logging
-from src.services.discovery.video_lead_scanner import video_lead_scanner
+from services.discovery.video_lead_scanner import video_lead_scanner
+
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class VideoLeadSkill:
+class VideoLeadSkill(OpenClawBaseSkill):
     """
     OpenClaw skill for discovering and analyzing video content leads.
     """
 
     def __init__(self):
+        super().__init__()
         self.name = "video_lead_discovery"
         self.description = "Discover trending videos, analyze performance, and find repurposing opportunities"
 
-    async def execute(self, params: dict[str, Any]) -> dict[str, Any]:
+    async def execute(self, action: str = "discover_leads", **kwargs) -> str:
         """
         Execute video lead discovery operations.
-
-        Supported actions:
-        - discover_leads: Find high-performing video content
-        - analyze_video: Deep analysis of specific video
-        - find_templates: Identify successful video patterns
         """
-        action = params.get("action", "discover_leads")
-
         try:
             if action == "discover_leads":
-                return await self._discover_leads(params)
+                res = await self._discover_leads(kwargs)
             elif action == "analyze_video":
-                return await self._analyze_video(params)
+                res = await self._analyze_video(kwargs)
             elif action == "find_templates":
-                return await self._find_templates(params)
+                res = await self._find_templates(kwargs)
             else:
-                return {
-                    "success": False,
-                    "error": f"Unknown action: {action}",
-                    "available_actions": [
-                        "discover_leads",
-                        "analyze_video",
-                        "find_templates",
-                    ],
-                }
+                return f"⚠️ Unknown action: {action}"
+                
+            if isinstance(res, dict) and res.get("success"):
+                return res.get("message", "Success")
+            return f"⚠️ Error: {res.get('error') if isinstance(res, dict) else str(res)}"
         except Exception as e:
             logger.error(f"Video lead skill error: {e}")
-            return {"success": False, "error": str(e)}
+            return f"⚠️ Error: {str(e)}"
 
     async def _discover_leads(self, params: dict[str, Any]) -> dict[str, Any]:
         """Discover high-performing video leads"""
@@ -62,7 +54,7 @@ class VideoLeadSkill:
         min_viral_score = params.get("min_viral_score", 7.0)
         max_results = params.get("max_results", 10)
 
-        leads = await video_lead_scanner.discover_video_leads(
+        leads = await video_lead_scanner.scan_for_video_leads(
             niche=niche,
             platforms=platforms,
             min_viral_score=min_viral_score,
@@ -79,10 +71,10 @@ class VideoLeadSkill:
                     "title": lead.title,
                     "creator": lead.creator,
                     "url": lead.url,
-                    "views": lead.views,
-                    "likes": lead.likes,
-                    "comments": lead.comments,
-                    "engagement_rate": lead.engagement_rate,
+                    "view_count": lead.view_count,
+                    "like_count": lead.like_count,
+                    "comment_count": lead.comment_count,
+                    "engagement_score": lead.engagement_score,
                     "viral_score": lead.viral_score,
                     "content_type": lead.content_type,
                     "monetization_potential": lead.monetization_potential,
@@ -106,7 +98,7 @@ class VideoLeadSkill:
         if not video_url:
             return {"success": False, "error": "video_url parameter required"}
 
-        analysis = await video_lead_scanner.analyze_video_performance(
+        analysis = await video_lead_scanner.evaluate_video_performance(
             video_url=video_url, niche=niche
         )
 
@@ -127,7 +119,7 @@ class VideoLeadSkill:
         if not niche:
             return {"success": False, "error": "Niche parameter required"}
 
-        templates = await video_lead_scanner.find_video_templates(
+        templates = await video_lead_scanner.identify_video_templates(
             niche=niche, template_type=template_type, min_samples=min_samples
         )
 

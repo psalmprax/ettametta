@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, validator
+from api.utils.api_responses import success_response
 import httpx
 import re
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
-from src.api.utils.database import get_db
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB
+from api.utils.database import get_db
 
 router = APIRouter(prefix="/trading", tags=["Trading"])
 
@@ -53,7 +54,7 @@ async def get_trading_summary(
     """
     Get trading dashboard summary across all positions.
     """
-    from src.api.utils.models import TradingPortfolioDB, TradingPositionDB
+    from api.utils.models import TradingPortfolioDB, TradingPositionDB
     from sqlalchemy import select, func
 
     try:
@@ -63,12 +64,14 @@ async def get_trading_summary(
         portfolio = result.scalar_one_or_none()
 
         if not portfolio:
-            return {
-                "positions": 0,
-                "unrealized_pnl": 0.0,
-                "status": "no_portfolio",
-                "balance": 0.0
-            }
+            return success_response(
+                data={
+                    "positions": 0,
+                    "unrealized_pnl": 0.0,
+                    "status": "no_portfolio",
+                    "balance": 0.0
+                }
+            )
 
         # Count positions
         stmt = select(func.count(TradingPositionDB.id)).filter(TradingPositionDB.portfolio_id == portfolio.id)
@@ -76,12 +79,14 @@ async def get_trading_summary(
         pos_count = result.scalar()
 
         # Real dashboard state
-        return {
-            "positions": pos_count,
-            "unrealized_pnl": 0.0,  # Calculation requires live market feed, currently fallback to neutral
-            "status": "active" if pos_count > 0 else "no_positions",
-            "balance": portfolio.cash_balance
-        }
+        return success_response(
+            data={
+                "positions": pos_count,
+                "unrealized_pnl": 0.0,  # Calculation requires live market feed, currently fallback to neutral
+                "status": "active" if pos_count > 0 else "no_positions",
+                "balance": portfolio.cash_balance
+            }
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Summary failed: {str(e)}")
 
@@ -95,7 +100,7 @@ async def get_market_data(
     """
     # Validate and sanitize symbol
     symbol = validate_symbol(symbol)
-    from src.api.config import settings
+    from api.config import settings
     import httpx
 
     if not settings.ALPHA_VANTAGE_API_KEY:
@@ -141,7 +146,7 @@ async def get_market_data(
                     detail="Market data rate limit reached. Please wait a minute.",
                 )
 
-            return data
+            return success_response(data=data)
     except Exception as e:
         if isinstance(e, HTTPException):
             raise e
@@ -155,7 +160,7 @@ async def get_crypto_data(
     """
     Get cryptocurrency data using CoinGecko.
     """
-    from src.api.config import settings
+    from api.config import settings
     import httpx
 
     try:
@@ -170,7 +175,7 @@ async def get_crypto_data(
             response = await client.get(url, params=params)
             data = response.json()
 
-            return data
+            return success_response(data=data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -188,17 +193,19 @@ async def get_trending_crypto(current_user: UserDB = Depends(get_current_user)):
 
             # Return top 10 trending coins
             coins = data.get("coins", [])[:10]
-            return {
-                "trending": [
-                    {
-                        "name": c["item"]["name"],
-                        "symbol": c["item"]["symbol"],
-                        "price": c["item"]["price_usd"],
-                        "change_24h": c["item"]["price_change_percentage_24h"],
-                    }
-                    for c in coins
-                ]
-            }
+            return success_response(
+                data={
+                    "trending": [
+                        {
+                            "name": c["item"]["name"],
+                            "symbol": c["item"]["symbol"],
+                            "price": c["item"]["price_usd"],
+                            "change_24h": c["item"]["price_change_percentage_24h"],
+                        }
+                        for c in coins
+                    ]
+                }
+            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -213,7 +220,7 @@ async def market_screener(
     Screen stocks using Alpha Vantage TOP_GAINERS_LOSERS and SECTOR PERFORMANCE APIs.
     Falls back to CoinGecko trending crypto if Alpha Vantage is unavailable.
     """
-    from src.api.config import settings
+    from api.config import settings
     import httpx
 
     try:
@@ -294,14 +301,16 @@ async def market_screener(
                     r for r in results if r.get("market_cap", 0) >= min_market_cap
                 ]
 
-            return {
-                "results": results[:25],
-                "count": len(results[:25]),
-                "filters": {"sector": sector, "min_market_cap": min_market_cap},
-                "source": "alphavantage"
-                if settings.ALPHA_VANTAGE_API_KEY
-                else "coingecko",
-            }
+            return success_response(
+                data={
+                    "results": results[:25],
+                    "count": len(results[:25]),
+                    "filters": {"sector": sector, "min_market_cap": min_market_cap},
+                    "source": "alphavantage"
+                    if settings.ALPHA_VANTAGE_API_KEY
+                    else "coingecko",
+                }
+            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Screener unavailable: {str(e)}")
 
@@ -316,7 +325,7 @@ async def get_symbol_analysis(
     # Validate and sanitize symbol
     symbol = validate_symbol(symbol)
 
-    from src.api.config import settings
+    from api.config import settings
     from groq import AsyncGroq
     import httpx
 
@@ -351,7 +360,7 @@ async def get_symbol_analysis(
 
         analysis = response.choices[0].message.content
 
-        return {"symbol": symbol, "market_data": market_data, "analysis": analysis}
+        return success_response(data={"symbol": symbol, "market_data": market_data, "analysis": analysis})
     except HTTPException:
         raise
     except Exception as e:
@@ -420,12 +429,12 @@ async def get_portfolio(current_user: UserDB = Depends(get_current_user)):
     """
     Get user's trading portfolio with current values.
     """
-    from src.services.trading.service import trading_service
+    from services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
 
-    return await trading_service.get_portfolio_value(current_user.id)
+    return success_response(data=await trading_service.get_portfolio_value(current_user.id))
 
 
 @router.post("/portfolio/position")
@@ -435,7 +444,7 @@ async def add_portfolio_position(
     """
     Add a buy or sell position to portfolio.
     """
-    from src.services.trading.service import trading_service
+    from services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
@@ -454,12 +463,12 @@ async def get_price_alerts(current_user: UserDB = Depends(get_current_user)):
     """
     Get all price alerts for user.
     """
-    from src.services.trading.service import trading_service
+    from services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
 
-    return {"alerts": await trading_service.get_price_alerts(current_user.id)}
+    return success_response(data={"alerts": await trading_service.get_price_alerts(current_user.id)})
 
 
 @router.post("/alerts")
@@ -469,13 +478,15 @@ async def add_price_alert(
     """
     Add a price alert.
     """
-    from src.services.trading.service import trading_service
+    from services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
 
-    return await trading_service.add_price_alert(
-        current_user.id, alert.symbol.upper(), alert.target_price, alert.condition
+    return success_response(
+        data=await trading_service.add_price_alert(
+            current_user.id, alert.symbol.upper(), alert.target_price, alert.condition
+        )
     )
 
 
@@ -484,13 +495,13 @@ async def check_price_alerts(current_user: UserDB = Depends(get_current_user)):
     """
     Check for triggered price alerts.
     """
-    from src.services.trading.service import trading_service
+    from services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
 
     triggered = await trading_service.check_price_alerts(current_user.id)
-    return {"triggered": triggered, "count": len(triggered)}
+    return success_response(data={"triggered": triggered, "count": len(triggered)})
 
 
 @router.get("/history/{symbol}")
@@ -500,12 +511,12 @@ async def get_symbol_history(
     """
     Get historical price data for a symbol.
     """
-    from src.services.trading.service import trading_service
+    from services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
 
-    return await trading_service.get_historical_data(symbol.upper(), days)
+    return success_response(data=await trading_service.get_historical_data(symbol.upper(), days))
 
 
 @router.get("/technical/{symbol}")
@@ -515,12 +526,12 @@ async def get_technical_analysis(
     """
     Get technical indicators for a symbol (SMA, RSI, trend).
     """
-    from src.services.trading.service import trading_service
+    from services.trading.service import trading_service
 
     if not trading_service.is_enabled():
         raise HTTPException(status_code=503, detail="Trading service not enabled")
 
-    return await trading_service.get_technical_indicators(symbol.upper())
+    return success_response(data=await trading_service.get_technical_indicators(symbol.upper()))
 
 
 @router.get("/watchlist")
@@ -530,14 +541,14 @@ async def get_watchlist(
     """
     Get user's persistent market watchlist.
     """
-    from src.api.utils.models import TradingWatchlistDB
+    from api.utils.models import TradingWatchlistDB
     from sqlalchemy import select
 
     try:
         stmt = select(TradingWatchlistDB.symbol).filter(TradingWatchlistDB.user_id == current_user.id)
         result = await db.execute(stmt)
         symbols = result.all()
-        return [s[0] for s in symbols]
+        return success_response(data=[s[0] for s in symbols])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -551,7 +562,7 @@ async def add_to_watchlist(
     """
     Add a symbol to the user's persistent watchlist.
     """
-    from src.api.utils.models import TradingWatchlistDB
+    from api.utils.models import TradingWatchlistDB
     from sqlalchemy import and_
 
     try:
@@ -561,7 +572,7 @@ async def add_to_watchlist(
         )
         result = await db.execute(stmt)
         if result.scalar_one_or_none():
-            return {"status": "Already in watchlist", "symbol": request.symbol}
+            return success_response(data={"status": "Already in watchlist", "symbol": request.symbol})
 
         new_item = TradingWatchlistDB(
             user_id=current_user.id,
@@ -569,7 +580,7 @@ async def add_to_watchlist(
         )
         db.add(new_item)
         await db.commit()
-        return {"status": "Added to watchlist", "symbol": request.symbol}
+        return success_response(data={"status": "Added to watchlist", "symbol": request.symbol})
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -584,7 +595,7 @@ async def remove_from_watchlist(
     """
     Remove a symbol from the user's persistent watchlist.
     """
-    from src.api.utils.models import TradingWatchlistDB
+    from api.utils.models import TradingWatchlistDB
     from sqlalchemy import and_, delete
 
     try:
@@ -594,7 +605,7 @@ async def remove_from_watchlist(
         )
         await db.execute(stmt)
         await db.commit()
-        return {"status": "Removed from watchlist", "symbol": symbol}
+        return success_response(data={"status": "Removed from watchlist", "symbol": symbol})
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
