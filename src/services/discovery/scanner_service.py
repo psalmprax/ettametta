@@ -81,10 +81,13 @@ class ScannerService:
         async with async_session_factory() as db:
             for candidate in candidates:
                 try:
+                    # Use metadata_json field consistently (aliased as 'metadata' in Pydantic)
+                    candidate_metadata = candidate.metadata_json or {}
+
                     # Check for existing record by external_id
                     external_id = (
-                        candidate.metadata.get("video_id")
-                        if candidate.metadata
+                        candidate_metadata.get("video_id")
+                        if candidate_metadata
                         else None
                     )
 
@@ -125,16 +128,10 @@ class ScannerService:
                                 engagement_score=candidate.engagement_score,
                                 viral_score=candidate.viral_score,
                                 category=candidate.category,
-                                tags=candidate.metadata.get("tags")
-                                if candidate.metadata
-                                else None,
-                                metadata_json=candidate.metadata,
-                                niche=candidate.metadata.get("niche")
-                                if candidate.metadata
-                                else None,
-                                published_at=candidate.metadata.get("published_at")
-                                if candidate.metadata
-                                else None,
+                                tags=candidate_metadata.get("tags"),
+                                metadata_json=candidate_metadata,
+                                niche=candidate_metadata.get("niche"),
+                                published_at=candidate_metadata.get("published_at"),
                             )
                             db.add(db_candidate)
                             saved_count += 1

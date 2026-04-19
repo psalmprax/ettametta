@@ -339,7 +339,8 @@ class DiscoveryService:
         for c in all_candidates:
             # Audit for quality without rejecting
             # Pass duration_seconds explicitly in metadata for robustness
-            audit_metadata = (c.metadata or {}).copy()
+            candidate_metadata = c.metadata_json or {}
+            audit_metadata = candidate_metadata.copy()
             audit_metadata["duration_seconds"] = c.duration_seconds
 
             audit = await audit_content_quality(
@@ -348,8 +349,8 @@ class DiscoveryService:
             c.quality_score = audit["score"]
             c.quality_flags = audit["flags"]
             if audit["is_low_quality"]:
-                c.metadata["low_quality_warning"] = True
-                c.metadata["quality_reasons"] = audit["flags"]
+                c.metadata_json["low_quality_warning"] = True
+                c.metadata_json["quality_reasons"] = audit["flags"]
 
         # Enforcement: Selective Monetization Mode (Viral Score > 85)
         async with async_session_factory() as db:
@@ -615,7 +616,7 @@ class DiscoveryService:
         """Analyzes a candidate for viral patterns with real transcript extraction."""
         transcript = await self._get_video_transcript(candidate.source_url)
         return await pattern_deconstructor.analyze_video_structure(
-            transcript, candidate.metadata or {}
+            transcript, candidate.metadata_json or {}
         )
 
     async def _get_video_transcript(self, video_url: str) -> str:
@@ -887,40 +888,38 @@ class DiscoveryService:
         """
         Find cross-platform reuploads of the same content.
         Uses title similarity and video fingerprint matching.
-        
+
         Args:
             content_id: Original content ID to find reuploads for
             source_platform: Platform where original was found
-            
+
         Returns:
             List of candidates that are likely reuploads
         """
         from sqlalchemy import or_, func
-        
+
         # Get original content
         async with async_session_factory() as db:
             original = await db.get(ContentCandidateDB, content_id)
             if not original:
                 return []
-            
+
             title_keywords = original.title.split()[:5]  # Top 5 words for matching
-            
+
             # Search for similar titles across other platforms
             conditions = [
                 ContentCandidateDB.niche == original.niche,
                 ContentCandidateDB.id != content_id,
             ]
-            
+
             if source_platform:
                 conditions.append(ContentCandidateDB.platform != source_platform)
-            
+
             # Search for title similarity (any keyword match)
             for kw in title_keywords:
                 if len(kw) > 3:  # Skip short words
-                    conditions.append(
-                        ContentCandidateDB.title.ilike(f"%{kw}%")
-                    )
-            
+                    conditions.append(ContentCandidateDB.title.ilike(f"%{kw}%"))
+
             stmt = (
                 select(ContentCandidateDB)
                 .where(or_(*conditions))
@@ -929,58 +928,58 @@ class DiscoveryService:
             )
             result = await db.execute(stmt)
             rows = result.scalars().all()
-            
+
             reuploads = []
             for r in rows:
                 # Calculate similarity score
-                similarity = self._calculate_title_similarity(
-                    original.title, r.title
-                )
+                similarity = self._calculate_title_similarity(original.title, r.title)
                 if similarity > 0.3:  # 30% threshold
-                    reuploads.append(ContentCandidate(
-                        id=r.id,
-                        platform=r.platform,
-                        source_url=r.source_url,
-                        creator_name=r.creator_name,
-                        title=r.title,
-                        description=r.description,
-                        thumbnail_url=r.thumbnail_url,
-                        view_count=r.view_count,
-                        engagement_score=r.engagement_score,
-                        viral_score=r.viral_score,
-                        duration_seconds=r.duration_seconds,
-                        category=r.category or "video",
-                        niche=r.niche,
-                        metadata={
-                            **(r.metadata_json or {}),
-                            "similarity_score": similarity,
-                            "original_id": content_id,
-                            "is_reupload": True,
-                        },
-                    ))
-            
+                    reuploads.append(
+                        ContentCandidate(
+                            id=r.id,
+                            platform=r.platform,
+                            source_url=r.source_url,
+                            creator_name=r.creator_name,
+                            title=r.title,
+                            description=r.description,
+                            thumbnail_url=r.thumbnail_url,
+                            view_count=r.view_count,
+                            engagement_score=r.engagement_score,
+                            viral_score=r.viral_score,
+                            duration_seconds=r.duration_seconds,
+                            category=r.category or "video",
+                            niche=r.niche,
+                            metadata={
+                                **(r.metadata_json or {}),
+                                "similarity_score": similarity,
+                                "original_id": content_id,
+                                "is_reupload": True,
+                            },
+                        )
+                    )
+
             return reuploads
-    
+
     def _calculate_title_similarity(self, title1: str, title2: str) -> float:
         """
         Calculate title similarity score (0.0 to 1.0) using word overlap.
         """
         words1 = set(title1.lower().split())
         words2 = set(title2.lower().split())
-        
+
         if not words1 or not words2:
             return 0.0
-        
+
         # Filter short words
         words1 = {w for w in words1 if len(w) > 2}
         words2 = {w for w in words2 if len(w) > 2}
-        
+
         if not words1 or not words2:
             return 0.0
-        
+
         intersection = words1 & words2
         union = words1 | words2
-        
+
         return len(intersection) / len(union) if union else 0.0
 
     # Video Lead Discovery Methods
@@ -1144,13 +1143,14 @@ class DiscoveryService:
                     if stock_candidates:
                         for sc in stock_candidates:
                             download_url = None
+                            sc_metadata = sc.metadata_json or {}
                             if sc.platform == "Pexels":
-                                video_files = sc.metadata.get("video_files", [])
+                                video_files = sc_metadata.get("video_files", [])
                                 if video_files:
                                     download_url = video_files[0].get("link")
                             elif sc.platform == "Archive.org":
                                 # Construct direct download link
-                                ident = sc.metadata.get("identifier")
+                                ident = sc_metadata.get("identifier")
                                 download_url = (
                                     f"https://archive.org/download/{ident}/{ident}.mp4"
                                 )
