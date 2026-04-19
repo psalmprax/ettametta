@@ -45,6 +45,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY apps/remotion-studio /app/apps/remotion-studio
 WORKDIR /app/apps/remotion-studio
 RUN npm install
+COPY src /app/src
 WORKDIR /app
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
