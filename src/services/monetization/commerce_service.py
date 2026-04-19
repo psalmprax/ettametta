@@ -1,11 +1,11 @@
 import logging
 import httpx
 from typing import Any
-from src.api.config import settings
-from src.api.utils.database import async_session_factory
+from api.config import settings
+from api.utils.database import async_session_factory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.api.utils.models import SystemSettings, AffiliateLinkDB
+from api.utils.models import SystemSettings, AffiliateLinkDB
 
 class CommerceService:
     def __init__(self):

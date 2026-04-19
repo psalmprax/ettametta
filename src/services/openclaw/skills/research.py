@@ -1,19 +1,28 @@
 import requests
 import logging
 import urllib.parse
-from typing import Any
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class ResearchSkill:
+class ResearchSkill(OpenClawBaseSkill):
     """
     Free academic research skill using OpenAlex API (no API key required).
     Source: https://openalex.org/
     """
 
     def __init__(self):
+        super().__init__()
         self.base_url = "https://api.openalex.org"
+
+    def execute(self, action: str = "search", topic: str = "", limit: int = 5, **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "trends":
+            return self.search_trends(topic)
+        return self.search_papers(topic, limit=limit)
 
     def search_papers(self, query: str, limit: int = 5) -> str:
         """

@@ -53,13 +53,14 @@ class GoogleTrendsScanner:
                             candidates.append(ContentCandidate(
                                 id=f"gt_{trend.get('id', {}).get('value', '')}",
                                 platform=self.platform,
-                                url=f"https://www.google.com/search?q={title.replace(' ', '+')}",
-                                author=niche,
+                                source_url=f"https://www.google.com/search?q={title.replace(' ', '+')}",
+                                creator_name=niche,
                                 title=f"TRENDING: {title}",
-                                description=trend.get("summary", ""),
                                 view_count=1_000_000,  # Estimate
-                                engagement_rate=0.1,
-                                discovery_date=datetime.now(),
+                                like_count=0,
+                                comment_count=0,
+                                share_count=0,
+                                engagement_score=0.1,
                                 tags=[niche, "trending", "google"],
                                 metadata={
                                     "source": "google_trends",

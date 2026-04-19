@@ -1,18 +1,25 @@
 import requests
 import logging
-from src.api.config import settings
+from api.config import settings
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
-class AnalyticsSkill:
+class AnalyticsSkill(OpenClawBaseSkill):
     def __init__(self):
+        super().__init__()
         self.api_url = f"{settings.API_URL}/analytics"
 
-    def _get_headers(self):
-        headers = {}
-        if settings.INTERNAL_API_TOKEN:
-            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-        return headers
+    def execute(self, action: str = "summary", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "revenue":
+            return self.get_revenue_report()
+        elif action == "posts":
+            return self.get_recent_posts(limit=kwargs.get("limit", 5))
+        return self.get_summary()
+
 
     def get_summary(self) -> str:
         """
@@ -22,7 +29,8 @@ class AnalyticsSkill:
             response = requests.get(f"{self.api_url}/stats/summary", headers=self._get_headers(), timeout=10)
             
             if response.status_code == 200:
-                data = response.json()
+                raw_data = response.json()
+                data = raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
                 
                 return (
                     f"📊 **Empire Analytics Summary**:\n"
@@ -48,15 +56,17 @@ class AnalyticsSkill:
         try:
             response = requests.get(f"{self.api_url}/posts", headers=self._get_headers(), timeout=10)
             if response.status_code == 200:
-                posts = response.json()
+                raw_data = response.json()
+                posts = raw_data.get("data", []) if isinstance(raw_data, dict) else raw_data
+                
                 if not posts:
                     return "📝 **Recent Posts**: No posts published yet."
                 
                 msg = "📝 **Recent Posts**:\n"
                 for p in posts[:limit]:
-                    title = p.get('metadata', {}).get('title', 'Untitled')
-                    views = p.get('performance', {}).get('views', 0)
-                    msg += f"• *{title}* ({views} views)\n"
+                    title = p.get('title', 'Untitled')
+                    view_count = p.get('view_count', 0)
+                    msg += f"• *{title}* ({view_count} views)\n"
                 return msg
             else:
                 return f"⚠️ **Fetch Error**: Status {response.status_code}"
@@ -72,7 +82,9 @@ class AnalyticsSkill:
             response = requests.get(f"{base_url}/report", headers=self._get_headers(), timeout=10)
             
             if response.status_code == 200:
-                data = response.json()
+                raw_data = response.json()
+                data = raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
+                
                 total = data.get('total_revenue', 0.0)
                 epm = data.get('epm', 0.0)
                 logs = data.get('logs', [])

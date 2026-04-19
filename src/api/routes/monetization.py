@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.api.utils.database import get_db
-from src.api.utils.models import AffiliateLinkDB, RevenueLogDB
-from src.api.routes.auth import get_current_user
-from src.services.monetization.service import base_monetization_engine
-from src.services.monetization.promo_generator import base_promo_generator
-from src.api.utils.subscription import credits_required
-from src.services.payment.credit_service import credit_service
+from api.utils.database import get_db
+from api.utils.models import AffiliateLinkDB, RevenueLogDB
+from api.routes.auth import get_current_user
+from api.utils.api_responses import success_response
+from services.monetization.service import base_monetization_engine
+from services.monetization.promo_generator import base_promo_generator
+from api.utils.subscription import credits_required
+from services.payment.credit_service import credit_service
 from pydantic import BaseModel
 from typing import Any
 from datetime import datetime, timedelta
@@ -42,7 +43,7 @@ async def recommend_links(
     result = await db.execute(stmt)
     db_links = result.scalars().all()
 
-    return {"suggestions": recommendations, "available_links": db_links}
+    return success_response(data={"suggestions": recommendations, "available_links": db_links})
 
 
 @router.post("/auto-merch")
@@ -55,7 +56,7 @@ async def auto_merch(
     """
     Triggers the Reverse Monetization flow: Trend -> Design -> Mockup -> Store.
     """
-    from src.services.monetization.auto_merch import (
+    from services.monetization.auto_merch import (
         base_auto_merch_service as auto_merch_service,
     )
 
@@ -77,11 +78,13 @@ async def auto_merch(
             status_code=500, detail="Failed to generate or publish merchandise."
         )
 
-    return {
-        "status": "success",
-        "message": f"Successfully created merch for '{request.trend_topic}'",
-        "product": product_data,
-    }
+    return success_response(
+        data={
+            "status": "success",
+            "message": f"Successfully created merch for '{request.trend_topic}'",
+            "product": product_data,
+        }
+    )
 
 
 @router.get("/report")
@@ -96,10 +99,10 @@ async def get_monetization_report(
     logs = result.scalars().all()
 
     total_rev = sum(log.amount for log in logs)
-    total_views = sum(log.views for log in logs)
+    total_views = sum(log.view_count for log in logs)
     epm = base_monetization_engine.calculate_epm(total_rev, total_views)
 
-    return {"total_revenue": total_rev, "epm": epm, "logs": logs}
+    return success_response(data={"total_revenue": total_rev, "epm": epm, "logs": logs})
 
 
 @router.get("/empire/metrics")
@@ -109,7 +112,7 @@ async def get_empire_metrics(
     """Get empire metrics - returns basic stats for now."""
     import datetime
     from sqlalchemy import select, func, desc
-    from src.api.utils.models import PublishedContentDB, SocialAccount, VideoJobDB
+    from api.utils.models import PublishedContentDB, SocialAccount, VideoJobDB
 
     now = datetime.datetime.utcnow()
     last_week = now - datetime.timedelta(days=7)
@@ -140,13 +143,15 @@ async def get_empire_metrics(
     )
     total_views = views_result.scalar() or 0
 
-    return {
-        "total_accounts": total_accounts,
-        "recent_published": recent_published,
-        "total_views": int(total_views),
-        "growth_rate": 0.0,
-        "week_over_week": 0,
-    }
+    return success_response(
+        data={
+            "total_accounts": total_accounts,
+            "recent_published": recent_published,
+            "total_views": int(total_views),
+            "growth_rate": 0.0,
+            "week_over_week": 0,
+        }
+    )
 
 
 @router.get("/empire/activity")
@@ -158,7 +163,7 @@ async def get_empire_activity(
     """
     import datetime
     from sqlalchemy import select, desc
-    from src.api.utils.models import PublishedContentDB
+    from api.utils.models import PublishedContentDB
 
     # Get recent published content
     result = await db.execute(
@@ -169,17 +174,19 @@ async def get_empire_activity(
     )
     recent = result.scalars().all()
 
-    return {
-        "activities": [
-            {
-                "type": "published",
-                "title": p.title,
-                "platform": p.platform,
-                "published_at": p.published_at.isoformat() if p.published_at else None,
-            }
-            for p in recent
-        ]
-    }
+    return success_response(
+        data={
+            "activities": [
+                {
+                    "type": "published",
+                    "title": p.title,
+                    "platform": p.platform,
+                    "published_at": p.published_at.isoformat() if p.published_at else None,
+                }
+                for p in recent
+            ]
+        }
+    )
 
 
 class CloneRequest(BaseModel):
@@ -193,7 +200,7 @@ async def get_winning_blueprints(
 ):
     """Get winning content blueprints from past publishes."""
     from sqlalchemy import select, desc, func
-    from src.api.utils.models import PublishedContentDB
+    from api.utils.models import PublishedContentDB
 
     # Get top performing content
     result = await db.execute(
@@ -216,7 +223,7 @@ async def get_winning_blueprints(
         blueprints[niche]["count"] += 1
         blueprints[niche]["total_views"] += p.view_count or 0
 
-    return {"blueprints": list(blueprints.values())}
+    return success_response(data={"blueprints": list(blueprints.values())})
 
 
 @router.get("/empire/network")
@@ -227,7 +234,7 @@ async def get_network_graph(
     Returns the visualization graph (nodes/links) for the empire mesh.
     """
     from sqlalchemy import select
-    from src.api.utils.models import PublishedContentDB, SocialAccount
+    from api.utils.models import PublishedContentDB, SocialAccount
 
     # Get connected accounts as nodes
     accounts_result = await db.execute(
@@ -273,9 +280,7 @@ async def get_network_graph(
             }
         )
 
-    return {"nodes": nodes, "links": links}
-
-    return await base_empire_service.get_network_graph(db, current_user.id)
+    return success_response(data={"nodes": nodes, "links": links})
 
 
 @router.post("/commerce/sync")
@@ -287,20 +292,24 @@ async def sync_commerce_products(
     """
     Triggers a test sync with the configured Shopify store.
     """
-    from src.services.monetization.commerce_service import base_commerce_service
+    from services.monetization.commerce_service import base_commerce_service
 
     # Test with the provided niche to verify connection
     products = await base_commerce_service.get_relevant_products(niche)
     if not products:
-        return {
-            "status": "warning",
-            "message": "No products found. Check credentials or niche tags.",
+        return success_response(
+            data={
+                "status": "warning",
+                "message": "No products found. Check credentials or niche tags.",
+            }
+        )
+    return success_response(
+        data={
+            "status": "success",
+            "sample_count": len(products),
+            "source": products[0].get("source"),
         }
-    return {
-        "status": "success",
-        "sample_count": len(products),
-        "source": products[0].get("source"),
-    }
+    )
 
 
 @router.post("/empire/clone")
@@ -309,17 +318,19 @@ async def clone_strategy(
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    from src.services.monetization.empire_service import base_empire_service
+    from services.monetization.empire_service import base_empire_service
 
     success = await base_empire_service.clone_strategy(
         db, current_user.id, request.source_niche, request.target_niche
     )
     if not success:
         raise HTTPException(status_code=500, detail="Cloning failed")
-    return {
-        "status": "success",
-        "message": f"Strategy cloned to {request.target_niche}",
-    }
+    return success_response(
+        data={
+            "status": "success",
+            "message": f"Strategy cloned to {request.target_niche}",
+        }
+    )
 
 
 class LinkCreate(BaseModel):
@@ -339,7 +350,7 @@ async def list_affiliate_links(
     stmt = select(AffiliateLinkDB).where(AffiliateLinkDB.user_id == current_user.id)
     result = await db.execute(stmt)
     links = result.scalars().all()
-    return {"links": links}
+    return success_response(data={"links": links})
 
 
 @router.post("/links")
@@ -355,7 +366,7 @@ async def create_affiliate_link(
     db.add(db_link)
     await db.commit()
     await db.refresh(db_link)
-    return db_link
+    return success_response(data=db_link)
 
 
 class PromoRequest(BaseModel):
@@ -372,4 +383,4 @@ async def generate_promo(request: PromoRequest, current_user=Depends(get_current
     script = await base_promo_generator.generate_promo_script(
         request.product_name, request.niche, request.duration
     )
-    return script
+    return success_response(data=script)

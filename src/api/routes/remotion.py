@@ -1,13 +1,13 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Any
-from src.services.video_engine.remotion_service import RemotionService
+from services.video_engine.remotion_service import RemotionService
 import logging
 
 # Backward compatibility
 base_remotion_service = RemotionService()
 import uuid
-from src.api.routes.auth import get_current_user
+from api.routes.auth import get_current_user
 
 router = APIRouter(prefix="/remotion", tags=["remotion"])
 logger = logging.getLogger(__name__)

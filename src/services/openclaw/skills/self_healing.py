@@ -6,15 +6,41 @@ from datetime import datetime, timedelta
 from .notifications import notification_skill
 from .memory import memory_skill
 
+from .base_skill import OpenClawBaseSkill
+
 logger = logging.getLogger(__name__)
 
 
-class SelfHealingSkill:
+class SelfHealingSkill(OpenClawBaseSkill):
+    """
+    OpenClaw skill for monitoring system health and auto-restarting failed processes.
+    Acting as a 'Watchdog' for the distributed agent network.
+    """
+
     def __init__(self):
+        super().__init__()
         self.monitored_processes: dict[str, dict] = {}
         self.health_checks: dict[str, dict] = {}
         self.auto_restart_enabled = True
         self.last_health_check = datetime.now()
+
+    def execute(self, action: str = "status", process: str = None, **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "status":
+            return self.get_watchdog_status()
+        elif action == "check":
+            return self.perform_health_check()
+        elif action == "restart" and process:
+            return self.restart_process(process)
+        elif action == "enable_auto":
+            self.auto_restart_enabled = True
+            return "✅ Auto-restart enabled"
+        elif action == "disable_auto":
+            self.auto_restart_enabled = False
+            return "❌ Auto-restart disabled"
+        return f"⚠️ Unknown action or missing process for Watchdog: {action}"
 
     def monitor_process(
         self, name: str, command: str, health_check: callable = None

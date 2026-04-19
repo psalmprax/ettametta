@@ -15,7 +15,7 @@ import logging
 import json
 from typing import Any
 from pathlib import Path
-from src.services.optimization.model_registry import base_model_registry
+from services.optimization.model_registry import base_model_registry
 
 logger = logging.getLogger(__name__)
 

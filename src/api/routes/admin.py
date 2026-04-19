@@ -12,11 +12,12 @@ try:
 except ImportError:
     load_dotenv = None
 
-from src.api.utils.database import get_db
-from src.api.utils.user_models import UserDB, UserRole
-from src.api.routes.auth import get_current_user
+from api.utils.database import get_db
+from api.utils.user_models import UserDB, UserRole
+from api.routes.auth import get_current_user
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.api.utils.audit_service import audit_service
+from api.utils.audit_service import audit_service
+from api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/admin", tags=["Admin Operations"])
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ async def get_env_keys(current_user: UserDB = Depends(admin_required)):
                 key = line.split("=")[0]
                 keys.append(key)
     
-    return {"keys": keys, "count": len(keys)}
+    return success_response(data={"keys": keys, "count": len(keys)})
 
 @router.post("/system/env/upload")
 async def upload_env_file(
@@ -123,11 +124,13 @@ async def upload_env_file(
         db=db,
     )
 
-    return {
-        "message": "System environment (.env) updated and hot-swapped.",
-        "backup_created": True,
-        "note": "A full system restart is recommended to synchronize Workers and other microservices."
-    }
+    return success_response(
+        data={
+            "message": "System environment (.env) updated and hot-swapped.",
+            "backup_created": True,
+            "note": "A full system restart is recommended to synchronize Workers and other microservices.",
+        }
+    )
 
 @router.post("/system/restart")
 async def restart_system(
@@ -157,7 +160,9 @@ async def restart_system(
 
     threading.Thread(target=kill_process, daemon=True).start()
 
-    return {
-        "message": "System restart initiated. The API will be offline momentarily.",
-        "estimated_downtime": "5-15 seconds"
-    }
+    return success_response(
+        data={
+            "message": "System restart initiated. The API will be offline momentarily.",
+            "estimated_downtime": "5-15 seconds",
+        }
+    )

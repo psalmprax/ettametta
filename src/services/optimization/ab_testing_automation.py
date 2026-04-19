@@ -7,13 +7,13 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from src.api.utils.database import async_session_factory
+from api.utils.database import async_session_factory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.api.utils.models import ABTestDB
-from src.api.routes.ab_testing import calculate_statistics
-from src.api.routes.ws import notify_system_log_async
-from src.services.analytics.service import base_analytics_service
+from api.utils.models import ABTestDB
+from api.routes.ab_testing import calculate_statistics
+from api.routes.ws import notify_system_log_async
+from services.analytics.service import base_analytics_service
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ class ABTestingAutomation:
                 return  # Need more data
 
             # Use proper statistical testing
-            from src.api.routes.ab_testing import calculate_statistics
+            from api.routes.ab_testing import calculate_statistics
 
             # For views-based tests, use views as conversions
             stats = calculate_statistics(

@@ -3,7 +3,7 @@ import json
 import time
 from typing import Any
 from groq import AsyncGroq
-from src.api.config import settings
+from api.config import settings
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -43,7 +43,7 @@ class CircuitBreaker:
             self.state = "OPEN"
 
 
-from src.services.llm.intelligence_hub import base_intelligence_hub
+from services.llm.intelligence_hub import base_intelligence_hub
 
 class MonetizationEngine:
     def __init__(self):

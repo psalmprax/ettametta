@@ -55,7 +55,6 @@ langchain-groq
 langchain-community
 langchain-openai
 duckduckgo-search
-ck>=3.11.0
 
 # Testing
 pytest>=7.4.0

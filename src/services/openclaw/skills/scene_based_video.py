@@ -10,61 +10,44 @@ from typing import Any
 import logging
 import asyncio
 
-from src.services.video_engine.scene_orchestrator import base_scene_based_orchestrator
+from services.video_engine.scene_orchestrator import base_scene_based_orchestrator
+
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class SceneBasedVideoSkill:
+class SceneBasedVideoSkill(OpenClawBaseSkill):
     """
     OpenClaw skill for producing complete videos from scene descriptions.
     Automatically finds relevant videos, fuses them, adds audio, and prepares for upload.
     """
 
     def __init__(self):
+        super().__init__()
         self.name = "scene_based_video_production"
         self.description = "Create complete videos from scene descriptions with automatic video discovery, fusion, and audio overlay"
 
-    async def execute(self, params: dict[str, Any]) -> dict[str, Any]:
+    async def execute(self, action: str = "produce_video", **kwargs) -> str:
         """
         Execute scene-based video production.
-
-        Supported actions:
-        - produce_video: Create complete video from scenes
-        - find_scene_videos: Find videos for specific scenes
-        - create_production_plan: Generate production plan without execution
-
-        Args:
-            params: Parameters for video production
-                - action: Action to perform
-                - scenes: list of scene descriptions
-                - niche: Content niche
-                - target_duration: Target video duration (seconds)
-                - audio_script: Script for voiceover (optional)
-                - output_filename: Custom output filename (optional)
         """
-        action = params.get("action", "produce_video")
-
         try:
             if action == "produce_video":
-                return await self._produce_complete_video(params)
+                res = await self._produce_complete_video(kwargs)
             elif action == "find_scene_videos":
-                return await self._find_scene_videos(params)
+                res = await self._find_scene_videos(kwargs)
             elif action == "create_production_plan":
-                return await self._create_production_plan(params)
+                res = await self._create_production_plan(kwargs)
             else:
-                return {
-                    "success": False,
-                    "error": f"Unknown action: {action}",
-                    "available_actions": [
-                        "produce_video",
-                        "find_scene_videos",
-                        "create_production_plan",
-                    ],
-                }
+                return f"⚠️ Unknown action: {action}"
+            
+            if isinstance(res, dict) and res.get("success"):
+                return res.get("message", "Success")
+            return f"⚠️ Error: {res.get('error') if isinstance(res, dict) else str(res)}"
         except Exception as e:
             logger.error(f"Scene-based video skill error: {e}")
-            return {"success": False, "error": str(e)}
+            return f"⚠️ Error: {str(e)}"
 
     async def _produce_complete_video(self, params: dict[str, Any]) -> dict[str, Any]:
         """Produce a complete video from scene descriptions"""

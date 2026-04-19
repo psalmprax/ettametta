@@ -1,18 +1,23 @@
 import requests
 import logging
-from src.api.config import settings
+from api.config import settings
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
-class SystemSkill:
+class SystemSkill(OpenClawBaseSkill):
     def __init__(self):
+        super().__init__()
         self.api_url = settings.API_URL
 
-    def _get_headers(self):
-        headers = {}
-        if settings.INTERNAL_API_TOKEN:
-            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-        return headers
+    def execute(self, action: str = "health", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "storage":
+            return self.get_storage_status()
+        return self.check_health()
+
 
     def check_health(self) -> str:
         """

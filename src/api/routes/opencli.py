@@ -9,14 +9,14 @@ Each user provides their own Chrome cookies via the opencli Chrome extension.
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
 from typing import Any
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
-from src.api.utils.database import get_db
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB
+from api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.api.utils.models import OpenCLISessionDB
-from src.api.config import settings
-from src.services.opencli.service import opencli_service
+from api.utils.models import OpenCLISessionDB
+from api.config import settings
+from services.opencli.service import opencli_service
 from datetime import datetime
 import logging
 

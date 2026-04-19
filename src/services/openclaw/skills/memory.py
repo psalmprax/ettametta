@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from typing import Any
 from pathlib import Path
 
+from .base_skill import OpenClawBaseSkill
+
 logger = logging.getLogger(__name__)
 
 MEMORY_DIR = Path("/tmp/viral_forge_memory")
@@ -301,12 +303,23 @@ class SemanticMemory:
         self._save()
 
 
-class MemorySkill:
+class MemorySkill(OpenClawBaseSkill):
     def __init__(self):
+        super().__init__()
         self.graph = MemoryGraph()
         self.episodic = EpisodicMemory()
         self.procedural = ProceduralMemory()
         self.semantic = SemanticMemory()
+
+    def execute(self, action: str = "list", key: str = "", value: Any = "", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "store":
+            return self.store_fact(key, value)
+        elif action == "retrieve":
+            return self.recall_facts(key=key)
+        return self.recall_facts()
 
     def record_event(
         self,

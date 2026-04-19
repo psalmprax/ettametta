@@ -6,37 +6,39 @@ import time
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from src.api.utils.database import get_db, async_session_factory
-from src.api.utils.models import NexusJobDB, BlueprintDB, VideoJobDB
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
-from src.services.nexus_engine.orchestrator import base_nexus_orchestrator
-from pydantic import BaseModel
+from api.utils.database import get_db, async_session_factory
+from shared.enums import SystemJobStatus
+from api.utils.models import NexusJobDB, BlueprintDB, VideoJobDB
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB
+from services.nexus_engine.orchestrator import base_nexus_orchestrator
+from pydantic import BaseModel, Field
+from api.utils.api_responses import success_response
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/nexus", tags=["Nexus Composition"])
 
 
 class NexusComposeRequest(BaseModel):
-    niche: str
-    topic: str | None = None
+    niche: str = Field(..., description="The high-level market segment (e.g., 'AI', 'Motivation')")
+    topic: str | None = Field(None, description="The specific subject of the content. Defaults to 'Viral trends in [niche]' if omitted.")
     visual_paths: list[str] | None = None
     voiceover_paths: list[str] | None = None
     music_path: str | None = None
     script_segments: list[dict] | None = None
     generate_thumbnail: bool = False
     cinema_mode: bool = False
-    blueprint_id: str | None = "viral-reskin"
+    blueprint_id: str | None = Field("viral-reskin", description="The Nexus blueprint to execute.")
 
 
 async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
-    from src.services.nexus_engine.thumbnail_service import base_thumbnail_generator
-    from src.services.nexus_engine.auto_creator import base_auto_creator
-    from src.services.nexus_engine.blueprints import (
+    from services.nexus_engine.thumbnail_service import base_thumbnail_generator
+    from services.nexus_engine.auto_creator import base_auto_creator
+    from services.nexus_engine.blueprints import (
         execute_blueprint,
         get_blueprint_by_id,
     )
-    from src.api.routes.ws import notify_nexus_job_update_sync
+    from api.routes.ws import notify_nexus_job_update_sync
 
     async with async_session_factory() as db:
         try:
@@ -48,7 +50,7 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                 logging.error(f"[Nexus] Job {job_id} not found")
                 return
 
-            job.status = "COMPOSING"
+            job.status = SystemJobStatus.COMPOSING
             await db.commit()
             await db.refresh(job)
 
@@ -81,7 +83,7 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                     )
 
                     if execution_result["status"] == "success":
-                        job.status = "COMPLETED"
+                        job.status = SystemJobStatus.COMPLETED
                         job.output_path = (
                             execution_result.get("results", {})
                             .get("egress", {})
@@ -99,7 +101,7 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                         )
                         return
                     else:
-                        job.status = "FAILED"
+                        job.status = SystemJobStatus.FAILED
                         job.error_log = execution_result.get(
                             "error", "Blueprint execution failed"
                         )
@@ -149,7 +151,7 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                     music_path=request.music_path,
                 )
 
-            job.status = "COMPLETED"
+            job.status = SystemJobStatus.COMPLETED
             job.output_path = output_path
             job.progress = 100
             await db.commit()
@@ -174,7 +176,7 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                 result = await db.execute(stmt)
                 job = result.scalar_one_or_none()
                 if job:
-                    job.status = "FAILED"
+                    job.status = SystemJobStatus.FAILED
                     job.error_log = str(e)
                     await db.commit()
                     notify_nexus_job_update_sync(
@@ -200,14 +202,14 @@ async def compose_video(
     """
     Triggers the high-fidelity video assembly pipeline.
     """
-    new_job = NexusJobDB(niche=request.niche, user_id=current_user.id, status="PENDING")
+    new_job = NexusJobDB(niche=request.niche, user_id=current_user.id, status=SystemJobStatus.PENDING)
     db.add(new_job)
     await db.commit()
     await db.refresh(new_job)
 
     background_tasks.add_task(run_nexus_composition, new_job.id, request)
 
-    return {"status": "accepted", "job_id": new_job.id}
+    return success_response(data={"status": "accepted", "job_id": new_job.id})
 
 
 @router.get("/blueprints")
@@ -217,9 +219,10 @@ async def list_nexus_blueprints(
     """
     Returns the available Nexus production recipes/blueprints.
     """
-    from src.services.nexus_engine.blueprints import get_blueprints
+    from services.nexus_engine.blueprints import get_blueprints
 
-    return await get_blueprints(db)
+    blueprints = await get_blueprints(db)
+    return success_response(data=blueprints)
 
 
 class BlueprintCreate(BaseModel):
@@ -238,7 +241,7 @@ async def create_nexus_blueprint(
     """
     Creates a new custom Nexus blueprint.
     """
-    from src.api.utils.models import BlueprintDB
+    from api.utils.models import BlueprintDB
 
     # Check if ID exists
     stmt = select(BlueprintDB).where(BlueprintDB.id == blueprint.id)
@@ -258,7 +261,7 @@ async def create_nexus_blueprint(
     await db.commit()
     await db.refresh(new_bp)
 
-    return new_bp
+    return success_response(data=new_bp)
 
 
 @router.get("/jobs")
@@ -275,7 +278,7 @@ async def list_nexus_jobs(
         .limit(10)
     )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    return success_response(data=result.scalars().all())
 
 
 @router.get("/stats")
@@ -295,32 +298,34 @@ async def get_nexus_stats(
 
     completed_result = await db.execute(
         select(func.count(NexusJobDB.id)).where(
-            NexusJobDB.user_id == current_user.id, NexusJobDB.status == "COMPLETED"
+            NexusJobDB.user_id == current_user.id, NexusJobDB.status == SystemJobStatus.COMPLETED
         )
     )
     completed = completed_result.scalar() or 0
 
     failed_result = await db.execute(
         select(func.count(NexusJobDB.id)).where(
-            NexusJobDB.user_id == current_user.id, NexusJobDB.status == "FAILED"
+            NexusJobDB.user_id == current_user.id, NexusJobDB.status == SystemJobStatus.FAILED
         )
     )
     failed = failed_result.scalar() or 0
 
     pending_result = await db.execute(
         select(func.count(NexusJobDB.id)).where(
-            NexusJobDB.user_id == current_user.id, NexusJobDB.status == "PENDING"
+            NexusJobDB.user_id == current_user.id, NexusJobDB.status == SystemJobStatus.PENDING
         )
     )
     pending = pending_result.scalar() or 0
 
-    return {
-        "total": total,
-        "completed": completed,
-        "failed": failed,
-        "pending": pending,
-        "success_rate": round(completed / total * 100, 1) if total > 0 else 0,
-    }
+    return success_response(
+        data={
+            "total": total,
+            "completed": completed,
+            "failed": failed,
+            "pending": pending,
+            "success_rate": round(completed / total * 100, 1) if total > 0 else 0,
+        }
+    )
 
 
 @router.get("/queue")
@@ -337,25 +342,27 @@ async def get_nexus_queue(
         select(NexusJobDB)
         .where(
             NexusJobDB.user_id == current_user.id,
-            NexusJobDB.status.in_(["PENDING", "COMPOSING", "ANALYZING"]),
+            NexusJobDB.status.in_([SystemJobStatus.PENDING, SystemJobStatus.COMPOSING, SystemJobStatus.ANALYZING]),
         )
         .order_by(NexusJobDB.created_at.asc())
     )
     result = await db.execute(stmt)
     jobs = result.scalars().all()
 
-    return {
-        "queue_length": len(jobs),
-        "jobs": [
-            {
-                "id": j.id,
-                "niche": j.niche,
-                "status": j.status,
-                "created_at": j.created_at.isoformat() if j.created_at else None,
-            }
-            for j in jobs
-        ],
-    }
+    return success_response(
+        data={
+            "queue_length": len(jobs),
+            "jobs": [
+                {
+                    "id": j.id,
+                    "niche": j.niche,
+                    "status": j.status,
+                    "created_at": j.created_at.isoformat() if j.created_at else None,
+                }
+                for j in jobs
+            ],
+        }
+    )
 
 
 @router.get("/job/{job_id}")
@@ -370,7 +377,7 @@ async def get_nexus_job(
 
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    return job
+    return success_response(data=job)
 
 
 @router.get("/telemetry")
@@ -384,10 +391,16 @@ async def get_nexus_telemetry(
 
     # 1. Database Access Metrics (Real Job Count)
     nexus_active_stmt = select(func.count(NexusJobDB.id)).where(
-        NexusJobDB.status.in_(["PENDING", "COMPOSING"])
+        NexusJobDB.status.in_([SystemJobStatus.PENDING, SystemJobStatus.COMPOSING])
     )
     video_active_stmt = select(func.count(VideoJobDB.id)).where(
-        VideoJobDB.status.in_(["Queued", "Downloading", "Processing", "Rendering"])
+        VideoJobDB.status.in_(
+            [
+                SystemJobStatus.QUEUED,
+                SystemJobStatus.PROCESSING,
+                SystemJobStatus.RENDERING,
+            ]
+        )
     )
 
     active_nexus_jobs = (await db.execute(nexus_active_stmt)).scalar() or 0
@@ -405,8 +418,8 @@ async def get_nexus_telemetry(
     node_id = os.getenv("NEXUS_NODE_ID", socket.gethostname())
 
     # Lazily import services to avoid circular dependencies
-    from src.services.video_engine.synthesis_service import base_generative_service
-    from src.services.llm.service import unified_llm_service
+    from services.video_engine.synthesis_service import base_generative_service
+    from services.llm.service import unified_llm_service
 
     gen_report = base_generative_service.get_dependency_report()
     llm_report = unified_llm_service.get_intelligence_report()
@@ -444,15 +457,17 @@ async def get_nexus_telemetry(
             }
         )
 
-    return {
-        "status": "OPERATIONAL" if gen_report["healthy"] else "DEGRADED",
-        "cluster_node": node_id,
-        "hostname": node_id,
-        "active_jobs": active_nexus_jobs + active_video_jobs,
-        "nexus_active": active_nexus_jobs,
-        "video_active": active_video_jobs,
-        "latency_ms": db_query_time_ms,
-        "timestamp": time.time(),
-        "load_avg": round(load_1, 2),
-        "signals": signals,
-    }
+    return success_response(
+        data={
+            "status": "OPERATIONAL" if gen_report["healthy"] else "DEGRADED",
+            "cluster_node": node_id,
+            "hostname": node_id,
+            "active_jobs": active_nexus_jobs + active_video_jobs,
+            "nexus_active": active_nexus_jobs,
+            "video_active": active_video_jobs,
+            "latency_ms": db_query_time_ms,
+            "timestamp": time.time(),
+            "load_avg": round(load_1, 2),
+            "signals": signals,
+        }
+    )

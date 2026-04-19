@@ -3,7 +3,7 @@ import logging
 import json
 from bs4 import BeautifulSoup
 from datetime import datetime
-from src.services.discovery.models import ContentCandidate
+from services.discovery.models import ContentCandidate
 
 logger = logging.getLogger(__name__)
 
@@ -95,13 +95,14 @@ class SkoolScanner:
                                 ContentCandidate(
                                     id=f"skool_{idx}",
                                     platform=self.platform,
-                                    url="https://skool.com/",
-                                    author="Skool Community",
+                                    source_url="https://skool.com/",
+                                    creator_name="Skool Community",
                                     title=title.text.strip(),
-                                    description=desc.text.strip() if desc else "",
                                     view_count=0,
-                                    engagement_rate=0.0,
-                                    discovery_date=datetime.now(),
+                                    like_count=0,
+                                    comment_count=0,
+                                    share_count=0,
+                                    engagement_score=0.0,
                                     tags=[
                                         "skool",
                                         "community",
@@ -165,13 +166,14 @@ class SkoolScanner:
                             ContentCandidate(
                                 id=f"skool_{idx}_{slug or 'clip'}",
                                 platform=self.platform,
-                                url=f"https://www.skool.com/{slug if slug else ''}",
-                                author=g.get("author", "Skool Expert"),
+                                source_url=f"https://www.skool.com/{slug if slug else ''}",
+                                creator_name=g.get("author", "Skool Expert"),
                                 title=name,
-                                description=description,
                                 view_count=g.get("memberCount", 0),
-                                engagement_rate=0.0,
-                                discovery_date=datetime.now(),
+                                like_count=0,
+                                comment_count=0,
+                                share_count=0,
+                                engagement_score=0.0,
                                 tags=[
                                     "skool",
                                     "community",

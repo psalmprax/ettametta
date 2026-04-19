@@ -3,8 +3,8 @@ import random
 from typing import Any
 from sqlalchemy import select
 from .base import BaseMonetizationStrategy
-from src.api.utils.database import async_session_factory
-from src.api.utils.models import AffiliateLinkDB
+from api.utils.database import async_session_factory
+from api.utils.models import AffiliateLinkDB
 
 class AffiliateStrategy(BaseMonetizationStrategy):
     async def get_assets(self, niche: str) -> list[dict[str, Any]]:

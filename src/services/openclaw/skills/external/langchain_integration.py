@@ -38,7 +38,7 @@ class LangChainService:
                 )
                 self.enabled = False
 
-    def create_chain(
+    async def create_chain(
         self,
         system_prompt: str,
         human_prompt: str,
@@ -72,7 +72,7 @@ class LangChainService:
             logger.error(f"Error invoking chain: {e}")
             return f"Error: {str(e)}"
 
-    def create_sequence(
+    async def create_sequence(
         self, prompts: list[str], model_name: str = "llama-3.3-70b-versatile"
     ) -> Any:
         """Create a sequence of prompts for multi-step processing."""
@@ -137,17 +137,17 @@ Optimize posting times, hashtags, and cross-platform strategies.""",
     }
 
     @classmethod
-    def get_template(cls, name: str) -> dict | None:
+    async def get_template(cls, name: str) -> dict | None:
         """Get a prompt template by name."""
         return cls.TEMPLATES.get(name)
 
     @classmethod
-    def list_templates(cls) -> list[str]:
+    async def list_templates(cls) -> list[str]:
         """list all available templates."""
         return list(cls.TEMPLATES.keys())
 
     @classmethod
-    def render_template(cls, name: str, **kwargs) -> dict[str, str]:
+    async def render_template(cls, name: str, **kwargs) -> dict[str, str]:
         """Render a template with variables."""
         template = cls.get_template(name)
         if not template:

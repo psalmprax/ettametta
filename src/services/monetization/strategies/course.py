@@ -2,7 +2,7 @@ import logging
 import random
 from typing import Any
 from .base import BaseMonetizationStrategy
-from src.api.utils.models import SystemSettings
+from api.utils.models import SystemSettings
 
 class CourseStrategy(BaseMonetizationStrategy):
     """
@@ -14,7 +14,7 @@ class CourseStrategy(BaseMonetizationStrategy):
         Fetches course platform URL from database configuration.
         """
         from sqlalchemy import select
-        from src.api.utils.database import async_session_factory
+        from api.utils.database import async_session_factory
         
         async with async_session_factory() as db:
             stmt = select(SystemSettings).filter(SystemSettings.key == "course_platform_url")

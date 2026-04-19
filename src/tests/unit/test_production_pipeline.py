@@ -137,7 +137,7 @@ async def test_production_pipeline():
         # Simulate analysis
         analysis_result = {
             "content_relevance": 8.5,
-            "engagement_rate": 6.2,
+            "engagement_score": 6.2,
             "virality_score": 8.1,
             "production_quality": 7.8,
             "monetization_potential": "high",

@@ -2,11 +2,14 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import json
 import asyncio
 import logging
+import random
+import time
+from datetime import datetime, timedelta
 import redis.asyncio as redis
 import redis as redis_sync
-from src.api.config import settings
-from src.services.analytics.signal_bus import base_signal_bus
-from src.services.analytics.drift_monitor import base_drift_monitor
+from api.config import settings
+from services.analytics.signal_bus import base_signal_bus
+from services.analytics.drift_monitor import base_drift_monitor
 
 router = APIRouter(prefix="/ws", tags=["websockets"])
 
@@ -86,6 +89,8 @@ async def websocket_jobs_endpoint(websocket: WebSocket):
     except Exception as e:
         logging.error(f"[WS] Jobs Error: {e}")
         manager.disconnect(websocket)
+
+
 @router.websocket("/logs")
 async def websocket_logs_endpoint(websocket: WebSocket):
     """
@@ -96,16 +101,20 @@ async def websocket_logs_endpoint(websocket: WebSocket):
     logging.info("[WS] Logs Connection Accepted")
     try:
         # Initial greeting
-        await websocket.send_text(json.dumps({
-            "type": "log", 
-            "level": "SYSTEM", 
-            "message": "Secure log stream established. Monitoring system clusters...",
-            "timestamp": time.time()
-        }))
+        await websocket.send_text(
+            json.dumps(
+                {
+                    "type": "log",
+                    "level": "SYSTEM",
+                    "message": "Secure log stream established. Monitoring system clusters...",
+                    "timestamp": time.time(),
+                }
+            )
+        )
         while True:
             # Keep-alive
             await websocket.send_text(json.dumps({"type": "ping", "ts": time.time()}))
-            await asyncio.sleep(30) 
+            await asyncio.sleep(30)
     except WebSocketDisconnect:
         logging.info("[WS] Logs Disconnected (Client Closed)")
         manager.disconnect(websocket)
@@ -114,32 +123,37 @@ async def websocket_logs_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-import random
-import time
-from datetime import datetime, timedelta
-
-
 @router.websocket("/telemetry")
 async def websocket_telemetry_endpoint(websocket: WebSocket):
+    from shared.enums import SystemJobStatus
+    from api.utils.models import (
+        VideoJobDB,
+        PublishedContentDB,
+        ContentCandidateDB,
+    )
+    from sqlalchemy import select, func
+    from api.utils.database import async_session_factory
+    from services.analytics.drift_monitor import base_drift_monitor
+    from services.analytics.signal_bus import base_signal_bus
+    import psutil
+
     logging.info("[WS] Telemetry Handshake Attempt Received")
     await manager.city_connect(websocket)
     logging.info("[WS] Telemetry Connection Accepted")
+
     try:
         while True:
             # Generate telemetry from real system state
             try:
-                from src.api.utils.database import get_db
-                from src.api.utils.models import (
-                    VideoJobDB,
-                    PublishedContentDB,
-                    ContentCandidateDB,
-                )
-                from sqlalchemy import select, func
-                from sqlalchemy.ext.asyncio import AsyncSession
-                from src.api.utils.database import async_session_factory
-
                 async with async_session_factory() as db:
-                    stmt_active = select(func.count(VideoJobDB.id)).where(VideoJobDB.status.in_(["Queued", "Rendering"]))
+                    stmt_active = select(func.count(VideoJobDB.id)).where(
+                        VideoJobDB.status.in_(
+                            [
+                                SystemJobStatus.QUEUED,
+                                SystemJobStatus.RENDERING,
+                            ]
+                        )
+                    )
                     res_active = await db.execute(stmt_active)
                     active_jobs = res_active.scalar() or 0
 
@@ -151,23 +165,32 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     res_discovered = await db.execute(stmt_discovered)
                     total_discovered = res_discovered.scalar() or 0
 
-                    stmt_completed = select(func.count(VideoJobDB.id)).where(VideoJobDB.status == "Completed")
+                    stmt_completed = select(func.count(VideoJobDB.id)).where(
+                        VideoJobDB.status == SystemJobStatus.COMPLETED
+                    )
                     res_completed = await db.execute(stmt_completed)
                     completed_jobs = res_completed.scalar() or 0
 
                     recent_cutoff = datetime.utcnow() - timedelta(hours=24)
-                    stmt_recent = select(func.count(PublishedContentDB.id)).where(PublishedContentDB.published_at >= recent_cutoff)
+                    stmt_recent = select(func.count(PublishedContentDB.id)).where(
+                        PublishedContentDB.published_at >= recent_cutoff
+                    )
                     res_recent = await db.execute(stmt_recent)
                     recent_published = res_recent.scalar() or 0
 
-                    stmt_views = select(func.coalesce(func.sum(PublishedContentDB.view_count), 0))
+                    stmt_views = select(
+                        func.coalesce(func.sum(PublishedContentDB.view_count), 0)
+                    )
                     res_views = await db.execute(stmt_views)
                     total_views = res_views.scalar() or 0
 
-                    stmt_likes = select(func.coalesce(func.sum(PublishedContentDB.likes), 0))
+                    stmt_likes = select(
+                        func.coalesce(func.sum(PublishedContentDB.like_count), 0)
+                    )
                     res_likes = await db.execute(stmt_likes)
                     total_likes = res_likes.scalar() or 0
-            except Exception:
+            except Exception as db_err:
+                logging.error(f"[WS] Telemetry DB Error: {db_err}")
                 active_jobs = 0
                 total_published = 0
                 total_discovered = 0
@@ -177,25 +200,29 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                 total_likes = 0
 
             # Derive metrics from real system state
-            import psutil
-            
             cpu_usage = psutil.cpu_percent(interval=None)
-            memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
-            
+
             # 10/10 INTELLIGENCE BRIDGE: Pull real metrics from the Signal Bus
             drift_report = base_drift_monitor.audit_system_honesty()
-            
+
             # Use current topic if available, else global aggregate
-            features = base_signal_bus.get_feature_vector("global_trend") or [0.5, 0.0, 0.1]
-            global_velocity = round(features[0] * 5, 2) # Normalizing velocity
-            signal_strength = round(max(0.1, 1.0 - (drift_report['current_mae'] * 2)), 3)
-            
+            features = base_signal_bus.get_feature_vector("global_trend") or [
+                0.5,
+                0.0,
+                0.1,
+            ]
+            global_velocity = round(features[0] * 5, 2)  # Normalizing velocity
+            signal_strength = round(
+                max(0.1, 1.0 - (drift_report["current_mae"] * 2)), 3
+            )
+
             # Bitrate: Derived from active stream signals
             bitrate = round(400 + (global_velocity * 100), 2)
-            
+
             # Latency: Real processing lag
-            latency = 20.0 + (drift_report['current_mae'] * 100) # Simulation of compute pressure
+            latency = 20.0 + (
+                drift_report["current_mae"] * 100
+            )  # Simulation of compute pressure
 
             pulse_data = {
                 "type": "telemetry_pulse",
@@ -204,7 +231,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     "bitrate": bitrate,
                     "latency": latency,
                     "signal_strength": round(signal_strength, 3),
-                    "active_nodes": active_nodes,
+                    "active_nodes": active_jobs,  # Fixed: active_nodes -> active_jobs
                     "global_velocity": global_velocity,
                 },
                 "active_segments": [
@@ -214,12 +241,27 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     {"label": "AFRICA-NORTH", "load": min(90, 40 + completed_jobs * 3)},
                 ],
                 "geo_activity": [
-                    {"lat": 6.5244, "lng": 3.3792, "intensity": min(1.0, 0.4 + (recent_published * 0.1))}, # Lagos
-                    {"lat": 40.7128, "lng": -74.0060, "intensity": min(0.8, 0.2 + (active_jobs * 0.05))}, # NYC
-                    {"lat": 51.5074, "lng": -0.1278, "intensity": min(0.7, 0.1 + (completed_jobs * 0.01))}, # London
-                    {"lat": 1.3521, "lng": 103.8198, "intensity": min(0.6, 0.05 + (total_published * 0.005))}, # Singapore
-                ][:max(1, min(4, total_published // 10 + 1))],
-
+                    {
+                        "lat": 6.5244,
+                        "lng": 3.3792,
+                        "intensity": min(1.0, 0.4 + (recent_published * 0.1)),
+                    },  # Lagos
+                    {
+                        "lat": 40.7128,
+                        "lng": -74.0060,
+                        "intensity": min(0.8, 0.2 + (active_jobs * 0.05)),
+                    },  # NYC
+                    {
+                        "lat": 51.5074,
+                        "lng": -0.1278,
+                        "intensity": min(0.7, 0.1 + (completed_jobs * 0.01)),
+                    },  # London
+                    {
+                        "lat": 1.3521,
+                        "lng": 103.8198,
+                        "intensity": min(0.6, 0.05 + (total_published * 0.005)),
+                    },  # Singapore
+                ][: max(1, min(4, total_published // 10 + 1))],
                 "real_stats": {
                     "active_jobs": active_jobs,
                     "completed_jobs": completed_jobs,
@@ -227,8 +269,8 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     "total_discovered": total_discovered,
                     "total_views": total_views,
                     "total_likes": total_likes,
-                    "oracle_mae": drift_report['current_mae'],
-                    "oracle_status": drift_report['status']
+                    "oracle_mae": drift_report["current_mae"],
+                    "oracle_status": drift_report["status"],
                 },
             }
             await websocket.send_text(json.dumps(pulse_data))
@@ -255,8 +297,8 @@ def notify_system_log_sync(message: str, level: str = "INFO", module: str = "SYS
     Synchronous utility to publish system logs to Redis and persist to DB.
     """
     # Persist to DB
-    from src.api.utils.database import async_session_factory
-    from src.api.utils.models import SystemActivityDB
+    from api.utils.database import async_session_factory
+    from api.utils.models import SystemActivityDB
     import asyncio
 
     async def _db_log():
@@ -273,26 +315,30 @@ def notify_system_log_sync(message: str, level: str = "INFO", module: str = "SYS
     # Broadcast via Redis
     try:
         r = redis_sync.from_url(settings.REDIS_URL)
-        message_data = json.dumps({
-            "type": "log",
-            "level": level,
-            "module": module,
-            "message": message,
-            "timestamp": time.time()
-        })
+        message_data = json.dumps(
+            {
+                "type": "log",
+                "level": level,
+                "module": module,
+                "message": message,
+                "timestamp": time.time(),
+            }
+        )
         r.publish("system_logs", message_data)
     except Exception as e:
         logging.error(f"Failed to broadcast system log: {e}")
 
 
-async def notify_system_log_async(message: str, level: str = "INFO", module: str = "SYSTEM"):
+async def notify_system_log_async(
+    message: str, level: str = "INFO", module: str = "SYSTEM"
+):
     """
     Asynchronous utility to publish system logs to Redis and persist to DB.
     """
     import redis.asyncio as redis_async
     import time
-    from src.api.utils.database import async_session_factory
-    from src.api.utils.models import SystemActivityDB
+    from api.utils.database import async_session_factory
+    from api.utils.models import SystemActivityDB
 
     # Persist to DB in background
     try:
@@ -306,13 +352,15 @@ async def notify_system_log_async(message: str, level: str = "INFO", module: str
     # Broadcast via Redis
     try:
         r = redis_async.from_url(settings.REDIS_URL)
-        message_data = json.dumps({
-            "type": "log",
-            "level": level,
-            "module": module,
-            "message": message,
-            "timestamp": time.time()
-        })
+        message_data = json.dumps(
+            {
+                "type": "log",
+                "level": level,
+                "module": module,
+                "message": message,
+                "timestamp": time.time(),
+            }
+        )
         await r.publish("system_logs", message_data)
     except Exception as e:
         logging.error(f"Failed to broadcast system log (async): {e}")

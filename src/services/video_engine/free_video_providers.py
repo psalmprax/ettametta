@@ -463,7 +463,7 @@ class FreeVideoProviderService:
         """
         try:
             # Try PixVerse first (easiest UI)
-            from src.services.openclaw.skills.pixverse import PixVerseSkill
+            from services.openclaw.skills.pixverse import PixVerseSkill
 
             skill = PixVerseSkill()
             await skill.initialize()
@@ -784,7 +784,7 @@ class FreeVideoProviderService:
                     )
                 else:
                     logger.info("[Haiper] API unavailable, falling back to browser automation")
-                    from src.services.openclaw.skills.haiper import haiper_skill
+                    from services.openclaw.skills.haiper import haiper_skill
                     return await haiper_skill.generate(prompt, aspect_ratio)
 
                 return None
@@ -793,7 +793,7 @@ class FreeVideoProviderService:
             logger.error(f"[FreeVideoProvider] Haiper request failed: {e}")
             logger.info("[Haiper] Falling back to browser automation")
             try:
-                from src.services.openclaw.skills.haiper import haiper_skill
+                from services.openclaw.skills.haiper import haiper_skill
                 return await haiper_skill.generate(prompt, aspect_ratio)
             except Exception as browser_err:
                 logger.error(f"[FreeVideoProvider] Haiper browser fallback failed: {browser_err}")
@@ -852,7 +852,7 @@ class FreeVideoProviderService:
                     )
                 else:
                     logger.info("[Luma] API unavailable, falling back to browser automation")
-                    from src.services.openclaw.skills.luma import luma_skill
+                    from services.openclaw.skills.luma import luma_skill
                     return await luma_skill.generate(prompt, aspect_ratio)
 
                 return None
@@ -861,7 +861,7 @@ class FreeVideoProviderService:
             logger.error(f"[FreeVideoProvider] Luma request failed: {e}")
             logger.info("[Luma] Falling back to browser automation")
             try:
-                from src.services.openclaw.skills.luma import luma_skill
+                from services.openclaw.skills.luma import luma_skill
                 return await luma_skill.generate(prompt, aspect_ratio)
             except Exception as browser_err:
                 logger.error(f"[FreeVideoProvider] Luma browser fallback failed: {browser_err}")

@@ -57,7 +57,7 @@ class TestLangchainService:
                 if "services.langchain.service" in sys.modules:
                     del sys.modules["services.langchain.service"]
 
-                from src.services.langchain.service import LangChainService
+                from services.langchain.service import LangChainService
 
                 service = LangChainService()
                 assert service.enabled == False
@@ -68,7 +68,7 @@ class TestLangchainService:
             if "services.langchain.service" in sys.modules:
                 del sys.modules["services.langchain.service"]
 
-            from src.services.langchain.service import _langchain_available
+            from services.langchain.service import _langchain_available
 
             # Should be False when not installed
             assert _langchain_available == False
@@ -86,7 +86,7 @@ class TestCrewAIService:
                 if "services.crewai.service" in sys.modules:
                     del sys.modules["services.crewai.service"]
 
-                from src.services.crewai.service import CrewAIService
+                from services.crewai.service import CrewAIService
 
                 service = CrewAIService()
                 assert service.enabled == False
@@ -94,7 +94,7 @@ class TestCrewAIService:
     def test_crewai_service_checks_availability(self):
         """Test CrewAI availability check function"""
         with patch.dict("sys.modules", {"crewai": MagicMock()}):
-            from src.services.crewai.service import _check_crewai_available
+            from services.crewai.service import _check_crewai_available
 
             # With crewai mocked, should return True
             result = _check_crewai_available()
@@ -112,7 +112,7 @@ class TestAffiliateService:
             clear=False,
         ):
             try:
-                from src.services.monetization.strategies.affiliate import AffiliateStrategy
+                from services.monetization.strategies.affiliate import AffiliateStrategy
 
                 strategy = AffiliateStrategy()
                 assert strategy is not None
@@ -139,7 +139,7 @@ class TestTradingService:
                     mock_response.json.return_value = {}
                     mock_requests.get.return_value = mock_response
 
-                    from src.services.trading.service import TradingService
+                    from services.trading.service import TradingService
 
                     service = TradingService()
                     assert service is not None
@@ -163,7 +163,7 @@ class TestTradingService:
                     }
                     mock_requests.get.return_value = mock_response
 
-                    from src.services.trading.service import TradingService
+                    from services.trading.service import TradingService
 
                     service = TradingService()
 

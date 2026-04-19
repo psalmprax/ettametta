@@ -3,9 +3,9 @@ import httpx
 import random
 import uuid
 from typing import Any
-from src.api.config import settings
-from src.api.utils.os_worker import ai_worker
-from src.services.monetization.commerce_service import base_commerce_service
+from api.config import settings
+from api.utils.os_worker import ai_worker
+from services.monetization.commerce_service import base_commerce_service
 
 logger = logging.getLogger("AutoMerchService")
 

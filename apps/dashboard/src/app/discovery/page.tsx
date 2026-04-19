@@ -48,12 +48,12 @@ interface ContentCandidate {
     category: string; // video, blog, social, news, other
     description: string;
     thumbnail_url: string;
-    views: number;
+    view_count: number;
     engagement_score: number;
     viral_score: number;
     published_at: string;
-    author: string;
-    url: string;
+    creator_name: string;
+    source_url: string;
     duration_seconds: number;
     title: string;
 }
@@ -67,7 +67,7 @@ interface OpenCLISession {
 interface NicheTrend {
     niche: string;
     top_keywords: string[];
-    avg_engagement: number;
+    avg_engagement_score: number;
 }
 
 function DiscoveryContent() {
@@ -268,7 +268,7 @@ function DiscoveryContent() {
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    input_url: candidate.url,
+                    source_url: candidate.url,
                     niche: activeNiche,
                     platform: "YouTube Shorts",
                     style: selectedStyle,
@@ -405,7 +405,7 @@ function DiscoveryContent() {
                                      candidate.platform?.toLowerCase().includes('instagram') ? 'instagram' :
                                      candidate.platform?.toLowerCase().split(' ')[0] || "unknown",
                             action: action,
-                            content_url: candidate.url
+                            content_url: candidate.source_url
                         })
                     }),
                     {
@@ -1137,12 +1137,12 @@ function DiscoveryContent() {
                                                                 <div className="flex items-center gap-6">
                                                                     <div className="flex items-center gap-2">
                                                                         <Globe className="h-3.5 w-3.5 text-zinc-600" />
-                                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{candidate.author}</span>
+                                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{candidate.creator_name}</span>
                                                                     </div>
                                                                     <div className="h-1 w-1 rounded-full bg-zinc-800" />
                                                                     <div className="flex items-center gap-2">
                                                                         <BarChart3 className="h-3.5 w-3.5 text-zinc-600" />
-                                                                        <span className="text-[10px] font-bold text-zinc-500 tabular-nums">{(candidate.views || 0).toLocaleString()} Views</span>
+                                                                        <span className="text-[10px] font-bold text-zinc-500 tabular-nums">{(candidate.view_count || 0).toLocaleString()} Views</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1159,7 +1159,7 @@ function DiscoveryContent() {
                                                             </div>
                                                             <div className="space-y-1">
                                                                 <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Est_Revenue</p>
-                                                                <p className="text-xs font-black text-primary">${((candidate.views || 0) * 0.002).toFixed(2)}</p>
+                                                                <p className="text-xs font-black text-primary">${((candidate.view_count || 0) * 0.002).toFixed(2)}</p>
                                                             </div>
                                                             <div className="space-y-1">
                                                                 <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Signal_Node</p>

@@ -11,10 +11,10 @@ from tenacity import (
     retry_if_exception_type,
 )
 from googleapiclient.errors import HttpError as GoogleHttpError
-from src.api.config import settings
-from src.services.optimization.auth import token_manager
-from src.services.optimization.oracle_predictor import base_neural_oracle
-from src.services.analytics.ledger import base_performance_ledger
+from api.config import settings
+from services.optimization.auth import token_manager
+from services.optimization.oracle_predictor import base_neural_oracle
+from services.analytics.ledger import base_performance_ledger
 import numpy as np
 
 
@@ -214,11 +214,12 @@ class AnalyticsService:
                 )
                 result = ContentPerformance(
                     post_id=post_id,
-                    views=data["views"],
+                    view_count=data["views"],
                     watch_time=data["watch_time"],
                     retention_rate=raw_retention_rate,
-                    likes=data["likes"],
-                    shares=data["shares"],
+                    like_count=data["likes"],
+                    share_count=data["shares"],
+                    comment_count=data["comments"],
                     follows_gained=0,
                     retention_data=retention_data,
                     optimization_insight=insight,
@@ -237,8 +238,8 @@ class AnalyticsService:
         # Fallback: Query local database first before resorting to zeros
         db_views, db_likes, db_shares = 0, 0, 0
         try:
-            from src.api.utils.database import async_session_factory
-            from src.api.utils.models import PublishedContentDB
+            from api.utils.database import async_session_factory
+            from api.utils.models import PublishedContentDB
             from sqlalchemy import select
 
             async with async_session_factory() as db:
@@ -263,11 +264,12 @@ class AnalyticsService:
 
         fallback_result = ContentPerformance(
             post_id=post_id,
-            views=db_views,
+            view_count=db_views,
             watch_time=0.0,
             retention_rate=0.0,
-            likes=db_likes,
-            shares=db_shares,
+            like_count=db_likes,
+            share_count=db_shares,
+            comment_count=0,
             follows_gained=0,
             retention_data=base_neural_oracle.predict_curve([0.1, 0, 0, 0, 0], np.zeros(512)).tolist(),
             optimization_insight=fallback_insight
@@ -288,11 +290,12 @@ class AnalyticsService:
             # Convert to ContentPerformance format
             performance = ContentPerformance(
                 post_id=post_id,
-                views=metrics.get("views", 0),
+                view_count=metrics.get("views", 0),
                 watch_time=metrics.get("watch_time", 0.0),
                 retention_rate=metrics.get("retention_rate", 0.0),
-                likes=metrics.get("likes", 0),
-                shares=metrics.get("shares", 0) + metrics.get("retweets", 0),
+                like_count=metrics.get("likes", 0),
+                share_count=metrics.get("shares", 0) + metrics.get("retweets", 0),
+                comment_count=metrics.get("comments", 0),
                 follows_gained=metrics.get("follows_gained", 0),
                 retention_data=metrics.get("retention_data", []),
                 optimization_insight=metrics.get(
@@ -326,7 +329,7 @@ class AnalyticsService:
 
     async def _get_instagram_metrics(self, post_id: str, user_id: int) -> dict:
         """Get Instagram post metrics"""
-        from src.services.optimization.instagram_publisher import base_instagram_publisher
+        from services.optimization.instagram_publisher import base_instagram_publisher
 
         try:
             metrics = await base_instagram_publisher.get_metrics(post_id, user_id)
@@ -356,7 +359,7 @@ class AnalyticsService:
 
     async def _get_x_metrics(self, post_id: str, user_id: int) -> dict:
         """Get X/Twitter metrics"""
-        from src.services.optimization.x_publisher import base_x_publisher
+        from services.optimization.x_publisher import base_x_publisher
 
         try:
             metrics = await base_x_publisher.get_metrics(post_id, user_id)
@@ -380,8 +383,8 @@ class AnalyticsService:
         Fetches historical performance data points.
         Hardened: Queries real analytics history via PerformanceSnapshotDB.
         """
-        from src.api.utils.database import async_session_factory
-        from src.api.utils.models import PerformanceSnapshotDB
+        from api.utils.database import async_session_factory
+        from api.utils.models import PerformanceSnapshotDB
         from sqlalchemy import select
 
         try:
@@ -396,10 +399,10 @@ class AnalyticsService:
                 return [
                     {
                         "time": s.snapshot_at.isoformat(),
-                        "views": s.views,
-                        "likes": s.likes,
-                        "shares": s.shares,
-                        "comments": s.comments
+                        "views": s.view_count,
+                        "likes": s.like_count,
+                        "shares": s.share_count,
+                        "comments": s.comment_count
                     }
                     for s in snapshots
                 ]
@@ -418,7 +421,7 @@ class AnalyticsService:
     ) -> str:
         """Generates real performance insights using Groq with retries and circuit breaking."""
         from groq import AsyncGroq
-        from src.api.config import settings
+        from api.config import settings
 
         if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
             return "Strong engagement detected. Recommend consistent posting schedule."
@@ -480,8 +483,8 @@ class AnalyticsService:
         """
         Hardened: Real monetization suggestions based on user-defined products.
         """
-        from src.api.utils.database import async_session_factory
-        from src.api.utils.models import AffiliateLinkDB, DigitalProductDB, MembershipPlanDB
+        from api.utils.database import async_session_factory
+        from api.utils.models import AffiliateLinkDB, DigitalProductDB, MembershipPlanDB
         from sqlalchemy import select
 
         suggestions = []
@@ -504,7 +507,7 @@ class AnalyticsService:
                     })
 
                 # 2. Check for Digital Products if views are significant
-                if performance.views > 1000:
+                if performance.view_count > 1000:
                     stmt = select(DigitalProductDB).where(
                         DigitalProductDB.user_id == user_id,
                         DigitalProductDB.niche == niche
@@ -540,7 +543,7 @@ class AnalyticsService:
 
         # Fallback to defaults only if no real products found
         if not suggestions:
-            if performance.views > 50000:
+            if performance.view_count > 50000:
                 suggestions.append({
                     "type": "Generic",
                     "product": f"Elite {niche} Tools",
@@ -633,8 +636,8 @@ class AnalyticsService:
 
     async def record_snapshot(self, post_id: str, views: int, likes: int, shares: int, comments: int, retention_rate: float = 0.0, avg_duration: float = 0.0):
         """Records a performance snapshot to the database."""
-        from src.api.utils.database import async_session_factory
-        from src.api.utils.models import PerformanceSnapshotDB
+        from api.utils.database import async_session_factory
+        from api.utils.models import PerformanceSnapshotDB
         from sqlalchemy import select
         import datetime
 
@@ -651,19 +654,19 @@ class AnalyticsService:
                 
                 if last_s and last_s.snapshot_at.date() == today:
                     # Update today's existing snapshot
-                    last_s.views = max(last_s.views, views)
-                    last_s.likes = max(last_s.likes, likes)
-                    last_s.shares = max(last_s.shares, shares)
-                    last_s.comments = max(last_s.comments, comments)
+                    last_s.view_count = max(last_s.view_count, views)
+                    last_s.like_count = max(last_s.like_count, likes)
+                    last_s.share_count = max(last_s.share_count, shares)
+                    last_s.comment_count = max(last_s.comment_count, comments)
                     last_s.retention_rate = max(last_s.retention_rate, retention_rate)
                     last_s.avg_duration = max(last_s.avg_duration, avg_duration)
                 else:
                     db.add(PerformanceSnapshotDB(
                         content_id=post_id,
-                        views=views,
-                        likes=likes,
-                        shares=shares,
-                        comments=comments,
+                        view_count=views,
+                        like_count=likes,
+                        share_count=shares,
+                        comment_count=comments,
                         retention_rate=retention_rate,
                         avg_duration=avg_duration
                     ))
@@ -678,8 +681,8 @@ class AnalyticsService:
         """
         import redis
         import datetime
-        from src.services.optimization.youtube_publisher import base_youtube_publisher
-        from src.api.config import settings
+        from services.optimization.youtube_publisher import base_youtube_publisher
+        from api.config import settings
 
         self.logger.info(
             f"[Analytics] Injecting neural pattern into post {post_id} for user {user_id}"

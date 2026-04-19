@@ -13,10 +13,10 @@ import logging
 import time
 from typing import Any
 from sqlalchemy import select
-from src.api.utils.database import AsyncSessionLocal
-from src.api.utils.models import ExperimentCohortDB
-from src.services.distribution.experiment_batcher import base_experiment_batcher
-from src.services.infrastructure.resilience_metrics import (
+from api.utils.database import AsyncSessionLocal
+from api.utils.models import ExperimentCohortDB
+from services.distribution.experiment_batcher import base_experiment_batcher
+from services.infrastructure.resilience_metrics import (
     state_drift_detected,
     state_repairs_triggered,
     recovery_duration,
@@ -186,7 +186,7 @@ class ConsistencySentinel:
         )
 
         # Lazy import to avoid circular dependency
-        from src.services.infrastructure.recovery_service import base_recovery_service
+        from services.infrastructure.recovery_service import base_recovery_service
 
         repair_start = time.time()
         try:

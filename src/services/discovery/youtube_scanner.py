@@ -1,18 +1,18 @@
-from .scanner_base import TrendScanner
+from .scanner_base import DiscoveryScannerBase
 from .models import ContentCandidate
 import random
-from src.api.config import settings
+from api.config import settings
 from googleapiclient.discovery import build
 import datetime
 import re
 
-from src.api.utils.vault import get_secret
+from api.utils.vault import get_secret
 
 # Alias for plan compatibility
 YouTubeScanner = None  # Will be set after class definition
 
 
-class YouTubeShortsScanner(TrendScanner):
+class YouTubeShortsScanner(DiscoveryScannerBase):
     async def scan_trends(
         self, niche: str, published_after: datetime.datetime | None = None
     ) -> list[ContentCandidate]:
@@ -85,12 +85,13 @@ class YouTubeShortsScanner(TrendScanner):
                     ContentCandidate(
                         id=f"yt_{video_id}",
                         platform="YouTube Shorts",
-                        url=f"https://youtube.com/shorts/{video_id}",
-                        author=snippet.get("channelTitle", "Unknown"),
+                        source_url=f"https://youtube.com/shorts/{video_id}",
+                        creator_name=snippet.get("channelTitle", "Unknown"),
                         title=snippet.get("title", "No Title"),
-                        view_count=views,  # Legacy
-                        engagement_rate=engagement_score,  # Legacy
-                        views=views,
+                        view_count=views,
+                        like_count=int(stats.get("likeCount", 0)),
+                        comment_count=int(stats.get("commentCount", 0)),
+                        share_count=0,
                         engagement_score=engagement_score,
                         viral_score=viral_score,
                         duration_seconds=float(duration_seconds),

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from .base_skill import OpenClawBaseSkill
 import os
 from playwright.async_api import async_playwright, Browser, Page
 from typing import Any
@@ -7,16 +8,30 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-class WaveSpeedAISkill:
+class WaveSpeedAISkill(OpenClawBaseSkill):
     """
     WaveSpeedAI browser automation skill - Tier 1 easy
     Multiple AI models in one place (WAN, Sora, Veo, Kling, etc.)
     """
 
     def __init__(self):
+        super().__init__()
         self.base_url = "https://wavespeed.ai"
         self.browser: Browser | None = None
         self.page: Page | None = None
+
+    async def execute(self, action: str = "generate", prompt: str = "", aspect_ratio: str = "9:16", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        p = prompt or kwargs.get("prompt") or kwargs.get("topic", "")
+        if not p:
+            return f"⚠️ {self.__class__.__name__} failed: Missing prompt"
+            
+        res = await self.generate(p, aspect_ratio or kwargs.get("aspect_ratio", "9:16"))
+        if res.get("status") == "success":
+            return f"🎬 **{self.__class__.__name__} Video Generated!**\nURL: {res.get('video_url')}"
+        return f"⚠️ {self.__class__.__name__} failed: {res.get('error')}"
 
     async def initialize(self):
         """Initialize stealth browser session"""

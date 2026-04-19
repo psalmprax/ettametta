@@ -3,7 +3,7 @@ import asyncio
 import json
 from typing import Any
 from groq import Groq
-from src.api.config import settings
+from api.config import settings
 from .tools.discovery import discovery_tool
 from .tools.render import render_tool
 from .tools.publish import publish_tool
@@ -11,21 +11,22 @@ from .tools.affiliate import affiliate_tool
 from .tools.market_screener import market_screener_tool
 from .tools.paperclip_kpi import paperclip_kpi
 from .tools.remotion_render import remotion_tool
-from src.services.optimization.ab_testing_automation import ab_testing_automation
-from src.api.routes.ws import notify_system_log_async
+from services.optimization.ab_testing_automation import ab_testing_automation
+from api.routes.ws import notify_system_log_async
 
 logger = logging.getLogger(__name__)
 
 
-class AgentZero:
+from services.base_agent import BaseEttamettaAgent
+
+class AgentZero(BaseEttamettaAgent):
     """
     The Autonomous Director of ettametta.
     Orchestrates Discovery, Analysis, Production, and Publishing.
     """
 
     def __init__(self):
-        self.client = Groq(api_key=settings.GROQ_API_KEY)
-        self.model = "llama-3.3-70b-versatile"
+        super().__init__(agent_name="AGENT_ZERO")
         self.is_running = False
         self.current_step = "IDLE"
         self.last_run_at = None
@@ -41,11 +42,6 @@ class AgentZero:
             "remotion": remotion_tool,
             "ab_testing": ab_testing_automation,
         }
-
-    async def _log(self, message: str, level: str = "INFO"):
-        """Broadcasts a log message to the UI console."""
-        await notify_system_log_async(message, level=level, module="AGENT_ZERO")
-        logger.info(f"[AgentZero] {message}")
 
     async def start(self):
         """Starts the autonomous production loop."""
@@ -88,8 +84,8 @@ class AgentZero:
         await self._log("Iteration Started: Scouting for market trends...")
 
         # 1. Fetch monitored niches from DB
-        from src.api.utils.database import async_session_factory
-        from src.api.utils.models import MonitoredNiche
+        from api.utils.database import async_session_factory
+        from api.utils.models import MonitoredNiche
         from sqlalchemy import select
         import random
 
@@ -105,9 +101,15 @@ class AgentZero:
         target_niche = "Viral Tech Trends"
         if monitored_niches:
             target_niche = random.choice(monitored_niches)
-            await self._log(f"Syncing scouting vector with monitored niche: {target_niche}", "SYSTEM")
+            await self._log(
+                f"Syncing scouting vector with monitored niche: {target_niche}",
+                "SYSTEM",
+            )
         else:
-            await self._log("No active monitored niches found. Falling back to default cluster.", "INFO")
+            await self._log(
+                "No active monitored niches found. Falling back to default cluster.",
+                "INFO",
+            )
 
         # 2. Discover Trends
         self.current_step = "SCOUTING"
@@ -150,20 +152,22 @@ class AgentZero:
         self.latest_insights = strategy
 
         # Real-First Affiliate Integration: Query User's AffiliateLinkDB first
-        from src.api.utils.models import AffiliateLinkDB
-        
+        from api.utils.models import AffiliateLinkDB
+
         selected_link = "https://viralforge.ai/monetize"
         user_affiliate_found = False
-        
+
         try:
             async with async_session_factory() as db:
                 # Direct match for product alignment
-                stmt = select(AffiliateLinkDB).where(
-                    AffiliateLinkDB.niche == target_niche
-                ).limit(1)
+                stmt = (
+                    select(AffiliateLinkDB)
+                    .where(AffiliateLinkDB.niche == target_niche)
+                    .limit(1)
+                )
                 result = await db.execute(stmt)
                 user_link = result.scalar_one_or_none()
-                
+
                 if user_link:
                     selected_link = user_link.link
                     user_affiliate_found = True
@@ -176,7 +180,8 @@ class AgentZero:
 
         if not user_affiliate_found:
             recommendations = affiliate_tool.recommend_links(
-                niche=target_niche, script_text=f"{strategy['title']} - {strategy['hook']}"
+                niche=target_niche,
+                script_text=f"{strategy['title']} - {strategy['hook']}",
             )
 
             if (
@@ -194,21 +199,6 @@ class AgentZero:
                     "No existing affiliate links for target niche. Proceeding with generic monetization.",
                     "WARNING",
                 )
-        if (
-            recommendations.get("available_links")
-            and len(recommendations["available_links"]) > 0
-        ):
-            best_link = recommendations["available_links"][0]
-            selected_link = best_link.get("link", selected_link)
-            await self._log(
-                f"Selected conversion vector: {best_link.get('product_name')}",
-                "SUCCESS",
-            )
-        else:
-            await self._log(
-                "No existing affiliate links for target niche. Proceeding with generic monetization.",
-                "WARNING",
-            )
 
         # 4. Produce and Render
         self.current_step = "RENDERING"
@@ -295,12 +285,11 @@ class AgentZero:
             "recommended_product": "Specific product name to promote"
         }}
         """
-        chat_completion = self.client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model=self.model,
-            response_format={"type": "json_object"},
+        response = await self._call_llm(
+            prompt=prompt,
+            response_format="json_object"
         )
-        return json.loads(chat_completion.choices[0].message.content)
+        return json.loads(response)
 
 
 base_agent_zero = AgentZero()

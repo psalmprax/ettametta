@@ -6,11 +6,14 @@ import random
 from typing import Any
 from pathlib import Path
 from groq import AsyncGroq
-from src.api.config import settings
+from api.config import settings
 
 logger = logging.getLogger(__name__)
 
-class HermesSkillService:
+from services.base_agent import BaseEttamettaAgent
+from datetime import datetime
+
+class HermesSkillService(BaseEttamettaAgent):
     """
     Elite Self-Improving Skill Engine.
     Reflects on successful jobs to 'crystallize' winning patterns and 
@@ -18,6 +21,7 @@ class HermesSkillService:
     """
 
     def __init__(self, storage_path: str = "services/hermes/skills.json"):
+        super().__init__(agent_name="HERMES")
         # Normalize path to ensure it's relative to the app root or absolute
         self.storage_path = Path(os.getenv("HERMES_SKILLS_PATH", storage_path))
         if not self.storage_path.is_absolute():
@@ -26,8 +30,6 @@ class HermesSkillService:
             
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
         self.skills = self._load_skills()
-        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-        self.model = "llama-3.3-70b-versatile"
         
         # Viral Detection Thresholds
         self.success_views = 5000
@@ -60,7 +62,7 @@ class HermesSkillService:
         job_id = job_data.get("job_id", "unknown")
         source_niche = job_data.get("niche", "general")
         
-        logger.info(f"🧬 [Hermes] Spawning recursive variant for breakout success: {job_id}")
+        await self._log(f"🧬 Spawning recursive variant for breakout success: {job_id}")
         
         # Determine target niche (Scaling vs Transmutation)
         # 70% chance to double down on success, 30% to jump niche
@@ -72,10 +74,10 @@ class HermesSkillService:
             target_niche = random.choice([n for n in niches if n != source_niche])
             mode = "TRANSMUTATION"
 
-        logger.info(f"🧪 [Hermes] {mode} Triggered: '{source_niche}' -> '{target_niche}'")
+        await self._log(f"🧪 {mode} Triggered: '{source_niche}' -> '{target_niche}'")
 
         try:
-            from src.api.utils.celery import celery_app
+            from api.utils.celery import celery_app
             # Trigger recursive narrative fusion with the winning seed
             celery_app.send_task(
                 "video.narrative_fusion",
@@ -91,9 +93,9 @@ class HermesSkillService:
                     }
                 }
             )
-            logger.info(f"📡 [Hermes] Spinoff task enqueued for {target_niche}")
+            await self._log(f"📡 Spinoff task enqueued for {target_niche}")
         except Exception as e:
-            logger.error(f"[Hermes] Failed to enqueue spinoff: {e}")
+            await self._log(f"Failed to enqueue spinoff: {e}", "ERROR")
 
     async def reflect_and_crystallize(self, job_data: dict[str, Any], metrics: dict[str, Any]) -> dict[str, Any] | None:
         """
@@ -114,7 +116,7 @@ class HermesSkillService:
         niche = job_data.get("niche", "general")
         script = job_data.get("script", {})
 
-        logger.info(f"🚀 [Hermes] Reflecting on success: {job_id} ({views} views)")
+        await self._log(f"🚀 Reflecting on success: {job_id} ({views} views)")
 
         prompt = f"""
         You are the Hermes Reflection Engine. A video in the '{niche}' niche was successful.
@@ -133,16 +135,13 @@ class HermesSkillService:
         """
 
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are the Hermes Self-Improvement Engine."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={"type": "json_object"}
+            response_content = await self._call_llm(
+                prompt=prompt,
+                system_prompt="You are the Hermes Self-Improvement Engine.",
+                response_format="json_object"
             )
             
-            skill = json.loads(response.choices[0].message.content)
+            skill = json.loads(response_content)
             skill.update({
                 "job_id": job_id,
                 "niche": niche,
@@ -158,7 +157,7 @@ class HermesSkillService:
             if not any(s.get("job_id") == job_id for s in self.skills["niches"][niche]):
                 self.skills["niches"][niche].append(skill)
                 self._save_skills()
-                logger.info(f"💎 [Hermes] Crystallized pattern: {skill['skill_name']}")
+                await self._log(f"💎 Crystallized pattern: {skill['skill_name']}")
 
                 # 2. Trigger Spinoff if Breakout
                 if is_breakout:
@@ -167,7 +166,7 @@ class HermesSkillService:
                 return skill
 
         except Exception as e:
-            logger.error(f"[Hermes] Reflection failed: {e}")
+            await self._log(f"Reflection failed: {e}", "ERROR")
             return None
 
     def get_winning_context(self, niche: str, limit: int = 3) -> list[str]:
