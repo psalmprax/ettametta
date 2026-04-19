@@ -344,8 +344,8 @@ async def retry_publish(
                 detail=f"Content is not in PENDING_AUTH status. Current: {content.status}",
             )
 
-        # Get metadata
-        metadata_dict = content.metadata or {}
+        # Get metadata (use metadata_json for SQLAlchemy model)
+        metadata_dict = content.metadata_json or {}
         video_path = metadata_dict.get("video_path")
         platform_key = metadata_dict.get("platform_key", content.platform.lower())
 
@@ -425,7 +425,7 @@ async def retry_publish(
         metadata_dict.pop("delete_at", None)
         metadata_dict.pop("retention_hours", None)
         metadata_dict.pop("requires_auth", None)
-        content.metadata = metadata_dict
+        content.metadata_json = metadata_dict
 
         await db.commit()
 
