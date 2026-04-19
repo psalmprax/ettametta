@@ -50,14 +50,8 @@ RUN git clone https://github.com/vercel-labs/agent-skills.git /tmp/agent-skills 
 RUN mkdir -p /app/.skills
 
 # Copy openclaw code
-COPY src/services/openclaw /app
-
-# Copy necessary sibling services for integration
-COPY src/services /app/services
-COPY src/api /app/api
-COPY src/shared /app/shared
-# Ensure __init__.py exists in services to make it a package
-RUN touch /app/services/__init__.py
+COPY src /app/src
+RUN touch /app/src/services/__init__.py
 
 # Set PYTHONPATH to include /app so 'src' and 'services' works
 ENV PYTHONPATH=/app:/app/src
