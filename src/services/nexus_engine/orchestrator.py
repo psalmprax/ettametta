@@ -229,7 +229,7 @@ class NexusOrchestrator:
             valid_clip_count = 0
             for v_path, count in zip(visual_paths, counts):
                 if count is not None:
-                    remotion_clips.append({"url": v_path, "durationInFrames": count})
+                    remotion_clips.append({"url": v_path, "duration_in_frames": count})
                     valid_clip_count += 1
                 else:
                     self.logger.warning(f"Skipping invalid clip: {v_path}")
@@ -254,9 +254,9 @@ class NexusOrchestrator:
             cta_props = {}
             if cta_segment:
                 cta_props = {
-                    "showCtaOverlay": True,
-                    "ctaType": cta_segment.get("type"),
-                    "ctaText": cta_segment.get("text", "")[
+                    "show_cta_overlay": True,
+                    "cta_type": cta_segment.get("type"),
+                    "cta_text": cta_segment.get("text", "")[
                         :50
                     ],  # Keep it short for overlay
                 }
@@ -268,8 +268,8 @@ class NexusOrchestrator:
                 "vibe": vibe_data.get("vibe", "Neutral"),
                 "filter_override": vibe_data.get("filter_override"),
                 "clips": remotion_clips,
-                "audioUrl": audio_url,
-                "jobId": job_id,
+                "audio_url": audio_url,
+                "job_id": job_id,
                 **cta_props,
             }
 

@@ -35,7 +35,7 @@ func getUserAgents() []string {
 type ScanResult struct {
 	Niche        string  `json:"niche"`
 	Velocity     float64 `json:"velocity"`
-	URL          string  `json:"url"`
+	URL          string  `json:"source_url"`
 	ThumbnailURL string  `json:"thumbnail_url"`
 	Title        string  `json:"title"`
 	ViewCount    int64   `json:"view_count"`

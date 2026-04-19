@@ -12,7 +12,6 @@ from .tools.market_screener import market_screener_tool
 from .tools.paperclip_kpi import paperclip_kpi
 from .tools.remotion_render import remotion_tool
 from services.optimization.ab_testing_automation import ab_testing_automation
-from api.routes.ws import notify_system_log_async
 
 logger = logging.getLogger(__name__)
 

@@ -1,3 +1,4 @@
+import React from 'react';
 import { AbsoluteFill, Video, Audio, interpolate, useCurrentFrame, useVideoConfig, Sequence, spring, staticFile } from 'remotion';
 import { z } from 'zod';
 import { CTAOverlay } from './components/CTAOverlay';
@@ -5,11 +6,11 @@ import { CTAOverlay } from './components/CTAOverlay';
 export const viralClipSchema = z.object({
     title: z.string(),
     subtitle: z.string().optional(),
-    videoUrl: z.string().optional(),
-    audioUrl: z.string().optional(),
-    showCtaOverlay: z.boolean().optional(),
-    ctaType: z.enum(['engagement', 'cta']).optional(),
-    ctaText: z.string().optional(),
+    video_url: z.string().optional(),
+    audio_url: z.string().optional(),
+    show_cta_overlay: z.boolean().optional(),
+    cta_type: z.enum(['engagement', 'cta']).optional(),
+    cta_text: z.string().optional(),
     timeline: z.array(z.object({
         text: z.string(),
         role: z.string(),
@@ -19,17 +20,17 @@ export const viralClipSchema = z.object({
     })).optional(),
     clips: z.array(z.object({
         url: z.string(),
-        durationInFrames: z.number(),
+        duration_in_frames: z.number(),
     })).optional(),
-    trademarkUrl: z.string().optional(),
-    brandName: z.string().optional(),
-    primaryColor: z.string().optional(),
+    trademark_url: z.string().optional(),
+    brand_name: z.string().optional(),
+    primary_color: z.string().optional(),
 });
 
 export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({ 
-    title, subtitle, videoUrl, audioUrl, clips, timeline, 
-    showCtaOverlay, ctaType, ctaText,
-    trademarkUrl, brandName, primaryColor 
+    title, subtitle, video_url, audio_url, clips, timeline, 
+    show_cta_overlay, cta_type, cta_text,
+    trademark_url, brand_name, primary_color 
 }) => {
     const frame = useCurrentFrame();
     const { fps, durationInFrames } = useVideoConfig();
@@ -49,7 +50,7 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
     });
 
     // Show CTA in the last 2 seconds
-    const showCtaNow = showCtaOverlay && frame > durationInFrames - (fps * 2);
+    const showCtaNow = show_cta_overlay && frame > durationInFrames - (fps * 2);
 
     // Normalize video URL for local loading (Hardened symlink support)
     const resolvePath = (url?: string) => {
@@ -61,10 +62,10 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
         return url;
     };
 
-    const resolvedVideoUrl = resolvePath(videoUrl);
+    const resolvedVideoUrl = resolvePath(video_url);
     const resolvedClips = clips?.map(c => ({...c, url: resolvePath(c.url) || ''}));
-    const resolvedAudioUrl = resolvePath(audioUrl);
-    const resolvedLogoUrl = resolvePath(trademarkUrl);
+    const resolvedAudioUrl = resolvePath(audio_url);
+    const resolvedLogoUrl = resolvePath(trademark_url);
 
     return (
         <AbsoluteFill style={{ backgroundColor: 'black' }}>
@@ -72,9 +73,9 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
             {resolvedClips ? (
                 resolvedClips.reduce((acc, clip, index) => {
                     const startFrame = acc.totalFrames;
-                    acc.totalFrames += clip.durationInFrames;
+                    acc.totalFrames += clip.duration_in_frames;
                     acc.elements.push(
-                        <Sequence key={index} from={startFrame} durationInFrames={clip.durationInFrames}>
+                        <Sequence key={index} from={startFrame} durationInFrames={clip.duration_in_frames}>
                             <Video src={clip.url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </Sequence>
                     );
@@ -105,15 +106,15 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
-                                border: `4px solid ${primaryColor || '#FFFFFF'}`
+                                border: `4px solid ${primary_color || '#FFFFFF'}`
                             }}>
                                 <img src={resolvedLogoUrl} style={{ width: '250px', height: '250px', borderRadius: '50%' }} />
-                                {brandName && <h1 style={{ 
+                                {brand_name && <h1 style={{ 
                                     color: 'white', 
                                     fontSize: '60px', 
                                     marginTop: '20px',
                                     fontFamily: 'Arial Black'
-                                }}>{brandName}</h1>}
+                                }}>{brand_name}</h1>}
                             </div>
                         </AbsoluteFill>
                     </Sequence>
@@ -174,7 +175,7 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
             {/* 5. CTA Overlay */}
             {showCtaNow && (
                 <Sequence from={durationInFrames - (fps * 2)}>
-                    <CTAOverlay type={ctaType || 'engagement'} text={ctaText || ''} />
+                    <CTAOverlay type={cta_type || 'engagement'} text={cta_text || ''} />
                 </Sequence>
             )}
         </AbsoluteFill>

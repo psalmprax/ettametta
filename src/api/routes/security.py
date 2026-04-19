@@ -19,7 +19,7 @@ def admin_required(current_user: UserDB = Depends(get_current_user)):
 class ErrorReport(BaseModel):
     message: str
     stack: str | None = None
-    componentStack: str | None = None
+    component_stack: str | None = None
     timestamp: str
 
 
@@ -37,8 +37,8 @@ async def report_error(
         logger.info(f"🚨 Frontend Error Report: {error.message}")
         if error.stack:
             logger.debug(f"   Stack: {error.stack[:200]}...")
-        if error.componentStack:
-            logger.debug(f"   Component Stack: {error.componentStack[:200]}...")
+        if error.component_stack:
+            logger.debug(f"   Component Stack: {error.component_stack[:200]}...")
 
         return success_response(data={"status": "error_logged"})
     except Exception as e:
