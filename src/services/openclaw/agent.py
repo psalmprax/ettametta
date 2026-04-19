@@ -121,6 +121,7 @@ class CircuitBreaker:
 
 from services.base_agent import BaseEttamettaAgent
 
+
 class OpenClawAgent(BaseEttamettaAgent):
     # Class-level base system prompt for the agent
     BASE_SYSTEM_PROMPT = """You are OpenClaw, the autonomous Master Controller for the ettametta multi-agent empire.
@@ -158,8 +159,8 @@ class OpenClawAgent(BaseEttamettaAgent):
         self.circuit_breaker = CircuitBreaker()
         self.skills_path = Path(__file__).parent / "skills.yaml"
         self.system_prompt = self._build_system_prompt()
-        
-        # Polymorphic Skill Registry
+
+        # Polymorphic Skill Registry (deduplicated - removed semantic aliases)
         self.skill_registry = {
             "DISCOVERY": discovery_skill,
             "CASHCLAW": cashclaw_skill,
@@ -171,7 +172,6 @@ class OpenClawAgent(BaseEttamettaAgent):
             "SCRAPE": data_scraping_skill,
             "SECURITY": security_skill,
             "SYSTEM": system_skill,
-            "STORAGE": system_skill,
             "ANALYTICS": analytics_skill,
             "CONTENT": content_skill,
             "PUBLISH": publishing_skill,
@@ -188,7 +188,6 @@ class OpenClawAgent(BaseEttamettaAgent):
             "MEMORY": memory_skill,
             "NOTIFICATIONS": notification_skill,
             "WORKFLOW": workflow_skill,
-            "HERALD": publishing_skill,
             "ACCOUNT_AUDIT": audit_skill,
             "BRANDING": branding_skill,
             "SELF_IMPROVE": self_improve_skill,
@@ -197,11 +196,11 @@ class OpenClawAgent(BaseEttamettaAgent):
             "HEALING": self_healing_skill,
             "VIDEO_LEAD": video_lead_skill,
             "SCENE_VIDEO": scene_based_video_skill,
-            "WATCHDOG": self_healing_skill,
             "BROWSER": browser_skill,
             "DOCUMENT": document_skill,
             "PERSONA": persona_skill,
             "INTELLIGENT_WORKFLOW": intelligent_workflow_skill,
+            # Video generation skills
             "PIXVERSE": pixverse_skill,
             "LUMA": luma_skill,
             "PERCHANCE": perchance_skill,
@@ -519,33 +518,35 @@ class OpenClawAgent(BaseEttamettaAgent):
 
     def _get_model_name(self) -> str:
         """Get the appropriate model name for the current provider"""
+        # Comprehensive mapping for all supported providers (updated models)
         model_map = {
             "groq": "llama-3.3-70b-versatile",
-            "openai": "gpt-4",
-            "anthropic": "claude-3-sonnet-20240229",
-            "xai": "grok-1",
+            "openai": "gpt-4o",
+            "anthropic": "claude-3-5-sonnet-20241022",
+            "xai": "grok-2",
             "deepseek": "deepseek-chat",
-            "gemini": "gemini-pro",
-            "cohere": "command-a",  # Cohere - 20 RPM, 1K tokens/mo
-            "mistral": "mistral-small-3.1-2506",  # Mistral - 1 req/s, 1B tokens/mo
-            "cerebras": "llama-3.3-70b",  # Cerebras - 30 RPM, 14,400 RPD
-            "cloudflare": "@cf/meta-llama/llama-3.3-70b-instruct",  # Cloudflare - 10K neurons/day
-            "huggingface": "meta-llama/Llama-3.3-70B-Instruct",  # HuggingFace - $0.10/mo
-            "openrouter": "deepseek/deepseek-r1",  # OpenRouter - 50 RPD free
-            "nvidia": "meta/llama-3.3-70b-instruct",  # NVIDIA NIM - 40 RPM
-            "ollama_cloud": "deepseek-v3.2",  # Ollama Cloud - light usage
-            "siliconflow": "Qwen/Qwen3-8B",  # SiliconFlow - 1K RPM, 50K TPM
+            "gemini": "gemini-1.5-pro",
+            "cohere": "command-r-plus",
+            "mistral": "mistral-large-2411",
+            "cerebras": "llama-3.3-70b",
+            "cloudflare": "@cf/meta-llama/llama-3.1-70b-instruct",
+            "huggingface": "meta-llama/Llama-3.3-70B-Instruct",
+            "openrouter": "anthropic/claude-3.5-sonnet",
+            "nvidia": "meta/llama-3.3-70b-instruct",
+            "ollama_cloud": "qwen2.5:72b",
+            "siliconflow": "Qwen/Qwen2.5-72B-Instruct",
             "ollama": "llama3",
             "lm_studio": "local-model",
         }
-        return model_map.get(self.llm_provider, "llama3")
 
-    def _get_model_name(self) -> str:
-        """Get the appropriate model name for the current provider"""
-        # Mapping for special models if needed, else use default
-        if self.llm_provider == "groq":
-            return "llama-3.3-70b-versatile"
-        return getattr(settings, "MODEL", "llama-3.3-70b-versatile")
+        default_model = "llama-3.3-70b-versatile"
+
+        # Use mapped model or fall back to settings default
+        if self.llm_provider in model_map:
+            return model_map[self.llm_provider]
+
+        # Fallback to settings or default
+        return getattr(settings, "MODEL", None) or default_model
 
     def _get_user_from_api(self, identifier: str):
         # 1. Immediate Admin Fallback (Highest Priority)
@@ -607,7 +608,7 @@ class OpenClawAgent(BaseEttamettaAgent):
             # 1. Ask LLM for intent (Standard Mode)
             response_text = await self._call_llm(
                 prompt=message,
-                system_prompt=f"{self.system_prompt}\n\n[CLOSED-LOOP CONTEXT]: {recent_metrics}"
+                system_prompt=f"{self.system_prompt}\n\n[CLOSED-LOOP CONTEXT]: {recent_metrics}",
             )
             logger.info(f"LLM Raw Response: {response_text}")  # Debug log
 
@@ -646,17 +647,24 @@ class OpenClawAgent(BaseEttamettaAgent):
         """
         tool = tool_call.get("tool")
         params = tool_call.get("params", {})
-        
+
         logger.info(f"Executing tool: {tool} with params: {params}")
 
         # Standard Polymorphic Dispatch
         if tool in self.skill_registry:
             skill = self.skill_registry[tool]
-            
-            # Inject dependencies into params if not present
-            if "client" not in params:
-                params["client"] = self.clients.get("groq") or self.clients.get("openai")
-                
+
+            # Inject dependencies into params if not present and skill can accept them
+            # Most skills create their own clients, but we provide these for skills that need them
+            if "clients" not in params:
+                params["clients"] = self.clients
+
+            # Also provide a convenience API key reference
+            if "api_key" not in params:
+                params["api_key"] = getattr(
+                    settings, f"{self.llm_provider.upper()}_API_KEY", None
+                )
+
             try:
                 # Check if skill has execute method (OpenClawBaseSkill pattern)
                 if hasattr(skill, "execute"):
@@ -665,9 +673,11 @@ class OpenClawAgent(BaseEttamettaAgent):
                         return await skill.execute(**params)
                     else:
                         return skill.execute(**params)
-                
+
                 # Fallback for skills not yet refactored to OpenClawBaseSkill
-                logger.warning(f"[OpenClaw] Skill {tool} lacks execute() method. Falling back to legacy dispatch.")
+                logger.warning(
+                    f"[OpenClaw] Skill {tool} lacks execute() method. Falling back to legacy dispatch."
+                )
             except Exception as e:
                 logger.error(f"[OpenClaw] Skill execution failed for {tool}: {e}")
                 return f"⚠️ Skill {tool} execution error: {str(e)}"
@@ -702,7 +712,7 @@ class OpenClawAgent(BaseEttamettaAgent):
         try:
             response = await self._call_llm(
                 prompt=message,
-                system_prompt=f"{manager_prompt}\n\n[ANALYTICS]: {metrics}"
+                system_prompt=f"{manager_prompt}\n\n[ANALYTICS]: {metrics}",
             )
             return f"🏛️ **Workforce Council Strategy**\n\n{response}"
         finally:

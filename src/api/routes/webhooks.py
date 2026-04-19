@@ -134,14 +134,15 @@ async def youtube_upload_status(
             if payload.thumbnail_url:
                 content.thumbnail_url = payload.thumbnail_url
 
-            metadata = content.metadata or {}
+            # Use metadata_json for SQLAlchemy model consistency
+            metadata = content.metadata_json or {}
             metadata["youtube_status"] = payload.status
             metadata["youtube_duration"] = payload.duration
             if payload.error_message:
                 metadata["youtube_error"] = payload.error_message
             if payload.description:
                 metadata["youtube_description"] = payload.description
-            content.metadata = metadata
+            content.metadata_json = metadata
 
             _record_event(
                 db,
@@ -253,11 +254,12 @@ async def tiktok_upload_status(
                 metrics["comments"] = payload.comment_count
             content.metrics = metrics
 
-            metadata = content.metadata or {}
+            # Use metadata_json for SQLAlchemy model consistency
+            metadata = content.metadata_json or {}
             metadata["tiktok_status"] = payload.status
             if payload.error_message:
                 metadata["tiktok_error"] = payload.error_message
-            content.metadata = metadata
+            content.metadata_json = metadata
 
             _record_event(
                 db,
@@ -359,9 +361,10 @@ async def generic_platform_status(
                 content.status = "failed"
 
             if payload.metadata:
-                existing_metadata = content.metadata or {}
+                # Use metadata_json for SQLAlchemy model consistency
+                existing_metadata = content.metadata_json or {}
                 existing_metadata.update(payload.metadata)
-                content.metadata = existing_metadata
+                content.metadata_json = existing_metadata
 
             _record_event(
                 db,

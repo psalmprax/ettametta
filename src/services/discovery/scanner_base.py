@@ -21,11 +21,12 @@ class DiscoveryScannerBase(ABC):
         # Try to get publication date from various sources
         pub_date = None
 
-        # 1. Check metadata for published_at
-        if candidate.metadata:
-            pub_date_str = candidate.metadata.get(
+        # 1. Check metadata_json for published_at
+        candidate_metadata = candidate.metadata_json or {}
+        if candidate_metadata:
+            pub_date_str = candidate_metadata.get(
                 "published_at"
-            ) or candidate.metadata.get("publishedTime")
+            ) or candidate_metadata.get("publishedTime")
             if pub_date_str:
                 try:
                     pub_date = datetime.datetime.fromisoformat(
