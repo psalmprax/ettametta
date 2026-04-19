@@ -65,4 +65,4 @@ ENV PYTHONPATH=/app:/app/src
 EXPOSE 3001
 
 # Command to run the service
-CMD ["python", "main.py"]
+CMD ["python", "-m", "services.openclaw.main"]
