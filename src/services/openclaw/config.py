@@ -23,6 +23,12 @@ class Settings(BaseSettings):
 
     # AI Configuration
     GROQ_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    ANTHROPIC_API_KEY: str = ""
+    XAI_API_KEY: str = ""
+    DEEPSEEK_API_KEY: str = ""
+    ELEVENLABS_API_KEY: str = ""
+    PEXELS_API_KEY: str = ""
     MODEL: str = "llama-3.3-70b-versatile"
 
     # ettametta Internal APIs

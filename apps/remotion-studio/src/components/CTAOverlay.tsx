@@ -1,11 +1,11 @@
 import React from 'react';
-import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, Spring } from 'remotion';
+import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig, spring } from 'remotion';
 
 export const CTAOverlay: React.FC<{ type: 'engagement' | 'cta', text: string }> = ({ type, text }) => {
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();
     
-    const spring = Spring({
+    const springValue = spring({
         frame,
         fps,
         config: { stiffness: 100 }
@@ -26,7 +26,7 @@ export const CTAOverlay: React.FC<{ type: 'engagement' | 'cta', text: string }> 
                 padding: '40px 80px',
                 borderRadius: '50px',
                 boxShadow: '0 0 50px rgba(0,0,0,0.5)',
-                transform: `scale(${interpolate(spring, [0, 1], [0.5, 1.2])})`,
+                transform: `scale(${interpolate(springValue, [0, 1], [0.5, 1.2])})`,
                 textAlign: 'center'
             }}>
                 <h2 style={{

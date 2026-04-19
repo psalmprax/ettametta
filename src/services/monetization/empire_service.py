@@ -192,7 +192,7 @@ class EmpireService:
                     "id": f"ab_{test.id}",
                     "title": winner_title,
                     "niche": "Pattern Proved via A/B",
-                    "performance": f"{max(test.variant_a_views, test.variant_b_views)} views",
+                    "performance": f"{max(test.variant_a_view_count, test.variant_b_view_count)} views",
                     "status": "A/B Data Validated",
                 }
             )

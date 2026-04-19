@@ -399,10 +399,10 @@ class AnalyticsService:
                 return [
                     {
                         "time": s.snapshot_at.isoformat(),
-                        "views": s.view_count,
-                        "likes": s.like_count,
-                        "shares": s.share_count,
-                        "comments": s.comment_count
+                        "view_count": s.view_count,
+                        "like_count": s.like_count,
+                        "share_count": s.share_count,
+                        "comment_count": s.comment_count
                     }
                     for s in snapshots
                 ]

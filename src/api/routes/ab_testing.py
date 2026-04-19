@@ -163,14 +163,14 @@ async def get_test_results(
 
     # Get metric based on target
     if test.target_metric == "clicks":
-        views_a, views_b = test.variant_a_clicks, test.variant_b_click_count
-        conv_a, conv_b = test.variant_a_clicks, test.variant_b_click_count
+        views_a, views_b = test.variant_a_click_count, test.variant_b_click_count
+        conv_a, conv_b = test.variant_a_click_count, test.variant_b_click_count
     elif test.target_metric == "conversions":
-        views_a, views_b = test.variant_a_views, test.variant_b_view_count
-        conv_a, conv_b = test.variant_a_conversions, test.variant_b_conversion_count
+        views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
+        conv_a, conv_b = test.variant_a_conversion_count, test.variant_b_conversion_count
     else:  # views
-        views_a, views_b = test.variant_a_views, test.variant_b_view_count
-        conv_a, conv_b = test.variant_a_views, test.variant_b_view_count
+        views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
+        conv_a, conv_b = test.variant_a_view_count, test.variant_b_view_count
 
     total_views = views_a + views_b
 
@@ -181,15 +181,15 @@ async def get_test_results(
             "status": test.status,
             "variant_a": {
                 "title": test.variant_a_title,
-                "views": 0,
-                "clicks": 0,
-                "conversions": 0,
+                "view_count": 0,
+                "click_count": 0,
+                "conversion_count": 0,
             },
             "variant_b": {
                 "title": test.variant_b_title,
-                "views": 0,
-                "clicks": 0,
-                "conversions": 0,
+                "view_count": 0,
+                "click_count": 0,
+                "conversion_count": 0,
             },
             "statistics": {"significant": False, "message": "No data collected yet"},
         }
@@ -205,9 +205,9 @@ async def get_test_results(
             "variant_a": {
                 "title": test.variant_a_title,
                 "description": test.variant_a_description,
-                "views": test.variant_a_view_count,
-                "clicks": test.variant_a_click_count,
-                "conversions": test.variant_a_conversion_count,
+                "view_count": test.variant_a_view_count,
+                "click_count": test.variant_a_click_count,
+                "conversion_count": test.variant_a_conversion_count,
                 "conversion_rate": test.variant_a_conversion_count / test.variant_a_view_count
                 if test.variant_a_view_count > 0
                 else 0,
@@ -215,9 +215,9 @@ async def get_test_results(
             "variant_b": {
                 "title": test.variant_b_title,
                 "description": test.variant_b_description,
-                "views": test.variant_b_view_count,
-                "clicks": test.variant_b_click_count,
-                "conversions": test.variant_b_conversion_count,
+                "view_count": test.variant_b_view_count,
+                "click_count": test.variant_b_click_count,
+                "conversion_count": test.variant_b_conversion_count,
                 "conversion_rate": test.variant_b_conversion_count / test.variant_b_view_count
                 if test.variant_b_view_count > 0
                 else 0,
@@ -310,14 +310,14 @@ async def determine_winner(
 
     # Get the right metrics based on target
     if test.target_metric == "clicks":
-        views_a, views_b = test.variant_a_clicks, test.variant_b_click_count
-        conv_a, conv_b = test.variant_a_clicks, test.variant_b_click_count
+        views_a, views_b = test.variant_a_click_count, test.variant_b_click_count
+        conv_a, conv_b = test.variant_a_click_count, test.variant_b_click_count
     elif test.target_metric == "conversions":
-        views_a, views_b = test.variant_a_views, test.variant_b_view_count
-        conv_a, conv_b = test.variant_a_conversions, test.variant_b_conversion_count
+        views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
+        conv_a, conv_b = test.variant_a_conversion_count, test.variant_b_conversion_count
     else:
-        views_a, views_b = test.variant_a_views, test.variant_b_view_count
-        conv_a, conv_b = test.variant_a_views, test.variant_b_view_count
+        views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
+        conv_a, conv_b = test.variant_a_view_count, test.variant_b_view_count
 
     total_views = views_a + views_b
 
@@ -449,8 +449,8 @@ async def get_active_tests(
                     "content_id": t.content_id,
                     "variant_a_title": t.variant_a_title,
                     "variant_b_title": t.variant_b_title,
-                    "variant_a_views": t.variant_a_view_count,
-                    "variant_b_views": t.variant_b_view_count,
+                    "variant_a_view_count": t.variant_a_view_count,
+                    "variant_b_view_count": t.variant_b_view_count,
                     "target_metric": t.target_metric,
                     "total_events": t.variant_a_view_count + t.variant_b_view_count,
                     "created_at": t.created_at.isoformat() if t.created_at else None,
