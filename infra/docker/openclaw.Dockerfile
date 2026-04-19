@@ -35,7 +35,8 @@ RUN npm install -g npx
 # Install Python dependencies
 COPY src/api/requirements.txt api/requirements.txt
 COPY src/services/openclaw/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt; pip install --no-cache-dir -r api/requirements.txt || true
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r api/requirements.txt
 
 # Install Playwright browsers
 RUN playwright install chromium || true
