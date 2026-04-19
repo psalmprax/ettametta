@@ -17,18 +17,18 @@ class SmartScheduler:
         Falls back to default windows if insufficient data.
         """
         try:
-            from src.api.utils.database import async_session_factory
-            from src.api.utils.models import PublishedContentDB
+            from api.utils.database import async_session_factory
+            from api.utils.models import PublishedContentDB
             from sqlalchemy import extract, func, select
 
             async with async_session_factory() as db:
                 # Query views grouped by the hour the post was created/published
                 stmt = select(
                     extract("hour", PublishedContentDB.published_at).label("hour"),
-                    func.avg(PublishedContentDB.views).label("avg_views"),
+                    func.avg(PublishedContentDB.view_count).label("avg_views"),
                 ).where(
                     PublishedContentDB.status == "Published",
-                    PublishedContentDB.views > 0,
+                    PublishedContentDB.view_count > 0,
                 )
 
                 if user_id:

@@ -13,12 +13,12 @@ interface ContentCandidate {
     category: string;
     description: string;
     thumbnail_url: string;
-    views: number;
+    view_count: number;
     engagement_score: number;
     viral_score: number;
     published_at: string;
-    author: string;
-    url: string;
+    creator_name: string;
+    source_url: string;
     duration_seconds: number;
     title: string;
 }
@@ -166,7 +166,7 @@ export const CandidateList = memo<CandidateListProps>(function CandidateList({
                                                 </div>
                                                 <div className="flex items-center space-x-1">
                                                     <BarChart3 className="h-3 w-3" />
-                                                    <span>{candidate.views.toLocaleString()}</span>
+                                                    <span>{candidate.view_count.toLocaleString()}</span>
                                                 </div>
                                                 <div className="flex items-center space-x-1">
                                                     <Clock className="h-3 w-3" />
@@ -207,7 +207,7 @@ export const CandidateList = memo<CandidateListProps>(function CandidateList({
             <VideoPreviewModal
                 isOpen={showPreview}
                 onClose={() => setShowPreview(false)}
-                videoUrl={selectedCandidate?.url || ""}
+                videoUrl={selectedCandidate?.source_url || ""}
                 title={selectedCandidate?.title || ""}
             />
         </>

@@ -9,10 +9,10 @@ the Hermes Reflection Engine.
 
 import logging
 from typing import Any
-from src.services.hermes.service import base_hermes_service
-from src.services.analytics.training_pipeline import base_training_pipeline
-from src.services.optimization.oracle_predictor import base_neural_oracle
-from src.services.analytics.ledger import base_performance_ledger
+from services.hermes.service import base_hermes_service
+from services.analytics.training_pipeline import base_training_pipeline
+from services.optimization.oracle_predictor import base_neural_oracle
+from services.analytics.ledger import base_performance_ledger
 
 logger = logging.getLogger(__name__)
 

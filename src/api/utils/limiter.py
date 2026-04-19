@@ -1,8 +1,8 @@
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from fastapi import Request
-from src.api.config import settings
-from src.api.utils.user_models import SubscriptionTier
+from api.config import settings
+from api.utils.user_models import SubscriptionTier
 
 def get_user_rate_limit(request: Request) -> str:
     """

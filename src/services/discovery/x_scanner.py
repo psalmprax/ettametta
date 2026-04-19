@@ -53,8 +53,8 @@ class XScanner:
         seen = set()
         unique_candidates = []
         for c in candidates:
-            if c.url not in seen:
-                seen.add(c.url)
+            if c.source_url not in seen:
+                seen.add(c.source_url)
                 unique_candidates.append(c)
         
         logger.info(f"[XScanner] Found {len(unique_candidates)} unique tweets")
@@ -215,8 +215,8 @@ class XScanner:
                 engagement = retweets + likes + replies
                 estimated_views = engagement * 15  # Rough estimate
                 
-                # Calculate engagement rate
-                engagement_rate = engagement / max(estimated_views, 1)
+                # Calculate engagement score
+                engagement_score = engagement / max(estimated_views, 1)
                 
                 # Get media if present
                 media = legacy.get("entities", {}).get("media", [])
@@ -235,16 +235,16 @@ class XScanner:
                 return ContentCandidate(
                     id=f"x_{tweet_id}",
                     platform="X (Twitter)",
-                    url=url,
-                    author=username,
+                    source_url=url,
+                    creator_name=username,
                     title=full_text[:100] + "..." if len(full_text) > 100 else full_text,
                     view_count=estimated_views,
-                    engagement_rate=engagement_rate,
+                    like_count=likes,
+                    comment_count=replies,
+                    share_count=retweets,
+                    engagement_score=engagement_score,
                     thumbnail_url=media_url,
                     metadata={
-                        "retweets": retweets,
-                        "likes": likes,
-                        "replies": replies,
                         "full_text": full_text
                     }
                 )

@@ -10,7 +10,7 @@ import logging
 import json
 import asyncio
 from typing import Any
-from src.services.script_generator.service import base_script_generator
+from services.script_generator.service import base_script_generator
 
 logger = logging.getLogger(__name__)
 

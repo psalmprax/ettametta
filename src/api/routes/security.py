@@ -1,16 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from api.utils.api_responses import success_response
 import logging
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
-from src.services.security.service import base_security_sentinel
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB, UserRole
+from services.security.service import base_security_sentinel
 
 router = APIRouter(prefix="/security", tags=["Security"])
 logger = logging.getLogger(__name__)
 
 
 def admin_required(current_user: UserDB = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
@@ -39,7 +40,7 @@ async def report_error(
         if error.componentStack:
             logger.debug(f"   Component Stack: {error.componentStack[:200]}...")
 
-        return {"status": "error_logged"}
+        return success_response(data={"status": "error_logged"})
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to log error: {str(e)}")
 
@@ -51,7 +52,7 @@ async def get_security_status(current_user=Depends(get_current_user)):
     Requires authentication.
     """
     try:
-        return base_security_sentinel.get_security_status()
+        return success_response(data=base_security_sentinel.get_security_status())
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Sentinel Error: {str(e)}")
 
@@ -64,7 +65,7 @@ async def trigger_security_audit(current_user=Depends(admin_required)):
     """
     try:
         report = base_security_sentinel.audit_system_integrity()
-        return {"status": "Audit Complete", "report": report}
+        return success_response(data={"status": "Audit Complete", "report": report})
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Audit Failure: {str(e)}")
 
@@ -76,4 +77,4 @@ async def get_security_events(current_user=Depends(admin_required)):
     Requires authentication.
     """
     status = base_security_sentinel.get_security_status()
-    return status.get("recent_events", [])
+    return success_response(data=status.get("recent_events", []))

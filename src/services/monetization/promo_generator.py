@@ -2,8 +2,8 @@ import logging
 import json
 from typing import Any
 from groq import AsyncGroq
-from src.api.config import settings
-from src.api.utils.vault import get_secret
+from api.config import settings
+from api.utils.vault import get_secret
 from .commerce_service import base_commerce_service
 
 class PromoGenerator:

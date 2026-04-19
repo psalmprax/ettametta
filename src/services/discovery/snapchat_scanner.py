@@ -53,8 +53,8 @@ class SnapchatScanner:
         seen = set()
         unique = []
         for c in candidates:
-            if c.url not in seen:
-                seen.add(c.url)
+            if c.source_url not in seen:
+                seen.add(c.source_url)
                 unique.append(c)
         
         logger.info(f"[SnapchatScanner] Found {len(unique)} snaps")
@@ -239,7 +239,7 @@ class SnapchatScanner:
             comments = item.get("comments", 0) or item.get("commentCount", 0)
             shares = item.get("shares", 0) or item.get("shareCount", 0)
             engagement = likes + comments + shares
-            engagement_rate = engagement / max(views, 1) if views else 0.06
+            engagement_score = engagement / max(views, 1) if views else 0.06
             
             # Get URL
             url = video_url
@@ -255,13 +255,16 @@ class SnapchatScanner:
             return ContentCandidate(
                 id=f"snap_{snap_id}",
                 platform=platform_type,
-                url=url,
-                author=author,
+                source_url=url,
+                creator_name=author,
                 title=title[:100] if title else "Snapchat Video",
                 view_count=views,
-                engagement_rate=engagement_rate,
+                like_count=likes,
+                comment_count=comments,
+                share_count=shares,
+                engagement_score=engagement_score,
                 thumbnail_url=thumbnail,
-                metadata={"niche": niche, "likes": likes, "shares": shares}
+                metadata={"niche": niche}
             )
             
         except Exception as e:

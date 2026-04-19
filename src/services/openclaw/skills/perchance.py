@@ -5,15 +5,35 @@ import urllib.parse
 from playwright.async_api import async_playwright, Browser, Page
 from typing import Any
 
+from .base_skill import OpenClawBaseSkill
+
 logger = logging.getLogger(__name__)
 
 
-class PerchanceSkill:
+class PerchanceSkill(OpenClawBaseSkill):
     """
     Perchance AI image generator browser automation skill.
     Supports multiple generator variants with full parameter control.
     Free, no sign-up, unlimited generation.
     """
+
+    async def execute(self, action: str = "generate", prompt: str = "", style: str = "photo", resolution: str = "hd", aspect_ratio: str = "9:16", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        p = prompt or kwargs.get("prompt") or kwargs.get("topic", "")
+        if not p:
+            return "⚠️ Perchance failed: Missing prompt"
+            
+        res = await self.generate_with_settings(
+            p, 
+            style=style or kwargs.get("style", "photo"), 
+            resolution=resolution or kwargs.get("resolution", "hd"), 
+            aspect_ratio=aspect_ratio or kwargs.get("aspect_ratio", "9:16")
+        )
+        if res.get("status") == "success" and res.get("image_urls"):
+            return f"🖼️ **Perchance Image Generated!**\nURL: {res['image_urls'][0]}"
+        return f"⚠️ Perchance failed: {res.get('error')}"
 
     GENERATORS = {
         "default": "https://perchance.org/ai-text-to-image-generator",
@@ -48,6 +68,7 @@ class PerchanceSkill:
         seed: int = -1,
         batch_size: int = 1,
     ):
+        super().__init__()
         self.generator = generator
         self.resolution = resolution
         self.aspect_ratio = aspect_ratio
@@ -56,6 +77,7 @@ class PerchanceSkill:
         self.batch_size = batch_size
         self.browser: Browser | None = None
         self.page: Page | None = None
+        self.context = None
 
     async def initialize(self):
         """Initialize stealth browser session"""

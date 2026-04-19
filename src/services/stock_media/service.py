@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 import httpx
-from src.api.utils.vault import get_secret
+from api.utils.vault import get_secret
 
 
 class StockMediaService:

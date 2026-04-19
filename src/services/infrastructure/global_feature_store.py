@@ -3,7 +3,7 @@ import json
 import logging
 import time
 from typing import Any
-from src.api.config import settings
+from api.config import settings
 
 logger = logging.getLogger("GlobalFeatureStore")
 

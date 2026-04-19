@@ -188,7 +188,11 @@ def download_and_process_task(
                 analysis_data=analysis_data,
             )
         )
-        strategy = strategy_obj.dict()
+        strategy = (
+            strategy_obj.model_dump(mode="json")
+            if hasattr(strategy_obj, "model_dump")
+            else strategy_obj.dict()
+        )
         logging.info(
             f"[Task] AI Combined Strategy: {strategy['vibe']} (Style: {style}, Speed: {strategy['speed_range']}, Jitter: {strategy['jitter_intensity']})"
         )

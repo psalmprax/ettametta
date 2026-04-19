@@ -1,9 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
-from src.api.main import app
-from src.api.utils.database import SessionLocal
-from src.api.utils.models import UserDB, VideoJobDB
-from src.api.routes.auth import get_current_user
+from api.main import app
+from api.utils.database import SessionLocal
+from api.utils.models import UserDB, VideoJobDB
+from api.routes.auth import get_current_user
 import json
 
 client = TestClient(app)

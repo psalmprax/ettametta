@@ -78,14 +78,24 @@ async def audit_content_quality(title: str, description: str, metadata: dict[str
         
     # 3. Platform Metadata (If available)
     if metadata:
-        duration = metadata.get("duration", 0)
-        if duration > 1800: # Over 30 mins
-            flags.append("LONG_FORM_CONTENT")
-            score -= 0.3
+        # Use duration_seconds if available (set by DiscoveryService)
+        duration = metadata.get("duration_seconds")
+        if duration is None:
+            duration = metadata.get("duration", 0)
             
-        if duration < 10:
-            flags.append("TOO_SHORT")
-            score -= 0.2
+        try:
+            # Cast to float to handle strings that are numeric
+            duration_val = float(duration)
+            if duration_val > 1800: # Over 30 mins
+                flags.append("LONG_FORM_CONTENT")
+                score -= 0.3
+                
+            if duration_val < 10:
+                flags.append("TOO_SHORT")
+                score -= 0.2
+        except (ValueError, TypeError):
+            # If it's a string like PT1M30S and we couldn't parse it elsewhere, skip comparison
+            pass
 
     # Final Score Normalization
     score = max(0.1, round(score, 2))

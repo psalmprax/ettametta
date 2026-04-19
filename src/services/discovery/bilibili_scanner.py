@@ -54,8 +54,8 @@ class BilibiliScanner:
         seen = set()
         unique = []
         for c in candidates:
-            if c.url not in seen:
-                seen.add(c.url)
+            if c.source_url not in seen:
+                seen.add(c.source_url)
                 unique.append(c)
         
         logger.info(f"[BilibiliScanner] Found {len(unique)} videos")
@@ -160,7 +160,7 @@ class BilibiliScanner:
             # Calculate engagement
             engagement = like + coin + favorite + share + reply
             views = view if isinstance(view, int) else 0
-            engagement_rate = engagement / max(views, 1) if views else 0.05
+            engagement_score = engagement / max(views, 1) if views else 0.05
             
             # Get thumbnail (Bilibili uses specific format)
             pic = item.get("pic", "")
@@ -185,11 +185,14 @@ class BilibiliScanner:
             return ContentCandidate(
                 id=f"bilibili_{bvid or aid}",
                 platform="Bilibili",
-                url=url,
-                author=author,
+                source_url=url,
+                creator_name=author,
                 title=title or "Bilibili Video",
                 view_count=views,
-                engagement_rate=engagement_rate,
+                like_count=like,
+                comment_count=reply,
+                share_count=share,
+                engagement_score=engagement_score,
                 thumbnail_url=thumbnail,
                 duration_seconds=duration_seconds,
                 metadata={
@@ -241,7 +244,7 @@ class BilibiliScanner:
             # Calculate engagement
             engagement = like
             views = view if isinstance(view, int) else 0
-            engagement_rate = engagement / max(views, 1) if views else 0.05
+            engagement_score = engagement / max(views, 1) if views else 0.05
             
             # Get thumbnail
             pic = item.get("pic", "")
@@ -260,11 +263,14 @@ class BilibiliScanner:
             return ContentCandidate(
                 id=f"bilibili_{bvid or aid}",
                 platform="Bilibili",
-                url=url,
-                author=author,
+                source_url=url,
+                creator_name=author,
                 title=title or "Bilibili Video",
                 view_count=views,
-                engagement_rate=engagement_rate,
+                like_count=like,
+                comment_count=0,
+                share_count=0,
+                engagement_score=engagement_score,
                 thumbnail_url=thumbnail,
                 duration_seconds=duration_seconds,
                 metadata={"description": description}

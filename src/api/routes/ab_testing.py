@@ -6,13 +6,14 @@ Provides statistical A/B testing with proper significance testing
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.api.utils.database import get_db
-from src.api.utils.models import ABTestDB
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
+from api.utils.database import get_db
+from api.utils.models import ABTestDB
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB, UserRole
 from pydantic import BaseModel
 from datetime import datetime
 import math
+from api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/ab-testing", tags=["A/B Testing"])
 
@@ -133,14 +134,16 @@ async def start_ab_test(
     await db.commit()
     await db.refresh(test)
 
-    return {
-        "test_id": test.id,
-        "status": "started",
-        "variant_a": request.variant_a_title,
-        "variant_b": request.variant_b_title,
-        "target_metric": request.target_metric,
-        "message": "A/B test initialized. Start recording events to collect data.",
-    }
+    return success_response(
+        data={
+            "test_id": test.id,
+            "status": "started",
+            "variant_a": request.variant_a_title,
+            "variant_b": request.variant_b_title,
+            "target_metric": request.target_metric,
+            "message": "A/B test initialized. Start recording events to collect data.",
+        }
+    )
 
 
 @router.get("/test/{test_id}")
@@ -150,7 +153,7 @@ async def get_test_results(
     """Get detailed test results with statistical analysis"""
     stmt = select(ABTestDB).where(
         ABTestDB.id == test_id,
-        (ABTestDB.user_id == current_user.id) | (current_user.role == "admin"),
+        (ABTestDB.user_id == current_user.id) | (current_user.role == UserRole.ADMIN),
     )
     result = await db.execute(stmt)
     test = result.scalar_one_or_none()
@@ -160,14 +163,14 @@ async def get_test_results(
 
     # Get metric based on target
     if test.target_metric == "clicks":
-        views_a, views_b = test.variant_a_clicks, test.variant_b_clicks
-        conv_a, conv_b = test.variant_a_clicks, test.variant_b_clicks
+        views_a, views_b = test.variant_a_clicks, test.variant_b_click_count
+        conv_a, conv_b = test.variant_a_clicks, test.variant_b_click_count
     elif test.target_metric == "conversions":
-        views_a, views_b = test.variant_a_views, test.variant_b_views
-        conv_a, conv_b = test.variant_a_conversions, test.variant_b_conversions
+        views_a, views_b = test.variant_a_views, test.variant_b_view_count
+        conv_a, conv_b = test.variant_a_conversions, test.variant_b_conversion_count
     else:  # views
-        views_a, views_b = test.variant_a_views, test.variant_b_views
-        conv_a, conv_b = test.variant_a_views, test.variant_b_views
+        views_a, views_b = test.variant_a_views, test.variant_b_view_count
+        conv_a, conv_b = test.variant_a_views, test.variant_b_view_count
 
     total_views = views_a + views_b
 
@@ -194,42 +197,44 @@ async def get_test_results(
     # Calculate statistics with proper conversions
     stats = calculate_statistics(views_a, views_b, conv_a, conv_b)
 
-    return {
-        "test_id": test.id,
-        "content_id": test.content_id,
-        "status": test.status,
-        "variant_a": {
-            "title": test.variant_a_title,
-            "description": test.variant_a_description,
-            "views": test.variant_a_views,
-            "clicks": test.variant_a_clicks,
-            "conversions": test.variant_a_conversions,
-            "conversion_rate": test.variant_a_conversions / test.variant_a_views
-            if test.variant_a_views > 0
-            else 0,
-        },
-        "variant_b": {
-            "title": test.variant_b_title,
-            "description": test.variant_b_description,
-            "views": test.variant_b_views,
-            "clicks": test.variant_b_clicks,
-            "conversions": test.variant_b_conversions,
-            "conversion_rate": test.variant_b_conversions / test.variant_b_views
-            if test.variant_b_views > 0
-            else 0,
-        },
-        "statistics": {
-            "significant": stats.significant,
-            "confidence_level": round(stats.confidence_level, 2),
-            "winner": stats.winner,
-            "p_value": round(stats.p_value, 4) if stats.p_value else None,
-            "effect_size": round(stats.effect_size, 4),
-            "interpretation": _interpret_effect_size(stats.effect_size),
-        },
-        "created_at": test.created_at.isoformat() if test.created_at else None,
-        "completed_at": test.completed_at.isoformat() if test.completed_at else None,
-        "winner_variant": test.winner_variant,
-    }
+    return success_response(
+        data={
+            "test_id": test.id,
+            "content_id": test.content_id,
+            "status": test.status,
+            "variant_a": {
+                "title": test.variant_a_title,
+                "description": test.variant_a_description,
+                "views": test.variant_a_view_count,
+                "clicks": test.variant_a_click_count,
+                "conversions": test.variant_a_conversion_count,
+                "conversion_rate": test.variant_a_conversion_count / test.variant_a_view_count
+                if test.variant_a_view_count > 0
+                else 0,
+            },
+            "variant_b": {
+                "title": test.variant_b_title,
+                "description": test.variant_b_description,
+                "views": test.variant_b_view_count,
+                "clicks": test.variant_b_click_count,
+                "conversions": test.variant_b_conversion_count,
+                "conversion_rate": test.variant_b_conversion_count / test.variant_b_view_count
+                if test.variant_b_view_count > 0
+                else 0,
+            },
+            "statistics": {
+                "significant": stats.significant,
+                "confidence_level": round(stats.confidence_level, 2),
+                "winner": stats.winner,
+                "p_value": round(stats.p_value, 4) if stats.p_value else None,
+                "effect_size": round(stats.effect_size, 4),
+                "interpretation": _interpret_effect_size(stats.effect_size),
+            },
+            "created_at": test.created_at.isoformat() if test.created_at else None,
+            "completed_at": test.completed_at.isoformat() if test.completed_at else None,
+            "winner_variant": test.winner_variant,
+        }
+    )
 
 
 def _interpret_effect_size(effect_size: float) -> str:
@@ -268,22 +273,22 @@ async def record_variant_event(
 
     if event.event_type == "view":
         if variant == "A":
-            test.variant_a_views += 1
+            test.variant_a_view_count += 1
         else:
-            test.variant_b_views += 1
+            test.variant_b_view_count += 1
     elif event.event_type == "click":
         if variant == "A":
-            test.variant_a_clicks += 1
+            test.variant_a_click_count += 1
         else:
-            test.variant_b_clicks += 1
+            test.variant_b_click_count += 1
     elif event.event_type == "conversion":
         if variant == "A":
-            test.variant_a_conversions += 1
+            test.variant_a_conversion_count += 1
         else:
-            test.variant_b_conversions += 1
+            test.variant_b_conversion_count += 1
 
     await db.commit()
-    return {"status": "recorded", "variant": variant, "event_type": event.event_type}
+    return success_response(data={"status": "recorded", "variant": variant, "event_type": event.event_type})
 
 
 @router.post("/test/{test_id}/determine-winner")
@@ -295,7 +300,7 @@ async def determine_winner(
     """
     stmt = select(ABTestDB).where(
         ABTestDB.id == test_id,
-        (ABTestDB.user_id == current_user.id) | (current_user.role == "admin"),
+        (ABTestDB.user_id == current_user.id) | (current_user.role == UserRole.ADMIN),
     )
     result = await db.execute(stmt)
     test = result.scalar_one_or_none()
@@ -305,14 +310,14 @@ async def determine_winner(
 
     # Get the right metrics based on target
     if test.target_metric == "clicks":
-        views_a, views_b = test.variant_a_clicks, test.variant_b_clicks
-        conv_a, conv_b = test.variant_a_clicks, test.variant_b_clicks
+        views_a, views_b = test.variant_a_clicks, test.variant_b_click_count
+        conv_a, conv_b = test.variant_a_clicks, test.variant_b_click_count
     elif test.target_metric == "conversions":
-        views_a, views_b = test.variant_a_views, test.variant_b_views
-        conv_a, conv_b = test.variant_a_conversions, test.variant_b_conversions
+        views_a, views_b = test.variant_a_views, test.variant_b_view_count
+        conv_a, conv_b = test.variant_a_conversions, test.variant_b_conversion_count
     else:
-        views_a, views_b = test.variant_a_views, test.variant_b_views
-        conv_a, conv_b = test.variant_a_views, test.variant_b_views
+        views_a, views_b = test.variant_a_views, test.variant_b_view_count
+        conv_a, conv_b = test.variant_a_views, test.variant_b_view_count
 
     total_views = views_a + views_b
 
@@ -338,27 +343,31 @@ async def determine_winner(
         )
         await db.commit()
 
-        return {
-            "status": "winner_determined",
-            "winner": stats.winner,
-            "winner_title": winner_title,
-            "confidence": f"{stats.confidence_level:.1f}%",
-            "p_value": round(stats.p_value, 4),
-            "effect_size": round(stats.effect_size, 4),
-            "interpretation": _interpret_effect_size(stats.effect_size),
-            f"{test.target_metric}_a": views_a,
-            f"{test.target_metric}_b": views_b,
-        }
+        return success_response(
+            data={
+                "status": "winner_determined",
+                "winner": stats.winner,
+                "winner_title": winner_title,
+                "confidence": f"{stats.confidence_level:.1f}%",
+                "p_value": round(stats.p_value, 4),
+                "effect_size": round(stats.effect_size, 4),
+                "interpretation": _interpret_effect_size(stats.effect_size),
+                f"{test.target_metric}_a": views_a,
+                f"{test.target_metric}_b": views_b,
+            }
+        )
     else:
-        return {
-            "status": "inconclusive",
-            "message": "Not enough statistical evidence to declare a winner",
-            "p_value": round(stats.p_value, 4) if stats.p_value else None,
-            "confidence_level": f"{stats.confidence_level:.1f}%",
-            f"{test.target_metric}_a": views_a,
-            f"{test.target_metric}_b": views_b,
-            "recommendation": "Continue collecting data or consider that variants may have similar performance",
-        }
+        return success_response(
+            data={
+                "status": "inconclusive",
+                "message": "Not enough statistical evidence to declare a winner",
+                "p_value": round(stats.p_value, 4) if stats.p_value else None,
+                "confidence_level": f"{stats.confidence_level:.1f}%",
+                f"{test.target_metric}_a": views_a,
+                f"{test.target_metric}_b": views_b,
+                "recommendation": "Continue collecting data or consider that variants may have similar performance",
+            }
+        )
 
 
 @router.get("/test/{test_id}/recommend-variant")
@@ -374,43 +383,49 @@ async def recommend_variant(test_id: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Test not found")
 
     if test.winner_variant:
-        return {
-            "recommended_variant": test.winner_variant,
-            "reason": "statistical_winner",
-            "confidence": "100%",
-        }
+        return success_response(
+            data={
+                "recommended_variant": test.winner_variant,
+                "reason": "statistical_winner",
+                "confidence": "100%",
+            }
+        )
 
-    total_views = test.variant_a_views + test.variant_b_views
+    total_views = test.variant_a_view_count + test.variant_b_view_count
 
     if total_views < 10:
-        return {
-            "recommended_variant": "A"
-            if test.variant_a_views <= test.variant_b_views
-            else "B",
-            "reason": "initial_balance",
-            "message": "Not enough data for recommendation",
-        }
+        return success_response(
+            data={
+                "recommended_variant": "A"
+                if test.variant_a_view_count <= test.variant_b_view_count
+                else "B",
+                "reason": "initial_balance",
+                "message": "Not enough data for recommendation",
+            }
+        )
 
     # Use statistical result
     stats = calculate_statistics(
-        test.variant_a_views,
-        test.variant_b_views,
-        test.variant_a_views,
-        test.variant_b_views,
+        test.variant_a_view_count,
+        test.variant_b_view_count,
+        test.variant_a_view_count,
+        test.variant_b_view_count,
     )
 
     if stats.significant and stats.winner:
-        return {
-            "recommended_variant": stats.winner,
-            "reason": "statistically_significant",
-            "confidence": f"{stats.confidence_level:.1f}%",
-        }
+        return success_response(
+            data={
+                "recommended_variant": stats.winner,
+                "reason": "statistically_significant",
+                "confidence": f"{stats.confidence_level:.1f}%",
+            }
+        )
 
     # Fall back to balanced approach
-    if test.variant_a_views <= test.variant_b_views:
-        return {"recommended_variant": "A", "reason": "balanced"}
+    if test.variant_a_view_count <= test.variant_b_view_count:
+        return success_response(data={"recommended_variant": "A", "reason": "balanced"})
     else:
-        return {"recommended_variant": "B", "reason": "balanced"}
+        return success_response(data={"recommended_variant": "B", "reason": "balanced"})
 
 
 @router.get("/tests/active")
@@ -419,30 +434,32 @@ async def get_active_tests(
 ):
     """Get all active A/B tests with statistics"""
     stmt = select(ABTestDB).where(ABTestDB.status == "active")
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN:
         stmt = stmt.where(ABTestDB.user_id == current_user.id)
 
     stmt = stmt.order_by(ABTestDB.created_at.desc())
     result = await db.execute(stmt)
     tests = result.scalars().all()
 
-    return {
-        "active_tests": [
-            {
-                "id": t.id,
-                "content_id": t.content_id,
-                "variant_a_title": t.variant_a_title,
-                "variant_b_title": t.variant_b_title,
-                "variant_a_views": t.variant_a_views,
-                "variant_b_views": t.variant_b_views,
-                "target_metric": t.target_metric,
-                "total_events": t.variant_a_views + t.variant_b_views,
-                "created_at": t.created_at.isoformat() if t.created_at else None,
-            }
-            for t in tests
-        ],
-        "count": len(tests),
-    }
+    return success_response(
+        data={
+            "active_tests": [
+                {
+                    "id": t.id,
+                    "content_id": t.content_id,
+                    "variant_a_title": t.variant_a_title,
+                    "variant_b_title": t.variant_b_title,
+                    "variant_a_views": t.variant_a_view_count,
+                    "variant_b_views": t.variant_b_view_count,
+                    "target_metric": t.target_metric,
+                    "total_events": t.variant_a_view_count + t.variant_b_view_count,
+                    "created_at": t.created_at.isoformat() if t.created_at else None,
+                }
+                for t in tests
+            ],
+            "count": len(tests),
+        }
+    )
 
 
 @router.get("/tests/completed")
@@ -451,32 +468,34 @@ async def get_completed_tests(
 ):
     """Get all completed A/B tests with winner analysis"""
     stmt = select(ABTestDB).where(ABTestDB.status == "completed")
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN:
         stmt = stmt.where(ABTestDB.user_id == current_user.id)
 
     stmt = stmt.order_by(ABTestDB.completed_at.desc()).limit(20)
     result = await db.execute(stmt)
     tests = result.scalars().all()
 
-    return {
-        "completed_tests": [
-            {
-                "id": t.id,
-                "content_id": t.content_id,
-                "variant_a_title": t.variant_a_title,
-                "variant_b_title": t.variant_b_title,
-                "variant_a_views": t.variant_a_views,
-                "variant_b_views": t.variant_b_views,
-                "winner_variant": t.winner_variant,
-                "confidence_level": t.confidence_level,
-                "p_value": t.p_value,
-                "created_at": t.created_at.isoformat() if t.created_at else None,
-                "completed_at": t.completed_at.isoformat() if t.completed_at else None,
-            }
-            for t in tests
-        ],
-        "count": len(tests),
-    }
+    return success_response(
+        data={
+            "completed_tests": [
+                {
+                    "id": t.id,
+                    "content_id": t.content_id,
+                    "variant_a_title": t.variant_a_title,
+                    "variant_b_title": t.variant_b_title,
+                    "variant_a_view_count": t.variant_a_view_count,
+                    "variant_b_view_count": t.variant_b_view_count,
+                    "winner_variant": t.winner_variant,
+                    "confidence_level": t.confidence_level,
+                    "p_value": t.p_value,
+                    "created_at": t.created_at.isoformat() if t.created_at else None,
+                    "completed_at": t.completed_at.isoformat() if t.completed_at else None,
+                }
+                for t in tests
+            ],
+            "count": len(tests),
+        }
+    )
 
 
 @router.delete("/test/{test_id}")
@@ -484,7 +503,7 @@ async def delete_test(
     test_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Delete an A/B test (admin only)"""
-    if current_user.role != "admin":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
 
     stmt = select(ABTestDB).where(ABTestDB.id == test_id)
@@ -497,4 +516,4 @@ async def delete_test(
     await db.delete(test)
     await db.commit()
 
-    return {"status": "deleted", "test_id": test_id}
+    return success_response(data={"status": "deleted", "test_id": test_id})

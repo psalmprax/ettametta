@@ -1,13 +1,13 @@
 import logging
 import json
-from src.api.utils.vault import get_secret
+from api.utils.vault import get_secret
 import httpx
 import os
 import asyncio
 import uuid
 import shutil
 from pathlib import Path
-from src.api.config import settings
+from api.config import settings
 import redis
 import time
 from contextlib import asynccontextmanager

@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
-from src.api.utils.database import get_db
-from src.api.utils.auth import (
+from api.utils.database import get_db
+from api.utils.auth import (
     verify_password,
     get_password_hash,
     create_access_token,
@@ -11,7 +10,8 @@ from src.api.utils.auth import (
     verify_oauth_state,
 )
 from pydantic import BaseModel, EmailStr, field_validator
-from src.api.config import settings
+from api.config import settings
+from api.utils.api_responses import success_response
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
@@ -20,7 +20,7 @@ from authlib.integrations.base_client import OAuthError
 import secrets
 import redis
 import redis.asyncio as redis_async
-from src.api.utils.user_models import UserDB, SubscriptionTier
+from api.utils.user_models import UserDB, SubscriptionTier
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -94,10 +94,10 @@ class Token(BaseModel):
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.api.utils.database import get_db
+from api.utils.database import get_db
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register")
 async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     stmt = select(UserDB).where(UserDB.email == user.email)
     result = await db.execute(stmt)
@@ -118,10 +118,10 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(new_user)
 
-    return new_user
+    return success_response(data=UserResponse.model_validate(new_user).model_dump())
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login")
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
@@ -142,7 +142,7 @@ async def login(
 
     access_token = create_access_token(data={"sub": user.email})
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return success_response(data={"access_token": access_token, "token_type": "bearer"})
 
 
 async def get_current_user(
@@ -169,8 +169,8 @@ async def get_current_user(
     return user
 
 
-def admin_required(current_user: UserDB = Depends(get_current_user)):
-    from src.api.utils.user_models import UserRole
+def admin_required(current_user: UserDB = Depends(get_current_user)) -> UserDB:
+    from api.utils.user_models import UserRole
 
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
         raise HTTPException(
@@ -180,9 +180,9 @@ def admin_required(current_user: UserDB = Depends(get_current_user)):
     return current_user
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me")
 async def get_me(current_user: UserDB = Depends(get_current_user)):
-    return current_user
+    return success_response(data=UserResponse.model_validate(current_user).model_dump())
 
 
 @router.get("/google")
@@ -209,7 +209,7 @@ async def logout(token: str = Depends(oauth2_scheme)):
         await redis_client.sadd("token_blacklist", token)
     finally:
         await redis_client.close()
-    return {"message": "Logged out"}
+    return success_response(data={"message": "Logged out"})
 
 
 @router.get("/callback/google")

@@ -3,7 +3,7 @@ import re
 import requests
 import asyncio
 import logging
-from src.services.optimization.auth import token_manager
+from services.optimization.auth import token_manager
 
 logger = logging.getLogger(__name__)
 

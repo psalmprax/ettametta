@@ -1,17 +1,24 @@
 import requests
 import logging
-from src.api.config import settings
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class AgentZeroSkill:
+class AgentZeroSkill(OpenClawBaseSkill):
     """
     OpenClaw skill to control the autonomous Agent Zero Director.
     """
 
     def __init__(self):
+        super().__init__()
         # Note: In a production setup, AgentZero might have its own API port.
+
+    def execute(self, action: str = "status", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        return self.control_agent(action)
         # For this integration, we'll assume it's manageable via internal calls
         # or we'll trigger the base_agent_zero instance directly if in-process.
         # For the prototype, we assume OpenClaw is the management layer.
@@ -25,7 +32,7 @@ class AgentZeroSkill:
         try:
             if action == "start":
                 try:
-                    from src.services.agent_zero.agent import base_agent_zero
+                    from services.agent_zero.agent import base_agent_zero
                     import threading
 
                     def _start_async():
@@ -42,7 +49,7 @@ class AgentZeroSkill:
                     return f"⚠️ Failed to start Agent Zero: {e}"
             elif action == "stop":
                 try:
-                    from src.services.agent_zero.agent import base_agent_zero
+                    from services.agent_zero.agent import base_agent_zero
 
                     base_agent_zero.stop()
                     return "🛑 **Agent Zero Loop Stopped.** Autonomy suspended."
@@ -50,7 +57,7 @@ class AgentZeroSkill:
                     return f"⚠️ Failed to stop Agent Zero: {e}"
             elif action == "status":
                 try:
-                    from src.services.agent_zero.agent import base_agent_zero
+                    from services.agent_zero.agent import base_agent_zero
 
                     status = "RUNNING" if base_agent_zero.is_running else "STOPPED"
                     step = (

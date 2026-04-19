@@ -8,7 +8,9 @@ from .utils.hardware_detector import hardware_detector
 class Settings(BaseSettings):
     # Base Directories (Dynamic Portability)
     BASE_DIR: Path = Path(__file__).parent.parent.parent
-    REMOTION_APP_DIR: Path = Path(__file__).parent.parent.parent / "apps/remotion-studio"
+    REMOTION_APP_DIR: Path = (
+        Path(__file__).parent.parent.parent / "apps/remotion-studio"
+    )
     OUTPUT_DIR: Path = Path(__file__).parent.parent.parent / "outputs"
 
     # App Settings
@@ -21,18 +23,18 @@ class Settings(BaseSettings):
     INTERNAL_API_TOKEN: str | None = None  # Master token for internal services
     AI_CLUSTER_SECRET: str | None = "psalm_cluster_v1"  # Secret for remote GPU nodes
     PORT: int = 8000  # API port
-    
+
     # Trading Engine Config
     NICHE_TICKER_MAP: dict[str, list[str]] = {
         "technology": ["AAPL", "MSFT", "NVDA", "GOOGL"],
         "finance": ["GS", "JPM", "V", "MA"],
         "crypto": ["bitcoin", "ethereum", "solana", "cardano"],
-        "gaming": ["RNTFY", "ATVI", "EA", "TTWO"]
+        "gaming": ["RNTFY", "ATVI", "EA", "TTWO"],
     }
-    
+
     # Lean Infrastructure (CPU-First Hardening)
     CPU_AUTODETECT_THREADS: bool = True
-    RESOURCE_CONSTRAINED_MODE: bool = False # Set to True for small VPS (e.g. 2GB RAM)
+    RESOURCE_CONSTRAINED_MODE: bool = False  # Set to True for small VPS (e.g. 2GB RAM)
     REMOTION_STUDIO_PATH: str = "apps/remotion-studio"
 
     # AI Settings - Multi-Provider LLM Support
@@ -182,7 +184,8 @@ class Settings(BaseSettings):
         return self._detected_gpu_info
 
     @property
-    def GOOGLE_AUTH_REDIRECT_URI(self) -> str:
+    def GOOGLE_OAUTH_REDIRECT_URI(self) -> str:
+        """Google OAuth callback for general login (non-YouTube specific)."""
         return f"{self.PRODUCTION_DOMAIN.rstrip('/')}/auth/callback/google"
 
     @property
@@ -276,6 +279,7 @@ class Settings(BaseSettings):
     CONVERTKIT_API_KEY: str | None = None
 
     # LangChain Settings
+    MODEL: str = "llama-3.3-70b-versatile"
     LANGCHAIN_MODEL: str = "llama-3.3-70b-versatile"
     LANGCHAIN_TEMPERATURE: float = 0.7
 

@@ -6,7 +6,7 @@ import uuid
 import shutil
 from typing import Any
 from pathlib import Path
-from src.api.config import settings
+from api.config import settings
 
 class RemotionService:
     """

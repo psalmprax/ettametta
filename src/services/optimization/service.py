@@ -1,9 +1,9 @@
 from .models import PostMetadata
-from src.api.config import settings
-from src.api.utils.os_worker import ai_worker
-from src.api.utils.database import async_session_factory
-from src.api.utils.models import AffiliateLinkDB, SystemSettings
-from src.services.monetization.service import base_monetization_engine
+from api.config import settings
+from api.utils.os_worker import ai_worker
+from api.utils.database import async_session_factory
+from api.utils.models import AffiliateLinkDB, SystemSettings
+from services.monetization.service import base_monetization_engine
 import json
 import logging
 import random
@@ -18,7 +18,7 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type,
 )
-from src.services.monetization.auto_merch import base_auto_merch_service
+from services.monetization.auto_merch import base_auto_merch_service
 
 
 class CircuitBreaker:
@@ -160,7 +160,7 @@ class OptimizationService:
                             niche, content_id
                         )
                         if product:
-                            from src.services.monetization.strategies.commerce import (
+                            from services.monetization.strategies.commerce import (
                                 CommerceStrategy,
                             )
 
@@ -180,7 +180,7 @@ class OptimizationService:
                         aff_product = aff_result.scalar_one_or_none()
 
                         if aff_product:
-                            from src.services.monetization.strategies.affiliate import (
+                            from services.monetization.strategies.affiliate import (
                                 AffiliateStrategy,
                             )
 
@@ -195,26 +195,28 @@ class OptimizationService:
                     if aggression > 50:  # Only for aggressive growth accounts
                         # Check viral potential from discovery engagement score
                         try:
-                            from src.services.discovery.service import (
+                            from services.discovery.service import (
                                 base_discovery_service,
                             )
 
                             recent_content = (
-                                await base_discovery_service.discover_niche(
-                                    niche, platform
+                                await base_discovery_service.search_content(
+                                    query=niche, limit=10
                                 )
                             )
                             if recent_content and any(
-                                c.engagement_rate > 0.7 for c in recent_content
+                                getattr(c, "engagement_score", 0) > 0.7 for c in recent_content
                             ):
-                                arbitrage_suggestion = (
-                                    await base_auto_merch_service.trigger_auto_merch(
+                                arbitrage_data = (
+                                    await base_auto_merch_service.generate_and_publish_merch(
                                         niche
                                     )
                                 )
-                                commerce_info += (
-                                    f"\n- ARBITRAGE SUGGESTION: {arbitrage_suggestion}"
-                                )
+                                if arbitrage_data:
+                                    arbitrage_suggestion = arbitrage_data.get("url", "Product Generated")
+                                    commerce_info += (
+                                        f"\n- ARBITRAGE SUGGESTION: {arbitrage_suggestion}"
+                                    )
                         except Exception as e:
                             self.logger.debug(
                                 f"Discovery unavailable, skipping arbitrage: {e}"

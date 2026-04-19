@@ -20,9 +20,9 @@ async def verify_hermes_loop():
     print("💎 VIRALFORGE HERMES SELF-IMPROVEMENT LOOP VERIFICATION")
     print("-" * 60)
     
-    from src.services.hermes.service import base_hermes_service
-    from src.services.openclaw.skills.external.paperclip_integration import paperclip_skill
-    from src.services.script_generator.service import base_script_generator
+    from services.hermes.service import base_hermes_service
+    from services.openclaw.skills.external.paperclip_integration import paperclip_skill
+    from services.script_generator.service import base_script_generator
     
     # 1. Mock the LLM reflection in Hermes to avoid real API calls
     base_hermes_service.client = AsyncMock()
@@ -89,7 +89,7 @@ async def verify_hermes_loop():
     print("✅ Success: Script generator fetched and injected Hermes skills.")
 
     # 4. Final Health Check
-    from src.services.llm.service import unified_llm_service
+    from services.llm.service import unified_llm_service
     report = unified_llm_service.get_intelligence_report()
     hermes_fw = next((fw for fw in report['frameworks'] if fw['name'] == "Hermes Skill Engine"), None)
     

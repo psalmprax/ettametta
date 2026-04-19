@@ -33,8 +33,9 @@ ENV NPM_CONFIG_UNSAFE_PERM=true
 RUN npm install -g npx
 
 # Install Python dependencies
-COPY services/openclaw/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY src/api/requirements.txt api/requirements.txt
+COPY src/services/openclaw/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt; pip install --no-cache-dir -r api/requirements.txt || true
 
 # Install Playwright browsers
 RUN playwright install chromium || true
@@ -49,16 +50,16 @@ RUN git clone https://github.com/vercel-labs/agent-skills.git /tmp/agent-skills 
 RUN mkdir -p /app/.skills
 
 # Copy openclaw code
-COPY services/openclaw /app
+COPY src/services/openclaw /app
 
 # Copy necessary sibling services for integration
-COPY services/agent_zero /app/services/agent_zero
-COPY api /app/api
+COPY src/services /app/services
+COPY src/api /app/api
 # Ensure __init__.py exists in services to make it a package
 RUN touch /app/services/__init__.py
 
-# Set PYTHONPATH to include /app so 'services.agent_zero' works
-ENV PYTHONPATH=/app
+# Set PYTHONPATH to include /app so 'src' and 'services' works
+ENV PYTHONPATH=/app:/app/src
 
 # Expose port for health checks/webhooks
 EXPOSE 3001

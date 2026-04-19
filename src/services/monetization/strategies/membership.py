@@ -3,8 +3,8 @@ import random
 from typing import Any
 from sqlalchemy import select
 from .base import BaseMonetizationStrategy
-from src.api.utils.database import async_session_factory
-from src.api.utils.models import MembershipPlanDB, SystemSettings
+from api.utils.database import async_session_factory
+from api.utils.models import MembershipPlanDB, SystemSettings
 
 logger = logging.getLogger(__name__)
 

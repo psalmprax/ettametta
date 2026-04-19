@@ -4,11 +4,14 @@ from typing import Any
 import asyncio
 import logging
 import uuid
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
-from src.api.utils.limiter import limiter
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB
+from api.utils.limiter import limiter
+from api.utils.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Request
 
+from api.utils.api_responses import success_response
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agent", tags=["AI Agents"])
@@ -21,7 +24,7 @@ def get_groq_client():
     """Get or create Groq client singleton"""
     global _groq_client
     if _groq_client is None:
-        from src.api.config import settings
+        from api.config import settings
 
         if settings.GROQ_API_KEY:
             from groq import AsyncGroq
@@ -55,7 +58,7 @@ async def chat_with_agent(
     """
     Chat with AI agent. Supports both Groq and OpenAI.
     """
-    from src.api.config import settings
+    from api.config import settings
 
     # Add correlation ID for tracing
     correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
@@ -87,12 +90,14 @@ async def chat_with_agent(
                 temperature=0.7,
                 max_tokens=1024,
             )
-            return {
-                "response": response.choices[0].message.content,
-                "status": "success",
-                "agent": "openai",
-                "correlation_id": correlation_id,
-            }
+            return success_response(
+                data={
+                    "response": response.choices[0].message.content,
+                    "status": "success",
+                    "agent": "openai",
+                    "correlation_id": correlation_id,
+                }
+            )
         elif settings.GROQ_API_KEY:
             client = get_groq_client()
             if not client:
@@ -106,12 +111,14 @@ async def chat_with_agent(
                 temperature=0.7,
                 max_tokens=1024,
             )
-            return {
-                "response": response.choices[0].message.content,
-                "status": "success",
-                "agent": "groq",
-                "correlation_id": correlation_id,
-            }
+            return success_response(
+                data={
+                    "response": response.choices[0].message.content,
+                    "status": "success",
+                    "agent": "groq",
+                    "correlation_id": correlation_id,
+                }
+            )
         else:
             raise HTTPException(status_code=503, detail="No LLM API keys configured")
     except Exception as e:
@@ -183,7 +190,7 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
 
         # Get model settings for auto-recommendation
         try:
-            from src.services.openclaw.skills.model_settings import (
+            from services.openclaw.skills.model_settings import (
                 get_model_settings,
                 get_recommended_settings,
                 get_image_recommended_settings,
@@ -220,87 +227,45 @@ async def trigger_video_generation(message: str, context: dict) -> dict:
             elif not aspect_ratio:
                 aspect_ratio = "16:9"
 
-        # Import and run the skill
+        # Call OpenClaw container instead of local skill
         try:
-            skill_map = {
-                "pixverse": ("services.openclaw.skills.pixverse", "PixVerseSkill"),
-                "kling": ("services.openclaw.skills.kling", "KlingSkill"),
-                "haiper": ("services.openclaw.skills.haiper", "HaiperSkill"),
-                "luma": ("services.openclaw.skills.luma", "LumaSkill"),
-                "leiapix": ("services.openclaw.skills.leiapix", "LeiaPixSkill"),
-                "pika": ("services.openclaw.skills.pika", "PikaSkill"),
-                "runway": ("services.openclaw.skills.runway", "RunwaySkill"),
-                "perchance": ("services.openclaw.skills.perchance", "PerchanceSkill"),
-            }
+            import httpx
+            from api.config import settings
 
-            if provider in skill_map:
-                module_path, class_name = skill_map[provider]
-                module = __import__(module_path, fromlist=[class_name])
-                skill_class = getattr(module, class_name)
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.post(
+                    "http://openclaw:3001/execute-tool",
+                    json={
+                        "tool": provider.upper(),
+                        "params": {
+                            "prompt": prompt,
+                            "aspect_ratio": aspect_ratio,
+                            **context,
+                        },
+                        "internal_token": settings.INTERNAL_API_TOKEN,
+                    },
+                )
 
-                skill = skill_class()
-                await skill.initialize()
-                try:
-                    # Perchance = image generation (different params)
-                    if provider == "perchance":
-                        result = await asyncio.wait_for(
-                            skill.generate(
-                                prompt=prompt,
-                                generator=context.get("generator", "default"),
-                                resolution=context.get("resolution", "hd"),
-                                aspect_ratio=context.get("aspect_ratio", "1:1"),
-                                negative_prompt=context.get("negative_prompt", ""),
-                                seed=context.get("seed", -1),
-                                batch_size=context.get("batch_size", 1),
-                            ),
-                            timeout=180.0,
-                        )
-                        await skill.cleanup()
-                        if result.get("status") == "success":
-                            return {
-                                "response": f"✅ Image generated successfully! URLs: {result.get('image_urls', [])}",
-                                "status": "success",
-                                "provider": provider,
-                                "image_urls": result.get("image_urls"),
-                            }
-                        else:
-                            return {
-                                "response": f"⚠️ Image generation failed: {result.get('error', 'Unknown error')}",
-                                "status": "error",
-                                "provider": provider,
-                            }
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("status") == "success":
+                        return {
+                            "response": f"🎬 {provider.capitalize()} generation triggered successfully!",
+                            "result": data["result"],
+                            "status": "success",
+                            "agent": "openclaw",
+                        }
                     else:
-                        # Video providers
-                        result = await asyncio.wait_for(
-                            skill.generate(prompt=prompt, aspect_ratio=aspect_ratio),
-                            timeout=180.0,  # 3 minutes
-                        )
-                        await skill.cleanup()
-
-                        if result.get("status") == "success":
-                            return {
-                                "response": f"✅ Video generated successfully! URL: {result.get('video_url', 'N/A')}",
-                                "status": "success",
-                                "provider": provider,
-                                "video_url": result.get("video_url"),
-                            }
-                        else:
-                            return {
-                                "response": f"⚠️ Video generation failed: {result.get('error', 'Unknown error')}",
-                                "status": "error",
-                                "provider": provider,
-                            }
-                except asyncio.TimeoutError:
-                    await skill.cleanup()
+                        return {
+                            "response": f"❌ {provider.capitalize()} failed: {data.get('message')}"
+                        }
+                else:
                     return {
-                        "response": f"⏱️ Generation timed out after 3 minutes. Platform {provider} may be slow or require manual verification.",
-                        "status": "error",
+                        "response": f"❌ OpenClaw service error: {response.status_code}"
                     }
         except Exception as e:
-            return {
-                "response": f"Video generation failed: {str(e)}",
-                "status": "error",
-            }
+            logger.error(f"[Agent] OpenClaw call failed: {e}")
+            return {"response": f"❌ OpenClaw integration error: {str(e)}"}
 
     return None  # Not a video generation request
 
@@ -315,7 +280,7 @@ async def crew_task(
     """
     Execute a task using CrewAI if enabled, otherwise falls back to Groq multi-step execution.
     """
-    from src.api.config import settings
+    from api.config import settings
 
     # Add correlation ID for tracing
     correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
@@ -323,7 +288,7 @@ async def crew_task(
 
     if settings.ENABLE_CREWAI:
         try:
-            from src.services.crewai.service import crewai_service
+            from services.crewai.service import crewai_service
 
             # Check if service is enabled
             if not crewai_service.is_enabled():
@@ -337,12 +302,14 @@ async def crew_task(
                 agents=body.agents or ["researcher", "writer"],
                 context=body.context or {},
             )
-            return {
-                "result": result,
-                "status": "success",
-                "agent": "crewai",
-                "correlation_id": correlation_id,
-            }
+            return success_response(
+                data={
+                    "result": result,
+                    "status": "success",
+                    "agent": "crewai",
+                    "correlation_id": correlation_id,
+                }
+            )
         except HTTPException:
             raise
         except Exception as e:
@@ -430,14 +397,16 @@ async def crew_task(
             timeout=30.0,
         )
 
-        return {
-            "result": {
-                "agent_outputs": results,
-                "synthesis": synthesis_response.choices[0].message.content,
-            },
-            "status": "success",
-            "agent": "groq-multi",
-        }
+        return success_response(
+            data={
+                "result": {
+                    "agent_outputs": results,
+                    "synthesis": synthesis_response.choices[0].message.content,
+                },
+                "status": "success",
+                "agent": "groq-multi",
+            }
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -460,8 +429,8 @@ async def account_audit(
     Generates a 2-week sprint plan to reach monetization eligibility.
     Supported platforms: youtube, tiktok, instagram, facebook, x, linkedin, snapchat, twitch
     """
-    from src.api.config import settings
-    from src.services.openclaw.skills.audit import audit_skill
+    from api.config import settings
+    from services.openclaw.skills.audit import audit_skill
 
     if not settings.GROQ_API_KEY:
         raise HTTPException(status_code=503, detail="AI backend not configured")
@@ -499,12 +468,14 @@ async def account_audit(
                 status_code=400, detail="Invalid action. Use 'audit' or 'compare'"
             )
 
-        return {
-            "result": result,
-            "status": "success",
-            "action": body.action,
-            "platform": body.platform,
-        }
+        return success_response(
+            data={
+                "result": result,
+                "status": "success",
+                "action": body.action,
+                "platform": body.platform,
+            }
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -517,11 +488,11 @@ async def execute_code(
     Execute code using Code Interpreter if enabled, otherwise uses Groq for code analysis/generation.
     Does NOT execute arbitrary code server-side — returns AI-generated code and explanation.
     """
-    from src.api.config import settings
+    from api.config import settings
 
     if settings.ENABLE_INTERPRETER:
         try:
-            from src.services.interpreter.service import interpreter_service
+            from services.interpreter.service import interpreter_service
 
             result = await interpreter_service.execute(request.code)
             return {"result": result, "status": "success", "agent": "interpreter"}
@@ -558,15 +529,45 @@ async def execute_code(
             max_tokens=2048,
         )
 
-        return {
-            "result": {
-                "analysis": response.choices[0].message.content,
-                "language": request.language,
-                "note": "Code Interpreter not enabled. Using AI analysis instead of execution.",
-            },
-            "status": "success",
-            "agent": "groq-code-analysis",
-        }
+        return success_response(
+            data={
+                "result": {
+                    "analysis": response.choices[0].message.content,
+                    "language": request.language,
+                    "note": "Code Interpreter not enabled. Using AI analysis instead of execution.",
+                },
+                "status": "success",
+                "agent": "groq-code-analysis",
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class TrademarkRequest(BaseModel):
+    niche: str
+    account_id: str | None = None
+
+
+@router.post("/generate-trademark")
+async def generate_trademark(
+    body: TrademarkRequest,
+    current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Autonomous Brand Factory: Generates a brand identity (Logo, Name, Color) for a niche.
+    """
+    from services.branding.service import base_branding_service
+
+    try:
+        result = await base_branding_service.generate_brand_identity(
+            user_id=current_user.id,
+            niche=body.niche,
+            account_id=body.account_id,
+            db=db,
+        )
+        return success_response(data=result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -576,18 +577,20 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
     """
     Get available agent capabilities with real status.
     """
-    from src.api.config import settings
-    from src.services.openclaw.agent import openclaw_agent
+    from api.config import settings
+    from services.openclaw.agent import openclaw_agent
 
     report = openclaw_agent.get_dependency_report()
-    cb_status = openclaw_agent.circuit_breaker.state  # "closed", "open", "half-open"
+    cb_status = (
+        openclaw_agent.circuit_breaker.state
+    )  # Returns "CLOSED", "OPEN", or "HALF_OPEN"
 
     capabilities = {
         "workforce": {
             "enabled": True,
-            "status": "healthy" if cb_status == "closed" else "degraded",
+            "status": "healthy" if cb_status.upper() == "CLOSED" else "degraded",
             "report": report,
-            "circuit_breaker": cb_status,
+            "circuit_breaker": cb_status.lower(),  # Return lowercase for API consistency
             "description": "Alpha Workforce (OpenClaw) Agentic Engine",
         },
         "discovery": {
@@ -646,4 +649,4 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
         },
     }
 
-    return capabilities
+    return success_response(data=capabilities)

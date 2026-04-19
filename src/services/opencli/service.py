@@ -34,7 +34,7 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from src.api.config import settings
+from api.config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import shutil
 
-from src.api.config import settings
+from api.config import settings
 
 logger = logging.getLogger(__name__)
 

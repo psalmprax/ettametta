@@ -4,6 +4,8 @@ from typing import Any
 from datetime import datetime
 from .memory import memory_skill
 
+from .base_skill import OpenClawBaseSkill
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,7 +22,7 @@ class WorkflowStep:
         self.start_time = None
         self.end_time = None
 
-    def to_dict(self) -> dict:
+    async def to_dict(self) -> dict:
         return {
             "action": self.action,
             "params": self.params,
@@ -33,11 +35,24 @@ class WorkflowStep:
         }
 
 
-class WorkflowSkill:
+class WorkflowSkill(OpenClawBaseSkill):
     def __init__(self):
+        super().__init__()
         self.active_workflows: dict[str, dict] = {}
 
-    def create_workflow(self, name: str, steps: list[dict]) -> str:
+    async def execute(self, action: str = "list", name: str = "", steps: list[dict] = None, **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "create":
+            return self.create_workflow(name, steps or [])
+        elif action == "execute":
+            return self.execute_workflow(name)
+        elif action == "status":
+            return self.get_workflow_status(name)
+        return self.list_workflows()
+
+    async def create_workflow(self, name: str, steps: list[dict]) -> str:
         """Create a new workflow definition"""
         workflow_steps = []
         for step_data in steps:
@@ -62,7 +77,7 @@ class WorkflowSkill:
 
         return f"✅ Workflow '{name}' created with {len(steps)} steps"
 
-    def execute_workflow(self, name: str) -> str:
+    async def execute_workflow(self, name: str) -> str:
         """Execute a workflow asynchronously"""
         if name not in self.active_workflows:
             return f"❌ Workflow '{name}' not found"
@@ -133,7 +148,7 @@ class WorkflowSkill:
         else:
             return f"Executed {action} with params {params}"
 
-    def get_workflow_status(self, name: str) -> str:
+    async def get_workflow_status(self, name: str) -> str:
         """Get status of a workflow"""
         if name not in self.active_workflows:
             return f"❌ Workflow '{name}' not found"
@@ -157,7 +172,7 @@ class WorkflowSkill:
 
         return "\n".join(lines)
 
-    def list_workflows(self) -> str:
+    async def list_workflows(self) -> str:
         """list all active workflows"""
         if not self.active_workflows:
             return "📋 No active workflows"
@@ -170,7 +185,7 @@ class WorkflowSkill:
 
         return "\n".join(lines)
 
-    def cancel_workflow(self, name: str) -> str:
+    async def cancel_workflow(self, name: str) -> str:
         """Cancel a running workflow"""
         if name not in self.active_workflows:
             return f"❌ Workflow '{name}' not found"

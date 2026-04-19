@@ -1,7 +1,7 @@
 import os
 import httpx
 import logging
-from src.api.utils.vault import get_secret
+from api.utils.vault import get_secret
 
 class VoiceoverService:
     @property

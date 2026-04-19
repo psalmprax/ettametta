@@ -39,7 +39,7 @@ class VideoLead:
     thumbnail_url: str
     description: str
     tags: list[str]
-    engagement_rate: float
+    engagement_score: float
     viral_score: float
     niche: str
     content_type: str  # 'educational', 'entertainment', 'tutorial', etc.
@@ -85,7 +85,7 @@ class VideoLeadScanner:
                 "AI services not available - using keyword-based content matching"
             )
 
-    async def discover_video_leads(
+    async def scan_for_video_leads(
         self,
         niche: str,
         platforms: list[str] = None,
@@ -154,7 +154,7 @@ class VideoLeadScanner:
                             thumbnail_url="",
                             description=c.description,
                             tags=c.tags,
-                            engagement_rate=c.engagement_rate,
+                            engagement_score=c.engagement_score,
                             viral_score=c.viral_score / 10.0
                             if c.viral_score > 10
                             else c.viral_score,
@@ -177,7 +177,7 @@ class VideoLeadScanner:
 
         return filtered_leads[:max_results]
 
-    async def analyze_video_performance(
+    async def evaluate_video_performance(
         self, video_url: str, niche: str
     ) -> dict[str, Any]:
         """
@@ -218,7 +218,7 @@ class VideoLeadScanner:
             "content_template": self._extract_content_template(video_data),
         }
 
-    async def find_video_templates(
+    async def identify_video_templates(
         self, niche: str, template_type: str = "viral", min_samples: int = 10
     ) -> dict[str, Any]:
         """
@@ -233,7 +233,7 @@ class VideoLeadScanner:
             Template analysis with patterns and success factors
         """
         # Get high-performing videos in niche
-        leads = await self.discover_video_leads(
+        leads = await self.scan_for_video_leads(
             niche=niche, min_viral_score=8.0, max_results=min_samples * 2
         )
 
@@ -501,7 +501,7 @@ class VideoLeadScanner:
                             thumbnail_url="",
                             description=c.description,
                             tags=c.tags,
-                            engagement_rate=c.engagement_rate,
+                            engagement_score=c.engagement_score,
                             viral_score=c.viral_score / 10.0
                             if c.viral_score > 10
                             else c.viral_score,
@@ -515,7 +515,7 @@ class VideoLeadScanner:
         quality_videos = [
             video
             for video in all_videos
-            if self._calculate_viral_score(video.view_count, video.engagement_rate)
+            if self._calculate_viral_score(video.view_count, video.engagement_score)
             >= min_quality
         ]
 
@@ -568,7 +568,7 @@ class VideoLeadScanner:
 
         # Quality bonus
         quality_score = self._calculate_viral_score(
-            video.view_count, video.engagement_rate
+            video.view_count, video.engagement_score
         )
         relevance += (quality_score / 10) * 0.1  # 10% weight for quality
 
@@ -752,7 +752,7 @@ class VideoLeadScanner:
             if videos:
                 best_video = videos[0]
                 quality = self._calculate_viral_score(
-                    best_video.view_count, best_video.engagement_rate
+                    best_video.view_count, best_video.engagement_score
                 )
                 total_quality += quality
                 total_videos += 1
@@ -875,7 +875,7 @@ class VideoLeadScanner:
                             thumbnail_url="",
                             description=v_desc,
                             tags=[],
-                            engagement_rate=0.065,
+                            engagement_score=0.065,
                             viral_score=float(
                                 self._calculate_viral_score(views, 0.065)
                             ),
@@ -918,10 +918,10 @@ class VideoLeadScanner:
             comments = int(stats.get("commentCount", 0))
 
             # Calculate engagement rate
-            engagement_rate = (likes + comments) / max(views, 1) * 100
+            engagement_score = (likes + comments) / max(views, 1) * 100
 
             # Calculate viral score (0-10)
-            viral_score = min(self._calculate_viral_score(views, engagement_rate), 10.0)
+            viral_score = min(self._calculate_viral_score(views, engagement_score), 10.0)
 
             # Parse duration (PT1M30S -> 90 seconds)
             duration_str = content_details.get("duration", "PT0S")
@@ -944,12 +944,12 @@ class VideoLeadScanner:
                 .get("url", ""),
                 description=snippet.get("description", ""),
                 tags=snippet.get("tags", []),
-                engagement_rate=engagement_rate,
+                engagement_score=engagement_score,
                 viral_score=viral_score,
                 niche=niche,
                 content_type=self._classify_content_type(snippet.get("title", "")),
                 monetization_potential=self._assess_monetization(
-                    views, engagement_rate
+                    views, engagement_score
                 ),
             )
 
@@ -957,13 +957,13 @@ class VideoLeadScanner:
             logger.error(f"Error creating YouTube lead: {e}")
             return None
 
-    def _calculate_viral_score(self, views: int, engagement_rate: float) -> float:
+    def _calculate_viral_score(self, views: int, engagement_score: float) -> float:
         """Calculate viral potential score (0-10)"""
         # Base score from views (logarithmic scaling)
         view_score = min(10, (views / 1000000) * 5)  # 1M views = 5 points
 
         # Engagement bonus
-        engagement_bonus = min(5, engagement_rate / 2)  # 10% engagement = 5 points
+        engagement_bonus = min(5, engagement_score / 2)  # 10% engagement = 5 points
 
         return view_score + engagement_bonus
 
@@ -986,11 +986,11 @@ class VideoLeadScanner:
         else:
             return "general"
 
-    def _assess_monetization(self, views: int, engagement_rate: float) -> str:
+    def _assess_monetization(self, views: int, engagement_score: float) -> str:
         """Assess monetization potential"""
-        if views > 500000 and engagement_rate > 5:
+        if views > 500000 and engagement_score > 5:
             return "high"
-        elif views > 100000 and engagement_rate > 2:
+        elif views > 100000 and engagement_score > 2:
             return "medium"
         else:
             return "low"
@@ -1040,8 +1040,8 @@ class VideoLeadScanner:
 
             return {
                 "ai_analysis": response.choices[0].message.content,
-                "avg_duration": sum(l.duration for l in leads) / len(leads),
-                "avg_engagement": sum(l.engagement_rate for l in leads) / len(leads),
+                "avg_duration": sum(l.duration_seconds for l in leads) / len(leads),
+                "avg_engagement_score": sum(l.engagement_score for l in leads) / len(leads),
                 "content_types": self._count_content_types(leads),
             }
         except Exception as e:

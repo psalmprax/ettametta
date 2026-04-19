@@ -75,7 +75,7 @@ class AffiliateService:
         self.logger = logging.getLogger("AffiliateService")
         self.enabled = os.getenv("ENABLE_AFFILIATE_API", "false").lower() == "true"
 
-        from src.api.config import settings
+        from api.config import settings
 
         self.amazon_tag = settings.AMAZON_ASSOCIATES_TAG
         self.impact_api_key = settings.IMPACT_RADIUS_API_KEY
@@ -124,7 +124,7 @@ class AffiliateService:
         if not self.enabled:
             raise RuntimeError("Affiliate service is not enabled")
 
-        from src.api.config import settings
+        from api.config import settings
 
         amazon_api_key = getattr(settings, "AMAZON_PAAPI_KEY", None)
         amazon_api_tag = getattr(settings, "AMAZON_PAAPI_TAG", None)
@@ -201,7 +201,7 @@ class AffiliateService:
         # We assume api_key is the Access Key ID. But PA-API also requires Secret Key. Where do we get it?
         # Usually PA-API uses Access Key ID and Secret Key (not the tag). The tag is the associate tag.
         # We need to fetch secret from config.
-        from src.api.config import settings
+        from api.config import settings
 
         amazon_secret_key = getattr(settings, "AMAZON_PAAPI_SECRET", None)
         if not amazon_secret_key:
@@ -298,7 +298,7 @@ class AffiliateService:
         try:
             # Impact API requires Account SID and Auth Token
             # Expect IMPACT_ACCOUNT_SID in config
-            from src.api.config import settings
+            from api.config import settings
 
             impact_account_sid = getattr(settings, "IMPACT_ACCOUNT_SID", None)
             if not impact_account_sid:

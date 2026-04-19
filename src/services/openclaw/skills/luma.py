@@ -4,6 +4,8 @@ import os
 from typing import Any
 import uuid
 
+from .base_skill import OpenClawBaseSkill
+
 logger = logging.getLogger(__name__)
 
 # Any dependency
@@ -15,16 +17,29 @@ except ImportError:
     logger.warning("[Luma] Playwright not installed. Browser automation disabled.")
 
 
-class LumaSkill:
+class LumaSkill(OpenClawBaseSkill):
     """
-    Luma Dream Machine browser automation skill - Tier 1 easiest target
-    Very clean UI, predictable flow, no login required
+    Skill for interacting with Luma Dream Machine (Browser-based AI Video).
     """
 
-    def __init__(self):
-        self.base_url = "https://lumalabs.ai/dream-machine"
+    def __init__(self, base_url: str = "https://lumalabs.ai/dream-machine/creations"):
+        super().__init__()
+        self.base_url = base_url
 
-    async def generate(self, prompt: str, aspect_ratio: str = "9:16") -> dict[str, Any]:
+    async def execute(self, action: str = "generate", prompt: str = "", aspect_ratio: str = "9:16", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        p = prompt or kwargs.get("prompt") or kwargs.get("topic", "")
+        if not p:
+            return "⚠️ Luma failed: Missing prompt"
+            
+        res = await self.generate_video(p, aspect_ratio or kwargs.get("aspect_ratio", "9:16"))
+        if res.get("status") == "success":
+            return f"🎬 **Luma Video Generated!**\nURL: {res['video_url']}"
+        return f"⚠️ Luma failed: {res.get('error')}"
+
+    async def generate_video(self, prompt: str, aspect_ratio: str = "9:16") -> dict[str, Any]:
         """
         Generate video from prompt using Luma Dream Machine
         """

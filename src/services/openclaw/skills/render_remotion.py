@@ -4,12 +4,14 @@ import subprocess
 import logging
 from typing import Any
 
-from src.api.config import settings
+from api.config import settings
+
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class RemotionRenderSkill:
+class RemotionRenderSkill(OpenClawBaseSkill):
     """
     Skill for programmatic React-based video rendering via @remotion/cli.
     Provides pixel-perfect control over typography and animations.
@@ -19,7 +21,21 @@ class RemotionRenderSkill:
         self,
         remotion_project_path: str | None = None,
     ):
+        super().__init__()
         self.project_path = str(remotion_project_path or settings.REMOTION_APP_DIR)
+
+    def execute(self, action: str = "render", composition: str = "main", props: dict = None, **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        comp = composition or kwargs.get("composition", "main")
+        p = props or kwargs.get("props") or kwargs
+        
+        return self.render_remotion_clip(
+            comp,
+            p,
+            kwargs.get("output_name", "remotion_output.mp4")
+        )
 
     def render_remotion_clip(
         self,

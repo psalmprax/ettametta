@@ -4,8 +4,8 @@ import shutil
 import time
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from src.api.config import settings
-from src.api.utils.models import VideoJobDB, NexusJobDB, ScheduledPostDB
+from api.config import settings
+from api.utils.models import VideoJobDB, NexusJobDB, ScheduledPostDB
 from sqlalchemy.ext.asyncio import AsyncSession
 from .service import base_storage_service
 
@@ -48,7 +48,7 @@ class StorageManager:
             bytes_to_liberate = current_size - (self.threshold_bytes * 0.8)
             bytes_liberated = 0
 
-            from src.api.utils.database import async_session_factory
+            from api.utils.database import async_session_factory
             async with async_session_factory() as db:
                 for file_path, _ in files:
                     if bytes_liberated >= bytes_to_liberate:

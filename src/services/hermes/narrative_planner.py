@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any
 import os
-from src.services.llm.intelligence_hub import base_intelligence_hub
+from services.llm.intelligence_hub import base_intelligence_hub
 
 logger = logging.getLogger("NarrativePlanner")
 

@@ -23,7 +23,7 @@ test.describe('Video Transformation', () => {
 
     test('should display transformation form', async ({ page }) => {
         await page.goto('/creation');
-        await expect(page.locator('input[name="input_url"]')).toBeVisible();
+        await expect(page.locator('input[name="source_url"]')).toBeVisible();
         await expect(page.locator('select[name="niche"]')).toBeVisible();
         await expect(page.locator('select[name="platform"]')).toBeVisible();
         await expect(page.locator('button[type="submit"]')).toBeVisible();
@@ -32,7 +32,7 @@ test.describe('Video Transformation', () => {
     test('should submit transformation request', async ({ page }) => {
         await page.goto('/creation');
 
-        await page.fill('input[name="input_url"]', 'https://youtube.com/watch?v=test');
+        await page.fill('input[name="source_url"]', 'https://youtube.com/watch?v=test');
         await page.selectOption('select[name="niche"]', 'Technology');
         await page.selectOption('select[name="platform"]', 'YouTube Shorts');
         await page.selectOption('select[name="quality_tier"]', 'standard');
@@ -47,7 +47,7 @@ test.describe('Video Transformation', () => {
         await page.goto('/creation');
 
         // Submit a job
-        await page.fill('input[name="input_url"]', 'https://youtube.com/watch?v=test2');
+        await page.fill('input[name="source_url"]', 'https://youtube.com/watch?v=test2');
         await page.selectOption('select[name="niche"]', 'Motivation');
         await page.click('button[type="submit"]');
 

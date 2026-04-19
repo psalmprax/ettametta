@@ -52,8 +52,8 @@ class LinkedInScanner:
         seen = set()
         unique = []
         for c in candidates:
-            if c.url not in seen:
-                seen.add(c.url)
+            if c.source_url not in seen:
+                seen.add(c.source_url)
                 unique.append(c)
         
         logger.info(f"[LinkedInScanner] Found {len(unique)} posts")
@@ -243,7 +243,7 @@ class LinkedInScanner:
             # Estimate views
             engagement = likes + comments + shares
             views = engagement * 30  # LinkedIn typically has higher engagement
-            engagement_rate = engagement / max(views, 1) if views else 0.03
+            engagement_score = engagement / max(views, 1) if views else 0.03
             
             # Get thumbnail if present
             image = target.get("image", [])
@@ -254,13 +254,16 @@ class LinkedInScanner:
             return ContentCandidate(
                 id=f"li_{post_id}",
                 platform="LinkedIn",
-                url=url,
-                author=author,
+                source_url=url,
+                creator_name=author,
                 title=title[:100] if title else "LinkedIn Post",
                 view_count=views,
-                engagement_rate=engagement_rate,
+                like_count=likes,
+                comment_count=comments,
+                share_count=shares,
+                engagement_score=engagement_score,
                 thumbnail_url=thumbnail,
-                metadata={"likes": likes, "comments": comments, "shares": shares}
+                metadata={}
             )
             
         except Exception as e:

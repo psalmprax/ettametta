@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from src.api.config import settings
+from api.config import settings
 from authlib.integrations.base_client import OAuthError
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 import redis
@@ -39,13 +39,15 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
+import redis.asyncio as redis_async
+
+# Global Redis client for async operations
+redis_async_client = redis_async.from_url(settings.REDIS_URL, decode_responses=True)
+
+
 async def decode_access_token(token: str):
-    import redis.asyncio as redis
-
-    redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
-
     try:
-        if await redis_client.sismember("token_blacklist", token):
+        if await redis_async_client.sismember("token_blacklist", token):
             return None
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -56,9 +58,9 @@ async def decode_access_token(token: str):
         except Exception as e:
             print(f"DEBUG: Internal Error during decode: {str(e)}")
             return None
-
-    finally:
-        await redis_client.close()
+    except Exception as e:
+        print(f"DEBUG: Redis Error during decode: {str(e)}")
+        return None
 
 
 # Google OAuth setup

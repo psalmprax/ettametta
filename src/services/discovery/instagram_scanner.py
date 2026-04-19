@@ -62,8 +62,8 @@ class InstagramScanner:
         seen = set()
         unique_candidates = []
         for c in candidates:
-            if c.url not in seen:
-                seen.add(c.url)
+            if c.source_url not in seen:
+                seen.add(c.source_url)
                 unique_candidates.append(c)
         
         logger.info(f"[InstagramScanner] Found {len(unique_candidates)} unique Reels")
@@ -188,9 +188,9 @@ class InstagramScanner:
                 edge_media_to_comment = node.get("edge_media_to_comment", {})
                 comments = edge_media_to_comment.get("count", 0)
                 
-                # Calculate engagement rate estimate
+                # Calculate engagement score estimate
                 views_estimate = total_likes * 20  # Rough estimate
-                engagement_rate = (total_likes + comments) / max(views_estimate, 1) if views_estimate else 0
+                engagement_score = (total_likes + comments) / max(views_estimate, 1) if views_estimate else 0
                 
                 # Get thumbnail
                 display_url = node.get("display_url", "")
@@ -213,15 +213,16 @@ class InstagramScanner:
                 candidate = ContentCandidate(
                     id=f"ig_{shortcode}",
                     platform="Instagram Reels",
-                    url=f"https://www.instagram.com/reel/{shortcode}/",
-                    author=username,
+                    source_url=f"https://www.instagram.com/reel/{shortcode}/",
+                    creator_name=username,
                     title=title,
                     view_count=views_estimate,
-                    engagement_rate=engagement_rate,
+                    like_count=total_likes,
+                    comment_count=comments,
+                    share_count=0,
+                    engagement_score=engagement_score,
                     thumbnail_url=thumbnail_url,
                     metadata={
-                        "likes": total_likes,
-                        "comments": comments,
                         "is_portrait": is_portrait,
                         "dimensions": f"{width}x{height}"
                     }

@@ -1,5 +1,5 @@
 import redis.asyncio as redis
-from src.api.config import settings
+from api.config import settings
 
 _redis_instance = None
 
