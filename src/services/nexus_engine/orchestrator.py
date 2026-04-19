@@ -1,7 +1,7 @@
 import os
 import logging
 import json
-from typing import Any
+from typing import Optional, Dict, List
 from pathlib import Path
 import os
 import asyncio
@@ -23,7 +23,7 @@ from tenacity import (
 )
 from services.video_engine.processor import base_video_processor
 from services.nexus_engine.audio_mixer import base_audio_mixer
-from typing import Any
+from typing import List, Dict, Any, Optional
 
 
 class CircuitBreaker:
@@ -73,8 +73,8 @@ class NexusOrchestrator:
             )
 
     async def _retry_remotion_render(
-        self, composition_id: str, props: dict, output_name: str
-    ) -> str | None:
+        self, composition_id: str, props: Dict, output_name: str
+    ) -> Optional[str]:
         """Retry wrapper for remotion render with exponential backoff"""
         if self.remotion_circuit_breaker.is_open():
             raise RuntimeError(
@@ -90,11 +90,11 @@ class NexusOrchestrator:
             reraise=True,
         )
         async def _render():
-            from services.video_engine.remotion_service import base_remotion_service
+            from services.video_engine.remotion_service import remotion_service
 
             try:
                 result = await asyncio.wait_for(
-                    base_remotion_service.render_video(
+                    remotion_service.render_video(
                         composition_id=composition_id,
                         props=props,
                         output_name=output_name,
@@ -117,26 +117,15 @@ class NexusOrchestrator:
         self,
         job_id: str,
         niche: str,
-        script_segments: list[Any],
-        voiceover_paths: list[str],
-        visual_paths: list[str],
-        music_path: str | None = None,
+        script_segments: List[Any],
+        voiceover_paths: List[str],
+        visual_paths: List[str],
+        music_path: Optional[str] = None,
         blueprint_id: str = "viral-reskin",
-        user_id: str | int | None = None,
     ) -> str:
         """
         High-fidelity video assembly using Remotion React engine with node-level tracking.
         Production-grade with retries, circuit breaking, timeouts, and telemetry.
-        
-        Args:
-            job_id: Unique job identifier
-            niche: Target niche for the video
-            script_segments: List of script segments with timing
-            voiceover_paths: List of voiceover audio file paths
-            visual_paths: List of visual/video file paths
-            music_path: Optional background music path
-            blueprint_id: Blueprint identifier for rendering
-            user_id: User ID for brand lookup (optional, for brand identity)
         """
         from api.routes.ws import notify_nexus_job_update_sync
         from services.nexus_engine.blueprints import get_blueprint_by_id
@@ -147,15 +136,16 @@ class NexusOrchestrator:
         start_time = time.time()
         self.logger.info(f"[Nexus] Starting assembly for Job {job_id}")
 
-        # Use a single db session for the entire operation to keep it in scope
-        async with async_session_factory() as db:
-            blueprint = await get_blueprint_by_id(db, blueprint_id)
+        try:
+            async with async_session_factory() as db:
+                blueprint = await get_blueprint_by_id(db, blueprint_id)
+
             self.logger.info(
                 f"[Nexus] Using blueprint: {blueprint['name']} for Job {job_id}"
             )
 
             def update_node(
-                node_type: str, status: str, progress: int, error: str | None = None
+                node_type: str, status: str, progress: int, error: Optional[str] = None
             ):
                 payload = {
                     "id": str(job_id),
@@ -217,7 +207,7 @@ class NexusOrchestrator:
 
             import cv2
 
-            def get_frame_count(path: str) -> int | None:
+            def get_frame_count(path: str) -> Optional[int]:
                 if not os.path.exists(path):
                     return None
                 try:
@@ -266,24 +256,9 @@ class NexusOrchestrator:
                 cta_props = {
                     "showCtaOverlay": True,
                     "ctaType": cta_segment.get("type"),
-                    "ctaText": cta_segment.get("text", "")[:50],
-                }
-
-            # Fetch active Brand Identity (only if user_id provided)
-            from services.branding.service import base_branding_service
-            brand_identity = None
-            brand_props = {}
-            if user_id:
-                try:
-                    brand_identity = await base_branding_service.get_active_brand(user_id, niche, db)
-                except Exception as e:
-                    self.logger.warning(f"[Nexus] Brand lookup failed: {e}")
-            
-            if brand_identity:
-                brand_props = {
-                    "trademarkUrl": brand_identity.logo_url,
-                    "brandName": brand_identity.brand_name,
-                    "primaryColor": brand_identity.primary_color
+                    "ctaText": cta_segment.get("text", "")[
+                        :50
+                    ],  # Keep it short for overlay
                 }
 
             audio_url = voiceover_paths[0] if voiceover_paths else music_path
@@ -296,7 +271,6 @@ class NexusOrchestrator:
                 "audioUrl": audio_url,
                 "jobId": job_id,
                 **cta_props,
-                **brand_props,
             }
 
             output_filename = f"nexus_{job_id}_{niche.replace(' ', '_')}.mp4"
@@ -329,7 +303,7 @@ class NexusOrchestrator:
             # 4. Egress Node - Final validation and cleanup
             update_node("egress", "ACTIVE", 95)
 
-            # Any: Post-processing, thumbnail generation, metadata extraction
+            # Optional: Post-processing, thumbnail generation, metadata extraction
             try:
                 cap = cv2.VideoCapture(rendered_path)
                 final_fps = cap.get(cv2.CAP_PROP_FPS)
