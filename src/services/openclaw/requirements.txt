@@ -18,3 +18,7 @@ cohere>=4.45
 sqlalchemy>=2.0.0
 aiosqlite>=0.19.0
 redis>=5.0.0
+celery
+pyyaml
+imageio_ffmpeg
+httpx
