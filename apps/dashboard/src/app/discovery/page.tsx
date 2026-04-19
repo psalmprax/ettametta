@@ -268,7 +268,7 @@ function DiscoveryContent() {
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    source_url: candidate.url,
+                    source_url: candidate.source_url,
                     niche: activeNiche,
                     platform: "YouTube Shorts",
                     style: selectedStyle,
@@ -1101,7 +1101,7 @@ function DiscoveryContent() {
                                                         animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                                                         transition={{ delay: idx * 0.08, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                                                         layout
-                                                        onClick={() => candidate.url && handleOpenUrl(candidate.url)}
+                                                        onClick={() => candidate.source_url && handleOpenUrl(candidate.source_url)}
                                                         className="p-10 px-12 flex flex-col lg:flex-row lg:items-center justify-between hover:bg-white/3 transition-all group relative overflow-hidden cursor-pointer"
                                                     >
                                                         {/* ... (existing candidate UI) */}
