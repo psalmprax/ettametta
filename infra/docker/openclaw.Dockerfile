@@ -55,6 +55,7 @@ COPY src/services/openclaw /app
 # Copy necessary sibling services for integration
 COPY src/services /app/services
 COPY src/api /app/api
+COPY src/shared /app/shared
 # Ensure __init__.py exists in services to make it a package
 RUN touch /app/services/__init__.py
 
