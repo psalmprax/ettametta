@@ -1079,11 +1079,11 @@ async def sync_content_metrics(
                 variant_a_views = new_views // 2
                 variant_b_views = new_views - variant_a_views
 
-                ab_test.variant_a_views = (
-                    ab_test.variant_a_views or 0
+                ab_test.variant_a_view_count = (
+                    ab_test.variant_a_view_count or 0
                 ) + variant_a_views
-                ab_test.variant_b_views = (
-                    ab_test.variant_b_views or 0
+                ab_test.variant_b_view_count = (
+                    ab_test.variant_b_view_count or 0
                 ) + variant_b_views
 
                 # Record conversion events based on engagement
@@ -1096,11 +1096,11 @@ async def sync_content_metrics(
                     # Simple heuristic: treat engagement as conversions
                     conversions_a = engagement_score // 2
                     conversions_b = engagement_score - conversions_a
-                    ab_test.variant_a_conversions = (
-                        ab_test.variant_a_conversions or 0
+                    ab_test.variant_a_conversion_count = (
+                        ab_test.variant_a_conversion_count or 0
                     ) + conversions_a
-                    ab_test.variant_b_conversions = (
-                        ab_test.variant_b_conversions or 0
+                    ab_test.variant_b_conversion_count = (
+                        ab_test.variant_b_conversion_count or 0
                     ) + conversions_b
 
         await db.commit()
@@ -1509,11 +1509,12 @@ async def publish_video(
             new_test = ABTestDB(
                 content_id=str(new_post.id),
                 variant_a_title=metadata.title,
-                variant_b_title=request.variant_b_title,
-                variant_a_views=0,
-                variant_b_views=0,
-                variant_a_conversions=0,
-                variant_b_conversions=0,
+                variant_a_view_count=0,
+                variant_b_view_count=0,
+                variant_a_click_count=0,
+                variant_b_click_count=0,
+                variant_a_conversion_count=0,
+                variant_b_conversion_count=0,
                 status="active",
             )
             db.add(new_test)

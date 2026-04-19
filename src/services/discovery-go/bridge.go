@@ -36,7 +36,7 @@ func (b *AIBridge) SendToPatternDeconstructor(candidate ScanResult) error {
 
 	payload, _ := json.Marshal(map[string]interface{}{
 		"id":            candidateID,
-		"url":           candidate.URL,
+		"source_url":    candidate.URL,
 		"niche":         candidate.Niche,
 		"velocity":      candidate.Velocity,
 		"thumbnail_url": candidate.ThumbnailURL,

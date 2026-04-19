@@ -10,8 +10,8 @@ from telegram.ext import (
     filters,
 )
 from api.config import settings
-from agent import OpenClawAgent
-from dispatcher import dispatcher
+from .agent import OpenClawAgent
+from .dispatcher import dispatcher
 import uvicorn
 from fastapi import FastAPI, BackgroundTasks, Request, Response
 from pydantic import BaseModel
