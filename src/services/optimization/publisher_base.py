@@ -294,5 +294,5 @@ class MetricsResponse(BaseModel):
     likes: int = 0
     comments: int = 0
     shares: int = 0
-    engagement_rate: float = 0.0
+    engagement_score: float = 0.0
     timestamp: str = None

@@ -2,7 +2,7 @@ import logging
 import json
 from typing import Any
 from groq import AsyncGroq
-from src.api.config import settings
+from api.config import settings
 
 class EmpireModeScheduler:
     def __init__(self):

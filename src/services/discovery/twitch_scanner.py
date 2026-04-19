@@ -53,8 +53,8 @@ class TwitchScanner:
         seen = set()
         unique = []
         for c in candidates:
-            if c.url not in seen:
-                seen.add(c.url)
+            if c.source_url not in seen:
+                seen.add(c.source_url)
                 unique.append(c)
         
         logger.info(f"[TwitchScanner] Found {len(unique)} clips")
@@ -178,7 +178,7 @@ class TwitchScanner:
                     views = view_count if view_count else 0
                 
                 # Calculate engagement estimate
-                engagement_rate = 0.05 if views > 1000 else 0.08
+                engagement_score = 0.05 if views > 1000 else 0.08
                 
                 # Get thumbnail
                 thumbnail = node.get("thumbnailURL", "") or node.get("thumbnail", {})
@@ -193,11 +193,14 @@ class TwitchScanner:
                     candidates.append(ContentCandidate(
                         id=f"twitch_{clip_id}",
                         platform="Twitch Clips",
-                        url=url,
-                        author=streamer,
+                        source_url=url,
+                        creator_name=streamer,
                         title=title[:100],
                         view_count=views,
-                        engagement_rate=engagement_rate,
+                        like_count=0,
+                        comment_count=0,
+                        share_count=0,
+                        engagement_score=engagement_score,
                         thumbnail_url=thumbnail,
                         metadata={"game": game, "niche": niche}
                     ))

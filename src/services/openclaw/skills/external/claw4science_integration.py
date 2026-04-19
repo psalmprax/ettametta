@@ -2,20 +2,32 @@ import logging
 import requests
 from typing import Any
 from groq import Groq
-from src.api.config import settings
+from api.config import settings
+
+from ..base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
-class Claw4ScienceSkill:
+class Claw4ScienceSkill(OpenClawBaseSkill):
     """
     Skill for transforming technical/academic data into "Science-Pop" viral scripts.
     Integrates with academic repositories and scientific summaries.
     """
     
     def __init__(self):
+        super().__init__()
         self.groq_client = Groq(api_key=settings.GROQ_API_KEY)
         # Use LANGCHAIN_MODEL as default or fallback to llama3-8b
         self.model = getattr(settings, "LANGCHAIN_MODEL", "llama-3.1-8b-instant")
+
+    def execute(self, action: str = "convert", topic: str = "", raw_data: str = "", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "trends":
+            return self.fetch_scientific_niche_trends(topic)
+            
+        return self.convert_technical_to_viral(raw_data, kwargs.get("platform", "TikTok"))
         
     def convert_technical_to_viral(self, raw_data: str, target_platform: str = "TikTok") -> str:
         """

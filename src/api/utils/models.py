@@ -15,6 +15,7 @@ from .user_models import UserDB, UserRole, SubscriptionTier
 from datetime import datetime
 import enum
 import uuid
+from shared.enums import SystemJobStatus
 
 
 class SystemSettings(Base):
@@ -80,7 +81,8 @@ class ContentCandidateDB(Base):
     description = Column(String, nullable=True)
     creator_name = Column(String, nullable=True)  # Channel/author name
     creator_id = Column(String, nullable=True)  # Channel/author ID
-    url = Column(String)
+    source_url = Column(String)  # Primary canonical URL
+    url = Column(String, nullable=True)  # Legacy - will be phased out
     thumbnail_url = Column(String, nullable=True)
 
     # Timing fields
@@ -99,8 +101,7 @@ class ContentCandidateDB(Base):
     )  # Legacy - platforms have different share metrics
 
     # Engagement and viral scoring
-    engagement_rate = Column(Float, default=0.0)  # Legacy
-    views = Column(Integer, default=0)
+    # 'views' removed - use view_count as the canonical field
     engagement_score = Column(Float, default=0.0)
     viral_score = Column(Integer, default=0)
 
@@ -165,7 +166,7 @@ class NicheTrendDB(Base):
     niche = Column(String, index=True)
     platform = Column(String)
     top_keywords = Column(JSON)  # ["keyword1", "keyword2"]
-    avg_engagement = Column(Float)
+    avg_engagement_score = Column(Float)
     viral_pattern_ids = Column(JSON)  # Reference to ViralPatternDB IDs
     last_updated = Column(
         DateTime,
@@ -183,17 +184,17 @@ class PublishedContentDB(Base):
     title = Column(String)
     platform = Column(String)
     status = Column(String)  # Published, Failed
-    url = Column(String, nullable=True)
+    source_url = Column(String, nullable=True)
     published_at = Column(DateTime, default=lambda: datetime.utcnow())
     account_id = Column(String(36), ForeignKey("social_accounts.id"), index=True)
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
     niche = Column(String, index=True, nullable=True)
 
-    # Metrics fields
+    # Metrics fields (Normalized to *_count)
     view_count = Column(Integer, default=0)
-    likes = Column(Integer, default=0)
-    shares = Column(Integer, default=0)
-    comments = Column(Integer, default=0)
+    like_count = Column(Integer, default=0)
+    share_count = Column(Integer, default=0)
+    comment_count = Column(Integer, default=0)
     retention_rate = Column(Float, default=0.0)
 
 
@@ -203,12 +204,17 @@ class VideoJobDB(Base):
     id = Column(String(36), primary_key=True, index=True)  # Task ID (UUID)
     title = Column(String)
     status = Column(
-        String
-    )  # Queued, Validating, Downloading, Analyzing, Strategizing, Rendering, Retrying, Completed, Failed, Failed - API Limit, etc.
+        Enum(SystemJobStatus, native_enum=False),
+        default=SystemJobStatus.QUEUED,
+        nullable=False,
+    )
     progress = Column(Integer, default=0)
     time_remaining = Column(String, nullable=True)
-    input_url = Column(String)
+    source_url = Column(String)
     output_path = Column(String, nullable=True)
+    generation_params = Column(
+        JSON, default=dict
+    )  # Stores original generation parameters for retry
     error_message = Column(String, nullable=True)  # Detailed error information
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
@@ -231,6 +237,48 @@ class MonitoredNiche(Base):
     last_scanned_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
     __table_args__ = (UniqueConstraint("user_id", "niche", name="uix_user_niche"),)
+
+
+class DiscoveryAlertDB(Base):
+    """User alerts for when new trending content is found in a niche"""
+
+    __tablename__ = "discovery_alerts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    niche = Column(String, index=True, nullable=False)
+    threshold = Column(Integer, default=7)  # viral_score threshold
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    __table_args__ = (
+        UniqueConstraint("user_id", "niche", name="uix_user_niche_alert"),
+    )
+
+
+class DiscoveryFavoriteDB(Base):
+    """User's favorite content candidates"""
+
+    __tablename__ = "discovery_favorites"
+
+    id = Column(
+        String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id = Column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    __table_args__ = (UniqueConstraint("user_id", "id", name="uix_user_favorite"),)
+
+
+class ScanHistoryDB(Base):
+    """History of user's discovery scans"""
+
+    __tablename__ = "scan_history"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    niche = Column(String, index=True)
+    status = Column(String, default="pending")  # pending, completed, failed
+    results_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
 
 class AffiliateLinkDB(Base):
@@ -256,7 +304,7 @@ class RevenueLogDB(Base):
     platform = Column(String, index=True)
     niche = Column(String, index=True)
     amount = Column(Float, default=0.0)
-    views = Column(Integer, default=0)
+    view_count = Column(Integer, default=0)
     date = Column(DateTime, default=lambda: datetime.utcnow())
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
 
@@ -282,8 +330,10 @@ class NexusJobDB(Base):
         String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
     )
     status = Column(
-        String, default="PENDING"
-    )  # PENDING, COMPOSING, RENDERING, COMPLETED, FAILED
+        Enum(SystemJobStatus, native_enum=False),
+        default=SystemJobStatus.PENDING,
+        nullable=False,
+    )  # Unified status tracking
     niche = Column(String)
     output_path = Column(String, nullable=True)
     progress = Column(Integer, default=0)
@@ -314,12 +364,12 @@ class ABTestDB(Base):
     variant_b_title = Column(String)
     variant_a_description = Column(String, nullable=True)
     variant_b_description = Column(String, nullable=True)
-    variant_a_views = Column(Integer, default=0)
-    variant_b_views = Column(Integer, default=0)
-    variant_a_clicks = Column(Integer, default=0)
-    variant_b_clicks = Column(Integer, default=0)
-    variant_a_conversions = Column(Integer, default=0)
-    variant_b_conversions = Column(Integer, default=0)
+    variant_a_view_count = Column(Integer, default=0)
+    variant_b_view_count = Column(Integer, default=0)
+    variant_a_click_count = Column(Integer, default=0)
+    variant_b_click_count = Column(Integer, default=0)
+    variant_a_conversion_count = Column(Integer, default=0)
+    variant_b_conversion_count = Column(Integer, default=0)
     target_metric = Column(String, default="views")  # views, clicks, conversions
     status = Column(String, default="active")  # active, completed, paused
     winner_variant = Column(String, nullable=True)  # 'A' or 'B'
@@ -593,10 +643,10 @@ class PerformanceSnapshotDB(Base):
         String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
     )
     content_id = Column(String(36), ForeignKey("published_content.id"), index=True)
-    views = Column(Integer, default=0)
-    likes = Column(Integer, default=0)
-    shares = Column(Integer, default=0)
-    comments = Column(Integer, default=0)
+    view_count = Column(Integer, default=0)
+    like_count = Column(Integer, default=0)
+    share_count = Column(Integer, default=0)
+    comment_count = Column(Integer, default=0)
     retention_rate = Column(Float, default=0.0)
     avg_duration = Column(Float, default=0.0)
     snapshot_at = Column(DateTime, default=lambda: datetime.utcnow())

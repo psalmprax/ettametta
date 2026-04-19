@@ -10,7 +10,7 @@ import json
 import os
 import logging
 from typing import Any
-from src.services.optimization.oracle_predictor import base_neural_oracle
+from services.optimization.oracle_predictor import base_neural_oracle
 
 logger = logging.getLogger(__name__)
 

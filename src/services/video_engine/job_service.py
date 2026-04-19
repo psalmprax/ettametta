@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import logging
 
-from src.api.utils.models import VideoJobDB
+from api.utils.models import VideoJobDB
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +32,13 @@ class VideoJobService:
         job = VideoJobDB(
             title=title,
             status=status,
-            input_url=prompt,
-            niche=niche,
+            source_url=prompt,
             user_id=user_id,
-            engine=engine,
-            style=style,
+            generation_params={
+                "engine": engine,
+                "style": style,
+                "niche": niche
+            }
         )
         self.db.add(job)
         await self.db.commit()

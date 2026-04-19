@@ -69,9 +69,9 @@ class UnifiedLLMService:
 
     def get_intelligence_report(self):
         """Returns status of agentic frameworks including the new Hermes Skill Engine."""
-        from src.services.langchain.service import _check_langchain_available
-        from src.services.crewai.service import _check_crewai_available
-        from src.services.hermes.service import base_hermes_service
+        from services.langchain.service import _check_langchain_available
+        from services.crewai.service import _check_crewai_available
+        from services.hermes.service import base_hermes_service
         
         lc_installed = _check_langchain_available()
         ca_installed = _check_crewai_available()

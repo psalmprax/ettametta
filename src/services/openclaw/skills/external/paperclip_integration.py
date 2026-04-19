@@ -2,17 +2,35 @@ import logging
 import asyncio
 from datetime import datetime, timedelta
 
+from ..base_skill import OpenClawBaseSkill
+
 logger = logging.getLogger(__name__)
 
-class PaperclipOrganicSkill:
+class PaperclipOrganicSkill(OpenClawBaseSkill):
     """
     Skill for Paperclip-style autonomous organic scaling and KPI monitoring.
     Focuses on "Cost-Free" ads through direct social posting and performance loops.
     """
     
     def __init__(self):
+        super().__init__()
         self.kpi_data = {}
         self.threshold_viral = 1000 # Minimum views to consider "scaling"
+
+    def execute(self, action: str = "track", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "scale":
+            return self.scale_organic_reach(kwargs.get("niche", "General"))
+        elif action == "decision":
+            return str(self.get_autonomous_decision())
+            
+        return self.track_organic_performance(
+            kwargs.get("job_id", "test_job"),
+            kwargs.get("platform", "tiktok"),
+            kwargs.get("metrics", {"views": 0, "likes": 0, "shares": 0})
+        )
         
     def track_organic_performance(self, job_id: str, platform: str, metrics: dict[str, int]) -> str:
         """
@@ -35,7 +53,7 @@ class PaperclipOrganicSkill:
             status = "🔥 VIRAL DETECTED"
             # TRIGGER HERMES REFLECTION
             try:
-                from src.services.hermes.service import base_hermes_service
+                from services.hermes.service import base_hermes_service
                 # In a real system, we'd fetch the job_data from DB here
                 # Mocking minimal job_data for reflection
                 mock_job_data = {

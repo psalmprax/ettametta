@@ -1,12 +1,12 @@
 import requests
 import logging
-from typing import Any
 from datetime import datetime, timedelta
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class DataIngestionSkill:
+class DataIngestionSkill(OpenClawBaseSkill):
     """
     Free multi-source data ingestion skill.
     Sources: RSS feeds, Reddit (public), YouTube (via RSS), GitHub trending.
@@ -14,7 +14,26 @@ class DataIngestionSkill:
     """
 
     def __init__(self):
+        super().__init__()
         self.reddit_url = "https://www.reddit.com"
+
+    def execute(self, action: str = "ingest", source: str = "", limit: int = 5, **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "reddit":
+            return self.reddit_hot(source, limit)
+        elif action == "rss":
+            return self.fetch_rss(source, limit)
+        elif action == "github":
+            return self.github_trending(source, timeframe=kwargs.get("timeframe", "daily"), limit=limit)
+        
+        # Multi-source fallback
+        sources = kwargs.get("sources", [])
+        if sources:
+            return self.ingest_multi_source(sources)
+            
+        return f"⚠️ Unsupported ingestion action: {action}"
 
     def fetch_rss(self, feed_url: str, limit: int = 5) -> str:
         """

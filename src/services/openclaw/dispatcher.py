@@ -1,6 +1,6 @@
 import logging
 import requests
-from src.api.config import settings
+from api.config import settings
 
 logger = logging.getLogger("MessageDispatcher")
 

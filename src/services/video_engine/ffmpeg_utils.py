@@ -10,8 +10,8 @@ import os
 import subprocess
 import logging
 from pathlib import Path
-from src.api.config import settings
-from src.services.infrastructure.resource_governor import base_resource_governor
+from api.config import settings
+from services.infrastructure.resource_governor import base_resource_governor
 
 class FFmpegTransformer:
     def __init__(self, threads: int | None = None, preset: str | None = None):

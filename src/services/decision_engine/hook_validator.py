@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any
 from groq import AsyncGroq
-from src.api.config import settings
+from api.config import settings
 
 class HookValidator:
     def __init__(self):

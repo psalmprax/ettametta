@@ -54,8 +54,8 @@ os.environ["GROQ_API_KEY"] = "test_groq_key"
 @pytest.fixture(scope="session")
 def test_db():
     """Create a test database."""
-    from src.api.utils.database import Base, engine
-    from src.api.utils import models, user_models  # Ensure models are registered
+    from api.utils.database import Base, engine
+    from api.utils import models, user_models  # Ensure models are registered
     
     # Create tables
     Base.metadata.create_all(bind=engine)
@@ -69,7 +69,7 @@ def test_db():
 @pytest.fixture
 def client(test_db):
     """Create a test client for the FastAPI app."""
-    from src.api.main import app
+    from api.main import app
     
     with TestClient(app) as test_client:
         yield test_client

@@ -16,7 +16,7 @@ class PersonaService:
         """
         # Try local voiceover service
         try:
-            from src.services.voiceover.service import voiceover_service
+            from services.voiceover.service import voiceover_service
 
             audio_path = await voiceover_service.generate_voiceover(text)
             if audio_path:

@@ -21,14 +21,31 @@ export const viralClipSchema = z.object({
         url: z.string(),
         durationInFrames: z.number(),
     })).optional(),
+    trademarkUrl: z.string().optional(),
+    brandName: z.string().optional(),
+    primaryColor: z.string().optional(),
 });
 
-export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({ title, subtitle, videoUrl, audioUrl, clips, timeline, showCtaOverlay, ctaType, ctaText }) => {
+export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({ 
+    title, subtitle, videoUrl, audioUrl, clips, timeline, 
+    showCtaOverlay, ctaType, ctaText,
+    trademarkUrl, brandName, primaryColor 
+}) => {
     const frame = useCurrentFrame();
     const { fps, durationInFrames } = useVideoConfig();
 
     const titleOpacity = interpolate(frame, [0, 20], [0, 1], {
         extrapolateRight: 'clamp',
+    });
+
+    const introOpacity = interpolate(frame, [0, 15, 45, 60], [0, 1, 1, 0], {
+        extrapolateRight: 'clamp',
+    });
+
+    const introScale = spring({
+        frame,
+        fps,
+        config: { damping: 12 }
     });
 
     // Show CTA in the last 2 seconds
@@ -47,6 +64,7 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({ title, su
     const resolvedVideoUrl = resolvePath(videoUrl);
     const resolvedClips = clips?.map(c => ({...c, url: resolvePath(c.url) || ''}));
     const resolvedAudioUrl = resolvePath(audioUrl);
+    const resolvedLogoUrl = resolvePath(trademarkUrl);
 
     return (
         <AbsoluteFill style={{ backgroundColor: 'black' }}>
@@ -69,7 +87,50 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({ title, su
             {/* 2. Audio Track */}
             {resolvedAudioUrl && <Audio src={resolvedAudioUrl} />}
 
-            {/* 3. Dynamic Timeline Captions (The 10/10 Polish) */}
+            {/* 3. Trademark Overlay (Intro Sting & Watermark) */}
+            {resolvedLogoUrl && (
+                <AbsoluteFill>
+                    {/* Intro Sting (0-2s) */}
+                    <Sequence from={0} durationInFrames={fps * 2}>
+                        <AbsoluteFill style={{ 
+                            justifyContent: 'center', 
+                            alignItems: 'center', 
+                            opacity: introOpacity,
+                            transform: `scale(${introScale})`
+                        }}>
+                            <div style={{ 
+                                backgroundColor: 'rgba(0,0,0,0.8)', 
+                                padding: '40px', 
+                                borderRadius: '30px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                border: `4px solid ${primaryColor || '#FFFFFF'}`
+                            }}>
+                                <img src={resolvedLogoUrl} style={{ width: '250px', height: '250px', borderRadius: '50%' }} />
+                                {brandName && <h1 style={{ 
+                                    color: 'white', 
+                                    fontSize: '60px', 
+                                    marginTop: '20px',
+                                    fontFamily: 'Arial Black'
+                                }}>{brandName}</h1>}
+                            </div>
+                        </AbsoluteFill>
+                    </Sequence>
+
+                    {/* Corner Watermark (Persistent) */}
+                    <AbsoluteFill style={{ 
+                        justifyContent: 'flex-start', 
+                        alignItems: 'flex-end',
+                        padding: '40px',
+                        opacity: 0.3
+                    }}>
+                        <img src={resolvedLogoUrl} style={{ width: '100px', height: '100px', borderRadius: '50%' }} />
+                    </AbsoluteFill>
+                </AbsoluteFill>
+            )}
+
+            {/* 4. Dynamic Timeline Captions (The 10/10 Polish) */}
             {!showCtaNow && timeline && timeline.map((seg, i) => (
                 <Sequence key={i} from={Math.floor(seg.start * fps)} durationInFrames={Math.floor(seg.duration * fps)}>
                     <AbsoluteFill style={{

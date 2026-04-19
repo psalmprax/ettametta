@@ -1,6 +1,6 @@
 from typing import Any
-from src.api.utils.database import async_session_factory
-from src.api.utils.credit_models import (
+from api.utils.database import async_session_factory
+from api.utils.credit_models import (
     UserCreditDB,
     CreditTransactionDB,
     CreditPackageDB,
@@ -8,14 +8,15 @@ from src.api.utils.credit_models import (
     CreditUsageRuleDB,
     SubscriptionCreditDB,
 )
-from src.api.utils.user_models import UserDB, SubscriptionTier
+from api.utils.user_models import UserDB, SubscriptionTier
+from api.utils.subscription import get_subscription_tier_value
 from datetime import datetime, timedelta, timezone
 import uuid
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from src.api.utils.database import get_db
+from api.utils.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +51,11 @@ class CreditService:
         "storytelling": 40,
     }
 
-    # Subscription monthly credits
+    # Subscription monthly credits - must match SubscriptionTier enum values
     SUBSCRIPTION_CREDITS = {
         "free": 0,
-        "creator": 50,
-        "empire": 200,
+        "basic": 50,
+        "premium": 200,
         "sovereign": 500,
         "studio": 1000,
     }
@@ -353,10 +354,10 @@ class CreditService:
         """Get credit cost for an action (may vary by tier)"""
         base_cost = self.DEFAULT_COSTS.get(action, 10)
 
-        # Apply tier discounts
+        # Apply tier discounts - must match SubscriptionTier enum values
         tier_discounts = {
-            "creator": 0.1,  # 10% off
-            "empire": 0.2,  # 20% off
+            "basic": 0.1,  # 10% off
+            "premium": 0.2,  # 20% off
             "sovereign": 0.3,  # 30% off
             "studio": 0.5,  # 50% off
         }
@@ -376,7 +377,7 @@ class CreditService:
         if not user:
             return False, "User not found"
 
-        tier = user.subscription.value if user.subscription else "free"
+        tier = get_subscription_tier_value(user)
         cost = self.get_action_cost(action, tier)
 
         if not await self.has_sufficient_credits(user_id, cost, db):

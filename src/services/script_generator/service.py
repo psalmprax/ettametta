@@ -3,8 +3,8 @@ import json
 import logging
 import time
 from typing import Any
-from src.services.llm.intelligence_hub import base_intelligence_hub
-from src.api.config import settings
+from services.llm.intelligence_hub import base_intelligence_hub
+from api.config import settings
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -58,7 +58,7 @@ class ScriptGenerator:
         # 1. Fetch crystallized winning patterns from Hermes
         hermes_context = ""
         try:
-            from src.services.hermes.service import base_hermes_service
+            from services.hermes.service import base_hermes_service
             skills = base_hermes_service.get_winning_context(niche)
             if skills:
                 patterns = [f"- {s['skill_name']}: {s['abstracted_pattern']}" for s in skills]

@@ -5,10 +5,12 @@ import re
 from typing import Any
 from playwright.async_api import async_playwright, Browser, Page
 
+from .base_skill import OpenClawBaseSkill
+
 logger = logging.getLogger(__name__)
 
 
-class ContentEditorSkill:
+class ContentEditorSkill(OpenClawBaseSkill):
     """
     AI Content Editor & Remixing Engine
 
@@ -25,8 +27,31 @@ class ContentEditorSkill:
     """
 
     def __init__(self):
+        super().__init__()
         self.browser: Browser | None = None
         self.page: Page | None = None
+
+    async def execute(self, action: str = "remix", **kwargs) -> str:
+        """
+        Execute content editing actions.
+        """
+        if action == "find":
+            res = await self.find_content(**kwargs)
+        elif action == "remix":
+            res = await self.create_viral_edit(
+                source=kwargs.get("source", "youtube"),
+                url_or_query=kwargs.get("query", ""),
+                niche=kwargs.get("niche", "motivation"),
+                style=kwargs.get("style", "fast"),
+            )
+        elif action == "polish":
+            res = await self.polish_with_remotion(**kwargs)
+        else:
+            return f"⚠️ Unknown action: {action}"
+
+        if res.get("status") == "success":
+            return f"✅ **Content Editor ({action})**\nResult: {res}"
+        return f"⚠️ Error: {res.get('error')}"
 
     async def initialize(self):
         """Initialize stealth browser session"""
@@ -241,7 +266,7 @@ class ContentEditorSkill:
         except Exception as e:
             return {"status": "failed", "error": str(e)}
 
-    def _detect_best_moments_auto(self, video_path: str, num_clips: int) -> list[dict]:
+    async def _detect_best_moments_auto(self, video_path: str, num_clips: int) -> list[dict]:
         """Detect best moments using AI heuristics"""
         clips = []
 
@@ -257,7 +282,7 @@ class ContentEditorSkill:
 
         return clips
 
-    def _detect_keywords(self, video_path: str, num_clips: int) -> list[dict]:
+    async def _detect_keywords(self, video_path: str, num_clips: int) -> list[dict]:
         """Detect keyword moments"""
         clips = []
 
@@ -275,7 +300,7 @@ class ContentEditorSkill:
 
         return clips
 
-    def _manual_selection(self, video_path: str, num_clips: int) -> list[dict]:
+    async def _manual_selection(self, video_path: str, num_clips: int) -> list[dict]:
         """Manual clip selection template"""
         clips = []
 
@@ -344,7 +369,7 @@ class ContentEditorSkill:
         except Exception as e:
             return {"status": "failed", "error": str(e)}
 
-    def _build_clip_filter(self, clips: list[dict]) -> str:
+    async def _build_clip_filter(self, clips: list[dict]) -> str:
         """Build FFmpeg filter for clip cutting"""
         return "trim=start=5:end=15,setpts=PTS-STARTPTS"
 
@@ -762,7 +787,7 @@ class ContentEditorSkill:
         """
         try:
             import subprocess
-            from src.api.config import settings
+            from api.config import settings
             remotion_path = str(settings.REMOTION_APP_DIR)
             props = props or {}
 

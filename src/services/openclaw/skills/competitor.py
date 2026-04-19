@@ -2,21 +2,33 @@ import json
 import logging
 import requests
 from datetime import datetime
-from src.api.config import settings
+from api.config import settings
 from .memory import memory_skill
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class CompetitorSkill:
-    def __init__(self):
-        self.api_url = f"{settings.API_URL}"
-
-    def _get_headers(self):
-        headers = {}
-        if settings.INTERNAL_API_TOKEN:
-            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-        return headers
+class CompetitorSkill(OpenClawBaseSkill):
+    def execute(
+        self,
+        action: str = "analyze",
+        channel_name: str = "",
+        platform: str = "YouTube",
+        competitors: list = None,
+        **kwargs,
+    ) -> str:
+        """
+        Standardized mission execution.
+        Routes to analyze or compare based on action.
+        """
+        mode = action or kwargs.get("mode", "analyze")
+        ch = channel_name or kwargs.get("channel_name", "")
+        plt = platform or kwargs.get("platform", "YouTube")
+        
+        if mode == "compare" and (competitors or kwargs.get("competitors")):
+            return self.compare_competitors(competitors or kwargs.get("competitors"))
+        return self.analyze_competitor(ch, plt)
 
     def analyze_competitor(self, channel_name: str, platform: str = "YouTube") -> str:
         try:
@@ -30,14 +42,14 @@ class CompetitorSkill:
             else:
                 return self._analyze_generic(channel_name, platform)
         except Exception as e:
-            logger.error(f"Competitor Analysis Error: {e}")
-            return f"⚠️ Analysis Error: {e}"
+            logger.error(f"Intelligent workflow skill error: {e}")
+            return f"⚠️ Error: {str(e)}"
 
     def _analyze_youtube(self, channel_name: str) -> str:
         try:
             resp = requests.get(
                 f"{self.api_url}/discovery/search",
-                params={"q": channel_name, "platform": "youtube", "limit": 10},
+                params={"query": channel_name, "platform": "youtube", "limit": 10},
                 headers=self._get_headers(),
                 timeout=10,
             )
@@ -46,6 +58,8 @@ class CompetitorSkill:
             videos = []
             if resp.status_code == 200:
                 results = resp.json()
+                if isinstance(results, dict):
+                    results = results.get("data", [])
                 if isinstance(results, list):
                     videos = results
                     if results:

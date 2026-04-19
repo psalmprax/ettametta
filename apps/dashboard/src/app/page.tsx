@@ -294,7 +294,7 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {activityFeed.map((activity, idx) => {
-                const activityUrl = activity.url || activity.input_url || activity.output_path;
+                const activityUrl = activity.url || activity.source_url || activity.output_path;
                 return (
                   <motion.div
                     key={activity.id}

@@ -8,7 +8,7 @@ Requires ~24GB VRAM.
 import torch
 import os
 import time
-from src.api.config import settings
+from api.config import settings
 import requests
 
 # Model cache

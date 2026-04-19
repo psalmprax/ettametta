@@ -41,6 +41,13 @@ export async function withRealFallback<T>(
                     throw new Error(`API Signal Failure: ${result.status} (${result.statusText})`);
                 }
                 const data = await result.json();
+                
+                // Real-First Unwrapping: If backend uses the success_response wrapper, unwrap it.
+                if (data && typeof data === 'object' && data.success === true && 'data' in data) {
+                    options.onSuccess?.(data.data);
+                    return data.data as T;
+                }
+
                 options.onSuccess?.(data);
                 return data as T;
             } else {

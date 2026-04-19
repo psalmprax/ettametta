@@ -34,7 +34,7 @@ class BlogSEOService:
         Returns:
             dict with title, content, meta description, keywords
         """
-        from src.api.config import settings
+        from api.config import settings
 
         keywords = self._generate_keywords(topic)
         title = self._generate_title(topic, content_type)
@@ -115,7 +115,7 @@ Format as:
             "generated_at": datetime.now().isoformat(),
         }
 
-    def _generate_keywords(self, topic: str) -> list[str]:
+    async def _generate_keywords(self, topic: str) -> list[str]:
         """Generate SEO keywords for topic."""
         base = topic.lower().strip()
         keywords = [
@@ -130,7 +130,7 @@ Format as:
         ]
         return keywords[:8]
 
-    def _generate_title(self, topic: str, content_type: str) -> str:
+    async def _generate_title(self, topic: str, content_type: str) -> str:
         """Generate SEO title."""
         templates = {
             "blog": [
@@ -151,7 +151,7 @@ Format as:
         options = templates.get(content_type, templates["blog"])
         return random.choice(options)
 
-    def _generate_meta_description(self, topic: str, word_count: int) -> str:
+    async def _generate_meta_description(self, topic: str, word_count: int) -> str:
         """Generate meta description (under 160 chars)."""
         templates = [
             f"Learn everything about {topic}. Complete guide with tips, tricks, and expert insights.",
@@ -162,7 +162,7 @@ Format as:
         desc = random.choice(templates)
         return desc[:158] + ".." if len(desc) > 160 else desc
 
-    def _structure_content(self, topic: str, content_type: str, word_count: int) -> str:
+    async def _structure_content(self, topic: str, content_type: str, word_count: int) -> str:
         """Generate structured content."""
         sections = [
             f"## Introduction\n\nWelcome to our complete guide on {topic}. In this article, we'll cover everything you need to know.",
@@ -175,7 +175,7 @@ Format as:
 
         return "\n\n".join(sections[:4])
 
-    def _generate_headings(self, topic: str) -> list[str]:
+    async def _generate_headings(self, topic: str) -> list[str]:
         """Generate section headings."""
         return [
             f"What is {topic}?",
@@ -199,7 +199,7 @@ class TradingViewService:
 
     async def get_market_overview(self) -> dict[str, Any]:
         """Get comprehensive market overview using Alpha Vantage and CoinGecko."""
-        from src.api.config import settings
+        from api.config import settings
 
         overview = {
             "us_market": {"status": "available", "indices": []},
@@ -251,7 +251,7 @@ class TradingViewService:
 
         return overview
 
-    def get_chart_embed(self, symbol: str, interval: str = "1D") -> str:
+    async def get_chart_embed(self, symbol: str, interval: str = "1D") -> str:
         """Get TradingView chart embed URL for a symbol."""
         return f"https://www.tradingview.com/widget/{symbol.replace(':', '-')}/"
 
@@ -276,7 +276,7 @@ class BacktestService:
             start_date: Start date (YYYY-MM-DD)
             end_date: End date (YYYY-MM-DD)
         """
-        from src.services.trading.service import trading_service
+        from services.trading.service import trading_service
         from datetime import datetime
 
         # Get historical data
@@ -304,7 +304,7 @@ class BacktestService:
         else:
             return {"error": f"Unknown strategy: {strategy}"}
 
-    def _backtest_ma(self, closes: list[float], data: list[dict]) -> dict[str, Any]:
+    async def _backtest_ma(self, closes: list[float], data: list[dict]) -> dict[str, Any]:
         """Backtest simple moving average crossover strategy."""
         initial_balance = 10000
         position = 0
@@ -391,7 +391,7 @@ class BacktestService:
             "trades": trades[-10:],  # Last 10 trades
         }
 
-    def _backtest_momentum(
+    async def _backtest_momentum(
         self, closes: list[float], data: list[dict]
     ) -> dict[str, Any]:
         """Backtest momentum strategy."""
@@ -440,7 +440,7 @@ class BacktestService:
             "sharpe_ratio": "N/A (requires longer period)",
         }
 
-    def _backtest_mean_reversion(
+    async def _backtest_mean_reversion(
         self, closes: list[float], data: list[dict]
     ) -> dict[str, Any]:
         """Backtest mean reversion strategy."""

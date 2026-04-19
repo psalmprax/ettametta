@@ -268,7 +268,7 @@ async def test_video_editor_quality():
                 {
                     "title": "Top 10 AI Tools for 2024",
                     "views": 500000,
-                    "engagement_rate": 6.5,
+                    "engagement_score": 6.5,
                     "content_type": "list",
                     "duration": 480,
                 },
@@ -279,7 +279,7 @@ async def test_video_editor_quality():
                 {
                     "title": "How to Use ChatGPT Effectively",
                     "views": 750000,
-                    "engagement_rate": 8.2,
+                    "engagement_score": 8.2,
                     "content_type": "educational",
                     "duration": 720,
                 },

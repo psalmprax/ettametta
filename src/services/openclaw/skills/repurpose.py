@@ -1,15 +1,30 @@
 import requests
 import logging
-from src.api.config import settings
+from api.config import settings
+
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class RepurposeSkill:
+class RepurposeSkill(OpenClawBaseSkill):
     def __init__(self):
+        super().__init__()
         self.api_url = f"{settings.API_URL}"
 
-    def _get_headers(self):
+    def execute(self, action: str = "analyze", source_url: str = None, **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if not source_url:
+            return "⚠️ source_url is required for Repurpose skill."
+            
+        if action == "analyze":
+            return self.analyze_repurpose_potential(source_url)
+        elif action == "transform":
+            return self.trigger_repurpose_job(source_url, kwargs.get("target_platform", "TikTok"))
+            
+        return f"⚠️ Unknown action for Repurpose: {action}"
         headers = {}
         if settings.INTERNAL_API_TOKEN:
             headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
@@ -30,7 +45,8 @@ class RepurposeSkill:
             if resp.status_code != 200:
                 return f"⚠️ Could not fetch jobs: {resp.status_code}"
 
-            jobs = resp.json()
+            jobs_raw = resp.json()
+            jobs = jobs_raw.get("jobs", []) if isinstance(jobs_raw, dict) else jobs_raw
             source_job = None
             for job in jobs:
                 if job.get("id") == source_job_id or job.get("job_id") == source_job_id:
@@ -101,7 +117,7 @@ class RepurposeSkill:
 
                 payload = {
                     "action": "transform",
-                    "input_url": source_url,
+                    "source_url": source_url,
                     "prompt": f"Repurpose '{source_title}' for {platform}. "
                     f"Format: {adapt['aspect']}, max {adapt['max_duration']}s, style: {adapt['style']}. "
                     f"Adapt hook and pacing for {platform} audience.",

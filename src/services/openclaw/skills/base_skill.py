@@ -1,0 +1,31 @@
+import logging
+from abc import ABC, abstractmethod
+from api.config import settings
+
+logger = logging.getLogger(__name__)
+
+class OpenClawBaseSkill(ABC):
+    """
+    Base class for all OpenClaw/CashClaw Official Skills.
+    Enforces the mission-based pattern for workforce operations.
+    """
+    def __init__(self):
+        self.api_url = getattr(settings, "API_URL", "http://api:7001")
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    def _get_headers(self) -> dict:
+        """Standardized authorization headers for internal OpenClaw routing."""
+        headers = {}
+        token = getattr(settings, "INTERNAL_API_TOKEN", None)
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        return headers
+
+    @abstractmethod
+    def execute(self, *args, **kwargs) -> str:
+        """
+        Execute the primary mission of the skill.
+        Must be implemented by all subclasses.
+        Returns a formatted markdown string of the execution result.
+        """
+        pass

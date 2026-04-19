@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.api.utils.models import BlueprintDB
+from api.utils.models import BlueprintDB
 
 # Legacy hardcoded fallback for safety during transition
 FALLBACK_BLUEPRINTS = [
@@ -84,7 +84,7 @@ async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
     This provides the missing blueprint execution engine.
     """
     import logging
-    from src.api.routes.ws import notify_nexus_job_update_sync
+    from api.routes.ws import notify_nexus_job_update_sync
 
     logger = logging.getLogger(__name__)
     results = {}
@@ -172,7 +172,7 @@ def _execute_ingress_node(inputs: dict) -> dict:
 
 async def _execute_cognition_node(inputs: dict, ingress_result: dict) -> dict:
     """Execute AI cognition/processing node."""
-    from src.api.config import settings
+    from api.config import settings
 
     # Use AI for content analysis and processing
     if settings.GROQ_API_KEY:
@@ -207,7 +207,7 @@ async def _execute_cognition_node(inputs: dict, ingress_result: dict) -> dict:
 
 async def _execute_synthesis_node(inputs: dict, previous_results: dict) -> dict:
     """Execute content synthesis node using real AI models."""
-    from src.services.video_engine.synthesis_service import GenerativeService
+    from services.video_engine.synthesis_service import GenerativeService
     import logging
 
     logger = logging.getLogger(__name__)

@@ -16,9 +16,9 @@ from pathlib import Path
 import os
 import json
 
-from src.services.discovery.video_lead_scanner import video_lead_scanner
-from src.services.video_engine.processor import VideoProcessor
-from src.services.monetization.service import MonetizationEngine
+from services.discovery.video_lead_scanner import video_lead_scanner
+from services.video_engine.processor import VideoProcessor
+from services.monetization.service import MonetizationEngine
 
 logger = logging.getLogger(__name__)
 

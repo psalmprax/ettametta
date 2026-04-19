@@ -3,8 +3,8 @@ import logging
 import os
 import uuid
 from pathlib import Path
-from src.services.storage.service import base_storage_service
-from src.api.config import settings
+from services.storage.service import base_storage_service
+from api.config import settings
 
 class ThumbnailGenerator:
     def __init__(self, output_dir: str = "outputs/thumbnails"):

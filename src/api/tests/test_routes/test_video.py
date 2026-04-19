@@ -32,7 +32,7 @@ class TestVideoTransformation:
     def test_transform_requires_auth(self, client: TestClient):
         """Test that transform endpoint requires authentication."""
         response = client.post("/video/transform", json={
-            "input_url": "https://example.com/video.mp4",
+            "source_url": "https://example.com/video.mp4",
             "niche": "Technology",
             "platform": "YouTube Shorts"
         })
@@ -47,7 +47,7 @@ class TestVideoTransformation:
         response = client.post(
             "/video/transform",
             json={
-                "input_url": "https://example.com/video.mp4",
+                "source_url": "https://example.com/video.mp4",
                 "niche": "Technology",
                 "platform": "YouTube Shorts",
                 "quality_tier": "standard"
@@ -68,7 +68,7 @@ class TestVideoTransformation:
         response = client.post(
             "/video/transform",
             json={
-                "input_url": "https://example.com/video.mp4",
+                "source_url": "https://example.com/video.mp4",
                 "niche": "Motivation",
                 "platform": "TikTok",
                 "style": "Cinematic"
@@ -78,8 +78,8 @@ class TestVideoTransformation:
         
         assert response.status_code == 200
     
-    def test_transform_missing_input_url(self, client: TestClient, auth_token):
-        """Test transformation with missing input URL."""
+    def test_transform_missing_source_url(self, client: TestClient, auth_token):
+        """Test transformation with missing source URL."""
         response = client.post(
             "/video/transform",
             json={

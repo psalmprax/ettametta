@@ -2,7 +2,7 @@ import httpx
 import os
 import logging
 import random
-from src.api.utils.vault import get_secret
+from api.utils.vault import get_secret
 
 class StockService:
     def __init__(self):

@@ -2,24 +2,33 @@ import json
 import logging
 import requests
 from datetime import datetime
-from src.api.config import settings
+from api.config import settings
 from .memory import memory_skill
+
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class NotificationSkill:
+class NotificationSkill(OpenClawBaseSkill):
     def __init__(self):
+        super().__init__()
         self.api_url = f"{settings.API_URL}"
         self.notification_log: list[dict] = []
         self.webhooks: dict[str, str] = {}
         self.alert_rules: list[dict] = []
 
-    def _get_headers(self):
-        headers = {}
-        if settings.INTERNAL_API_TOKEN:
-            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-        return headers
+    def execute(self, action: str = "notify", channel: str = "telegram", message: str = "", priority: str = "normal", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        if action == "log":
+            return self.get_notification_log()
+        elif action == "setup":
+            return self.setup_default_alerts()
+            
+        return self.send_notification(channel, message, priority, kwargs.get("metadata"))
+
 
     def send_notification(
         self,

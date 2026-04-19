@@ -5,8 +5,8 @@ import logging
 import json
 import httpx
 import base64
-from src.api.utils.vault import get_secret
-from src.api.config import settings
+from api.utils.vault import get_secret
+from api.config import settings
 
 class VLMService:
     def __init__(self):

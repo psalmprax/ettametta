@@ -63,7 +63,7 @@ class CrewAIService:
 
     def hot_reload(self):
         """Re-initialize service from current environment/settings."""
-        from src.api.config import settings
+        from api.config import settings
         
         self.enabled = settings.ENABLE_CREWAI
         if not self.enabled:
@@ -202,7 +202,15 @@ class CrewAIService:
                     ))
             
             # 4. Run Crew
-            crew = Crew(agents=list(agents_map.values()), tasks=tasks, verbose=True)
+            from crewai import Process
+            crew = Crew(
+                agents=list(agents_map.values()), 
+                tasks=tasks, 
+                verbose=True,
+                memory=True,
+                process=Process.hierarchical,
+                manager_llm=self.llm
+            )
             result = crew.kickoff()
             
             self.circuit_breaker.record_success()

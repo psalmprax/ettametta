@@ -11,7 +11,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         """
         Get lead magnet assets for the given niche.
         """
-        from src.api.config import settings
+        from api.config import settings
         return [{
             "id": "newsletter",
             "name": "Weekly Newsletter",
@@ -28,7 +28,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         """
         Subscribes a lead to the configured email marketing service.
         """
-        from src.api.config import settings
+        from api.config import settings
         import httpx
         import hashlib
 
@@ -74,7 +74,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         Generate a call-to-action for lead capture.
         """
         # In a real setup, we would call an AI worker to generate this
-        from src.api.utils.os_worker import ai_worker
+        from api.utils.os_worker import ai_worker
         prompt = f"Generate a short viral video CTA for a {niche} lead magnet. Context: {context}. Max 10 words."
         
         try:

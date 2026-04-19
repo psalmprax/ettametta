@@ -15,7 +15,7 @@ import torch
 import os
 import time
 import requests
-from src.api.config import settings
+from api.config import settings
 
 # Model cache
 _ltx_pipe = None

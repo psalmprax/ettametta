@@ -19,8 +19,8 @@ from datetime import datetime
 from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from src.api.utils.database import async_session_factory
-from src.api.utils.models import (
+from api.utils.database import async_session_factory
+from api.utils.models import (
     TradingPortfolioDB,
     TradingPositionDB,
     TradingAlertDB,
@@ -105,7 +105,7 @@ class TradingService:
     """
 
     def __init__(self):
-        from src.api.config import settings
+        from api.config import settings
 
         self.enabled = settings.ENABLE_TRADING
         self.alpha_vantage_key = settings.ALPHA_VANTAGE_API_KEY
@@ -135,7 +135,7 @@ class TradingService:
 
         if not portfolio:
             # Hardened: No simulated 10k wealth. Balance starts at 0.0 unless configured.
-            from src.api.config import settings
+            from api.config import settings
 
             initial_balance = getattr(settings, "TRADING_INITIAL_BALANCE", 0.0)
             portfolio = TradingPortfolioDB(

@@ -46,7 +46,7 @@ class AutomatedVideoEditorTest:
             "platforms": ["youtube"],
             "quality_thresholds": {
                 "min_views": 10000,
-                "min_engagement_rate": 2.0,
+                "min_engagement_score": 2.0,
                 "min_viral_score": 6.0
             }
         }
@@ -318,7 +318,7 @@ class AutomatedVideoEditorTest:
                 "views": 150000,
                 "likes": 8500,
                 "comments": 1200,
-                "engagement_rate": 6.2,
+                "engagement_score": 6.2,
                 "viral_score": 8.1,
                 "content_type": "educational",
                 "duration": 480,
@@ -331,7 +331,7 @@ class AutomatedVideoEditorTest:
                 "views": 230000,
                 "likes": 12400,
                 "comments": 890,
-                "engagement_rate": 5.8,
+                "engagement_score": 5.8,
                 "viral_score": 7.9,
                 "content_type": "educational",
                 "duration": 360,
@@ -344,7 +344,7 @@ class AutomatedVideoEditorTest:
                 "views": 98000,
                 "likes": 5200,
                 "comments": 650,
-                "engagement_rate": 6.0,
+                "engagement_score": 6.0,
                 "viral_score": 7.2,
                 "content_type": "review",
                 "duration": 420,
@@ -358,7 +358,7 @@ class AutomatedVideoEditorTest:
             "video_id": video["video_id"],
             "content_relevance": 8.5,
             "production_quality": 7.8,
-            "engagement_potential": video["engagement_rate"],
+            "engagement_potential": video["engagement_score"],
             "technical_score": 8.2,
             "content_score": 8.0,
             "virality_potential": video["viral_score"],
@@ -557,7 +557,7 @@ async def main():
     if results["quality_metrics"]:
         quality = results["quality_metrics"]
         print("\n📈 QUALITY METRICS:")
-        print(".1f"
+        print(f"   • Overall score: {quality['overall_score']:.1f}/10")
         print(f"   • Grade: {quality.get('quality_grade', 'N/A')}")
 
     print("\n💡 RECOMMENDATIONS:")

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.api.utils.database import get_db
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB
+from api.utils.database import get_db
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB
 import logging
 
 router = APIRouter(prefix="/content-editor", tags=["Content Editor"])
@@ -48,7 +48,7 @@ async def find_content(
     Find content from YouTube, TikTok, or Reddit for remixing.
     """
     try:
-        from src.services.openclaw.skills.content_editor import content_editor_skill
+        from services.openclaw.skills.content_editor import content_editor_skill
 
         result = await content_editor_skill.find_content(
             source=body.source,
@@ -74,7 +74,7 @@ async def create_viral_edit(
     Create viral content: find → cut → remix → polish with Remotion.
     """
     try:
-        from src.services.openclaw.skills.content_editor import content_editor_skill
+        from services.openclaw.skills.content_editor import content_editor_skill
 
         result = await content_editor_skill.create_viral_with_remotion(
             source=body.source,

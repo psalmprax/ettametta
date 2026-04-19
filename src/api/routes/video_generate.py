@@ -1,21 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.api.utils.database import get_db
-from src.api.utils.models import VideoJobDB
-from src.api.routes.auth import get_current_user
-from src.api.utils.user_models import UserDB, SubscriptionTier
-from src.api.utils.subscription import (
+from api.utils.database import get_db
+from shared.enums import SystemJobStatus
+from api.utils.models import VideoJobDB
+from api.routes.auth import get_current_user
+from api.utils.user_models import UserDB, SubscriptionTier
+from api.utils.subscription import (
     subscription_required,
     check_daily_limit,
     engine_access_required,
     credits_required,
 )
-from src.services.video_engine.tasks import generate_video_task, generate_story_task
-from src.services.video_engine.synthesis_service import base_generative_service
-from src.services.payment.credit_service import credit_service
-from src.api.utils.limiter import limiter
-from src.api.utils.audit_service import audit_service
+from services.video_engine.tasks import generate_video_task, generate_story_task
+from services.video_engine.synthesis_service import base_generative_service
+from services.payment.credit_service import credit_service
+from api.utils.limiter import limiter
+from api.utils.audit_service import audit_service
+from api.utils.api_responses import success_response
 import logging
 
 router = APIRouter(prefix="/video", tags=["Video Generation"])
@@ -51,7 +53,7 @@ async def generate_single_video(
         await engine_access_required(body.engine)(current_user)
         await check_daily_limit(current_user, db)
 
-        from src.api.config.engine_config import (
+        from api.config.engine_config import (
             ENGINE_TO_ACTION,
             get_credit_action,
             DEFAULT_ENGINE,
@@ -87,18 +89,25 @@ async def generate_single_video(
         )
 
         if not success:
-            from src.api.utils.celery import celery_app
+            from api.utils.celery import celery_app
 
             celery_app.control.revoke(task.id, terminate=True)
-            raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
+            raise HTTPException(status_code=402, detail="Insufficient credits for this operation")
 
         # 3. Create Job
         new_job = VideoJobDB(
             id=task.id,
             title=f"AI Synthesis - {body.engine}",
-            status="Queued",
+            status=SystemJobStatus.QUEUED,
             progress=0,
-            input_url="Generation Prompt",
+            source_url="Generation Prompt",
+            generation_params={
+                "prompt": body.prompt,
+                "engine": body.engine,
+                "style": body.style,
+                "aspect_ratio": body.aspect_ratio,
+                "custom_image_url": body.custom_image_url,
+            },
             user_id=current_user.id,
         )
         db.add(new_job)
@@ -113,7 +122,7 @@ async def generate_single_video(
             db=db,
         )
 
-        return {"message": "Generation started", "task_id": task.id}
+        return success_response(data={"message": "Generation started", "task_id": task.id})
 
     except HTTPException:
         raise
@@ -154,7 +163,7 @@ async def start_story_generation(
         )
 
         if not success:
-            from src.api.utils.celery import celery_app
+            from api.utils.celery import celery_app
 
             celery_app.control.revoke(task.id, terminate=True)
             raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
@@ -163,7 +172,12 @@ async def start_story_generation(
         new_job = VideoJobDB(
             id=task.id,
             title=f"Storytelling - {body.style}",
-            status="Queued",
+            status=SystemJobStatus.QUEUED,
+            generation_params={
+                "prompt": body.prompt,
+                "engine": body.engine,
+                "style": body.style,
+            },
             user_id=current_user.id,
         )
         db.add(new_job)
@@ -199,7 +213,7 @@ async def retry_failed_job(
     """
     try:
         # Find the job
-        from src.api.utils.models import VideoJobDB
+        from api.utils.models import VideoJobDB
         from sqlalchemy import select
 
         stmt = select(VideoJobDB).where(
@@ -212,7 +226,11 @@ async def retry_failed_job(
             raise HTTPException(status_code=404, detail="Job not found")
 
         # Check if job can be retried
-        if not job.status.startswith("Failed"):
+        if job.status == SystemJobStatus.FAILED:
+            pass # Continue to retry
+        elif isinstance(job.status, str) and job.status.startswith("Failed"):
+            pass # Backward compatibility for string status
+        else:
             raise HTTPException(
                 status_code=400,
                 detail=f"Job is not in a failed state (current: {job.status})",
@@ -225,43 +243,42 @@ async def retry_failed_job(
             )
 
         # Determine which task type to retry
+        params = job.generation_params or {}
         if "AI Synthesis" in job.title:
             # Retry generate_video_task
-            from src.services.video_engine.tasks import generate_video_task
+            from services.video_engine.tasks import generate_video_task
 
-            # We need to extract parameters from the job or use defaults
-            # For now, use basic retry with stored parameters if available
-            # This is a simplified version - in production, store task args
             task = generate_video_task.delay(
-                prompt="Retried synthesis",  # Would need to store original prompt
-                engine="veo3",
-                style="Cinematic",
-                aspect_ratio="9:16",
+                prompt=params.get("prompt", "Retried synthesis"),
+                engine=params.get("engine", "veo3"),
+                style=params.get("style", "Cinematic"),
+                aspect_ratio=params.get("aspect_ratio", "9:16"),
                 user_id=current_user.id,
+                custom_image_url=params.get("custom_image_url"),
             )
         elif "Storytelling" in job.title:
             # Retry generate_story_task
-            from src.services.video_engine.tasks import generate_story_task
+            from services.video_engine.tasks import generate_story_task
 
             task = generate_story_task.delay(
-                prompt="Retried story",
-                engine="veo3",
-                style="Cinematic",
+                prompt=params.get("prompt", "Retried story"),
+                engine=params.get("engine", "veo3"),
+                style=params.get("style", "Cinematic"),
                 user_id=current_user.id,
             )
         else:
             # Retry download_and_process_task
-            from src.services.video_engine.tasks import download_and_process_task
+            from services.video_engine.tasks import download_and_process_task
 
             task = download_and_process_task.delay(
-                source_url=job.input_url,
-                niche="general",  # Would need to store original niche
+                source_url=job.source_url,
+                niche=params.get("niche", "general"),
                 platform="YouTube Shorts",
                 preview_only=False,
             )
 
         # Update job status
-        job.status = "Queued"
+        job.status = SystemJobStatus.QUEUED
         job.progress = 0
         job.error_message = None
         await db.commit()

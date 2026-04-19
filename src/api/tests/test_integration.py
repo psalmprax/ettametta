@@ -84,7 +84,7 @@ class TestVideoIntegration:
             f"{BASE_URL}/api/v1/video/transform",
             headers={"Authorization": f"Bearer {token}"},
             json={
-                "input_url": "https://youtube.com/shorts/test",
+                "source_url": "https://youtube.com/shorts/test",
                 "niche": "Motivation",
             },
         )

@@ -18,8 +18,8 @@ import logging
 import time
 from typing import Any
 from datetime import datetime
-from src.api.utils.redis import get_redis
-from src.services.infrastructure.resilience_metrics import (
+from api.utils.redis import get_redis
+from services.infrastructure.resilience_metrics import (
     chaos_faults_injected,
     chaos_scenarios_run,
     chaos_active,

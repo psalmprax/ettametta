@@ -1,21 +1,45 @@
 import requests
 import logging
 import re
-from typing import Any
+from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 
-class SocialMetricsSkill:
+class SocialMetricsSkill(OpenClawBaseSkill):
     """
     Free social media metrics skill using web scraping (no API keys required).
     Note: May be limited by rate limiting and anti-bot protection.
     """
 
     def __init__(self):
+        super().__init__()
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
+
+    def execute(self, action: str = "scan", platform: str = "", handle: str = "", **kwargs) -> str:
+        """
+        Polymorphic entry point for OpenClaw agent.
+        """
+        plt = (platform or kwargs.get("platform", "")).lower()
+        hdl = handle or kwargs.get("handle", "")
+        
+        if plt == "x":
+            return self.get_x_followers(hdl)
+        elif plt == "reddit":
+            return self.get_reddit_stats(hdl)
+        elif plt == "github":
+            return self.get_github_stats(hdl)
+        elif plt == "instagram":
+            return self.get_instagram_profile(hdl)
+        
+        # Multi-platform fallback
+        handles = kwargs.get("handles", {})
+        if handles:
+            return self.get_multi_platform(handles)
+            
+        return f"⚠️ Unsupported platform: {plt}"
 
     def get_x_followers(self, username: str) -> str:
         """

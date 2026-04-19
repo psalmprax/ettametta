@@ -10,6 +10,7 @@ from typing import Any
 import logging
 import asyncio
 
+from .base_skill import OpenClawBaseSkill
 from services.video_engine.video_production_assistant import (
     base_video_production_assistant,
 )
@@ -18,67 +19,50 @@ from services.discovery.video_lead_scanner import video_lead_scanner
 logger = logging.getLogger(__name__)
 
 
-class VideoProductionAssistantSkill:
+class VideoProductionAssistantSkill(OpenClawBaseSkill):
     """
     OpenClaw skill for generating manual video editing instructions and templates.
     Provides professional editing guidance from automated production plans.
     """
 
     def __init__(self):
+        super().__init__()
         self.name = "base_video_production_assistant"
         self.description = "Generate detailed editing instructions, templates, and guides for manual video production"
 
-    async def execute(self, params: dict[str, Any]) -> dict[str, Any]:
+    async def execute(self, action: str = "assist", **kwargs) -> str:
         """
-        Execute video production assistance operations.
-
-        Supported actions:
-        - generate_instructions: Create detailed editing instructions
-        - create_premiere_template: Generate Adobe Premiere project template
-        - create_capcut_template: Generate CapCut project template
-        - generate_ffmpeg_commands: Create FFmpeg command sequences
-        - create_resolve_script: Generate DaVinci Resolve automation script
-        - full_production_assistance: Complete production assistance package
-
-        Args:
-            params: Parameters for video production assistance
-                - action: Action to perform
-                - production_plan: Complete production plan (for most actions)
-                - scenes: Scene descriptions (alternative to production_plan)
-                - niche: Content niche
-                - output_format: Template format (premiere, capcut, resolve)
+        Execute video production assistance actions.
         """
-        action = params.get("action", "generate_instructions")
+        # If action is 'assist', map to 'full_production_assistance' or similar
+        act = action
+        if act == "assist":
+            act = "full_production_assistance"
+            
+        params = {"action": act, **kwargs}
 
         try:
-            if action == "generate_instructions":
-                return await self._generate_editing_instructions(params)
-            elif action == "create_premiere_template":
-                return await self._create_premiere_template(params)
-            elif action == "create_capcut_template":
-                return await self._create_capcut_template(params)
-            elif action == "generate_ffmpeg_commands":
-                return await self._generate_ffmpeg_commands(params)
-            elif action == "create_resolve_script":
-                return await self._create_resolve_script(params)
-            elif action == "full_production_assistance":
-                return await self._full_production_assistance(params)
+            if act == "generate_instructions":
+                res = await self._generate_editing_instructions(params)
+            elif act == "create_premiere_template":
+                res = await self._create_premiere_template(params)
+            elif act == "create_capcut_template":
+                res = await self._create_capcut_template(params)
+            elif act == "generate_ffmpeg_commands":
+                res = await self._generate_ffmpeg_commands(params)
+            elif act == "create_resolve_script":
+                res = await self._create_resolve_script(params)
+            elif act == "full_production_assistance":
+                res = await self._full_production_assistance(params)
             else:
-                return {
-                    "success": False,
-                    "error": f"Unknown action: {action}",
-                    "available_actions": [
-                        "generate_instructions",
-                        "create_premiere_template",
-                        "create_capcut_template",
-                        "generate_ffmpeg_commands",
-                        "create_resolve_script",
-                        "full_production_assistance",
-                    ],
-                }
+                return f"⚠️ Unknown action: {act}"
+            
+            if isinstance(res, dict) and res.get("success"):
+                return f"✅ **Production Assistance ({act})**\n{res.get('message', '')}"
+            return f"⚠️ Error: {res.get('error') if isinstance(res, dict) else str(res)}"
         except Exception as e:
             logger.error(f"Video production assistant error: {e}")
-            return {"success": False, "error": str(e)}
+            return f"⚠️ Error: {str(e)}"
 
     async def _generate_editing_instructions(
         self, params: dict[str, Any]
