@@ -1,5 +1,5 @@
 """
-LinkedIn Publisher for Viral Forge
+LinkedIn Publisher for ettametta
 Handles video uploads to LinkedIn via LinkedIn Marketing API (3-step: register → upload → post)
 Features: Retry logic, rate limiting, file validation, proper logging
 """

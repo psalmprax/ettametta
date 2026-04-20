@@ -13,7 +13,6 @@ from . import (
     billing,
     remotion,
     admin,
-    trading,
     agent,
     credits,
     persona,

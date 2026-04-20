@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class SEOAuditorSkill(OpenClawBaseSkill):
     """
-    CashClaw Official Skill: SEO Auditor
+    ettametta Official Skill: SEO Auditor
     Analyzes metadata, titles, and descriptions of video/landing page content for SEO performance.
     """
     def execute(self, action: str = "audit", url: str = None, text: str = None, target_keyword: str = None, **kwargs) -> str:

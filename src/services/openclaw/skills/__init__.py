@@ -56,7 +56,7 @@ from .browser import browser_skill
 from .document import document_skill
 from .persona import persona_skill
 
-# CashClaw Official Skills
+# ettametta Official Skills
 from .seo_auditor import seo_auditor_skill
 from .reputation_manager import reputation_manager_skill
 from .chat_sales import chat_sales_skill
@@ -72,7 +72,7 @@ claw4science_skill = safe_import_skill(
     ".external.claw4science_integration", "claw4science_skill"
 )
 remotion_skill = safe_import_skill(".render_remotion", "remotion_skill")
-cashclaw_skill = safe_import_skill(".cashclaw", "cashclaw_skill")
+ettametta_skill = safe_import_skill(".ettametta", "ettametta_skill")
 pixverse_skill = safe_import_skill(".pixverse", "pixverse_skill")
 branding_skill = safe_import_skill(".branding", "branding_skill")
 
@@ -159,7 +159,7 @@ __all__ = [
     "notification_skill",
     "workflow_skill",
     "self_healing_skill",
-    "cashclaw_skill",
+    "ettametta_skill",
     "pixverse_skill",
     "luma_skill",
     "kaiber_skill",
@@ -170,7 +170,6 @@ __all__ = [
     "document_skill",
     "persona_skill",
     "base_video_production_assistant_skill",
-    "intelligent_workflow_skill",
     "seo_auditor_skill",
     "reputation_manager_skill",
     "chat_sales_skill",

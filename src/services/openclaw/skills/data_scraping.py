@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class DataScrapingSkill(OpenClawBaseSkill):
     """
-    CashClaw Official Skill: Data Scraping
+    ettametta Official Skill: Data Scraping
     Provides unified scraping capabilities to supplement the discovery service.
     """
     def execute(self, action: str = "scrape", url: str = "", extract_fields: list = None, **kwargs) -> str:

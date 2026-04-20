@@ -91,13 +91,19 @@ export default function AdminSettingsPage() {
         enable_crewai: "false",
         enable_interpreter: "false",
         enable_affiliate_api: "false",
-        enable_trading: "false",
         // Advanced Monetization
         auto_merch_enabled: "false",
         lead_gen_url: "",
         digital_product_url: "",
         monetization_aggression: "80",
-        monetization_mode: "selective"
+        monetization_mode: "selective",
+        // System Defaults
+        membership_platform_url: "",
+        course_platform_url: "",
+        // Engine Parameters
+        scan_frequency: "Every 1 hour",
+        auto_pilot: "false",
+        force_originality: "false"
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);

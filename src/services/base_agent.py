@@ -178,7 +178,7 @@ class BaseEttamettaAgent:
         target_model = model or self.model
         
         # Try primary provider (Groq/OpenAI)
-        providers = [self.llm_provider, "groq", "openai", "cerebras", "openrouter", "mistral"]
+        providers = [self.llm_provider, "groq", "openai", "gemini", "anthropic", "cerebras", "openrouter", "mistral"]
         
         for provider in providers:
             client = self.clients.get(provider)
@@ -187,14 +187,22 @@ class BaseEttamettaAgent:
                 
             try:
                 if provider in ["groq", "openai", "mistral", "openrouter", "deepseek", "xai", "cerebras", "siliconflow", "nvidia"]:
-                    # standard OpenAI-compatible interface
+                    # map common model names to provider-specific ones
+                    actual_model = target_model
+                    if provider == "groq":
+                        actual_model = "llama-3.3-70b-versatile"
+                    elif provider == "cerebras":
+                        actual_model = "llama3.1-70b"
+                    elif provider == "openai" and "llama" in target_model.lower():
+                        actual_model = "gpt-4o" # Fallback for OpenAI if llama requested
+                    
                     messages = []
                     if system_prompt:
                         messages.append({"role": "system", "content": system_prompt})
                     messages.append({"role": "user", "content": prompt})
                     
                     kwargs = {
-                        "model": target_model if provider not in ["groq", "cerebras"] else ("llama-3.3-70b-versatile" if provider == "groq" else "llama3.1-70b"),
+                        "model": actual_model,
                         "messages": messages
                     }
                     if response_format == "json_object":
@@ -209,7 +217,31 @@ class BaseEttamettaAgent:
                         
                     return resp.choices[0].message.content
                 
-                # Add other provider logic (Gemini, Anthropic) as needed...
+                elif provider == "gemini":
+                    # Google Gemini interface
+                    resp = await client.generate_content_async(
+                        f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+                    )
+                    return resp.text
+                
+                elif provider == "anthropic":
+                    # Anthropic Claude interface
+                    messages = [{"role": "user", "content": prompt}]
+                    kwargs = {
+                        "model": "claude-3-5-sonnet-20240620",
+                        "max_tokens": 1024,
+                        "messages": messages,
+                    }
+                    if system_prompt:
+                        kwargs["system"] = system_prompt
+                    
+                    # Use async client if available
+                    async_client = self.clients.get(f"{provider}_async")
+                    if async_client:
+                        resp = await async_client.messages.create(**kwargs)
+                    else:
+                        resp = client.messages.create(**kwargs)
+                    return resp.content[0].text
             except Exception as e:
                 logger.warning(f"[{self.agent_name}] LLM provider {provider} failed: {e}")
                 continue

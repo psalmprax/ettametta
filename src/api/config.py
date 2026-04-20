@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     OUTPUT_DIR: Path = Path(__file__).parent.parent.parent / "outputs"
 
     # App Settings
-    APP_NAME: str = "ettametta API"
+    APP_NAME: str = "Ettametta API"
     ENV: str = "development"
     DEBUG: bool = True
     SECRET_KEY: str | None = None  # Must be set via environment variable
@@ -23,14 +23,6 @@ class Settings(BaseSettings):
     INTERNAL_API_TOKEN: str | None = None  # Master token for internal services
     AI_CLUSTER_SECRET: str | None = "psalm_cluster_v1"  # Secret for remote GPU nodes
     PORT: int = 8000  # API port
-
-    # Trading Engine Config
-    NICHE_TICKER_MAP: dict[str, list[str]] = {
-        "technology": ["AAPL", "MSFT", "NVDA", "GOOGL"],
-        "finance": ["GS", "JPM", "V", "MA"],
-        "crypto": ["bitcoin", "ethereum", "solana", "cardano"],
-        "gaming": ["RNTFY", "ATVI", "EA", "TTWO"],
-    }
 
     # Lean Infrastructure (CPU-First Hardening)
     CPU_AUTODETECT_THREADS: bool = True
@@ -247,7 +239,6 @@ class Settings(BaseSettings):
     ENABLE_CREWAI: bool = False
     ENABLE_INTERPRETER: bool = False
     ENABLE_AFFILIATE_API: bool = False
-    ENABLE_TRADING: bool = True
 
     # opencli-rs Integration (per-user Chrome session bridge)
     ENABLE_OPENCLI: bool = False
@@ -261,9 +252,8 @@ class Settings(BaseSettings):
     IMPACT_RADIUS_API_KEY: str | None = None
     SHAREASALE_API_KEY: str | None = None
 
-    # Trading API Keys
-    ALPHA_VANTAGE_API_KEY: str | None = None
-    COINGECKO_API_KEY: str | None = None
+    # Monetization
+    ENABLE_MONETIZATION: bool = True
 
     # Twilio/WhatsApp Configuration
     TWILIO_ACCOUNT_SID: str | None = None

@@ -1,5 +1,5 @@
 """
-AnimateDiff Inference Module for Viral Forge
+AnimateDiff Inference Module for ettametta
 
 AnimateDiff adds motion to Stable Diffusion images.
 Supports SDXL and SD 1.5 with various motion adapters.

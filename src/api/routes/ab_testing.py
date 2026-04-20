@@ -1,5 +1,5 @@
 """
-A/B Testing API Routes for Viral Forge
+A/B Testing API Routes for ettametta
 Provides statistical A/B testing with proper significance testing
 """
 

@@ -15,7 +15,7 @@ async def verify_cinematic_intuition():
         "segments": [
             {"text": "In a world of silicon and code", "duration": 4.0},
             {"text": "One system rises above all", "duration": 5.0},
-            {"text": "The Viral Forge", "duration": 3.0}
+            {"text": "The ettametta", "duration": 3.0}
         ]
     }
     

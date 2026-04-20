@@ -1,7 +1,7 @@
 """
 Video Generation Models Package
 
-Local and Remote video generation models for Viral Forge.
+Local and Remote video generation models for ettametta.
 """
 from .cogvideo_inference import generate_cogvideo
 from .mochi_inference import generate_mochi

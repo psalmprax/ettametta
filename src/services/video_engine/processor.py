@@ -27,7 +27,7 @@ def check_moviepy_available():
     global _moviepy_available
     if _moviepy_available is None:
         try:
-            from moviepy.editor import VideoFileClip
+            from moviepy import VideoFileClip
 
             _moviepy_available = True
         except ImportError:
@@ -239,7 +239,7 @@ class VideoProcessor:
         # Try to return MoviePy clip one more time with different settings
         try:
             # Try with different reader
-            from moviepy.editor import VideoFileClip
+            from moviepy import VideoFileClip
 
             clip = VideoFileClip(
                 input_path, audio=False, target_resolution=(height, width)
@@ -259,7 +259,7 @@ class VideoProcessor:
 
         # First try with asyncio timeout
         try:
-            from moviepy.editor import VideoFileClip
+            from moviepy import VideoFileClip
 
             clip = await asyncio.wait_for(
                 asyncio.to_thread(VideoFileClip, input_path),
@@ -331,7 +331,7 @@ class VideoProcessor:
 
         # Try loading with MoviePy again with extended timeout
         try:
-            from moviepy.editor import VideoFileClip
+            from moviepy import VideoFileClip
 
             clip = await asyncio.wait_for(
                 asyncio.to_thread(VideoFileClip, input_path), timeout=60
@@ -450,7 +450,8 @@ class VideoProcessor:
         )
 
         # Original MoviePy Fallback (kept for safety)
-        from moviepy.editor import VideoFileClip, vfx
+        from moviepy import VideoFileClip
+        import moviepy.video.fx as vfx
 
         clip = VideoFileClip(input_path)
         transformed = clip.with_effects([vfx.MirrorX()]).resized(
@@ -481,7 +482,7 @@ class VideoProcessor:
         logging.warning(
             "[VideoProcessor] Fast concat failed, falling back to MoviePy compose"
         )
-        from moviepy.editor import VideoFileClip, concatenate_videoclips
+        from moviepy import VideoFileClip, concatenate_videoclips
 
         clips = [VideoFileClip(p) for p in clip_paths]
         final_clip = concatenate_videoclips(clips, method="compose")
@@ -494,7 +495,7 @@ class VideoProcessor:
         """
         Randomly shifts speed based on AI strategy range to reset algorithm clocks.
         """
-        speed = random.uniform(speed_range[0], speed_range[1])
+        import moviepy.video.fx as vfx
         return clip.with_effects([vfx.MultiplySpeed(speed)])
 
     def apply_dynamic_jitter(
@@ -520,6 +521,8 @@ class VideoProcessor:
         """
         Adds high-energy light leaks/overlays with smooth transitions.
         """
+        from moviepy import ColorClip
+        import moviepy.video.fx as vfx
         leak = (
             ColorClip(size=clip.size, color=(255, 210, 160))
             .with_start(random.uniform(0, clip.duration - 1.0))
@@ -534,6 +537,7 @@ class VideoProcessor:
         """
         Adds a soft, glowing atmospheric layer (f9).
         """
+        import moviepy.video.fx as vfx
         glow = clip.with_effects([vfx.LumContrast(lum=5, contrast=0.1)]).with_opacity(
             0.3
         )
@@ -544,12 +548,14 @@ class VideoProcessor:
         Adds a subtle film grain effect to simulate analog texture (f10).
         """
         # Placeholder for real noise generation; for now, we use a subtle contrast jitter
+        import moviepy.video.fx as vfx
         return clip.with_effects([vfx.LumContrast(lum=0, contrast=0.08)])
 
     def apply_grayscale(self, clip: "VideoFileClip") -> "VideoFileClip":
         """
         Converts video to black and white for the Noir style (f11).
         """
+        import moviepy.video.fx as vfx
         return clip.with_effects([vfx.BlackAndWhite()])
 
     def apply_random_glitch(self, clip: "VideoFileClip") -> "VideoFileClip":
@@ -557,6 +563,7 @@ class VideoProcessor:
         Applies a random glitch effect by shifting RGB channels or adding noise (f12).
         """
         # MoviePy doesn't have a direct RGB shift, so we apply a jittered color shift
+        import moviepy.video.fx as vfx
         return clip.with_effects([vfx.Colorx(factor=random.uniform(0.9, 1.1))]).resized(
             height=int(clip.h * 1.01)
         )
@@ -574,6 +581,7 @@ class VideoProcessor:
             f"[VideoProcessor] Applying vibe adjustments: {mood} (Aesthetic: {aesthetic})"
         )
 
+        import moviepy.video.fx as vfx
         if "dark" in mood or "mysterious" in mood:
             # Increase contrast and slightly lower brightness for mystery
             clip = clip.with_effects([vfx.LumContrast(lum=-2, contrast=0.1)])
@@ -808,6 +816,7 @@ class VideoProcessor:
         def zoom(t):
             return 1.0 + 0.1 * (t / duration)
 
+        import moviepy.video.fx as vfx
         clip = clip.with_effects([vfx.Resize(zoom)])
 
         # 4. Set final size based on aspect ratio
@@ -873,7 +882,7 @@ class VideoProcessor:
 
                 # 1. Download Video Clip if it's a URL
                 local_vid = await _download_media(video_url, ".mp4")
-                from moviepy.editor import VideoFileClip
+                from moviepy import VideoFileClip
 
                 clip = VideoFileClip(local_vid)
 
@@ -888,6 +897,7 @@ class VideoProcessor:
                     audio_duration = narration.duration
                     if audio_duration > 0:
                         speed_factor = clip.duration / audio_duration
+                        import moviepy.video.fx as vfx
                         clip = clip.with_effects([vfx.MultiplySpeed(speed_factor)])
                         clip = clip.with_audio(narration)
                 else:

@@ -1,5 +1,5 @@
 """
-Twitch Publisher for Viral Forge
+Twitch Publisher for ettametta
 Handles video uploads to Twitch Clips via Twitch Helix API
 Features: Retry logic, rate limiting, file validation, proper logging
 """

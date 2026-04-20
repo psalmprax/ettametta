@@ -206,7 +206,7 @@ class SceneBasedVideoOrchestrator:
             video_files = []
             from .downloader import base_video_downloader
             
-            self.logger.info(f"Acquiring {len(segments)} segments for video fusion...")
+            logger.info(f"Acquiring {len(segments)} segments for video fusion...")
             
             for i, segment in enumerate(segments):
                 # Try local first, then download
@@ -217,7 +217,7 @@ class SceneBasedVideoOrchestrator:
                     video_files.append((source_path, segment))
                 elif video_url:
                     print(f"DEBUG: Downloading asset for segment {i+1}: {video_url}")
-                    self.logger.info(f"Downloading asset for segment {i+1}: {video_url}")
+                    logger.info(f"Downloading asset for segment {i+1}: {video_url}")
                     # In a production loop, we'd use await, but for hardening we'll ensure we have some assets
                     try:
                         downloaded_path = await base_video_downloader.download_video(video_url)
@@ -225,10 +225,10 @@ class SceneBasedVideoOrchestrator:
                             video_files.append((downloaded_path, segment))
                             print(f"DEBUG: Downloaded segment {i+1} to {downloaded_path}")
                         else:
-                            self.logger.warning(f"Failed to download segment {i+1}")
+                            logger.warning(f"Failed to download segment {i+1}")
                             print(f"DEBUG: Failed to download segment {i+1}")
                     except Exception as e:
-                        self.logger.error(f"Download error for segment {i+1}: {e}")
+                        logger.error(f"Download error for segment {i+1}: {e}")
                         print(f"DEBUG: Download EXCEPTION for segment {i+1}: {e}")
 
             print(f"DEBUG: Acquired {len(video_files)} video files for fusion")
@@ -236,47 +236,47 @@ class SceneBasedVideoOrchestrator:
                 print("DEBUG: No video files acquired, hitting fallback")
                 return {"success": False, "error": "No source videos could be acquired"}
 
-            # 2. Production Assembly (MoviePy)
+            # 2. Production Assembly (MoviePy 2.x)
             try:
-                import moviepy.editor as mpy
+                from moviepy import VideoFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
 
                 clips = []
                 for video_path, segment in video_files:
                     try:
-                        clip = mpy.VideoFileClip(video_path)
+                        clip = VideoFileClip(video_path)
                         duration = segment.get("duration", 5)
                         
                         # Apply smart duration cropping (narrative aware)
                         if clip.duration > duration:
                             # Start 10% in to avoid channel intros, or use centered crop
                             start_t = min(clip.duration * 0.1, clip.duration - duration)
-                            clip = clip.subclip(start_t, start_t + duration)
+                            clip = clip.subclipped(start_t, start_t + duration)
                         
                         # Add simple text overlay if prompt exists
-                        if segment.get("visual_prompt") and self.font_path:
-                            txt = mpy.TextClip(
-                                segment["visual_prompt"][:50], 
-                                fontsize=24, 
+                        if segment.get("visual_prompt") and self.video_processor.font_path:
+                            txt = TextClip(
+                                text=segment["visual_prompt"][:50], 
+                                font_size=24, 
                                 color='white', 
-                                font=self.font_path,
+                                font=self.video_processor.font_path,
                                 stroke_color='black',
                                 stroke_width=1
-                            ).set_duration(clip.duration).set_position(("center", "bottom"))
-                            clip = mpy.CompositeVideoClip([clip, txt])
+                            ).with_duration(clip.duration).with_position(("center", "bottom"))
+                            clip = CompositeVideoClip([clip, txt])
                         
                         clips.append(clip)
                     except Exception as clip_err:
-                        self.logger.error(f"Error processing clip {video_path}: {clip_err}")
+                        logger.error(f"Error processing clip {video_path}: {clip_err}")
 
                 if clips:
                     # Apply narrative-aware transitions
                     # For now: simple crossfade between all
-                    final_clip = mpy.concatenate_videoclips(clips, method="compose")
+                    final_clip = concatenate_videoclips(clips, method="compose")
                     
                     final_clip.write_videofile(
                         str(output_path), 
                         fps=30, 
-                        codec=self.processor.codec, # libx264 as requested
+                        codec=processor.codec, # libx264 as requested
                         audio_codec="aac",
                         threads=4,
                         preset="veryfast"
@@ -296,7 +296,7 @@ class SceneBasedVideoOrchestrator:
                     }
 
             except Exception as e:
-                self.logger.error(f"Real video fusion failed: {e}")
+                logger.error(f"Real video fusion failed: {e}")
                 raise e
 
             # Fallback: Create placeholder if no videos or processing failed
