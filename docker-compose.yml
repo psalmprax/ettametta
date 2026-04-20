@@ -268,7 +268,7 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
-      - API_URL=http://api:8000
+      - API_URL=http://ettametta-api-1:8000
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
       - PORT=3001
     volumes:
