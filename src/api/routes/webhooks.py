@@ -1,5 +1,5 @@
 """
-Webhooks API Routes for Viral Forge
+Webhooks API Routes for ettametta
 Handles callbacks from YouTube, TikTok, and other platforms with proper security
 """
 

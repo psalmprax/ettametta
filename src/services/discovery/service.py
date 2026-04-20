@@ -33,7 +33,6 @@ from .linkedin_scanner import base_linkedin_scanner
 from .bilibili_scanner import base_bilibili_scanner
 from .skool_scanner import base_skool_scanner
 from .duckduckgo_scanner import base_duckduckgo_scanner
-from .trading_scanner import TradingScanner
 from .video_lead_scanner import video_lead_scanner
 from .deconstructor import pattern_deconstructor
 from api.utils.database import async_session_factory
@@ -65,7 +64,6 @@ class DiscoveryService:
             YouTubeShortsScanner(),  # Real API ✓
             YouTubeLongScanner(),  # Real API ✓
             TikTokScanner(),  # Web scrape ✓
-            TradingScanner(),  # Financial Market Moves ✓
             base_duckduckgo_scanner,  # Free fallback ✓
         ]
         # Secondary scanners (supplementary, web scraping)
@@ -1227,7 +1225,7 @@ class DiscoveryService:
             f"✅ [Discovery] Procurement complete. {len(downloaded)} assets ready for fusion."
         )
 
-        if not downloaded:
+        if not downloaded and candidates:
             raise RuntimeError("CRITICAL: Failed to procure any assets for production.")
 
         return downloaded

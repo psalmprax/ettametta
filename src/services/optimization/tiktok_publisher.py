@@ -1,5 +1,5 @@
 """
-TikTok Publisher for Viral Forge
+TikTok Publisher for ettametta
 Handles video uploads to TikTok via Video Kit API
 Features: Chunked uploads, token refresh, proper logging
 """

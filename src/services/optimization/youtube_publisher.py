@@ -1,5 +1,5 @@
 """
-YouTube Publisher for Viral Forge
+YouTube Publisher for ettametta
 Handles video uploads to YouTube via Data API v3
 Features: Circuit breaker, token refresh, resumable uploads, proper logging
 """

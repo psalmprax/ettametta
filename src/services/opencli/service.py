@@ -10,7 +10,7 @@ Architecture:
 - Each user gets a session dir: OPENCLI_SESSIONS_DIR/user_{id}/
 - Cookie files are stored per platform: {platform}_cookies.txt
 - opencli-rs commands are executed with --cookies pointing to user's file
-- Results are parsed into Viral Forge's ContentCandidate/PostMetadata format
+- Results are parsed into ettametta's ContentCandidate/PostMetadata format
 
 Supported platforms (via opencli-rs):
 youtube, x, reddit, instagram, tiktok, facebook, hackernews,
@@ -88,7 +88,7 @@ PLATFORM_CAPABILITIES = {
     "stackoverflow": ["search", "feed", "top"],
 }
 
-# Map Viral Forge platform names to opencli-rs CLI names
+# Map ettametta platform names to opencli-rs CLI names
 PLATFORM_MAP = {
     "youtube": "youtube",
     "tiktok": "tiktok",
@@ -409,7 +409,7 @@ class OpenCLIService:
         if not result:
             return []
 
-        # Parse opencli-rs output into Viral Forge's candidate format
+        # Parse opencli-rs output into ettametta's candidate format
         candidates = []
         items = result.get("results", result.get("items", []))
         if isinstance(result, list):

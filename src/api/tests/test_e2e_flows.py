@@ -285,7 +285,6 @@ class TestUISmokeTest:
             "/analytics",
             "/empire",
             "/credits",
-            "/trading",
             "/settings",
         ]
         for page in pages:

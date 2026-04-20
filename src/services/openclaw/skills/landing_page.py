@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class LandingPageSkill(OpenClawBaseSkill):
     """
-    CashClaw Official Skill: Landing Page Production
+    ettametta Official Skill: Landing Page Production
     Drafts conversion-optimized landing page copy and structural UI definitions based on the viral pipeline output.
     """
     def execute(self, action: str = "generate", product_name: str = "", target_audience: str = "", key_benefits: list = None, **kwargs) -> str:

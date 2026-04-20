@@ -1,5 +1,5 @@
 """
-Base Publisher for Viral Forge
+Base Publisher for ettametta
 Provides common functionality for all social platform publishers including:
 - Retry mechanisms with exponential backoff
 - File validation

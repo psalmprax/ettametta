@@ -16,14 +16,8 @@ from services.openclaw.skills.external import (
     prompt_manager,
     crewai_service,
     viralforge_crew,
-    trading_service,
-    market_analysis,
     interpreter_service,
     blog_seo_service,
-    tradingview_service,
-    backtest_service,
-    metatrader_service,
-    binance_service,
 )
 from services.openclaw.skills.research import ResearchSkill, research_skill
 from services.openclaw.skills.content import ContentSkill
@@ -63,10 +57,6 @@ class PromptTemplateRequest(BaseModel):
     variables: dict[str, str] | None = None
 
 
-class TradingRequest(BaseModel):
-    action: str
-    symbol: str | None = None
-    coin_id: str | None = None
 
 
 class CrewRequest(BaseModel):
@@ -230,61 +220,6 @@ async def crewai_status():
     )
 
 
-@router.post("/trading/quote")
-async def get_trading_quote(request: TradingRequest):
-    """Get stock or crypto quote"""
-    action = request.action
-
-    if action == "stock":
-        return success_response(
-            data={"result": trading_service.get_stock_quote(request.symbol or "AAPL")}
-        )
-    elif action == "crypto":
-        return success_response(
-            data={
-                "result": trading_service.get_crypto_price(request.coin_id or "bitcoin")
-            }
-        )
-    elif action == "top_coins":
-        return success_response(data={"result": trading_service.get_top_coins()})
-    elif action == "sentiment":
-        return success_response(
-            data={
-                "result": trading_service.get_market_sentiment(request.symbol or "AAPL")
-            }
-        )
-
-    return success_response(data={"error": f"Unknown action: {action}"})
-
-
-@router.get("/trading/status")
-async def trading_status():
-    """Check trading API configuration status"""
-    alpha_enabled = bool(os.getenv("ALPHA_VANTAGE_API_KEY"))
-    coingecko_enabled = True  # CoinGecko has free tier
-
-    return success_response(
-        data={
-            "alpha_vantage": {
-                "enabled": alpha_enabled,
-                "message": "Alpha Vantage configured"
-                if alpha_enabled
-                else "Set ALPHA_VANTAGE_API_KEY for stock data",
-            },
-            "coingecko": {
-                "enabled": coingecko_enabled,
-                "message": "CoinGecko free tier available",
-            },
-        }
-    )
-
-
-@router.get("/market/opportunities")
-async def get_market_opportunities():
-    """Get content opportunities based on market data"""
-    return success_response(
-        data={"opportunities": market_analysis.get_content_opportunities()}
-    )
 
 
 @router.get("/interpreter/status")
@@ -322,74 +257,3 @@ async def generate_seo_content(request: dict):
     return success_response(data=result)
 
 
-@router.get("/tradingview/status")
-async def tradingview_status():
-    """Check TradingView integration status"""
-    return success_response(data=await tradingview_service.get_market_overview())
-
-
-class BacktestRequest(BaseModel):
-    symbol: str = "AAPL"
-    strategy: str = "simple_ma"
-    start_date: str = "2025-01-01"
-    end_date: str = "2025-12-31"
-
-
-@router.post("/backtest/run")
-async def run_backtest(request: BacktestRequest):
-    """
-    Run a backtest on historical data with real strategy implementation.
-    Strategies: simple_ma, momentum, mean_reversion
-    """
-    result = await backtest_service.run_backtest(
-        request.symbol, request.strategy, request.start_date, request.end_date
-    )
-    return success_response(data=result)
-
-
-@router.get("/metatrader/status")
-async def metatrader_status():
-    """Check MetaTrader status"""
-    return success_response(
-        data={
-            "enabled": metatrader_service.enabled,
-            "message": "MetaTrader 5 connected"
-            if metatrader_service.enabled
-            else "Set ENABLE_META_TRADER=true and install MetaTrader5 package",
-        }
-    )
-
-
-@router.get("/metatrader/account")
-async def get_mt_account():
-    """Get MetaTrader account info"""
-    return success_response(data=metatrader_service.get_account_info())
-
-
-@router.get("/metatrader/symbols")
-async def get_mt_symbols():
-    """Get available MetaTrader symbols"""
-    return success_response(data={"symbols": metatrader_service.get_symbols()})
-
-
-@router.get("/metatrader/positions")
-async def get_mt_positions():
-    """Get open MetaTrader positions"""
-    return success_response(data={"positions": metatrader_service.get_positions()})
-
-
-@router.post("/binance/price")
-async def get_binance_price(request: dict):
-    """Get Binance price for symbol"""
-    symbol = request.get("symbol", "BTCUSDT")
-    return success_response(data=binance_service.get_ticker_price(symbol))
-
-
-@router.get("/binance/klines")
-async def get_binance_klines(
-    symbol: str = "BTCUSDT", interval: str = "1h", limit: int = 100
-):
-    """Get Binance candlestick data"""
-    return success_response(
-        data={"klines": binance_service.get_klines(symbol, interval, limit)}
-    )

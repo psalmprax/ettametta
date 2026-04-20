@@ -1,5 +1,5 @@
 """
-Snapchat Publisher for Viral Forge
+Snapchat Publisher for ettametta
 Handles video uploads to Snapchat Spotlight via Snapchat Marketing API
 Features: Retry logic, rate limiting, file validation, proper logging
 """
@@ -67,7 +67,7 @@ class SnapchatPublisher(SocialPublisher):
                 "headline": metadata.title[:35],  # Spotlight headline limit
                 "call_to_action": "VIEW_MORE",
                 "video_url": video_url,
-                "brand_name": "Viral Forge",
+                "brand_name": "ettametta",
             }
 
             creative_response = await client.post(

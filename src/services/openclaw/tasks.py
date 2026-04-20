@@ -1,20 +1,19 @@
 import logging
 from api.utils.celery import celery_app
-from services.openclaw.skills.cashclaw import cashclaw_skill
+from services.openclaw.skills.ettametta import ettametta_skill
 
 logger = logging.getLogger(__name__)
 
-@celery_app.task(name="openclaw.cashclaw_polling")
-def cashclaw_polling_task():
+@celery_app.task(name="openclaw.ettametta_polling")
+def ettametta_polling_task():
     """
-    Periodic task to poll the HYRVE AI marketplace for new gigs
-    and automatically accept them if they meet the ROI threshold.
+    Background task to poll for new high-ROI gigs.
     """
-    logger.info("[Celery] Running CashClaw polling daemon...")
+    logger.info("[Celery] Running ettametta polling daemon...")
     try:
-        result = cashclaw_skill.auto_accept_gigs()
-        logger.info(f"[Celery] CashClaw result: {result}")
+        result = ettametta_skill.auto_accept_gigs()
+        logger.info(f"[Celery] ettametta result: {result}")
         return result
     except Exception as e:
-        logger.error(f"[Celery] CashClaw polling failed: {e}")
+        logger.error(f"[Celery] ettametta polling failed: {e}")
         return str(e)
