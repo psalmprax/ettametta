@@ -245,7 +245,7 @@ class CreditService:
                 return existing.referral_code
 
             # Generate new code
-            code = f"VF{uuid.uuid4().hex[:8].upper()}"
+            code = f"ET{uuid.uuid4().hex[:8].upper()}"
             referral = ReferralDB(
                 referrer_id=user_id, referral_code=code, status="pending"
             )

@@ -47,7 +47,6 @@ This directory contains the core business logic and external integrations of the
 |---------|---------|--------|-------|
 | `langchain/` | Enhanced LLM chaining | ⚠️ Optional | Disabled by default |
 | `crewai/` | Multi-agent orchestration | ⚠️ Optional | Disabled by default |
-| `trading/` | Market analysis | ⚠️ Optional | Comprehensive but out-of-scope |
 
 ## Service Interaction Matrix
 
@@ -80,7 +79,6 @@ ViralForge uses a tiered cognitive architecture:
 Each service includes built-in circuit breakers and retry logic (tenacity). Verification is performed via `api/tests/`:
 
 - `test_backends.py`: Comprehensive backend service tests (30 tests, 75% pass rate)
-- `test_services.py`: Legacy service tests
 - `test_cognitive_agentic.py`: Integration tests for agentic pipeline
 
 ### Test Coverage by Service

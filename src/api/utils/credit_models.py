@@ -1,5 +1,5 @@
 """
-Credit System Database Models for Viral Forge
+Credit System Database Models for ettametta
 """
 
 from sqlalchemy import (

@@ -1,5 +1,5 @@
 """
-Scheduled Posts and Cleanup Tasks for Viral Forge
+Scheduled Posts and Cleanup Tasks for ettametta
 Celery tasks for automated posting and video cleanup
 """
 

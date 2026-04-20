@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Viral Forge: Real-First Hardening E2E Suite
+ * ettametta: Real-First Hardening E2E Suite
  * This suite validates that the dashboard is strictly coupled to the Go API Gateway
  * and that no simulated UI patterns or "dummy" data remain in production-level modules.
  */

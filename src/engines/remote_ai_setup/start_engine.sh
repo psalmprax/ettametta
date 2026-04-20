@@ -13,7 +13,7 @@ echo "🛑 [Bootstrap] Killing old processes..."
 pkill -f "python3 -u main.py" || true
 sleep 2
 
-echo "🚀 [Bootstrap] Starting Viral Forge AI Engine on Port 8080 (Mapped to 19675)..."
+echo "🚀 [Bootstrap] Starting ettametta AI Engine on Port 8080 (Mapped to 19675)..."
 nohup python3 -u main.py > server_out.log 2>&1 &
 PID=$!
 echo $PID > engine.pid

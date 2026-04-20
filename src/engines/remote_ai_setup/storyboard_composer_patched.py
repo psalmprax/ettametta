@@ -106,7 +106,7 @@ def assemble_master(video_files, final_output):
     except: print("❌ Error during multi-shot assembly.")
 
 def main():
-    print("============== VIRAL FORGE: STORYBOARD COMPOSER (BYPASS) ==============")
+    print("============== ETTAMETTA: STORYBOARD COMPOSER (BYPASS) ==============")
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     completed_clips = []
     

@@ -1,5 +1,5 @@
 """
-Instagram Publisher for Viral Forge
+Instagram Publisher for ettametta
 Handles video uploads to Instagram via Meta Graph API
 Features: Retry logic, rate limiting, file validation, proper logging
 """

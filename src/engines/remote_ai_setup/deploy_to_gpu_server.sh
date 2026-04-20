@@ -1,6 +1,6 @@
 #!/bin/bash
 # Optimized GPU Server Deployment Script
-# Viral Forge "Real-First" Production Engine
+# ettametta "Real-First" Production Engine
 
 set -e
 

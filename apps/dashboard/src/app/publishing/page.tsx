@@ -744,7 +744,7 @@ export default function PublishingPage() {
                         setIsConfirmDisconnectOpen(false);
                     }}
                     title="Sever Neural Link?"
-                    description="This will permanently disconnect the account node from the Viral Forge cluster. Synchronized metrics may be lost."
+                    description="This will permanently disconnect the account node from the ettametta cluster. Synchronized metrics may be lost."
                     variant="danger"
                     confirmText="Sever Link"
                 />

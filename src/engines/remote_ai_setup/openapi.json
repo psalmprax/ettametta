@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Viral Forge Remote AI Engine",
+    "title": "ettametta Remote AI Engine",
     "description": "High-performance GPU inference server for video synthesis and multi-modal analysis.",
     "version": "1.5.0"
   },

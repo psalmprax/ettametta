@@ -150,7 +150,7 @@ if __name__ == "__main__":
         # We will test an Image-to-Video sequence.
         # Generating 1 minute of video directly (1440 frames) is unsupported by current foundational open-source models (LTX/SVD).
         # Standard cinematography generates a 1 minute video by concatenating 10 to 12 x 5-second scenes.
-        print("======== TESTING VIRAL FORGE LIKENESS ENGINE ========")
+        print("======== TESTING ETTAMETTA LIKENESS ENGINE ========")
         job_id = await composer.generate_scene(
             prompt="High quality cinematic portrait of Davido on stage performing, neon lighting, highly detailed, expressive face, 4k",
             character_name="Davido",

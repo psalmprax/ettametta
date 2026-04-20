@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class ReputationManagerSkill(OpenClawBaseSkill):
     """
-    CashClaw Official Skill: Reputation Manager
+    ettametta Official Skill: Reputation Manager
     Scans comments and mentions to assess sentiment and drafts automated responses.
     """
     def execute(self, action: str = "scan", platform: str = "", target_identifier: str = "", **kwargs) -> str:

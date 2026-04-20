@@ -241,26 +241,26 @@ CONTENT_CATEGORIES = {
         "audience": "science curious",
         "style": "wonder",
     },
-    # Finance (15+)
-    "stock_market": {
-        "name": "Stock Market",
-        "keywords": ["stock", "market", "trading"],
-        "search_terms": ["stock market", "trading tips", "market analysis"],
-        "audience": "investors",
-        "style": "financial",
+    # Content Monetization (15+)
+    "creator_revenue": {
+        "name": "Creator Revenue",
+        "keywords": ["monetization", "adsense", "revenue", "sponsorship"],
+        "search_terms": ["youtube monetization", "tiktok revenue", "brand deals"],
+        "audience": "creators, entrepreneurs",
+        "style": "educational, advisory",
     },
-    "crypto": {
-        "name": "Cryptocurrency",
-        "keywords": ["crypto", "bitcoin", "blockchain"],
-        "search_terms": ["crypto news", "bitcoin", "blockchain"],
-        "audience": "crypto enthusiasts",
-        "style": "financial",
+    "viral_merch": {
+        "name": "Viral Merch",
+        "keywords": ["merchandise", "dropshipping", "print on demand"],
+        "search_terms": ["viral merch ideas", "creator shop", "ecommerce"],
+        "audience": "creators, shop owners",
+        "style": "promotional",
     },
-    "investing": {
-        "name": "Investing",
-        "keywords": ["investing", "passive income", "wealth"],
-        "search_terms": ["investing advice", "passive income", "wealth"],
-        "audience": "investors",
+    "passive_income_creators": {
+        "name": "Passive Income for Creators",
+        "keywords": ["passive income", "affiliate", "courses"],
+        "search_terms": ["passive income creators", "affiliate marketing tips"],
+        "audience": "creators",
         "style": "advisory",
     },
     # Social (20+)

@@ -55,7 +55,7 @@ if WAV2LIP_PATH not in sys.path:
 CONTENT_DIR = "/tmp/ai_content"
 os.makedirs(CONTENT_DIR, exist_ok=True)
 
-app = FastAPI(title="Viral Forge Remote AI Engine (Pro-Grade 8K/60FPS)")
+app = FastAPI(title="ettametta Remote AI Engine (Pro-Grade 8K/60FPS)")
 
 # Auto-detect hardware
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

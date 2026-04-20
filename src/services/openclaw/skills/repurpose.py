@@ -18,17 +18,15 @@ class RepurposeSkill(OpenClawBaseSkill):
         """
         if not source_url:
             return "⚠️ source_url is required for Repurpose skill."
-            
+
         if action == "analyze":
             return self.analyze_repurpose_potential(source_url)
         elif action == "transform":
-            return self.trigger_repurpose_job(source_url, kwargs.get("target_platform", "TikTok"))
-            
-        return f"⚠️ Unknown action for Repurpose: {action}"
-        headers = {}
-        if settings.INTERNAL_API_TOKEN:
-            headers["Authorization"] = f"Bearer {settings.INTERNAL_API_TOKEN}"
-        return headers
+            return self.trigger_repurpose_job(
+                source_url, kwargs.get("target_platform", "TikTok")
+            )
+
+        return f"⚠️ Unknown action for Repurpose: {action}. Valid actions: analyze, transform"
 
     def repurpose_content(
         self,

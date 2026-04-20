@@ -60,7 +60,7 @@ class PayPalService:
         self,
         amount: float,
         currency: str = "USD",
-        description: str = "Viral Forge Purchase",
+        description: str = "ettametta Purchase",
         idempotency_key: str | None = None,
     ) -> dict:
         """Create a PayPal order"""
@@ -130,7 +130,7 @@ class PayPalService:
         data = {
             "plan_id": plan_id,
             "application_context": {
-                "brand_name": "Viral Forge",
+                "brand_name": "ettametta",
                 "landing_page": "NO_PREFERENCE",
                 "user_action": "SUBSCRIBE_NOW",
                 "payment_method": "PAYPAL",

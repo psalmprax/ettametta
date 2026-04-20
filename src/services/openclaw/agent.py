@@ -45,7 +45,7 @@ from services.openclaw.skills import (
     notification_skill,
     workflow_skill,
     self_healing_skill,
-    cashclaw_skill,
+    ettametta_skill,
     pixverse_skill,
     luma_skill,
     branding_skill,
@@ -153,9 +153,9 @@ class OpenClawAgent(BaseEttamettaAgent):
     """
 
     def __init__(self, user_id: int = None, reasoning_mode: str = "standard"):
-        super().__init__(agent_name="OPENCLAW")
         self.user_id = user_id
         self.reasoning_mode = reasoning_mode
+        super().__init__(agent_name="OPENCLAW")
         self.circuit_breaker = CircuitBreaker()
         self.skills_path = Path(__file__).parent / "skills.yaml"
         self.system_prompt = self._build_system_prompt()
@@ -163,7 +163,7 @@ class OpenClawAgent(BaseEttamettaAgent):
         # Polymorphic Skill Registry (deduplicated - removed semantic aliases)
         self.skill_registry = {
             "DISCOVERY": discovery_skill,
-            "CASHCLAW": cashclaw_skill,
+            "ETTAMETTA": ettametta_skill,
             "NICHE": niche_skill,
             "SEO_AUDIT": seo_auditor_skill,
             "REPUTATION": reputation_manager_skill,
@@ -324,37 +324,22 @@ class OpenClawAgent(BaseEttamettaAgent):
             "lm_studio": self._init_lm_studio,
         }
 
-        # Try primary provider first
-        if self.llm_provider in providers:
-            try:
-                providers[self.llm_provider]()
-                logger.info(
-                    f"[OpenClaw] Initialized {self.llm_provider} as primary LLM"
-                )
-                return
-            except Exception as e:
-                logger.warning(
-                    f"[OpenClaw] Failed to initialize {self.llm_provider}: {e}"
-                )
-
-        # Fallback to other providers
+        # Initialize all available providers
+        initialized_count = 0
         for provider_name, init_func in providers.items():
-            if provider_name != self.llm_provider:
-                try:
-                    init_func()
-                    logger.info(f"[OpenClaw] Using {provider_name} as fallback LLM")
-                    self.llm_provider = provider_name
-                    return
-                except Exception as e:
-                    logger.debug(f"[OpenClaw] {provider_name} not available: {e}")
+            try:
+                init_func()
+                if provider_name in self.clients:
+                    initialized_count += 1
+                    logger.debug(f"[OpenClaw] Initialized {provider_name}")
+            except Exception as e:
+                logger.debug(f"[OpenClaw] Provider {provider_name} not available: {e}")
 
-        # Hardened: No dummy fallback allowed. System must fail clearly if unconfigured.
-        logger.error(
-            "[OpenClaw] No LLM providers available - please check environment variables."
-        )
-        raise RuntimeError(
-            "OpenClaw configuration error: No valid LLM providers initialized. Set GROQ_API_KEY or similar."
-        )
+        if initialized_count == 0:
+            logger.error("[OpenClaw] No LLM providers available - please check environment variables.")
+            raise RuntimeError("OpenClaw configuration error: No valid LLM providers initialized. Set GROQ_API_KEY or similar.")
+        
+        logger.info(f"[OpenClaw] Initialized {initialized_count} LLM providers (Primary: {self.llm_provider})")
 
     def _init_groq(self):
         api_key = self._get_api_key("groq")

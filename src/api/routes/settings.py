@@ -102,9 +102,6 @@ async def get_settings(
         "amazon_paapi_tag": app_settings.AMAZON_PAAPI_TAG,
         "impact_radius_api_key": app_settings.IMPACT_RADIUS_API_KEY,
         "shareasale_api_key": app_settings.SHAREASALE_API_KEY,
-        # Trading
-        "alpha_vantage_api_key": app_settings.ALPHA_VANTAGE_API_KEY,
-        "coingecko_api_key": app_settings.COINGECKO_API_KEY,
         # Video & Voice
         "elevenlabs_api_key": app_settings.ELEVENLABS_API_KEY,
         "fish_speech_endpoint": app_settings.FISH_SPEECH_ENDPOINT,
@@ -132,7 +129,6 @@ async def get_settings(
         "enable_crewai": str(app_settings.ENABLE_CREWAI),
         "enable_interpreter": str(app_settings.ENABLE_INTERPRETER),
         "enable_affiliate_api": str(app_settings.ENABLE_AFFILIATE_API),
-        "enable_trading": str(app_settings.ENABLE_TRADING),
         "enable_opencli": str(app_settings.ENABLE_OPENCLI),
         # Business Logic
         "limit_free": str(app_settings.LIMIT_FREE),

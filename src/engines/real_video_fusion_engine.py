@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import asyncio
 import logging
@@ -12,29 +13,30 @@ from PIL import Image
 from uuid import uuid4
 
 # Ascension & Singularity Services
-from src.services.discovery.service import base_discovery_service
-from src.services.voiceover.service import base_voiceover_service
-from src.services.script_generator.service import base_script_generator
-from src.engines.intelligent_video_workflow import discover_multi_platform, analyze_content_type
-from src.services.video_engine.ffmpeg_utils import base_ffmpeg_transformer
-from src.services.visual_generator.service import base_visual_generator
-from src.services.optimization.viral_critic import base_viral_critic
-from src.services.audio.rhythm_engine import base_rhythm_engine
-from src.services.video_engine.neural_vision_analyzer import base_neural_vision
-from src.services.analytics.bridge import base_analytics_bridge
-from src.services.optimization.oracle_predictor import base_neural_oracle
-from src.services.distribution.publisher import base_publisher
-from src.services.analytics.training_pipeline import base_training_pipeline
-from src.services.analytics.ledger import base_performance_ledger
-from src.services.video_engine.forge_batch import base_forge_batch
-from src.services.distribution.deployment_gateway import base_deployment_gateway
-from src.services.analytics.harvester import base_analytics_harvester
-from src.services.discovery.trend_scanner import base_trend_scanner
-from src.services.optimization.strategy_generator import base_viral_strategist
-from src.services.analytics.drift_monitor import base_drift_monitor
-from src.services.analytics.stream_processor import base_stream_processor
-from src.services.hermes.narrative_planner import base_narrative_planner
-from src.services.hermes.attention_simulator import base_attention_simulator
+from services.discovery.service import base_discovery_service
+from services.voiceover.service import base_voiceover_service
+from services.script_generator.service import base_script_generator
+from engines.intelligent_video_workflow import discover_multi_platform, analyze_content_type
+from services.video_engine.ffmpeg_utils import base_ffmpeg_transformer
+from services.visual_generator.service import base_visual_generator
+from services.optimization.viral_critic import base_viral_critic
+from services.audio.rhythm_engine import base_rhythm_engine
+from services.video_engine.neural_vision_analyzer import base_neural_vision
+from services.analytics.bridge import base_analytics_bridge
+from services.optimization.oracle_predictor import base_neural_oracle
+from services.distribution.publisher import base_publisher
+from services.analytics.training_pipeline import base_training_pipeline
+from services.analytics.ledger import base_performance_ledger
+from services.video_engine.forge_batch import base_forge_batch
+from services.distribution.deployment_gateway import base_deployment_gateway
+from services.analytics.harvester import base_analytics_harvester
+from services.discovery.trend_scanner import base_trend_scanner
+from services.optimization.strategy_generator import base_viral_strategist
+from services.analytics.drift_monitor import base_drift_monitor
+from services.analytics.stream_processor import base_stream_processor
+from services.hermes.narrative_planner import base_narrative_planner
+from services.hermes.attention_simulator import base_attention_simulator
+from services.video_engine.synthesis_service import base_generative_service
 
 try:
     from scenedetect import detect, ContentDetector
@@ -49,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 class RealVideoFusionEngine:
     """
-    The Viral Forge: Neural Production Engine (10.0/10)
+    The ettametta: Neural Production Engine (10.0/10)
     ===================================================
     The final state of ViralForge. Parallel rendering, Neural Retention 
     Curve prediction, and Multi-Point Cinematic Optimization.
@@ -60,12 +62,12 @@ class RealVideoFusionEngine:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     async def create_real_video_content(
-        self, discovered_videos: list[dict], content_topic: str, duration_sec: int = 60, session_id: str | None = None
+        self, discovered_videos: list[dict], content_topic: str, duration_sec: int = 60, session_id: str | None = None, quality: str = "ELITE"
     ) -> dict[str, Any]:
         """High-Throughput PRODUCTION cycle with Neural Predictive Pruning"""
 
         request_id = session_id or str(uuid4()) # Fallback if not provided
-        print(f"🏗️  VIRAL FORGE - NEURAL ENGINE 10.0 [ID: {request_id}]")
+        print(f"🏗️  ETTAMETTA - NEURAL ENGINE 10.0 [ID: {request_id}]")
         print("=" * 60)
 
         # 1. NARRATIVE REASONING (The 10/10 Intelligence Leap)
@@ -76,33 +78,41 @@ class RealVideoFusionEngine:
             print(f"🔄 [NRM] Low Attention Predicted for {request_id}. Regenerating...")
             blueprint = await base_narrative_planner.plan_story(content_topic, "Entertainment", duration_sec, session_id=request_id)
         
-        # 2. Select the highest-relevance clips
-        eligible_clips = self._select_videos_for_download(discovered_videos)
+        # 2. Select and Download Primary Viral Leads
+        eligible_clips = self._select_videos_for_download(discovered_videos, limit=10)
         downloaded_assets = await base_discovery_service.batch_download_videos(eligible_clips)
 
-        # 2. Asset-Aware Scripting
+        # 3. SYNTHESIS SERVICE INTEGRATION: Pull High-Fidelity Stock Supplement
+        # This addresses the user requirement to use Synthesis Service for stock acquisition
+        print(f"🎬 [SynthesisService] Sourcing high-fidelity stock for '{content_topic}'...")
+        stock_assets = await base_generative_service.pull_stock_for_niche(content_topic, count=3)
+        if stock_assets:
+            print(f"   ✨ Supplemented with {len(stock_assets)} professional stock clips.")
+            downloaded_assets.extend(stock_assets)
+
+        # 4. Asset-Aware Scripting
         niche = blueprint.get("niche", "Entertainment") if blueprint else "Entertainment"
         script = await base_script_generator.generate_script(
             topic=content_topic, niche=niche, duration_sec=duration_sec, clips=downloaded_assets, session_id=request_id
         )
 
-        # 3. Scene Analysis (including Motion + Semantic)
+        # 5. Scene Analysis (including Motion + Semantic)
         await self._analyze_visual_memory(downloaded_assets)
 
-        # 5. Neural-Sequential Fusion Plan
-        print("🧪 Generating Narrative-Aware Fusion Plan...")
-        fusion_plan = await self._create_fusion_plan_neural(downloaded_assets, script, duration_sec, blueprint)
+        # 6. Neural-Sequential Fusion Plan
+        print(f"🧪 Generating Narrative-Aware Fusion Plan (Quality: {quality})...")
+        fusion_plan = await self._create_fusion_plan_neural(downloaded_assets, script, duration_sec, blueprint, quality=quality)
 
-        # 6. Production Assembly
+        # 7. Production Assembly
         final_video = await self._execute_real_video_fusion(fusion_plan)
 
         return {**final_video, "script": script, "fusion_plan": fusion_plan}
 
-    async def _create_fusion_plan_neural(self, downloaded_assets: list[dict], script: dict, duration_sec: int, blueprint: Any = None) -> dict[str, Any]:
+    async def _create_fusion_plan_neural(self, downloaded_assets: list[dict], script: dict, duration_sec: int, blueprint: Any = None, quality: str = "ELITE") -> dict[str, Any]:
         """Elite Cinematic Fusion (Tier 10): Rhythmic & Emotional Alignment"""
         segments = []
         total_duration = 0
-        candidate_paths = [a["file_path"] for a in downloaded_assets]
+        candidate_paths = [a["file_path"] for a in downloaded_assets if "file_path" in a]
         total_script_segments = len(script.get("segments", []))
         
         # 🎵 RHYTHMIC ANCHORING
@@ -149,6 +159,9 @@ class RealVideoFusionEngine:
             top_k = base_neural_vision.find_top_k_matches(line_text, k=5, candidate_paths=candidate_paths)
             
             # 🏆 NEURAL TOURNAMENT: CINEMATIC SCORING
+            # Enforce diversity by penalizing recently used assets
+            used_in_this_video = [s["file_path"] for s in segments]
+            
             best_match = None
             if top_k:
                 scored_candidates = []
@@ -164,7 +177,10 @@ class RealVideoFusionEngine:
                     if role == "HOOK" or intensity_score > 0.8:
                         role_bias = 1.5 if cand.get("motion_score", 0) > 0.7 else 0.8
                     
-                    oracle_score = (curve[0] * 0.4) + (motion_match * 0.4) + (role_bias * 0.2)
+                    # DIVERSITY PENALTY: Reduce score if asset was already used
+                    diversity_multiplier = 0.6 if cand.get("file_path") in used_in_this_video else 1.0
+                    
+                    oracle_score = ((curve[0] * 0.4) + (motion_match * 0.4) + (role_bias * 0.2)) * diversity_multiplier
                     scored_candidates.append({**cand, "oracle_score": oracle_score, "predicted_curve": curve})
                 
                 best_match = max(scored_candidates, key=lambda x: x["oracle_score"])
@@ -174,13 +190,13 @@ class RealVideoFusionEngine:
                 if downloaded_assets:
                     fallback_match = max(downloaded_assets, key=lambda x: x.get("motion_score", 0)) if intensity_score > 0.7 else downloaded_assets[0]
                     best_match = {
-                        "path": fallback_match["file_path"],
+                        "path": fallback_match.get("file_path", ""),
                         "timestamp": 0.0,
                         "oracle_score": 0.5,
                         "predicted_curve": [0.5, 0.4, 0.3, 0.2]
                     }
 
-            if not best_match:
+            if not best_match or not best_match.get("path"):
                 logger.error(f"❌ [Fatal] Could not resolve asset for segment {i} ({current_emotion})")
                 return {"success": False, "error": "Incomplete Asset Pool"}
 
@@ -212,6 +228,8 @@ class RealVideoFusionEngine:
             "title": script.get("title", "Director's Edit"),
             "segments": segments,
             "total_duration": total_duration,
+            "script_metadata": script,
+            "quality": quality,
             "editorial_style": "Fast-Paced Narrative" if duration_sec < 45 else "Cinematic Deep-Dive"
         }
 
@@ -221,24 +239,81 @@ class RealVideoFusionEngine:
         temp_dir.mkdir(exist_ok=True)
         
         bg_music_path = "src/templates/audio/background/cinematic_energetic.mp3"
+        quality_mode = fusion_plan.get("quality", "ELITE")
         
-        processed_clips = []
-        for i, segment in enumerate(fusion_plan["segments"]):
-            output_file = temp_dir / f"seg_{i:03d}.mp4"
-            # Apply cinematic look and ensure 1080x1920 normalization
-            success = base_ffmpeg_transformer.apply_originality(
-                segment["file_path"], str(output_file),
-                start_offset=segment["start_offset"],
-                duration=segment["duration"],
-                lut_path="templates/luts/cinematic_pro.cube"
-            )
-            if success: processed_clips.append(str(output_file))
+        # Parallel Orchestration: Use a semaphore to limit concurrent FFmpeg processes
+        # Given 8 cores and 26GB RAM, we can safely process 2 segments in parallel for ELITE
+        semaphore = asyncio.Semaphore(2 if quality_mode == "ELITE" else 4)
 
-        # 1. Visual Assembly
-        intermediate_video = self.output_dir / f"visual_only_{int(asyncio.get_event_loop().time())}.mp4"
-        success = base_ffmpeg_transformer.concatenate_videos(processed_clips, str(intermediate_video))
+        async def process_segment(i, segment):
+            async with semaphore:
+                raw_output = temp_dir / f"raw_seg_{i:03d}.mp4"
+                zoomed_output = temp_dir / f"seg_{i:03d}.mp4"
+                
+                # Step A: Apply cinematic look (originality)
+                success = await asyncio.to_thread(
+                    base_ffmpeg_transformer.apply_originality,
+                    segment["file_path"], str(raw_output),
+                    start_offset=segment["start_offset"],
+                    duration=segment["duration"] + 0.5,
+                    lut_path="templates/luts/cinematic_pro.cube"
+                )
+                if not success: return None
+                
+                # Step B: Apply cinematic transformation (zoom or fast-track)
+                if quality_mode == "ELITE":
+                    success = await asyncio.to_thread(
+                        base_ffmpeg_transformer.apply_cinematic_zoom,
+                        str(raw_output), str(zoomed_output), segment["duration"] + 0.5
+                    )
+                else:
+                    success = await asyncio.to_thread(
+                        base_ffmpeg_transformer.apply_fast_transform,
+                        str(raw_output), str(zoomed_output)
+                    )
+                
+                return str(zoomed_output) if success else None
+
+        # Execute parallel processing
+        print(f"🌀 [ParallelFusion] Orchestrating {len(fusion_plan['segments'])} segments in waves...")
+        tasks = [process_segment(i, seg) for i, seg in enumerate(fusion_plan["segments"])]
+        results = await asyncio.gather(*tasks)
+        
+        processed_clips = [r for r in results if r is not None]
+        
+        if len(processed_clips) < len(fusion_plan["segments"]):
+            logger.error("❌ Some segments failed to render in parallel.")
+            # We continue if we have at least most clips, or fail if critical
+            if not processed_clips: return {"success": False, "error": "Parallel Render Failure"}
+
+        # 1. ELITE Visual Assembly with Transitions
+        ts = int(asyncio.get_event_loop().time())
+        intermediate_video = self.output_dir / f"visual_elite_{ts}.mp4"
+        success = base_ffmpeg_transformer.xfade_concatenate(processed_clips, str(intermediate_video), transition="random")
+        if not success:
+            logger.error("❌ Elite visual concatenation failed.")
+            return {"success": False, "error": "Elite Concat Failed"}
         
         # 2. Rhythmic Audio Mix (Professional Intuition)
+        final_draft = self.output_dir / f"draft_{ts}.mp4"
+        success = base_ffmpeg_transformer.add_background_music(str(intermediate_video), bg_music_path, str(final_draft))
+        if not success:
+            logger.error("❌ Audio mixing failed.")
+            return {"success": False, "error": "Audio Mix Failed"}
+        
+        # 3. ELITE OVERLAYS: Signature Styling
+        ass_path = temp_dir / "production.ass"
+        base_ffmpeg_transformer.generate_styled_subtitles(fusion_plan["segments"], str(ass_path))
+        
+        final_video = self.output_dir / f"neural_{random.randint(100, 9999)}.mp4"
+        success = base_ffmpeg_transformer.apply_production_render(str(final_draft), str(ass_path), str(final_video), quality_mode=quality_mode)
+        
+        return {
+            "success": success,
+            "video_path": str(final_video),
+            "script": fusion_plan.get("script_metadata"), # Pass through for UI
+            "fusion_plan": fusion_plan
+        }
         # In a full cycle, voiceover_path would be passed in. 
         # For standalone hardening, we mix BG Music if no VO is provided.
         final_output = self.output_dir / f"neural_{int(asyncio.get_event_loop().time())}.mp4"
@@ -268,7 +343,9 @@ class RealVideoFusionEngine:
     async def _analyze_visual_memory(self, downloaded_assets: list[dict]):
         """Analyze scenes for motion and semantics"""
         for asset in downloaded_assets:
-            path = asset["file_path"]
+            path = asset.get("file_path")
+            if not path or not os.path.exists(path): continue
+            
             cap = cv2.VideoCapture(path)
             for ts in [0.0, 3.0, 6.0]:
                 cap.set(cv2.CAP_PROP_POS_MSEC, ts * 1000)
@@ -278,14 +355,22 @@ class RealVideoFusionEngine:
                     base_neural_vision.analyze_scene(path, img, timestamp=ts)
             cap.release()
 
-    def _select_videos_for_download(self, candidates: list[dict], limit: int = 4) -> list[dict]:
-        return sorted(candidates, key=lambda x: x.get("relevance", 0), reverse=True)[:limit]
+    def _select_videos_for_download(self, candidates: list[dict], limit: int = 10) -> list[dict]:
+        """Logic for picking the absolute best viral leads"""
+        if not candidates: return []
+        
+        # Rank by relevance and viral score, but ensure diversity by shuffling top results
+        sorted_c = sorted(candidates, key=lambda x: (x.get("relevance", 0), x.get("viral_score", 0)), reverse=True)
+        top_tier = sorted_c[:limit * 2]
+        import random
+        random.shuffle(top_tier)
+        return top_tier[:limit]
 
 async def create_the_viral_forge_cycle(variants: int = 5):
     """
     Absolute 10.0 Cycle: Proactive Trending, Strategic Framing, and Empire Deployment.
     """
-    print("🌌 INITIATING THE VIRAL FORGE: PROPHET TIER 10.0")
+    print("🌌 INITIATING THE ETTAMETTA: PROPHET TIER 10.0")
     
     # 1. Proactive Trend Detection (The Prophet)
     opportunities = await base_trend_scanner.scan_for_opportunities()

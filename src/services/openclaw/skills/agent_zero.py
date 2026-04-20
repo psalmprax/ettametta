@@ -19,10 +19,6 @@ class AgentZeroSkill(OpenClawBaseSkill):
         Polymorphic entry point for OpenClaw agent.
         """
         return self.control_agent(action)
-        # For this integration, we'll assume it's manageable via internal calls
-        # or we'll trigger the base_agent_zero instance directly if in-process.
-        # For the prototype, we assume OpenClaw is the management layer.
-        pass
 
     def control_agent(self, action: str) -> str:
         """

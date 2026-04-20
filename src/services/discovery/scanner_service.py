@@ -21,7 +21,6 @@ from api.utils.vault import get_secret
 from .youtube_scanner import YouTubeShortsScanner
 from .youtube_long_scanner import YouTubeLongScanner
 from .tiktok_scanner import TikTokScanner
-from .trading_scanner import TradingScanner
 from .models import ContentCandidate
 
 logger = logging.getLogger(__name__)
@@ -39,7 +38,6 @@ class ScannerService:
             YouTubeShortsScanner(),
             YouTubeLongScanner(),
             TikTokScanner(),
-            TradingScanner(),
         ]
 
     async def scan_all_platforms(self, niche: str) -> list[ContentCandidate]:

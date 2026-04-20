@@ -16,7 +16,7 @@ class TestConfigSettings:
         """Test that default settings are defined"""
         from api.config import settings
 
-        assert settings.APP_NAME == "ettametta API"
+        assert settings.APP_NAME == "Ettametta API"
         assert settings.ENV == "test"  # Set by conftest.py
         assert settings.ALGORITHM == "HS256"
 
@@ -37,7 +37,6 @@ class TestConfigSettings:
         assert settings.ENABLE_CREWAI == True  # Overridden in .env
         assert settings.ENABLE_INTERPRETER == True  # Overridden in .env
         assert settings.ENABLE_AFFILIATE_API == True  # Overridden in .env
-        assert settings.ENABLE_TRADING == True  # Overridden in .env
 
     def test_storage_defaults(self):
         """Test default storage configuration"""

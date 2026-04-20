@@ -54,7 +54,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
         try {
             if (navigator.share) {
                 await navigator.share({
-                    title: title || "Viral Forge Video",
+                    title: title || "ettametta Video",
                     url: videoUrl,
                 });
                 setShareStatus("Shared");
