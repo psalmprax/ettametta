@@ -295,8 +295,10 @@ async def google_auth_callback(
 
 # Internal endpoint for OpenClaw to fetch users with Telegram bots
 @router.get("/internal/users-with-bots", tags=["Internal"])
-async def get_users_with_bots(request: Request):
+async def get_users_with_bots(request: Request, db: AsyncSession = Depends(get_db)):
     """Internal endpoint for OpenClaw to get users configured with Telegram bots."""
+    from sqlalchemy import select
+
     # Verify internal token
     auth_header = request.headers.get("Authorization")
     if not auth_header or not settings.INTERNAL_API_TOKEN:
@@ -306,12 +308,12 @@ async def get_users_with_bots(request: Request):
         raise HTTPException(status_code=401, detail="Invalid token")
 
     # Get all users with telegram_bot_token set
-    db = next(get_db())
-    users = (
-        db.query(UserDB)
-        .filter(UserDB.telegram_bot_token != None, UserDB.telegram_bot_token != "")
-        .all()
+    result = await db.execute(
+        select(UserDB).where(
+            UserDB.telegram_bot_token != None, UserDB.telegram_bot_token != ""
+        )
     )
+    users = result.scalars().all()
 
     return [
         {
