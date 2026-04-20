@@ -291,3 +291,34 @@ async def google_auth_callback(
         raise HTTPException(
             status_code=400, detail=f"Google authentication failed: {str(e)}"
         )
+
+
+# Internal endpoint for OpenClaw to fetch users with Telegram bots
+@router.get("/internal/users-with-bots", tags=["Internal"])
+async def get_users_with_bots(request: Request):
+    """Internal endpoint for OpenClaw to get users configured with Telegram bots."""
+    # Verify internal token
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not settings.INTERNAL_API_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    if auth_header != f"Bearer {settings.INTERNAL_API_TOKEN}":
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    # Get all users with telegram_bot_token set
+    db = next(get_db())
+    users = (
+        db.query(UserDB)
+        .filter(UserDB.telegram_bot_token != None, UserDB.telegram_bot_token != "")
+        .all()
+    )
+
+    return [
+        {
+            "id": user.id,
+            "email": user.email,
+            "telegram_bot_token": user.telegram_bot_token,
+            "role": user.role,
+        }
+        for user in users
+    ]
