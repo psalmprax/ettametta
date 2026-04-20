@@ -256,7 +256,7 @@ services:
     build:
       context: .
       dockerfile: ./infra/docker/openclaw.Dockerfile
-    image: viral_forge-openclaw
+    image: ettametta-openclaw
     ports:
       - "7217-7219:3001"
     environment:
@@ -267,7 +267,8 @@ services:
       - PEXELS_API_KEY=${PEXELS_API_KEY}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
-      - API_URL=http://nginx/api/v1
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
+      - API_URL=http://api:8000
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
       - PORT=3001
     volumes:
