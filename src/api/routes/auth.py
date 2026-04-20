@@ -309,9 +309,7 @@ async def get_users_with_bots(request: Request, db: AsyncSession = Depends(get_d
 
     # Get all users with telegram_bot_token set
     result = await db.execute(
-        select(UserDB).where(
-            UserDB.telegram_bot_token != None, UserDB.telegram_bot_token != ""
-        )
+        select(UserDB).where(UserDB.telegram_token != None, UserDB.telegram_token != "")
     )
     users = result.scalars().all()
 
