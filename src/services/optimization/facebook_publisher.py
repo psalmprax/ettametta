@@ -1,5 +1,5 @@
 """
-Facebook Publisher for Viral Forge
+Facebook Publisher for ettametta
 Handles video uploads to Facebook via Meta Graph API
 Features: Retry logic, rate limiting, file validation, proper logging
 """

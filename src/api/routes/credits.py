@@ -1,4 +1,4 @@
-"""Credit System API Routes for Viral Forge
+"""Credit System API Routes for ettametta
 Provides credit management, packages, purchases, and referral system
 """
 
@@ -189,7 +189,7 @@ async def purchase_credits(
                         "currency": "usd",
                         "product_data": {
                             "name": f"{package['name']} Credit Pack - {package['credits']} Credits",
-                            "description": f"Viral Forge credit pack: {package['credits']} credits",
+                            "description": f"ettametta credit pack: {package['credits']} credits",
                         },
                         "unit_amount": package["price_cents"],
                     },

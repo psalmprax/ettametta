@@ -623,27 +623,33 @@ class VideoLeadScanner:
         fusion_segments = []
 
         for i, (scene_key, videos) in enumerate(scene_videos.items()):
-            if videos:
-                best_video = videos[0]  # Use highest-ranked video
-                segment_duration = min(
-                    best_video.duration_seconds, target_duration // len(scene_videos)
+            scene_data = scenes[i] if i < len(scenes) else {}
+            
+            # Prioritize provided source_url or video_path
+            source_url = scene_data.get("source_url")
+            video_path = scene_data.get("video_path")
+            
+            if video_path or source_url or videos:
+                best_video = videos[0] if videos else None
+                
+                segment_duration = scene_data.get("duration") or (
+                    best_video.duration_seconds if best_video else target_duration // len(scene_videos)
                 )
 
                 fusion_segments.append(
                     {
                         "scene": scene_key,
-                        "type": scenes[i].get("type", "content")
-                        if i < len(scenes)
-                        else "content",
-                        "video_id": best_video.video_id,
-                        "platform": best_video.platform,
+                        "type": scene_data.get("type", "content"),
+                        "video_id": best_video.video_id if best_video else f"custom_{i}",
+                        "platform": best_video.platform if best_video else "custom",
+                        "url": source_url or (best_video.url if best_video else None),
+                        "video_path": video_path,
                         "duration": segment_duration,
                         "start_time": total_duration,
+                        "visual_prompt": scene_data.get("visual_prompt"),
                         "transition": self._get_transition_for_type(
-                            scenes[i].get("type", "content")
+                            scene_data.get("type", "content")
                         )
-                        if i < len(scenes)
-                        else "fade",
                     }
                 )
 

@@ -37,8 +37,8 @@ class VideoContentAnalyzer:
     """
 
     def __init__(self):
-        self.groq_api_key = os.getenv("GROQ_API_KEY")
-        self.model = "llama-3.2-90b-vision-preview"  # Vision model
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        self.model = "gpt-4o-mini"  # Elite Vision model
 
     async def analyze_video_content(
         self, video_path: str = "", video_url: str = ""
@@ -180,9 +180,9 @@ CRITICAL:
 
                 async with httpx.AsyncClient(timeout=60) as client:
                     response = await client.post(
-                        "https://api.groq.com/openai/v1/chat/completions",
+                        "https://api.openai.com/v1/chat/completions",
                         headers={
-                            "Authorization": f"Bearer {self.groq_api_key}",
+                            "Authorization": f"Bearer {self.openai_api_key}",
                             "Content-Type": "application/json",
                         },
                         json={

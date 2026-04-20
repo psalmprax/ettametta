@@ -36,7 +36,6 @@ const navItems = [
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Empire", href: "/empire", icon: Crown },
     { name: "Credits", href: "/credits", icon: Coins },
-    { name: "Trading", href: "/trading", icon: TrendingUp },
 ];
 
 interface SidebarProps {

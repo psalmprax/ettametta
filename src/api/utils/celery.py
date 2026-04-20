@@ -52,8 +52,8 @@ celery_app.conf.update(
             "task": "storage.manage_lifecycle",
             "schedule": 86400.0,  # Every 24 hours
         },
-        "cashclaw-job-polling-10m": {
-            "task": "openclaw.cashclaw_polling",
+        "ettametta-job-polling-10m": {
+            "task": "openclaw.ettametta_polling",
             "schedule": 600.0,  # Every 10 minutes
         },
     },

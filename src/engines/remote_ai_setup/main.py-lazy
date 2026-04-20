@@ -21,7 +21,7 @@ from pydantic import BaseModel
 CONTENT_DIR = "/tmp/ai_content"
 os.makedirs(CONTENT_DIR, exist_ok=True)
 
-app = FastAPI(title="Viral Forge Remote AI Engine (Optimized Lazy Loading)")
+app = FastAPI(title="ettametta Remote AI Engine (Optimized Lazy Loading)")
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"📡 Using Device: {DEVICE}")

@@ -36,9 +36,9 @@ from prometheus_fastapi_instrumentator import Instrumentator
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Viral Forge API",
+    title="ettametta API",
     description="""## Overview
-Viral Forge is an AI-powered content creation and monetization platform.
+ettametta is an AI-powered content creation and monetization platform.
 
 ## Features
 - **Discovery**: Find trending content across platforms
@@ -115,7 +115,6 @@ from api.routes import (
     billing,
     remotion,
     admin,
-    trading,
     agent,
     credits,
     persona,
@@ -334,7 +333,6 @@ v1_router.include_router(admin.router, tags=["Admin"])
 v1_router.include_router(no_face.router, tags=["Automation"])
 v1_router.include_router(ab_testing.router, tags=["Growth"])
 v1_router.include_router(remotion.router, tags=["Remotion"])
-v1_router.include_router(trading.router, tags=["Trading"])
 v1_router.include_router(agent.router, tags=["AI Agents"])
 v1_router.include_router(credits.router, tags=["Credits & Billing"])
 v1_router.include_router(zero.router, tags=["Agent Zero"])

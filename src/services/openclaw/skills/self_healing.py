@@ -95,11 +95,11 @@ class SelfHealingSkill(OpenClawBaseSkill):
 
             if cpu_percent > 90:
                 healthy = False
-                issues.append(".1f")
+                issues.append(f"⚠️ **High CPU Usage**: {cpu_percent:.1f}% detected. Initiating load balancing.")
 
             if memory_percent > 80:
                 healthy = False
-                issues.append(".1f")
+                issues.append(f"⚠️ **High Memory Usage**: {memory_percent:.1f}% detected. Releasing cached assets.")
 
             return {
                 "status": "running",
@@ -174,6 +174,8 @@ class SelfHealingSkill(OpenClawBaseSkill):
 
             if not healthy:
                 alerts.append(f"⚠️ {name}: {status}")
+                if "issues" in health:
+                    alerts.extend(health["issues"])
                 if self.auto_restart_enabled and status in [
                     "not_running",
                     "process_gone",

@@ -1,6 +1,6 @@
 # Universal Remote AI Server - Installation Guide
 
-This guide provides instructions for deploying the Viral Forge Remote AI engine on any server with a GPU (NVIDIA, AMD, Apple, or Intel) or high-performance CPU.
+This guide provides instructions for deploying the ettametta Remote AI engine on any server with a GPU (NVIDIA, AMD, Apple, or Intel) or high-performance CPU.
 
 ## Supported Environments
 - **OS**: Ubuntu/Debian, RHEL/Fedora/CentOS, macOS

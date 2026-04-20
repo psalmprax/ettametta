@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class ChatSalesSkill(OpenClawBaseSkill):
     """
-    CashClaw Official Skill: Chat Sales
+    ettametta Official Skill: Chat Sales
     Handles 2-way conversational sales via Social DMs and WhatsApp.
     """
     def execute(self, action: str = "reply", platform: str = "", target_identifier: str = "", context: str = "", **kwargs) -> str:

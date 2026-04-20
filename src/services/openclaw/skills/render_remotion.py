@@ -31,10 +31,16 @@ class RemotionRenderSkill(OpenClawBaseSkill):
         comp = composition or kwargs.get("composition", "main")
         p = props or kwargs.get("props") or kwargs
         
+        # Extract specific remotion flags from kwargs
+        use_gpu = kwargs.get("use_gpu", False)
+        frames = kwargs.get("frames")
+        
         return self.render_remotion_clip(
-            comp,
-            p,
-            kwargs.get("output_name", "remotion_output.mp4")
+            composition=comp,
+            props=p,
+            output_name=kwargs.get("output_name", "remotion_output.mp4"),
+            use_gpu=use_gpu,
+            frames=frames
         )
 
     def render_remotion_clip(
@@ -42,6 +48,8 @@ class RemotionRenderSkill(OpenClawBaseSkill):
         composition: str,
         props: dict[str, Any],
         output_name: str = "remotion_output.mp4",
+        use_gpu: bool = False,
+        frames: str | None = None,
     ) -> str:
         """
         Executes a remotion render command.
@@ -60,7 +68,15 @@ class RemotionRenderSkill(OpenClawBaseSkill):
             f"--props={props_json}",
         ]
 
-        logger.info(f"Executing Remotion Render: {' '.join(cmd)}")
+        if not use_gpu:
+            cmd.append("--disable-gpu")
+            # Force software rendering for maximum compatibility on CPU
+            cmd.append("--gl=swiftshader")
+        
+        if frames:
+            cmd.append(f"--frames={frames}")
+
+        logger.info(f"Executing Remotion Render (GPU={'ON' if use_gpu else 'OFF'}): {' '.join(cmd)}")
 
         try:
             # Check if Node.js/NPX is installed
@@ -70,8 +86,9 @@ class RemotionRenderSkill(OpenClawBaseSkill):
             result = subprocess.run(
                 cmd, cwd=self.project_path, check=True, capture_output=True, text=True
             )
-            return f"🎬 **Remotion Render Success**\nComposition: `{composition}`\nOutput: {output_path}"
+            return f"🎬 **Remotion Render Success**\nComposition: `{composition}`\nOutput: {output_path}\nHardware: {'GPU' if use_gpu else 'CPU (Software)'}"
         except subprocess.CalledProcessError as e:
+            logger.error(f"Remotion Render Failed: {e.stderr}")
             return f"⚠️ Remotion Render Failed: {e.stderr}"
         except FileNotFoundError:
             return "⚠️ Remotion CLI not found. Please ensure Node.js and @remotion/cli are installed."

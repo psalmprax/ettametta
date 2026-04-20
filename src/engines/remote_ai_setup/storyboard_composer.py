@@ -227,7 +227,7 @@ def run_storyboard(storyboard_list, mode_label):
         print(f"\n❌ No clips were successfully generated in {mode_label}.")
 
 def main():
-    print("============== VIRAL FORGE: STORYBOARD COMPOSER ==============")
+    print("============== ETTAMETTA: STORYBOARD COMPOSER ==============")
     if not ensure_tunnel():
         print("Exiting: Could not establish secure connection to rendering node.")
         return

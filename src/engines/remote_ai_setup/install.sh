@@ -132,4 +132,4 @@ npx skills add openclaw/skills/self-healing-watchdog -g -y || echo "⚠️ Self-
 echo "🌐 Installing Chromium for Headless Video Rendering..."
 sudo apt-get install -y chromium-browser libgbm-dev
 $SCRIPT_DIR/check_hardware.py" || python3 "$SCRIPT_DIR/check_hardware.py"
-echo "✅ Viral Forge AI Engine is ready for production."
+echo "✅ ettametta AI Engine is ready for production."

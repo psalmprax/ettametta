@@ -27,7 +27,7 @@ from basicsr.archs.rrdbnet_arch import RRDBNet
 CONTENT_DIR = "/tmp/ai_content"
 os.makedirs(CONTENT_DIR, exist_ok=True)
 
-app = FastAPI(title="Viral Forge Remote AI Engine (4K High-Fidelity)")
+app = FastAPI(title="ettametta Remote AI Engine (4K High-Fidelity)")
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"📡 Using Device: {DEVICE}")

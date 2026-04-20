@@ -1391,4 +1391,36 @@ class GenerativeService:
             return None
 
 
+    async def pull_stock_for_niche(self, niche: str, count: int = 3) -> list[dict]:
+        """
+        Procures professional stock assets matching the niche.
+        Uses StockService to fetch and download assets.
+        """
+        from .stock_service import base_stock_service
+        
+        logging.info(f"[GenerativeService] Pulling {count} stock assets for niche: {niche}")
+        
+        try:
+            urls = await base_stock_service.fetch_b_roll(niche, count=count)
+            downloaded_assets = []
+            
+            for url in urls:
+                # Use a reliable local path for stock
+                path = await base_stock_service.download_stock_video(url, output_dir="local_downloads/stock")
+                if path:
+                    downloaded_assets.append({
+                        "id": f"stock_{uuid.uuid4().hex[:8]}",
+                        "platform": "Pexels",
+                        "url": url,
+                        "file_path": path,
+                        "motion_score": 0.8, # Stock is usually high quality
+                        "relevance": 0.9
+                    })
+            
+            return downloaded_assets
+        except Exception as e:
+            logging.error(f"[GenerativeService] Failed to pull stock for {niche}: {e}")
+            return []
+
+
 base_generative_service = GenerativeService()

@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 class OpenClawBaseSkill(ABC):
     """
-    Base class for all OpenClaw/CashClaw Official Skills.
+    Base class for all ettametta Official Skills.
     Enforces the mission-based pattern for workforce operations.
     """
     def __init__(self):

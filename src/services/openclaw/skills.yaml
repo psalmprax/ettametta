@@ -164,6 +164,12 @@ skills:
       platform: "string"
       target_identifier: "string"
       context: "string"
+  - name: ETTAMETTA
+    description: "Revenue Recovery and Monetization Optimizer for ettametta."
+    params:
+      action: "audit|optimize|auto_accept"
+      platform: "string"
+      niche: "string"
   - name: LANDING_PAGE
     description: "Draft conversion-optimized landing page structure."
     params:

@@ -1,5 +1,5 @@
 """
-X (Twitter) Publisher for Viral Forge
+X (Twitter) Publisher for ettametta
 Handles video uploads to X via Twitter API v1.1 (chunked media upload) + v2 (tweet creation)
 Features: Retry logic, rate limiting, file validation, proper logging
 """
