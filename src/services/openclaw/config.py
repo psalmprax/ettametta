@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     XAI_API_KEY: str = ""
     DEEPSEEK_API_KEY: str = ""
     ELEVENLABS_API_KEY: str = ""
+
+    # Ollama (Self-hosted LLM)
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.2:1b"
     PEXELS_API_KEY: str = ""
     MODEL: str = "llama-3.3-70b-versatile"
 
