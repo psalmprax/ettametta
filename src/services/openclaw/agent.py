@@ -336,10 +336,16 @@ class OpenClawAgent(BaseEttamettaAgent):
                 logger.debug(f"[OpenClaw] Provider {provider_name} not available: {e}")
 
         if initialized_count == 0:
-            logger.error("[OpenClaw] No LLM providers available - please check environment variables.")
-            raise RuntimeError("OpenClaw configuration error: No valid LLM providers initialized. Set GROQ_API_KEY or similar.")
-        
-        logger.info(f"[OpenClaw] Initialized {initialized_count} LLM providers (Primary: {self.llm_provider})")
+            logger.error(
+                "[OpenClaw] No LLM providers available - please check environment variables."
+            )
+            raise RuntimeError(
+                "OpenClaw configuration error: No valid LLM providers initialized. Set GROQ_API_KEY or similar."
+            )
+
+        logger.info(
+            f"[OpenClaw] Initialized {initialized_count} LLM providers (Primary: {self.llm_provider})"
+        )
 
     def _init_groq(self):
         api_key = self._get_api_key("groq")
@@ -480,11 +486,20 @@ class OpenClawAgent(BaseEttamettaAgent):
     def _init_ollama_cloud(self):
         api_key = self._get_api_key("ollama_cloud")
         if api_key:
-            self.clients["ollama_cloud"] = {
-                "api_key": api_key,
-                "base_url": "https://cloud.ollama.ai/v1",
-            }
-            logger.info("[OpenClaw] Ollama Cloud initialized")
+            try:
+                from openai import OpenAI, AsyncOpenAI
+
+                self.clients["ollama_cloud"] = OpenAI(
+                    api_key=api_key, base_url="https://cloud.ollama.ai/v1"
+                )
+                self.clients["ollama_cloud_async"] = AsyncOpenAI(
+                    api_key=api_key, base_url="https://cloud.ollama.ai/v1"
+                )
+                logger.info("[OpenClaw] Ollama Cloud initialized")
+            except ImportError:
+                logger.warning(
+                    "[OpenClaw] OpenAI package not installed for Ollama Cloud"
+                )
 
     def _init_siliconflow(self):
         api_key = self._get_api_key("siliconflow")
