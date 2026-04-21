@@ -533,9 +533,9 @@ class OpenClawAgent(BaseEttamettaAgent):
             "huggingface": "meta-llama/Llama-3.3-70B-Instruct",
             "openrouter": "anthropic/claude-3.5-sonnet",
             "nvidia": "meta/llama-3.3-70b-instruct",
-            "ollama_cloud": "qwen2.5:72b",
+            "ollama_cloud": getattr(settings, "OLLAMA_CLOUD_MODEL", "qwen2.5:72b"),
             "siliconflow": "Qwen/Qwen2.5-72B-Instruct",
-            "ollama": "llama3",
+            "ollama": getattr(settings, "OLLAMA_MODEL", "llama3"),
             "lm_studio": "local-model",
         }
 
