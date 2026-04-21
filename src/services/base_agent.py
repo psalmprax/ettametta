@@ -164,10 +164,8 @@ class BaseEttamettaAgent:
 
     def _init_ollama(self):
         try:
-            # Support both OLLAMA_URL (from settings) and OLLAMA_BASE_URL (from env)
-            url = getattr(settings, "OLLAMA_URL", None) or os.getenv(
-                "OLLAMA_BASE_URL", "http://localhost:11434"
-            )
+            # Priority: OLLAMA_BASE_URL (env) > OLLAMA_URL (settings) > localhost
+            url = os.getenv("OLLAMA_BASE_URL") or settings.OLLAMA_URL
             resp = requests.get(f"{url}/api/tags", timeout=2)
             if resp.status_code == 200:
                 try:
