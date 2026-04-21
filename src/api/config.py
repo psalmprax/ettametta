@@ -46,8 +46,9 @@ class Settings(BaseSettings):
     OLLAMA_CLOUD_API_KEY: str | None = None  # Ollama Cloud
     SILICONFLOW_API_KEY: str | None = None  # SiliconFlow - 1K RPM, 50K TPM free
     OLLAMA_URL: str = "http://localhost:11434"  # Local Ollama server
+    OLLAMA_MODEL: str = "llama3"  # Default model for Ollama
     LM_STUDIO_URL: str = "http://localhost:1234"  # Local LM Studio server
-    DEFAULT_LLM_PROVIDER: str = "openai"  # groq, openai, xai, deepseek, anthropic, cohere, mistral, cerebras, cloudflare, huggingface, openrouter, nvidia, ollama_cloud, siliconflow, ollama, lm_studio
+    DEFAULT_LLM_PROVIDER: str = "ollama"  # groq, openai, xai, deepseek, anthropic, cohere, mistral, cerebras, cloudflare, huggingface, openrouter, nvidia, ollama_cloud, siliconflow, ollama, lm_studio
 
     USE_OS_MODELS: bool = True
 
