@@ -49,7 +49,7 @@ async def test_prop_hardening():
         assert "timeline" in props
         assert len(props["timeline"]) == 1
         assert props["timeline"][0]["text"] == "Hello"
-        assert props["subtitle"] == "A ViralForge Production ID: test_id_"
+        assert props["subtitle"] == "A ettametta Production ID: test_id_"
         assert props["showCtaOverlay"] is True
         
         print("🎉 Prop Hardening Verified!")

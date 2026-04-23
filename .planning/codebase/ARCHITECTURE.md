@@ -18,7 +18,7 @@
 
 **API Layer:**
 - Purpose: HTTP request handling, routing, authentication, and response formatting
-- Location: `api/`
+- Location: `src/api/`
 - Contains: FastAPI routes, middleware, exception handlers, utilities
 - Depends on: Services layer, Database layer, External APIs
 - Used by: Frontend applications, external clients
@@ -71,7 +71,7 @@
 
 **Service Classes:**
 - Purpose: Encapsulate business logic and external API integrations
-- Examples: `services/nexus_engine/orchestrator.py`, `services/video_engine/processor.py`
+- Examples: `src/services/nexus_engine/orchestrator.py`, `services/video_engine/processor.py`
 - Pattern: Singleton instances with `base_` prefix (e.g., `base_nexus_orchestrator`)
 
 **Database Models:**
@@ -97,7 +97,7 @@
 - Responsibilities: Route dispatching, middleware setup, exception handling, startup initialization
 
 **AI Processing Service:**
-- Location: `remote_ai_setup/main.py`
+- Location: `src/engines/remote_ai_setup/main.py`
 - Triggers: Celery task queue messages
 - Responsibilities: AI model processing, video generation, external API calls
 

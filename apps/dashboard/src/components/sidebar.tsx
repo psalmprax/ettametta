@@ -27,7 +27,7 @@ import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Discovery", href: "/discovery", icon: Search },
     { name: "Creation", href: "/creation", icon: Sparkles },
     { name: "Nexus Flow", href: "/nexus", icon: Zap },
@@ -92,7 +92,7 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
                             exit={{ opacity: 0, width: 0 }}
                             className="flex flex-col overflow-hidden"
                         >
-                            <span className="text-xl font-black text-white tracking-tighter uppercase leading-none group-hover:text-cyan-400 transition-colors whitespace-nowrap">ettametta</span>
+                            <span className="text-xl font-black text-white tracking-tighter uppercase leading-none group-hover:text-cyan-400 transition-colors whitespace-nowrap">AlphaHecta</span>
                             <span className="text-[9px] font-black text-cyan-400 tracking-[0.4em] uppercase mt-1.5 opacity-80 flex items-center gap-1.5">
                                 <div className="h-1 w-1 rounded-full bg-cyan-400 animate-pulse" />
                                 OS // V3.0
@@ -252,7 +252,7 @@ export function MobileHeader({ onMenuClick }: { onMenuClick?: () => void }) {
             <button onClick={onMenuClick} className="p-2 -ml-2">
                 <Menu className="h-6 w-6 text-zinc-400" />
             </button>
-            <span className="text-lg font-bold text-violet-500">EM</span>
+            <span className="text-lg font-bold text-violet-500">AH</span>
             <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center">
                 <span className="text-xs font-bold text-white">U</span>
             </div>

@@ -99,7 +99,7 @@ export default function LoginPage() {
                     <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 border border-primary/20 animate-pulse">
                         <Zap className="h-10 w-10 text-primary fill-primary" />
                     </div>
-                    <h1 className="text-5xl font-black uppercase tracking-tighter text-white">ETTA<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400 text-hollow">METTA</span></h1>
+                    <h1 className="text-5xl font-black uppercase tracking-tighter text-white">ALPHA<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400 text-hollow">HECTA</span></h1>
                     <p className="text-zinc-500 font-medium">Log in to your high-velocity workflow</p>
                 </div>
 
@@ -199,7 +199,7 @@ export default function LoginPage() {
                 </form>
 
                 <p className="text-center text-zinc-600 text-sm font-medium">
-                    New to ettametta?{" "}
+                    New to AlphaHecta?{" "}
                     <Link href="/register" className="text-white hover:text-primary transition-colors">
                         Register Access
                     </Link>

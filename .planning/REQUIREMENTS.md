@@ -59,4 +59,4 @@ None yet.
 Last session: 2026-04-09T08:09:54.097Z
 Stopped at: Completed 01-04-PLAN.md
 Resume file: None</content>
-<parameter name="filePath">/home/psalmprax/ALL_PROJECTS/viral_forge/.planning/STATE.md
+<parameter name="filePath">/home/psalmprax/ALL_PROJECTS/ettametta/.planning/STATE.md

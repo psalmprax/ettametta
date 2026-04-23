@@ -5,7 +5,7 @@
 ## Directory Layout
 
 ```
-viral_forge/
+ettametta/
 ├── api/                    # FastAPI backend application
 ├── services/               # Business logic services
 ├── apps/                   # Frontend applications
