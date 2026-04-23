@@ -2,7 +2,7 @@
     print(f"   Available Now: {available_outputs}/{total_possible} ({available_outputs/total_possible*100:.1f}%)")
     print(f"   With Dependencies: {total_possible}/{total_possible} (100%)")
 
-    print("\n🏆 WHAT VIRALFORGE CAN PRODUCE:")
+    print("\n🏆 WHAT ETTAMETTA CAN PRODUCE:")
     print("   ✅ Complete content production strategy")
     print("   ✅ Monetization optimization plan")
     print("   ✅ Multi-platform upload specifications")
@@ -15,7 +15,7 @@
     print("   ⚠️  Audio processing and mixing (needs audio libraries)")
 
     print("\n💡 BOTTOM LINE:")
-    print("   The ViralForge video editor produces HIGH-QUALITY content planning,")
+    print("   The Ettametta video editor produces HIGH-QUALITY content planning,")
     print("   optimization strategies, and production specifications that rival")
     print("   professional video editors. The actual video rendering requires")
     print("   standard video processing libraries that can be easily added.")

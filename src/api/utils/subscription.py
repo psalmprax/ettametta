@@ -1,9 +1,10 @@
 from fastapi import HTTPException, status, Depends
-from api.utils.database import get_db
-from api.utils.user_models import UserDB, SubscriptionTier
-from api.routes.auth import get_current_user
+from src.api.utils.database import get_db
+from src.api.utils.user_models import UserDB, UserRole
+from src.api.routes.auth import get_current_user
 from sqlalchemy.ext.asyncio import AsyncSession
 from functools import wraps
+from src.shared.enums import CreditAction
 
 
 def subscription_required(required_tier: SubscriptionTier):
@@ -34,11 +35,11 @@ def subscription_required(required_tier: SubscriptionTier):
     return dependency
 
 
-async def check_daily_limit(current_user: UserDB, db_session):
+async def check_daily_limit(current_user: UserDB, db_session: AsyncSession):
     """
     Checks if the user has exceeded their daily video generation limit.
     """
-    from api.utils.models import VideoJobDB
+    from src.api.utils.models import VideoJobDB
     from datetime import datetime, timedelta
     from sqlalchemy import select, func
 
@@ -74,6 +75,21 @@ async def check_daily_limit(current_user: UserDB, db_session):
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"{window_name.capitalize()} limit reached for {get_subscription_tier_value(current_user)} tier ({quota} videos/{config['window']}).",
         )
+
+
+def daily_limit_reached():
+    """
+    FastAPI dependency to enforce daily limits.
+    """
+
+    async def dependency(
+        current_user: UserDB = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
+    ):
+        await check_daily_limit(current_user, db)
+        return current_user
+
+    return dependency
 
 
 def engine_access_required(engine: str):
@@ -140,24 +156,27 @@ def engine_access_required(engine: str):
     return dependency
 
 
-def credits_required(action: str):
+def credits_required(action: CreditAction | str):
     """
     Dependency to check and consume credits for an action.
+    Accepts CreditAction enum or string for backward compatibility.
     """
 
     async def dependency(
         current_user: UserDB = Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
     ):
-        from services.payment.credit_service import credit_service
+        from src.services.payment.credit_service import credit_service
 
+        # Convert to string if CreditAction enum
+        action_str = action.value if isinstance(action, CreditAction) else action
         tier = get_subscription_tier_value(current_user)
-        cost = credit_service.get_action_cost(action, tier)
+        cost = credit_service.get_action_cost(action_str, tier)
 
         if not await credit_service.has_sufficient_credits(current_user.id, cost, db):
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail=f"Insufficient credits. Need {cost} credits for {action.replace('_', ' ')}.",
+                detail=f"Insufficient credits. Need {cost} credits for {action_str.replace('_', ' ')}.",
             )
 
         return cost

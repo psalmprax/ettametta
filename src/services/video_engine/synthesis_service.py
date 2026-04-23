@@ -1,13 +1,13 @@
 import logging
 import json
-from api.utils.vault import get_secret
+from src.api.utils.vault import get_secret
 import httpx
 import os
 import asyncio
 import uuid
 import shutil
 from pathlib import Path
-from api.config import settings
+from src.api.config import settings
 import redis
 import time
 from contextlib import asynccontextmanager
@@ -743,8 +743,8 @@ class GenerativeService:
                 f"[GenerativeService] Dispatching ComfyUI workflow for {model_name} to {settings.COMFYUI_URL}..."
             )
 
-            output_path = f"{settings.VIDEO_OUTPUTS_DIR}/comfy_{uuid.uuid4()}.mp4"
-            os.makedirs(settings.VIDEO_OUTPUTS_DIR, exist_ok=True)
+            output_path = f"{settings.STORAGE_OUTPUT_DIR}/comfy_{uuid.uuid4()}.mp4"
+            os.makedirs(settings.STORAGE_OUTPUT_DIR, exist_ok=True)
 
             # Actual ComfyUI execution logic
             success = False
@@ -938,7 +938,7 @@ class GenerativeService:
         import uuid, os
 
         job_id = f"veo3_{uuid.uuid4().hex[:8]}"
-        output_dir = settings.REMOTE_VIDEO_OUTPUTS_DIR
+        output_dir = settings.REMOTE_STORAGE_OUTPUT_DIR
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, f"{job_id}.mp4")
 
@@ -999,7 +999,7 @@ class GenerativeService:
         import uuid, os
 
         job_id = f"wan_{uuid.uuid4().hex[:8]}"
-        output_dir = settings.REMOTE_VIDEO_OUTPUTS_DIR
+        output_dir = settings.REMOTE_STORAGE_OUTPUT_DIR
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, f"{job_id}.mp4")
 
@@ -1355,9 +1355,9 @@ class GenerativeService:
                                         f"{render_node_url}/download/{job_id}"
                                     )
                                     if dl_resp.status_code == 200:
-                                        output_path = f"{settings.VIDEO_OUTPUTS_DIR}/animatediff_{uuid.uuid4().hex[:8]}.mp4"
+                                        output_path = f"{settings.STORAGE_OUTPUT_DIR}/animatediff_{uuid.uuid4().hex[:8]}.mp4"
                                         os.makedirs(
-                                            settings.VIDEO_OUTPUTS_DIR, exist_ok=True
+                                            settings.STORAGE_OUTPUT_DIR, exist_ok=True
                                         )
                                         with open(output_path, "wb") as f:
                                             f.write(dl_resp.content)

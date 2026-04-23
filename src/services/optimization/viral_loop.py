@@ -1,11 +1,11 @@
 import logging
 import asyncio
-from services.discovery.service import base_discovery_service
-from services.video_engine.tasks import download_and_process_task
-from api.utils.database import async_session_factory
+from src.services.discovery.service import base_discovery_service
+from src.services.video_engine.tasks import download_and_process_task
+from src.api.utils.database import async_session_factory
 from sqlalchemy import select
-from shared.enums import SystemJobStatus
-from api.utils.models import (
+from src.shared.enums import SystemJobStatus
+from src.api.utils.models import (
     SystemSettings,
     ContentCandidateDB,
     VideoJobDB,
@@ -55,7 +55,7 @@ class ViralLoopController:
                 task = download_and_process_task.delay(winner.source_url, niche, platform)
 
                 # 4. Record the job entry
-                from api.utils.user_models import UserDB, UserRole
+                from src.api.utils.user_models import UserDB, UserRole
                 stmt_admin = select(UserDB).where(UserDB.role == UserRole.ADMIN)
                 result_admin = await db.execute(stmt_admin)
                 admin = result_admin.scalar_one_or_none()

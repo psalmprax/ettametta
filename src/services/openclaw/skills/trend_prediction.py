@@ -2,7 +2,7 @@ import json
 import logging
 import requests
 from datetime import datetime, timedelta
-from api.config import settings
+from src.api.config import settings
 from .memory import memory_skill
 
 from .base_skill import OpenClawBaseSkill
@@ -23,7 +23,7 @@ class TrendPredictionSkill(OpenClawBaseSkill):
         Polymorphic entry point for OpenClaw agent.
         """
         if action == "predict":
-            return self.predict_viral_trends(niche, kwargs.get("horizon", 7))
+            return self.predict_trend(niche, kwargs.get("horizon", 7))
         elif action == "velocity":
             return self.get_trend_velocity(kwargs.get("topic", niche))
         elif action == "signal":
@@ -142,11 +142,11 @@ class TrendPredictionSkill(OpenClawBaseSkill):
         prompt += "Provide:\n1. Top 5 predicted trends with confidence scores\n2. Content ideas for each\n3. Best platform for each\n4. Timing recommendations"
         return prompt
 
-    def get_trend_velocity(self, topic: str) -> str:
+    def get_trend_velocity(self, niche: str) -> str:
         try:
             resp = requests.get(
                 f"{self.api_url}/discovery/search",
-                params={"query": topic, "platform": "all", "limit": 20},
+                params={"query": niche, "platform": "all", "limit": 20},
                 headers=self._get_headers(),
                 timeout=10,
             )
@@ -159,7 +159,7 @@ class TrendPredictionSkill(OpenClawBaseSkill):
                 raw_data.get("data", []) if isinstance(raw_data, dict) else raw_data
             )
             if not results:
-                return f"📉 No data found for '{topic}'."
+                return f"📉 No data found for niche '{niche}'."
 
             scores = [
                 r.get("score", 0)
@@ -167,7 +167,7 @@ class TrendPredictionSkill(OpenClawBaseSkill):
                 if isinstance(r.get("score"), (int, float))
             ]
             if len(scores) < 2:
-                return f"📊 **Trend: {topic}**\nInsufficient data points for velocity analysis.\nCurrent score: {scores[0] if scores else 'N/A'}"
+                return f"📊 **Trend: {niche}**\nInsufficient data points for velocity analysis.\nCurrent score: {scores[0] if scores else 'N/A'}"
 
             avg_recent = sum(scores[:5]) / min(5, len(scores))
             avg_older = sum(scores[-5:]) / min(5, len(scores))
@@ -185,7 +185,7 @@ class TrendPredictionSkill(OpenClawBaseSkill):
                 direction = "💀 DYING"
 
             memory_skill.store_fact(
-                f"velocity_{topic}",
+                f"velocity_{niche}",
                 {
                     "velocity": velocity,
                     "direction": direction,
@@ -197,7 +197,7 @@ class TrendPredictionSkill(OpenClawBaseSkill):
             )
 
             return (
-                f"📊 **Trend Velocity: {topic}**\n"
+                f"📊 **Trend Velocity: {niche}**\n"
                 f"• Direction: {direction}\n"
                 f"• Velocity: {velocity:+.1f}%\n"
                 f"• Recent Avg Score: {avg_recent:.1f}\n"
@@ -209,7 +209,7 @@ class TrendPredictionSkill(OpenClawBaseSkill):
             logger.error(f"Trend Velocity Error: {e}")
             return f"⚠️ Velocity Error: {e}"
 
-    def get_cross_platform_signals(self, topic: str) -> str:
+    def get_cross_platform_signals(self, niche: str) -> str:
         platforms = ["youtube", "tiktok", "reddit", "twitter", "instagram"]
         results = {}
 
@@ -217,7 +217,7 @@ class TrendPredictionSkill(OpenClawBaseSkill):
             try:
                 resp = requests.get(
                     f"{self.api_url}/discovery/search",
-                    params={"query": topic, "platform": platform, "limit": 5},
+                    params={"query": niche, "platform": platform, "limit": 5},
                     headers=self._get_headers(),
                     timeout=8,
                 )
@@ -247,9 +247,9 @@ class TrendPredictionSkill(OpenClawBaseSkill):
             assessment = "📉 Weak signal — not yet trending"
 
         lines = [
-            f"🌐 **Cross-Platform Signal: {topic}**",
+            f"🌐 **Cross-Platform Signal: {niche}**",
             f"• Assessment: {assessment}",
-            f"• Active Platforms: {signal_platforms}/{len(platforms)}",
+            f"• Active Platforms: {len(active_platforms)}/{len(platforms)}",
             "",
         ]
         for p, c in results.items():
@@ -257,7 +257,7 @@ class TrendPredictionSkill(OpenClawBaseSkill):
             lines.append(f"  {p:12s} [{bar}] {c}")
 
         memory_skill.store_fact(
-            f"cross_platform_{topic}",
+            f"cross_platform_{niche}",
             {
                 "platforms": results,
                 "signal_strength": signal_strength,

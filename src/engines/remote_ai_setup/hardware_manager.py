@@ -18,6 +18,10 @@ class HardwareManager:
 
     def _detect_device(self) -> str:
         """Determines the best available hardware device."""
+        # 0. Forced CPU Override (Hardening)
+        if os.getenv("FORCE_CPU") == "true":
+            return "cpu"
+
         # 1. NVIDIA / AMD (ROCm)
         if torch.cuda.is_available():
             return "cuda"

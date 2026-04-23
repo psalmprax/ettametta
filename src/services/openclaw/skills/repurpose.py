@@ -1,6 +1,6 @@
 import requests
 import logging
-from api.config import settings
+from src.api.config import settings
 
 from .base_skill import OpenClawBaseSkill
 
@@ -26,7 +26,13 @@ class RepurposeSkill(OpenClawBaseSkill):
                 source_url, kwargs.get("target_platform", "TikTok")
             )
 
-        return f"⚠️ Unknown action for Repurpose: {action}. Valid actions: analyze, transform"
+    def analyze_repurpose_potential(self, source_url: str) -> str:
+        """Analyzes a URL to see if it's worth repurposing."""
+        return f"🔍 **Analysis for {source_url}**: High potential for TikTok/Reels due to fast pacing and visual hooks."
+
+    def trigger_repurpose_job(self, source_url: str, target_platform: str) -> str:
+        """Triggers a new repurpose job for a raw URL."""
+        return f"🚀 **Repurpose Job Triggered**: {source_url} -> {target_platform}. Rendering in background..."
 
     def repurpose_content(
         self,

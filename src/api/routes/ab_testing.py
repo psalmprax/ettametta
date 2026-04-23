@@ -6,14 +6,15 @@ Provides statistical A/B testing with proper significance testing
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.database import get_db
-from api.utils.models import ABTestDB
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB, UserRole
+from src.api.utils.database import get_db
+from src.api.utils.models import ABTestDB
+from src.shared.enums import ABTestStatus
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB, UserRole
 from pydantic import BaseModel
 from datetime import datetime
 import math
-from api.utils.api_responses import success_response
+from src.api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/ab-testing", tags=["A/B Testing"])
 
@@ -148,7 +149,9 @@ async def start_ab_test(
 
 @router.get("/test/{test_id}")
 async def get_test_results(
-    test_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
+    test_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """Get detailed test results with statistical analysis"""
     stmt = select(ABTestDB).where(
@@ -157,7 +160,7 @@ async def get_test_results(
     )
     result = await db.execute(stmt)
     test = result.scalar_one_or_none()
-    
+
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
@@ -167,7 +170,10 @@ async def get_test_results(
         conv_a, conv_b = test.variant_a_click_count, test.variant_b_click_count
     elif test.target_metric == "conversions":
         views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
-        conv_a, conv_b = test.variant_a_conversion_count, test.variant_b_conversion_count
+        conv_a, conv_b = (
+            test.variant_a_conversion_count,
+            test.variant_b_conversion_count,
+        )
     else:  # views
         views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
         conv_a, conv_b = test.variant_a_view_count, test.variant_b_view_count
@@ -208,7 +214,8 @@ async def get_test_results(
                 "view_count": test.variant_a_view_count,
                 "click_count": test.variant_a_click_count,
                 "conversion_count": test.variant_a_conversion_count,
-                "conversion_rate": test.variant_a_conversion_count / test.variant_a_view_count
+                "conversion_rate": test.variant_a_conversion_count
+                / test.variant_a_view_count
                 if test.variant_a_view_count > 0
                 else 0,
             },
@@ -218,7 +225,8 @@ async def get_test_results(
                 "view_count": test.variant_b_view_count,
                 "click_count": test.variant_b_click_count,
                 "conversion_count": test.variant_b_conversion_count,
-                "conversion_rate": test.variant_b_conversion_count / test.variant_b_view_count
+                "conversion_rate": test.variant_b_conversion_count
+                / test.variant_b_view_count
                 if test.variant_b_view_count > 0
                 else 0,
             },
@@ -231,7 +239,9 @@ async def get_test_results(
                 "interpretation": _interpret_effect_size(stats.effect_size),
             },
             "created_at": test.created_at.isoformat() if test.created_at else None,
-            "completed_at": test.completed_at.isoformat() if test.completed_at else None,
+            "completed_at": test.completed_at.isoformat()
+            if test.completed_at
+            else None,
             "winner_variant": test.winner_variant,
         }
     )
@@ -260,11 +270,11 @@ async def record_variant_event(
     stmt = select(ABTestDB).where(ABTestDB.id == test_id)
     result = await db.execute(stmt)
     test = result.scalar_one_or_none()
-    
+
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
-    if test.winner_variant or test.status == "completed":
+    if test.winner_variant or test.status == ABTestStatus.COMPLETED:
         return {"status": "test_completed", "winner": test.winner_variant}
 
     variant = event.variant.upper()
@@ -288,12 +298,16 @@ async def record_variant_event(
             test.variant_b_conversion_count += 1
 
     await db.commit()
-    return success_response(data={"status": "recorded", "variant": variant, "event_type": event.event_type})
+    return success_response(
+        data={"status": "recorded", "variant": variant, "event_type": event.event_type}
+    )
 
 
 @router.post("/test/{test_id}/determine-winner")
 async def determine_winner(
-    test_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
+    test_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """
     Determines and records the winning variant based on proper statistical significance.
@@ -304,7 +318,7 @@ async def determine_winner(
     )
     result = await db.execute(stmt)
     test = result.scalar_one_or_none()
-    
+
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
@@ -314,7 +328,10 @@ async def determine_winner(
         conv_a, conv_b = test.variant_a_click_count, test.variant_b_click_count
     elif test.target_metric == "conversions":
         views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
-        conv_a, conv_b = test.variant_a_conversion_count, test.variant_b_conversion_count
+        conv_a, conv_b = (
+            test.variant_a_conversion_count,
+            test.variant_b_conversion_count,
+        )
     else:
         views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
         conv_a, conv_b = test.variant_a_view_count, test.variant_b_view_count
@@ -336,7 +353,7 @@ async def determine_winner(
         test.winner_variant = stats.winner
         test.confidence_level = stats.confidence_level
         test.p_value = stats.p_value
-        test.status = "completed"
+        test.status = ABTestStatus.COMPLETED
         test.completed_at = datetime.utcnow()
         winner_title = (
             test.variant_a_title if stats.winner == "A" else test.variant_b_title
@@ -378,7 +395,7 @@ async def recommend_variant(test_id: str, db: AsyncSession = Depends(get_db)):
     stmt = select(ABTestDB).where(ABTestDB.id == test_id)
     result = await db.execute(stmt)
     test = result.scalar_one_or_none()
-    
+
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
@@ -433,7 +450,7 @@ async def get_active_tests(
     db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Get all active A/B tests with statistics"""
-    stmt = select(ABTestDB).where(ABTestDB.status == "active")
+    stmt = select(ABTestDB).where(ABTestDB.status == ABTestStatus.ACTIVE)
     if current_user.role != UserRole.ADMIN:
         stmt = stmt.where(ABTestDB.user_id == current_user.id)
 
@@ -467,7 +484,7 @@ async def get_completed_tests(
     db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Get all completed A/B tests with winner analysis"""
-    stmt = select(ABTestDB).where(ABTestDB.status == "completed")
+    stmt = select(ABTestDB).where(ABTestDB.status == ABTestStatus.COMPLETED)
     if current_user.role != UserRole.ADMIN:
         stmt = stmt.where(ABTestDB.user_id == current_user.id)
 
@@ -489,7 +506,9 @@ async def get_completed_tests(
                     "confidence_level": t.confidence_level,
                     "p_value": t.p_value,
                     "created_at": t.created_at.isoformat() if t.created_at else None,
-                    "completed_at": t.completed_at.isoformat() if t.completed_at else None,
+                    "completed_at": t.completed_at.isoformat()
+                    if t.completed_at
+                    else None,
                 }
                 for t in tests
             ],
@@ -500,7 +519,9 @@ async def get_completed_tests(
 
 @router.delete("/test/{test_id}")
 async def delete_test(
-    test_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
+    test_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """Delete an A/B test (admin only)"""
     if current_user.role != UserRole.ADMIN:
@@ -509,7 +530,7 @@ async def delete_test(
     stmt = select(ABTestDB).where(ABTestDB.id == test_id)
     result = await db.execute(stmt)
     test = result.scalar_one_or_none()
-    
+
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
@@ -517,3 +538,29 @@ async def delete_test(
     await db.commit()
 
     return success_response(data={"status": "deleted", "test_id": test_id})
+
+
+@router.post("/evolution/{parent_job_id}")
+async def trigger_flywheel_evolution(
+    parent_job_id: str,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Triggers the 'Find Winners Fast' Flywheel Evolution (Standard 4.1).
+    Calculates weighted engagement scores, kills losers, and prepares winner for iteration.
+    """
+    from src.services.optimization.flywheel import base_flywheel_service
+    
+    winner = await base_flywheel_service.run_evolution_cycle(parent_job_id)
+    
+    if not winner:
+        raise HTTPException(status_code=404, detail="No variants found for this parent job")
+    
+    return success_response(data={
+        "status": "evolution_complete",
+        "winner_id": winner["job_id"],
+        "winner_score": round(winner["score"], 4),
+        "winner_metrics": winner["metrics"],
+        "evolution_strategy": "Killed bottom 70%, Scaling top variant."
+    })

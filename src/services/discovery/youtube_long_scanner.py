@@ -1,7 +1,7 @@
 from .scanner_base import DiscoveryScannerBase
 from .models import ContentCandidate
 import random
-from api.config import settings
+from src.api.config import settings
 from googleapiclient.discovery import build
 import datetime
 import re

@@ -14,7 +14,7 @@ export const cinematicMinimalSchema = z.object({
     cta_text: z.string().optional(),
 });
 
-export const CinematicMinimal: React.FC<z.infer<typeof cinematicMinimalSchema>> = ({ title, subtitle, video_url, audio_url, primary_color = '#ffffff', show_cta_overlay, cta_type, cta_text }) => {
+export const CinematicMinimal: React.FC<z.infer<typeof cinematicMinimalSchema>> = ({ title, subtitle, video_url, audio_url, primary_color = '#00F2FE', show_cta_overlay, cta_type, cta_text }) => {
     const frame = useCurrentFrame();
     const { fps, durationInFrames } = useVideoConfig();
 
@@ -30,11 +30,11 @@ export const CinematicMinimal: React.FC<z.infer<typeof cinematicMinimalSchema>> 
     });
 
     return (
-        <AbsoluteFill style={{ backgroundColor: 'black' }}>
+        <AbsoluteFill style={{ backgroundColor: '#0A0A0B' }}>
             {/* Background Video with Slow Zoom */}
             {video_url && (
                 <div style={{ transform: `scale(${scale})`, width: '100%', height: '100%' }}>
-                    <Video src={video_url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+                    <Video src={video_url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }} />
                 </div>
             )}
             {/* Audio */}
@@ -47,35 +47,39 @@ export const CinematicMinimal: React.FC<z.infer<typeof cinematicMinimalSchema>> 
                     justifyContent: 'center',
                     alignItems: 'center',
                     padding: '80px',
-                    background: 'radial-gradient(circle, transparent 20%, rgba(0,0,0,0.4) 100%)'
+                    background: 'radial-gradient(circle, transparent 20%, rgba(10,10,11,0.8) 100%)'
                 }}>
                     <div style={{ textAlign: 'center', opacity }}>
                         <div style={{
-                            height: '2px',
-                            width: '100px',
-                            backgroundColor: primary_color,
+                            height: '4px',
+                            width: '120px',
+                            background: 'linear-gradient(to right, #00F2FE, #4ADE80)',
+                            borderRadius: '2px',
                             margin: '0 auto 40px',
                             transform: `scaleX(${interpolate(frame, [0, 60], [0, 1], { extrapolateRight: 'clamp' })})`
                         }} />
 
                         <h1 style={{
                             color: 'white',
-                            fontSize: '80px',
-                            fontFamily: 'Georgia, serif',
-                            fontStyle: 'italic',
-                            letterSpacing: '0.1em',
-                            marginBottom: '20px'
+                            fontSize: '90px',
+                            fontFamily: 'Inter, sans-serif',
+                            fontWeight: 800,
+                            letterSpacing: '-0.04em',
+                            lineHeight: 1.1,
+                            marginBottom: '24px',
+                            textShadow: '0 0 30px rgba(0, 242, 254, 0.3)'
                         }}>
                             {title}
                         </h1>
 
                         <p style={{
-                            color: 'rgba(255,255,255,0.7)',
-                            fontSize: '24px',
+                            color: 'rgba(255,255,255,0.8)',
+                            fontSize: '28px',
                             fontFamily: 'Inter, sans-serif',
                             textTransform: 'uppercase',
-                            letterSpacing: '0.5em',
-                            fontWeight: 300
+                            letterSpacing: '0.4em',
+                            fontWeight: 500,
+                            color: '#8E2DE2'
                         }}>
                             {subtitle}
                         </p>

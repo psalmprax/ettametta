@@ -68,7 +68,7 @@ sys.modules['moviepy.video.fx'] = type('fx', (), {})()
 async def test_production_pipeline():
     """Test the complete video production pipeline"""
 
-    print("🎬 VIRALFORGE VIDEO EDITOR - PRODUCTION PIPELINE TEST")
+    print("🎬 ETTAMETTA VIDEO EDITOR - PRODUCTION PIPELINE TEST")
     print("=" * 65)
 
     pipeline_results = {

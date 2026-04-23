@@ -1,7 +1,7 @@
 import httpx
 import logging
 import os
-from api.config import settings
+from src.api.config import settings
 
 class VisualGenerator:
     def __init__(self):

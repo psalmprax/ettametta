@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 
 
 def bootstrap():
-    print("🚀 Bootstrapping ViralForge Database...")
+    print("🚀 Bootstrapping Ettametta Database...")
 
     # 1. Create all tables
     print("📋 Creating all tables via SQLAlchemy...")

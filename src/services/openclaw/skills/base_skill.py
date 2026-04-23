@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 

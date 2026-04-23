@@ -2,12 +2,12 @@ import os
 import logging
 import httpx
 import json
-from typing import Optional, Dict, Any
+from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
-from api.utils.models import BrandIdentityDB
-from api.config import settings
+from src.api.utils.models import BrandIdentityDB
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +21,9 @@ class BrandingService:
         self,
         user_id: str | int,
         niche: str,
-        account_id: Optional[str] = None,
-        db: Optional[AsyncSession] = None,
-    ) -> Dict[str, Any]:
+        account_id: str | None = None,
+        db: AsyncSession | None = None,
+    ) -> dict[str, Any]:
         """
         Autonomous Brand Factory:
         Calls OpenClaw execute-tool to run the branding_skill (which has playwright).
@@ -120,7 +120,7 @@ class BrandingService:
 
     async def get_active_brand(
         self, user_id: str | int, niche: str, db: AsyncSession
-    ) -> Optional[BrandIdentityDB]:
+    ) -> BrandIdentityDB | None:
         """Fetch active brand for the given user and niche."""
         # Normalize user_id to string
         user_id_str = str(user_id)

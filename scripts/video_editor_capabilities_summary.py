@@ -3,7 +3,7 @@
 Video Editor Capabilities Summary
 =================================
 
-Comprehensive overview of the ViralForge video editor's production capabilities,
+Comprehensive overview of the Ettametta video editor's production capabilities,
 addressing key questions about video production assistance and hardware requirements.
 """
 
@@ -11,7 +11,7 @@ addressing key questions about video production assistance and hardware requirem
 def demonstrate_video_editor_capabilities():
     """Demonstrate and explain the video editor capabilities"""
 
-    print("🎬 VIRALFORGE VIDEO EDITOR - CAPABILITIES OVERVIEW")
+    print("🎬 ETTAMETTA VIDEO EDITOR - CAPABILITIES OVERVIEW")
     print("=" * 65)
 
     print("\n📋 ANSWERING YOUR QUESTIONS:")
@@ -113,7 +113,7 @@ def demonstrate_video_editor_capabilities():
 
     print("\n🎬 CONCLUSION:")
     print("-" * 13)
-    print("   The ViralForge video editor provides MORE than the original")
+    print("   The Ettametta video editor provides MORE than the original")
     print("   Video Production Assistant concept - it includes automated")
     print("   discovery, intelligent planning, and comprehensive editing")
     print("   support. While actual video file rendering requires additional")

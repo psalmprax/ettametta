@@ -2,7 +2,7 @@ import logging
 import random
 from typing import Any
 from .base import BaseMonetizationStrategy
-from api.utils.models import SystemSettings
+from src.api.utils.models import SystemSettings
 
 class SponsorshipStrategy(BaseMonetizationStrategy):
     """
@@ -14,7 +14,7 @@ class SponsorshipStrategy(BaseMonetizationStrategy):
         Fetches brand partners from database configuration.
         """
         from sqlalchemy import select
-        from api.utils.database import async_session_factory
+        from src.api.utils.database import async_session_factory
         
         async with async_session_factory() as db:
             stmt = select(SystemSettings).filter(SystemSettings.key == "brand_partners")

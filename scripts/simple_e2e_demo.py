@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 def demonstrate_complete_workflow():
     """Demonstrate the complete video production workflow"""
 
-    print("🎬 VIRALFORGE VIDEO EDITOR - COMPLETE WORKFLOW DEMONSTRATION")
+    print("🎬 ETTAMETTA VIDEO EDITOR - COMPLETE WORKFLOW DEMONSTRATION")
     print("=" * 70)
     print("End-to-End Video Processing: Discovery → Production → Preview")
     print()
@@ -223,7 +223,7 @@ def demonstrate_complete_workflow():
     print("   • Standard cloud server sufficient")
 
     print("\n🎉 CONCLUSION:")
-    print("   ✅ The ViralForge video editor CAN perform complete end-to-end")
+    print("   ✅ The Ettametta video editor CAN perform complete end-to-end")
     print("      video processing from content discovery to upload-ready preview!")
     print()
     print("   ✅ All 5 workflow phases are operational")

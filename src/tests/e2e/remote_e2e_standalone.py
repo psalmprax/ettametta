@@ -10,7 +10,7 @@ import asyncio
 import subprocess
 import base64
 
-PROJECT_DIR = "/home/psalmprax/ALL_PROJECTS/viral_forge"
+PROJECT_DIR = "/home/psalmprax/ALL_PROJECTS/ettametta"
 sys.path.insert(0, PROJECT_DIR)
 
 os.environ["DEBUG"] = "true"

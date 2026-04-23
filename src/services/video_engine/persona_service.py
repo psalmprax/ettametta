@@ -16,7 +16,7 @@ class PersonaService:
         """
         # Try local voiceover service
         try:
-            from services.voiceover.service import voiceover_service
+            from src.services.voiceover.service import voiceover_service
 
             audio_path = await voiceover_service.generate_voiceover(text)
             if audio_path:
@@ -48,14 +48,14 @@ class PersonaService:
         return None
 
     async def animate_persona(
-        self, reference_image_url: str, topic: str, script: str | None = None
+        self, reference_image_url: str, niche: str, script: str | None = None
     ) -> str:
         """
-        Orchestrates the creation of a personalized deepfake video.
+        Orchestrates the animation of a personalized persona video via external rendering services.
         1. Generates TTS audio via voiceover service.
         2. Sends image + audio to the Render Node for LivePortrait/SadTalker animation.
         """
-        logger.info(f"Animating Persona. Image: {reference_image_url} | Topic: {topic}")
+        logger.info(f"Animating Persona. Image: {reference_image_url} | Niche: {niche}")
 
         if not self.render_node_url:
             logger.error("RENDER_NODE_URL missing. Cannot animate persona.")
@@ -63,7 +63,7 @@ class PersonaService:
                 "Render node URL not configured. Please set RENDER_NODE_URL in environment."
             )
 
-        script_text = script or f"Hey everyone, let's talk about {topic}."
+        script_text = script or f"Hey everyone, let's talk about {niche}."
 
         # Step 1: Generate TTS audio
         audio_path = await self._generate_tts(script_text)

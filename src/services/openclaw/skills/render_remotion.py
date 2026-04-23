@@ -4,7 +4,7 @@ import subprocess
 import logging
 from typing import Any
 
-from api.config import settings
+from src.api.config import settings
 
 from .base_skill import OpenClawBaseSkill
 
@@ -55,7 +55,7 @@ class RemotionRenderSkill(OpenClawBaseSkill):
         Executes a remotion render command.
         Example: npx remotion render <comp-id> out.mp4 --props='{"text": "Hello"}'
         """
-        output_path = str(settings.OUTPUT_DIR / output_name)
+        output_path = str(settings.REMOTION_OUTPUT_DIR / output_name)
         props_json = json.dumps(props)
 
         # Command construction

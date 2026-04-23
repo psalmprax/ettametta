@@ -10,7 +10,7 @@ from typing import Any
 import logging
 import asyncio
 
-from services.video_engine.scene_orchestrator import base_scene_based_orchestrator
+from src.services.video_engine.scene_orchestrator import base_scene_based_orchestrator
 
 from .base_skill import OpenClawBaseSkill
 

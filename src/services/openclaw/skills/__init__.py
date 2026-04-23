@@ -96,8 +96,8 @@ leonardo_skill = safe_import_skill(".leonardo", "leonardo_skill")
 invideo_skill = safe_import_skill(".invideo", "invideo_skill")
 fliki_skill = safe_import_skill(".fliki", "fliki_skill")
 content_editor_skill = safe_import_skill(".content_editor", "content_editor_skill")
-base_video_production_assistant_skill = safe_import_skill(
-    ".video_production_assistant", "base_video_production_assistant_skill"
+production_assistant_skill = safe_import_skill(
+    ".video_production_assistant", "production_assistant_skill"
 )
 
 # Render and Agent Zero skills (must exist or be handled gracefully)
@@ -169,7 +169,7 @@ __all__ = [
     "browser_skill",
     "document_skill",
     "persona_skill",
-    "base_video_production_assistant_skill",
+    "production_assistant_skill",
     "seo_auditor_skill",
     "reputation_manager_skill",
     "chat_sales_skill",

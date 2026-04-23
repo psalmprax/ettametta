@@ -2,7 +2,7 @@ import json
 import logging
 import requests
 from datetime import datetime
-from api.config import settings
+from src.api.config import settings
 from .memory import memory_skill
 from .base_skill import OpenClawBaseSkill
 
@@ -58,7 +58,7 @@ class AuditSkill(OpenClawBaseSkill):
             },
         }
 
-    def execute(self, action: str = "audit", platform: str = "youtube", user_id: int = 1, competitor_url: str = None, **kwargs) -> str:
+    def execute(self, action: str = "audit", platform: str = "youtube", user_id: str = 1, competitor_url: str = None, **kwargs) -> str:
         """
         Standardized mission execution.
         Routes to audit or compare based on action.
@@ -70,7 +70,7 @@ class AuditSkill(OpenClawBaseSkill):
             return self.compare_with_competitor(uid, competitor_url, platform)
         return self.audit_account(uid, platform)
 
-    def audit_account(self, user_id: int, platform: str = "youtube") -> str:
+    def audit_account(self, user_id: str, platform: str = "youtube") -> str:
         """
         Perform a comprehensive audit of the user's account on any platform.
         Analyzes: account health, monetization readiness, growth opportunities.
@@ -100,10 +100,10 @@ class AuditSkill(OpenClawBaseSkill):
             logger.error(f"{platform} Audit Error: {e}")
             return f"⚠️ {platform} Audit Error: {e}"
 
-    def _get_user_token(self, platform: str, user_id: int) -> str | None:
+    def _get_user_token(self, platform: str, user_id: str) -> str | None:
         """Get user's OAuth token for specified platform."""
         try:
-            from services.optimization.auth import token_manager
+            from src.services.optimization.auth import token_manager
 
             token = token_manager.get_token(platform, user_id=user_id)
             return token
@@ -112,7 +112,7 @@ class AuditSkill(OpenClawBaseSkill):
             return None
 
     def _fetch_platform_data(
-        self, platform: str, access_token: str, user_id: int
+        self, platform: str, access_token: str, user_id: str
     ) -> dict:
         """Fetch account data for any platform."""
         if platform == "youtube":
@@ -301,7 +301,7 @@ class AuditSkill(OpenClawBaseSkill):
 
     # Platform-specific implementations
 
-    def _audit_youtube_account(self, user_id: int) -> str:
+    def _audit_youtube_account(self, user_id: str) -> str:
         """YouTube-specific account audit."""
         access_token = self._get_user_token("youtube", user_id)
         if not access_token:
@@ -334,7 +334,7 @@ class AuditSkill(OpenClawBaseSkill):
             "youtube", account_data, monetization, growth_strategy
         )
 
-    def _audit_tiktok_account(self, user_id: int) -> str:
+    def _audit_tiktok_account(self, user_id: str) -> str:
         """TikTok-specific account audit."""
         access_token = self._get_user_token("tiktok", user_id)
         if not access_token:
@@ -364,7 +364,7 @@ class AuditSkill(OpenClawBaseSkill):
             "tiktok", account_data, monetization, growth_strategy
         )
 
-    def _audit_instagram_account(self, user_id: int) -> str:
+    def _audit_instagram_account(self, user_id: str) -> str:
         """Instagram-specific account audit."""
         access_token = self._get_user_token("instagram", user_id)
         if not access_token:
@@ -395,22 +395,22 @@ class AuditSkill(OpenClawBaseSkill):
         )
 
     # Simplified implementations for other platforms (can be expanded)
-    def _audit_facebook_account(self, user_id: int) -> str:
+    def _audit_facebook_account(self, user_id: str) -> str:
         return self._audit_generic_account("facebook", user_id)
 
-    def _audit_x_account(self, user_id: int) -> str:
+    def _audit_x_account(self, user_id: str) -> str:
         return self._audit_generic_account("x", user_id)
 
-    def _audit_linkedin_account(self, user_id: int) -> str:
+    def _audit_linkedin_account(self, user_id: str) -> str:
         return self._audit_generic_account("linkedin", user_id)
 
-    def _audit_snapchat_account(self, user_id: int) -> str:
+    def _audit_snapchat_account(self, user_id: str) -> str:
         return self._audit_generic_account("snapchat", user_id)
 
-    def _audit_twitch_account(self, user_id: int) -> str:
+    def _audit_twitch_account(self, user_id: str) -> str:
         return self._audit_generic_account("twitch", user_id)
 
-    def _audit_generic_account(self, platform: str, user_id: int) -> str:
+    def _audit_generic_account(self, platform: str, user_id: str) -> str:
         """Generic audit for platforms without full API integration yet."""
         access_token = self._get_user_token(platform, user_id)
         if not access_token:
@@ -779,7 +779,7 @@ class AuditSkill(OpenClawBaseSkill):
         return total_views / len(content) if content else 0.0
 
     def compare_with_competitor(
-        self, user_id: int, competitor_url: str, platform: str = "youtube"
+        self, user_id: str, competitor_url: str, platform: str = "youtube"
     ) -> str:
         """
         Compare user's account with a competitor and generate gap analysis.

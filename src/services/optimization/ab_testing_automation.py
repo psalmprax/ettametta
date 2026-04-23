@@ -7,10 +7,10 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from api.utils.database import async_session_factory
+from src.api.utils.database import async_session_factory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.utils.models import ABTestDB
+from src.api.utils.models import ABTestDB
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class ABTestingAutomation:
 
     async def _log(self, message: str, level: str = "INFO"):
         """Broadcast a log message"""
-        from api.routes.ws import notify_system_log_async
+        from src.api.routes.ws import notify_system_log_async
         await notify_system_log_async(message, level=level, module="AB_TESTING")
 
     async def _check_active_tests(self):
@@ -87,7 +87,7 @@ class ABTestingAutomation:
                 return  # Need more data
 
             # Use proper statistical testing
-            from api.routes.ab_testing import calculate_statistics
+            from src.api.routes.ab_testing import calculate_statistics
 
             # For views-based tests, use views as conversions
             stats = calculate_statistics(

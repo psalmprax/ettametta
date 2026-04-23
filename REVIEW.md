@@ -17,7 +17,7 @@ The backend implementation shows a mix of well-architected patterns and areas re
 
 ### CR-01: Inconsistent Database Session Management
 
-**File:** `api/routes/video.py:415`
+**File:** `src/api/routes/video.py:415`
 **Issue:** Uses synchronous `SessionLocal()` instead of async dependency `get_db`. This creates inconsistent session handling patterns and potential resource leaks.
 
 ```python
@@ -79,7 +79,7 @@ task = download_and_process_task.delay(...)  # No validation task was queued suc
 
 ### CR-04: Potential Race Condition in Credit Consumption
 
-**File:** `api/routes/video.py:75-84`
+**File:** `src/api/routes/video.py:75-84`
 **Issue:** Credit is consumed before verifying the task can actually be queued. If Celery is overloaded and task queuing fails, users lose credits without video processing.
 
 ```python

@@ -1,14 +1,15 @@
-from api.utils.celery import celery_app
+from src.api.utils.celery import celery_app
 
 from .processor import VideoProcessor
 from .downloader import base_video_downloader
-from services.optimization.youtube_publisher import base_youtube_publisher
-from services.optimization.service import base_optimization_service
-from shared.enums import SystemJobStatus
+from src.services.optimization.youtube_publisher import base_youtube_publisher
+from src.services.optimization.service import base_optimization_service
+from src.shared.enums import SystemJobStatus
 import asyncio
 import logging
 import os
-from api.config import settings
+from src.api.config import settings
+from src.shared.internal_client import internal_job_client
 
 logger = logging.getLogger(__name__)
 
@@ -76,11 +77,11 @@ def download_and_process_task(
     - enhanced: Tier 2 + sound design
     - premium: Tier 3 full processing (sound + motion graphics)
     """
-    from api.utils.database import get_async_db_url, AsyncSession
-    from api.utils.models import VideoJobDB
+    from src.api.utils.database import get_async_db_url, AsyncSession
+    from src.api.utils.models import VideoJobDB
     from sqlalchemy import select
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-    from api.config import settings
+    from src.api.config import settings
     import uuid
     import asyncio
 
@@ -98,37 +99,16 @@ def download_and_process_task(
     )
 
     def update_job(status=None, progress=None, output_path=None, error_message=None):
-        async def _update():
-            async with _task_session_factory() as db:
-                stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
-                result = await db.execute(stmt)
-                job = result.scalar_one_or_none()
-                if job:
-                    if status:
-                        job.status = status
-                    if progress is not None:
-                        job.progress = progress
-                    if output_path:
-                        job.output_path = output_path
-                    if error_message:
-                        job.error_message = error_message
-                    await db.commit()
-
-                    # Real-time WebSocket Notification
-                    from api.routes.ws import notify_job_update_sync
-
-                    notification = {
-                        "id": task_id,
-                        "status": job.status,
-                        "progress": job.progress,
-                        "output_path": job.output_path,
-                    }
-                    if job.error_message:
-                        notification["error_message"] = job.error_message
-
-                    notify_job_update_sync(notification)
-
-        run_async(_update())
+        """Standardized job status update via Internal API (Decoupled)"""
+        run_async(
+            internal_job_client.update_job(
+                job_id=task_id,
+                status=status,
+                progress=progress,
+                output_path=output_path,
+                error_message=error_message,
+            )
+        )
 
     try:
         # 1. Download
@@ -166,7 +146,7 @@ def download_and_process_task(
 
         # C. Generate Strategy via Groq (Integrated Scraper + VLM Intelligence)
         update_job(status=SystemJobStatus.STRATEGIZING, progress=40)
-        from services.decision_engine.service import base_strategy_service
+        from src.services.decision_engine.service import base_strategy_service
 
         # Extract transcript from video if available
         from .transcription import base_transcription_service
@@ -205,7 +185,7 @@ def download_and_process_task(
         processor = VideoProcessor()
         output_name = f"{uuid.uuid4()}.mp4"
 
-        from api.utils.models import VideoFilterDB
+        from src.api.utils.models import VideoFilterDB
         from sqlalchemy import select
 
         async def get_filters():
@@ -229,7 +209,7 @@ def download_and_process_task(
         # Sound Design: enabled by explicit flag OR quality_tier
         if sound_design or quality_tier in ("enhanced", "premium"):
             update_job(status=SystemJobStatus.ADDING_SOUND_DESIGN, progress=55)
-            from services.audio.sound_design import sound_design_service
+            from src.services.audio.sound_design import sound_design_service
 
             enhanced_path = run_async(
                 sound_design_service.add_background_music(processed_path, niche=niche)
@@ -241,7 +221,7 @@ def download_and_process_task(
         # Motion Graphics: enabled by explicit flag OR premium tier
         if motion_graphics or quality_tier == "premium":
             update_job(status=SystemJobStatus.ADDING_MOTION_GRAPHICS, progress=60)
-            from services.video_engine.motion_graphics import (
+            from src.services.video_engine.motion_graphics import (
                 base_motion_graphics_service,
             )
 
@@ -262,12 +242,12 @@ def download_and_process_task(
         )
 
         # 3.5 Storage (Upload to S3 or prepare local URL)
-        from services.storage.service import base_storage_service
+        from src.services.storage.service import base_storage_service
 
         # Upload
         storage_key = base_storage_service.upload_file(processed_path)
         # Get public URL for dashboard preview
-        public_url = base_storage_service.get_public_url(storage_key)
+        public_url = base_storage_service.get_file_url(storage_key)
 
         if preview_only:
             update_job(
@@ -294,7 +274,7 @@ def download_and_process_task(
             )
         elif platform == "TikTok":
             # Use Real TikTok Publisher
-            from services.optimization.tiktok_publisher import base_tiktok_publisher
+            from src.services.optimization.tiktok_publisher import base_tiktok_publisher
 
             update_job(status=SystemJobStatus.TIKTOK_UPLOAD, progress=90)
             url = run_async(
@@ -382,53 +362,34 @@ def generate_video_task(
     engine: str,
     style: str,
     aspect_ratio: str,
-    user_id: int,
+    user_id: str,
     custom_image_url: str = None,
+    parent_id: str = None,  # Standard 4.1: Variant Tracking
+    variant_index: int = None,
 ):
     """
     Background task for AI Video Synthesis (T2V).
     Simplified sync version for demo.
     """
-    from api.utils.models import VideoJobDB
-    from api.utils.database import async_session_factory
-    from services.storage.service import base_storage_service
+    from src.api.utils.models import VideoJobDB
+    from src.api.utils.database import async_session_factory
+    from src.services.storage.service import base_storage_service
     from .synthesis_service import base_generative_service
     import uuid
 
     task_id = self.request.id
 
     def update_job(status=None, progress=None, output_path=None, error_message=None):
-        async def _update():
-            async with async_session_factory() as db:
-                stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
-                result = await db.execute(stmt)
-                job = result.scalar_one_or_none()
-                if job:
-                    if status:
-                        job.status = status
-                    if progress is not None:
-                        job.progress = progress
-                    if output_path:
-                        job.output_path = output_path
-                    if error_message:
-                        job.error_message = error_message
-                    await db.commit()
-
-                    # Real-time WebSocket Notification
-                    from api.routes.ws import notify_job_update_sync
-
-                    notification = {
-                        "id": task_id,
-                        "status": job.status,
-                        "progress": job.progress,
-                        "output_path": job.output_path,
-                    }
-                    if job.error_message:
-                        notification["error_message"] = job.error_message
-
-                    notify_job_update_sync(notification)
-
-        run_async(_update())
+        """Standardized job status update via Internal API (Decoupled)"""
+        run_async(
+            internal_job_client.update_job(
+                job_id=task_id,
+                status=status,
+                progress=progress,
+                output_path=output_path,
+                error_message=error_message,
+            )
+        )
 
     try:
         # 1. Synthesis
@@ -493,7 +454,7 @@ def generate_video_task(
 
         # 4. Storage
         storage_key = base_storage_service.upload_file(local_video_path)
-        public_url = base_storage_service.get_public_url(storage_key)
+        public_url = base_storage_service.get_file_url(storage_key)
 
         update_job(
             status=SystemJobStatus.COMPLETED, progress=100, output_path=public_url
@@ -553,52 +514,32 @@ def generate_video_task(
     max_retries=3,
     retry_kwargs={"max_retries": 3},
 )
-def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int):
+def generate_story_task(self, prompt: str, engine: str, style: str, user_id: str):
     """
     Orchestrates the synthesis of a multi-scene narrative story.
     """
-    from api.utils.database import async_session_factory
-    from api.utils.models import VideoJobDB
+    from src.api.utils.database import async_session_factory
+    from src.api.utils.models import VideoJobDB
     from sqlalchemy import select
-    from services.decision_engine.service import base_strategy_service
-    from services.video_engine.synthesis_service import base_generative_service
-    from services.video_engine.voiceover import base_voiceover_service
+    from src.services.decision_engine.service import base_strategy_service
+    from src.services.video_engine.synthesis_service import base_generative_service
+    from src.services.video_engine.voiceover import base_voiceover_service
     import uuid
     import asyncio
 
     task_id = self.request.id
 
     def update_job(status=None, progress=None, output_path=None, error_message=None):
-        async def _update():
-            async with async_session_factory() as db:
-                stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
-                result = await db.execute(stmt)
-                job = result.scalar_one_or_none()
-                if job:
-                    if status:
-                        job.status = status
-                    if progress is not None:
-                        job.progress = progress
-                    if output_path:
-                        job.output_path = output_path
-                    if error_message:
-                        job.error_message = error_message
-                    await db.commit()
-
-                    from api.routes.ws import notify_job_update_sync
-
-                    notification = {
-                        "id": task_id,
-                        "status": job.status,
-                        "progress": job.progress,
-                        "output_path": job.output_path,
-                    }
-                    if job.error_message:
-                        notification["error_message"] = job.error_message
-
-                    notify_job_update_sync(notification)
-
-        run_async(_update())
+        """Standardized job status update via Internal API (Decoupled)"""
+        run_async(
+            internal_job_client.update_job(
+                job_id=task_id,
+                status=status,
+                progress=progress,
+                output_path=output_path,
+                error_message=error_message,
+            )
+        )
 
     try:
         # 1. Scripting Agent
@@ -646,10 +587,10 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
         )
 
         # 4. Storage & Finalization
-        from services.storage.service import base_storage_service
+        from src.services.storage.service import base_storage_service
 
         storage_key = base_storage_service.upload_file(final_video_path)
-        public_url = base_storage_service.get_public_url(storage_key)
+        public_url = base_storage_service.get_file_url(storage_key)
 
         update_job(
             status=SystemJobStatus.COMPLETED, progress=100, output_path=public_url
@@ -707,18 +648,16 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: int
     retry_backoff=True,
     max_retries=2,
 )
-def narrative_fusion_task(
-    self, niche: str, duration_sec: int = 60, user_id: int = None
-):
+def narrative_fusion_task(self, niche: str, duration_sec: int = 60, user_id: str = None):
     """
     Tier 10 Autonomous Narrative Fusion task.
     Discovers multiple assets from 15+ platforms and fuses them into a cinematic narrative.
     """
-    from api.utils.database import async_session_factory
-    from api.utils.models import VideoJobDB
+    from src.api.utils.database import async_session_factory
+    from src.api.utils.models import VideoJobDB
     from sqlalchemy import select
-    from engines.real_video_fusion_engine import RealVideoFusionEngine
-    from engines.intelligent_video_workflow import (
+    from src.engines.real_video_fusion_engine import RealVideoFusionEngine
+    from src.engines.intelligent_video_workflow import (
         discover_multi_platform,
         analyze_content_type,
     )
@@ -727,23 +666,16 @@ def narrative_fusion_task(
     task_id = self.request.id
 
     def update_job(status=None, progress=None, output_path=None, error_message=None):
-        async def _update():
-            async with async_session_factory() as db:
-                stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
-                result = await db.execute(stmt)
-                job = result.scalar_one_or_none()
-                if job:
-                    if status:
-                        job.status = status
-                    if progress is not None:
-                        job.progress = progress
-                    if output_path:
-                        job.output_path = output_path
-                    if error_message:
-                        job.error_message = error_message
-                    await db.commit()
-
-        run_async(_update())
+        """Standardized job status update via Internal API (Decoupled)"""
+        run_async(
+            internal_job_client.update_job(
+                job_id=task_id,
+                status=status,
+                progress=progress,
+                output_path=output_path,
+                error_message=error_message,
+            )
+        )
 
     try:
         # Phase 1: Intelligent Discovery
@@ -785,10 +717,10 @@ def narrative_fusion_task(
 
         if result.get("success"):
             # Phase 4: Storage
-            from services.storage.service import base_storage_service
+            from src.services.storage.service import base_storage_service
 
             storage_key = base_storage_service.upload_file(result["video_path"])
-            public_url = base_storage_service.get_public_url(storage_key)
+            public_url = base_storage_service.get_file_url(storage_key)
 
             update_job(
                 status=SystemJobStatus.COMPLETED, progress=100, output_path=public_url

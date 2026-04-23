@@ -4,9 +4,9 @@ from typing import Any
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from api.utils.database import AsyncSessionLocal
-from api.utils.models import ExperimentCohortDB
-from api.utils.redis import get_redis
+from src.api.utils.database import AsyncSessionLocal
+from src.api.utils.models import ExperimentCohortDB
+from src.api.utils.redis import get_redis
 
 logger = logging.getLogger("ExperimentBatcher")
 
@@ -48,7 +48,7 @@ class ExperimentBatcher:
         Checks StrategyRegistryDB to ensure the strategy isn't 'KILLED'.
         """
         async with AsyncSessionLocal() as db:
-            from api.utils.models import StrategyRegistryDB
+            from src.api.utils.models import StrategyRegistryDB
             stmt = select(StrategyRegistryDB).where(StrategyRegistryDB.name == strategy_name)
             result = await db.execute(stmt)
             strat = result.scalar_one_or_none()

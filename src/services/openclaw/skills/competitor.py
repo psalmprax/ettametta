@@ -2,7 +2,7 @@ import json
 import logging
 import requests
 from datetime import datetime
-from api.config import settings
+from src.api.config import settings
 from .memory import memory_skill
 from .base_skill import OpenClawBaseSkill
 

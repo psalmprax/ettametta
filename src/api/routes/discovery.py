@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import httpx
@@ -7,54 +7,56 @@ import logging
 import datetime
 import json
 
-from services.discovery.service import base_discovery_service
-from services.discovery.models import ContentCandidate, ViralPattern
-from services.discovery.analysis_service import (
+from src.services.discovery.service import base_discovery_service
+from src.services.discovery.models import ContentCandidate, ViralPattern
+from src.services.discovery.analysis_service import (
     extract_content_patterns,
     get_persisted_analysis_report,
 )
 from fastapi_cache.decorator import cache
-from api.utils.api_responses import success_response, Paginator, paginate_list
+from src.api.utils.api_responses import (
+    success_response,
+    Paginator,
+    paginate_list,
+    handle_exception,
+)
+
+from src.services.payment.credit_service import credit_service
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.api.utils.database import get_db
+from src.api.utils.subscription import credits_required, get_subscription_tier_value
+from src.api.config import settings
+from src.shared.enums import SystemJobStatus, CreditAction
+from src.api.utils.models import ContentCandidateDB
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, and_, func
 
 logger = logging.getLogger(__name__)
-
-
-# NOTE: ContentSearchResult is deprecated. Use ContentCandidate (from services.discovery.models) for all endpoints.
 
 
 router = APIRouter(prefix="/discovery", tags=["Discovery"])
 
 DISCOVERY_GO_URL = os.getenv("DISCOVERY_GO_URL", "http://discovery-go:8080")
 
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from api.utils.subscription import credits_required, get_subscription_tier_value
-from services.payment.credit_service import credit_service
-from api.config import settings
-from api.utils.database import get_db
-from shared.enums import SystemJobStatus
-from api.utils.models import ContentCandidateDB
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-
 
 @router.get("/trends")
 @cache(expire=60)
 async def get_trends(
-    niche: Optional[str] = None,
+    niche: str | None = None,
     horizon: str = "30d",
     page: int = 1,
     limit: int = 20,
     min_viral_score: int = 0,
     exclude_shorts: bool = False,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
 ):
     try:
         if niche:
             trends = await base_discovery_service.find_trending_content(
                 niche,
                 horizon=horizon,
-                tier=get_subscription_tier_value(user),
+                tier=get_subscription_tier_value(current_user),
                 min_viral_score=min_viral_score,
                 exclude_shorts=exclude_shorts,
             )
@@ -66,24 +68,24 @@ async def get_trends(
 
         return success_response(data=paginate_list(trends, page=page, page_size=limit))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 @router.get("/search")
 async def search_discovery(
-    query: Optional[str] = None,
-    platform: Optional[List[str]] = None,
-    min_views: Optional[int] = None,
-    min_viral_score: Optional[float] = None,
-    creator: Optional[str] = None,
-    tags: Optional[List[str]] = None,
-    date_from: Optional[datetime.datetime] = None,
-    date_to: Optional[datetime.datetime] = None,
+    query: str | None = None,
+    platform: list[str] | None = None,
+    min_views: int | None = None,
+    min_viral_score: float | None = None,
+    creator: str | None = None,
+    tags: list[str] | None = None,
+    date_from: datetime.datetime | None = None,
+    date_to: datetime.datetime | None = None,
     sort_by: str = "viral_score",
     limit: int = 50,
     offset: int = 0,
     page: int = 1,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
 ):
     try:
         results = await base_discovery_service.search_content(
@@ -101,7 +103,7 @@ async def search_discovery(
         )
         return success_response(data=paginate_list(results, page=page, page_size=limit))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 class ScanRequest(BaseModel):
@@ -114,7 +116,9 @@ class NicheWatchRequest(BaseModel):
 
 
 @router.post("/scan")
-async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_user)):
+async def trigger_scan(
+    request: ScanRequest, current_user: UserDB = Depends(get_current_user)
+):
     """
     Asynchronously triggers a discovery scan. If 'deep' is true, dispatches a Celery task.
     Returns a task ID for UI status tracking.
@@ -126,11 +130,11 @@ async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_
     try:
         if request.deep:
             # Run deep scan as background task to avoid blocking
-            from services.discovery.tasks import deep_scan_task
+            from src.services.discovery.tasks import deep_scan_task
 
             task = deep_scan_task.delay(
                 niches=request.niches,
-                tier=get_subscription_tier_value(user),
+                tier=get_subscription_tier_value(current_user),
             )
 
             return success_response(
@@ -172,9 +176,11 @@ async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_
                             niche,
                             horizon="30d",
                             tier=getattr(
-                                user.subscription, "value", str(user.subscription)
+                                current_user.subscription,
+                                "value",
+                                str(current_user.subscription),
                             )
-                            if user.subscription
+                            if current_user.subscription
                             else "free",
                         )
                         all_results.extend(results)
@@ -249,13 +255,13 @@ async def trigger_scan(request: ScanRequest, user: UserDB = Depends(get_current_
         import traceback
 
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Discovery Error: {str(e)}")
+        return handle_exception(e)
 
 
 @router.post("/analyze")
 async def analyze_candidate(
     candidate: ContentCandidate,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     credits_cost: int = Depends(credits_required("viral_analysis")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -263,13 +269,13 @@ async def analyze_candidate(
     Asynchronous deconstruction: Dispatches deep AI analysis to Celery
     and returns a task ID for UI polling.
     """
-    from services.discovery.tasks import analyze_viral_pattern_task
+    from src.services.discovery.tasks import analyze_viral_pattern_task
 
     # Consume credits
     await credit_service.consume_credits(
-        user_id=user.id,
+        user_id=current_user.id,
         amount=credits_cost,
-        action="viral_analysis",
+        action=CreditAction.VIRAL_ANALYSIS,
         db=db,
         reference_id=candidate.id,  # Using candidate ID as reference
     )
@@ -287,12 +293,14 @@ async def analyze_candidate(
 
 @router.get("/niche-trends/{niche}")
 @cache(expire=300)
-async def get_niche_trends(niche: str, user: UserDB = Depends(get_current_user)):
+async def get_niche_trends(
+    niche: str, current_user: UserDB = Depends(get_current_user)
+):
     try:
         trend = await base_discovery_service.aggregate_niche_trends(niche)
         if not trend:
             # If no data yet, try to scan first
-            tier_value = get_subscription_tier_value(user)
+            tier_value = get_subscription_tier_value(current_user)
             await base_discovery_service.find_trending_content(niche, tier=tier_value)
             trend = await base_discovery_service.aggregate_niche_trends(niche)
             if not trend:
@@ -305,18 +313,18 @@ async def get_niche_trends(niche: str, user: UserDB = Depends(get_current_user))
                 )
         return success_response(data=trend)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 @router.get("/niches")
 async def list_monitored_niches(
-    user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    from api.utils.models import MonitoredNiche
+    from src.api.utils.models import MonitoredNiche
 
     try:
         stmt = select(MonitoredNiche.niche).filter(MonitoredNiche.is_active == True)
-        # Anyly filter by user if specific watch is desired,
+        # Anyly filter by current_user if specific watch is desired,
         # but for now we list all global active niches for inspiration
         stmt = stmt.distinct()
 
@@ -324,26 +332,27 @@ async def list_monitored_niches(
         niches = result.all()
         return success_response(data=[n[0] for n in niches])
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 @router.post("/niche/watch")
 async def watch_niche(
     request: NicheWatchRequest,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Persistently watch/monitor a niche for this user.
+    Persistently watch/monitor a niche for this current_user.
     """
-    from api.utils.models import MonitoredNiche
+    from src.api.utils.models import MonitoredNiche
     from sqlalchemy import and_
 
     try:
         # Check if already watching
         stmt = select(MonitoredNiche).filter(
             and_(
-                MonitoredNiche.user_id == user.id, MonitoredNiche.niche == request.niche
+                MonitoredNiche.user_id == current_user.id,
+                MonitoredNiche.niche == request.niche,
             )
         )
         result = await db.execute(stmt)
@@ -359,84 +368,28 @@ async def watch_niche(
 
         # Create new monitor
         new_monitor = MonitoredNiche(
-            user_id=user.id, niche=request.niche, is_active=True
+            user_id=current_user.id, niche=request.niche, is_active=True
         )
         db.add(new_monitor)
         await db.commit()
-
         return success_response(
             data={"status": "Niche Watch Established", "niche": request.niche}
         )
+
     except Exception as e:
         await db.rollback()
-        raise HTTPException(
-            status_code=500, detail=f"Failed to establish watch: {str(e)}"
-        )
-
-
-@router.post("/niche/unwatch")
-async def unwatch_niche(
-    request: NicheWatchRequest,
-    user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Stop watching a niche for this user.
-    """
-    from api.utils.models import MonitoredNiche
-    from sqlalchemy import and_
-
-    try:
-        stmt = select(MonitoredNiche).filter(
-            and_(
-                MonitoredNiche.user_id == user.id, MonitoredNiche.niche == request.niche
-            )
-        )
-        result = await db.execute(stmt)
-        existing = result.scalar_one_or_none()
-
-        if existing:
-            existing.is_active = False
-            await db.commit()
-            return success_response(
-                data={"status": "Niche Unwatched", "niche": request.niche}
-            )
-
-        return success_response(data={"status": "Not Watching", "niche": request.niche})
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to unwatch: {str(e)}")
-
-
-@router.get("/categories")
-async def list_categories(
-    user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
-):
-    """
-    Alias for /niches - returns list of monitored content categories.
-    """
-    from api.utils.models import MonitoredNiche
-
-    try:
-        stmt = (
-            select(MonitoredNiche.niche)
-            .filter(MonitoredNiche.is_active == True)
-            .distinct()
-        )
-        result = await db.execute(stmt)
-        niches = result.all()
-        return success_response(data=[n[0] for n in niches])
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 @router.get("/analyze/{task_id}")
-async def get_analysis_status(task_id: str, user: UserDB = Depends(get_current_user)):
+async def get_analysis_status(
+    task_id: str, current_user: UserDB = Depends(get_current_user)
+):
     """
     Get the status of an analysis task and return results when complete.
     """
-    from api.utils.celery import celery_app
-    from services.discovery.tasks import analyze_viral_pattern_task
+    from src.api.utils.celery import celery_app
+    from src.services.discovery.tasks import analyze_viral_pattern_task
 
     try:
         # Get task result
@@ -468,7 +421,7 @@ async def get_analysis_status(task_id: str, user: UserDB = Depends(get_current_u
                 }
             )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 class CreateVideoFromAnalysisRequest(BaseModel):
@@ -483,16 +436,16 @@ class CreateVideoFromAnalysisRequest(BaseModel):
 async def create_video_from_analysis(
     task_id: str,
     request: CreateVideoFromAnalysisRequest,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     credits_cost: int = Depends(credits_required("video_transformation")),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Create a video transformation from completed analysis.
     """
-    from api.utils.celery import celery_app
-    from services.video_engine.tasks import download_and_process_task
-    from api.utils.models import VideoJobDB
+    from src.api.utils.celery import celery_app
+    from src.services.video_engine.tasks import download_and_process_task
+    from src.api.utils.models import VideoJobDB
 
     try:
         # Check if task is complete
@@ -530,15 +483,15 @@ async def create_video_from_analysis(
 
         # Consume credits
         success, msg = await credit_service.consume_credits(
-            user_id=user.id,
+            user_id=current_user.id,
             amount=credits_cost,
-            action="video_transformation",
+            action=CreditAction.VIDEO_TRANSFORMATION,
             db=db,
             reference_id=task.id,
         )
 
         if not success:
-            from api.utils.celery import celery_app
+            from src.api.utils.celery import celery_app
 
             celery_app.control.revoke(task.id, terminate=True)
             raise HTTPException(
@@ -552,7 +505,7 @@ async def create_video_from_analysis(
             status=SystemJobStatus.QUEUED,
             progress=0,
             source_url=candidate_url,
-            user_id=user.id,
+            user_id=current_user.id,
         )
         db.add(new_job)
         await db.commit()
@@ -569,7 +522,7 @@ async def create_video_from_analysis(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 # ─── Auto-Pipeline Endpoints ───────────────────────────────────────────
@@ -586,16 +539,16 @@ class AutoTransformRequest(BaseModel):
 @router.post("/auto-transform")
 async def auto_transform(
     request: AutoTransformRequest,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     One-shot pipeline: Discover best content → Analyze → Create video transformation.
     Combines 3 steps into 1 call for autonomous operation.
     """
-    from api.utils.celery import celery_app
-    from services.video_engine.tasks import download_and_process_task
-    from api.utils.models import VideoJobDB
+    from src.api.utils.celery import celery_app
+    from src.services.video_engine.tasks import download_and_process_task
+    from src.api.utils.models import VideoJobDB
     from shared.enums import SystemJobStatus
 
     credits_needed = 2  # 分析 + video creation
@@ -608,7 +561,7 @@ async def auto_transform(
         candidates = await base_discovery_service.find_trending_content(
             request.niche,
             horizon="7d",
-            tier=get_subscription_tier_value(user),
+            tier=get_subscription_tier_value(current_user),
             min_viral_score=request.min_viral_score,
         )
 
@@ -646,7 +599,7 @@ async def auto_transform(
             status=SystemJobStatus.QUEUED,
             progress=0,
             source_url=source_url,
-            user_id=user.id,
+            user_id=current_user.id,
         )
         db.add(new_job)
         await db.commit()
@@ -667,7 +620,7 @@ async def auto_transform(
         raise
     except Exception as e:
         logger.error(f"[Auto-Transform] Pipeline failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 class InsightResponse(BaseModel):
@@ -681,13 +634,14 @@ class InsightResponse(BaseModel):
 
 @router.get("/insights/{niche}")
 @cache(expire=3600)
-async def get_niche_insights(niche: str, user: UserDB = Depends(get_current_user)):
+async def get_niche_insights(
+    niche: str, current_user: UserDB = Depends(get_current_user)
+):
     """
     Get AI-driven insights and recommendations for a specific niche.
     Uses Groq Llama-3 to generate high-fidelity, real-time advice based on the niche.
     """
-    from groq import Groq
-    from api.config import settings
+    from src.services.llm.intelligence_hub import IntelligenceHub
     import json
 
     # Default fallback data
@@ -695,35 +649,31 @@ async def get_niche_insights(niche: str, user: UserDB = Depends(get_current_user
     filters = ["Glitch Alpha", "Cinematic Pulse"]
     confidence = 0.85
 
-    if settings.GROQ_API_KEY:
-        try:
-            client = Groq(api_key=settings.GROQ_API_KEY)
-            prompt = f"""
-            You are a viral growth expert for the {niche} niche on YouTube Shorts/TikTok.
-            Provide a viral optimization strategy for this niche.
-            
-            Return ONLY a JSON object with this structure:
-            {{
-                "recommendation": "string (single actionable sentence, max 30 words)",
-                "filters_suggested": ["string", "string"],
-                "confidence": float (0.0 to 1.0)
-            }}
-            """
+    try:
+        hub = IntelligenceHub()
+        prompt = f"""
+        You are a viral growth expert for the {niche} niche on YouTube Shorts/TikTok.
+        Provide a viral optimization strategy for this niche.
+        
+        Return ONLY a JSON object with this structure:
+        {{
+            "recommendation": "string (single actionable sentence, max 30 words)",
+            "filters_suggested": ["string", "string"],
+            "confidence": float (0.0 to 1.0)
+        }}
+        """
 
-            chat_completion = client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                model="llama-3.3-70b-versatile",
-                response_format={"type": "json_object"},
-            )
+        ai_data = await hub.chat(
+            prompt=prompt,
+            system_prompt="You are a Viral Growth Strategy Analyst.",
+            json_mode=True,
+        )
 
-            ai_data = json.loads(chat_completion.choices[0].message.content)
-            recommendation = ai_data.get("recommendation", recommendation)
-            filters = ai_data.get("filters_suggested", filters)
-            confidence = ai_data.get("confidence", confidence)
-        except Exception as e:
-            import logging
-
-            logging.error(f"[Discovery] Groq Insight Failure: {e}")
+        recommendation = ai_data.get("recommendation", recommendation)
+        filters = ai_data.get("filters_suggested", filters)
+        confidence = ai_data.get("confidence", confidence)
+    except Exception as e:
+        logger.error(f"[Discovery] Intelligence Hub Insight Failure: {e}")
 
     return success_response(
         data=InsightResponse(
@@ -738,7 +688,7 @@ async def get_niche_insights(niche: str, user: UserDB = Depends(get_current_user
 
 
 # ─── opencli-rs Enhanced Discovery ─────────────────────────────────────
-# These endpoints use the user's own Chrome sessions (via opencli-rs)
+# These endpoints use the current_user's own Chrome sessions (via opencli-rs)
 # as an alternative to global API-based discovery.
 
 
@@ -747,21 +697,21 @@ async def opencli_search(
     platform: str,
     query: str,
     limit: int = 20,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
 ):
-    """Search a platform using the user's own Chrome session (via opencli-rs).
+    """Search a platform using the current_user's own Chrome session (via opencli-rs).
 
-    This is an alternative to the global API-based search. Each user
+    This is an alternative to the global API-based search. Each current_user
     can connect their own platform sessions via the /opencli/sessions
     endpoints, then use this to search with their authenticated session.
     """
-    from api.config import settings
-    from services.opencli.scanner import OpenCLIScanner
+    from src.api.config import settings
+    from src.services.opencli.scanner import OpenCLIScanner
 
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
 
-    scanner = OpenCLIScanner(user.id)
+    scanner = OpenCLIScanner(current_user.id)
     candidates = await scanner.scan_trends(query, platforms=[platform.lower()])
 
     # Limit results
@@ -773,19 +723,19 @@ async def opencli_feed(
     platform: str,
     feed_type: str = "trending",
     limit: int = 20,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
 ):
-    """Get feed/trending content from a platform using the user's Chrome session.
+    """Get feed/trending content from a platform using the current_user's Chrome session.
 
     feed_type options: feed, trending, hot, top, explore
     """
-    from api.config import settings
-    from services.opencli.scanner import OpenCLIScanner
+    from src.api.config import settings
+    from src.services.opencli.scanner import OpenCLIScanner
 
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
 
-    scanner = OpenCLIScanner(user.id)
+    scanner = OpenCLIScanner(current_user.id)
     candidates = await scanner.get_platform_feed(platform.lower(), feed_type, limit)
 
     return success_response(data=candidates)
@@ -795,20 +745,20 @@ async def opencli_feed(
 async def opencli_scan(
     niche: str = "general",
     platforms: list[str] | None = None,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
 ):
-    """Deep scan all connected platforms using the user's Chrome sessions.
+    """Deep scan all connected platforms using the current_user's Chrome sessions.
 
     This merges opencli-rs results with the standard discovery pipeline,
-    giving the user content discovered through their own authenticated sessions.
+    giving the current_user content discovered through their own authenticated sessions.
     """
-    from api.config import settings
-    from services.opencli.scanner import OpenCLIScanner
+    from src.api.config import settings
+    from src.services.opencli.scanner import OpenCLIScanner
 
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
 
-    scanner = OpenCLIScanner(user.id)
+    scanner = OpenCLIScanner(current_user.id)
     p = [p.lower() for p in platforms] if platforms else None
     candidates = await scanner.scan_trends(niche, platforms=p)
 
@@ -831,19 +781,19 @@ class InteractionRequest(BaseModel):
 @router.post("/interact")
 async def record_interaction(
     request: InteractionRequest,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Records a UI interaction with a discovery candidate.
     """
-    from api.utils.models import DiscoveryInteractionDB
+    from src.api.utils.models import DiscoveryInteractionDB
     import datetime
 
     try:
         new_interaction = DiscoveryInteractionDB(
             candidate_id=request.candidate_id,
-            user_id=user.id,
+            user_id=current_user.id,
             action=request.action,
             status=1,  # Established
             details={
@@ -866,7 +816,7 @@ async def record_interaction(
         )
     except Exception as e:
         logger.error(f"Interaction record failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to record interaction")
+        return handle_exception(e)
 
 
 # ─── Content Analysis Endpoints ───────────────────────────────────────────────
@@ -875,13 +825,13 @@ async def record_interaction(
 class AnalysisResponse(BaseModel):
     content_id: str
     analysis_results: dict
-    analyzed_at: Optional[datetime.datetime] = None
+    analyzed_at: datetime.datetime | None = None
 
 
 @router.get("/{content_id}/analysis")
 async def get_content_analysis(
     content_id: str,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     force: bool = False,
 ):
@@ -930,7 +880,7 @@ async def get_content_analysis(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+        return handle_exception(e)
 
 
 # ─── Velocity & Reupload Tracking Endpoints ───────────────────────────────────
@@ -939,14 +889,14 @@ async def get_content_analysis(
 @router.get("/{content_id}/velocity")
 async def get_content_velocity(
     content_id: str,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Get viral velocity score for a specific content item.
     Calculates real-time velocity based on view count and age.
     """
-    from services.discovery.scanner_base import DiscoveryScannerBase
+    from src.services.discovery.scanner_base import DiscoveryScannerBase
 
     try:
         # Get content from database
@@ -1006,13 +956,13 @@ async def get_content_velocity(
         raise
     except Exception as e:
         logger.error(f"Velocity calculation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 @router.get("/{content_id}/reuploads")
 async def get_content_reuploads(
     content_id: str,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     limit: int = 20,
 ):
@@ -1065,7 +1015,7 @@ async def get_content_reuploads(
         raise
     except Exception as e:
         logger.error(f"Reupload search failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 # ─── Refresh Endpoints ───────────────────────────────────────────────────────
@@ -1079,7 +1029,7 @@ class RefreshRequest(BaseModel):
 @router.post("/refresh")
 async def refresh_discovery(
     request: RefreshRequest,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
 ):
     """
     Refresh discovery cache for specified niches.
@@ -1087,7 +1037,7 @@ async def refresh_discovery(
     Clears Redis cache and triggers new scans.
     """
     import redis
-    from api.config import settings
+    from src.api.config import settings
 
     try:
         # Connect to Redis
@@ -1129,7 +1079,7 @@ async def refresh_discovery(
 
     except Exception as e:
         logger.error(f"Refresh failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 # ─── Export Endpoints ───────────────────────────────────────────────────────────
@@ -1144,7 +1094,7 @@ class ExportRequest(BaseModel):
 @router.post("/export")
 async def export_discovery(
     request: ExportRequest,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
 ):
     """
     Export discovery results as JSON or CSV.
@@ -1228,7 +1178,7 @@ async def export_discovery(
 
     except Exception as e:
         logger.error(f"Export failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 # ─── Niche Alert Endpoints ────────────────���──────────────────────────────────────
@@ -1242,15 +1192,15 @@ class NicheAlertRequest(BaseModel):
 
 @router.get("/alerts")
 async def get_niche_alerts(
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get user's niche alerts."""
-    from api.utils.models import DiscoveryAlertDB
+    """Get current_user's niche alerts."""
+    from src.api.utils.models import DiscoveryAlertDB
 
     try:
         stmt = select(DiscoveryAlertDB).filter(
-            DiscoveryAlertDB.user_id == user.id,
+            DiscoveryAlertDB.user_id == current_user.id,
             DiscoveryAlertDB.is_active == True,
         )
         result = await db.execute(stmt)
@@ -1271,21 +1221,21 @@ async def get_niche_alerts(
         )
     except Exception as e:
         logger.error(f"Get alerts failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 @router.post("/alerts")
 async def create_niche_alert(
     request: NicheAlertRequest,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Create an alert for when new trending content is found in a niche."""
-    from api.utils.models import DiscoveryAlertDB
+    from src.api.utils.models import DiscoveryAlertDB
 
     try:
         alert = DiscoveryAlertDB(
-            user_id=user.id,
+            user_id=current_user.id,
             niche=request.niche,
             threshold=request.threshold,
             is_active=request.enabled,
@@ -1305,21 +1255,21 @@ async def create_niche_alert(
     except Exception as e:
         await db.rollback()
         logger.error(f"Create alert failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 @router.delete("/alerts/{alert_id}")
 async def delete_niche_alert(
     alert_id: int,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a niche alert."""
-    from api.utils.models import DiscoveryAlertDB
+    from src.api.utils.models import DiscoveryAlertDB
 
     try:
         alert = await db.get(DiscoveryAlertDB, alert_id)
-        if not alert or alert.user_id != user.id:
+        if not alert or alert.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Alert not found")
 
         await db.delete(alert)
@@ -1331,7 +1281,7 @@ async def delete_niche_alert(
     except Exception as e:
         await db.rollback()
         logger.error(f"Delete alert failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 # ─── Bulk Favorites Endpoints ──────────────────────────────────────────────
@@ -1345,11 +1295,11 @@ class BulkFavoriteRequest(BaseModel):
 @router.post("/favorites/bulk")
 async def bulk_favorites(
     request: BulkFavoriteRequest,
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Add or remove multiple candidates from favorites."""
-    from api.utils.models import DiscoveryFavoriteDB
+    from src.api.utils.models import DiscoveryFavoriteDB
 
     try:
         added = 0
@@ -1362,7 +1312,7 @@ async def bulk_favorites(
             if request.action == "add" and not existing:
                 fav = DiscoveryFavoriteDB(
                     id=candidate_id,
-                    user_id=user.id,
+                    user_id=current_user.id,
                 )
                 db.add(fav)
                 added += 1
@@ -1383,23 +1333,23 @@ async def bulk_favorites(
     except Exception as e:
         await db.rollback()
         logger.error(f"Bulk favorite failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 @router.get("/favorites")
 async def get_favorites(
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     limit: int = 50,
 ):
-    """Get user's favorite content."""
-    from api.utils.models import DiscoveryFavoriteDB
+    """Get current_user's favorite content."""
+    from src.api.utils.models import DiscoveryFavoriteDB
 
     try:
         stmt = (
             select(ContentCandidateDB)
             .join(DiscoveryFavoriteDB, DiscoveryFavoriteDB.id == ContentCandidateDB.id)
-            .where(DiscoveryFavoriteDB.user_id == user.id)
+            .where(DiscoveryFavoriteDB.user_id == current_user.id)
             .order_by(ContentCandidateDB.viral_score.desc())
             .limit(limit)
         )
@@ -1423,7 +1373,7 @@ async def get_favorites(
         )
     except Exception as e:
         logger.error(f"Get favorites failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
 # ─── Scan History Endpoints ──────────────────────────────────────────────
@@ -1431,17 +1381,17 @@ async def get_favorites(
 
 @router.get("/history")
 async def get_scan_history(
-    user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     limit: int = 20,
 ):
-    """Get scan history for the user."""
-    from api.utils.models import ScanHistoryDB
+    """Get scan history for the current_user."""
+    from src.api.utils.models import ScanHistoryDB
 
     try:
         stmt = (
             select(ScanHistoryDB)
-            .where(ScanHistoryDB.user_id == user.id)
+            .where(ScanHistoryDB.user_id == current_user.id)
             .order_by(ScanHistoryDB.created_at.desc())
             .limit(limit)
         )
@@ -1467,4 +1417,4 @@ async def get_scan_history(
         )
     except Exception as e:
         logger.error(f"Get history failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)

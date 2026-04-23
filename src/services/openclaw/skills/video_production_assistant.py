@@ -11,10 +11,10 @@ import logging
 import asyncio
 
 from .base_skill import OpenClawBaseSkill
-from services.video_engine.video_production_assistant import (
-    base_video_production_assistant,
+from src.services.video_engine.video_production_assistant import (
+    production_assistant,
 )
-from services.discovery.video_lead_scanner import video_lead_scanner
+from src.services.discovery.video_lead_scanner import video_lead_scanner
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class VideoProductionAssistantSkill(OpenClawBaseSkill):
 
     def __init__(self):
         super().__init__()
-        self.name = "base_video_production_assistant"
+        self.name = "production_assistant"
         self.description = "Generate detailed editing instructions, templates, and guides for manual video production"
 
     async def execute(self, action: str = "assist", **kwargs) -> str:
@@ -87,7 +87,7 @@ class VideoProductionAssistantSkill(OpenClawBaseSkill):
                     "error": "Either production_plan or (scenes + niche) required",
                 }
 
-        instructions = base_video_production_assistant.generate_editing_instructions(
+        instructions = production_assistant.generate_editing_instructions(
             production_plan
         )
 
@@ -108,7 +108,7 @@ class VideoProductionAssistantSkill(OpenClawBaseSkill):
         if not production_plan:
             return {"success": False, "error": "production_plan parameter required"}
 
-        template = base_video_production_assistant.create_premiere_template(
+        template = production_assistant.create_premiere_template(
             production_plan
         )
 
@@ -128,7 +128,7 @@ class VideoProductionAssistantSkill(OpenClawBaseSkill):
         if not production_plan:
             return {"success": False, "error": "production_plan parameter required"}
 
-        template = base_video_production_assistant.create_capcut_template(
+        template = production_assistant.create_capcut_template(
             production_plan
         )
 
@@ -148,7 +148,7 @@ class VideoProductionAssistantSkill(OpenClawBaseSkill):
         if not production_plan:
             return {"success": False, "error": "production_plan parameter required"}
 
-        commands = base_video_production_assistant.create_ffmpeg_commands(
+        commands = production_assistant.create_ffmpeg_commands(
             production_plan
         )
 
@@ -168,7 +168,7 @@ class VideoProductionAssistantSkill(OpenClawBaseSkill):
         if not production_plan:
             return {"success": False, "error": "production_plan parameter required"}
 
-        script = base_video_production_assistant.generate_davinci_resolve_script(
+        script = production_assistant.generate_davinci_resolve_script(
             production_plan
         )
 
@@ -191,20 +191,20 @@ class VideoProductionAssistantSkill(OpenClawBaseSkill):
             return {"success": False, "error": "production_plan parameter required"}
 
         # Generate all assistance materials
-        instructions = base_video_production_assistant.generate_editing_instructions(
+        instructions = production_assistant.generate_editing_instructions(
             production_plan
         )
-        premiere_template = base_video_production_assistant.create_premiere_template(
+        premiere_template = production_assistant.create_premiere_template(
             production_plan
         )
-        capcut_template = base_video_production_assistant.create_capcut_template(
+        capcut_template = production_assistant.create_capcut_template(
             production_plan
         )
-        ffmpeg_commands = base_video_production_assistant.create_ffmpeg_commands(
+        ffmpeg_commands = production_assistant.create_ffmpeg_commands(
             production_plan
         )
         resolve_script = (
-            base_video_production_assistant.generate_davinci_resolve_script(
+            production_assistant.generate_davinci_resolve_script(
                 production_plan
             )
         )
@@ -228,4 +228,4 @@ class VideoProductionAssistantSkill(OpenClawBaseSkill):
 
 
 # Skill instance
-base_video_production_assistant_skill = VideoProductionAssistantSkill()
+production_assistant_skill = VideoProductionAssistantSkill()

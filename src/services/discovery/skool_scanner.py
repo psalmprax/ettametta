@@ -3,7 +3,7 @@ import logging
 import json
 from bs4 import BeautifulSoup
 from datetime import datetime
-from services.discovery.models import ContentCandidate
+from src.services.discovery.models import ContentCandidate
 
 logger = logging.getLogger(__name__)
 

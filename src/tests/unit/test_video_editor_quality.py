@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ViralForge Video Editor Quality Test
+Ettametta Video Editor Quality Test
 =====================================
 
 Demonstrates the video editor capabilities using mock data and available components.
@@ -87,7 +87,7 @@ sys.modules["psycopg2"] = MagicMock()
 async def test_video_editor_quality():
     """Comprehensive test of video editor capabilities"""
 
-    print("🎬 VIRALFORGE VIDEO EDITOR QUALITY ASSESSMENT")
+    print("🎬 ETTAMETTA VIDEO EDITOR QUALITY ASSESSMENT")
     print("=" * 60)
 
     results = {

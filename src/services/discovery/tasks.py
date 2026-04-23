@@ -1,6 +1,6 @@
-from api.utils.celery import celery_app
-from api.utils.models import MonitoredNiche
-from services.discovery.service import base_discovery_service
+from src.api.utils.celery import celery_app
+from src.api.utils.models import MonitoredNiche
+from src.services.discovery.service import base_discovery_service
 from datetime import datetime
 import asyncio
 
@@ -11,9 +11,9 @@ def sentinel_trend_watcher():
     Background task that iterates through all active niches and triggers discovery.
     If AUTO_PILOT is enabled, it triggers the Viral Loop for autonomous processing.
     """
-    from api.utils.models import SystemSettings
-    from services.optimization.viral_loop import base_viral_loop
-    from api.utils.database import async_session_factory
+    from src.api.utils.models import SystemSettings
+    from src.services.optimization.viral_loop import base_viral_loop
+    from src.api.utils.database import async_session_factory
     from sqlalchemy import select
 
     async def run_watcher():
@@ -80,7 +80,7 @@ def analyze_viral_pattern_task(candidate_data: dict):
     """
     Background task for deep AI deconstruction of a viral candidate.
     """
-    from services.discovery.models import ContentCandidate
+    from src.services.discovery.models import ContentCandidate
 
     candidate = ContentCandidate(**candidate_data)
 

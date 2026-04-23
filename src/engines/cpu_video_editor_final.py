@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ViralForge Video Editor - CPU-Based Complete Implementation
+Ettametta Video Editor - CPU-Based Complete Implementation
 ==========================================================
 
 Demonstrates that the video editor can produce high-quality content
@@ -10,7 +10,7 @@ using only CPU-based infrastructure (no GPU required).
 def demonstrate_cpu_video_editor():
     """Demonstrate complete CPU-based video editor capabilities"""
 
-    print("🎬 VIRALFORGE VIDEO EDITOR - CPU-BASED IMPLEMENTATION")
+    print("🎬 ETTAMETTA VIDEO EDITOR - CPU-BASED IMPLEMENTATION")
     print("=" * 60)
 
     # Infrastructure Overview
@@ -162,7 +162,7 @@ def demonstrate_cpu_video_editor():
 
     print("\n🎯 FINAL CONCLUSION")
     print("-" * 20)
-    print("✅ The ViralForge video editor CAN produce high-quality content")
+    print("✅ The Ettametta video editor CAN produce high-quality content")
     print("✅ All video processing runs efficiently on CPU infrastructure")
     print("✅ No GPU required - significant cost and maintenance savings")
     print("✅ Complete end-to-end video production pipeline operational")

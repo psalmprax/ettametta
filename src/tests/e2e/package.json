@@ -1,7 +1,7 @@
 {
-    "name": "viral-forge-e2e",
+    "name": "ettametta-e2e",
     "version": "1.0.0",
-    "description": "End-to-end tests for viral_forge",
+    "description": "End-to-end tests for ettametta",
     "scripts": {
         "test": "playwright test",
         "test:ui": "playwright test --ui",

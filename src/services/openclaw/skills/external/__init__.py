@@ -7,9 +7,9 @@ from .langchain_integration import (
 )
 from .crewai_integration import (
     crewai_service,
-    viralforge_crew,
+    ettametta_crew,
     CrewAIService,
-    ViralForgeCrew,
+    EttamettaCrew,
 )
 from .interpreter_integration import (
     interpreter_service,
@@ -35,9 +35,9 @@ __all__ = [
     "PromptTemplateManager",
     # CrewAI
     "crewai_service",
-    "viralforge_crew",
+    "ettametta_crew",
     "CrewAIService",
-    "ViralForgeCrew",
+    "EttamettaCrew",
     # Interpreter
     "interpreter_service",
     "code_executor",

@@ -98,7 +98,7 @@ class LangChainService:
 
 class PromptTemplateManager:
     """
-    Manage reusable prompt templates for viral_forge agent.
+    Manage reusable prompt templates for ettametta agent.
     """
 
     TEMPLATES = {

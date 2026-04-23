@@ -29,7 +29,7 @@ class SignalBus:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS signals (
                     timestamp REAL,
-                    topic TEXT,
+                    niche TEXT,
                     platform TEXT,
                     velocity REAL,
                     acceleration REAL,
@@ -38,40 +38,40 @@ class SignalBus:
                 )
             """)
 
-    def ingest_signal(self, topic: str, platform: str, raw_metrics: dict[str, Any]):
+    def ingest_signal(self, niche: str, platform: str, raw_metrics: dict[str, Any]):
         """Normalizes and persists a social signal"""
         # 1. Calculation Logic (Simplified for CPU-first logic)
         velocity = raw_metrics.get("growth_rate", 0.0)
         saturation = raw_metrics.get("saturation", 0.1)
         
         # 2. Acceleration Calculation (d2/dt2)
-        acceleration = self._calculate_acceleration(topic, velocity)
+        acceleration = self._calculate_acceleration(niche, velocity)
         
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 "INSERT INTO signals VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (time.time(), topic, platform, velocity, acceleration, saturation, 0.5)
+                (time.time(), niche, platform, velocity, acceleration, saturation, 0.5)
             )
         
-        logger.info(f"📡 [Bus] Ingested {platform} signal for '{topic}'. Accel: {acceleration:.2f}")
+        logger.info(f"📡 [Bus] Ingested {platform} signal for '{niche}'. Accel: {acceleration:.2f}")
 
-    def _calculate_acceleration(self, topic: str, current_velocity: float) -> float:
+    def _calculate_acceleration(self, niche: str, current_velocity: float) -> float:
         """Computes the 2nd derivative of engagement velocity"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "SELECT velocity FROM signals WHERE topic = ? ORDER BY timestamp DESC LIMIT 1",
-                (topic,)
+                "SELECT velocity FROM signals WHERE niche = ? ORDER BY timestamp DESC LIMIT 1",
+                (niche,)
             )
             prev = cursor.fetchone()
             if not prev: return 0.0
             return current_velocity - prev[0]
 
-    def get_feature_vector(self, topic: str) -> list[float]:
+    def get_feature_vector(self, niche: str) -> list[float]:
         """Returns the full temporal feature vector for the Forecaster"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "SELECT velocity, acceleration, saturation FROM signals WHERE topic = ? ORDER BY timestamp DESC LIMIT 1",
-                (topic,)
+                "SELECT velocity, acceleration, saturation FROM signals WHERE niche = ? ORDER BY timestamp DESC LIMIT 1",
+                (niche,)
             )
             row = cursor.fetchone()
             return list(row) if row else []

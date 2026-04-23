@@ -3,14 +3,14 @@
 Video Editor Capability Demonstration
 ====================================
 
-Shows the core capabilities of the ViralForge video editor system.
+Shows the core capabilities of the Ettametta video editor system.
 """
 
 
 def demonstrate_capabilities():
     """Demonstrate video editor capabilities"""
 
-    print("🎬 VIRALFORGE VIDEO EDITOR CAPABILITIES")
+    print("🎬 ETTAMETTA VIDEO EDITOR CAPABILITIES")
     print("=" * 50)
 
     capabilities = [

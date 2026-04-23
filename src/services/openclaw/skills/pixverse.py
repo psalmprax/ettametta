@@ -4,7 +4,7 @@ import os
 from playwright.async_api import async_playwright, Browser, Page
 from typing import Any
 import uuid
-from api.config import settings
+from src.api.config import settings
 
 from .base_skill import OpenClawBaseSkill
 

@@ -30,7 +30,7 @@ class FacebookPublisher(SocialPublisher):
         self,
         video_path: str,
         metadata: PostMetadata,
-        user_id: int,
+        user_id: str,
         account_id: int | None,
         headers: dict,
     ) -> str | None:
@@ -163,7 +163,7 @@ class FacebookPublisher(SocialPublisher):
     async def _get_metrics_impl(
         self,
         platform_id: str,
-        user_id: int,
+        user_id: str,
         account_id: int | None,
         headers: dict,
     ) -> dict:
@@ -195,7 +195,7 @@ class FacebookPublisher(SocialPublisher):
 
             return {"error": data.get("error", {}).get("message", "Unknown error")}
 
-    async def health_check(self, user_id: int) -> bool:
+    async def health_check(self, user_id: str) -> bool:
         """Verify Facebook credentials"""
         return await token_manager.get_token("facebook", user_id=user_id) is not None
 
