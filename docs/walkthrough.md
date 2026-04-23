@@ -9,7 +9,7 @@ This occurred because the `Jenkins.Dockerfile` was hardcoded to download the `aa
 
 ### Jenkins Agent Configuration
 
-#### [Jenkins.Dockerfile](file:///home/psalmprax/viral_forge/Jenkins.Dockerfile)
+#### [Jenkins.Dockerfile](file:///home/psalmprax/ettametta/Jenkins.Dockerfile)
 Updated the `curl` command to download the correct `x86_64` binary for `docker-compose`.
 
 ```diff
@@ -23,7 +23,7 @@ Updated the `curl` command to download the correct `x86_64` binary for `docker-c
 I rebuilt the Jenkins image and verified that `docker-compose` is now correctly installed and executable:
 
 ```bash
-psalmprax@ettametta:~/viral_forge$ docker run --rm viral_forge-jenkins docker-compose --version
+psalmprax@ettametta:~/ettametta$ docker run --rm ettametta-jenkins docker-compose --version
 Docker Compose version v2.26.1
 ```
 
@@ -145,7 +145,7 @@ I addressed the critical P0/P1 gaps identified in the system analysis:
 - **Result**: The system will now print a comprehensive "Startup Shield" report, alerting to missing OAuth credentials or insecure secret keys before tasks are accepted.
 
 **3. Production Environment Template**
-- **Artifact**: Created [.env.production.template](file:///home/psalmprax/viral_forge/.env.production.template).
+- **Artifact**: Created [.env.production.template](file:///home/psalmprax/ettametta/.env.production.template).
 - **Benefit**: Provides a clear roadmap for setting up the production environment with all required P0/P1 keys (YouTube/TikTok OAuth, Stripe, S3, etc.).
 
 **4. Unit Test Synchronization**
@@ -163,18 +163,18 @@ I addressed the critical P0/P1 gaps identified in the system analysis:
 I increased the project's verification density from 30% to 60%+ by implementing deep integration and E2E suites:
 
 **1. Discovery Bridge Integration**
-- **Artifact**: [test_integration_discovery.py](file:///home/psalmprax/viral_forge/api/tests/test_integration_discovery.py)
+- **Artifact**: [test_integration_discovery.py](file:///home/psalmprax/ettametta/api/tests/test_integration_discovery.py)
 - **Coverage**: Validates the high-concurrency bridge between Python and the Go-based scanner, ensuring niche requests are correctly proxied and handled.
 
 **2. Video Pipeline Virtualization**
-- **Artifact**: [test_integration_video.py](file:///home/psalmprax/viral_forge/api/tests/test_integration_video.py)
+- **Artifact**: [test_integration_video.py](file:///home/psalmprax/ettametta/api/tests/test_integration_video.py)
 - **Coverage**: Simulates the full video processing pipeline with mocked media engines, allowing for rapid regression testing without requiring high-cost GPU resources.
 
 **3. Middleware Health Monitoring**
 - **Implementation**: Added physical heartbeat checks for Redis connectivity and Celery worker task registration.
 
 **4. CI/CD Orchestration**
-- **Action**: Updated [Jenkinsfile](file:///home/psalmprax/viral_forge/Jenkinsfile).
+- **Action**: Updated [Jenkinsfile](file:///home/psalmprax/ettametta/Jenkinsfile).
 - **Result**: The "Integration Tests" stage now automatically executes the expanded discovery/video suites on every commit, providing immediate feedback on core service health.
 
 > [!IMPORTANT]
@@ -188,16 +188,16 @@ I increased the project's verification density from 30% to 60%+ by implementing 
 I consolidated the fragmented project health reports to improve long-term maintainability:
 
 **1. Master Gap Analysis**
-- **Artifact**: [gap_analysis.md](file:///home/psalmprax/viral_forge/docs/gap_analysis.md)
+- **Artifact**: [gap_analysis.md](file:///home/psalmprax/ettametta/docs/gap_analysis.md)
 - **Action**: Merged 10+ separate `gap_analysis_*.md` files into a single, comprehensive master report.
 - **Benefit**: Provides a clear, unified view of the remaining 7% of production blockers (primarily credentials).
 
 **2. Audit Archiving**
-- **Action**: Moved all outdated reports and historical audits to [docs/archive/gap_analysis/](file:///home/psalmprax/viral_forge/docs/archive/gap_analysis/).
+- **Action**: Moved all outdated reports and historical audits to [docs/archive/gap_analysis/](file:///home/psalmprax/ettametta/docs/archive/gap_analysis/).
 - **Result**: A clean `docs/` root directory focused on current implementation details.
 
 > [!TIP]
-> Use the [Master Gap Analysis](file:///home/psalmprax/viral_forge/docs/gap_analysis.md) as your primary reference for the final "Operational Ignition" phase (OAuth & S3 setup).
+> Use the [Master Gap Analysis](file:///home/psalmprax/ettametta/docs/gap_analysis.md) as your primary reference for the final "Operational Ignition" phase (OAuth & S3 setup).
 
 ---
 **Ettametta // Quality Assurance Strategy**
@@ -207,7 +207,7 @@ I consolidated the fragmented project health reports to improve long-term mainta
 I have codified the testing infrastructure to ensure seamless long-term validation:
 
 **1. Testing Guide**
-- **Artifact**: [testing.md](file:///home/psalmprax/viral_forge/docs/testing.md)
+- **Artifact**: [testing.md](file:///home/psalmprax/ettametta/docs/testing.md)
 - **Content**: Centralized directory of all 50+ backend tests, E2E specs, and manual utility scripts.
 - **Usage**: Detailed instructions for running local `pytest` and Playwright suites.
 
@@ -216,7 +216,7 @@ I have codified the testing infrastructure to ensure seamless long-term validati
 - **Result**: New developers can now identify and execute the full validation loop (Discovery -> Video -> Automation) with standardized commands.
 
 > [!IMPORTANT]
-> Refer to the [Testing Guide](file:///home/psalmprax/viral_forge/docs/testing.md) whenever adding new microservices or modifying core video/discovery bridges.
+> Refer to the [Testing Guide](file:///home/psalmprax/ettametta/docs/testing.md) whenever adding new microservices or modifying core video/discovery bridges.
 
 ---
 **Ettametta // E2E Infrastructure Repair**
@@ -252,7 +252,7 @@ I unified the testing standards across all development environments to eliminate
 - **Action**: Integrated a new `e2e` Playwright block that builds the Docker stack and runs browser tests against it.
 
 **2. Jenkins Hardening**
-- **Action**: Removed the `|| true` fallback from the `E2E Tests` stage in the [Jenkinsfile](file:///home/psalmprax/viral_forge/Jenkinsfile).
+- **Action**: Removed the `|| true` fallback from the `E2E Tests` stage in the [Jenkinsfile](file:///home/psalmprax/ettametta/Jenkinsfile).
 - **Result**: The pipeline will now correctly fail and abort deployment if a browser test fails, ensuring 100% regression confidence.
 
 **3. Verified Coverage**
@@ -274,7 +274,7 @@ I have enhanced the CI/CD pipeline to provide granular logs for every test failu
 - **Result**: The pipeline will now definitively fail and abort deployment if *any* test or linting check does not pass.
 
 **2. Granular Reporting & Archiving**
-- **Artifact**: [Jenkinsfile](file:///home/psalmprax/viral_forge/Jenkinsfile) updated with `archiveArtifacts`.
+- **Artifact**: [Jenkinsfile](file:///home/psalmprax/ettametta/Jenkinsfile) updated with `archiveArtifacts`.
 - **Feature**: Jenkins now archives all `*.xml` test results and Playwright HTML reports as build artifacts.
 - **Benefit**: You can now download the full browser trace and failure logs directly from the Jenkins build page.
 
@@ -302,7 +302,7 @@ The platform has reached a critical maturity level, with 100% of the regression 
 - **Production Env**: Deploy with the provided `.env.production.template`.
 
 **3. Documentation Master**
-- All fragmented gap reports have been consolidated into [docs/gap_analysis.md](file:///home/psalmprax/viral_forge/docs/gap_analysis.md) for long-term governance.
+- All fragmented gap reports have been consolidated into [docs/gap_analysis.md](file:///home/psalmprax/ettametta/docs/gap_analysis.md) for long-term governance.
 
 > [!IMPORTANT]
 > **ettametta** is now formally capable of autonomous operation. The only remaining steps are high-level credential injection and final production environment mounting.

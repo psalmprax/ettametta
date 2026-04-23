@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ettametta | Autonomous Social Engine",
-  description: "Next-generation generative social distribution network.",
+  title: "AlphaHecta | Production-Ready AI",
+  description: "The unified platform to deploy autonomous agents with military grade precision.",
 };
 
 import RootClientContext from "@/components/providers/RootClientContext";

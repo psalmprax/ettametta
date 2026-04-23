@@ -85,4 +85,4 @@
 ---
 
 *Convention analysis: 2026-04-09*</content>
-<parameter name="filePath">ALL_PROJECTS/viral_forge/.planning/codebase/CONVENTIONS.md
+<parameter name="filePath">ALL_PROJECTS/ettametta/.planning/codebase/CONVENTIONS.md

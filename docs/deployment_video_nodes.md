@@ -53,8 +53,8 @@ The core backend now sends a POST request to `RENDER_NODE_URL`. The remote node 
 6. **Clone & Run**:
    ```bash
    # In the RunPod terminal
-   git clone https://your-repo-url.com/viral_forge.git
-   cd viral_forge/apps/render_node
+   git clone https://your-repo-url.com/ettametta.git
+   cd ettametta/apps/render_node
    pip install -r requirements.txt
    uvicorn main:app --host 0.0.0.0 --port 8000
    ```
@@ -73,8 +73,8 @@ The core backend now sends a POST request to `RENDER_NODE_URL`. The remote node 
    ```
 4. **Docker Setup**: We provided a `Dockerfile` inside `apps/render_node` specifically for this.
    ```bash
-   git clone https://your-repo-url.com/viral_forge.git
-   cd viral_forge/apps/render_node
+   git clone https://your-repo-url.com/ettametta.git
+   cd ettametta/apps/render_node
    
    # Build the container (this handles all heavy CUDA dependencies)
    docker build -t ettametta-render-node .

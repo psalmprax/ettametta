@@ -11,18 +11,18 @@ This plan addresses the large (~2GB+) downloads of NVIDIA/CUDA libraries during 
 
 ### [API & Voiceover Services]
 
-#### [MODIFY] [requirements.txt](file:///home/psalmprax/viral_forge/api/requirements.txt)
-#### [MODIFY] [requirements.txt](file:///home/psalmprax/viral_forge/services/voiceover/requirements.txt)
+#### [MODIFY] [requirements.txt](file:///home/psalmprax/ettametta/api/requirements.txt)
+#### [MODIFY] [requirements.txt](file:///home/psalmprax/ettametta/services/voiceover/requirements.txt)
 Add `--extra-index-url https://download.pytorch.org/whl/cpu` to ensure `torch` dependencies use the CPU-only variant.
 
-#### [MODIFY] [Dockerfile](file:///home/psalmprax/viral_forge/api/Dockerfile)
-#### [MODIFY] [Dockerfile](file:///home/psalmprax/viral_forge/services/voiceover/Dockerfile)
+#### [MODIFY] [Dockerfile](file:///home/psalmprax/ettametta/api/Dockerfile)
+#### [MODIFY] [Dockerfile](file:///home/psalmprax/ettametta/services/voiceover/Dockerfile)
 - Modify the `pip install` command to prioritize the CPU wheel index.
 - **[NEW]** Install Remotion dependencies in `api/Dockerfile`.
 
 ### [Remotion Engine]
 
-#### [MODIFY] [Dockerfile](file:///home/psalmprax/viral_forge/api/Dockerfile)
+#### [MODIFY] [Dockerfile](file:///home/psalmprax/ettametta/api/Dockerfile)
 Install Remotion and its dependencies to enable Tier 3 motion graphics:
 ```dockerfile
 # Install Remotion dependencies
@@ -71,7 +71,7 @@ This plan addresses the OOM (Out of Memory) crashes that are causing the Jenkins
 
 ### [Infrastructure & Deployment]
 
-#### [MODIFY] [docker-compose.yml](file:///home/psalmprax/viral_forge/docker-compose.yml)
+#### [MODIFY] [docker-compose.yml](file:///home/psalmprax/ettametta/docker-compose.yml)
 - Reduce `celery_worker` concurrency and replicas.
 - Add memory limits to core services.
 
@@ -107,7 +107,7 @@ This phase formalizes the manual validation steps into a repeatable `pytest` sui
 
 ### [Test Suite]
 
-#### [NEW] [test_automation.py](file:///home/psalmprax/viral_forge/api/tests/test_automation.py)
+#### [NEW] [test_automation.py](file:///home/psalmprax/ettametta/api/tests/test_automation.py)
 A new test suite that performs:
 - **Discovery Scan Verification**: Real hit against the discovery bridge.
 - **Video Pipeline Verification**: Submission of transformation jobs with fallback MP4s.
@@ -128,18 +128,18 @@ This phase addresses the critical security and configuration gaps identified in 
 
 ### [API Configuration]
 
-#### [MODIFY] [config.py](file:///home/psalmprax/viral_forge/api/config.py)
+#### [MODIFY] [config.py](file:///home/psalmprax/ettametta/api/config.py)
 - Add `CORS_ORIGINS` settings.
 - Harden `validate_critical_config` to raise errors in production mode.
 - Ensure all OAuth keys have proper env mapping.
 
-#### [MODIFY] [main.py](file:///home/psalmprax/viral_forge/api/main.py)
+#### [MODIFY] [main.py](file:///home/psalmprax/ettametta/api/main.py)
 - Replace hardcoded CORS origins with `settings.CORS_ORIGINS`.
 - Implement dynamic regex for subdomains if provided.
 
 ### [Infrastructure]
 
-#### [NEW] [.env.production.template](file:///home/psalmprax/viral_forge/.env.production.template)
+#### [NEW] [.env.production.template](file:///home/psalmprax/ettametta/.env.production.template)
 - Create a comprehensive template with all P0/P1 keys marked as required.
 
 ## Verification Plan
@@ -156,11 +156,11 @@ This phase increases test coverage from 30% to 60%+ by implementing deep service
 
 ### [Test Suites]
 
-#### [NEW] [test_integration_discovery.py](file:///home/psalmprax/viral_forge/api/tests/test_integration_discovery.py)
+#### [NEW] [test_integration_discovery.py](file:///home/psalmprax/ettametta/api/tests/test_integration_discovery.py)
 - **Goal**: Verify the bridge between Python `DiscoveryService` and the Go-based `discovery-go` scanner.
 - **Coverage**: HTTP request/response validation, schema mapping, and error handling for scanner timeouts.
 
-#### [NEW] [test_integration_video.py](file:///home/psalmprax/viral_forge/api/tests/test_integration_video.py)
+#### [NEW] [test_integration_video.py](file:///home/psalmprax/ettametta/api/tests/test_integration_video.py)
 - **Goal**: Verify the `VideoProcessor` pipeline without requiring a GPU.
 - **Coverage**: Mocked FFmpeg output generation, metadata extraction, and successful task state transitions in Celery.
 
@@ -199,11 +199,11 @@ This phase formally integrates the Playwright browser-based tests into both Jenk
 
 ### [CI Configuration]
 
-#### [MODIFY] [.github/workflows/ci.yml](file:///home/psalmprax/viral_forge/.github/workflows/ci.yml)
+#### [MODIFY] [.github/workflows/ci.yml](file:///home/psalmprax/ettametta/.github/workflows/ci.yml)
 - **Action**: Update backend tests to run `pytest tests/` (full suite).
 - **Action**: Add a new `e2e` job that installs Node.js, Playwright, and runs the browser tests.
 
-#### [MODIFY] [Jenkinsfile](file:///home/psalmprax/viral_forge/Jenkinsfile)
+#### [MODIFY] [Jenkinsfile](file:///home/psalmprax/ettametta/Jenkinsfile)
 - **Action**: Remove `|| true` from the `E2E Tests` stage to make test results meaningful.
 - **Action**: Add structured JUnit/Allure reporting for Playwright results.
 

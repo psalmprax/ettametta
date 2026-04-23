@@ -10,6 +10,7 @@
 - [ ] **Phase 6: Automated Scheduling Publishing** - Campaign automation for publishing
 - [x] **Phase 7: Monetization** - Revenue generation and credit management
 - [x] **Phase 8: Analytics** - Performance metrics and insights
+- [ ] **Phase 9: Enterprise Hardening** - Strategic scaling and technical resilience
 
 ## Phase Details
 
@@ -107,6 +108,18 @@
 **Plans**: 1 plans
 - [x] 08-01-PLAN.md — Implement performance analytics and content metrics
 
+### Phase 9: Enterprise Hardening
+**Goal**: Transition to an enterprise-grade, high-availability platform
+**Depends on**: All previous phases
+**Requirements**: Various (See HARDENING_ROADMAP.md)
+**Success Criteria** (what must be TRUE):
+  1. Decoupled Architecture (Go/Python DB separation)
+  2. Zero-Crash technical stability (Remediation of nil-pointers/recursion)
+  3. Unified Observability (Traces/Structured Logs)
+  4. Unified LLM Proxy with Cost-Aware Routing
+  5. EU AI Act compliant automated governance
+**Plans**: See HARDENING_ROADMAP.md
+
 **UI hint**: yes
 
 | Phase | Plans Complete | Status | Completed |
@@ -119,6 +132,7 @@
 | 6. Automated Scheduling Publishing | 3/3 | Completed | - |
 | 7. Monetization | 1/1 | Completed | 2026-04-17 |
 | 8. Analytics | 1/1 | Completed | 2026-04-17 |
+| 9. Enterprise Hardening | 0/1 | In Progress | - |
 
 ---
 *Roadmap created: 2026-04-08*

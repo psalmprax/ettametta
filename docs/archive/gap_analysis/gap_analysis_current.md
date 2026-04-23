@@ -1,4 +1,4 @@
-# ettametta/viral_forge - Current Gap Analysis Report
+# ettametta/ettametta - Current Gap Analysis Report
 
 **Date:** February 24, 2026  
 **Status:** ~92% Production Ready  
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The ettametta (viral_forge) project is a comprehensive autonomous multi-platform viral content discovery, transformation, optimization, and publishing engine. The codebase is mature with:
+The ettametta (ettametta) project is a comprehensive autonomous multi-platform viral content discovery, transformation, optimization, and publishing engine. The codebase is mature with:
 
 - ✅ **Next.js 14 Dashboard** - 10 functional pages
 - ✅ **FastAPI Backend** - 15+ route modules  
