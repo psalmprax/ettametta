@@ -44,7 +44,7 @@ export function NotificationCenter() {
                 onSuccess: (events) => {
                     const newNotes = events.slice(0, 5).map((e: any, i: number) => ({
                         id: `sec-${i}`,
-                        type: "security",
+                        type: "security" as "security",
                         message: typeof e === 'string' ? e : e.message,
                         timestamp: new Date().toISOString(),
                         read: false
