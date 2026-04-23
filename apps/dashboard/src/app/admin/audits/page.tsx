@@ -43,11 +43,11 @@ export default function AuditsPage() {
             await Promise.all([
                 withRealFallback<any>(
                     () => fetch(`${API_BASE}/security/status`, { headers }),
-                    { onSuccess: (data) => setSecurityStatus(data) }
+                    { fallback: null, onSuccess: (data) => setSecurityStatus(data) }
                 ),
                 withRealFallback<any[]>(
                     () => fetch(`${API_BASE}/security/events`, { headers }),
-                    { onSuccess: (data) => setSecurityEvents(data) }
+                    { fallback: [], onSuccess: (data) => setSecurityEvents(data) }
                 )
             ]);
         }
@@ -65,6 +65,7 @@ export default function AuditsPage() {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
+                fallback: { report: null },
                 onSuccess: (data) => {
                     toast.success("Security Audit Complete");
                     setSecurityStatus(data.report);
@@ -91,6 +92,7 @@ export default function AuditsPage() {
                 body: JSON.stringify({ action: "audit", platform })
             }),
             {
+                fallback: { result: null },
                 onSuccess: (data) => {
                     toast.success(`${platform.toUpperCase()} Audit Dispatched`);
                     // Append simulated report for UI immediate feedback
