@@ -40,6 +40,9 @@ const config: Config = {
                 ring: "hsl(var(--ring))",
                 "neon-violet": "#8b5cf6",
                 "neon-cyan": "#22d3ee",
+                "brand-dark": "#0a0a0f",
+                "cyan-glow": "#00e0ff",
+                "emerald-accent": "#00ff7f",
             },
             borderRadius: {
                 lg: "var(--radius)",

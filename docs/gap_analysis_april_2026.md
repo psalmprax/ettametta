@@ -69,7 +69,7 @@ This document tracks the resolution of issues identified in the March 2026 UI/UX
 
 ### Design Files
 
-- `viral_forge_redesign.pen` - Pencil design source
+- `ettametta_redesign.pen` - Pencil design source
 - `docs/redesign/dsKi6.png` - Desktop mockup
 - `docs/redesign/aVBiD.png` - Mobile mockup
 

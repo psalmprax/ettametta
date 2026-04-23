@@ -1,4 +1,4 @@
-# ettametta/viral_forge - Master Gap Analysis Report
+# ettametta/ettametta - Master Gap Analysis Report
 
 **Last Updated:** March 2, 2026  
 **Status:** ~95% Production Ready (🚀 E2E Playwright Integrated into CI)  
@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-The **ettametta (viral_forge)** platform is a sophisticated multi-platform viral content discovery, transformation, optimization, and publishing engine. Since February 2024, the project has evolved from a feature-rich prototype into a hardened automation suite.
+The **ettametta (ettametta)** platform is a sophisticated multi-platform viral content discovery, transformation, optimization, and publishing engine. Since February 2024, the project has evolved from a feature-rich prototype into a hardened automation suite.
 
 **Accomplishments:**
 - ✅ **Full Dashboard**: 12 modular pages in Next.js 14.

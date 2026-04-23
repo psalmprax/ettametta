@@ -1,7 +1,7 @@
 # System Architecture Comparison: Current vs 3-Tier Video Quality Model
 
 **Date:** February 24, 2026  
-**Comparison:** Current ettametta/viral_forge implementation vs recommended faceless content system
+**Comparison:** Current ettametta/ettametta implementation vs recommended faceless content system
 
 ---
 
