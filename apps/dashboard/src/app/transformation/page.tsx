@@ -363,6 +363,12 @@ function TransformationPageContent() {
                                     <p className="text-zinc-500 font-medium leading-relaxed">Input source telemetry (Video URL) to apply high-velocity <span className="text-primary font-bold">Neural pattern injection</span>.</p>
                                 </div>
                                 <form onSubmit={handleNewJob} className="space-y-8">
+                                    <div className="relative group">
+                                        <LinkIcon className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500 group-hover:text-primary transition-colors" />
+                                        <input
+                                            type="text"
+                                            placeholder={isBatchMode ? "Paste Multiple URLs (Line Separated)..." : "Paste Viral Intel URL (YouTube/TikTok)..."}
+                                            value={newJobUrl}
                                             onChange={(e) => setNewJobUrl(e.target.value)}
                                             className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-6 pl-16 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all text-white font-bold placeholder:text-zinc-700 tracking-tight"
                                         />
