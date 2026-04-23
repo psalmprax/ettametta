@@ -40,6 +40,7 @@ export function NotificationCenter() {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
+                fallback: [],
                 onSuccess: (events) => {
                     const newNotes = events.slice(0, 5).map((e: any, i: number) => ({
                         id: `sec-${i}`,
