@@ -19,7 +19,8 @@ import {
     Menu,
     X,
     Crown,
-    Coins
+    Coins,
+    CheckCircle2
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
