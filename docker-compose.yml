@@ -84,6 +84,7 @@ services:
       - SECRET_KEY
       - INTERNAL_API_TOKEN
       - RENDER_NODE_URL
+      - CORS_ORIGINS
     depends_on:
       - db
       - redis
@@ -119,14 +120,11 @@ services:
     build:
       context: ./apps/dashboard
       args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://149.104.110.122.sslip.io:7200/api/v1}
         - NEXT_PUBLIC_API_PORT=7200
         - NEXT_PUBLIC_INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
-        - NEXT_PUBLIC_AI_GATEWAY_URL=http://149.104.110.122.sslip.io:7200/ai-gateway
     ports:
       - "7202:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://149.104.110.122.sslip.io:7200/api/v1}
       - NEXT_PUBLIC_API_PORT=7200
       - API_INTERNAL_URL=http://api:8000
       - NEXT_PUBLIC_INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
