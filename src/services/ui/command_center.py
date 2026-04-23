@@ -2,7 +2,7 @@
 Empire Command Center: Operational War Room (10/10)
 ==================================================
 
-The final command interface for ViralForge. Monitor stream 
+The final command interface for Ettametta. Monitor stream 
 health, accuracy drift, and A/B experimental performance.
 """
 
@@ -11,14 +11,14 @@ import json
 import logging
 import time
 from datetime import datetime
-from services.analytics.ledger import base_performance_ledger
-from services.analytics.drift_monitor import base_drift_monitor
-from services.infrastructure.inference_gateway import base_inference_gateway
-from services.infrastructure.event_bus import base_event_bus
-from services.infrastructure.resource_governor import base_resource_governor
-from services.infrastructure.economic_controller import base_economic_controller
-from services.analytics.drift_detector import base_drift_detector
-from services.distribution.experiment_batcher import base_experiment_batcher
+from src.services.analytics.ledger import base_performance_ledger
+from src.services.analytics.drift_monitor import base_drift_monitor
+from src.services.infrastructure.inference_gateway import base_inference_gateway
+from src.services.infrastructure.event_bus import base_event_bus
+from src.services.infrastructure.resource_governor import base_resource_governor
+from src.services.infrastructure.economic_controller import base_economic_controller
+from src.services.analytics.drift_detector import base_drift_detector
+from src.services.distribution.experiment_batcher import base_experiment_batcher
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class CommandCenter:
         os.system('clear' if os.name == 'nt' else 'clear')
         
         # 1. EMPIRE HEADERS
-        print("🌌 VIRALFORGE EMPIRE - LIVE OPS [VERSION 10.0]")
+        print("🌌 ETTAMETTA EMPIRE - LIVE OPS [VERSION 10.0]")
         print("=" * 75)
         
         # 2. RUNTIME VITALS (PRODUCTION SWARM)
@@ -56,6 +56,7 @@ class CommandCenter:
         print("-" * 75)
         
         # 3. PERFORMANCE & EFFICIENCY (THE 10/10 CORE)
+        drift_report = base_drift_monitor.audit_system_honesty()
         report = base_performance_ledger.get_accuracy_report()
         early_exits = 142 # This would be pulled from a real counter in production
         savings = early_exits * 0.45 # Average hours saved per early exit
@@ -78,7 +79,7 @@ class CommandCenter:
         print("  [15:28] 🚀 Gateway: Pushing var_a_champion to TikTok")
         
         print("\n" + "=" * 75)
-        print("ViralForge is autonomously managing your content empire. Press Ctrl+C to minimize.")
+        print("Ettametta is autonomously managing your content empire. Press Ctrl+C to minimize.")
 
     def _get_drift_bar(self, mae: float) -> str:
         # Visual representation of drift

@@ -10,8 +10,8 @@ import os
 import subprocess
 import logging
 from pathlib import Path
-from api.config import settings
-from services.infrastructure.resource_governor import base_resource_governor
+from src.api.config import settings
+from src.services.infrastructure.resource_governor import base_resource_governor
 
 class FFmpegTransformer:
     def __init__(self, threads: int | None = None, preset: str | None = None):
@@ -25,6 +25,10 @@ class FFmpegTransformer:
 
     def _detect_hardware_acceleration(self) -> str:
         """Detects the best available hardware encoder."""
+        if os.getenv("FORCE_CPU") == "true":
+            logging.info("🛠️ [HW-ACCEL] FORCE_CPU detected. Overriding to libx264.")
+            return "cpu"
+            
         try:
             # Check for NVIDIA NVENC
             res = subprocess.run(["ffmpeg", "-encoders"], capture_output=True, text=True)
@@ -57,7 +61,7 @@ class FFmpegTransformer:
             logging.error(f"[FFmpeg] Error: {e.stderr}")
             return False
 
-    def apply_originality(self, input_path: str, output_path: str, mirror: bool = False, zoom: float = 1.05, contrast: float = 1.05, brightness: float = 0.0, start_offset: float = 0.0, duration: float = None, lut_path: str = None) -> bool:
+    def apply_originality(self, input_path: str, output_path: str, mirror: bool = False, zoom: float = 1.05, contrast: float = 1.05, brightness: float = 0.0, start_offset: float = 0.0, duration: float = None, lut_path: str = None, quality_mode: str = "ELITE") -> bool:
         """
         Applies mirroring, zooming, color grading, and optional LUT in a single FFmpeg pass.
         This provides the cinematic 'Ascension' vibe.
@@ -95,8 +99,8 @@ class FFmpegTransformer:
         else:
             audio_filter = f"[1:a]volume=1.0[a]"
 
-        # Quality mode: We use ELITE for originality pass if not fast-tracking
-        quality_mode = "ELITE" if self.preset != "ultrafast" else "FAST"
+        # Quality mode: We use passed quality_mode unless resource-constrained
+        if self.preset == "ultrafast": quality_mode = "FAST"
         encoder, preset, extra_params = self._get_encoder_params(quality_mode)
 
         cmd = [
@@ -262,13 +266,41 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         ]
         return self._run_cmd(cmd)
 
-    def apply_cinematic_zoom(self, input_path: str, output_path: str, duration: float) -> bool:
-        """Applies a slow, cinematic Ken Burns zoom effect."""
-        # Elite: High-precision zoom
+    def draw_text_overlay(self, input_path: str, output_path: str, text: str, start_time: float = 0, duration: float = 5, position: str = "center") -> bool:
+        """Draws a professional text overlay using FFmpeg's drawtext filter."""
+        # Escape text for FFmpeg
+        safe_text = text.replace("'", "").replace(":", "\\:")
+        
+        pos_filter = "x=(w-text_w)/2:y=(h-text_h)/2" # center
+        if position == "bottom":
+            pos_filter = "x=(w-text_w)/2:y=h-text_h-100"
+        elif position == "top":
+            pos_filter = "x=(w-text_w)/2:y=100"
+
+        drawtext = (
+            f"drawtext=text='{safe_text}':fontcolor=white:fontsize=64:box=1:boxcolor=black@0.5:boxborderw=10:"
+            f"{pos_filter}:enable='between(t,{start_time},{start_time+duration})'"
+        )
+
         encoder, preset, extra_params = self._get_encoder_params("ELITE")
+        
         cmd = [
             "ffmpeg", "-y", "-i", input_path,
-            "-vf", f"zoompan=z='min(zoom+0.001,1.1)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={int(duration*30)}:s=1080x1920:fps=30",
+            "-vf", drawtext,
+            "-c:v", encoder, "-preset", preset
+        ] + extra_params + [
+            "-c:a", "copy",
+            output_path
+        ]
+        return self._run_cmd(cmd)
+
+    def apply_cinematic_zoom(self, input_path: str, output_path: str, duration: float, zoom_speed: float = 0.001, max_zoom: float = 1.1, quality_mode: str = "ELITE") -> bool:
+        """Applies a slow, cinematic Ken Burns zoom effect."""
+        # Elite: High-precision zoom
+        encoder, preset, extra_params = self._get_encoder_params(quality_mode)
+        cmd = [
+            "ffmpeg", "-y", "-i", input_path,
+            "-vf", f"zoompan=z='min(zoom+{zoom_speed},{max_zoom})':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={int(duration*30)}:s=1080x1920:fps=30",
             "-c:v", encoder, "-preset", preset
         ] + extra_params + [
             "-c:a", "copy",

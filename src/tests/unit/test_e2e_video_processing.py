@@ -65,7 +65,7 @@ sys.modules["subprocess"] = type("subprocess", (), {"run": MockFFmpeg().run})()
 async def run_e2e_video_processing_test():
     """Execute complete end-to-end video processing test"""
 
-    print("🎬 VIRALFORGE VIDEO EDITOR - END-TO-END PROCESSING TEST")
+    print("🎬 ETTAMETTA VIDEO EDITOR - END-TO-END PROCESSING TEST")
     print("=" * 70)
     print("Testing complete workflow: Discovery → Processing → Preview")
     print()
@@ -415,7 +415,7 @@ if __name__ == "__main__":
     if results["success"]:
         print("\\n🎉 E2E TEST COMPLETED SUCCESSFULLY!")
         print(
-            "The ViralForge video editor can perform complete end-to-end video processing!"
+            "The Ettametta video editor can perform complete end-to-end video processing!"
         )
         print(f"Quality Score: {results.get('output_quality', 'N/A')}/10")
         print(f"Upload Ready: {'Yes' if results.get('upload_ready') else 'No'}")

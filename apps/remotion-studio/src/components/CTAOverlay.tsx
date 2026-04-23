@@ -18,32 +18,52 @@ export const CTAOverlay: React.FC<{ type: 'engagement' | 'cta', text: string }> 
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            background: 'rgba(0,0,0,0.4)',
+            background: 'rgba(10, 10, 11, 0.4)',
             zIndex: 100
         }}>
             <div style={{
-                backgroundColor: isEngagement ? '#ff0000' : '#FFD700',
+                background: 'rgba(255, 255, 255, 0.05)',
+                backdropFilter: 'blur(24px) saturate(180%)',
                 padding: '40px 80px',
-                borderRadius: '50px',
-                boxShadow: '0 0 50px rgba(0,0,0,0.5)',
+                borderRadius: '40px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: '0 40px 80px rgba(0,0,0,0.8)',
                 transform: `scale(${interpolate(springValue, [0, 1], [0.5, 1.2])})`,
-                textAlign: 'center'
+                textAlign: 'center',
+                position: 'relative',
+                overflow: 'hidden'
             }}>
+                {/* Iridescent Border Simulation */}
+                <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '40px',
+                    padding: '2px',
+                    background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.4), rgba(142, 45, 226, 0.4))',
+                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude',
+                }} />
+
                 <h2 style={{
-                    color: isEngagement ? 'white' : 'black',
-                    fontSize: '80px',
+                    color: '#00F2FE',
+                    fontSize: '90px',
                     margin: 0,
-                    fontFamily: 'Arial Black',
-                    textTransform: 'uppercase'
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 900,
+                    textTransform: 'uppercase',
+                    letterSpacing: '-0.02em',
+                    textShadow: '0 0 40px rgba(0, 242, 254, 0.5)'
                 }}>
-                    {isEngagement ? '👍 LIKE & SUB! 🔔' : '🔗 LINK IN BIO! 💰'}
+                    {isEngagement ? 'LIKE & SUB' : 'LINK IN BIO'}
                 </h2>
                 <p style={{
-                    color: isEngagement ? 'white' : 'black',
-                    fontSize: '40px',
-                    margin: '10px 0 0',
-                    fontFamily: 'Arial',
-                    fontWeight: 'bold'
+                    color: 'white',
+                    fontSize: '42px',
+                    margin: '16px 0 0',
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 600,
+                    opacity: 0.8
                 }}>
                     {text}
                 </p>

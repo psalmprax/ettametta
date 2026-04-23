@@ -3,11 +3,12 @@ Scheduled Posts and Cleanup Tasks for ettametta
 Celery tasks for automated posting and video cleanup
 """
 
-from api.utils.celery import celery_app
-from api.utils.database import async_session_factory
-from api.utils.models import ScheduledPostDB, PublishedContentDB
-from services.optimization.models import PostMetadata
-from services.optimization.auth import token_manager
+from src.api.utils.celery import celery_app
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import ScheduledPostDB, PublishedContentDB
+from src.services.optimization.models import PostMetadata
+from src.services.optimization.auth import token_manager
+from src.shared.enums import ContentPublishStatus
 import datetime
 import logging
 import asyncio
@@ -219,7 +220,7 @@ def retry_failed_posts():
 
 async def _retry_missed_schedules_internal():
     """Retry missed scheduled posts - posts that passed their scheduled time"""
-    from services.optimization.scheduler import smart_scheduler
+    from src.services.optimization.scheduler import smart_scheduler
 
     async with async_session_factory() as db:
         retried = 0
@@ -240,7 +241,9 @@ async def _retry_missed_schedules_internal():
                 max_retries = 3
 
                 if retry_count >= max_retries:
-                    logger.warning(f"[Scheduler] Post {post.id} reached max retries ({retry_count})")
+                    logger.warning(
+                        f"[Scheduler] Post {post.id} reached max retries ({retry_count})"
+                    )
                     post.status = "FAILED"
                     post.error_message = f"Max retries exceeded ({retry_count})"
                     db.add(post)
@@ -302,7 +305,7 @@ async def _cleanup_pending_videos_internal():
         try:
             now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
             stmt = select(PublishedContentDB).where(
-                PublishedContentDB.status == "PENDING_AUTH"
+                PublishedContentDB.status == ContentPublishStatus.PENDING_AUTH
             )
             result = await db.execute(stmt)
             pending_videos = result.scalars().all()

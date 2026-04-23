@@ -3,8 +3,8 @@ import random
 from typing import Any
 from sqlalchemy import select
 from .base import BaseMonetizationStrategy
-from api.utils.database import async_session_factory
-from api.utils.models import DigitalProductDB
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import DigitalProductDB
 
 logger = logging.getLogger(__name__)
 

@@ -4,14 +4,14 @@ Billing API Routes for ettametta
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
-from api.utils.user_models import UserDB
-from api.routes.auth import get_current_user
-from api.utils.database import get_db
-from api.utils.subscription import get_subscription_tier_value
+from src.api.utils.user_models import UserDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.database import get_db
+from src.api.utils.subscription import get_subscription_tier_value
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.config import settings
-from api.utils.api_responses import success_response
+from src.api.config import settings
+from src.api.utils.api_responses import success_response, handle_exception
 
 router = APIRouter(prefix="/billing", tags=["Billing"])
 
@@ -33,7 +33,10 @@ async def create_checkout_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a Stripe checkout session for subscription"""
-    from services.payment.stripe_service import get_payment_service, SUBSCRIPTION_TIERS
+    from src.services.payment.stripe_service import (
+        get_payment_service,
+        SUBSCRIPTION_TIERS,
+    )
 
     # Validate tier
     if request.tier not in SUBSCRIPTION_TIERS:
@@ -48,9 +51,11 @@ async def create_checkout_session(
         # Check if user has stripe_customer_id
         stripe_customer_id = getattr(current_user, "stripe_customer_id", None)
 
+        # Get payment service instance (reuse throughout function)
+        payment_service = get_payment_service()
+
         if not stripe_customer_id:
             # Create Stripe customer
-            payment_service = get_payment_service()
             customer = await payment_service.create_customer(
                 email=current_user.email, user_id=current_user.id
             )
@@ -61,7 +66,6 @@ async def create_checkout_session(
             await db.commit()
 
         # Create checkout session
-        payment_service = get_payment_service()
         result = await payment_service.create_subscription(
             stripe_customer_id=stripe_customer_id, tier=request.tier
         )
@@ -69,7 +73,7 @@ async def create_checkout_session(
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Payment error: {str(e)}")
+        return handle_exception(e)
 
 
 @router.get("/subscription")
@@ -77,7 +81,10 @@ async def get_subscription(
     current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """Get current user's subscription status"""
-    from services.payment.stripe_service import get_payment_service, SUBSCRIPTION_TIERS
+    from src.services.payment.stripe_service import (
+        get_payment_service,
+        SUBSCRIPTION_TIERS,
+    )
 
     try:
         stmt = select(UserDB).where(UserDB.id == current_user.id)
@@ -119,9 +126,7 @@ async def get_subscription(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching subscription: {str(e)}"
-        )
+        return handle_exception(e)
 
 
 @router.post("/cancel")
@@ -129,7 +134,7 @@ async def cancel_subscription(
     current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """Cancel current subscription"""
-    from services.payment.stripe_service import get_payment_service
+    from src.services.payment.stripe_service import get_payment_service
 
     try:
         stmt = select(UserDB).where(UserDB.id == current_user.id)
@@ -162,15 +167,13 @@ async def cancel_subscription(
     except ValueError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error cancelling subscription: {str(e)}"
-        )
+        return handle_exception(e)
 
 
 @router.post("/webhook")
 async def stripe_webhook(request: Request):
     """Handle Stripe webhook events"""
-    from services.payment.stripe_service import get_payment_service
+    from src.services.payment.stripe_service import get_payment_service
 
     payload = await request.body()
     signature = request.headers.get("stripe-signature")

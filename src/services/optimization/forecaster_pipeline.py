@@ -11,9 +11,9 @@ import asyncio
 import torch
 import numpy as np
 from typing import Any
-from services.analytics.signal_bus import base_signal_bus
-from services.optimization.oracle_predictor import base_neural_oracle
-from services.analytics.ledger import base_performance_ledger
+from src.services.analytics.signal_bus import base_signal_bus
+from src.services.optimization.oracle_predictor import base_neural_oracle
+from src.services.analytics.ledger import base_performance_ledger
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +34,11 @@ class ForecasterPipeline:
         
         training_samples = []
         for entry in ledger_data:
-            topic = entry.get("topic")
-            features = base_signal_bus.get_feature_vector(topic)
+            niche = entry.get("niche")
+            if not niche:
+                continue
+                
+            features = base_signal_bus.get_feature_vector(niche)
             outcome = [entry.get("actual_retention", 0.5)] * 4 # Mock curve outcome
             
             if features:
@@ -54,9 +57,9 @@ class ForecasterPipeline:
         await asyncio.sleep(1) # Simulation
         print("✅ [Forecaster] Neural Model Updated with Real-World Performance.")
 
-    def predict_opportunity(self, topic: str) -> dict[str, Any]:
-        """Predicts the virality probability for a new topic"""
-        features = base_signal_bus.get_feature_vector(topic)
+    def predict_opportunity(self, niche: str) -> dict[str, Any]:
+        """Predicts the virality probability for a new niche"""
+        features = base_signal_bus.get_feature_vector(niche)
         if not features:
             return {"probability": 0.5, "confidence": "low"}
         

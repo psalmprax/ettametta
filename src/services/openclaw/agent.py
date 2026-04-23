@@ -4,7 +4,7 @@ import requests
 import asyncio
 import time
 from groq import Groq
-from api.config import settings
+from src.api.config import settings
 from typing import Any
 import httpx
 import yaml
@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 try:
-    from api.utils.llm_vault import get_llm_api_key
+    from src.api.utils.llm_vault import get_llm_api_key
 
     VAULT_AVAILABLE = True
 except ImportError:
     VAULT_AVAILABLE = False
 
-from services.openclaw.skills import (
+from src.services.openclaw.skills import (
     discovery_skill,
     system_skill,
     analytics_skill,
@@ -83,7 +83,7 @@ from services.openclaw.skills import (
     invideo_skill,
     fliki_skill,
     content_editor_skill,
-    base_video_production_assistant_skill,
+    production_assistant_skill,
     video_lead_skill,
     scene_based_video_skill,
 )
@@ -119,7 +119,7 @@ class CircuitBreaker:
             logger.warning("[OpenClaw] Circuit opened due to failures")
 
 
-from services.base_agent import BaseEttamettaAgent
+from src.services.base_agent import BaseEttamettaAgent
 
 
 class OpenClawAgent(BaseEttamettaAgent):
@@ -152,7 +152,7 @@ class OpenClawAgent(BaseEttamettaAgent):
     }}
     """
 
-    def __init__(self, user_id: int = None, reasoning_mode: str = "standard"):
+    def __init__(self, user_id: str = None, reasoning_mode: str = "standard"):
         self.user_id = user_id
         self.reasoning_mode = reasoning_mode
         super().__init__(agent_name="OPENCLAW")
@@ -224,7 +224,7 @@ class OpenClawAgent(BaseEttamettaAgent):
             "INVIDEO": invideo_skill,
             "FLIKI": fliki_skill,
             "CONTENT_EDITOR": content_editor_skill,
-            "VIDEO_ASSISTANT": base_video_production_assistant_skill,
+            "VIDEO_ASSISTANT": production_assistant_skill,
         }
 
     def _load_dynamic_skills(self) -> list:

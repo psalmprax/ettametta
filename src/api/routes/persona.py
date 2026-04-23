@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.database import get_db
-from api.utils.models import PersonaDB
-from api.routes.auth import get_current_user
+from src.api.utils.database import get_db
+from src.api.utils.models import PersonaDB
+from src.api.routes.auth import get_current_user
 import uuid
 import os
 import requests
-from api.config import settings
+from src.api.config import settings
 from pydantic import BaseModel
-from api.utils.api_responses import success_response
+from src.api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/persona", tags=["Persona Engine"])
 
@@ -39,10 +39,10 @@ async def create_persona(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Registers a new Persona for deepfake generation.
+    Registers a new Persona for autonomous character generation.
     Files are uploaded to the configured S3-compatible storage.
     """
-    from api.utils.storage import storage_service
+    from src.api.utils.storage import storage_service
     import tempfile
 
     persona = PersonaDB(name=name, user_id=current_user.id)
@@ -83,7 +83,7 @@ async def generate_persona_video(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Initiates the deepfake generation pipeline via PersonaService.
+    Initiates the autonomous character generation pipeline via PersonaService.
     """
     stmt = select(PersonaDB).where(
         PersonaDB.id == request.persona_id, PersonaDB.user_id == current_user.id
@@ -94,15 +94,18 @@ async def generate_persona_video(
     if not persona:
         raise HTTPException(status_code=404, detail="Persona not found")
 
-    from services.video_engine.persona_service import base_persona_service
+    from src.services.video_engine.persona_service import base_persona_service
 
     try:
         url = await base_persona_service.animate_persona(
             persona.reference_image_url, request.topic, request.script
         )
         return success_response(data={"status": "success", "video_url": url})
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Persona animation failed: {e}")
+        raise HTTPException(status_code=503, detail="Persona service unavailable")
 
 
 @router.get("/list")

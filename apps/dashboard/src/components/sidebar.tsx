@@ -32,6 +32,7 @@ const navItems = [
     { name: "Nexus Flow", href: "/nexus", icon: Zap },
     { name: "Autonomous", href: "/autonomous", icon: Cpu },
     { name: "Transformation", href: "/transformation", icon: Video },
+    { name: "Audits", href: "/admin/audits", icon: CheckCircle2 },
     { name: "Publishing", href: "/publishing", icon: Share2 },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Empire", href: "/empire", icon: Crown },
@@ -250,7 +251,7 @@ export function MobileHeader({ onMenuClick }: { onMenuClick?: () => void }) {
             <button onClick={onMenuClick} className="p-2 -ml-2">
                 <Menu className="h-6 w-6 text-zinc-400" />
             </button>
-            <span className="text-lg font-bold text-violet-500">VF</span>
+            <span className="text-lg font-bold text-violet-500">EM</span>
             <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center">
                 <span className="text-xs font-bold text-white">U</span>
             </div>

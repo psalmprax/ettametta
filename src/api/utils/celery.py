@@ -1,7 +1,7 @@
 from celery import Celery
 import os
 
-from api.config import settings
+from src.api.config import settings
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", settings.REDIS_URL)
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", settings.REDIS_URL)

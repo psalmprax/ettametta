@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from typing import Any
-from api.utils.models import AuditLogDB
-from api.utils.database import async_session_factory
+from src.api.utils.models import AuditLogDB
+from src.api.utils.database import async_session_factory
 import json
 
 
@@ -10,7 +10,7 @@ class AuditService:
     @staticmethod
     async def log(
         action: str,
-        user_id: int | None = None,
+        user_id: str | None = None,
         resource_type: str | None = None,
         resource_id: str | None = None,
         details: dict | None = None,

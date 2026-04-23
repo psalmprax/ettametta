@@ -34,7 +34,7 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -142,13 +142,13 @@ class OpenCLIService:
             )
         return self._binary_available
 
-    def _user_session_dir(self, user_id: int) -> Path:
+    def _user_session_dir(self, user_id: str) -> Path:
         """Get the session directory for a specific user."""
         user_dir = self.sessions_dir / f"user_{user_id}"
         user_dir.mkdir(parents=True, exist_ok=True)
         return user_dir
 
-    def _cookie_path(self, user_id: int, platform: str) -> Path:
+    def _cookie_path(self, user_id: str, platform: str) -> Path:
         """Get the cookie file path for a user+platform, with global fallback."""
         # 1. User-specific path
         user_path = self._user_session_dir(user_id) / f"{platform}_cookies.txt"
@@ -170,7 +170,7 @@ class OpenCLIService:
             
         return user_path
 
-    def _config_path(self, user_id: int) -> Path:
+    def _config_path(self, user_id: str) -> Path:
         """Get the opencli config path for a user."""
         return self._user_session_dir(user_id) / "config.json"
 
@@ -192,7 +192,7 @@ class OpenCLIService:
         ]
 
     async def save_user_cookies(
-        self, user_id: int, platform: str, cookies: str
+        self, user_id: str, platform: str, cookies: str
     ) -> bool:
         """Save Chrome session cookies for a user+platform.
 
@@ -220,7 +220,7 @@ class OpenCLIService:
             logger.error(f"[OpenCLI] Failed to save cookies: {e}")
             return False
 
-    async def verify_user_session(self, user_id: int, platform: str) -> dict[str, Any]:
+    async def verify_user_session(self, user_id: str, platform: str) -> dict[str, Any]:
         """Verify if a user's session for a platform is valid.
 
         Returns:
@@ -271,7 +271,7 @@ class OpenCLIService:
                 "message": str(e),
             }
 
-    async def get_user_sessions(self, user_id: int) -> list[dict[str, Any]]:
+    async def get_user_sessions(self, user_id: str) -> list[dict[str, Any]]:
         """Get all platform session statuses for a user."""
         sessions = []
         user_dir = self._user_session_dir(user_id)
@@ -293,7 +293,7 @@ class OpenCLIService:
 
         return sessions
 
-    async def disconnect_platform(self, user_id: int, platform: str) -> bool:
+    async def disconnect_platform(self, user_id: str, platform: str) -> bool:
         """Remove session cookies for a user+platform."""
         platform = platform.lower()
         cookie_path = self._cookie_path(user_id, platform)
@@ -316,7 +316,7 @@ class OpenCLIService:
     )
     async def _run_opencli(
         self,
-        user_id: int,
+        user_id: str,
         platform: str,
         command: str,
         params: dict[str, str] | None = None,
@@ -393,7 +393,7 @@ class OpenCLIService:
 
     async def search_platform(
         self,
-        user_id: int,
+        user_id: str,
         platform: str,
         query: str,
         limit: int = 20,
@@ -447,7 +447,7 @@ class OpenCLIService:
 
     async def get_platform_feed(
         self,
-        user_id: int,
+        user_id: str,
         platform: str,
         feed_type: str = "feed",
         limit: int = 20,
@@ -506,7 +506,7 @@ class OpenCLIService:
 
     async def post_to_platform(
         self,
-        user_id: int,
+        user_id: str,
         platform: str,
         content: str,
         media_url: str | None = None,
@@ -547,7 +547,7 @@ class OpenCLIService:
 
     async def interact_with_content(
         self,
-        user_id: int,
+        user_id: str,
         platform: str,
         action: str,
         content_url: str,
@@ -596,7 +596,7 @@ class OpenCLIService:
         except ValueError:
             return 0
 
-    async def get_user_platforms_status(self, user_id: int) -> dict[str, Any]:
+    async def get_user_platforms_status(self, user_id: str) -> dict[str, Any]:
         """Get a summary of all platform connections for a user."""
         sessions = await self.get_user_sessions(user_id)
         connected = [s for s in sessions if s["status"] == "connected"]

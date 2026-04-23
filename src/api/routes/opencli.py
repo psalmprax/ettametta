@@ -9,14 +9,15 @@ Each user provides their own Chrome cookies via the opencli Chrome extension.
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
 from typing import Any
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from api.utils.database import get_db
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.models import OpenCLISessionDB
-from api.config import settings
-from services.opencli.service import opencli_service
+from src.api.utils.models import OpenCLISessionDB
+from src.shared.enums import SessionStatus
+from src.api.config import settings
+from src.services.opencli.service import opencli_service
 from datetime import datetime
 import logging
 
@@ -67,8 +68,7 @@ async def list_supported_platforms():
 
 @router.get("/sessions")
 async def get_my_sessions(
-    current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """Get all platform session statuses for the current user."""
     if not settings.ENABLE_OPENCLI:
@@ -95,7 +95,7 @@ async def get_my_sessions(
 async def connect_platform(
     data: CookieUpload,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Upload Chrome session cookies for a platform.
 
@@ -161,7 +161,7 @@ async def connect_platform(
 async def disconnect_platform(
     platform: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Remove session cookies for a platform."""
     if not settings.ENABLE_OPENCLI:
@@ -179,7 +179,7 @@ async def disconnect_platform(
         result = await db.execute(stmt)
         db_session = result.scalar_one_or_none()
         if db_session:
-            db_session.status = "disconnected"
+            db_session.status = SessionStatus.DISCONNECTED
             db_session.updated_at = datetime.utcnow()
             await db.commit()
     finally:
@@ -192,7 +192,7 @@ async def disconnect_platform(
 async def verify_platform_session(
     platform: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Verify if a platform session is still valid."""
     if not settings.ENABLE_OPENCLI:
@@ -228,10 +228,9 @@ async def verify_platform_session(
 async def search_platform(
     data: SearchRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    """Search a platform using the user's Chrome session.
-    """
+    """Search a platform using the user's Chrome session."""
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
 
@@ -263,7 +262,7 @@ async def get_platform_feed(
     feed_type: str = "feed",
     limit: int = 20,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get feed/trending content from a platform using the user's session.
 
@@ -298,10 +297,9 @@ async def get_platform_feed(
 async def post_to_platform(
     data: PostRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    """Post content to a platform using the user's Chrome session.
-    """
+    """Post content to a platform using the user's Chrome session."""
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
 

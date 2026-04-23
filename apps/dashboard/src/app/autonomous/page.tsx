@@ -20,14 +20,15 @@ import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { useCallback } from "react";
 import { getAuthToken } from "@/lib/auth_utils";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export default function AutonomousPage() {
     const [isRunning, setIsRunning] = useState(false);
     const [status, setStatus] = useState("Idle");
     const [logs, setLogs] = useState<string[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isConfirmStopOpen, setIsConfirmStopOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState("IDLE");
     const [insights, setInsights] = useState<any>(null);
     const [lastRun, setLastRun] = useState<number | null>(null);
@@ -88,6 +89,11 @@ export default function AutonomousPage() {
     }, [fetchStatus]);
 
     const handleToggle = async () => {
+        if (isRunning && !isConfirmStopOpen) {
+            setIsConfirmStopOpen(true);
+            return;
+        }
+
         setIsProcessing(true);
         const action = isRunning ? "stop" : "start";
         const token = getAuthToken();
@@ -115,6 +121,42 @@ export default function AutonomousPage() {
             }
         );
         setIsProcessing(false);
+    };
+
+    const handleForceKill = async () => {
+        const token = getAuthToken();
+        if (!token) return;
+
+        toast.promise(
+            fetch(`${API_BASE}/zero/kill`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                loading: 'Sending Force Kill signal...',
+                success: () => {
+                    setIsRunning(false);
+                    setStatus("Engine Terminated");
+                    setLogs(prev => [`[CRITICAL] SIGKILL sent to Agent Zero. Cleanup initiated.`, ...prev]);
+                    return 'Engine Terminated via Force Kill';
+                },
+                error: 'Failed to send Kill signal'
+            }
+        );
+    };
+
+    const handleExportLogs = () => {
+        const logContent = logs.join("\n");
+        const blob = new Blob([logContent], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `agent_zero_logs_${new Date().toISOString()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success("Logs exported successfully");
     };
 
     const StatusCard = ({ icon: Icon, label, value, color }: any) => (
@@ -147,21 +189,46 @@ export default function AutonomousPage() {
                         </p>
                     </div>
 
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleToggle}
-                        disabled={isProcessing}
-                        className={cn(
-                            "py-5 px-10 rounded-2xl flex items-center gap-3 shadow-2xl transition-all uppercase text-xs font-black tracking-widest",
-                            isRunning
-                                ? "bg-zinc-950 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10"
-                                : "bg-emerald-500 text-black shadow-[0_0_50px_rgba(16,185,129,0.3)]"
+                    <div className="flex items-center gap-4">
+                        <ConfirmModal 
+                            isOpen={isConfirmStopOpen}
+                            onClose={() => setIsConfirmStopOpen(false)}
+                            onConfirm={() => {
+                                setIsConfirmStopOpen(false);
+                                handleToggle();
+                            }}
+                            title="Halt Autonomous Operations?"
+                            description="Stopping Agent Zero will terminate all active social scans and video pattern injections. Progress in current threads may be lost."
+                            variant="danger"
+                            confirmText="Halt Engine"
+                        />
+                        {isRunning && (
+                            <motion.button
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                onClick={handleForceKill}
+                                className="h-14 w-14 rounded-2xl flex items-center justify-center border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 transition-all shadow-xl group"
+                                title="Emergency Force Kill"
+                            >
+                                <AlertCircle className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                            </motion.button>
                         )}
-                    >
-                        {isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : (isRunning ? <Pause className="h-5 w-5 fill-rose-500" /> : <Play className="h-5 w-5 fill-black" />)}
-                        {isRunning ? "Halt Operations" : "Launch Director"}
-                    </motion.button>
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleToggle}
+                            disabled={isProcessing}
+                            className={cn(
+                                "py-5 px-10 rounded-2xl flex items-center gap-3 shadow-2xl transition-all uppercase text-xs font-black tracking-widest",
+                                isRunning
+                                    ? "bg-zinc-950 border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
+                                    : "bg-emerald-500 text-black shadow-[0_0_50px_rgba(16,185,129,0.3)]"
+                            )}
+                        >
+                            {isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : (isRunning ? <Pause className="h-5 w-5 fill-emerald-500" /> : <Play className="h-5 w-5 fill-black" />)}
+                            {isRunning ? "Stop Director" : "Launch Director"}
+                        </motion.button>
+                    </div>
                 </div>
 
                 {/* Status Matrix */}
@@ -259,7 +326,15 @@ export default function AutonomousPage() {
                                     <Terminal className="h-4 w-4 text-primary" />
                                     <span className="text-[10px] font-black uppercase tracking-widest text-white">System Console</span>
                                 </div>
-                                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                <div className="flex items-center gap-4">
+                                    <button 
+                                        onClick={handleExportLogs}
+                                        className="text-[8px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
+                                    >
+                                        Export
+                                    </button>
+                                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                </div>
                             </div>
                             <div className="p-6 font-mono text-[10px] space-y-3 overflow-y-auto h-[400px] custom-scrollbar">
                                 {logs.length === 0 && (

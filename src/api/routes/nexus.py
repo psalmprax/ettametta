@@ -6,14 +6,14 @@ import time
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from api.utils.database import get_db, async_session_factory
-from shared.enums import SystemJobStatus
-from api.utils.models import NexusJobDB, BlueprintDB, VideoJobDB
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from services.nexus_engine.orchestrator import base_nexus_orchestrator
+from src.api.utils.database import get_db, async_session_factory
+from src.shared.enums import SystemJobStatus
+from src.api.utils.models import NexusJobDB, BlueprintDB, VideoJobDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.services.nexus_engine.orchestrator import base_nexus_orchestrator
 from pydantic import BaseModel, Field
-from api.utils.api_responses import success_response
+from src.api.utils.api_responses import success_response
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/nexus", tags=["Nexus Composition"])
@@ -32,13 +32,13 @@ class NexusComposeRequest(BaseModel):
 
 
 async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
-    from services.nexus_engine.thumbnail_service import base_thumbnail_generator
-    from services.nexus_engine.auto_creator import base_auto_creator
-    from services.nexus_engine.blueprints import (
+    from src.services.nexus_engine.thumbnail_service import base_thumbnail_generator
+    from src.services.nexus_engine.auto_creator import base_auto_creator
+    from src.services.nexus_engine.blueprints import (
         execute_blueprint,
         get_blueprint_by_id,
     )
-    from api.routes.ws import notify_nexus_job_update_sync
+    from src.api.routes.ws import notify_nexus_job_update_sync
 
     async with async_session_factory() as db:
         try:
@@ -202,7 +202,7 @@ async def compose_video(
     """
     Triggers the high-fidelity video assembly pipeline.
     """
-    new_job = NexusJobDB(niche=request.niche, user_id=current_user.id, status=SystemJobStatus.PENDING)
+    new_job = NexusJobDB(niche=request.niche, user_id=current_user.id, status=SystemJobStatus.QUEUED)
     db.add(new_job)
     await db.commit()
     await db.refresh(new_job)
@@ -219,7 +219,7 @@ async def list_nexus_blueprints(
     """
     Returns the available Nexus production recipes/blueprints.
     """
-    from services.nexus_engine.blueprints import get_blueprints
+    from src.services.nexus_engine.blueprints import get_blueprints
 
     blueprints = await get_blueprints(db)
     return success_response(data=blueprints)
@@ -241,7 +241,7 @@ async def create_nexus_blueprint(
     """
     Creates a new custom Nexus blueprint.
     """
-    from api.utils.models import BlueprintDB
+    from src.api.utils.models import BlueprintDB
 
     # Check if ID exists
     stmt = select(BlueprintDB).where(BlueprintDB.id == blueprint.id)
@@ -312,7 +312,7 @@ async def get_nexus_stats(
 
     pending_result = await db.execute(
         select(func.count(NexusJobDB.id)).where(
-            NexusJobDB.user_id == current_user.id, NexusJobDB.status == SystemJobStatus.PENDING
+            NexusJobDB.user_id == current_user.id, NexusJobDB.status == SystemJobStatus.QUEUED
         )
     )
     pending = pending_result.scalar() or 0
@@ -342,7 +342,7 @@ async def get_nexus_queue(
         select(NexusJobDB)
         .where(
             NexusJobDB.user_id == current_user.id,
-            NexusJobDB.status.in_([SystemJobStatus.PENDING, SystemJobStatus.COMPOSING, SystemJobStatus.ANALYZING]),
+            NexusJobDB.status.in_([SystemJobStatus.QUEUED, SystemJobStatus.COMPOSING, SystemJobStatus.ANALYZING]),
         )
         .order_by(NexusJobDB.created_at.asc())
     )
@@ -391,7 +391,7 @@ async def get_nexus_telemetry(
 
     # 1. Database Access Metrics (Real Job Count)
     nexus_active_stmt = select(func.count(NexusJobDB.id)).where(
-        NexusJobDB.status.in_([SystemJobStatus.PENDING, SystemJobStatus.COMPOSING])
+        NexusJobDB.status.in_([SystemJobStatus.QUEUED, SystemJobStatus.COMPOSING])
     )
     video_active_stmt = select(func.count(VideoJobDB.id)).where(
         VideoJobDB.status.in_(
@@ -418,8 +418,8 @@ async def get_nexus_telemetry(
     node_id = os.getenv("NEXUS_NODE_ID", socket.gethostname())
 
     # Lazily import services to avoid circular dependencies
-    from services.video_engine.synthesis_service import base_generative_service
-    from services.llm.service import unified_llm_service
+    from src.services.video_engine.synthesis_service import base_generative_service
+    from src.services.llm.service import unified_llm_service
 
     gen_report = base_generative_service.get_dependency_report()
     llm_report = unified_llm_service.get_intelligence_report()

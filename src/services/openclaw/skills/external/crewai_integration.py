@@ -91,9 +91,9 @@ class CrewAIService:
             return f"Error: {str(e)}"
 
 
-class ViralForgeCrew:
+class EttamettaCrew:
     """
-    Pre-configured CrewAI crews for viral_forge workflows.
+    Pre-configured CrewAI crews for ettametta workflows.
     """
 
     @staticmethod
@@ -198,4 +198,4 @@ class ViralForgeCrew:
 
 
 crewai_service = CrewAIService()
-viralforge_crew = ViralForgeCrew()
+ettametta_crew = EttamettaCrew()

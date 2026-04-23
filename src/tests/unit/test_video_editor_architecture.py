@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ViralForge Video Editor Architecture Quality Demonstration
+Ettametta Video Editor Architecture Quality Demonstration
 ==========================================================
 
 Demonstrates the high-quality architecture and design of the video editor
@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 async def demonstrate_video_editor_quality():
     """Demonstrate the quality aspects of the video editor architecture"""
 
-    print("🎬 VIRALFORGE VIDEO EDITOR ARCHITECTURE QUALITY")
+    print("🎬 ETTAMETTA VIDEO EDITOR ARCHITECTURE QUALITY")
     print("=" * 60)
 
     quality_aspects = {

@@ -10,7 +10,7 @@ from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
-MEMORY_DIR = Path("/tmp/viral_forge_memory")
+MEMORY_DIR = Path("/tmp/ettametta_memory")
 MEMORY_DIR.mkdir(exist_ok=True)
 
 GRAPH_FILE = MEMORY_DIR / "knowledge_graph.json"

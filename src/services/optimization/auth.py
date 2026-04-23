@@ -3,11 +3,11 @@ import datetime
 import base64
 import logging
 from cryptography.fernet import Fernet
-from api.utils.database import get_db, async_session_factory
+from src.api.utils.database import get_db, async_session_factory
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.models import SocialAccount
-from api.config import settings
+from src.api.utils.models import SocialAccount
+from src.api.config import settings
 from .cookie_manager import cookie_manager
 
 logger = logging.getLogger(__name__)
@@ -163,7 +163,7 @@ class TokenManager:
             return False
 
         import httpx
-        from api.utils.vault import get_secret
+        from src.api.utils.vault import get_secret
 
         try:
             if platform == "youtube":

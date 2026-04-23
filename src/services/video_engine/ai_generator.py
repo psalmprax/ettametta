@@ -289,9 +289,9 @@ class AIVideoGeneratorService:
             )
             return None
 
-    async def generate_intro(self, topic: str, duration: int = 3) -> str | None:
-        """Generate intro clip for a topic"""
-        prompt = f"Professional intro for {topic} video, cinematic, high quality"
+    async def generate_intro(self, niche: str, duration: int = 3) -> str | None:
+        """Generate intro clip for a niche"""
+        prompt = f"Professional intro for {niche} video, cinematic, high quality"
         return await self.generate_clip(prompt, duration)
 
     async def generate_Outro(

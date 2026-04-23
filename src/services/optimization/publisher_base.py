@@ -71,7 +71,7 @@ class SocialPublisher(ABC):
         self,
         video_path: str,
         metadata: PostMetadata,
-        user_id: int,
+        user_id: str,
         account_id: int | None,
         headers: dict[str, str],
     ) -> str | None:
@@ -82,7 +82,7 @@ class SocialPublisher(ABC):
     async def _get_metrics_impl(
         self,
         platform_id: str,
-        user_id: int,
+        user_id: str,
         account_id: int | None,
         headers: dict[str, str],
     ) -> dict:
@@ -222,7 +222,7 @@ class SocialPublisher(ABC):
         self,
         video_path: str,
         metadata: PostMetadata,
-        user_id: int,
+        user_id: str,
         account_id: int | None = None,
     ) -> str | None:
         """
@@ -256,7 +256,7 @@ class SocialPublisher(ABC):
     async def get_metrics(
         self,
         platform_id: str,
-        user_id: int,
+        user_id: str,
         account_id: int | None = None,
     ) -> dict:
         """Fetches live engagement metrics for a post"""
@@ -276,11 +276,11 @@ class SocialPublisher(ABC):
             return {"error": str(e)}
 
     @abstractmethod
-    async def health_check(self, user_id: int) -> bool:
+    async def health_check(self, user_id: str) -> bool:
         """Verifies API credentials and connectivity"""
         pass
 
-    async def ensure_valid_token(self, user_id: int, account_id: int | None = None):
+    async def ensure_valid_token(self, user_id: str, account_id: int | None = None):
         """Token validation and refresh"""
         return await token_manager.ensure_valid_token(
             self.platform_name, user_id=user_id, account_id=account_id

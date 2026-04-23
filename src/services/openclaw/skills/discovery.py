@@ -2,7 +2,7 @@ import requests
 import logging
 import json
 from typing import Any
-from api.config import settings
+from src.api.config import settings
 from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
@@ -28,14 +28,14 @@ class DiscoverySkill(OpenClawBaseSkill):
     def execute(
         self,
         action: str = "search",
-        topic: str = "general",
-        niche: str = None,
+        topic: str = None,
+        niche: str = "general",
         **kwargs,
     ) -> str:
         """
         Polymorphic entry point for OpenClaw agent.
         """
-        target = topic if topic != "general" else (niche or "general")
+        target = niche if niche != "general" else (topic or "general")
 
         if action == "search":
             return self.search_trends(target, analyze=kwargs.get("analyze", False))
@@ -59,12 +59,12 @@ class DiscoverySkill(OpenClawBaseSkill):
         return f"⚠️ Unknown discovery action: {action}"
 
 
-    def search_trends(self, topic: str, limit: int = 5, analyze: bool = False) -> str:
+    def search_trends(self, niche: str, limit: int = 5, analyze: bool = False) -> str:
         """
         Enhanced search with optional AI analysis.
         """
         try:
-            payload = {"query": topic, "limit": limit}
+            payload = {"query": niche, "limit": limit}
             response = requests.get(
                 f"{self.api_url}/search",
                 params=payload,
@@ -81,7 +81,7 @@ class DiscoverySkill(OpenClawBaseSkill):
                 if not results:
                     return f"No trends found for '{topic}'."
 
-                summary = f"🔎 **Discovery Results for '{topic}':**\n"
+                summary = f"🔎 **Discovery Results for '{niche}':**\n"
                 for i, item in enumerate(results[:limit], 1):
                     title = item.get("title", "No Title")
                     platform = item.get("platform", "Unknown")
@@ -92,7 +92,7 @@ class DiscoverySkill(OpenClawBaseSkill):
                     )
 
                 if analyze and self.groq_client:
-                    analysis = self._analyze_trends(results[:limit], topic)
+                    analysis = self._analyze_trends(results[:limit], niche)
                     summary += f"\n🤖 **AI Analysis:** {analysis}"
 
                 return summary
@@ -250,7 +250,7 @@ Provide 3 specific trend predictions with reasoning. Format as:
             logger.error(f"Trend prediction error: {e}")
             return f"⚠️ Trend prediction failed: {str(e)}"
 
-    def _analyze_trends(self, trends: list[dict], topic: str) -> str:
+    def _analyze_trends(self, trends: list[dict], niche: str) -> str:
         """
         Use AI to analyze discovered trends.
         """
@@ -265,7 +265,7 @@ Provide 3 specific trend predictions with reasoning. Format as:
                 ]
             )
 
-            prompt = f"""Analyze these trending results for '{topic}' and provide insights:
+            prompt = f"""Analyze these trending results for '{niche}' and provide insights:
 
 {trends_text}
 

@@ -3,9 +3,9 @@ import httpx
 import random
 import uuid
 from typing import Any
-from api.config import settings
-from api.utils.os_worker import ai_worker
-from services.monetization.commerce_service import base_commerce_service
+from src.api.config import settings
+from src.api.utils.os_worker import ai_worker
+from src.services.monetization.commerce_service import base_commerce_service
 
 logger = logging.getLogger("AutoMerchService")
 
@@ -17,15 +17,15 @@ class AutoMerchService:
     3. Image PNG -> Print-on-Demand / Shopify (Commerce)
     """
 
-    async def generate_and_publish_merch(self, trend_topic: str) -> dict[str, Any] | None:
+    async def generate_and_publish_merch(self, niche: str) -> dict[str, Any] | None:
         """
         Orchestrates the entire reverse monetization flow.
         Returns the Shopify/POD product data if successful.
         """
-        logger.info(f"[AutoMerch] Initiating pipeline for trend: {trend_topic}")
+        logger.info(f"[AutoMerch] Initiating pipeline for trend: {niche}")
         
         # 1. Concept -> Design Prompt
-        design_prompt = await self._generate_design_prompt(trend_topic)
+        design_prompt = await self._generate_design_prompt(niche)
         if not design_prompt:
             logger.error("[AutoMerch] Failed to generate design concept.")
             return None
@@ -37,7 +37,7 @@ class AutoMerchService:
             return None
             
         # 3. Publish to Store
-        product_title = f"{trend_topic.title()} Official Merch"
+        product_title = f"{niche.title()} Official Merch"
         product_data = await self._publish_to_pod(product_title, image_url)
         
         if product_data:

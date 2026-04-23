@@ -4,18 +4,18 @@ Provides AI-powered analysis of content to extract topics, sentiment, viral pote
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.utils.models import ContentCandidateDB
+from src.api.utils.models import ContentCandidateDB
 
 
 async def extract_content_patterns(
     content_id: str,
     db: AsyncSession,
     force: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Analyze content for viral patterns and insights.
 
@@ -25,7 +25,7 @@ async def extract_content_patterns(
         force: Force re-analysis even if already analyzed
 
     Returns:
-        Analysis results dict with topics, sentiment, viral_potential, keywords
+        Analysis results dict with niches, sentiment, viral_potential, keywords
     """
     # Fetch content record
     stmt = select(ContentCandidateDB).filter(ContentCandidateDB.id == content_id)
@@ -60,9 +60,9 @@ async def extract_content_patterns(
     return analysis_results
 
 
-def _perform_pattern_analysis(text: str, content: ContentCandidateDB) -> Dict[str, Any]:
+def _perform_pattern_analysis(text: str, content: ContentCandidateDB) -> dict[str, Any]:
     """
-    Perform text analysis to extract topics, sentiment, viral potential, and keywords.
+    Perform text analysis to extract niches, sentiment, viral potential, and keywords.
 
     This is a basic implementation. In production, replace with actual AI/NLP service.
     """
@@ -92,9 +92,9 @@ def _perform_pattern_analysis(text: str, content: ContentCandidateDB) -> Dict[st
         if kw in text_lower:
             all_keywords.append(kw)
 
-    # Topic categorization (basic keyword matching)
-    topics = []
-    topic_keywords = {
+    # Niche categorization (basic keyword matching)
+    niches = []
+    niche_keywords = {
         "entertainment": ["funny", "comedy", "laugh", "meme", "humor", "joke", "fail"],
         "education": [
             "learn",
@@ -131,13 +131,13 @@ def _perform_pattern_analysis(text: str, content: ContentCandidateDB) -> Dict[st
         "food": ["food", "recipe", "cook", "eat", "taste", "delicious", "homemade"],
         "news": ["news", "update", "breaking", "report", "story", "announce"],
     }
-    for topic, keywords in topic_keywords.items():
+    for niche, keywords in niche_keywords.items():
         if any(kw in text_lower for kw in keywords):
-            topics.append(topic)
+            niches.append(niche)
 
-    # Default to "entertainment" if no topics found
-    if not topics:
-        topics = ["entertainment"]
+    # Default to "entertainment" if no niches found
+    if not niches:
+        niches = ["entertainment"]
 
     # Sentiment analysis (basic rule-based)
     positive_words = [
@@ -187,7 +187,7 @@ def _perform_pattern_analysis(text: str, content: ContentCandidateDB) -> Dict[st
             viral_potential = "medium"
 
     return {
-        "topics": topics,
+        "niches": niches,
         "sentiment": sentiment,
         "viral_potential": viral_potential,
         "keywords": all_keywords[:10] if all_keywords else ["viral", "content"],
@@ -197,7 +197,7 @@ def _perform_pattern_analysis(text: str, content: ContentCandidateDB) -> Dict[st
 async def get_persisted_analysis_report(
     content_id: str,
     db: AsyncSession,
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Retrieve existing analysis for content without performing new analysis.
 

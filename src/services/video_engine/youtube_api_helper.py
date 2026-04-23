@@ -3,7 +3,7 @@ import re
 import requests
 import asyncio
 import logging
-from services.optimization.auth import token_manager
+from src.services.optimization.auth import token_manager
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 async def get_youtube_streaming_url(
     video_id: str, 
     api_key: str | None = None, 
-    user_id: int | None = None
+    user_id: str | None = None
 ) -> str | None:
     """
     Get video streaming URL using YouTube Data API.

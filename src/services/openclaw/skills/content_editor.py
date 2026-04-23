@@ -669,7 +669,7 @@ class ContentEditorSkill(OpenClawBaseSkill):
                 "-t",
                 str(duration),
                 "-vf",
-                f"scale=-2:min(ih\,1920),crop=min(iw\\,1080):ih:ow-iw",
+                fr"scale=-2:min(ih,1920),crop=min(iw,1080):ih:ow-iw",
                 "-c:v",
                 "libx264",
                 "-preset",
@@ -787,7 +787,7 @@ class ContentEditorSkill(OpenClawBaseSkill):
         """
         try:
             import subprocess
-            from api.config import settings
+            from src.api.config import settings
             remotion_path = str(settings.REMOTION_APP_DIR)
             props = props or {}
 

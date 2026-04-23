@@ -6,7 +6,7 @@ import uuid
 import shutil
 from typing import Any
 from pathlib import Path
-from api.config import settings
+from src.api.config import settings
 
 class RemotionService:
     """
@@ -39,12 +39,24 @@ class RemotionService:
             # --- HARDENING: Path Mapping for Remotion Browser Security ---
             # Remotion cannot access arbitrary absolute paths. We use the public/assets symlink.
             hardened_props = json.loads(json.dumps(props))
-            if "sections" in hardened_props:
-                for section in hardened_props["sections"]:
-                    if "videoPath" in section and section["videoPath"]:
-                        # Convert /path/to/local_downloads/file.mp4 -> ./assets/file.mp4
-                        fname = os.path.basename(section["videoPath"])
-                        section["videoPath"] = f"./assets/{fname}"
+            
+            def harden_path(val):
+                if isinstance(val, str) and (os.path.isabs(val) or "/" in val):
+                    return f"./assets/{os.path.basename(val)}"
+                return val
+
+            # Top level hardening
+            for key in ["video_url", "audio_url", "trademark_url"]:
+                if key in hardened_props and hardened_props[key]:
+                    hardened_props[key] = harden_path(hardened_props[key])
+
+            # Nested list hardening (timeline/sections)
+            for list_key in ["timeline", "sections", "clips"]:
+                if list_key in hardened_props and isinstance(hardened_props[list_key], list):
+                    for item in hardened_props[list_key]:
+                        for path_key in ["videoPath", "url"]:
+                            if path_key in item and item[path_key]:
+                                item[path_key] = harden_path(item[path_key])
 
             # 1. Write props to temporary JSON file
             with open(input_props_path, "w") as f:

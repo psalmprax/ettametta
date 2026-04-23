@@ -18,8 +18,8 @@ import logging
 import time
 from typing import Any
 from datetime import datetime
-from api.utils.redis import get_redis
-from services.infrastructure.resilience_metrics import (
+from src.api.utils.redis import get_redis
+from src.services.infrastructure.resilience_metrics import (
     chaos_faults_injected,
     chaos_scenarios_run,
     chaos_active,
@@ -31,7 +31,7 @@ logger = logging.getLogger("ChaosUtility")
 class ChaosUtility:
     """
     The Infrastructure Destroyer — with Orchestration.
-    Injects controlled failures into the ViralForge distributed swarm.
+    Injects controlled failures into the Ettametta distributed swarm.
     Supports single-fault injection AND multi-fault scenario playbooks.
     """
 

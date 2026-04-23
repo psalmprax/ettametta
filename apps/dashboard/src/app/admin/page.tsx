@@ -663,7 +663,7 @@ export default function AdminSettingsPage() {
                                                     value={settings.lead_gen_url}
                                                     onChange={(e) => updateSetting("lead_gen_url", e.target.value)}
                                                     className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
-                                                    placeholder="https://viralforge.com/free-resources"
+                                                    placeholder="https://ettametta.ai/free-resources"
                                                 />
                                             </div>
                                             <div>
@@ -673,7 +673,7 @@ export default function AdminSettingsPage() {
                                                     value={settings.digital_product_url}
                                                     onChange={(e) => updateSetting("digital_product_url", e.target.value)}
                                                     className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
-                                                    placeholder="https://shop.viralforge.com"
+                                                    placeholder="https://shop.ettametta.ai"
                                                 />
                                             </div>
                                         </div>

@@ -5,35 +5,38 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi.exceptions import RequestValidationError
-from api.utils.database import engine, Base, AsyncSessionLocal
-from api.utils.models import SystemSettings, ContentCandidateDB, MonitoredNiche
-from api.utils.user_models import UserDB
-from api.utils import credit_models  # Import to register credit models with SQLAlchemy
+from src.api.utils.database import engine, Base, AsyncSessionLocal
+from src.api.utils.models import SystemSettings, ContentCandidateDB, MonitoredNiche
+from src.api.utils.user_models import UserDB
+from src.api.utils import credit_models  # Import to register credit models with SQLAlchemy
 from sqlalchemy import select, func
 
 
 # Tables should be managed via Alembic in production.
 
-from services.security.service import base_security_sentinel
-from api.config import settings
+from src.services.security.service import base_security_sentinel
+from src.api.config import settings
 import os
 import time
 import logging
 import asyncio
-from services.infrastructure.chaos_utility import base_chaos_utility
+from src.services.infrastructure.chaos_utility import base_chaos_utility
 import asyncio
-from services.infrastructure.recovery_service import base_recovery_service
-from services.analytics.consistency_sentinel import base_consistency_sentinel
+from src.services.infrastructure.recovery_service import base_recovery_service
+from src.services.analytics.consistency_sentinel import base_consistency_sentinel
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
-from api.utils.limiter import limiter, get_user_rate_limit, get_remote_address
+from src.api.utils.limiter import limiter, get_user_rate_limit, get_remote_address
 
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
 from prometheus_fastapi_instrumentator import Instrumentator
 
-logger = logging.getLogger(__name__)
+from src.api.utils.tracing import set_request_id, get_request_id, setup_tracing_logger
+import uuid
+
+logger = setup_tracing_logger(__name__)
 
 app = FastAPI(
     title="ettametta API",
@@ -51,9 +54,9 @@ ettametta is an AI-powered content creation and monetization platform.
 Most endpoints require JWT authentication. Get token from `/api/v1/auth/login`.
 
 ## Rate Limits
-- Free tier: 60 requests/minute
-- Creator tier: 120 requests/minute
-- Empire tier: 300 requests/minute
+- Free tier: 5 requests/hour
+- Basic tier: 50 requests/hour
+- Sovereign tier: 500 requests/hour
 
 ## Errors
 All errors follow this format:
@@ -94,14 +97,29 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
+class TracingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Extract or generate Request-ID
+        rid = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        set_request_id(rid)
+        
+        response = await call_next(request)
+        
+        # Propagate back to client
+        response.headers["X-Request-ID"] = rid
+        return response
+
+app.add_middleware(TracingMiddleware)
+
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         start_time = time.time()
+        rid = get_request_id()
         response = await call_next(request)
         process_time = time.time() - start_time
         if settings.ENV == "production" or settings.DEBUG:
             logger.info(
-                f"{request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.3f}s"
+                f"[{rid}] {request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.3f}s"
             )
         response.headers["X-Process-Time"] = str(process_time)
         return response
@@ -109,39 +127,43 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(RequestLoggingMiddleware)
 
-from api.routes import (
+from src.api.routes import (
+    video_jobs,
+    discovery,
     auth,
-    security,
+    video_generate,
+    health,
+    ws,
+    proxy,
+    internal,
+    video_transform,
+    content_editor,
+    publish,
+    analytics,
+    monetization,
     billing,
-    remotion,
-    admin,
-    agent,
-    credits,
+    settings as route_settings,
+    nexus,
+    security,
     persona,
     webhooks,
+    admin,
+    no_face,
+    ab_testing,
+    remotion,
+    agent,
+    credits,
     zero,
     opencli,
     tools,
     llm,
-    video_jobs,
-    video_transform,
-    video_generate,
-    content_editor,
-    discovery,
-    publish,
-    settings as route_settings,
-    nexus,
-    no_face,
-    analytics,
-    monetization,
-    ws,
     ab_testing,
 )
 
 from fastapi.staticfiles import StaticFiles
 
-os.makedirs(settings.VIDEO_OUTPUTS_DIR, exist_ok=True)
-app.mount("/static", StaticFiles(directory=settings.VIDEO_OUTPUTS_DIR), name="static")
+os.makedirs(settings.STORAGE_OUTPUT_DIR, exist_ok=True)
+app.mount("/static", StaticFiles(directory=settings.STORAGE_OUTPUT_DIR), name="static")
 
 # Rate Limiter setup
 app.state.limiter = limiter
@@ -220,7 +242,7 @@ async def value_error_exception_handler(request: Request, exc: ValueError):
 
 
 import traceback
-from api.utils.models import SelfHealingAuditDB
+from src.api.utils.models import SelfHealingAuditDB
 
 
 @app.exception_handler(Exception)
@@ -239,8 +261,23 @@ async def global_exception_handler(request: Request, exc: Exception):
             )
             db.add(audit)
             await db.commit()
+            
+            # Standard 3.12: Compliance Hardening (EU AI Act Article 71)
+            # Notify external surveillance authorities of serious incidents
+            from src.services.infrastructure.incident_reporting import base_incident_service
+            await base_incident_service.report_incident(
+                incident_type="SYSTEM_CRASH",
+                details={
+                    "path": request.url.path,
+                    "method": request.method,
+                    "exception": type(exc).__name__,
+                    "message": str(exc),
+                    "audit_id": audit.id
+                },
+                severity="CRITICAL"
+            )
     except Exception as db_exc:
-        logger.error(f"Failed to persist fault audit: {db_exc}")
+        logger.error(f"Failed to persist fault audit or report incident: {db_exc}")
 
     return JSONResponse(
         status_code=500,
@@ -297,14 +334,15 @@ async def startup_event():
     )
     FastAPICache.init(RedisBackend(redis_instance), prefix="fastapi-cache")
     await seed_monitored_niches()
-    
+
     # Start Hot-Reload Listener
-    from api.utils.hot_reload import start_hot_reload_listener
+    from src.api.utils.hot_reload import start_hot_reload_listener
+
     asyncio.create_task(start_hot_reload_listener())
-    
+
     # Standard: Stateful Recovery - Distributed System Correctness
     await base_recovery_service.sync_all_vitals()
-    
+
     # Standard: Autonomous Enforcement - ConsistencySentinel
     asyncio.create_task(base_consistency_sentinel.start())
     logger.info("🛡️ [Startup] ConsistencySentinel enforcement loop activated.")
@@ -340,6 +378,9 @@ v1_router.include_router(opencli.router, tags=["opencli-rs"])
 v1_router.include_router(tools.router, tags=["Free Tools"])
 v1_router.include_router(llm.router, tags=["LLM - Multi-Provider"])
 v1_router.include_router(ws.router, tags=["WebSockets"])
+v1_router.include_router(health.router, tags=["Health"])
+v1_router.include_router(proxy.router, tags=["Proxy"])
+v1_router.include_router(internal.router, tags=["Internal"])
 
 # Include versioned router under /api
 app.include_router(v1_router, prefix="/api")
@@ -381,11 +422,13 @@ async def health_check():
 # ─── Chaos Engineering Endpoints (Reality Run Protocol) ───────────
 chaos_router = APIRouter(prefix="/v1/chaos", tags=["Chaos"])
 
+
 @chaos_router.post("/latency")
 async def inject_latency(service: str, delay_ms: int):
     """Adds artificial delay to a service."""
     await base_chaos_utility.inject_latency(service, delay_ms)
     return {"status": "injected", "service": service, "delay": f"{delay_ms}ms"}
+
 
 @chaos_router.post("/crash")
 async def simulate_crash():
@@ -393,11 +436,13 @@ async def simulate_crash():
     await base_chaos_utility.simulate_worker_crash()
     return {"status": "crash_simulated"}
 
+
 @chaos_router.post("/exhaustion")
 async def induce_exhaustion(platform: str):
     """Fakes a 429/403 for a specific platform API."""
     await base_chaos_utility.induce_api_exhaustion(platform)
     return {"status": "exhaustion_active", "platform": platform}
+
 
 @chaos_router.post("/scenario")
 async def run_chaos_scenario(name: str):
@@ -405,11 +450,15 @@ async def run_chaos_scenario(name: str):
     report = await base_chaos_utility.run_scenario(name)
     return report
 
+
 @chaos_router.post("/continuous/start")
 async def start_continuous_chaos(intensity: str = "medium", duration_minutes: int = 30):
     """Starts a background continuous chaos injection loop."""
-    result = await base_chaos_utility.start_continuous_chaos(intensity, duration_minutes)
+    result = await base_chaos_utility.start_continuous_chaos(
+        intensity, duration_minutes
+    )
     return result
+
 
 @chaos_router.post("/continuous/stop")
 async def stop_continuous_chaos():
@@ -417,21 +466,25 @@ async def stop_continuous_chaos():
     result = await base_chaos_utility.stop_continuous_chaos()
     return result
 
+
 @chaos_router.post("/clear")
 async def clear_all_faults():
     """Emergency: removes all active chaos faults from the system."""
     await base_chaos_utility.clear_all_faults()
     return {"status": "all_faults_cleared"}
 
+
 @chaos_router.get("/report")
 async def get_chaos_report():
     """Returns current chaos state, sentinel health, and recovery status."""
-    from services.infrastructure.recovery_service import base_recovery_service
+    from src.services.infrastructure.recovery_service import base_recovery_service
+
     return {
         "chaos": base_chaos_utility.get_chaos_report(),
         "sentinel": base_consistency_sentinel.get_status(),
         "recovery": base_recovery_service.get_status(),
     }
+
 
 app.include_router(chaos_router, prefix="/api")
 

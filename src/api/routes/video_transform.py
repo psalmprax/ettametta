@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.utils.database import get_db
-from shared.enums import SystemJobStatus
-from api.utils.models import VideoJobDB
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from api.utils.subscription import check_daily_limit, credits_required
-from services.video_engine.tasks import download_and_process_task
-from services.payment.credit_service import credit_service
-from api.utils.limiter import limiter
-from api.utils.audit_service import audit_service
-from api.utils.api_responses import success_response
+from src.api.utils.database import get_db
+from src.shared.enums import SystemJobStatus
+from src.api.utils.models import VideoJobDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.api.utils.subscription import check_daily_limit, credits_required
+from src.services.video_engine.tasks import download_and_process_task
+from src.services.payment.credit_service import credit_service
+from src.api.utils.limiter import limiter
+from src.api.utils.audit_service import audit_service
+from src.api.utils.api_responses import success_response
 import logging
 
 router = APIRouter(prefix="/video", tags=["Video Transformation"])
@@ -78,7 +78,7 @@ async def start_transformation(
 
         if not success:
             # ROLLBACK: Revoke the task if credit consumption fails
-            from api.utils.celery import celery_app
+            from src.api.utils.celery import celery_app
 
             celery_app.control.revoke(task.id, terminate=True)
             logger.warning(f"Task {task.id} revoked due to credit failure: {msg}")
@@ -107,13 +107,15 @@ async def start_transformation(
             db=db,
         )
 
-        return success_response(data={"message": "Transformation started", "task_id": task.id})
+        return success_response(
+            data={"message": "Transformation started", "task_id": task.id}
+        )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Transformation failed: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=503, detail="Video processing unavailable")
 
 
 class TestDriveRequest(BaseModel):
@@ -130,8 +132,8 @@ async def test_drive(
     """
     Identifies the top viral candidate and triggers a preview transformation.
     """
-    from services.discovery.service import base_discovery_service
-    from api.utils.models import ContentCandidateDB
+    from src.services.discovery.service import base_discovery_service
+    from src.api.utils.models import ContentCandidateDB
 
     try:
         await check_daily_limit(current_user, db)
@@ -169,12 +171,14 @@ async def test_drive(
         db.add(new_job)
         await db.commit()
 
-        return success_response(data={"message": "Test Drive started", "task_id": task.id})
+        return success_response(
+            data={"message": "Test Drive started", "task_id": task.id}
+        )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Test drive failed: {e}")
-        raise HTTPException(status_code=500, detail="Internal error")
+        raise HTTPException(status_code=503, detail="Video processing unavailable")
 
 
 @router.post("/auto-insert-links")
@@ -187,13 +191,16 @@ async def auto_insert_affiliate_links(
     """
     Automatically inserts affiliate links into video content.
     """
-    from services.monetization.service import base_monetization_engine
+    from src.services.monetization.service import base_monetization_engine
 
     try:
         return success_response(
-            data=await base_monetization_engine.auto_insert_links(
-                video_path, niche, script_content
+            data=await base_monetization_engine.plan_monetization_strategy(
+                niche, script_content, video_path=video_path
             )
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Auto-insert links failed: {e}")
+        raise HTTPException(status_code=503, detail="Video processing unavailable")

@@ -83,7 +83,7 @@ class LangChainService:
             return
         
         # Initialize with Groq
-        from api.config import settings
+        from src.api.config import settings
         
         api_key = settings.GROQ_API_KEY
         if not api_key:
@@ -268,7 +268,7 @@ class LangChainService:
         start_time = time.time()
         try:
             prompt = ChatPromptTemplate.from_template("""
-                System: You are the ViralForge Predictor. Analyze the following script for viral potential.
+                System: You are the Ettametta Predictor. Analyze the following script for viral potential.
                 Niche: {niche}
                 Metadata: {metadata}
                 

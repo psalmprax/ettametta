@@ -4,15 +4,15 @@ Provides credit management, packages, purchases, and referral system
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from api.utils.database import get_db
-from api.utils.subscription import get_subscription_tier_value
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.api.utils.database import get_db
+from src.api.utils.subscription import get_subscription_tier_value
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.payment.credit_service import credit_service
+from src.services.payment.credit_service import credit_service
 import stripe
 import logging
-from api.utils.api_responses import success_response
+from src.api.utils.api_responses import success_response, handle_exception
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,8 @@ async def _get_packages(db: AsyncSession) -> list[dict]:
 
 async def _get_package_by_id(package_id: str, db: AsyncSession) -> dict | None:
     """Get package by ID with validation"""
+    if not package_id or not isinstance(package_id, str):
+        return None
     packages = await _get_packages(db)
     return next((p for p in packages if p["id"] == package_id), None)
 
@@ -130,8 +132,8 @@ async def purchase_credits(
     db: AsyncSession = Depends(get_db),
 ):
     """Purchase credits - creates Stripe checkout session"""
-    from services.payment.stripe_service import get_payment_service
-    from api.config import settings
+    from src.services.payment.stripe_service import get_payment_service
+    from src.api.config import settings
     import uuid
 
     package = await _get_package_by_id(request.package_id, db)
@@ -166,18 +168,14 @@ async def purchase_credits(
             current_user.stripe_customer_id = stripe_customer_id
             await db.commit()
         except Exception as e:
-            logger.error(f"[Credits] Failed to create Stripe customer: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to initialize payment. Please try again.",
-            )
+            return handle_exception(e)
 
     success_url = f"{settings.PRODUCTION_DOMAIN}/settings?tab=billing&credits_success=true&session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = (
         f"{settings.PRODUCTION_DOMAIN}/settings?tab=billing&credits_cancelled=true"
     )
 
-    from api.config import settings
+    from src.api.config import settings
 
     try:
         session = stripe.checkout.Session.create(
@@ -226,11 +224,7 @@ async def purchase_credits(
             status_code=502, detail=f"Payment processing error: {str(e)}"
         )
     except Exception as e:
-        logger.error(f"[Credits] Purchase failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to create checkout session. Please try again.",
-        )
+        return handle_exception(e)
 
 
 # === Credit Costs ===
@@ -259,7 +253,7 @@ async def get_referral_code(
 ):
     """Get user's referral code with share URL"""
     code = await credit_service.get_referral_code(current_user.id, db)
-    from api.config import settings
+    from src.api.config import settings
 
     share_url = f"{settings.PRODUCTION_DOMAIN}/register?ref={code}"
 

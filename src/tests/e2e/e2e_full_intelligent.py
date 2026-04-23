@@ -16,12 +16,12 @@ import subprocess
 import asyncio
 import shutil
 
-sys.path.insert(0, "/home/psalmprax/ALL_PROJECTS/viral_forge")
+sys.path.insert(0, "/home/psalmprax/ALL_PROJECTS/ettametta")
 os.environ["DEBUG"] = "true"
 
 # Use a real discovered video from intelligent_video_workflow
 VIDEO_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Rick Roll as test
-OUTPUT_DIR = "/home/psalmprax/ALL_PROJECTS/viral_forge/temp/e2e_full"
+OUTPUT_DIR = "/home/psalmprax/ALL_PROJECTS/ettametta/temp/e2e_full"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 REMOTE_HOST = "root@149.104.110.122"
@@ -178,9 +178,9 @@ def step5_process(video_path):
             "-o",
             "StrictHostKeyChecking=no",
             REMOTE_HOST,
-            "cd /home/psalmprax/ALL_PROJECTS/viral_forge/apps/remotion-studio && "
+            "cd /home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio && "
             f"npx remotion render src/index.ts CinematicMinimal "
-            f"/home/psalmprax/ALL_PROJECTS/viral_forge/apps/remotion-studio/out/e2e_output.mp4 "
+            f"/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/out/e2e_output.mp4 "
             f"--props {REMOTE_PATH}/props.json --quality 1",
         ],
         capture_output=True,
@@ -196,7 +196,7 @@ def step5_process(video_path):
                 "-z",
                 "-e",
                 "ssh -i /home/psalmprax/Music/id_rsa -o StrictHostKeyChecking=no",
-                f"{REMOTE_HOST}:/home/psalmprax/ALL_PROJECTS/viral_forge/apps/remotion-studio/out/e2e_output.mp4",
+                f"{REMOTE_HOST}:/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/out/e2e_output.mp4",
                 os.path.join(OUTPUT_DIR, "final_output.mp4"),
             ]
         )
@@ -245,7 +245,7 @@ def main():
             "-c",
             f"""
 import sys
-sys.path.insert(0, '/home/psalmprax/ALL_PROJECTS/viral_forge')
+sys.path.insert(0, '/home/psalmprax/ALL_PROJECTS/ettametta')
 from src.services.video_engine.base_remotion_service import base_remotion_service
 import asyncio
 result = asyncio.run(base_remotion_service.render_video(
@@ -269,7 +269,7 @@ print(result)
     # Copy output to downloads
     if os.path.exists(video):
         final = (
-            "/home/psalmprax/ALL_PROJECTS/viral_forge/downloads/e2e_full_pipeline.mp4"
+            "/home/psalmprax/ALL_PROJECTS/ettametta/downloads/e2e_full_pipeline.mp4"
         )
         shutil.copy(video, final)
         print(f"\n  ✅ OUTPUT: {final}")

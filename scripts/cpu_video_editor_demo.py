@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ViralForge Video Editor - Complete CPU-Based Implementation
+Ettametta Video Editor - Complete CPU-Based Implementation
 ===========================================================
 
 Full video production capabilities using CPU-based infrastructure.
@@ -47,7 +47,7 @@ class CPU_VideoEditor:
     async def demonstrate_complete_workflow(self) -> Dict[str, Any]:
         """Demonstrate complete video production workflow on CPU"""
 
-        print("🎬 VIRALFORGE VIDEO EDITOR - CPU-BASED COMPLETE WORKFLOW")
+        print("🎬 ETTAMETTA VIDEO EDITOR - CPU-BASED COMPLETE WORKFLOW")
         print("=" * 70)
 
         workflow_results = {}
@@ -367,7 +367,7 @@ if __name__ == "__main__":
     results = asyncio.run(editor.demonstrate_complete_workflow())
 
     print("
-🎉 CONCLUSION:"    print("   The ViralForge video editor provides COMPLETE video production")
+🎉 CONCLUSION:"    print("   The Ettametta video editor provides COMPLETE video production")
     print("   capabilities using CPU-based infrastructure. No GPU required!")
     print("   ")
     print("   Cost: $50-200/month")

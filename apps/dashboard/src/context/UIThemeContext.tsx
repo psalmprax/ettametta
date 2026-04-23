@@ -16,7 +16,7 @@ const UIThemeContext = createContext<UIThemeContextType>({
     toggleTheme: () => {},
 });
 
-const THEME_KEY = "viralforge_ui_theme";
+const THEME_KEY = "ettametta_ui_theme";
 
 export function UIThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setThemeState] = useState<UITheme>("legacy");

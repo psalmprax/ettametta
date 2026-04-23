@@ -12,6 +12,5 @@ services:
     volumes:
       - /home/ubuntu/jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-      - /home/ubuntu/viralforge:/home/ubuntu/viralforge
       - /home/ubuntu/ettametta:/home/ubuntu/ettametta
     user: "root" # Required to access docker.sock for building images inside pipeline

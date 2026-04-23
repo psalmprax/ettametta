@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from api.utils.database import get_db
-from shared.enums import SystemJobStatus
-from api.utils.models import VideoJobDB, AuditLogDB
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB, UserRole
-from api.utils.audit_service import audit_service
-from services.payment.credit_service import credit_service
+from src.api.utils.database import get_db
+from src.shared.enums import SystemJobStatus, CreditAction
+from src.api.utils.models import VideoJobDB, AuditLogDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB, UserRole
+from src.api.utils.audit_service import audit_service
+from src.services.payment.credit_service import credit_service
+from src.services.video_engine.job_service import get_video_job_service, VideoJobService
 from datetime import datetime, timedelta
-from api.utils.api_responses import success_response
+from src.api.utils.api_responses import success_response
 import logging
 
 router = APIRouter(prefix="/video/jobs", tags=["Video Jobs"])
@@ -18,27 +19,23 @@ logger = logging.getLogger(__name__)
 
 @router.get("/")
 async def list_jobs(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user),
+    job_service: VideoJobService = Depends(get_video_job_service),
 ):
     """
-    Lists all video processing jobs from the database for the current user.
+    Lists all video processing jobs from the database for the current current_user.
     """
     try:
-        if current_user.role == UserRole.ADMIN:
-            stmt = select(VideoJobDB).order_by(VideoJobDB.created_at.desc())
-        else:
-            stmt = (
-                select(VideoJobDB)
-                .where(VideoJobDB.user_id == current_user.id)
-                .order_by(VideoJobDB.created_at.desc())
-            )
-
-        result = await db.execute(stmt)
-        jobs = result.scalars().all()
+        include_all = current_user.role == UserRole.ADMIN
+        jobs, _ = await job_service.get_user_jobs(
+            user_id=current_user.id,
+            limit=100,  # sensible default for listing
+            include_all=include_all,
+        )
         return success_response(data=jobs)
     except Exception as e:
         logger.error(f"Error listing jobs: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve jobs.")
+        raise HTTPException(status_code=500, detail="Database error retrieving jobs")
 
 
 @router.post("/{job_id}/abort")
@@ -50,8 +47,8 @@ async def abort_job(
     """
     Abort a running video processing job.
     """
-    from api.utils.celery import celery_app
-    from api.routes.ws import notify_job_update_sync
+    from src.api.utils.celery import celery_app
+    from src.api.routes.ws import notify_job_update_sync
 
     try:
         stmt = select(VideoJobDB).where(VideoJobDB.id == job_id)
@@ -87,12 +84,12 @@ async def abort_job(
         raise
     except Exception as e:
         logger.error(f"Error aborting job {job_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to abort job.")
+        raise HTTPException(status_code=500, detail="Database error aborting job")
 
 
-@router.get("/metadata/{task_id}")
+@router.get("/metadata/{job_id}")
 async def get_job_details(
-    task_id: str,
+    job_id: str,
     current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -103,7 +100,7 @@ async def get_job_details(
     try:
         # Get video job
         stmt = select(VideoJobDB).where(
-            VideoJobDB.id == task_id, VideoJobDB.user_id == current_user.id
+            VideoJobDB.id == job_id, VideoJobDB.user_id == current_user.id
         )
         result = await db.execute(stmt)
         job = result.scalar_one_or_none()
@@ -115,7 +112,7 @@ async def get_job_details(
         stmt_audit = (
             select(AuditLogDB)
             .where(
-                AuditLogDB.resource_id == task_id, AuditLogDB.resource_type == "VIDEO"
+                AuditLogDB.resource_id == job_id, AuditLogDB.resource_type == "VIDEO"
             )
             .order_by(AuditLogDB.created_at.desc())
         )
@@ -125,7 +122,7 @@ async def get_job_details(
 
         # Extract metadata from audit logs
         metadata = {
-            "task_id": task_id,
+            "job_id": job_id,
             "title": job.title,
             "status": job.status,
             "progress": job.progress,
@@ -156,7 +153,7 @@ async def get_job_details(
 
         # Calculate cost information
         engine = metadata["generation_details"].get("engine", "unknown")
-        from api.utils.subscription import get_provider_quota_info
+        from src.api.utils.subscription import get_provider_quota_info
 
         # Simple cost mapping (consistent with original)
         cost_mapping = {
@@ -181,8 +178,8 @@ async def get_job_details(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching metadata for {task_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch metadata")
+        logger.error(f"Error fetching metadata for {job_id}: {e}")
+        raise HTTPException(status_code=500, detail="Database error fetching metadata")
 
 
 @router.post("/{job_id}/retry")
@@ -194,7 +191,7 @@ async def retry_job(
     """
     Retry a failed video processing job.
     """
-    from services.video_engine.tasks import (
+    from src.services.video_engine.tasks import (
         download_and_process_task,
         generate_video_task,
         generate_story_task,
@@ -263,7 +260,7 @@ async def retry_job(
 
         # Audit log
         await audit_service.log(
-            action="VIDEO_JOB_RETRY",
+            action=CreditAction.VIDEO_JOB_RETRY,
             user_id=current_user.id,
             resource_type="VIDEO",
             resource_id=task.id,
@@ -279,7 +276,7 @@ async def retry_job(
         raise
     except Exception as e:
         logger.error(f"Retry failed for {job_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Database error retrying job")
 
 
 @router.get("/quotas")
@@ -287,9 +284,9 @@ async def get_video_quotas(
     current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """
-    Get current user's video generation quotas and usage.
+    Get current current_user's video generation quotas and usage.
     """
-    from api.utils.subscription import get_user_subscription_tier
+    from src.api.utils.subscription import get_user_subscription_tier
 
     try:
         tier = await get_user_subscription_tier(current_user, db)
@@ -333,4 +330,4 @@ async def get_video_quotas(
 
     except Exception as e:
         logger.error(f"Quota fetch failed for {current_user.id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch quotas")
+        raise HTTPException(status_code=500, detail="Database error fetching quotas")

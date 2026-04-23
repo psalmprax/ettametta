@@ -1,6 +1,6 @@
 import requests
 import logging
-from api.config import settings
+from src.api.config import settings
 from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class NicheSkill(OpenClawBaseSkill):
         elif action == "trends":
             return self.get_niche_trends(niche)
         elif action == "auto_merch":
-            return self.trigger_auto_merch(kwargs.get("trend_topic", niche))
+            return self.trigger_auto_merch(kwargs.get("niche", niche))
 
         return f"⚠️ Unknown niche action: {action}"
 
@@ -70,7 +70,7 @@ class NicheSkill(OpenClawBaseSkill):
         except Exception as e:
             return f"⚠️ Skill Error: {str(e)}"
 
-    def trigger_auto_merch(self, trend_topic: str) -> str:
+    def trigger_auto_merch(self, niche: str) -> str:
         """
         Triggers the Reverse Monetization pipeline for a detected trend.
         Calls /monetization/auto-merch on the backend.
@@ -78,7 +78,7 @@ class NicheSkill(OpenClawBaseSkill):
         try:
             # Note: We need the full base URL since monetization is on a different route prefix
             api_url = settings.API_URL
-            payload = {"trend_topic": trend_topic}
+            payload = {"niche": niche}
             response = requests.post(
                 f"{api_url}/monetization/auto-merch",
                 json=payload,
@@ -92,7 +92,7 @@ class NicheSkill(OpenClawBaseSkill):
                     raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
                 )
                 product = data.get("product", {}) if isinstance(data, dict) else {}
-                return f"👕 **Auto-Merch Success!**\nTrend: {trend_topic}\nProduct: {product.get('name')}\nPrice: {product.get('price')}\nStore Link: {product.get('url')}"
+                return f"👕 **Auto-Merch Success!**\nTrend: {niche}\nProduct: {product.get('name')}\nPrice: {product.get('price')}\nStore Link: {product.get('url')}"
             else:
                 return (
                     f"⚠️ **Auto-Merch Failed**: server returned {response.status_code}"

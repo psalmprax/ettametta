@@ -11,11 +11,11 @@ import subprocess
 
 # Paths
 INPUT_VIDEO = "/tmp/test_video.mp4"
-OUTPUT_DIR = "/home/psalmprax/ALL_PROJECTS/viral_forge/apps/remotion-studio/out"
+OUTPUT_DIR = "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/out"
 OUTPUT_VIDEO = os.path.join(OUTPUT_DIR, "ffmpeg_overlay.mp4")
 
 # First copy the title video from remotion
-TITLE_VIDEO = "/home/psalmprax/ALL_PROJECTS/viral_forge/apps/remotion-studio/out/test_remotion_output.mp4"
+TITLE_VIDEO = "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/out/test_remotion_output.mp4"
 
 if __name__ == "__main__":
     print("=== FFMPEG VIDEO OVERLAY TEST ===")

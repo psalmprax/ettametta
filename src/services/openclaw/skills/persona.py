@@ -2,14 +2,15 @@ import logging
 import requests
 from typing import Any
 from .base_skill import OpenClawBaseSkill
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
 
 class PersonaSkill(OpenClawBaseSkill):
     """
-    OpenClaw skill for generating deepfake videos using uploaded personas/avatars.
+    Persona Skill for OpenClaw agents.
+    Manages autonomous character behaviors and interaction styles via API.
     """
 
     def execute(
@@ -20,7 +21,8 @@ class PersonaSkill(OpenClawBaseSkill):
         **kwargs,
     ) -> str:
         """
-        Polymorphic entry point for OpenClaw agent.
+        Persona Skill for OpenClaw agents.
+        Manages autonomous character behaviors and interaction styles via API.
         """
         pid = persona_id or kwargs.get("persona_id")
         if not pid:

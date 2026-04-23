@@ -4,7 +4,7 @@ import time
 import shutil
 import logging
 from typing import Any
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger("ModelRegistry")
 

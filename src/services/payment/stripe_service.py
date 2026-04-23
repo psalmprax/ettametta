@@ -8,7 +8,7 @@ import asyncio
 from typing import Any
 from datetime import datetime
 from sqlalchemy import select
-from api.utils.database import async_session_factory
+from src.api.utils.database import async_session_factory
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class PaymentService:
         stripe.api_key = stripe_api_key
 
     async def create_customer(
-        self, email: str, user_id: int, idempotency_key: str = None
+        self, email: str, user_id: str, idempotency_key: str = None
     ) -> dict[str, Any]:
         """Create a Stripe customer for a user"""
         try:
@@ -92,7 +92,7 @@ class PaymentService:
         idempotency_key: str = None,
     ) -> dict[str, Any]:
         """Create a checkout session for subscription"""
-        from api.config import settings
+        from src.api.config import settings
 
         # Use provided URLs or default to production domain settings
         if success_url is None:
@@ -181,7 +181,7 @@ class PaymentService:
             logger.error(f"[PaymentService] Invalid signature: {e}")
             raise
 
-        from api.utils.user_models import UserDB, SubscriptionTier
+        from src.api.utils.user_models import UserDB, SubscriptionTier
 
         # Handle events
         if event["type"] == "checkout.session.completed":
@@ -196,11 +196,11 @@ class PaymentService:
                 user_id = metadata.get("user_id")
                 credits = int(metadata.get("credits", 0))
                 if user_id and credits > 0:
-                    from services.payment.credit_service import credit_service
+                    from src.services.payment.credit_service import credit_service
 
                     # Assuming add_credits is now async or we wrap it
                     await credit_service.add_credits(
-                        user_id=int(user_id),
+                        user_id=user_id,
                         amount=credits,
                         transaction_type="purchase",
                         description=f"Credit purchase via Stripe (session: {session.id})",
@@ -320,7 +320,7 @@ class PaymentService:
 
 # Initialize with API key from settings
 def get_payment_service() -> PaymentService:
-    from api.config import settings
+    from src.api.config import settings
 
     if not settings.STRIPE_SECRET_KEY:
         raise ValueError(

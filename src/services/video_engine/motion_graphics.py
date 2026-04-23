@@ -79,13 +79,13 @@ class MotionGraphicsService:
         logger.info(f"[MotionGraphics] Rendering Remotion title - title: {title}")
 
         try:
-            from services.video_engine.remotion_service import base_remotion_service
+            from src.services.video_engine.remotion_service import base_remotion_service
 
             # Prepare props for Remotion
             props = {
                 "title": title,
                 "subtitle": subtitle or "",
-                "videoUrl": video_path,  # We use the existing video as background
+                "video_url": video_path,  # We use the existing video as background
             }
 
             output_name = f"mg_{os.path.basename(video_path)}"

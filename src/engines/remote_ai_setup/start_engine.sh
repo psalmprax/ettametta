@@ -8,7 +8,7 @@ export AI_GATEWAY_URL="http://149.104.110.122.sslip.io:7200/ai-gateway"
 export AI_NODE_PUBLIC_URL="http://175.155.64.174:19675"
 export AI_CLUSTER_SECRET="2aa8f7102fc81c6ee2fe28fa60f9e6bd012034bba8c601467aee61460b9aade8"
 
-cd /workspace/viral_forge_ai
+cd /workspace/ettametta_ai
 echo "🛑 [Bootstrap] Killing old processes..."
 pkill -f "python3 -u main.py" || true
 sleep 2

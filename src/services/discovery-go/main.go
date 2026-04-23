@@ -18,6 +18,7 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.Use(TracingMiddleware())
 
 	r.GET("/health", healthHandler)
 

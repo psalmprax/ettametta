@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import redis.asyncio as redis
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +25,14 @@ async def start_hot_reload_listener():
                 
                 # Reload LangChain
                 try:
-                    from services.langchain.service import langchain_service
+                    from src.services.langchain.service import langchain_service
                     langchain_service.hot_reload()
                 except Exception as e:
                     logger.error(f"Failed to reload LangChain: {e}")
                 
                 # Reload CrewAI
                 try:
-                    from services.crewai.service import crewai_service
+                    from src.services.crewai.service import crewai_service
                     crewai_service.hot_reload()
                 except Exception as e:
                     logger.error(f"Failed to reload CrewAI: {e}")

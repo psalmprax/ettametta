@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import logging
 
-from api.utils.models import VideoJobDB
+from src.api.utils.models import VideoJobDB
+from src.shared.enums import SystemJobStatus
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class VideoJobService:
         prompt: str,
         niche: str = "general",
         style: str | None = None,
-        status: str = "pending",
+        status: str = SystemJobStatus.QUEUED,
     ) -> VideoJobDB:
         """Create a new video job"""
         job = VideoJobDB(
@@ -34,7 +35,7 @@ class VideoJobService:
             status=status,
             source_url=prompt,
             user_id=user_id,
-            generation_params={
+            metadata={
                 "engine": engine,
                 "style": style,
                 "niche": niche
@@ -45,16 +46,26 @@ class VideoJobService:
         await self.db.refresh(job)
         return job
 
-    async def get_user_jobs(self, user_id: str, limit: int = 10) -> list[VideoJobDB]:
-        """Get jobs for a user"""
-        stmt = (
-            select(VideoJobDB)
-            .where(VideoJobDB.user_id == user_id)
-            .order_by(VideoJobDB.created_at.desc())
-            .limit(limit)
-        )
+    async def get_user_jobs(self, user_id: str | None = None, limit: int = 10, offset: int = 0, include_all: bool = False) -> tuple[list[VideoJobDB], int]:
+        """Get jobs for a user or all jobs if include_all=True (admin). Returns (jobs, total_count)."""
+        from sqlalchemy import func
+        
+        base_stmt = select(VideoJobDB)
+        
+        if user_id and not include_all:
+            base_stmt = base_stmt.where(VideoJobDB.user_id == user_id)
+        
+        # Get total count
+        count_stmt = select(func.count(VideoJobDB.id)).select_from(base_stmt.subquery())
+        total_result = await self.db.execute(count_stmt)
+        total_count = total_result.scalar() or 0
+        
+        # Get paginated results
+        stmt = base_stmt.order_by(VideoJobDB.created_at.desc()).offset(offset).limit(limit)
         result = await self.db.execute(stmt)
-        return list(result.scalars().all())
+        jobs = list(result.scalars().all())
+        
+        return jobs, total_count
 
     async def get_job_by_id(self, job_id: str, user_id: str) -> VideoJobDB | None:
         """Get a specific job"""
@@ -64,15 +75,27 @@ class VideoJobService:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def update_job_status(self, job_id: str, status: str) -> bool:
-        """Update job status"""
+async def update_job_status(self, job_id: str, status: SystemJobStatus | str) -> bool:
+        """Update job status with strict enum enforcement"""
+        if isinstance(status, str):
+            try:
+                status = SystemJobStatus[status.upper()]
+            except KeyError:
+                logger.warning(f"[JobService] Invalid status string: {status}, ignoring update.")
+                return False
+        
         stmt = select(VideoJobDB).where(VideoJobDB.id == job_id)
         result = await self.db.execute(stmt)
         job = result.scalar_one_or_none()
         if job:
             job.status = status
-            await self.db.commit()
-            return True
+            try:
+                await self.db.commit()
+                return True
+            except Exception as e:
+                await self.db.rollback()
+                logger.error(f"[JobService] Failed to commit status update: {e}")
+                return False
         return False
 
     async def delete_job(self, job_id: str, user_id: str) -> bool:

@@ -1,6 +1,6 @@
 import httpx
 from sqlalchemy.orm import Session
-from api.utils.database import get_db
+from src.api.utils.database import get_db
 
 
 async def send_telegram_message(bot_token: str, chat_id: str, message: str) -> dict:
@@ -69,7 +69,7 @@ async def configure_telegram_bot(user_id: str, chat_id: str) -> dict:
     Returns:
         Response from Telegram API
     """
-    from api.config import settings as app_settings
+    from src.api.config import settings as app_settings
 
     bot_token = app_settings.TELEGRAM_BOT_TOKEN
     message = "Your Telegram notifications are configured."
@@ -87,7 +87,7 @@ async def configure_whatsapp_bot(user_id: str, number: str) -> dict:
     Returns:
         Response from Twilio API
     """
-    from api.config import settings as app_settings
+    from src.api.config import settings as app_settings
 
     account_sid = app_settings.TWILIO_ACCOUNT_SID
     auth_token = app_settings.TWILIO_AUTH_TOKEN

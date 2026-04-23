@@ -90,7 +90,7 @@ def load_hunyuan_gguf_model():
             model_path=model_path,
             n_ctx=4096,
             n_threads=8,
-            n_gpu_layers=64,  # Offload to GPU
+            n_gpu_layers=0 if os.getenv("FORCE_CPU") == "true" else 64,  # Conditional offload
         )
         
         print("✅ HunyuanVideo GGUF loaded successfully", flush=True)

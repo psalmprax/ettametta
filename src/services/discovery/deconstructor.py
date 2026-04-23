@@ -1,7 +1,7 @@
 import os
 from .models import ContentCandidate, ViralPattern
 import json
-from api.utils.os_worker import ai_worker
+from src.api.utils.os_worker import ai_worker
 
 
 class PatternDeconstructor:
@@ -14,7 +14,7 @@ class PatternDeconstructor:
         """
         Calls Groq API to deconstruct the video into hooks and sentiment.
         """
-        from api.config import settings
+        from src.api.config import settings
 
         if not settings.GROQ_API_KEY:
             return self._fallback_pattern(transcript)

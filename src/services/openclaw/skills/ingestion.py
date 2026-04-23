@@ -40,7 +40,7 @@ class DataIngestionSkill(OpenClawBaseSkill):
         Fetch and parse RSS feed items.
         """
         try:
-            headers = {"User-Agent": "viral_forge/1.0"}
+            headers = {"User-Agent": "ettametta/1.0"}
             response = requests.get(feed_url, headers=headers, timeout=10)
 
             if response.status_code != 200:
@@ -80,7 +80,7 @@ class DataIngestionSkill(OpenClawBaseSkill):
         """
         try:
             url = f"{self.reddit_url}/r/{subreddit}/hot.json"
-            headers = {"User-Agent": "viral_forge/1.0"}
+            headers = {"User-Agent": "ettametta/1.0"}
             response = requests.get(url, headers=headers, timeout=10)
 
             if response.status_code == 200:
@@ -128,7 +128,7 @@ class DataIngestionSkill(OpenClawBaseSkill):
             )
             url = f"https://api.github.com/search/repositories?{params}"
 
-            headers = {"User-Agent": "viral_forge/1.0"}
+            headers = {"User-Agent": "ettametta/1.0"}
             response = requests.get(url, headers=headers, timeout=10)
 
             if response.status_code != 200:
