@@ -1,11 +1,10 @@
 import os
 import logging
 import json
-from typing import Optional, Dict, List
-from pathlib import Path
-import os
 import asyncio
 import time
+from pathlib import Path
+from typing import Any
 
 # Graceful imports for optional dependencies
 try:
@@ -21,9 +20,8 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type,
 )
-from services.video_engine.processor import base_video_processor
-from services.nexus_engine.audio_mixer import base_audio_mixer
-from typing import List, Dict, Any, Optional
+from src.services.video_engine.processor import base_video_processor
+from src.services.nexus_engine.audio_mixer import base_audio_mixer
 
 
 class CircuitBreaker:
@@ -74,7 +72,7 @@ class NexusOrchestrator:
 
     async def _retry_remotion_render(
         self, composition_id: str, props: Dict, output_name: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """Retry wrapper for remotion render with exponential backoff"""
         if self.remotion_circuit_breaker.is_open():
             raise RuntimeError(
@@ -90,7 +88,7 @@ class NexusOrchestrator:
             reraise=True,
         )
         async def _render():
-            from services.video_engine.remotion_service import remotion_service
+            from src.services.video_engine.remotion_service import remotion_service
 
             try:
                 result = await asyncio.wait_for(
@@ -117,21 +115,21 @@ class NexusOrchestrator:
         self,
         job_id: str,
         niche: str,
-        script_segments: List[Any],
-        voiceover_paths: List[str],
-        visual_paths: List[str],
-        music_path: Optional[str] = None,
+        script_segments: list[Any],
+        voiceover_paths: list[str],
+        visual_paths: list[str],
+        music_path: str | None = None,
         blueprint_id: str = "viral-reskin",
     ) -> str:
         """
         High-fidelity video assembly using Remotion React engine with node-level tracking.
         Production-grade with retries, circuit breaking, timeouts, and telemetry.
         """
-        from api.routes.ws import notify_nexus_job_update_sync
-        from services.nexus_engine.blueprints import get_blueprint_by_id
+        from src.api.routes.ws import notify_nexus_job_update_sync
+        from src.services.nexus_engine.blueprints import get_blueprint_by_id
 
         # Need to use async session here for get_blueprint_by_id
-        from api.utils.database import async_session_factory
+        from src.api.utils.database import async_session_factory
 
         start_time = time.time()
         self.logger.info(f"[Nexus] Starting assembly for Job {job_id}")
@@ -145,7 +143,7 @@ class NexusOrchestrator:
             )
 
             def update_node(
-                node_type: str, status: str, progress: int, error: Optional[str] = None
+                node_type: str, status: str, progress: int, error: str | None = None
             ):
                 payload = {
                     "id": str(job_id),
@@ -188,7 +186,7 @@ class NexusOrchestrator:
 
             # Cognitive Vibe Check (LangChain Integration)
             vibe_data = {}
-            from services.langchain.service import langchain_service
+            from src.services.langchain.service import langchain_service
 
             if langchain_service.is_enabled():
                 self.logger.info(f"[Nexus] Performing Cognitive Vibe Check for {niche}")
@@ -207,7 +205,7 @@ class NexusOrchestrator:
 
             import cv2
 
-            def get_frame_count(path: str) -> Optional[int]:
+            def get_frame_count(path: str) -> int | None:
                 if not os.path.exists(path):
                     return None
                 try:

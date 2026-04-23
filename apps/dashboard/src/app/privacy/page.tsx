@@ -25,7 +25,7 @@ export default function PrivacyPage() {
                             1. Data Collection
                         </h2>
                         <p>
-                            ViralForge collects minimal data necessary to provide its services, including account information and social media tokens for authorized platforms.
+                            Ettametta collects minimal data necessary to provide its services, including account information and social media tokens for authorized platforms.
                         </p>
                     </section>
 
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
                             2. Use of Information
                         </h2>
                         <p>
-                            Your data is used solely to facilitate content discovery and publishing as requested through the ViralForge dashboard.
+                            Your data is used solely to facilitate content discovery and publishing as requested through the Ettametta dashboard.
                         </p>
                     </section>
 

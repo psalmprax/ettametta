@@ -14,8 +14,8 @@ from datetime import datetime, timedelta
 import re
 import json
 
-from api.utils.vault import get_secret
-from api.config import settings
+from src.api.utils.vault import get_secret
+from src.api.config import settings
 from groq import Groq
 
 logger = logging.getLogger(__name__)

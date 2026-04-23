@@ -10,10 +10,8 @@ from typing import Any
 import logging
 import asyncio
 
-from engines.intelligent_video_workflow import discover_multi_platform
-from services.video_engine.tasks import narrative_fusion_task
-from api.utils.database import async_session_factory
-from api.utils.models import VideoJobDB
+from src.engines.intelligent_video_workflow import discover_multi_platform
+from src.services.video_engine.tasks import narrative_fusion_task
 
 from .base_skill import OpenClawBaseSkill
 

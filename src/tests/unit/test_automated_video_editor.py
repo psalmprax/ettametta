@@ -57,7 +57,7 @@ class AutomatedVideoEditorTest:
     async def run_complete_test(self) -> dict[str, Any]:
         """Run the complete automated video editor test"""
 
-        print("🎬 AUTOMATED VIRALFORGE VIDEO EDITOR TEST")
+        print("🎬 AUTOMATED ETTAMETTA VIDEO EDITOR TEST")
         print("=" * 60)
         print("Testing end-to-end video editing capabilities without human intervention")
         print()

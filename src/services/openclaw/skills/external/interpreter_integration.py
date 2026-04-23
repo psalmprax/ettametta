@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import shutil
 
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class OpenInterpreterService:
     def __init__(self):
         self.enabled = OPENINTERPRETER_ENABLED
         self.allowed_dirs = [
-            "/tmp/viral_forge",
+            "/tmp/ettametta",
             str(settings.BASE_DIR),
         ]
 
@@ -170,7 +170,7 @@ print(script)
 
 class CodeExecutor:
     """
-    Simple code execution for viral_forge automation.
+    Simple code execution for ettametta automation.
     """
 
     @staticmethod

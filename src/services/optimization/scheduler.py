@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import random
+from src.shared.enums import ContentPublishStatus
 
 
 class SmartScheduler:
@@ -11,14 +12,14 @@ class SmartScheduler:
             {"start": 18, "end": 21},  # Evening peak
         ]
 
-    async def _get_peak_windows_from_db(self, user_id: int = None) -> list[dict]:
+    async def _get_peak_windows_from_db(self, user_id: str = None) -> list[dict]:
         """
         Dynamically calculate peak engagement windows based on historic real performance.
         Falls back to default windows if insufficient data.
         """
         try:
-            from api.utils.database import async_session_factory
-            from api.utils.models import PublishedContentDB
+            from src.api.utils.database import async_session_factory
+            from src.api.utils.models import PublishedContentDB
             from sqlalchemy import extract, func, select
 
             async with async_session_factory() as db:
@@ -27,7 +28,7 @@ class SmartScheduler:
                     extract("hour", PublishedContentDB.published_at).label("hour"),
                     func.avg(PublishedContentDB.view_count).label("avg_views"),
                 ).where(
-                    PublishedContentDB.status == "Published",
+                    PublishedContentDB.status == ContentPublishStatus.PUBLISHED,
                     PublishedContentDB.view_count > 0,
                 )
 
@@ -36,7 +37,7 @@ class SmartScheduler:
 
                 stmt = (
                     stmt.group_by(extract("hour", PublishedContentDB.published_at))
-                    .order_by(func.avg(PublishedContentDB.views).desc())
+                    .order_by(func.avg(PublishedContentDB.view_count).desc())
                     .limit(3)
                 )
 
@@ -61,7 +62,7 @@ class SmartScheduler:
         return self.default_windows
 
     def calculate_next_posting_time(
-        self, last_post_time: datetime | None = None, user_id: int = None
+        self, last_post_time: datetime | None = None, user_id: str = None
     ) -> datetime:
         """
         Calculates the optimal next posting window based on current trends and peak times.
@@ -94,7 +95,7 @@ class SmartScheduler:
         )
 
     def calculate_n_optimal_windows(
-        self, count: int = 3, user_id: int = None
+        self, count: int = 3, user_id: str = None
     ) -> list[dict]:
         """
         Returns the top N optimal posting windows with engagement predictions.

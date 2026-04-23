@@ -9,7 +9,7 @@ from .transcription import TranscriptionService
 from .ocr_service import check_easyocr_available
 from .stock_service import StockService
 from .ffmpeg_utils import FFmpegTransformer
-from api.config import settings
+from src.api.config import settings
 
 # Backward compatibility aliases
 base_transcription_service = TranscriptionService()
@@ -55,7 +55,7 @@ def check_cv2_available():
 
 class VideoProcessor:
     """
-    Advanced Video Processing Engine for ViralForge.
+    Advanced Video Processing Engine for Ettametta.
 
     This class handles multi-stage video synthesis, frame-level transformations,
     OCR injection, and subtitle rendering using both MoviePy and OpenCV (where available).
@@ -74,10 +74,11 @@ class VideoProcessor:
             output_dir (str): Root directory for video outputs. Defaults to "outputs".
         """
         self.output_dir = output_dir
-        self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
         # Force high-optimized CPU rendering (libx264)
         self.use_gpu = False
+        # Default font path for captions (can be overridden)
+        self.font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
         self.codec = "libx264"
 
         # Dynamic Font Resolution
@@ -496,6 +497,7 @@ class VideoProcessor:
         Randomly shifts speed based on AI strategy range to reset algorithm clocks.
         """
         import moviepy.video.fx as vfx
+
         return clip.with_effects([vfx.MultiplySpeed(speed)])
 
     def apply_dynamic_jitter(
@@ -523,6 +525,7 @@ class VideoProcessor:
         """
         from moviepy import ColorClip
         import moviepy.video.fx as vfx
+
         leak = (
             ColorClip(size=clip.size, color=(255, 210, 160))
             .with_start(random.uniform(0, clip.duration - 1.0))
@@ -538,6 +541,7 @@ class VideoProcessor:
         Adds a soft, glowing atmospheric layer (f9).
         """
         import moviepy.video.fx as vfx
+
         glow = clip.with_effects([vfx.LumContrast(lum=5, contrast=0.1)]).with_opacity(
             0.3
         )
@@ -549,6 +553,7 @@ class VideoProcessor:
         """
         # Placeholder for real noise generation; for now, we use a subtle contrast jitter
         import moviepy.video.fx as vfx
+
         return clip.with_effects([vfx.LumContrast(lum=0, contrast=0.08)])
 
     def apply_grayscale(self, clip: "VideoFileClip") -> "VideoFileClip":
@@ -556,6 +561,7 @@ class VideoProcessor:
         Converts video to black and white for the Noir style (f11).
         """
         import moviepy.video.fx as vfx
+
         return clip.with_effects([vfx.BlackAndWhite()])
 
     def apply_random_glitch(self, clip: "VideoFileClip") -> "VideoFileClip":
@@ -564,6 +570,7 @@ class VideoProcessor:
         """
         # MoviePy doesn't have a direct RGB shift, so we apply a jittered color shift
         import moviepy.video.fx as vfx
+
         return clip.with_effects([vfx.Colorx(factor=random.uniform(0.9, 1.1))]).resized(
             height=int(clip.h * 1.01)
         )
@@ -582,6 +589,7 @@ class VideoProcessor:
         )
 
         import moviepy.video.fx as vfx
+
         if "dark" in mood or "mysterious" in mood:
             # Increase contrast and slightly lower brightness for mystery
             clip = clip.with_effects([vfx.LumContrast(lum=-2, contrast=0.1)])
@@ -817,6 +825,7 @@ class VideoProcessor:
             return 1.0 + 0.1 * (t / duration)
 
         import moviepy.video.fx as vfx
+
         clip = clip.with_effects([vfx.Resize(zoom)])
 
         # 4. Set final size based on aspect ratio
@@ -898,6 +907,7 @@ class VideoProcessor:
                     if audio_duration > 0:
                         speed_factor = clip.duration / audio_duration
                         import moviepy.video.fx as vfx
+
                         clip = clip.with_effects([vfx.MultiplySpeed(speed_factor)])
                         clip = clip.with_audio(narration)
                 else:
@@ -958,7 +968,7 @@ class VideoProcessor:
         )
 
         try:
-            from services.video_engine.remotion_service import base_remotion_service
+            from src.services.video_engine.remotion_service import base_remotion_service
 
             # Prepare props for the Remotion ViralClip composition
             props = {
@@ -968,12 +978,12 @@ class VideoProcessor:
                 "subtitle": strategy.get("visual_mood", "Created by OpenClaw")
                 if strategy
                 else "Cinematic Studio",
-                "videoUrl": input_path,
+                "video_url": input_path,
             }
 
             # We'll also pass any voiceover from the strategy if available
             if strategy and strategy.get("voiceover_url"):
-                props["audioUrl"] = strategy["voiceover_url"]
+                props["audio_url"] = strategy["voiceover_url"]
 
             rendered_path = await base_remotion_service.render_video(
                 composition_id="ViralClip", props=props, output_name=output_name

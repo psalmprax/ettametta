@@ -2,7 +2,7 @@ import aiohttp
 import logging
 from typing import Any
 from .models import ContentCandidate
-from api.config import settings
+from src.api.config import settings
 
 
 class PublicDomainScanner:

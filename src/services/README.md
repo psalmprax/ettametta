@@ -1,6 +1,6 @@
-# ViralForge Services Layer Architecture
+# ettametta Services Layer Architecture
 
-This directory contains the core business logic and external integrations of the ViralForge engine.
+This directory contains the core business logic and external integrations of the ettametta engine.
 
 ## Service Categories
 
@@ -60,7 +60,7 @@ This directory contains the core business logic and external integrations of the
 
 ## Cognitive & Agentic Tiers
 
-ViralForge uses a tiered cognitive architecture:
+ettametta uses a tiered cognitive architecture:
 
 1. **Standard Tier**: Uses direct LLM calls (Groq/OpenAI) for rapid decision making.
 2. **Cognitive Tier (LangChain)**: Enhances the assembly pipeline with contextual memory and visual vibe analysis. (Enabled via `ENABLE_LANGCHAIN=true`)

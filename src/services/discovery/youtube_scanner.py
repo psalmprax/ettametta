@@ -1,12 +1,15 @@
 from .scanner_base import DiscoveryScannerBase
 from .models import ContentCandidate
 import random
-from api.config import settings
+from src.api.config import settings
 from googleapiclient.discovery import build
 import datetime
 import re
+import logging
 
-from api.utils.vault import get_secret
+from src.api.utils.vault import get_secret
+
+logger = logging.getLogger(__name__)
 
 # Alias for plan compatibility
 YouTubeScanner = None  # Will be set after class definition
@@ -21,9 +24,7 @@ class YouTubeShortsScanner(DiscoveryScannerBase):
         """
         api_key = get_secret("youtube_api_key")
         if not api_key:
-            print(
-                "[YouTubeScanner] ERROR: No YOUTUBE_API_KEY found. Cannot scan trends."
-            )
+            logger.error("No YOUTUBE_API_KEY found. Cannot scan trends.")
             raise ValueError(
                 "YouTube API key not configured. Please set YOUTUBE_API_KEY in environment."
             )
@@ -112,8 +113,8 @@ class YouTubeShortsScanner(DiscoveryScannerBase):
             return candidates
 
         except Exception as e:
-            print(f"[YouTubeScanner] ERROR: {str(e)}")
-            raise ValueError(f"YouTube API error: {str(e)}")
+            logger.error(f"YouTube scanning failed: {str(e)}")
+            return []
 
     def _calculate_engagement(self, stats: dict) -> float:
         views = int(stats.get("viewCount", 1))

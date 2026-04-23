@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from api.utils.api_responses import success_response
+from src.api.utils.api_responses import success_response
 import logging
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB, UserRole
-from services.security.service import base_security_sentinel
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB, UserRole
+from src.services.security.service import base_security_sentinel
 
 router = APIRouter(prefix="/security", tags=["Security"])
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ async def report_error(
 
         return success_response(data={"status": "error_logged"})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to log error: {str(e)}")
+        raise HTTPException(status_code=503, detail="Logging service unavailable")
 
 
 @router.get("/status")
@@ -54,7 +54,7 @@ async def get_security_status(current_user=Depends(get_current_user)):
     try:
         return success_response(data=base_security_sentinel.get_security_status())
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Sentinel Error: {str(e)}")
+        raise HTTPException(status_code=503, detail="Security service unavailable")
 
 
 @router.post("/scan")
@@ -67,7 +67,7 @@ async def trigger_security_audit(current_user=Depends(admin_required)):
         report = base_security_sentinel.audit_system_integrity()
         return success_response(data={"status": "Audit Complete", "report": report})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Audit Failure: {str(e)}")
+        raise HTTPException(status_code=503, detail="Audit service unavailable")
 
 
 @router.get("/events")

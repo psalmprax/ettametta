@@ -5,7 +5,7 @@ import datetime
 import os
 import logging
 from sqlalchemy import select
-from typing import Any, Optional
+from typing import Any
 from .models import ContentCandidate, ViralPattern
 
 # Graceful imports for optional dependencies
@@ -35,16 +35,16 @@ from .skool_scanner import base_skool_scanner
 from .duckduckgo_scanner import base_duckduckgo_scanner
 from .video_lead_scanner import video_lead_scanner
 from .deconstructor import pattern_deconstructor
-from api.utils.database import async_session_factory
-from api.utils.models import (
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import (
     ContentCandidateDB,
     SystemSettings,
     NicheTrendDB,
     MonitoredNiche,
 )
-from api.config import settings
-from api.utils.vault import get_secret
-from api.utils.celery import celery_app
+from src.api.config import settings
+from src.api.utils.vault import get_secret
+from src.api.utils.celery import celery_app
 from groq import Groq
 
 
@@ -89,14 +89,14 @@ class DiscoveryService:
 
     async def _log(self, message: str, level: str = "INFO"):
         """Broadcasts a discovery log message."""
-        from api.routes.ws import notify_system_log_async
+        from src.api.routes.ws import notify_system_log_async
 
         await notify_system_log_async(message, level=level, module="DISCOVERY")
         # Send log via Redis to avoid circular import
         import json
         import redis
         import datetime
-        from api.config import settings
+        from src.api.config import settings
 
         try:
             r = redis.from_url(settings.REDIS_URL)
@@ -125,7 +125,7 @@ class DiscoveryService:
     ) -> list[ContentCandidate]:
         import json
         import redis
-        from api.config import settings
+        from src.api.config import settings
 
         # 1. Check Cache (Skip if deep scan)
         redis_url = settings.REDIS_URL
@@ -156,7 +156,7 @@ class DiscoveryService:
 
         # 2. Intelligent/Parallel Scanning
         import asyncio
-        from engines.intelligent_video_workflow import discover_multi_platform
+        from src.engines.intelligent_video_workflow import discover_multi_platform
 
         all_candidates = []
 
@@ -247,7 +247,7 @@ class DiscoveryService:
             logger.info(
                 f"[Discovery] Deep Scan: Auto-triggering analysis for top candidates."
             )
-            from services.discovery.tasks import analyze_viral_pattern_task
+            from src.services.discovery.tasks import analyze_viral_pattern_task
 
             for c in all_candidates[:5]:
                 analyze_viral_pattern_task.delay(c.dict())
@@ -272,7 +272,7 @@ class DiscoveryService:
                         ContentCandidate(
                             id=r.id,
                             platform=r.platform,
-                            source_url=r.source_url or r.url,
+                            source_url=r.source_url,
                             creator_name=r.creator_name,
                             creator_id=r.creator_id,
                             title=r.title,
@@ -545,7 +545,7 @@ class DiscoveryService:
         """
         Uses Groq with parallel batching and high-speed models to rank candidates.
         """
-        from api.utils.vault import get_secret
+        from src.api.utils.vault import get_secret
 
         groq_key = get_secret("groq_api_key")
         if not groq_key:
@@ -653,7 +653,7 @@ class DiscoveryService:
         """
         Processes discovered content to identify top keywords and engagement for a niche.
         """
-        from api.utils.models import NicheTrendDB
+        from src.api.utils.models import NicheTrendDB
         from collections import Counter
         import re
         from sqlalchemy import select
@@ -717,18 +717,26 @@ class DiscoveryService:
                 db.add(trend)
 
             await db.commit()
-            return trend
+
+            # Return as dict for better serialization and semantic alignment
+            return {
+                "niche": niche,
+                "top_keywords": top_keywords,
+                "avg_engagement_score": avg_engagement_score,
+                "candidate_count": len(candidates),
+                "generated_at": datetime.utcnow().isoformat() + "Z",
+            }
 
     async def search_content(
         self,
-        query: Optional[str] = None,
-        platforms: Optional[list[str]] = None,
-        min_views: Optional[int] = None,
-        min_viral_score: Optional[float] = None,
-        creator: Optional[str] = None,
-        tags: Optional[list[str]] = None,
-        date_from: Optional[datetime.datetime] = None,
-        date_to: Optional[datetime.datetime] = None,
+        query: str | None = None,
+        platforms: list[str] | None = None,
+        min_views: int | None = None,
+        min_viral_score: float | None = None,
+        creator: str | None = None,
+        tags: list[str] | None = None,
+        date_from: datetime.datetime | None = None,
+        date_to: datetime.datetime | None = None,
         sort_by: str = "viral_score",
         limit: int = 50,
         offset: int = 0,
@@ -791,7 +799,7 @@ class DiscoveryService:
                         ContentCandidate(
                             id=r.id,
                             platform=r.platform,
-                            source_url=r.source_url or r.url,
+                            source_url=r.source_url,
                             creator_name=r.creator_name,
                             creator_id=r.creator_id,
                             title=r.title,
@@ -854,7 +862,7 @@ class DiscoveryService:
                 ContentCandidate(
                     id=r.id,
                     platform=r.platform,
-                    source_url=r.source_url or r.url,
+                    source_url=r.source_url,
                     creator_name=r.creator_name,
                     creator_id=r.creator_id,
                     title=r.title,

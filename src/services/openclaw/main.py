@@ -9,7 +9,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from api.config import settings
+from src.api.config import settings
 from .agent import OpenClawAgent
 from .dispatcher import dispatcher
 import uvicorn
@@ -111,7 +111,7 @@ class BotManager:
             logger.error(f"Error fetching users: {e}")
             raise
 
-    async def start_bot(self, user_id: int, token: str):
+    async def start_bot(self, user_id: str, token: str):
         if user_id in self._starting_ids:
             logger.warning(f"Bot for user {user_id} is already starting. Skipping.")
             return
@@ -158,7 +158,7 @@ class BotManager:
             if user_id in self._starting_ids:
                 self._starting_ids.remove(user_id)
 
-    async def stop_bot(self, user_id: int):
+    async def stop_bot(self, user_id: str):
         if user_id in self.apps:
             logger.info(f"Stopping bot for user {user_id}...")
             app = self.apps[user_id]
@@ -217,7 +217,7 @@ async def health_check():
 
 
 @app.post("/refresh-bot/{user_id}")
-async def refresh_bot(user_id: int, background_tasks: BackgroundTasks):
+async def refresh_bot(user_id: str, background_tasks: BackgroundTasks):
     # Fetch token from main API
     try:
         # Internal call to get user info (we'll need to make sure this returns the token)

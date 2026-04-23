@@ -25,7 +25,7 @@ async def run_e2e_workflow():
     Discovery -> Analysis -> Procurement -> Neural Fusion
     """
     print("\n" + "="*60)
-    print("🚀 VIRALFORGE E2E WORKFLOW TEST STARTING")
+    print("🚀 ETTAMETTA E2E WORKFLOW TEST STARTING")
     print("="*60)
 
     topic = "AI productivity tools 2026"

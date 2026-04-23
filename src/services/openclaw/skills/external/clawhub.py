@@ -19,7 +19,7 @@ class ClawHubSkillLoader:
     def __init__(self, cache_dir: str = "/tmp/clawhub_skills"):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self.headers = {"User-Agent": "viral_forge/1.0"}
+        self.headers = {"User-Agent": "ettametta/1.0"}
 
     def list_categories(self) -> list[str]:
         """Get list of skill categories from the repo."""
@@ -101,7 +101,7 @@ class ClawHubSkillLoader:
 
 class PopularSkills:
     """
-    Pre-configured popular skills relevant to viral_forge.
+    Pre-configured popular skills relevant to ettametta.
     """
 
     SKILLS = {

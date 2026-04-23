@@ -13,30 +13,30 @@ from PIL import Image
 from uuid import uuid4
 
 # Ascension & Singularity Services
-from services.discovery.service import base_discovery_service
-from services.voiceover.service import base_voiceover_service
-from services.script_generator.service import base_script_generator
-from engines.intelligent_video_workflow import discover_multi_platform, analyze_content_type
-from services.video_engine.ffmpeg_utils import base_ffmpeg_transformer
-from services.visual_generator.service import base_visual_generator
-from services.optimization.viral_critic import base_viral_critic
-from services.audio.rhythm_engine import base_rhythm_engine
-from services.video_engine.neural_vision_analyzer import base_neural_vision
-from services.analytics.bridge import base_analytics_bridge
-from services.optimization.oracle_predictor import base_neural_oracle
-from services.distribution.publisher import base_publisher
-from services.analytics.training_pipeline import base_training_pipeline
-from services.analytics.ledger import base_performance_ledger
-from services.video_engine.forge_batch import base_forge_batch
-from services.distribution.deployment_gateway import base_deployment_gateway
-from services.analytics.harvester import base_analytics_harvester
-from services.discovery.trend_scanner import base_trend_scanner
-from services.optimization.strategy_generator import base_viral_strategist
-from services.analytics.drift_monitor import base_drift_monitor
-from services.analytics.stream_processor import base_stream_processor
-from services.hermes.narrative_planner import base_narrative_planner
-from services.hermes.attention_simulator import base_attention_simulator
-from services.video_engine.synthesis_service import base_generative_service
+from src.services.discovery.service import base_discovery_service
+from src.services.voiceover.service import base_voiceover_service
+from src.services.script_generator.service import base_script_generator
+from src.engines.intelligent_video_workflow import discover_multi_platform, analyze_content_type
+from src.services.video_engine.ffmpeg_utils import base_ffmpeg_transformer
+from src.services.visual_generator.service import base_visual_generator
+from src.services.optimization.viral_critic import base_viral_critic
+from src.services.audio.rhythm_engine import base_rhythm_engine
+from src.services.video_engine.neural_vision_analyzer import base_neural_vision
+from src.services.analytics.bridge import base_analytics_bridge
+from src.services.optimization.oracle_predictor import base_neural_oracle
+from src.services.distribution.publisher import base_publisher
+from src.services.analytics.training_pipeline import base_training_pipeline
+from src.services.analytics.ledger import base_performance_ledger
+from src.services.video_engine.production_batch import base_production_batch
+from src.services.distribution.deployment_gateway import base_deployment_gateway
+from src.services.analytics.harvester import base_analytics_harvester
+from src.services.discovery.trend_scanner import base_trend_scanner
+from src.services.optimization.strategy_generator import base_viral_strategist
+from src.services.analytics.drift_monitor import base_drift_monitor
+from src.services.analytics.stream_processor import base_stream_processor
+from src.services.hermes.narrative_planner import base_narrative_planner
+from src.services.hermes.attention_simulator import base_attention_simulator
+from src.services.video_engine.synthesis_service import base_generative_service
 
 try:
     from scenedetect import detect, ContentDetector
@@ -53,7 +53,7 @@ class RealVideoFusionEngine:
     """
     The ettametta: Neural Production Engine (10.0/10)
     ===================================================
-    The final state of ViralForge. Parallel rendering, Neural Retention 
+    The final state of Ettametta. Parallel rendering, Neural Retention 
     Curve prediction, and Multi-Point Cinematic Optimization.
     """
 
@@ -64,19 +64,52 @@ class RealVideoFusionEngine:
     async def create_real_video_content(
         self, discovered_videos: list[dict], content_topic: str, duration_sec: int = 60, session_id: str | None = None, quality: str = "ELITE"
     ) -> dict[str, Any]:
-        """High-Throughput PRODUCTION cycle with Neural Predictive Pruning"""
+        """
+        High-Throughput PRODUCTION cycle with Neural Predictive Pruning.
+        
+        Returns:
+            dict: {
+                "success": bool,
+                "video_path": str, (Path to the fused mp4)
+                "script": dict, (The final script used for fusion)
+                "fusion_plan": dict, (The rhythmic segment plan)
+                "editorial_style": str
+            }
+        """
 
         request_id = session_id or str(uuid4()) # Fallback if not provided
         print(f"🏗️  ETTAMETTA - NEURAL ENGINE 10.0 [ID: {request_id}]")
         print("=" * 60)
 
         # 1. NARRATIVE REASONING (The 10/10 Intelligence Leap)
-        blueprint = await base_narrative_planner.plan_story(content_topic, "Entertainment", duration_sec, session_id=request_id)
-        simulation = base_attention_simulator.simulate_retention(blueprint)
+        attempts = 0
+        max_attempts = 3
+        target_score = 90
+        feedback = None
+        blueprint = None
         
-        if simulation["verdict"] == "REGENERATE":
-            print(f"🔄 [NRM] Low Attention Predicted for {request_id}. Regenerating...")
-            blueprint = await base_narrative_planner.plan_story(content_topic, "Entertainment", duration_sec, session_id=request_id)
+        while attempts < max_attempts:
+            blueprint = await base_narrative_planner.plan_story(
+                content_topic, "Entertainment", duration_sec, session_id=request_id, feedback=feedback
+            )
+            simulation = base_attention_simulator.simulate_retention(blueprint)
+            
+            if simulation["narrative_score"] >= target_score:
+                print(f"✅ [NRM] Elite Narrative Achieved: {simulation['narrative_score']}% (Attempts: {attempts + 1})")
+                break
+            
+            attempts += 1
+            if attempts < max_attempts:
+                print(f"🔄 [NRM] Critique Pass {attempts}: Score {simulation['narrative_score']}% below target. Refining...")
+                feedback = (
+                    f"Score: {simulation['narrative_score']}%. "
+                    f"Hook: {'Yes' if any(e['action'].lower() == 'hook' for e in blueprint.get('emotional_arc', [])) else 'Missing'}. "
+                    f"Conflict: {'Yes' if blueprint.get('narrative_conflict') else 'Missing'}. "
+                    f"Curiosity Gaps: {len(blueprint.get('curiosity_gaps', []))}/3."
+                )
+        
+        if simulation["narrative_score"] < target_score:
+            print(f"⚠️ [NRM] Could not reach elite target. Proceeding with best attempt: {simulation['narrative_score']}%")
         
         # 2. Select and Download Primary Viral Leads
         eligible_clips = self._select_videos_for_download(discovered_videos, limit=10)
@@ -366,7 +399,7 @@ class RealVideoFusionEngine:
         random.shuffle(top_tier)
         return top_tier[:limit]
 
-async def create_the_viral_forge_cycle(variants: int = 5):
+async def create_the_ettametta_cycle(variants: int = 5):
     """
     Absolute 10.0 Cycle: Proactive Trending, Strategic Framing, and Empire Deployment.
     """
@@ -402,4 +435,4 @@ async def create_the_viral_forge_cycle(variants: int = 5):
     return []
 
 if __name__ == "__main__":
-    asyncio.run(create_the_viral_forge_cycle())
+    asyncio.run(create_the_ettametta_cycle())

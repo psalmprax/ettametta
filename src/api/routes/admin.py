@@ -12,12 +12,12 @@ try:
 except ImportError:
     load_dotenv = None
 
-from api.utils.database import get_db
-from api.utils.user_models import UserDB, UserRole
-from api.routes.auth import get_current_user
+from src.api.utils.database import get_db
+from src.api.utils.user_models import UserDB, UserRole
+from src.api.routes.auth import get_current_user
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.utils.audit_service import audit_service
-from api.utils.api_responses import success_response
+from src.api.utils.audit_service import audit_service
+from src.api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/admin", tags=["Admin Operations"])
 logger = logging.getLogger(__name__)
@@ -166,3 +166,47 @@ async def restart_system(
             "estimated_downtime": "5-15 seconds",
         }
     )
+
+
+@router.post("/compliance/webhooks")
+async def register_incident_webhook(
+    url: str,
+    name: str | None = None,
+    secret: str | None = None,
+    current_user: UserDB = Depends(admin_required),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Registers an external incident reporting webhook (Standard 3.12).
+    Complies with EU AI Act Article 71 incident notification requirements.
+    """
+    from src.api.utils.models import IncidentWebhookDB
+    new_webhook = IncidentWebhookDB(
+        url=url,
+        name=name,
+        secret=secret,
+        is_active=True
+    )
+    db.add(new_webhook)
+    await db.commit()
+    return success_response(data={"id": new_webhook.id, "status": "Registered"})
+
+
+@router.get("/compliance/webhooks")
+async def list_incident_webhooks(
+    current_user: UserDB = Depends(admin_required),
+    db: AsyncSession = Depends(get_db)
+):
+    """Lists all registered incident reporting webhooks."""
+    from src.api.utils.models import IncidentWebhookDB
+    from sqlalchemy import select
+    stmt = select(IncidentWebhookDB)
+    result = await db.execute(stmt)
+    webhooks = result.scalars().all()
+    return success_response(data=[{
+        "id": w.id,
+        "url": w.url,
+        "name": w.name,
+        "is_active": w.is_active,
+        "last_triggered_at": w.last_triggered_at
+    } for w in webhooks])

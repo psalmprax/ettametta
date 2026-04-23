@@ -2,27 +2,27 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 import os
-from api.utils.api_responses import success_response
+from src.api.utils.api_responses import success_response
 import sys
 
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 )
 
-from services.openclaw.skills.external import (
+from src.services.openclaw.skills.external import (
     popular_skills,
     clawhub_loader,
     langchain_service,
     prompt_manager,
     crewai_service,
-    viralforge_crew,
+    ettametta_crew,
     interpreter_service,
     blog_seo_service,
 )
-from services.openclaw.skills.research import ResearchSkill, research_skill
-from services.openclaw.skills.content import ContentSkill
-from services.openclaw.skills.analytics import AnalyticsSkill
-from services.openclaw.skills.ingestion import data_ingestion_skill
+from src.services.openclaw.skills.research import ResearchSkill, research_skill
+from src.services.openclaw.skills.content import ContentSkill
+from src.services.openclaw.skills.analytics import AnalyticsSkill
+from src.services.openclaw.skills.ingestion import data_ingestion_skill
 
 social_metrics_skill = AnalyticsSkill()
 
@@ -133,7 +133,7 @@ async def get_social_metrics(request: MetricsRequest):
 
 @router.get("/skills/popular")
 async def get_popular_skills():
-    """Get popular ClawHub skills relevant to viral_forge"""
+    """Get popular ClawHub skills relevant to ettametta"""
     return success_response(
         data={
             "skills": popular_skills.get_all_skills(),
@@ -198,9 +198,9 @@ async def langchain_status():
 async def run_crewai_crew(request: CrewRequest):
     """Run a CrewAI crew for content creation"""
     if request.crew_type == "content":
-        result = await viralforge_crew.run_content_team(request.topic)
+        result = await ettametta_crew.run_content_team(request.topic)
     elif request.crew_type == "affiliate":
-        result = await viralforge_crew.run_affiliate_campaign(request.topic)
+        result = await ettametta_crew.run_affiliate_campaign(request.topic)
     else:
         return {"error": f"Unknown crew type: {request.crew_type}"}
 

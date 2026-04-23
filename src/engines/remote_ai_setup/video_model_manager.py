@@ -69,6 +69,8 @@ class VideoModelManager:
         threading.Thread(target=monitor, daemon=True).start()
 
     def _get_best_encoder(self) -> str:
+        if os.getenv("FORCE_CPU") == "true":
+            return "libx264"
         try:
             result = subprocess.run(["ffmpeg", "-encoders"], capture_output=True, text=True, check=True)
             for enc in ["h264_nvenc", "h264_amf", "h264_qsv", "h264_videotoolbox"]:

@@ -392,4 +392,4 @@ ffmpeg -f concat -safe 0 -i concat_list.txt \\
 
 
 # Global instance
-base_video_production_assistant = VideoProductionAssistant()
+production_assistant = VideoProductionAssistant()

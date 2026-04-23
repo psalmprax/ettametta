@@ -1,23 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.utils.database import get_db
-from shared.enums import SystemJobStatus
-from api.utils.models import VideoJobDB
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB, SubscriptionTier
-from api.utils.subscription import (
+from src.api.utils.database import get_db
+from src.shared.enums import SystemJobStatus, CreditAction
+from src.api.utils.models import VideoJobDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB, SubscriptionTier
+from src.api.utils.subscription import (
     subscription_required,
-    check_daily_limit,
+    daily_limit_reached,
     engine_access_required,
     credits_required,
+    check_daily_limit,
 )
-from services.video_engine.tasks import generate_video_task, generate_story_task
-from services.video_engine.synthesis_service import base_generative_service
-from services.payment.credit_service import credit_service
-from api.utils.limiter import limiter
-from api.utils.audit_service import audit_service
-from api.utils.api_responses import success_response
+from src.services.video_engine.job_service import get_video_job_service, VideoJobService
+from src.services.video_engine.tasks import generate_video_task, generate_story_task
+from src.api.utils.limiter import limiter
+from src.api.utils.audit_service import audit_service
+from src.api.utils.api_responses import success_response, handle_exception
+from src.services.payment.credit_service import credit_service
 import logging
 
 router = APIRouter(prefix="/video", tags=["Video Generation"])
@@ -30,6 +31,8 @@ class GenerationRequest(BaseModel):
     style: str = "Cinematic"
     aspect_ratio: str = "9:16"
     custom_image_url: str | None = None
+    num_variants: int = 1  # Standard 4.1: Growth Loop Scaling
+    variant_strategy: str = "hook_variation"
 
 
 class StoryRequest(BaseModel):
@@ -43,17 +46,18 @@ class StoryRequest(BaseModel):
 async def generate_single_video(
     request: Request,
     body: GenerationRequest,
-    current_user: UserDB = Depends(get_current_user),
+    current_user: UserDB = Depends(daily_limit_reached()),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Hardened AI video synthesis endpoint with atomic credit flow.
     """
     try:
+        # Engine access check still manual because it depends on request body
         await engine_access_required(body.engine)(current_user)
-        await check_daily_limit(current_user, db)
+        # daily_limit_reached dependency already checked via Depends
 
-        from api.config.engine_config import (
+        from src.api.config.engine_config import (
             ENGINE_TO_ACTION,
             get_credit_action,
             DEFAULT_ENGINE,
@@ -65,77 +69,119 @@ async def generate_single_video(
         action = get_credit_action(body.engine)
         credits_cost = await credits_required(action)(current_user, db)
 
-        # 1. Dispatch Task first
-        try:
-            task = generate_video_task.delay(
-                prompt=body.prompt,
-                engine=body.engine,
-                style=body.style,
-                aspect_ratio=body.aspect_ratio,
-                user_id=current_user.id,
-                custom_image_url=body.custom_image_url,
+        # --- ELITE GROWTH LOOP: MULTI-VARIANT GENERATION ---
+        num_variants = body.num_variants if body.num_variants > 0 else 1
+        variant_strategy = body.variant_strategy or "hook_variation"
+
+        # 0. Generate Variant Prompts (Standard 4.1)
+        variant_prompts = [{"modified_prompt": body.prompt, "variant_name": "Original"}]
+        if num_variants > 1:
+            from src.services.optimization.variant_generator import (
+                base_variant_generator,
             )
-        except Exception as task_err:
-            logger.error(f"Generation task failure: {task_err}")
-            raise HTTPException(status_code=503, detail="Generation queue unavailable")
 
-        # 2. Consume Credits
-        success, msg = await credit_service.consume_credits(
-            user_id=current_user.id,
-            amount=credits_cost,
-            action=action,
-            db=db,
-            reference_id=task.id,
-        )
+            variant_prompts = await base_variant_generator.generate_variant_prompts(
+                original_prompt=body.prompt,
+                count=num_variants,
+                strategy=variant_strategy,
+                session_id=request.state.request_id
+                if hasattr(request.state, "request_id")
+                else None,
+            )
 
-        if not success:
-            from api.utils.celery import celery_app
+        # Ensure we have a parent ID for grouping
+        parent_job_id = str(uuid.uuid4())
+        task_ids = []
 
-            celery_app.control.revoke(task.id, terminate=True)
-            raise HTTPException(status_code=402, detail="Insufficient credits for this operation")
+        # 1. Dispatch Tasks for each variant
+        for i, variant in enumerate(variant_prompts):
+            try:
+                task = generate_video_task.delay(
+                    prompt=variant.get("modified_prompt", body.prompt),
+                    engine=body.engine,
+                    style=variant.get("suggested_style", body.style),
+                    aspect_ratio=body.aspect_ratio,
+                    user_id=current_user.id,
+                    custom_image_url=body.custom_image_url,
+                    parent_id=parent_job_id,
+                    variant_index=i,
+                )
+                task_ids.append(task.id)
 
-        # 3. Create Job
-        new_job = VideoJobDB(
-            id=task.id,
-            title=f"AI Synthesis - {body.engine}",
-            status=SystemJobStatus.QUEUED,
-            progress=0,
-            source_url="Generation Prompt",
-            generation_params={
-                "prompt": body.prompt,
-                "engine": body.engine,
-                "style": body.style,
-                "aspect_ratio": body.aspect_ratio,
-                "custom_image_url": body.custom_image_url,
-            },
-            user_id=current_user.id,
-        )
-        db.add(new_job)
+                # 2. Consume Credits for each variant
+                success, msg = await credit_service.consume_credits(
+                    user_id=current_user.id,
+                    amount=credits_cost,
+                    action=action,
+                    db=db,
+                    reference_id=task.id,
+                )
+
+                if not success:
+                    # Partial failure - stop and revoke
+                    from src.api.utils.celery import celery_app
+
+                    celery_app.control.revoke(task.id, terminate=True)
+                    logger.warning(f"Credit failure for variant {i}: {msg}")
+                    break
+
+                # 3. Create Job for each variant
+                new_job = VideoJobDB(
+                    id=task.id,
+                    title=f"Variant {i}: {variant.get('variant_name', 'Default')}",
+                    status=SystemJobStatus.QUEUED,
+                    progress=0,
+                    source_url="Generation Prompt",
+                    job_metadata={
+                        "prompt": variant.get("modified_prompt", body.prompt),
+                        "engine": body.engine,
+                        "style": variant.get("suggested_style", body.style),
+                        "parent_id": parent_job_id,
+                        "variant_index": i,
+                        "variant_logic": variant.get("logic", "N/A"),
+                        "hook_text": variant.get("hook_text", "N/A"),
+                    },
+                    user_id=current_user.id,
+                )
+                db.add(new_job)
+
+            except Exception as task_err:
+                logger.error(f"Variant generation task failure: {task_err}")
+
         await db.commit()
 
         await audit_service.log(
-            action="VIDEO_GENERATE_START",
+            action=CreditAction.VIDEO_GENERATE_VARIANTS_START,
             user_id=current_user.id,
             resource_type="VIDEO",
-            resource_id=task.id,
-            details={"engine": body.engine, "style": body.style},
+            resource_id=parent_job_id,
+            details={
+                "engine": body.engine,
+                "count": len(task_ids),
+                "strategy": variant_strategy,
+            },
             db=db,
         )
 
-        return success_response(data={"message": "Generation started", "task_id": task.id})
+        return success_response(
+            data={
+                "message": f"Started {len(task_ids)} video variants",
+                "parent_id": parent_job_id,
+                "task_ids": task_ids,
+            }
+        )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"video_generate.py: Error: {e}")
-        raise HTTPException(status_code=500, detail="Generation failed")
+        return handle_exception(e)
 
 
 @router.post("/generate-story")
 async def start_story_generation(
     request: Request,
     body: StoryRequest,
-    current_user: UserDB = Depends(subscription_required(SubscriptionTier.BASIC)),
+    current_user: UserDB = Depends(daily_limit_reached()),
     credits_cost: int = Depends(credits_required("storytelling")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -143,7 +189,9 @@ async def start_story_generation(
     Triggers a multi-scene storytelling narrative task.
     """
     try:
-        await check_daily_limit(current_user, db)
+        # Minimum tier check (BASIC for stories)
+        await subscription_required(SubscriptionTier.BASIC)(current_user)
+        # daily_limit_reached dependency already checked via Depends
 
         # 1. Dispatch Task
         task = generate_story_task.delay(
@@ -157,13 +205,13 @@ async def start_story_generation(
         success, msg = await credit_service.consume_credits(
             user_id=current_user.id,
             amount=credits_cost,
-            action="storytelling",
+            action=CreditAction.STORYTELLING,
             db=db,
             reference_id=task.id,
         )
 
         if not success:
-            from api.utils.celery import celery_app
+            from src.api.utils.celery import celery_app
 
             celery_app.control.revoke(task.id, terminate=True)
             raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
@@ -173,7 +221,7 @@ async def start_story_generation(
             id=task.id,
             title=f"Storytelling - {body.style}",
             status=SystemJobStatus.QUEUED,
-            generation_params={
+            job_metadata={
                 "prompt": body.prompt,
                 "engine": body.engine,
                 "style": body.style,
@@ -184,7 +232,7 @@ async def start_story_generation(
         await db.commit()
 
         await audit_service.log(
-            action="STORY_GENERATE_START",
+            action=CreditAction.STORY_GENERATE_START,
             user_id=current_user.id,
             resource_type="VIDEO",
             resource_id=task.id,
@@ -195,15 +243,14 @@ async def start_story_generation(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Story generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return handle_exception(e)
 
 
-@router.post("/retry/{task_id}")
+@router.post("/retry/{job_id}")
 @limiter.limit("10/minute")
 async def retry_failed_job(
     request: Request,
-    task_id: str,
+    job_id: str,
     current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -213,11 +260,11 @@ async def retry_failed_job(
     """
     try:
         # Find the job
-        from api.utils.models import VideoJobDB
+        from src.api.utils.models import VideoJobDB
         from sqlalchemy import select
 
         stmt = select(VideoJobDB).where(
-            VideoJobDB.id == task_id, VideoJobDB.user_id == current_user.id
+            VideoJobDB.id == job_id, VideoJobDB.user_id == current_user.id
         )
         result = await db.execute(stmt)
         job = result.scalar_one_or_none()
@@ -227,9 +274,9 @@ async def retry_failed_job(
 
         # Check if job can be retried
         if job.status == SystemJobStatus.FAILED:
-            pass # Continue to retry
+            pass  # Continue to retry
         elif isinstance(job.status, str) and job.status.startswith("Failed"):
-            pass # Backward compatibility for string status
+            pass  # Backward compatibility for string status
         else:
             raise HTTPException(
                 status_code=400,
@@ -243,10 +290,10 @@ async def retry_failed_job(
             )
 
         # Determine which task type to retry
-        params = job.generation_params or {}
+        params = job.job_metadata or {}
         if "AI Synthesis" in job.title:
             # Retry generate_video_task
-            from services.video_engine.tasks import generate_video_task
+            from src.services.video_engine.tasks import generate_video_task
 
             task = generate_video_task.delay(
                 prompt=params.get("prompt", "Retried synthesis"),
@@ -258,7 +305,7 @@ async def retry_failed_job(
             )
         elif "Storytelling" in job.title:
             # Retry generate_story_task
-            from services.video_engine.tasks import generate_story_task
+            from src.services.video_engine.tasks import generate_story_task
 
             task = generate_story_task.delay(
                 prompt=params.get("prompt", "Retried story"),
@@ -268,7 +315,7 @@ async def retry_failed_job(
             )
         else:
             # Retry download_and_process_task
-            from services.video_engine.tasks import download_and_process_task
+            from src.services.video_engine.tasks import download_and_process_task
 
             task = download_and_process_task.delay(
                 source_url=job.source_url,
@@ -284,25 +331,24 @@ async def retry_failed_job(
         await db.commit()
 
         await audit_service.log(
-            action="VIDEO_JOB_RETRY",
+            action=CreditAction.VIDEO_JOB_RETRY,
             user_id=current_user.id,
             resource_type="VIDEO",
-            resource_id=task_id,
+            resource_id=job_id,
             details={"new_task_id": task.id},
             db=db,
         )
 
         return {
             "message": "Job retry initiated",
-            "original_task_id": task_id,
+            "original_job_id": job_id,
             "new_task_id": task.id,
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Job retry failed: {e}")
-        raise HTTPException(status_code=500, detail="Retry failed")
+        return handle_exception(e)
 
 
 @router.get("/{job_id}/preview")
@@ -336,8 +382,7 @@ async def get_video_preview(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Video preview failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get video preview")
+        return handle_exception(e)
 
 
 @router.get("/jobs")
@@ -345,7 +390,7 @@ async def list_video_jobs(
     page: int = 1,
     limit: int = 10,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    job_service: VideoJobService = Depends(get_video_job_service),
 ):
     """
     Get paginated list of user's video generation jobs.
@@ -358,20 +403,9 @@ async def list_video_jobs(
 
         offset = (page - 1) * limit
 
-        stmt = (
-            select(VideoJobDB)
-            .where(VideoJobDB.user_id == current_user.id)
-            .order_by(VideoJobDB.created_at.desc())
-            .offset(offset)
-            .limit(limit)
+        jobs, total_jobs = await job_service.get_user_jobs(
+            user_id=current_user.id, limit=limit, offset=offset
         )
-        result = await db.execute(stmt)
-        jobs = result.scalars().all()
-
-        # Get total count for pagination info
-        count_stmt = select(VideoJobDB).where(VideoJobDB.user_id == current_user.id)
-        count_result = await db.execute(count_stmt)
-        total_jobs = len(count_result.scalars().all())
 
         return {
             "jobs": [
@@ -394,5 +428,4 @@ async def list_video_jobs(
             },
         }
     except Exception as e:
-        logger.error(f"Video jobs listing failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to list video jobs")
+        return handle_exception(e)

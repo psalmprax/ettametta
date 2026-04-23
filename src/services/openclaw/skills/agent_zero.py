@@ -28,7 +28,7 @@ class AgentZeroSkill(OpenClawBaseSkill):
         try:
             if action == "start":
                 try:
-                    from services.agent_zero.agent import base_agent_zero
+                    from src.services.agent_zero.agent import base_agent_zero
                     import threading
 
                     def _start_async():
@@ -45,7 +45,7 @@ class AgentZeroSkill(OpenClawBaseSkill):
                     return f"⚠️ Failed to start Agent Zero: {e}"
             elif action == "stop":
                 try:
-                    from services.agent_zero.agent import base_agent_zero
+                    from src.services.agent_zero.agent import base_agent_zero
 
                     base_agent_zero.stop()
                     return "🛑 **Agent Zero Loop Stopped.** Autonomy suspended."
@@ -53,7 +53,7 @@ class AgentZeroSkill(OpenClawBaseSkill):
                     return f"⚠️ Failed to stop Agent Zero: {e}"
             elif action == "status":
                 try:
-                    from services.agent_zero.agent import base_agent_zero
+                    from src.services.agent_zero.agent import base_agent_zero
 
                     status = "RUNNING" if base_agent_zero.is_running else "STOPPED"
                     step = (

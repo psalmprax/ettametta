@@ -4,7 +4,7 @@ import json
 import random
 from .models import ContentCandidate
 from datetime import datetime
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 

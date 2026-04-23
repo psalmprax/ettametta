@@ -1,4 +1,4 @@
-from api.utils.vault import get_secret
+from src.api.utils.vault import get_secret
 import os
 import logging
 import mimetypes
@@ -136,9 +136,10 @@ class StorageService:
             logging.error(f"[StorageService] Cloud upload failed: {e}")
             return None
 
-    def get_public_url(self, object_key_or_path: str, expiration: int = 3600) -> str:
+    def get_file_url(self, object_key_or_path: str, expiration: int = 3600) -> str:
         """
         Generates a presigned URL (Cloud) or returns a local static URL path.
+        This provides a reachable URL for internal or external consumers.
         """
         s3_client = self._get_client()
         if (
@@ -162,7 +163,7 @@ class StorageService:
         else:
             # Local fallback logic
             filename = os.path.basename(object_key_or_path)
-            from api.config import settings
+            from src.api.config import settings
 
             return f"{get_secret('production_domain', settings.PRODUCTION_DOMAIN)}/static/outputs/{filename}"
 

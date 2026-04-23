@@ -1,4 +1,4 @@
-from api.config import settings
+from src.api.config import settings
 import requests
 import logging
 from .base_skill import OpenClawBaseSkill

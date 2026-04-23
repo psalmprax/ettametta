@@ -6,7 +6,7 @@ Finds trending videos, analyzes performance, and identifies repurposing opportun
 
 from typing import Any
 import logging
-from services.discovery.video_lead_scanner import video_lead_scanner
+from src.services.discovery.video_lead_scanner import video_lead_scanner
 
 from .base_skill import OpenClawBaseSkill
 

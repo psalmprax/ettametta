@@ -1,5 +1,5 @@
 """
-The Bulk Forge: Parallel Rendering Engine (10/10)
+The Production Batch: Parallel Rendering Engine (10/10)
 ==============================================
 
 Uses Python's multiprocessing to saturate CPU cores with 
@@ -15,7 +15,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-class ForgeBatchRenderer:
+class ProductionBatchRenderer:
     """
     High-Throughput Parallel Renderer for Final Productions.
     """
@@ -28,12 +28,12 @@ class ForgeBatchRenderer:
         cmd = variant_data["cmd"]
         
         try:
-            logger.info(f"🏗️  [ForgeBatch] Starting render: {video_path}")
+            logger.info(f"🏗️  [ProductionBatch] Starting render: {video_path}")
             # Run FFmpeg command
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             return {"success": True, "path": video_path, "variant_id": variant_data.get("variant_id")}
         except subprocess.CalledProcessError as e:
-            logger.error(f"❌ [ForgeBatch] Render Failed: {video_path}")
+            logger.error(f"❌ [ProductionBatch] Render Failed: {video_path}")
             logger.error(f"Error: {e.stderr}")
             return {"success": False, "error": e.stderr, "variant_id": variant_data.get("variant_id")}
 
@@ -41,7 +41,7 @@ class ForgeBatchRenderer:
         """Parallelizes the rendering of multiple production variants"""
         results = []
         
-        print(f"🚀 FORGE BATCH: Parallelizing {len(variants)} variants across {self.max_workers} cores...")
+        print(f"🚀 PRODUCTION BATCH: Parallelizing {len(variants)} variants across {self.max_workers} cores...")
         
         with concurrent.futures.ProcessPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_variant = {
@@ -52,8 +52,8 @@ class ForgeBatchRenderer:
                 results.append(future.result())
         
         success_count = sum(1 for r in results if r["success"])
-        print(f"✅ FORGE BATCH COMPLETE: {success_count}/{len(variants)} successful renders.")
+        print(f"✅ PRODUCTION BATCH COMPLETE: {success_count}/{len(variants)} successful renders.")
         return results
 
 # Singleton Instance
-base_forge_batch = ForgeBatchRenderer()
+base_production_batch = ProductionBatchRenderer()

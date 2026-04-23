@@ -3,7 +3,7 @@ import asyncio
 import json
 from typing import Any
 from groq import Groq
-from api.config import settings
+from src.api.config import settings
 from .tools.discovery import discovery_tool
 from .tools.render import render_tool
 from .tools.publish import publish_tool
@@ -11,12 +11,12 @@ from .tools.affiliate import affiliate_tool
 from .tools.market_screener import market_screener_tool
 from .tools.paperclip_kpi import paperclip_kpi
 from .tools.remotion_render import remotion_tool
-from services.optimization.ab_testing_automation import ab_testing_automation
+from src.services.optimization.ab_testing_automation import ab_testing_automation
 
 logger = logging.getLogger(__name__)
 
 
-from services.base_agent import BaseEttamettaAgent
+from src.services.base_agent import BaseEttamettaAgent
 
 class AgentZero(BaseEttamettaAgent):
     """
@@ -83,8 +83,8 @@ class AgentZero(BaseEttamettaAgent):
         await self._log("Iteration Started: Scouting for market trends...")
 
         # 1. Fetch monitored niches from DB
-        from api.utils.database import async_session_factory
-        from api.utils.models import MonitoredNiche
+        from src.api.utils.database import async_session_factory
+        from src.api.utils.models import MonitoredNiche
         from sqlalchemy import select
         import random
 
@@ -112,7 +112,7 @@ class AgentZero(BaseEttamettaAgent):
 
         # 2. Discover Trends
         self.current_step = "SCOUTING"
-        trends = discovery_tool.run(topic=target_niche, limit=5)
+        trends = discovery_tool.run(niche=target_niche, limit=5)
 
         if "error" in trends or not trends.get("valid_candidates"):
             await self._log(
@@ -151,9 +151,9 @@ class AgentZero(BaseEttamettaAgent):
         self.latest_insights = strategy
 
         # Real-First Affiliate Integration: Query User's AffiliateLinkDB first
-        from api.utils.models import AffiliateLinkDB
+        from src.api.utils.models import AffiliateLinkDB
 
-        selected_link = "https://viralforge.ai/monetize"
+        selected_link = "https://ettametta.ai/monetize"
         user_affiliate_found = False
 
         try:

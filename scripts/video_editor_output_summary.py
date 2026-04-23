@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ViralForge Video Editor Production Output Summary
+Ettametta Video Editor Production Output Summary
 ================================================
 
 Clear demonstration of what the video editor produces and its quality level.
@@ -8,9 +8,9 @@ Clear demonstration of what the video editor produces and its quality level.
 
 
 def show_production_output():
-    """Show what the ViralForge video editor actually produces"""
+    """Show what the Ettametta video editor actually produces"""
 
-    print("🎬 VIRALFORGE VIDEO EDITOR - PRODUCTION OUTPUT SUMMARY")
+    print("🎬 ETTAMETTA VIDEO EDITOR - PRODUCTION OUTPUT SUMMARY")
     print("=" * 65)
 
     print("\n✅ WHAT THE VIDEO EDITOR PRODUCES (Available Now):")
@@ -118,7 +118,7 @@ def show_production_output():
     print("=" * 65)
 
     print(
-        "\n✅ VERDICT: YES, the ViralForge video editor CAN produce high-quality content!"
+        "\n✅ VERDICT: YES, the Ettametta video editor CAN produce high-quality content!"
     )
     print()
     print("The system produces:")

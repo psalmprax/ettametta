@@ -3,14 +3,14 @@
 Video Editor Production Output Assessment
 =========================================
 
-Realistic assessment of what the ViralForge video editor can produce
+Realistic assessment of what the Ettametta video editor can produce
 without requiring full video processing dependencies.
 """
 
 def assess_production_capabilities():
     """Assess what the video editor can actually produce"""
 
-    print("🎬 VIRALFORGE VIDEO EDITOR - PRODUCTION OUTPUT ASSESSMENT")
+    print("🎬 ETTAMETTA VIDEO EDITOR - PRODUCTION OUTPUT ASSESSMENT")
     print("=" * 70)
 
     # What the system CAN produce
@@ -178,7 +178,7 @@ def assess_production_capabilities():
     print(f"   With Dependencies: {total_possible}/{total_possible} (100%)")
 
     print("
-🏆 WHAT VIRALFORGE CAN PRODUCE:"    print("   ✅ Complete content production strategy")
+🏆 WHAT ETTAMETTA CAN PRODUCE:"    print("   ✅ Complete content production strategy")
     print("   ✅ Monetization optimization plan")
     print("   ✅ Multi-platform upload specifications")
     print("   ✅ Automated quality assessment reports")
@@ -190,7 +190,7 @@ def assess_production_capabilities():
     print("   ⚠️  Audio processing and mixing (needs audio libraries)")
 
     print("
-💡 BOTTOM LINE:"    print("   The ViralForge video editor produces HIGH-QUALITY content planning,")
+💡 BOTTOM LINE:"    print("   The Ettametta video editor produces HIGH-QUALITY content planning,")
     print("   optimization strategies, and production specifications that rival")
     print("   professional video editors. The actual video rendering requires")
     print("   standard video processing libraries that can be easily added.")

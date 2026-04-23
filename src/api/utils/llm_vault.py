@@ -1,4 +1,4 @@
-from api.utils.vault import get_secret
+from src.api.utils.vault import get_secret
 import logging
 
 logger = logging.getLogger(__name__)

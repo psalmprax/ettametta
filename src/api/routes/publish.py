@@ -1,28 +1,29 @@
 from fastapi import APIRouter, HTTPException, Request, Depends, status, Query
 from fastapi.responses import RedirectResponse
-from services.optimization.service import base_optimization_service
-from services.optimization.youtube_publisher import base_youtube_publisher
-from services.optimization.tiktok_publisher import base_tiktok_publisher
-from services.optimization.models import PostMetadata
-from services.optimization.auth import token_manager
-from services.optimization.scheduler import smart_scheduler
+from src.services.optimization.service import base_optimization_service
+from src.services.optimization.youtube_publisher import base_youtube_publisher
+from src.services.optimization.tiktok_publisher import base_tiktok_publisher
+from src.services.optimization.models import PostMetadata
+from src.services.optimization.auth import token_manager
+from src.services.optimization.scheduler import smart_scheduler
 from pydantic import BaseModel
 from google_auth_oauthlib.flow import Flow
-from api.config import settings
-from api.routes.auth import get_current_user
-from api.utils.vault import get_secret, get_secret_async
-from api.utils.user_models import UserDB, UserRole
+from src.api.config import settings
+from src.api.routes.auth import get_current_user
+from src.api.utils.vault import get_secret, get_secret_async
+from src.api.utils.user_models import UserDB, UserRole
 
-# from api.utils.user_models import UserDB, UserRole # Deprecated import
-from api.utils.database import get_db
+# from src.api.utils.user_models import UserDB, UserRole # Deprecated import
+from src.api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.models import SocialAccount, PublishedContentDB
-from api.utils.subscription import credits_required
-from services.payment.credit_service import credit_service
+from src.api.utils.models import SocialAccount, PublishedContentDB
+from src.shared.enums import ContentPublishStatus, CreditAction
+from src.api.utils.subscription import credits_required
+from src.services.payment.credit_service import credit_service
 import datetime
 import uuid
-from api.utils.api_responses import success_response
+from src.api.utils.api_responses import success_response
 import logging
 import os
 
@@ -323,8 +324,8 @@ async def retry_publish(
     Retry publishing a video that was pending authentication.
     Called after user has authenticated the platform.
     """
-    from api.utils.models import PublishedContentDB
-    from services.optimization.service import base_optimization_service
+    from src.api.utils.models import PublishedContentDB
+    from src.services.optimization.service import base_optimization_service
 
     try:
         # Get the pending content
@@ -338,7 +339,7 @@ async def retry_publish(
         if not content:
             raise HTTPException(status_code=404, detail="Content not found")
 
-        if content.status != "PENDING_AUTH":
+        if content.status != ContentPublishStatus.PENDING_AUTH:
             raise HTTPException(
                 status_code=400,
                 detail=f"Content is not in PENDING_AUTH status. Current: {content.status}",
@@ -355,7 +356,7 @@ async def retry_publish(
             )
 
         # Check if now authenticated
-        from services.optimization.auth import token_manager
+        from src.services.optimization.auth import token_manager
 
         has_auth = (
             await token_manager.get_token(platform_key, user_id=current_user.id)
@@ -380,13 +381,13 @@ async def retry_publish(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "tiktok":
-            from services.optimization.tiktok_publisher import base_tiktok_publisher
+            from src.services.optimization.tiktok_publisher import base_tiktok_publisher
 
             url = await base_tiktok_publisher.upload_video(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "instagram":
-            from services.optimization.instagram_publisher import (
+            from src.services.optimization.instagram_publisher import (
                 base_instagram_publisher,
             )
 
@@ -394,7 +395,7 @@ async def retry_publish(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "facebook":
-            from services.optimization.facebook_publisher import (
+            from src.services.optimization.facebook_publisher import (
                 base_facebook_publisher,
             )
 
@@ -402,13 +403,13 @@ async def retry_publish(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "x":
-            from services.optimization.x_publisher import base_x_publisher
+            from src.services.optimization.x_publisher import base_x_publisher
 
             url = await base_x_publisher.upload_video(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "linkedin":
-            from services.optimization.linkedin_publisher import (
+            from src.services.optimization.linkedin_publisher import (
                 base_linkedin_publisher,
             )
 
@@ -417,7 +418,9 @@ async def retry_publish(
             )
 
         # Update status
-        content.status = "Published" if url else "Failed"
+        content.status = (
+            ContentPublishStatus.PUBLISHED if url else ContentPublishStatus.FAILED
+        )
         content.source_url = url
         content.published_at = datetime.datetime.utcnow() if url else None
 
@@ -441,8 +444,11 @@ async def retry_publish(
 
     except HTTPException:
         raise
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Publishing failed: {e}")
+        raise HTTPException(status_code=503, detail="Publishing service unavailable")
     finally:
         pass
 
@@ -545,7 +551,7 @@ async def auth_tiktok_callback(code: str, state: str):
             )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Token exchange failed: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Token exchange failed: {str(e)}")
 
 
 # Instagram/Facebook OAuth (via Meta)
@@ -641,7 +647,7 @@ async def auth_instagram_callback(code: str, state: str):
                 }
             )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Token exchange failed: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Token exchange failed: {str(e)}")
 
 
 # X (Twitter) OAuth
@@ -737,7 +743,7 @@ async def auth_x_callback(code: str, state: str):
                 }
             )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Token exchange failed: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Token exchange failed: {str(e)}")
 
 
 # LinkedIn OAuth
@@ -832,7 +838,7 @@ async def auth_linkedin_callback(code: str, state: str):
                 }
             )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Token exchange failed: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Token exchange failed: {str(e)}")
 
 
 class PublishRequest(BaseModel):
@@ -871,8 +877,11 @@ async def generate_package(
             content_id, niche, platform
         )
         return success_response(data=package)
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Publishing failed: {e}")
+        raise HTTPException(status_code=503, detail="Publishing service unavailable")
 
 
 @router.get("/comments/{content_id}")
@@ -1066,7 +1075,7 @@ async def sync_content_metrics(
         content.share_count = metrics.get("shares", 0)
 
         # Record A/B test events if this post is part of an A/B test
-        from api.utils.models import ABTestDB
+        from src.api.utils.models import ABTestDB
 
         stmt_ab = select(ABTestDB).where(ABTestDB.content_id == str(content.id))
         result_ab = await db.execute(stmt_ab)
@@ -1105,9 +1114,12 @@ async def sync_content_metrics(
 
         await db.commit()
         return success_response(data={"status": "success", "metrics": metrics})
+    except HTTPException:
+        raise
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Publishing operation failed: {e}")
+        raise HTTPException(status_code=503, detail="Publishing service unavailable")
     finally:
         pass
 
@@ -1134,7 +1146,7 @@ async def get_scheduled_posts(
     current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """Get scheduled posts waiting for publish."""
-    from api.utils.models import ScheduledPostDB
+    from src.api.utils.models import ScheduledPostDB
     import datetime
 
     try:
@@ -1195,7 +1207,7 @@ async def schedule_post(
     """
     Schedules a video for later publishing.
     """
-    from api.utils.models import ScheduledPostDB
+    from src.api.utils.models import ScheduledPostDB
 
     try:
         prediction = smart_scheduler.predict_engagement(
@@ -1232,8 +1244,11 @@ async def schedule_post(
         return success_response(
             data={"status": "success", "message": f"Scheduled for {scheduled_time}"}
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Publishing failed: {e}")
+        raise HTTPException(status_code=503, detail="Publishing service unavailable")
 
     finally:
         pass
@@ -1246,7 +1261,7 @@ async def publish_video(
     db: AsyncSession = Depends(get_db),
     credits_cost: int = Depends(credits_required("social_publish")),
 ):
-    from api.utils.models import PublishedContentDB, ABTestDB
+    from src.api.utils.models import PublishedContentDB, ABTestDB
 
     try:
         # Consume credits
@@ -1266,8 +1281,8 @@ async def publish_video(
 
         # 2. Affiliate Injection
         if request.inject_monetization:
-            from api.utils.models import AffiliateLinkDB
-            from services.monetization.service import base_monetization_engine
+            from src.api.utils.models import AffiliateLinkDB
+            from src.services.monetization.service import base_monetization_engine
 
             # First, try AI-powered recommendations
             try:
@@ -1367,7 +1382,7 @@ async def publish_video(
             }
 
         # === CHECK PLATFORM AUTHENTICATION ===
-        from services.optimization.auth import token_manager
+        from src.services.optimization.auth import token_manager
 
         has_auth = (
             await token_manager.get_token(
@@ -1390,7 +1405,7 @@ async def publish_video(
                 new_post = PublishedContentDB(
                     title=metadata.title or "Viral Post",
                     platform=request.platform,
-                    status="PENDING_AUTH",  # Special status for pending auth
+                    status=ContentPublishStatus.PENDING_AUTH,  # Special status for pending auth
                     url=None,
                     account_id=request.account_id,
                     user_id=current_user.id,
@@ -1433,7 +1448,7 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "tiktok":
-            from services.optimization.tiktok_publisher import base_tiktok_publisher
+            from src.services.optimization.tiktok_publisher import base_tiktok_publisher
 
             url = await base_tiktok_publisher.upload_video(
                 request.video_path,
@@ -1442,7 +1457,7 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "instagram":
-            from services.optimization.instagram_publisher import (
+            from src.services.optimization.instagram_publisher import (
                 base_instagram_publisher,
             )
 
@@ -1453,7 +1468,7 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "facebook":
-            from services.optimization.facebook_publisher import (
+            from src.services.optimization.facebook_publisher import (
                 base_facebook_publisher,
             )
 
@@ -1464,7 +1479,7 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "x":
-            from services.optimization.x_publisher import base_x_publisher
+            from src.services.optimization.x_publisher import base_x_publisher
 
             url = await base_x_publisher.upload_video(
                 request.video_path,
@@ -1473,7 +1488,7 @@ async def publish_video(
                 account_id=request.account_id,
             )
         elif platform_key == "linkedin":
-            from services.optimization.linkedin_publisher import (
+            from src.services.optimization.linkedin_publisher import (
                 base_linkedin_publisher,
             )
 
@@ -1522,15 +1537,18 @@ async def publish_video(
             logger.info(f"[A/B Testing] Initialized test for post {new_post.id}")
 
             # Record initial view event for variant A (assuming it gets shown first)
-            from api.routes.ab_testing import router as ab_router
+            from src.api.routes.ab_testing import router as ab_router
             # We'll use the existing event recording endpoint
             # For now, just initialize the counters - real tracking would need frontend integration
 
         return success_response(
             data={"status": "success", "url": url, "metadata": metadata}
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Publishing failed: {e}")
+        raise HTTPException(status_code=503, detail="Publishing service unavailable")
 
     finally:
         pass
@@ -1547,9 +1565,9 @@ async def publish_multi_platform(
     - Authenticated platforms will be published immediately
     - Unauthenticated platforms will be stored as PENDING_AUTH (deleted after 3 hours)
     """
-    from api.utils.models import PublishedContentDB
-    from services.optimization.service import base_optimization_service
-    from services.optimization.auth import token_manager
+    from src.api.utils.models import PublishedContentDB
+    from src.services.optimization.service import base_optimization_service
+    from src.services.optimization.auth import token_manager
 
     try:
         results = {"published": [], "pending_auth": [], "failed": []}
@@ -1613,7 +1631,7 @@ async def publish_multi_platform(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "tiktok":
-                            from services.optimization.tiktok_publisher import (
+                            from src.services.optimization.tiktok_publisher import (
                                 base_tiktok_publisher,
                             )
 
@@ -1621,7 +1639,7 @@ async def publish_multi_platform(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "instagram":
-                            from services.optimization.instagram_publisher import (
+                            from src.services.optimization.instagram_publisher import (
                                 base_instagram_publisher,
                             )
 
@@ -1629,7 +1647,7 @@ async def publish_multi_platform(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "facebook":
-                            from services.optimization.facebook_publisher import (
+                            from src.services.optimization.facebook_publisher import (
                                 base_facebook_publisher,
                             )
 
@@ -1637,7 +1655,7 @@ async def publish_multi_platform(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "x":
-                            from services.optimization.x_publisher import (
+                            from src.services.optimization.x_publisher import (
                                 base_x_publisher,
                             )
 
@@ -1645,7 +1663,7 @@ async def publish_multi_platform(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "linkedin":
-                            from services.optimization.linkedin_publisher import (
+                            from src.services.optimization.linkedin_publisher import (
                                 base_linkedin_publisher,
                             )
 
@@ -1702,7 +1720,7 @@ async def publish_multi_platform(
                     new_post = PublishedContentDB(
                         title=metadata.title or "Viral Post",
                         platform=platform_name,
-                        status="PENDING_AUTH",
+                        status=ContentPublishStatus.PENDING_AUTH,
                         url=None,
                         user_id=current_user.id,
                         niche=request.niche,
@@ -1739,8 +1757,11 @@ async def publish_multi_platform(
             "results": results,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Publishing failed: {e}")
+        raise HTTPException(status_code=503, detail="Publishing service unavailable")
     finally:
         pass
 
@@ -1766,8 +1787,8 @@ async def opencli_post(
     This is an alternative to OAuth-based publishing. The user must have
     a connected session for the platform via /opencli/sessions/connect.
     """
-    from api.config import settings
-    from services.opencli.service import opencli_service
+    from src.api.config import settings
+    from src.services.opencli.service import opencli_service
 
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")
@@ -1779,7 +1800,7 @@ async def opencli_post(
 
     if result.get("success"):
         # Record in DB
-        from api.utils.database import async_session_factory
+        from src.api.utils.database import async_session_factory
 
         async with async_session_factory() as db:
             try:
@@ -1807,8 +1828,8 @@ async def opencli_post_multi(
     current_user: UserDB = Depends(get_current_user),
 ):
     """Post to multiple platforms using the user's Chrome sessions."""
-    from api.config import settings
-    from services.opencli.service import opencli_service
+    from src.api.config import settings
+    from src.services.opencli.service import opencli_service
 
     if not settings.ENABLE_OPENCLI:
         raise HTTPException(status_code=404, detail="opencli integration is disabled")

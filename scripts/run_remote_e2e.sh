@@ -26,7 +26,7 @@ GPU_PORT="19461"
 
 SSH_KEY="/home/psalmprax/Music/id_rsa"
 SSH_OPTS="-o StrictHostKeyChecking=no -o PasswordAuthentication=no -o UserKnownHostsFile=/dev/null"
-E2E_DIR="/home/psalmprax/ALL_PROJECTS/viral_forge/e2e"
+E2E_DIR="/home/psalmprax/ALL_PROJECTS/ettametta/e2e"
 REMOTE_E2E_DIR="/tmp/viral-forge-e2e"
 REMOTE_BASE_URL="${REMOTE_BASE_URL:-http://149.104.110.122:7202}"
 

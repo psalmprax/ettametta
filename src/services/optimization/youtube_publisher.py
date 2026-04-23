@@ -30,7 +30,7 @@ class YouTubePublisher(SocialPublisher):
         self,
         video_path: str,
         metadata: PostMetadata,
-        user_id: int,
+        user_id: str,
         account_id: int | None,
         headers: dict,
     ) -> str | None:
@@ -82,7 +82,7 @@ class YouTubePublisher(SocialPublisher):
     async def _get_metrics_impl(
         self,
         platform_id: str,
-        user_id: int,
+        user_id: str,
         account_id: int | None,
         headers: dict,
     ) -> dict:
@@ -117,7 +117,7 @@ class YouTubePublisher(SocialPublisher):
             logger.error(f"[YouTubePublisher] Metrics fetch failed: {e}")
             return {"error": str(e)}
 
-    async def health_check(self, user_id: int) -> bool:
+    async def health_check(self, user_id: str) -> bool:
         """Verify YouTube credentials"""
         return await token_manager.get_token("youtube", user_id=user_id) is not None
 

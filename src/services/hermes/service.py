@@ -6,11 +6,11 @@ import random
 from typing import Any
 from pathlib import Path
 from groq import AsyncGroq
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
-from services.base_agent import BaseEttamettaAgent
+from src.services.base_agent import BaseEttamettaAgent
 from datetime import datetime
 
 class HermesSkillService(BaseEttamettaAgent):
@@ -77,7 +77,7 @@ class HermesSkillService(BaseEttamettaAgent):
         await self._log(f"🧪 {mode} Triggered: '{source_niche}' -> '{target_niche}'")
 
         try:
-            from api.utils.celery import celery_app
+            from src.api.utils.celery import celery_app
             # Trigger recursive narrative fusion with the winning seed
             celery_app.send_task(
                 "video.narrative_fusion",

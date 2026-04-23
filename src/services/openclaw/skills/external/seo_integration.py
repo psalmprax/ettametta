@@ -34,7 +34,7 @@ class BlogSEOService:
         Returns:
             dict with title, content, meta description, keywords
         """
-        from api.config import settings
+        from src.api.config import settings
 
         keywords = self._generate_keywords(topic)
         title = self._generate_title(topic, content_type)

@@ -26,7 +26,7 @@ export default function TermsPage() {
                             1. Acceptance of Terms
                         </h2>
                         <p>
-                            By accessing or using ViralForge, you agree to be bound by these Terms of Service. If you do not agree to all of these terms, do not use the service.
+                            By accessing or using Ettametta, you agree to be bound by these Terms of Service. If you do not agree to all of these terms, do not use the service.
                         </p>
                     </section>
 
@@ -36,7 +36,7 @@ export default function TermsPage() {
                             2. Service Description
                         </h2>
                         <p>
-                            ViralForge provides tools for content discovery, analysis, and social media publishing across various platforms including YouTube and TikTok.
+                            Ettametta provides tools for content discovery, analysis, and social media publishing across various platforms including YouTube and TikTok.
                         </p>
                     </section>
 

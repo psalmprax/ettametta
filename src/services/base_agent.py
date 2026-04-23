@@ -3,8 +3,8 @@ import asyncio
 import json
 import os
 import requests
-from typing import Any, Dict, Optional, List
-from api.config import settings
+from typing import Any
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class BaseEttamettaAgent:
     async def _log(self, message: str, level: str = "INFO"):
         """Broadcasts a log message to the UI console and local logger."""
         try:
-            from api.routes.ws import notify_system_log_async
+            from src.api.routes.ws import notify_system_log_async
 
             await notify_system_log_async(message, level=level, module=self.agent_name)
         except Exception:

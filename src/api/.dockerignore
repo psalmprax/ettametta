@@ -20,6 +20,6 @@ coverage.xml
 .dockerignore
 .env
 db.sqlite3
-viral_forge.db
+ettametta.db
 outputs
 temp

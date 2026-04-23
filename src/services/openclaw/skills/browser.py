@@ -7,8 +7,8 @@ logger = logging.getLogger(__name__)
 
 class BrowserSkill(OpenClawBaseSkill):
     """
-    OpenClaw skill for advanced browser automation using Playwright.
-    Enables navigating, clicking, and extracting content from dynamic web pages.
+    Browser Skill for OpenClaw agents.
+    Retrieves raw HTML content from target URLs for analysis.
     """
 
     def __init__(self):

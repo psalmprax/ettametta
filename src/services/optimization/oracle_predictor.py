@@ -15,7 +15,7 @@ import logging
 import json
 from typing import Any
 from pathlib import Path
-from services.optimization.model_registry import base_model_registry
+from src.services.optimization.model_registry import base_model_registry
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class RetentionNeuralNet(nn.Module):
 
 class NeuralOracle:
     """
-    The Scientific Heart of ViralForge: Temporal Deep Learning.
+    The Scientific Heart of Ettametta: Temporal Deep Learning.
     """
     def __init__(self, model_path: str | None = None):
         if model_path:

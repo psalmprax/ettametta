@@ -1,8 +1,8 @@
 import pytest
 import asyncio
 from unittest.mock import MagicMock, AsyncMock, patch
-from services.monetization.orchestrator import MonetizationOrchestrator
-from services.monetization.strategies.base import BaseMonetizationStrategy
+from src.services.monetization.orchestrator import MonetizationOrchestrator
+from src.services.monetization.strategies.base import BaseMonetizationStrategy
 
 class MockFailingStrategy(BaseMonetizationStrategy):
     async def get_assets(self, niche):

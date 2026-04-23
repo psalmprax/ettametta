@@ -16,7 +16,7 @@ def clear_vram():
         print(f"   VRAM Reserved:  {torch.cuda.memory_reserved() / 1024**2:.2f} MB")
 
 def run_verification():
-    output_dir = "/workspace/viral_forge_ai/outputs/verify"
+    output_dir = "/workspace/ettametta_ai/outputs/verify"
     os.makedirs(output_dir, exist_ok=True)
     
     # 1. Hunyuan Verification

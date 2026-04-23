@@ -2,9 +2,9 @@ import pytest
 import os
 import httpx
 from unittest.mock import patch, AsyncMock, MagicMock
-from services.video_engine.models.wan_inference import generate_wan_api
-from services.video_engine.models.mochi_inference import generate_mochi_api
-from services.video_engine.processor import VideoProcessor
+from src.services.video_engine.models.wan_inference import generate_wan_api
+from src.services.video_engine.models.mochi_inference import generate_mochi_api
+from src.services.video_engine.processor import VideoProcessor
 
 @pytest.fixture
 def mock_video_dir(tmp_path):
