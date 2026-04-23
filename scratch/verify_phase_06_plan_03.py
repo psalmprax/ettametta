@@ -96,7 +96,7 @@ async def verify():
                 # Direct DB check via psql as final word
                 print("Checking DB directly via psql...")
                 try:
-                    cmd = f"docker exec viral_forge-db-1 psql -U psalmprax -d ettametta -t -c \"SELECT status FROM scheduled_posts WHERE id='{post_id_2}'\""
+                    cmd = f"docker exec ettametta-db-1 psql -U psalmprax -d ettametta -t -c \"SELECT status FROM scheduled_posts WHERE id='{post_id_2}'\""
                     out = subprocess.check_output(cmd, shell=True).decode().strip()
                     print(f"Direct DB status: {out}")
                     if out == "FAILED":

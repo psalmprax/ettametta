@@ -1,7 +1,7 @@
 # AI Stack Comparison: Current vs Recommended
 
 **Date:** February 24, 2026  
-**Purpose:** Compare current ettametta/viral_forge stack against recommended AI agent stacks for faceless content + affiliate income + trading automation
+**Purpose:** Compare current ettametta/ettametta stack against recommended AI agent stacks for faceless content + affiliate income + trading automation
 
 ---
 

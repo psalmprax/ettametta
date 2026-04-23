@@ -1,11 +1,17 @@
 const getApiBase = () => {
+    // If NEXT_PUBLIC_API_URL is set (e.g. in .env), use it
     if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+    
+    // Client-side auto-detection
     if (typeof window !== "undefined") {
         // If we are on port 7202 (direct dashboard), we likely need port 7200 for API (Nginx)
         const host = window.location.host.includes(":7202") ? window.location.host.replace(":7202", ":7200") : window.location.host;
-        return `${window.location.protocol}//${host}`;
+        // The API is served under /api/v1 via Nginx
+        return `${window.location.protocol}//${host}/api/v1`;
     }
-    return "http://api:8000";
+    
+    // Server-side fallback (internal Docker networking)
+    return "http://api:8000/api/v1";
 };
 
 export const API_BASE = getApiBase();

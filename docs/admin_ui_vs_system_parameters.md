@@ -160,4 +160,4 @@ The admin UI should organize settings into these categories:
 - System parameters bypass database lookup for security
 - Admin UI parameters use database with environment fallback
 - Add validation for system parameters on application startup</content>
-<parameter name="filePath">/home/psalmprax/ALL_PROJECTS/viral_forge/docs/admin_ui_vs_system_parameters.md
+<parameter name="filePath">/home/psalmprax/ALL_PROJECTS/ettametta/docs/admin_ui_vs_system_parameters.md

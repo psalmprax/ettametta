@@ -48,8 +48,8 @@ YouTube and TikTok block automated downloads without authentication. You need to
 
 4. **Copy cookie files** to the cookies directory:
    ```bash
-   cp youtube_cookies.txt /path/to/viralforge/cookies/
-   cp tiktok_cookies.txt /path/to/viralforge/cookies/
+   cp youtube_cookies.txt /path/to/ettametta/cookies/
+   cp tiktok_cookies.txt /path/to/ettametta/cookies/
    chmod 600 cookies/*.txt
    ```
 
@@ -87,7 +87,7 @@ Required for automated publishing and trend discovery.
     *   Click **Create Credentials** -> **OAuth client ID**.
     *   **Application type**: Web application.
     *   **Authorized redirect URIs**: 
-        *   `http://localhost:8000/api/v1/auth/callback/google`
+        *   `http://your-domain.com/auth/callback/google`
         *   `http://130.61.26.105.sslip.io:8000/api/v1/auth/callback/google` 
         > [!TIP]
         > Google does not allow raw IPs. Using `.sslip.io` at the end of your IP works as a free domain.
@@ -155,7 +155,7 @@ The following issues were identified and fixed during the dummy data audit:
 ### 2. Persona Image Storage - Real S3 Upload
 **File**: `api/routes/persona.py`
 
-**Problem**: Persona creation was storing images to fake Google Storage URLs like `https://storage.googleapis.com/viral-forge-assets/...`
+**Problem**: Persona creation was storing images to fake Google Storage URLs like `https://storage.googleapis.com/ettametta-assets/...`
 
 **Fix**:
 - Integrated real S3-compatible storage service (`api.utils.storage`)
@@ -205,4 +205,4 @@ The Jenkins container is configured with **Docker-out-of-Docker (DooD)**, meanin
 
 ---
 
-Run `docker-compose up -d` for the main application from `/home/ubuntu/viralforge/`.
+Run `docker-compose up -d` for the main application from `/home/ubuntu/ettametta/`.

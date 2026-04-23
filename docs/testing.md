@@ -1,6 +1,6 @@
 # ettametta - Testing & Validation Guide
 
-This document outlines the testing infrastructure, locations, and execution procedures for the **ettametta** (viral_forge) platform.
+This document outlines the testing infrastructure, locations, and execution procedures for the **ettametta** (ettametta) platform.
 
 ---
 

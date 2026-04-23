@@ -4,7 +4,7 @@ import logging
 from src.services.llm.intelligence_hub import base_intelligence_hub
 
 async def test_hub_hardening():
-    print("🧪 Testing ViralForge Intelligence Hub Hardening...")
+    print("🧪 Testing ettametta Intelligence Hub Hardening...")
     
     # Test 1: Successful OpenAI call with RequestID
     print("\n[Test 1] OpenAI Primary Call...")
