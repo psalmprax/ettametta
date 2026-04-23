@@ -59,4 +59,4 @@ class StockMediaService:
             return []
 
 
-base_stock_service = StockMediaService()
+base_stock_media_service = StockMediaService()

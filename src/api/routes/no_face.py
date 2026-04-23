@@ -4,7 +4,7 @@ from typing import Any
 from src.services.script_generator.service import base_script_generator
 from src.services.decision_engine.hook_validator import base_hook_validator
 from src.services.voiceover.service import base_voiceover_service
-from src.services.stock_media.service import base_stock_service
+from src.services.stock_media.service import base_stock_media_service
 from src.services.visual_generator.service import base_visual_generator
 from src.services.multiplatform.translator import base_global_adapter
 from src.services.scheduler.empire_mode import base_empire_scheduler
@@ -87,7 +87,7 @@ async def search_stock(query: str, current_user=Depends(get_current_user)):
     """
     Searches for Pexels stock video assets.
     """
-    results = await base_stock_service.search_videos(query)
+    results = await base_stock_media_service.search_videos(query)
     return results
 
 

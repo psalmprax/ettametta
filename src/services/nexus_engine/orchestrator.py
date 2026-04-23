@@ -4,7 +4,7 @@ import json
 import asyncio
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 # Graceful imports for optional dependencies
 try:
