@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     REMOTION_APP_DIR: Path = (
         Path(__file__).parent.parent.parent / "apps/remotion-studio"
     )
-    OUTPUT_DIR: Path = Path(__file__).parent.parent.parent / "outputs"
+    REMOTION_OUTPUT_DIR: Path = Path(__file__).parent.parent.parent / "outputs"
 
     # App Settings
     APP_NAME: str = "Ettametta API"
@@ -45,10 +45,11 @@ class Settings(BaseSettings):
     NVIDIA_API_KEY: str | None = None  # NVIDIA NIM - 40 RPM free
     OLLAMA_CLOUD_API_KEY: str | None = None  # Ollama Cloud
     SILICONFLOW_API_KEY: str | None = None  # SiliconFlow - 1K RPM, 50K TPM free
-    OLLAMA_URL: str = "http://localhost:11434"  # Local Ollama server
-    OLLAMA_MODEL: str = "llama3.2:3b"  # Default model for Ollama
+    OLLAMA_URL: str = "http://127.0.0.1:11434"  # Local Ollama server
+    OLLAMA_MODEL: str = "hermes3"  # Default model for Ollama
     LM_STUDIO_URL: str = "http://localhost:1234"  # Local LM Studio server
     DEFAULT_LLM_PROVIDER: str = "ollama"  # groq, openai, xai, deepseek, anthropic, cohere, mistral, cerebras, cloudflare, huggingface, openrouter, nvidia, ollama_cloud, siliconflow, ollama, lm_studio
+    FALLBACK_LLM_PROVIDER: str = "openai"
 
     USE_OS_MODELS: bool = True
 
@@ -115,8 +116,8 @@ class Settings(BaseSettings):
     COMFYUI_URL: str = "http://220.135.0.171:8188"
     COMFYUI_WORKFLOWS_DIR: str = "services/video_engine/workflows"
     COMFYUI_MODELS_DIR: str = "services/video_engine/models"
-    VIDEO_OUTPUTS_DIR: str = "data/storage/outputs"
-    REMOTE_VIDEO_OUTPUTS_DIR: str = "/workspace/outputs"
+    STORAGE_OUTPUT_DIR: str = "data/storage/outputs"
+    REMOTE_STORAGE_OUTPUT_DIR: str = "/workspace/outputs"
     CLEANUP_TRANSIENT_MODELS: bool = True
     GPU_QUEUE_SLOTS: int = (
         1  # Concurrent generations allowed (auto-detected from hardware)
@@ -178,7 +179,7 @@ class Settings(BaseSettings):
 
     @property
     def GOOGLE_OAUTH_REDIRECT_URI(self) -> str:
-        """Google OAuth callback for general login (non-YouTube specific)."""
+        """Google OAuth callback for general authentication (standard account login)."""
         return f"{self.PRODUCTION_DOMAIN.rstrip('/')}/auth/callback/google"
 
     @property

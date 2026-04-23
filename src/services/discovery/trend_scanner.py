@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 
 class TrendScanner:
     """
-    Detects low-saturation/high-velocity topics for early-mover advantage.
+    Detects low-saturation/high-velocity niches for early-mover advantage.
     """
 
     def __init__(self):
         self.monitored_niches = ["AI", "Finance", "Health", "Productivity", "Tech"]
 
-    def calculate_velocity(self, topic: str, samples: list[int]) -> float:
+    def calculate_velocity(self, niche: str, samples: list[int]) -> float:
         """Calculates growth rate of engagement over time"""
         if len(samples) < 2: return 0.0
         # Simplistic velocity: (Latest - Mean) / Mean
@@ -33,25 +33,25 @@ class TrendScanner:
 
     async def scan_for_opportunities(self) -> list[dict[str, Any]]:
         """
-        Simulates scanning Reddit/X for emergent topics.
+        Simulates scanning Reddit/X for emergent niches.
         Identifies 'Velocity Spikes'.
         """
         print("🔮 [Prophet] Scanning for emergent velocity spikes...")
         
         opportunities = []
         
-        # SIMULATION: Detecting a breakout topic
-        breakout_topic = "Autonomous Neural Agencies"
+        # SIMULATION: Detecting a breakout niche
+        breakout_niche = "Autonomous Neural Agencies"
         velocity = 0.85 # 85% growth in 4 hours
         saturation = 0.12 # Only index of 0.12 on TikTok/Reels
         
         if velocity > 0.5 and saturation < 0.3:
-            logger.info(f"🔥 [Prophet] BREAKOUT DETECTED: {breakout_topic} (Vel: {velocity:.2f}, Sat: {saturation:.2f})")
+            logger.info(f"🔥 [Prophet] BREAKOUT DETECTED: {breakout_niche} (Vel: {velocity:.2f}, Sat: {saturation:.2f})")
             opportunities.append({
-                "topic": breakout_topic,
+                "niche": breakout_niche,
                 "velocity": velocity,
                 "saturation": saturation,
-                "niche": "AI",
+                "parent_niche": "AI",
                 "reason": "High interest velocity on X with zero video saturation."
             })
             

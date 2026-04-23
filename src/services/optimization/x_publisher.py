@@ -32,7 +32,7 @@ class XPublisher(SocialPublisher):
         self,
         video_path: str,
         metadata: PostMetadata,
-        user_id: int,
+        user_id: str,
         account_id: int | None,
         headers: dict,
     ) -> str | None:
@@ -199,7 +199,7 @@ class XPublisher(SocialPublisher):
     async def _get_metrics_impl(
         self,
         platform_id: str,
-        user_id: int,
+        user_id: str,
         account_id: int | None,
         headers: dict,
     ) -> dict:
@@ -223,7 +223,7 @@ class XPublisher(SocialPublisher):
 
             return {"error": data.get("error", {}).get("message", "Unknown error")}
 
-    async def health_check(self, user_id: int) -> bool:
+    async def health_check(self, user_id: str) -> bool:
         """Verify X credentials"""
         return await token_manager.get_token("x", user_id=user_id) is not None
 

@@ -2,9 +2,9 @@ import logging
 import asyncio
 import numpy as np
 from typing import Any
-from services.optimization.oracle_predictor import base_neural_oracle
-from services.infrastructure.event_bus import base_event_bus
-from services.optimization.model_registry import base_model_registry
+from src.services.optimization.oracle_predictor import base_neural_oracle
+from src.services.infrastructure.event_bus import base_event_bus
+from src.services.optimization.model_registry import base_model_registry
 
 logger = logging.getLogger("InferenceGateway")
 

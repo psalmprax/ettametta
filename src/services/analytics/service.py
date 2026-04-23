@@ -11,10 +11,10 @@ from tenacity import (
     retry_if_exception_type,
 )
 from googleapiclient.errors import HttpError as GoogleHttpError
-from api.config import settings
-from services.optimization.auth import token_manager
-from services.optimization.oracle_predictor import base_neural_oracle
-from services.analytics.ledger import base_performance_ledger
+from src.api.config import settings
+from src.services.optimization.auth import token_manager
+from src.services.optimization.oracle_predictor import base_neural_oracle
+from src.services.analytics.ledger import base_performance_ledger
 import numpy as np
 
 
@@ -154,7 +154,7 @@ class AnalyticsService:
             raise
 
     async def get_performance_report(
-        self, post_id: str, user_id: int, platform: str = "youtube"
+        self, post_id: str, user_id: str, platform: str = "youtube"
     ) -> ContentPerformance:
         # Redis Caching Layer
         cache_key = f"analytics:report:{post_id}:{user_id}"
@@ -183,7 +183,7 @@ class AnalyticsService:
             )
 
     async def _get_youtube_analytics(
-        self, post_id: str, user_id: int
+        self, post_id: str, user_id: str
     ) -> ContentPerformance:
         """Fetch YouTube analytics data"""
         token_data = token_manager.get_token("youtube", user_id)
@@ -238,8 +238,8 @@ class AnalyticsService:
         # Fallback: Query local database first before resorting to zeros
         db_views, db_likes, db_shares = 0, 0, 0
         try:
-            from api.utils.database import async_session_factory
-            from api.utils.models import PublishedContentDB
+            from src.api.utils.database import async_session_factory
+            from src.api.utils.models import PublishedContentDB
             from sqlalchemy import select
 
             async with async_session_factory() as db:
@@ -280,7 +280,7 @@ class AnalyticsService:
         return fallback_result
 
     async def _get_social_analytics(
-        self, post_id: str, user_id: int, platform: str
+        self, post_id: str, user_id: str, platform: str
     ) -> ContentPerformance:
         """Fetch analytics from social media platforms"""
         try:
@@ -315,7 +315,7 @@ class AnalyticsService:
             return ContentPerformance()
 
     async def _fetch_platform_metrics(
-        self, platform: str, post_id: str, user_id: int
+        self, platform: str, post_id: str, user_id: str
     ) -> dict:
         """Fetch metrics from specific social platform"""
         if platform == "instagram":
@@ -327,9 +327,9 @@ class AnalyticsService:
         else:
             return self._get_default_metrics()
 
-    async def _get_instagram_metrics(self, post_id: str, user_id: int) -> dict:
+    async def _get_instagram_metrics(self, post_id: str, user_id: str) -> dict:
         """Get Instagram post metrics"""
-        from services.optimization.instagram_publisher import base_instagram_publisher
+        from src.services.optimization.instagram_publisher import base_instagram_publisher
 
         try:
             metrics = await base_instagram_publisher.get_metrics(post_id, user_id)
@@ -348,7 +348,7 @@ class AnalyticsService:
             self.logger.warning(f"[Instagram Analytics] Failed: {e}")
             return self._get_default_metrics()
 
-    async def _get_tiktok_metrics(self, post_id: str, user_id: int) -> dict:
+    async def _get_tiktok_metrics(self, post_id: str, user_id: str) -> dict:
         """Get TikTok video metrics"""
         # TikTok API integration would go here
         # For now, return default metrics with a note
@@ -357,9 +357,9 @@ class AnalyticsService:
             "optimization_insight": "TikTok analytics integration pending",
         }
 
-    async def _get_x_metrics(self, post_id: str, user_id: int) -> dict:
+    async def _get_x_metrics(self, post_id: str, user_id: str) -> dict:
         """Get X/Twitter metrics"""
-        from services.optimization.x_publisher import base_x_publisher
+        from src.services.optimization.x_publisher import base_x_publisher
 
         try:
             metrics = await base_x_publisher.get_metrics(post_id, user_id)
@@ -383,8 +383,8 @@ class AnalyticsService:
         Fetches historical performance data points.
         Hardened: Queries real analytics history via PerformanceSnapshotDB.
         """
-        from api.utils.database import async_session_factory
-        from api.utils.models import PerformanceSnapshotDB
+        from src.api.utils.database import async_session_factory
+        from src.api.utils.models import PerformanceSnapshotDB
         from sqlalchemy import select
 
         try:
@@ -421,7 +421,7 @@ class AnalyticsService:
     ) -> str:
         """Generates real performance insights using Groq with retries and circuit breaking."""
         from groq import AsyncGroq
-        from api.config import settings
+        from src.api.config import settings
 
         if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
             return "Strong engagement detected. Recommend consistent posting schedule."
@@ -478,13 +478,13 @@ class AnalyticsService:
         return "Retention curve is nominal. Maintain current narrative pace."
 
     async def suggest_optimal_monetization(
-        self, performance: ContentPerformance, user_id: int, niche: str
+        self, performance: ContentPerformance, user_id: str, niche: str
     ) -> list[dict]:
         """
         Hardened: Real monetization suggestions based on user-defined products.
         """
-        from api.utils.database import async_session_factory
-        from api.utils.models import AffiliateLinkDB, DigitalProductDB, MembershipPlanDB
+        from src.api.utils.database import async_session_factory
+        from src.api.utils.models import AffiliateLinkDB, DigitalProductDB, MembershipPlanDB
         from sqlalchemy import select
 
         suggestions = []
@@ -636,8 +636,8 @@ class AnalyticsService:
 
     async def record_snapshot(self, post_id: str, views: int, likes: int, shares: int, comments: int, retention_rate: float = 0.0, avg_duration: float = 0.0):
         """Records a performance snapshot to the database."""
-        from api.utils.database import async_session_factory
-        from api.utils.models import PerformanceSnapshotDB
+        from src.api.utils.database import async_session_factory
+        from src.api.utils.models import PerformanceSnapshotDB
         from sqlalchemy import select
         import datetime
 
@@ -674,15 +674,15 @@ class AnalyticsService:
         except Exception as e:
             self.logger.error(f"[Analytics] Failed to record snapshot for {post_id}: {e}")
 
-    async def inject_pattern(self, post_id: str, user_id: int) -> dict:
+    async def inject_pattern(self, post_id: str, user_id: str) -> dict:
         """
         Executes a real-world neural pattern injection by synchronizing high-velocity
         viral telemetry with the distribution weights of a specific post.
         """
         import redis
         import datetime
-        from services.optimization.youtube_publisher import base_youtube_publisher
-        from api.config import settings
+        from src.services.optimization.youtube_publisher import base_youtube_publisher
+        from src.api.config import settings
 
         self.logger.info(
             f"[Analytics] Injecting neural pattern into post {post_id} for user {user_id}"
@@ -690,7 +690,7 @@ class AnalyticsService:
 
         # Real-First Action: Update tags to trigger platform re-indexing
         viral_tags = [
-            "#viralforge",
+            "#ettametta",
             "#neuralpattern",
             "#algorithmhook",
             "#highvelocity",

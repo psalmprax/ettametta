@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import List, Optional, Any
+from typing import Any
 
 
 class ContentCandidate(BaseModel):
@@ -16,34 +16,35 @@ class ContentCandidate(BaseModel):
     source_url: str
 
     # Creator fields
-    creator_name: Optional[str] = None
-    creator_id: Optional[str] = None
+    creator_name: str | None = None
+    creator_id: str | None = None
 
-    title: Optional[str] = None
-    description: Optional[str] = None
-    thumbnail_url: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    thumbnail_url: str | None = None
     # Timestamps
-    published_at: Optional[datetime] = None
-    scanned_at: Optional[datetime] = None
+    published_at: datetime | None = None
+    scanned_at: datetime | None = None
     # Metrics
     view_count: int = 0
     like_count: int = 0
     comment_count: int = 0
     share_count: int = 0
+    velocity: float = 0.0
     engagement_score: float = 0.0
     viral_score: int = 0
     duration_seconds: float = 0.0
     # Categorization
     category: str = "video"
-    tags: List[str] = []
-    niche: Optional[str] = None
+    tags: list[str] = []
+    niche: str | None = None
     # Quality & analysis
     quality_score: float = 1.0
-    quality_flags: List[str] = []
-    analysis_results: Optional[dict] = None
-    analyzed_at: Optional[datetime] = None
+    quality_flags: list[str] = []
+    analysis_results: dict | None = None
+    analyzed_at: datetime | None = None
     # Misc
-    external_id: Optional[str] = None
+    external_id: str | None = None
     discovery_date: datetime = Field(default_factory=datetime.utcnow)
     # Use metadata_json to match DB field name, with 'metadata' as alias for convenience
     metadata_json: dict = Field(default_factory=dict)

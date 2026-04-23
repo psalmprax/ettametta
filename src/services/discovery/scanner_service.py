@@ -11,12 +11,12 @@ Exports:
 import asyncio
 import logging
 from datetime import datetime
-from typing import Optional
 
-from api.utils.celery import celery_app
-from api.utils.database import async_session_factory
-from api.utils.models import ContentCandidateDB, MonitoredNiche
-from api.utils.vault import get_secret
+
+from src.api.utils.celery import celery_app
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import ContentCandidateDB, MonitoredNiche
+from src.api.utils.vault import get_secret
 
 from .youtube_scanner import YouTubeShortsScanner
 from .youtube_long_scanner import YouTubeLongScanner
@@ -144,7 +144,7 @@ class ScannerService:
 
 
 # Global service instance
-_scanner_service: Optional[ScannerService] = None
+_scanner_service: ScannerService | None = None
 
 
 def get_scanner_service() -> ScannerService:

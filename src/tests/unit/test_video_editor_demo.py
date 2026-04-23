@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 async def demonstrate_video_editor_capabilities():
     """Demonstrate key video editor capabilities"""
 
-    print("🎬 VIRALFORGE VIDEO EDITOR CAPABILITY DEMONSTRATION")
+    print("🎬 ETTAMETTA VIDEO EDITOR CAPABILITY DEMONSTRATION")
     print("=" * 65)
 
     capabilities_demonstrated = []
@@ -267,7 +267,7 @@ async def demonstrate_video_editor_capabilities():
 
     if capability_score >= 90 and avg_quality_score >= 8.5:
         print("\n🎉 CONCLUSION: EXCELLENT CAPABILITY DEMONSTRATION")
-        print("   The ViralForge video editor successfully demonstrates")
+        print("   The Ettametta video editor successfully demonstrates")
         print("   enterprise-grade capabilities for automated content production!")
     else:
         print("\n⚠️  CONCLUSION: SOLID FOUNDATION WITH ROOM FOR ENHANCEMENT")

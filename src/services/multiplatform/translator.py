@@ -2,8 +2,8 @@ import logging
 import json
 from typing import Any
 from groq import AsyncGroq
-from api.config import settings
-from services.voiceover.service import base_voiceover_service
+from src.api.config import settings
+from src.services.voiceover.service import base_voiceover_service
 
 class GlobalReachAdapter:
     def __init__(self):

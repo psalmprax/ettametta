@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from api.utils.database import get_db
-from api.utils.auth import (
+from src.api.utils.database import get_db
+from src.api.utils.auth import (
     verify_password,
     get_password_hash,
     create_access_token,
@@ -10,8 +10,8 @@ from api.utils.auth import (
     verify_oauth_state,
 )
 from pydantic import BaseModel, EmailStr, field_validator
-from api.config import settings
-from api.utils.api_responses import success_response
+from src.api.config import settings
+from src.api.utils.api_responses import success_response
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
@@ -20,7 +20,7 @@ from authlib.integrations.base_client import OAuthError
 import secrets
 import redis
 import redis.asyncio as redis_async
-from api.utils.user_models import UserDB, SubscriptionTier
+from src.api.utils.user_models import UserDB, SubscriptionTier
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -36,7 +36,7 @@ def create_google_flow():
                 "client_secret": settings.GOOGLE_CLIENT_SECRET,
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [settings.GOOGLE_AUTH_REDIRECT_URI],
+                "redirect_uris": [settings.GOOGLE_OAUTH_REDIRECT_URI],
             }
         },
         scopes=[
@@ -44,7 +44,7 @@ def create_google_flow():
             "https://www.googleapis.com/auth/userinfo.email",
             "https://www.googleapis.com/auth/userinfo.profile",
         ],
-        redirect_uri=settings.GOOGLE_AUTH_REDIRECT_URI,
+        redirect_uri=settings.GOOGLE_OAUTH_REDIRECT_URI,
     )
 
 
@@ -94,7 +94,7 @@ class Token(BaseModel):
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.database import get_db
+from src.api.utils.database import get_db
 
 
 @router.post("/register")
@@ -111,7 +111,7 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
 
     new_user = UserDB(
         username=username,
-        email=user.email,
+        email=current_user.email,
         hashed_password=hashed_pwd,
     )
     db.add(new_user)
@@ -140,7 +140,7 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = create_access_token(data={"sub": user.email})
+    access_token = create_access_token(data={"sub": current_user.email})
 
     return success_response(data={"access_token": access_token, "token_type": "bearer"})
 
@@ -170,7 +170,7 @@ async def get_current_user(
 
 
 def admin_required(current_user: UserDB = Depends(get_current_user)) -> UserDB:
-    from api.utils.user_models import UserRole
+    from src.api.utils.user_models import UserRole
 
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
         raise HTTPException(
@@ -275,7 +275,7 @@ async def google_auth_callback(
             await db.refresh(user)
 
         # Create access token
-        access_token = create_access_token(data={"sub": user.email})
+        access_token = create_access_token(data={"sub": current_user.email})
 
         # Redirect to frontend with token
         dashboard_url = (
@@ -315,10 +315,10 @@ async def get_users_with_bots(request: Request, db: AsyncSession = Depends(get_d
 
     return [
         {
-            "id": user.id,
-            "email": user.email,
+            "id": current_user.id,
+            "email": current_user.email,
             "telegram_bot_token": user.telegram_bot_token,
-            "role": user.role,
+            "role": current_user.role,
         }
         for user in users
     ]

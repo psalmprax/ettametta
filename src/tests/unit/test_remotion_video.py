@@ -9,11 +9,11 @@ import sys
 import subprocess
 import json
 
-PROJECT_DIR = "/home/psalmprax/ALL_PROJECTS/viral_forge"
+PROJECT_DIR = "/home/psalmprax/ALL_PROJECTS/ettametta"
 sys.path.insert(0, PROJECT_DIR)
 os.environ["DEBUG"] = "true"
 
-STUDIO_PATH = "/home/psalmprax/ALL_PROJECTS/viral_forge/apps/remotion-studio"
+STUDIO_PATH = "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio"
 OUTPUT_DIR = os.path.join(STUDIO_PATH, "out")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -27,11 +27,11 @@ def test_video_overlay():
     print("=== REMOTION VIDEO OVERLAY TEST ===")
     print(f"Video URL: {video_url}")
 
-    # Test ViralClip with videoUrl via HTTP
+    # Test ViralClip with video_url via HTTP
     props = {
         "title": "AI Tools That Will Change Everything",
         "subtitle": "2026 Viral Trends",
-        "videoUrl": video_url,
+        "video_url": video_url,
     }
     composition_id = "ViralClip"
 

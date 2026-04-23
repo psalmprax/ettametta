@@ -1,9 +1,9 @@
 from .models import PostMetadata
-from api.config import settings
-from api.utils.os_worker import ai_worker
-from api.utils.database import async_session_factory
-from api.utils.models import AffiliateLinkDB, SystemSettings
-from services.monetization.service import base_monetization_engine
+from src.api.config import settings
+from src.api.utils.os_worker import ai_worker
+from src.api.utils.database import async_session_factory
+from src.api.utils.models import AffiliateLinkDB, SystemSettings
+from src.services.monetization.service import base_monetization_engine
 import json
 import logging
 import random
@@ -18,7 +18,7 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type,
 )
-from services.monetization.auto_merch import base_auto_merch_service
+from src.services.monetization.auto_merch import base_auto_merch_service
 
 
 class CircuitBreaker:
@@ -160,7 +160,7 @@ class OptimizationService:
                             niche, content_id
                         )
                         if product:
-                            from services.monetization.strategies.commerce import (
+                            from src.services.monetization.strategies.commerce import (
                                 CommerceStrategy,
                             )
 
@@ -180,7 +180,7 @@ class OptimizationService:
                         aff_product = aff_result.scalar_one_or_none()
 
                         if aff_product:
-                            from services.monetization.strategies.affiliate import (
+                            from src.services.monetization.strategies.affiliate import (
                                 AffiliateStrategy,
                             )
 
@@ -195,7 +195,7 @@ class OptimizationService:
                     if aggression > 50:  # Only for aggressive growth accounts
                         # Check viral potential from discovery engagement score
                         try:
-                            from services.discovery.service import (
+                            from src.services.discovery.service import (
                                 base_discovery_service,
                             )
 
@@ -438,18 +438,18 @@ class OptimizationService:
         }
 
     async def generate_viral_hooks(
-        self, topic: str, platform: str, count: int = 5
+        self, niche: str, platform: str, count: int = 5
     ) -> list[str]:
         """
         Generate viral hook suggestions for content creation.
         Production-grade with retries and circuit breaking.
         """
         if not settings.GROQ_API_KEY or settings.GROQ_API_KEY == "your_key_here":
-            return self._basic_hook_suggestions(topic, platform, count)
+            return self._basic_hook_suggestions(niche, platform, count)
 
         try:
             hooks_prompt = f"""
-            Generate {count} viral hook suggestions for {platform} content about: {topic}
+            Generate {count} viral hook suggestions for {platform} content about: {niche}
 
             Each hook should be:
             - Attention-grabbing in first 3 seconds
@@ -464,33 +464,33 @@ class OptimizationService:
             result_text = await self._call_groq(hooks_prompt, max_tokens=500)
 
             if not result_text:
-                return self._basic_hook_suggestions(topic, platform, count)
+                return self._basic_hook_suggestions(niche, platform, count)
 
             try:
                 hooks = json.loads(result_text)
                 return (
                     hooks
                     if isinstance(hooks, list)
-                    else self._basic_hook_suggestions(topic, platform, count)
+                    else self._basic_hook_suggestions(niche, platform, count)
                 )
             except Exception as e:
                 self.logger.warning(f"Failed to parse hooks response: {e}")
-                return self._basic_hook_suggestions(topic, platform, count)
+                return self._basic_hook_suggestions(niche, platform, count)
 
         except Exception as e:
             self.logger.warning(f"[Hooks] Generation failed: {e}")
-            return self._basic_hook_suggestions(topic, platform, count)
+            return self._basic_hook_suggestions(niche, platform, count)
 
     def _basic_hook_suggestions(
-        self, topic: str, platform: str, count: int
+        self, niche: str, platform: str, count: int
     ) -> list[str]:
         """Basic hook suggestions when AI is unavailable"""
         base_hooks = [
-            f"You won't believe what happened with {topic}",
-            f"The secret to {topic} no one talks about",
-            f"{topic} changed my life - you need to know this",
-            f"Stop doing {topic} wrong - watch this",
-            f"I tried {topic} for 30 days - here's what happened",
+            f"You won't believe what happened with {niche}",
+            f"The secret to {niche} no one talks about",
+            f"{niche} changed my life - you need to know this",
+            f"Stop doing {niche} wrong - watch this",
+            f"I tried {niche} for 30 days - here's what happened",
         ]
         return base_hooks[:count]
 

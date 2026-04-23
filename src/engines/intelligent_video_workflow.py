@@ -25,15 +25,9 @@ async def expand_query_intelligently(query: str, session_id: str | None = None) 
     """Use LLM to expand a base query into high-converting viral variations with resilient fallback."""
     print(f"  🧠 Expanding query intelligently: {query}")
     
-    import datetime
-    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    jitter = " (Make it slightly more experimental and controversial)" if datetime.datetime.now().microsecond % 2 == 0 else ""
-
     prompt = f"""Take this topic: "{query}"
-Generate 5 highly different, viral search variations that people actually use to find trending content in 2024.
-Avoid generic terms. Use click-driven, value-heavy hooks.{jitter}
-Ensure these variations are different from previous searches by incorporating the context of {now_str}.
-Return ONLY a JSON list of strings."""
+Generate 3 viral, high-intent search variations that people use to find trending short-form content.
+Avoid generic terms. Return ONLY a JSON list of strings."""
 
     try:
         result = await base_intelligence_hub.chat(
@@ -51,10 +45,14 @@ Return ONLY a JSON list of strings."""
             print(f"  ✨ Query swarm generated ({result['provider'].upper()}): {unique_variations}")
             return unique_variations
             
-    except Exception as e:
-        print(f"  ⚠️ Intelligent expansion failed: {str(e)[:50]}")
+    except BaseException as e:
+        print(f"  [ERROR] Intelligent expansion failed: {str(e)[:50]}")
+        import sys
+        sys.stdout.flush()
 
-    print("  🛑 Intelligence fallback enabled. Using literal search.")
+    print("  [FALLBACK] Intelligence fallback enabled. Using literal search.")
+    import sys
+    sys.stdout.flush()
     return [query]
 
 
@@ -162,6 +160,53 @@ def search_by_date_youtube(
         print(f"  ⚠️ YouTube: {str(e)[:30]}")
 
     return videos
+
+
+async def search_youtube_api(query: str, max_results: int = 5) -> list[dict]:
+    """Search YouTube using the official Data API v3."""
+    print(f"  🔍 YouTube API: {query}")
+    from src.api.config import settings
+    
+    api_key = settings.YOUTUBE_API_KEY
+    if not api_key:
+        return []
+        
+    url = "https://www.googleapis.com/youtube/v3/search"
+    params = {
+        "part": "snippet",
+        "q": query,
+        "maxResults": max_results,
+        "type": "video",
+        "key": api_key,
+        "videoEmbeddable": "true"
+    }
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, params=params)
+            if response.status_code != 200:
+                print(f"  ⚠️ YouTube API Error: {response.status_code}")
+                return []
+                
+            data = response.json()
+            videos = []
+            for item in data.get("items", []):
+                if item["id"]["kind"] != "youtube#video":
+                    continue
+                vid = item["id"]["videoId"]
+                snippet = item["snippet"]
+                videos.append({
+                    "id": vid,
+                    "title": snippet["title"],
+                    "channel": snippet["channelTitle"],
+                    "url": f"https://youtube.com/watch?v={vid}",
+                    "platform": "youtube",
+                    "thumbnail": snippet.get("thumbnails", {}).get("high", {}).get("url", "")
+                })
+            return videos
+    except Exception as e:
+        print(f"  ⚠️ YouTube API Exception: {str(e)[:50]}")
+        return []
 
 
 async def scrape_youtube(query: str, max_results: int = 2) -> list[dict]:
@@ -676,7 +721,9 @@ async def discover_multi_platform(query: str, max_per_platform: int = 2, session
     seen_ids = set()
 
     # Wave 2: Concurrent Multi-Platform Swarm
-    print(f"  📡 Launching Discovery Swarm ({len(search_swarm)} variations x 11 platforms)...")
+    print(f"  [DISCOVERY] Launching Discovery Swarm ({len(search_swarm)} variations x 11 platforms)...")
+    import sys
+    sys.stdout.flush()
     
     import random
     tasks = []
@@ -699,6 +746,7 @@ async def discover_multi_platform(query: str, max_per_platform: int = 2, session
             scrape_facebook(sub_query, max_per_platform),
             scrape_instagram(sub_query, max_per_platform),
             scrape_twitch(sub_query, max_per_platform),
+            search_youtube_api(sub_query, max_per_platform),
         ])
 
     raw_results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -722,7 +770,9 @@ async def discover_multi_platform(query: str, max_per_platform: int = 2, session
     if not all_results:
         print(f"  🛑 WARNING: No results found in primary swamp. Retrying with broad topic...")
         # Emergency broad search if specific queries fail (Real-First fallback)
-        fallback_results = await search_by_date_youtube("top trending viral videos 2024", 5, "thisweek")
+        fallback_results = await search_youtube_api("top trending viral videos 2024", 5)
+        if not fallback_results:
+            fallback_results = await asyncio.to_thread(search_by_date_youtube, "top trending viral videos 2024", 5, "thisweek")
         all_results.extend(fallback_results)
 
     # Final Audit

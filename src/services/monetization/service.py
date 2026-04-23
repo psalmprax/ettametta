@@ -3,7 +3,7 @@ import json
 import time
 from typing import Any
 from groq import AsyncGroq
-from api.config import settings
+from src.api.config import settings
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -43,7 +43,7 @@ class CircuitBreaker:
             self.state = "OPEN"
 
 
-from services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_hub
 
 class MonetizationEngine:
     def __init__(self):
@@ -112,8 +112,8 @@ class MonetizationEngine:
             self.logger.error(f"[Monetization] Asset matching failed: {e}")
             return assets[0] if assets else None
 
-    async def auto_insert_links(
-        self, video_path: str, niche: str, script_content: str = "", session_id: str | None = None
+    async def plan_monetization_strategy(
+        self, niche: str, script_content: str = "", video_path: str = "", session_id: str | None = None
     ) -> dict[str, Any]:
         """
         Automatically inserts affiliate links into video content via overlays or voiceover.
@@ -126,6 +126,8 @@ class MonetizationEngine:
                 return {
                     "status": "no_assets",
                     "message": "No affiliate assets available for this niche",
+                    "video_path": None,
+                    "insertion_plan": {"insertions": []}
                 }
 
             # Use AI to determine the best insertion points and methods
@@ -135,6 +137,8 @@ class MonetizationEngine:
                 return {
                     "status": "no_opportunities",
                     "message": "No suitable insertion points found",
+                    "video_path": None,
+                    "insertion_plan": {"insertions": []}
                 }
 
             # For now, return the plan - actual video editing would require FFmpeg integration
@@ -152,7 +156,18 @@ class MonetizationEngine:
 
         except Exception as e:
             logging.error(f"[Monetization] Auto-insert failed: {e}")
-            return {"status": "error", "message": str(e)}
+            return {
+                "status": "error", 
+                "message": str(e),
+                "video_path": None,
+                "insertion_plan": {"insertions": []}
+            }
+
+    async def auto_insert_links(
+        self, video_path: str, niche: str, script_content: str = ""
+    ) -> dict[str, Any]:
+        """Legacy alias for plan_monetization_strategy"""
+        return await self.plan_monetization_strategy(niche, script_content, video_path)
 
     async def _plan_link_insertion(
         self, script_content: str, assets: list[dict], session_id: str | None = None
@@ -209,87 +224,52 @@ class MonetizationEngine:
     ) -> str:
         """
         Actually processes the video file to add affiliate link insertions.
-        This requires FFmpeg integration for video editing.
+        Uses FFmpegTransformer for robust processing.
         """
+        from src.services.video_engine.ffmpeg_utils import base_ffmpeg_transformer
         import os
         import uuid
-        from moviepy import VideoFileClip, TextClip, CompositeVideoClip
 
-        try:
-            # Load the video
-            video = VideoFileClip(video_path)
-
-            # Process insertions
-            clips = [video]  # Start with original video
-
-            for insertion in insertion_plan.get("insertions", []):
-                if insertion["type"] == "overlay":
-                    # Add text overlay
-                    txt_clip = (
-                        TextClip(
-                            insertion["script_addition"],
-                            fontsize=50,
-                            color="white",
-                            bg_color="black",
-                            size=(video.w * 0.8, 100),
-                        )
-                        .set_position("center")
-                        .set_duration(5)
-                    )
-
-                    # Position based on timing
-                    if insertion["timing"] == "end":
-                        txt_clip = txt_clip.set_start(video.duration - 5)
-                    else:
-                        # Parse timing like "10-15"
-                        start_time = float(insertion["timing"].split("-")[0])
-                        txt_clip = txt_clip.set_start(start_time)
-
-                    clips.append(txt_clip)
-
-                elif insertion["type"] == "end_screen":
-                    # Add end screen text
-                    end_text = (
-                        TextClip(
-                            insertion["script_addition"],
-                            fontsize=40,
-                            color="yellow",
-                            bg_color="rgba(0,0,0,0.7)",
-                            size=(video.w, 200),
-                        )
-                        .set_position(("center", video.h - 250))
-                        .set_duration(10)
-                        .set_start(video.duration - 10)
-                    )
-
-                    clips.append(end_text)
-
-            # Composite all clips
-            final_video = CompositeVideoClip(clips)
-
-            # Export
-            output_path = f"processed_{uuid.uuid4()}.mp4"
-            final_video.write_videofile(
-                output_path,
-                fps=24,
-                codec="libx264",
-                audio_codec="aac",
-                temp_audiofile=f"temp_audio_{uuid.uuid4()}.m4a",
-                remove_temp=True,
-            )
-
-            # Cleanup
-            video.close()
-            final_video.close()
-
-            return output_path
-
-        except ImportError:
-            self.logger.error("[Monetization] moviepy not installed - video processing skipped")
+        if not video_path or not os.path.exists(video_path):
             return video_path
+
+        current_path = video_path
+        
+        try:
+            for i, insertion in enumerate(insertion_plan.get("insertions", [])):
+                if insertion["type"] == "overlay" or insertion["type"] == "end_screen":
+                    output_path = f"monetized_{i}_{uuid.uuid4().hex[:8]}.mp4"
+                    
+                    # Parse timing
+                    start_time = 0.0
+                    if insertion["timing"] != "end":
+                        try:
+                            start_time = float(insertion["timing"].split("-")[0])
+                        except:
+                            pass
+                    else:
+                        start_time = 55.0 # Fallback for end of a 60s video
+                    
+                    success = base_ffmpeg_transformer.draw_text_overlay(
+                        current_path,
+                        output_path,
+                        insertion["script_addition"],
+                        start_time=start_time,
+                        duration=5.0,
+                        position="bottom" if insertion["type"] == "end_screen" else "center"
+                    )
+                    
+                    if success:
+                        # Cleanup intermediate if it's not the original
+                        if current_path != video_path and os.path.exists(current_path):
+                            os.remove(current_path)
+                        current_path = output_path
+
+            return current_path
+
         except Exception as e:
             self.logger.error(f"[Monetization] Video processing failed: {e}")
-            return video_path  # Return original if processing fails
+            return video_path
 
     def calculate_epm(self, revenue: float, views: int) -> float:
         if views == 0:

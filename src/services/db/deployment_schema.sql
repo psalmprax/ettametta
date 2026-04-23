@@ -1,5 +1,5 @@
 /*
- ViralForge Production Schema (9.9/10)
+ Ettametta Production Schema (9.9/10)
  =====================================
 
  The authoritative data structure for the Viral Intelligence Core, 

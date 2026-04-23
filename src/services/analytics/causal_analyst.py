@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from typing import Any
 from groq import AsyncGroq
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger("CausalAnalyst")
 

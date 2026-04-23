@@ -12,7 +12,7 @@ and this scanner will use their session to search/fetch content.
 
 import logging
 from typing import Any
-from services.discovery.models import ContentCandidate
+from src.services.discovery.models import ContentCandidate
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class OpenCLIScanner:
     """Scanner that uses a specific user's opencli-rs sessions."""
 
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: str):
         self.user_id = user_id
 
     async def scan_trends(
@@ -35,8 +35,8 @@ class OpenCLIScanner:
             niche: Search query / niche keyword
             platforms: Specific platforms to search (None = all connected)
         """
-        from services.opencli.service import opencli_service
-        from api.config import settings
+        from src.services.opencli.service import opencli_service
+        from src.api.config import settings
 
         if not settings.ENABLE_OPENCLI:
             return []
@@ -113,7 +113,7 @@ class OpenCLIScanner:
         limit: int = 20,
     ) -> list[ContentCandidate]:
         """Get feed/trending from a specific platform for the user."""
-        from services.opencli.service import opencli_service
+        from src.services.opencli.service import opencli_service
 
         results = await opencli_service.get_platform_feed(
             self.user_id, platform, feed_type, limit

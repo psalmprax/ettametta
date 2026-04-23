@@ -3,12 +3,13 @@ import logging
 import asyncio
 import uuid
 import json
-from typing import Optional, Dict, Any
+from typing import Any
 from .perchance import perchance_skill
 
 from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
+
 
 class BrandingSkill(OpenClawBaseSkill):
     def __init__(self, branding_dir: str = "assets/branding"):
@@ -16,28 +17,28 @@ class BrandingSkill(OpenClawBaseSkill):
         self.branding_dir = branding_dir
         os.makedirs(branding_dir, exist_ok=True)
 
-    async def execute(self, action: str = "identity", niche: str = "General", **kwargs) -> str:
+    async def execute(
+        self, action: str = "identity", niche: str = "General", **kwargs
+    ) -> str:
         """
         Polymorphic entry point for OpenClaw agent.
         """
-        # Pass the LLM client if available in kwargs
-        client = kwargs.get("client")
-        result = await self.generate_identity(niche, client)
-        
-        if result.get("status") == "success":
-            return (
-                f"🎨 **Brand Identity: {result['brand_name']}**\n"
-                f"• Primary Color: `{result['primary_color']}`\n"
-                f"• Logo URL: {result['logo_url']}\n"
-                f"• Brief: {result['visual_prompt']}"
-            )
-        return "⚠️ Branding generation failed."
+        if action == "identity":
+            client = kwargs.get("client")
+            result = await self.generate_identity(niche, client)
 
-    async def generate_identity(
-        self, 
-        niche: str,
-        client: Any = None
-    ) -> Dict[str, Any]:
+            if result.get("status") == "success":
+                return (
+                    f"🎨 **Brand Identity: {result['brand_name']}**\n"
+                    f"• Primary Color: `{result['primary_color']}`\n"
+                    f"• Logo URL: {result['logo_url']}\n"
+                    f"• Brief: {result['visual_prompt']}"
+                )
+            return "⚠️ Branding generation failed."
+
+        return f"⚠️ Unknown action for Branding: {action}. Valid actions: identity"
+
+    async def generate_identity(self, niche: str, client: Any = None) -> dict[str, Any]:
         """
         Generate brand identity (Logo, Name, Color) using AI.
         Runs inside OpenClaw to leverage playwright/perchance.
@@ -61,8 +62,7 @@ class BrandingSkill(OpenClawBaseSkill):
                     "primary_color": "hex_code"
                 }}
                 """
-                
-                # Check if client has chat.completions (OpenAI/Groq format)
+
                 if hasattr(client, "chat"):
                     response = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
@@ -80,15 +80,14 @@ class BrandingSkill(OpenClawBaseSkill):
             except Exception as e:
                 logger.warning(f"[BrandingSkill] AI brief generation failed: {e}")
 
-        # 2. Synthesize Logo using Perchance (Inside OpenClaw)
         logger.info(f"[BrandingSkill] Synthesizing logo for {brand_name}")
         result = await perchance_skill.generate(
             prompt=visual_prompt,
             generator="product",
             resolution="square",
-            aspect_ratio="1:1"
+            aspect_ratio="1:1",
         )
-        
+
         logo_url = None
         if result.get("status") == "success" and result.get("image_urls"):
             logo_url = result["image_urls"][0]
@@ -98,7 +97,8 @@ class BrandingSkill(OpenClawBaseSkill):
             "logo_url": logo_url,
             "primary_color": primary_color,
             "visual_prompt": visual_prompt,
-            "status": "success" if logo_url else "failed"
+            "status": "success" if logo_url else "failed",
         }
+
 
 branding_skill = BrandingSkill()

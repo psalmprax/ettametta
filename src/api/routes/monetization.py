@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from api.utils.database import get_db
-from api.utils.models import AffiliateLinkDB, RevenueLogDB
-from api.routes.auth import get_current_user
-from api.utils.api_responses import success_response
-from services.monetization.service import base_monetization_engine
-from services.monetization.promo_generator import base_promo_generator
-from api.utils.subscription import credits_required
-from services.payment.credit_service import credit_service
+from src.api.utils.database import get_db
+from src.api.utils.models import AffiliateLinkDB, RevenueLogDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.api_responses import success_response
+from src.services.monetization.service import base_monetization_engine
+from src.services.monetization.promo_generator import base_promo_generator
+from src.api.utils.subscription import credits_required
+from src.services.payment.credit_service import credit_service
 from pydantic import BaseModel
 from typing import Any
 from datetime import datetime, timedelta
@@ -22,7 +22,7 @@ class LinkRecommendationRequest(BaseModel):
 
 
 class AutoMerchRequest(BaseModel):
-    trend_topic: str
+    niche: str
 
 
 @router.post("/recommend-links")
@@ -43,7 +43,9 @@ async def recommend_links(
     result = await db.execute(stmt)
     db_links = result.scalars().all()
 
-    return success_response(data={"suggestions": recommendations, "available_links": db_links})
+    return success_response(
+        data={"suggestions": recommendations, "available_links": db_links}
+    )
 
 
 @router.post("/auto-merch")
@@ -56,7 +58,7 @@ async def auto_merch(
     """
     Triggers the Reverse Monetization flow: Trend -> Design -> Mockup -> Store.
     """
-    from services.monetization.auto_merch import (
+    from src.services.monetization.auto_merch import (
         base_auto_merch_service as auto_merch_service,
     )
 
@@ -65,13 +67,11 @@ async def auto_merch(
         user_id=current_user.id,
         amount=credits_cost,
         action="auto_merch",
-        description=f"Auto-merch generation for {request.trend_topic}",
+        description=f"Auto-merch generation for {request.niche}",
         db=db,
     )
 
-    product_data = await auto_merch_service.generate_and_publish_merch(
-        request.trend_topic
-    )
+    product_data = await auto_merch_service.generate_and_publish_merch(request.niche)
 
     if not product_data:
         raise HTTPException(
@@ -81,7 +81,7 @@ async def auto_merch(
     return success_response(
         data={
             "status": "success",
-            "message": f"Successfully created merch for '{request.trend_topic}'",
+            "message": f"Successfully created merch for '{request.niche}'",
             "product": product_data,
         }
     )
@@ -112,7 +112,7 @@ async def get_empire_metrics(
     """Get empire metrics - returns basic stats for now."""
     import datetime
     from sqlalchemy import select, func, desc
-    from api.utils.models import PublishedContentDB, SocialAccount, VideoJobDB
+    from src.api.utils.models import PublishedContentDB, SocialAccount, VideoJobDB
 
     now = datetime.datetime.utcnow()
     last_week = now - datetime.timedelta(days=7)
@@ -163,7 +163,7 @@ async def get_empire_activity(
     """
     import datetime
     from sqlalchemy import select, desc
-    from api.utils.models import PublishedContentDB
+    from src.api.utils.models import PublishedContentDB
 
     # Get recent published content
     result = await db.execute(
@@ -181,7 +181,9 @@ async def get_empire_activity(
                     "type": "published",
                     "title": p.title,
                     "platform": p.platform,
-                    "published_at": p.published_at.isoformat() if p.published_at else None,
+                    "published_at": p.published_at.isoformat()
+                    if p.published_at
+                    else None,
                 }
                 for p in recent
             ]
@@ -200,7 +202,7 @@ async def get_winning_blueprints(
 ):
     """Get winning content blueprints from past publishes."""
     from sqlalchemy import select, desc, func
-    from api.utils.models import PublishedContentDB
+    from src.api.utils.models import PublishedContentDB
 
     # Get top performing content
     result = await db.execute(
@@ -234,7 +236,7 @@ async def get_network_graph(
     Returns the visualization graph (nodes/links) for the empire mesh.
     """
     from sqlalchemy import select
-    from api.utils.models import PublishedContentDB, SocialAccount
+    from src.api.utils.models import PublishedContentDB, SocialAccount
 
     # Get connected accounts as nodes
     accounts_result = await db.execute(
@@ -292,7 +294,7 @@ async def sync_commerce_products(
     """
     Triggers a test sync with the configured Shopify store.
     """
-    from services.monetization.commerce_service import base_commerce_service
+    from src.services.monetization.commerce_service import base_commerce_service
 
     # Test with the provided niche to verify connection
     products = await base_commerce_service.get_relevant_products(niche)
@@ -318,13 +320,15 @@ async def clone_strategy(
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    from services.monetization.empire_service import base_empire_service
+    from src.services.monetization.empire_service import base_empire_service
 
     success = await base_empire_service.clone_strategy(
         db, current_user.id, request.source_niche, request.target_niche
     )
     if not success:
-        raise HTTPException(status_code=500, detail="Cloning failed")
+        raise HTTPException(
+            status_code=503, detail="Strategy cloning service unavailable"
+        )
     return success_response(
         data={
             "status": "success",

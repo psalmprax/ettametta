@@ -1,8 +1,8 @@
 import asyncio
 import logging
 import os
-from services.video_engine.processor import base_video_processor
-from services.video_engine.ocr_service import base_ocr_service
+from src.services.video_engine.processor import base_video_processor
+from src.services.video_engine.ocr_service import base_ocr_service
 
 logging.basicConfig(level=logging.INFO)
 

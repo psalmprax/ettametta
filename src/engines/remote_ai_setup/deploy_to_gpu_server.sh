@@ -9,7 +9,7 @@ REMOTE_HOST=${1}
 REMOTE_PORT=${2:-22}
 REMOTE_USER=${3:-"root"}
 SSH_KEY=${SSH_KEY:-"/home/psalmprax/Music/id_rsa"}
-REMOTE_DIR="/workspace/viral_forge_ai"
+REMOTE_DIR="/workspace/ettametta_ai"
 LOCAL_DIR="$(pwd)/remote_ai_setup"
 
 

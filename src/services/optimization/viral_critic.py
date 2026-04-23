@@ -1,6 +1,6 @@
 import logging
 import json
-from services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_hub
 from typing import Any
 
 class ViralCritic:

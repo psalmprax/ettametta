@@ -2,7 +2,7 @@ import httpx
 import os
 import logging
 import random
-from api.utils.vault import get_secret
+from src.api.utils.vault import get_secret
 
 class StockService:
     def __init__(self):
@@ -15,8 +15,31 @@ class StockService:
         Searches Pexels for a video matching the keyword and returns the download URL.
         """
         if not self.api_key or self.api_key == "your_key_here":
-            logging.warning("[StockService] Pexels API key missing. Skipping B-roll.")
-            return []
+            logging.warning("[StockService] Pexels API key missing. Using Tier 10 Mock Assets.")
+            mock_assets = {
+                "cyberpunk": [
+                    "https://videos.pexels.com/video-files/3126938/3126938-uhd_3840_2160_25fps.mp4",
+                    "https://videos.pexels.com/video-files/3121459/3121459-uhd_3840_2160_25fps.mp4"
+                ],
+                "ai": [
+                    "https://videos.pexels.com/video-files/853889/853889-hd_1920_1080_25fps.mp4"
+                ],
+                "nature": [
+                    "https://videos.pexels.com/video-files/1526909/1526909-hd_1920_1080_24fps.mp4"
+                ],
+                "motivation": [
+                    "https://videos.pexels.com/video-files/3195393/3195393-uhd_3840_2160_25fps.mp4"
+                ]
+            }
+            
+            # Find closest match
+            kw = keyword.lower()
+            for key, urls in mock_assets.items():
+                if key in kw:
+                    return random.sample(urls, min(count, len(urls)))
+            
+            # Global fallback
+            return ["https://videos.pexels.com/video-files/3126938/3126938-uhd_3840_2160_25fps.mp4"]
 
         try:
             async with httpx.AsyncClient() as client:
@@ -70,7 +93,11 @@ class StockService:
         filepath = os.path.join(output_dir, filename)
         
         try:
-            async with httpx.AsyncClient() as client:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Referer": "https://www.pexels.com/"
+            }
+            async with httpx.AsyncClient(headers=headers) as client:
                 response = await client.get(url, follow_redirects=True)
                 response.raise_for_status()
                 with open(filepath, "wb") as f:

@@ -4,7 +4,7 @@ from typing import Any
 from datetime import datetime
 
 
-from services.base_agent import BaseEttamettaAgent
+from src.services.base_agent import BaseEttamettaAgent
 
 class AlgorithmSentinel(BaseEttamettaAgent):
     """

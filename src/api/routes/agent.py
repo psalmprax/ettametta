@@ -4,33 +4,20 @@ from typing import Any
 import asyncio
 import logging
 import uuid
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB
-from api.utils.limiter import limiter
-from api.utils.database import get_db
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
+from src.api.utils.limiter import limiter
+from src.api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Request
 
-from api.utils.api_responses import success_response
+from src.api.utils.api_responses import success_response
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agent", tags=["AI Agents"])
 
-# Global Groq client to avoid duplicate initialization
-_groq_client = None
-
-
-def get_groq_client():
-    """Get or create Groq client singleton"""
-    global _groq_client
-    if _groq_client is None:
-        from api.config import settings
-
-        if settings.GROQ_API_KEY:
-            from groq import AsyncGroq
-
-            _groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-    return _groq_client
+from src.services.llm.intelligence_hub import IntelligenceHub
 
 
 class ChatMessage(BaseModel):
@@ -56,492 +43,68 @@ async def chat_with_agent(
     current_user: UserDB = Depends(get_current_user),
 ):
     """
-    Chat with AI agent. Supports both Groq and OpenAI.
+    Chat with AI agent using IntelligenceHub (Standard 3.25)
     """
-    from api.config import settings
-
     # Add correlation ID for tracing
     correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
-    request.state.correlation_id = correlation_id
 
     # Check for video generation intent first
     video_trigger = await trigger_video_generation(body.message, body.context)
     if video_trigger:
         return video_trigger
 
-    # Try OpenAI first (default), fallback to Groq
-    provider = body.context.get("provider", "openai") if body.context else "openai"
-
     try:
+        hub = IntelligenceHub()
         system_prompt = "You are a helpful AI assistant for a viral content creation platform. Be concise and actionable."
         if body.context:
             system_prompt += f"\n\nContext: {body.context}"
 
-        if provider == "openai" and settings.OPENAI_API_KEY:
-            from openai import AsyncOpenAI
-
-            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-            response = await client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": body.message},
-                ],
-                temperature=0.7,
-                max_tokens=1024,
-            )
-            return success_response(
-                data={
-                    "response": response.choices[0].message.content,
-                    "status": "success",
-                    "agent": "openai",
-                    "correlation_id": correlation_id,
-                }
-            )
-        elif settings.GROQ_API_KEY:
-            client = get_groq_client()
-            if not client:
-                raise HTTPException(status_code=503, detail="GROQ API not configured")
-            response = await client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": body.message},
-                ],
-                temperature=0.7,
-                max_tokens=1024,
-            )
-            return success_response(
-                data={
-                    "response": response.choices[0].message.content,
-                    "status": "success",
-                    "agent": "groq",
-                    "correlation_id": correlation_id,
-                }
-            )
-        else:
-            raise HTTPException(status_code=503, detail="No LLM API keys configured")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Video generation trigger - detects intent and calls OpenCLAW skills
-async def trigger_video_generation(message: str, context: dict) -> dict:
-    """Detect video generation intent and trigger OpenCLAW skill"""
-    import re
-
-    message_lower = message.lower()
-
-    # Detect video generation keywords
-    video_keywords = [
-        "generate video",
-        "create video",
-        "make video",
-        "video of",
-        "generate using",
-        "create using",
-        "make using",
-    ]
-    provider_keywords = [
-        "pixverse",
-        "kling",
-        "haiper",
-        "luma",
-        "leiapix",
-        "pika",
-        "runway",
-        "leonardo",
-        "heygen",
-        "genmo",
-        "perchance",
-    ]
-
-    # Check if it's a video generation request
-    is_video_request = any(kw in message_lower for kw in video_keywords)
-    provider = None
-
-    # Detect which provider
-    for kw in provider_keywords:
-        if kw in message_lower:
-            provider = kw
-            break
-
-    if is_video_request and provider:
-        # Extract prompt from message
-        prompt_match = re.search(
-            r"video (?:of |about )?(.+?)(?:using|$)", message, re.IGNORECASE
-        )
-        prompt = prompt_match.group(1).strip() if prompt_match else message
-
-        # Auto-detect use case from message
-        use_case = None
-        if (
-            "short" in message_lower
-            or "tiktok" in message_lower
-            or "reels" in message_lower
-        ):
-            use_case = "short_form"
-        elif "cinematic" in message_lower or "film" in message_lower:
-            use_case = "cinematic"
-        elif "product" in message_lower:
-            use_case = "product"
-        elif "portrait" in message_lower:
-            use_case = "portrait"
-
-        # Get model settings for auto-recommendation
-        try:
-            from services.openclaw.skills.model_settings import (
-                get_model_settings,
-                get_recommended_settings,
-                get_image_recommended_settings,
-            )
-
-            model_info = get_model_settings(provider)
-        except ImportError:
-            model_info = None
-
-        # Get aspect ratio from context or auto-recommend
-        if context is None:
-            context = {}
-
-        use_case_from_ctx = context.get("use_case", use_case)
-
-        if provider == "perchance":
-            # Image generation - use image recommended settings
-            if not context.get("generator"):
-                img_recs = get_image_recommended_settings(provider)
-                context.setdefault("generator", img_recs.get("generator", "default"))
-            if not context.get("resolution"):
-                img_recs = get_image_recommended_settings(provider)
-                context.setdefault("resolution", img_recs.get("resolution", "hd"))
-            if not context.get("aspect_ratio"):
-                img_recs = get_image_recommended_settings(provider)
-                context.setdefault("aspect_ratio", img_recs.get("aspect_ratio", "1:1"))
-            aspect_ratio = context.get("aspect_ratio", "1:1")
-        else:
-            # Video generation - use video recommended settings
-            aspect_ratio = context.get("aspect_ratio")
-            if not aspect_ratio and model_info:
-                video_recs = get_recommended_settings(provider, use_case_from_ctx)
-                aspect_ratio = video_recs.get("aspect_ratio", "16:9")
-            elif not aspect_ratio:
-                aspect_ratio = "16:9"
-
-        # Call OpenClaw container instead of local skill
-        try:
-            import httpx
-            from api.config import settings
-
-            async with httpx.AsyncClient(timeout=120.0) as client:
-                response = await client.post(
-                    "http://openclaw:3001/execute-tool",
-                    json={
-                        "tool": provider.upper(),
-                        "params": {
-                            "prompt": prompt,
-                            "aspect_ratio": aspect_ratio,
-                            **context,
-                        },
-                        "internal_token": settings.INTERNAL_API_TOKEN,
-                    },
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get("status") == "success":
-                        return {
-                            "response": f"🎬 {provider.capitalize()} generation triggered successfully!",
-                            "result": data["result"],
-                            "status": "success",
-                            "agent": "openclaw",
-                        }
-                    else:
-                        return {
-                            "response": f"❌ {provider.capitalize()} failed: {data.get('message')}"
-                        }
-                else:
-                    return {
-                        "response": f"❌ OpenClaw service error: {response.status_code}"
-                    }
-        except Exception as e:
-            logger.error(f"[Agent] OpenClaw call failed: {e}")
-            return {"response": f"❌ OpenClaw integration error: {str(e)}"}
-
-    return None  # Not a video generation request
-
-
-@router.post("/crew")
-@limiter.limit("5/minute")  # Rate limit crew executions
-async def crew_task(
-    request: Request,
-    body: AgentRequest,
-    current_user: UserDB = Depends(get_current_user),
-):
-    """
-    Execute a task using CrewAI if enabled, otherwise falls back to Groq multi-step execution.
-    """
-    from api.config import settings
-
-    # Add correlation ID for tracing
-    correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
-    request.state.correlation_id = correlation_id
-
-    if settings.ENABLE_CREWAI:
-        try:
-            from services.crewai.service import crewai_service
-
-            # Check if service is enabled
-            if not crewai_service.is_enabled():
-                raise HTTPException(
-                    status_code=503,
-                    detail="CrewAI service not enabled. Set ENABLE_CREWAI=true and provide valid GROQ_API_KEY.",
-                )
-
-            result = await crewai_service.execute_task(
-                task=body.task,
-                agents=body.agents or ["researcher", "writer"],
-                context=body.context or {},
-            )
-            return success_response(
-                data={
-                    "result": result,
-                    "status": "success",
-                    "agent": "crewai",
-                    "correlation_id": correlation_id,
-                }
-            )
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    # Fallback: Simulate multi-agent workflow with Groq
-    if not settings.GROQ_API_KEY:
-        raise HTTPException(
-            status_code=503,
-            detail="No AI backend configured. Set GROQ_API_KEY or enable CrewAI.",
-        )
-
-    try:
-        client = get_groq_client()
-        if not client:
-            raise HTTPException(status_code=503, detail="GROQ API not configured")
-
-        agents = body.agents or ["researcher", "writer"]
-        context = body.context or {}
-
-        agent_prompts = {
-            "researcher": "You are a research analyst. Gather key facts and insights about the topic.",
-            "writer": "You are a professional content writer. Create engaging, viral-ready content.",
-            "analyst": "You are a data analyst. Identify patterns, metrics, and optimization opportunities.",
-            "strategist": "You are a content strategy. Plan content distribution and growth tactics.",
-            "editor": "You are a senior editor. Refine and polish content for maximum impact.",
-        }
-
-        accumulated_context = f"Task: {body.task}\nContext: {context}"
-
-        # Run agents in parallel using asyncio.gather
-        async def run_agent(agent_name: str) -> tuple[str, str]:
-            agent_prompt = agent_prompts.get(
-                agent_name,
-                f"You are a {agent_name} agent. Complete your part of the task.",
-            )
-            try:
-                response = await client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[
-                        {"role": "system", "content": agent_prompt},
-                        {"role": "user", "content": accumulated_context},
-                    ],
-                    temperature=0.7,
-                    max_tokens=1024,
-                    timeout=30.0,
-                )
-                return agent_name, response.choices[0].message.content
-            except Exception as e:
-                logger.warning(f"[Agent] Agent {agent_name} failed: {e}")
-                return agent_name, f"Agent failed: {str(e)}"
-
-        # Execute all agents concurrently
-        agent_tasks = [run_agent(agent) for agent in agents]
-        agent_results = await asyncio.gather(*agent_tasks, return_exceptions=True)
-
-        results = {}
-        for result in agent_results:
-            if isinstance(result, Exception):
-                logger.error(f"[Agent] Task exception: {result}")
-                continue
-            agent_name, agent_output = result
-            results[agent_name] = agent_output
-
-        if not results:
-            raise HTTPException(status_code=500, detail="All agents failed")
-
-        # Build context for synthesis from all outputs
-        synthesis_context = accumulated_context
-        for agent_name, agent_output in results.items():
-            synthesis_context += f"\n\n{agent_name.upper()} output: {agent_output}"
-
-        # Final synthesis
-        synthesis_response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a synthesizer. Combine all agent outputs into a cohesive final result.",
-                },
-                {"role": "user", "content": synthesis_context},
-            ],
-            temperature=0.5,
-            max_tokens=2048,
-            timeout=30.0,
+        ai_data = await hub.chat(
+            prompt=body.message, system_prompt=system_prompt, session_id=correlation_id
         )
 
         return success_response(
             data={
-                "result": {
-                    "agent_outputs": results,
-                    "synthesis": synthesis_response.choices[0].message.content,
-                },
+                "response": ai_data.get("response", ai_data.get("content", "")),
                 "status": "success",
-                "agent": "groq-multi",
+                "agent": ai_data.get("provider", "intelligence-hub"),
+                "correlation_id": correlation_id,
             }
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-class AccountAuditRequest(BaseModel):
-    action: str = "audit"
-    platform: str = "youtube"
-    competitor_url: str | None = None
-
-
-@router.post("/account-audit")
-@limiter.limit("10/minute")
-async def account_audit(
-    request: Request,
-    body: AccountAuditRequest,
-    current_user: UserDB = Depends(get_current_user),
-):
-    """
-    Audit YOUR account on any platform for growth and monetization readiness.
-    Generates a 2-week sprint plan to reach monetization eligibility.
-    Supported platforms: youtube, tiktok, instagram, facebook, x, linkedin, snapchat, twitch
-    """
-    from api.config import settings
-    from services.openclaw.skills.audit import audit_skill
-
-    if not settings.GROQ_API_KEY:
-        raise HTTPException(status_code=503, detail="AI backend not configured")
-
-    # Validate platform
-    supported_platforms = [
-        "youtube",
-        "tiktok",
-        "instagram",
-        "facebook",
-        "x",
-        "linkedin",
-        "snapchat",
-        "twitch",
-    ]
-    if body.platform.lower() not in supported_platforms:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported platform. Supported: {', '.join(supported_platforms)}",
-        )
-
-    try:
-        if body.action == "audit":
-            result = audit_skill.audit_account(current_user.id, body.platform.lower())
-        elif body.action == "compare":
-            if not body.competitor_url:
-                raise HTTPException(
-                    status_code=400, detail="competitor_url required for compare action"
-                )
-            result = audit_skill.compare_with_competitor(
-                current_user.id, body.competitor_url, body.platform.lower()
-            )
-        else:
-            raise HTTPException(
-                status_code=400, detail="Invalid action. Use 'audit' or 'compare'"
-            )
-
-        return success_response(
-            data={
-                "result": result,
-                "status": "success",
-                "action": body.action,
-                "platform": body.platform,
-            }
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/code-executor")
-async def execute_code(
-    request: CodeRequest, current_user: UserDB = Depends(get_current_user)
-):
-    """
-    Execute code using Code Interpreter if enabled, otherwise uses Groq for code analysis/generation.
-    Does NOT execute arbitrary code server-side — returns AI-generated code and explanation.
-    """
-    from api.config import settings
-
-    if settings.ENABLE_INTERPRETER:
-        try:
-            from services.interpreter.service import interpreter_service
-
-            result = await interpreter_service.execute(request.code)
-            return {"result": result, "status": "success", "agent": "interpreter"}
+    except HTTPException:
+        raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"[Agent] Code execution failed: {e}")
+            raise HTTPException(status_code=503, detail="Code execution service unavailable")
 
-    # Fallback: Groq code analysis/generation
-    if not settings.GROQ_API_KEY:
-        raise HTTPException(
-            status_code=503,
-            detail="No AI backend configured. Set GROQ_API_KEY or enable Code Interpreter.",
-        )
-
+    # Fallback: IntelligenceHub code analysis
     try:
-        from groq import AsyncGroq
-
-        client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-
-        response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        f"You are a {request.language} code assistant. "
-                        "Analyze, explain, and improve code. "
-                        "Provide corrected/enhanced code with explanations. "
-                        "NEVER execute code. Only analyze and generate."
-                    ),
-                },
-                {"role": "user", "content": request.code},
-            ],
+        hub = IntelligenceHub()
+        ai_data = await hub.chat(
+            prompt=request.code,
+            system_prompt=(
+                f"You are a {request.language} code assistant. "
+                "Analyze, explain, and improve code. "
+                "Provide corrected/enhanced code with explanations. "
+                "NEVER execute code. Only analyze and generate."
+            ),
             temperature=0.3,
-            max_tokens=2048,
         )
 
         return success_response(
             data={
                 "result": {
-                    "analysis": response.choices[0].message.content,
+                    "analysis": ai_data.get("content", ""),
                     "language": request.language,
                     "note": "Code Interpreter not enabled. Using AI analysis instead of execution.",
                 },
                 "status": "success",
-                "agent": "groq-code-analysis",
+                "agent": "intelligence-hub-code-analysis",
             }
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"[Agent] Code execution failed: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
 
 
 class TrademarkRequest(BaseModel):
@@ -558,7 +121,7 @@ async def generate_trademark(
     """
     Autonomous Brand Factory: Generates a brand identity (Logo, Name, Color) for a niche.
     """
-    from services.branding.service import base_branding_service
+    from src.services.branding.service import base_branding_service
 
     try:
         result = await base_branding_service.generate_brand_identity(
@@ -569,7 +132,7 @@ async def generate_trademark(
         )
         return success_response(data=result)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=503, detail=str(e))
 
 
 @router.get("/capabilities")
@@ -577,8 +140,8 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
     """
     Get available agent capabilities with real status.
     """
-    from api.config import settings
-    from services.openclaw.agent import openclaw_agent
+    from src.api.config import settings
+    from src.services.openclaw.agent import openclaw_agent
 
     report = openclaw_agent.get_dependency_report()
     cb_status = (

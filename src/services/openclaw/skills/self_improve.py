@@ -8,7 +8,7 @@ from pathlib import Path
 
 import requests
 
-from api.config import settings
+from src.api.config import settings
 from .base_skill import OpenClawBaseSkill
 try:
     from .memory import memory_skill
@@ -19,8 +19,8 @@ except (ImportError, ValueError):
 logger = logging.getLogger(__name__)
 
 SKILLS_DIR = Path(__file__).parent
-SELF_IMPROVE_LOG = Path("/tmp/viral_forge_memory/self_improve_log.json")
-SKILL_BACKUP_DIR = Path("/tmp/viral_forge_memory/skill_backups")
+SELF_IMPROVE_LOG = Path("/tmp/ettametta_memory/self_improve_log.json")
+SKILL_BACKUP_DIR = Path("/tmp/ettametta_memory/skill_backups")
 SKILL_BACKUP_DIR.mkdir(exist_ok=True)
 
 
@@ -86,7 +86,8 @@ class SelfImprovementSkill(OpenClawBaseSkill):
         Polymorphic entry point for OpenClaw agent.
         """
         if action == "suggest":
-            return self.suggest_improvements(kwargs.get("niche", "General"))
+            target_tool = kwargs.get("tool", kwargs.get("target", "Discovery"))
+            return self.suggest_improvements(target_tool)
         elif action == "optimize":
             return self.optimize_codebase(kwargs.get("target", "skills"))
         elif action == "log":
@@ -322,7 +323,7 @@ class SelfImprovementSkill(OpenClawBaseSkill):
         lines.append("Use `/self-improve suggest <tool>` to generate a fix.")
         return "\n".join(lines)
 
-    async def suggest_improvement(self, tool_name: str) -> str:
+    async def suggest_improvements(self, tool_name: str) -> str:
         errors = memory_skill.episodic.search(event_type="tool_error", limit=50)
         tool_errors = [e for e in errors if e["data"].get("tool") == tool_name]
 

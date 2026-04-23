@@ -7,9 +7,9 @@ import time
 from datetime import datetime, timedelta
 import redis.asyncio as redis
 import redis as redis_sync
-from api.config import settings
-from services.analytics.signal_bus import base_signal_bus
-from services.analytics.drift_monitor import base_drift_monitor
+from src.api.config import settings
+from src.services.analytics.signal_bus import base_signal_bus
+from src.services.analytics.drift_monitor import base_drift_monitor
 
 router = APIRouter(prefix="/ws", tags=["websockets"])
 
@@ -125,16 +125,16 @@ async def websocket_logs_endpoint(websocket: WebSocket):
 
 @router.websocket("/telemetry")
 async def websocket_telemetry_endpoint(websocket: WebSocket):
-    from shared.enums import SystemJobStatus
-    from api.utils.models import (
+    from src.shared.enums import SystemJobStatus
+    from src.api.utils.models import (
         VideoJobDB,
         PublishedContentDB,
         ContentCandidateDB,
     )
     from sqlalchemy import select, func
-    from api.utils.database import async_session_factory
-    from services.analytics.drift_monitor import base_drift_monitor
-    from services.analytics.signal_bus import base_signal_bus
+    from src.api.utils.database import async_session_factory
+    from src.services.analytics.drift_monitor import base_drift_monitor
+    from src.services.analytics.signal_bus import base_signal_bus
     import psutil
 
     logging.info("[WS] Telemetry Handshake Attempt Received")
@@ -297,8 +297,8 @@ def notify_system_log_sync(message: str, level: str = "INFO", module: str = "SYS
     Synchronous utility to publish system logs to Redis and persist to DB.
     """
     # Persist to DB
-    from api.utils.database import async_session_factory
-    from api.utils.models import SystemActivityDB
+    from src.api.utils.database import async_session_factory
+    from src.api.utils.models import SystemActivityDB
     import asyncio
 
     async def _db_log():
@@ -337,8 +337,8 @@ async def notify_system_log_async(
     """
     import redis.asyncio as redis_async
     import time
-    from api.utils.database import async_session_factory
-    from api.utils.models import SystemActivityDB
+    from src.api.utils.database import async_session_factory
+    from src.api.utils.models import SystemActivityDB
 
     # Persist to DB in background
     try:

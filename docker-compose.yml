@@ -1,5 +1,5 @@
 networks:
-  viral_forge:
+  ettametta:
     driver: bridge
 
 services:
@@ -23,7 +23,7 @@ services:
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.entrypoints=web"
     networks:
-      - viral_forge
+      - ettametta
   api:
     build:
       context: .
@@ -40,7 +40,7 @@ services:
       - "traefik.http.routers.api.entrypoints=web"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
     networks:
-      - viral_forge
+      - ettametta
     command: python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --log-level debug
     restart: always
     env_file: .env
@@ -100,7 +100,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - viral_forge
+      - ettametta
 
   discovery-go:
     build: 
@@ -113,7 +113,7 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
       - YOUTUBE_API_KEY
     networks:
-      - viral_forge
+      - ettametta
 
   dashboard:
     build:
@@ -137,7 +137,7 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - viral_forge
+      - ettametta
 
   redis:
     image: redis:alpine
@@ -147,7 +147,7 @@ services:
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-ettametta_redis_pass}
     networks:
-      - viral_forge
+      - ettametta
 
   celery_worker:
     build:
@@ -207,7 +207,7 @@ services:
         limits:
           memory: 1G
     networks:
-      - viral_forge
+      - ettametta
 
   celery_beat:
     build:
@@ -239,7 +239,7 @@ services:
       - redis
       - db
     networks:
-      - viral_forge
+      - ettametta
 
   nginx:
     image: nginx:alpine
@@ -250,7 +250,7 @@ services:
       - ./infra/docker/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
     networks:
-      - viral_forge
+      - ettametta
 
   openclaw:
     build:
@@ -268,7 +268,7 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
       - OLLAMA_BASE_URL=http://ettametta-ollama:11434
-      - OLLAMA_MODEL=llama3.2:3b
+      - OLLAMA_MODEL=hermes3
       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
       - API_URL=http://ettametta-api-1:8000
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
@@ -276,7 +276,7 @@ services:
     volumes:
       - .:/app
     networks:
-      - viral_forge
+      - ettametta
     deploy:
       replicas: 1
       resources:
@@ -299,25 +299,25 @@ services:
     depends_on:
       - api
     networks:
-      - viral_forge
+      - ettametta
 
   ai-gateway:
     build:
       context: .
       dockerfile: ./infra/docker/gatekeeper.Dockerfile
-    image: viral_forge-ai-gateway
+    image: ettametta-ai-gateway
     ports:
       - "8133:8133"
     environment:
       - AI_NODES=${AI_NODES:-""}
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
-      - AI_CLUSTER_SECRET=${AI_CLUSTER_SECRET:-"viral_forge_neural_default_secret"}
+      - AI_CLUSTER_SECRET=${AI_CLUSTER_SECRET:-"ettametta_neural_default_secret"}
     volumes:
       - ./src/engines/remote_ai_setup:/app
       - gateway_data:/workspace
     restart: always
     networks:
-      - viral_forge
+      - ettametta
 
   voiceover:
     profiles:
@@ -335,7 +335,7 @@ services:
     deploy:
       replicas: 0
     networks:
-      - viral_forge
+      - ettametta
 
   video_processor:
     profiles:
@@ -365,7 +365,7 @@ services:
       - PEXELS_API_KEY
       - ELEVENLABS_API_KEY
     networks:
-      - viral_forge
+      - ettametta
     runtime: nvidia
     deploy:
       resources:
@@ -426,7 +426,7 @@ services:
       - "7208:9090"
     restart: unless-stopped
     networks:
-      - viral_forge
+      - ettametta
 
   grafana:
     image: grafana/grafana:latest
@@ -442,7 +442,7 @@ services:
       - prometheus
     restart: unless-stopped
     networks:
-      - viral_forge
+      - ettametta
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -458,7 +458,7 @@ services:
       - "7210:9100"
     restart: unless-stopped
     networks:
-      - viral_forge
+      - ettametta
 
    # gpu-exporter:
    #   image: utkuozdemir/nvidia_gpu_exporter:latest
@@ -484,7 +484,7 @@ services:
       - "7212:3100"
     restart: unless-stopped
     networks:
-      - viral_forge
+      - ettametta
 
   promtail:
     image: grafana/promtail:latest
@@ -495,7 +495,7 @@ services:
     command: -config.file=/etc/promtail/config.yml
     restart: unless-stopped
     networks:
-      - viral_forge
+      - ettametta
 
 volumes:
   postgres_data:

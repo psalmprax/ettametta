@@ -1,7 +1,7 @@
 import requests
 import logging
 from typing import Any
-from services.openclaw.config import settings
+from src.services.openclaw.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -12,12 +12,12 @@ class DiscoveryTool:
     def __init__(self):
         self.api_url = f"{settings.API_URL}/discovery"
 
-    def run(self, topic: str, limit: int = 5) -> dict[str, Any]:
+    def run(self, niche: str, limit: int = 5) -> dict[str, Any]:
         """
-        Searches for trending topics across multi-platform scanners.
+        Searches for trending niches across multi-platform scanners.
         """
         try:
-            payload = {"query": topic, "platform": "all", "limit": limit}
+            payload = {"query": niche, "platform": "all", "limit": limit}
             response = requests.get(f"{self.api_url}/search", params=payload, timeout=15)
             
             if response.status_code == 200:

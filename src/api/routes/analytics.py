@@ -1,16 +1,16 @@
 from fastapi import APIRouter, HTTPException, Depends
-from services.analytics.service import base_analytics_service
-from services.analytics.models import ContentPerformance
-from api.routes.auth import get_current_user
-from api.utils.user_models import UserDB, UserRole
+from src.services.analytics.service import base_analytics_service
+from src.services.analytics.models import ContentPerformance
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB, UserRole
 import datetime
 from fastapi_cache.decorator import cache
-from api.utils.database import get_db
+from src.api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from shared.enums import SystemJobStatus
-from api.utils.api_responses import success_response, Paginator, paginate_list
-from api.utils.models import (
+from src.shared.enums import SystemJobStatus, ContentPublishStatus
+from src.api.utils.api_responses import success_response, Paginator, paginate_list
+from src.api.utils.models import (
     PublishedContentDB,
     VideoJobDB,
     NicheTrendDB,
@@ -29,13 +29,13 @@ async def list_analytics_posts(
 ):
     try:
         stmt = select(PublishedContentDB).where(
-            PublishedContentDB.status == "Published"
+            PublishedContentDB.status == ContentPublishStatus.PUBLISHED
         )
         if current_user.role != UserRole.ADMIN:
             stmt = stmt.where(PublishedContentDB.user_id == current_user.id)
 
         stmt = stmt.order_by(PublishedContentDB.published_at.desc())
-        
+
         # Execute query first to get total count
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total_result = await db.execute(count_stmt)
@@ -44,13 +44,16 @@ async def list_analytics_posts(
         # Apply pagination using Paginator values
         paginator = Paginator(page=page, page_size=size)
         stmt = stmt.offset(paginator.offset).limit(paginator.limit)
-        
+
         result = await db.execute(stmt)
         posts = result.scalars().all()
-        
+
         return success_response(data=paginator.paginate_response(posts, total_items))
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Content metrics failed: {e}")
+        raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
 @router.get("/report")
@@ -151,7 +154,8 @@ async def get_report(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Trend analysis failed: {e}")
+        raise HTTPException(status_code=503, detail="Analytics service unavailable")
     finally:
         pass
 
@@ -182,7 +186,8 @@ async def get_insights(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Performance analysis failed: {e}")
+        raise HTTPException(status_code=503, detail="Analytics service unavailable")
     finally:
         pass
 
@@ -217,7 +222,8 @@ async def get_monetization_suggestions(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Comparative analysis failed: {e}")
+        raise HTTPException(status_code=503, detail="Analytics service unavailable")
     finally:
         pass
 
@@ -231,7 +237,7 @@ async def get_stats_summary(
     try:
         # Base queries
         post_stmt = select(PublishedContentDB).where(
-            PublishedContentDB.status == "Published"
+            PublishedContentDB.status == ContentPublishStatus.PUBLISHED
         )
         job_stmt = select(VideoJobDB)
 
@@ -323,8 +329,8 @@ async def get_stats_summary(
 @cache(expire=3600)
 async def get_storage_stats(current_user: UserDB = Depends(get_current_user)):
     """Get storage usage statistics for the outputs directory."""
-    from services.storage.manager import storage_manager
-    from api.config import settings
+    from src.services.storage.manager import storage_manager
+    from src.api.config import settings
 
     try:
         current_size = storage_manager.get_output_dir_size()
@@ -345,8 +351,11 @@ async def get_storage_stats(current_user: UserDB = Depends(get_current_user)):
                 "provider": settings.STORAGE_PROVIDER,
             }
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"A/B test metrics failed: {e}")
+        raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
 @router.get("/ab/results/{content_id}")
@@ -393,8 +402,11 @@ async def get_report_history(
     try:
         history = await base_analytics_service.get_historical_performance(post_id)
         return success_response(data=history)
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Dashboard metrics failed: {e}")
+        raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
 @router.post("/inject-pattern/{post_id}")
@@ -420,7 +432,8 @@ async def inject_pattern(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"ROI analysis failed: {e}")
+        raise HTTPException(status_code=503, detail="Analytics service unavailable")
     finally:
         pass
 
@@ -435,7 +448,7 @@ async def export_analytics(
 
     try:
         stmt = select(PublishedContentDB).where(
-            PublishedContentDB.status == "Published"
+            PublishedContentDB.status == ContentPublishStatus.PUBLISHED
         )
         if current_user.role != UserRole.ADMIN:
             stmt = stmt.where(PublishedContentDB.user_id == current_user.id)
@@ -449,7 +462,6 @@ async def export_analytics(
         writer.writerow(
             ["Post ID", "Platform", "Title", "Views", "Likes", "Shares", "Published At"]
         )
-
 
         for post in posts:
             writer.writerow(
@@ -466,7 +478,7 @@ async def export_analytics(
 
         output.seek(0)
         filename = (
-            f"viral_forge_analytics_{datetime.datetime.now().strftime('%Y%m%d')}.csv"
+            f"ettametta_analytics_{datetime.datetime.now().strftime('%Y%m%d')}.csv"
         )
         return StreamingResponse(
             io.StringIO(output.getvalue()),

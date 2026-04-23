@@ -1,6 +1,6 @@
 import logging
-from api.utils.celery import celery_app
-from services.openclaw.skills.ettametta import ettametta_skill
+from src.api.utils.celery import celery_app
+from src.services.openclaw.skills.ettametta import ettametta_skill
 
 logger = logging.getLogger(__name__)
 

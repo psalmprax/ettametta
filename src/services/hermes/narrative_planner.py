@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any
 import os
-from services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_hub
 
 logger = logging.getLogger("NarrativePlanner")
 
@@ -15,16 +15,26 @@ class NarrativePlanner:
         # We now use the unified IntelligenceHub for multi-provider resilience
         pass
 
-    async def plan_story(self, topic: str, niche: str, duration_sec: int = 60, session_id: str | None = None) -> dict[str, Any]:
+    async def plan_story(self, topic: str, niche: str, duration_sec: int = 60, session_id: str | None = None, feedback: str | None = None) -> dict[str, Any]:
         """Creates a high-level Narrative Blueprint for the attention economy."""
         
         logger.info(f"🧠 [NRM] Designing Narrative Blueprint for: {topic}")
         
+        feedback_clause = f"\nPREVIOUS FEEDBACK: {feedback}\nPlease address these issues in the new version." if feedback else ""
+
         prompt = f"""
         You are the Narrative Reasoning Model (NRM). Your task is to design a high-retention 'Story Blueprint' for a {duration_sec}-second video.
         
         TOPIC: {topic}
         NICHE: {niche}
+        {feedback_clause}
+        
+        TARGET QUALITY: ELITE (95%+ Attention Score)
+        
+        CRITICAL REQUIREMENTS:
+        1. HOOK: Must be visceral and immediate (Time 0-5s).
+        2. CONFLICT: Establish a high-stakes tension early.
+        3. CURIOSITY GAPS: You MUST include at least 3 distinct 'Curiosity Gaps' with clear payoff timestamps to maximize retention.
         
         TASK:
         1. DECOMPOSE: Identify the Core Claim, the Conflict, and the Stakes.
@@ -43,16 +53,18 @@ class NarrativePlanner:
                 {{"time_start": 45, "time_end": 60, "emotion": "Relief/Clarity", "action": "Resolution"}}
             ],
             "curiosity_gaps": [
-                {{"gap": "Question asked", "payoff_time": 45}}
+                {{"gap": "Question 1", "payoff_time": 15}},
+                {{"gap": "Question 2", "payoff_time": 35}},
+                {{"gap": "Question 3", "payoff_time": 55}}
             ],
-            "visual_direction": "The overall cinematic style (e.g., 'Aggressive Cuts', 'Documentary', 'Ethereal')"
+            "visual_direction": "The overall cinematic style"
         }}
         """
         
         try:
             result = await base_intelligence_hub.chat(
                 prompt=prompt,
-                system_prompt="You are a Story-Driven Attention Optimization Engine. Return ONLY valid JSON.",
+                system_prompt="You are a Story-Driven Attention Optimization Engine. Return ONLY valid JSON. Focus on maximizing Curiosity Gaps.",
                 session_id=session_id,
                 json_mode=True
             )

@@ -2,11 +2,11 @@ import pytest
 import requests
 import importlib
 from unittest.mock import patch, MagicMock
-import services.video_engine.models.wan_inference as wan_mod
-import services.video_engine.models.mochi_inference as mochi_mod
-import services.video_engine.models.hunyuan_inference as hun_mod
-import services.video_engine.models.ltx_video_inference as ltx_mod
-import services.video_engine.models.cogvideo_inference as cog_mod
+import src.services.video_engine.models.wan_inference as wan_mod
+import src.services.video_engine.models.mochi_inference as mochi_mod
+import src.services.video_engine.models.hunyuan_inference as hun_mod
+import src.services.video_engine.models.ltx_video_inference as ltx_mod
+import src.services.video_engine.models.cogvideo_inference as cog_mod
 
 @pytest.fixture
 def mock_output_dir(tmp_path):

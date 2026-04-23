@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Sidebar, MobileNav, MobileHeader } from "@/components/sidebar";
 import { SearchBar } from "@/components/search-bar";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { useUITheme } from "@/context/UIThemeContext";
 import { useAuth } from "@/context/AuthContext";
 
@@ -84,6 +85,7 @@ function LegacyLayout({ children }: { children: React.ReactNode }) {
                 <header className="h-16 border-b border-white/5 bg-zinc-950/50 flex items-center justify-between px-6">
                     <SearchBar />
                     <div className="flex items-center gap-4">
+                        <NotificationCenter />
                         <Link href="/credits" className="flex items-center gap-2 px-3 py-1.5 bg-violet-500/10 border border-violet-500/20 rounded-lg hover:bg-violet-500/20 transition-colors">
                             <Coins className="h-4 w-4 text-violet-400" />
                             <span className="text-sm font-black text-violet-300 tabular-nums">{credits?.toLocaleString()} credits</span>

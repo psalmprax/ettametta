@@ -11,12 +11,12 @@ import subprocess
 import json
 import shutil
 
-PROJECT_DIR = "/home/psalmprax/ALL_PROJECTS/viral_forge"
+PROJECT_DIR = "/home/psalmprax/ALL_PROJECTS/ettametta"
 sys.path.insert(0, PROJECT_DIR)
 
 os.environ["DEBUG"] = "true"
 
-STUDIO_PATH = "/home/psalmprax/ALL_PROJECTS/viral_forge/apps/remotion-studio"
+STUDIO_PATH = "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio"
 OUTPUT_DIR = os.path.join(STUDIO_PATH, "out")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 

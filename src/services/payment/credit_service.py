@@ -1,6 +1,6 @@
 from typing import Any
-from api.utils.database import async_session_factory
-from api.utils.credit_models import (
+from src.api.utils.database import async_session_factory
+from src.api.utils.credit_models import (
     UserCreditDB,
     CreditTransactionDB,
     CreditPackageDB,
@@ -8,15 +8,15 @@ from api.utils.credit_models import (
     CreditUsageRuleDB,
     SubscriptionCreditDB,
 )
-from api.utils.user_models import UserDB, SubscriptionTier
-from api.utils.subscription import get_subscription_tier_value
+from src.api.utils.user_models import UserDB, SubscriptionTier
+from src.api.utils.subscription import get_subscription_tier_value
 from datetime import datetime, timedelta, timezone
 import uuid
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from api.utils.database import get_db
+from src.api.utils.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,13 @@ class CreditService:
         return balance >= amount
 
     async def consume_credits(
-        self, user_id: str, amount: int, action: str, db, reference_id: str = None
+        self,
+        user_id: str,
+        amount: int,
+        action: str,
+        db: AsyncSession,
+        reference_id: str | None = None,
+        auto_commit: bool = True,
     ) -> tuple[bool, str]:
         """
         Attempt to consume credits for an action.
@@ -135,9 +141,11 @@ class CreditService:
                 reference_id=reference_id,
             )
             db.add(transaction)
-            # Hardened: Let caller commit unless it's a standalone call?
-            # Actually, consume_credits should commit to be atomic for the consumption.
-            await db.commit()
+            
+            if auto_commit:
+                await db.commit()
+            else:
+                await db.flush()
 
             logger.info(
                 f"[CreditService] User {user_id} spent {amount} credits for {action}"
@@ -155,8 +163,9 @@ class CreditService:
         amount: int,
         transaction_type: str,
         db: AsyncSession,
-        description: str = None,
-        reference_id: str = None,
+        description: str | None = None,
+        reference_id: str | None = None,
+        auto_commit: bool = True,
     ) -> bool:
         """Add credits to user's balance"""
         try:
@@ -178,7 +187,12 @@ class CreditService:
                 reference_id=reference_id,
             )
             db.add(transaction)
-            await db.commit()
+            
+            if auto_commit:
+                await db.commit()
+            else:
+                await db.flush()
+                
             return True
         except Exception as e:
             await db.rollback()
@@ -301,6 +315,7 @@ class CreditService:
                 "earned",
                 db,
                 f"Referral bonus - {referral_code}",
+                auto_commit=False,
             )
 
             await db.commit()
@@ -366,7 +381,7 @@ class CreditService:
         return max(1, int(base_cost * (1 - discount)))
 
     async def check_and_consume(
-        self, user_id: int, action: str, db: AsyncSession, reference_id: str = None
+        self, user_id: str, action: str, db: AsyncSession, reference_id: str = None
     ) -> tuple[bool, str]:
         """Check if user can afford action and consume credits"""
         # Get user's tier

@@ -1,4 +1,4 @@
-# Minimal and Hardened Sandbox for ViralForge Interpreter
+# Minimal and Hardened Sandbox for Ettametta Interpreter
 FROM python:3.10-slim
 
 # Prevent Bytecode and set non-buffered output

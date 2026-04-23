@@ -19,6 +19,7 @@ class LLMProvider(str, Enum):
     DEEPSEEK = "deepseek"
     ANTHROPIC = "anthropic"
     GEMINI = "gemini"
+    OLLAMA = "ollama"
 
 
 class UnifiedLLMService:
@@ -34,6 +35,7 @@ class UnifiedLLMService:
         LLMProvider.DEEPSEEK: "DEEPSEEK_API_KEY",
         LLMProvider.ANTHROPIC: "ANTHROPIC_API_KEY",
         LLMProvider.GEMINI: "GOOGLE_API_KEY",
+        LLMProvider.OLLAMA: "OLLAMA_API_KEY", # Optional
     }
 
     PROVIDER_MODELS = {
@@ -47,6 +49,7 @@ class UnifiedLLMService:
         LLMProvider.DEEPSEEK: ["deepseek-chat", "deepseek-coder"],
         LLMProvider.ANTHROPIC: ["claude-3-5-sonnet-20241022", "claude-3-opus-20240229"],
         LLMProvider.GEMINI: ["gemini-1.5-flash", "gemini-1.5-pro"],
+        LLMProvider.OLLAMA: ["llama3.2:3b", "llama3.1:8b"],
     }
 
     # Base URLs for API endpoints
@@ -56,10 +59,12 @@ class UnifiedLLMService:
         LLMProvider.XAI: "https://api.x.ai/v1",
         LLMProvider.DEEPSEEK: "https://api.deepseek.com/v1",
         LLMProvider.ANTHROPIC: "https://api.anthropic.com/v1",
+        LLMProvider.OLLAMA: "http://localhost:11434/v1", # Default fallback
     }
 
-    def __init__(self, default_provider: LLMProvider = LLMProvider.GROQ):
-        self.default_provider = default_provider
+    def __init__(self, default_provider: LLMProvider | None = None):
+        from src.api.config import settings
+        self.default_provider = default_provider or LLMProvider(settings.DEFAULT_LLM_PROVIDER)
         self._api_keys: dict[LLMProvider, str] = {}
         self._load_api_keys()
         
@@ -69,9 +74,9 @@ class UnifiedLLMService:
 
     def get_intelligence_report(self):
         """Returns status of agentic frameworks including the new Hermes Skill Engine."""
-        from services.langchain.service import _check_langchain_available
-        from services.crewai.service import _check_crewai_available
-        from services.hermes.service import base_hermes_service
+        from src.services.langchain.service import _check_langchain_available
+        from src.services.crewai.service import _check_crewai_available
+        from src.services.hermes.service import base_hermes_service
         
         lc_installed = _check_langchain_available()
         ca_installed = _check_crewai_available()
@@ -108,6 +113,9 @@ class UnifiedLLMService:
             if api_key and api_key != "your_key_here":
                 self._api_keys[provider] = api_key
                 logger.info(f"[LLM] Loaded API key for {provider.value}")
+
+        # OLLAMA is always available if URL is set (local or cloud)
+        self._api_keys[LLMProvider.OLLAMA] = os.getenv("OLLAMA_API_KEY", "not_required")
 
         if not self._api_keys:
             logger.warning(
@@ -225,7 +233,14 @@ class UnifiedLLMService:
             )
 
         # OpenAI-compatible API call
-        url = f"{self.BASE_URLS[provider]}/chat/completions"
+        if provider == LLMProvider.OLLAMA:
+            from src.api.config import settings
+            base_url = settings.OLLAMA_URL.rstrip("/")
+            if "/v1" not in base_url:
+                base_url = f"{base_url}/v1"
+            url = f"{base_url}/chat/completions"
+        else:
+            url = f"{self.BASE_URLS[provider]}/chat/completions"
 
         # Adjust model name for Groq if needed
         if provider == LLMProvider.GROQ and "/" in model:

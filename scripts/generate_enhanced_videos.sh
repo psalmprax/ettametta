@@ -14,7 +14,7 @@ SSH_KEY="/home/psalmprax/Music/id_rsa"
 SSH_OPTS="-o StrictHostKeyChecking=no -o PasswordAuthentication=no"
 
 # Local output
-OUTPUT_DIR="/home/psalmprax/ALL_PROJECTS/viral_forge/test_videos"
+OUTPUT_DIR="/home/psalmprax/ALL_PROJECTS/ettametta/test_videos"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # GPU Server URL

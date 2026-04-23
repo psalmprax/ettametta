@@ -63,7 +63,7 @@ class CrewAIService:
 
     def hot_reload(self):
         """Re-initialize service from current environment/settings."""
-        from api.config import settings
+        from src.api.config import settings
         
         self.enabled = settings.ENABLE_CREWAI
         if not self.enabled:
@@ -117,7 +117,7 @@ class CrewAIService:
         This ensures 'Elite' tier dynamism over static stubs.
         """
         prompt = f"""
-        You are the ViralForge Strategy Architect.
+        You are the Ettametta Strategy Architect.
         Generate a set of tasks for a content creation crew working on: '{topic}' for {platform}.
         
         CREW ROLES: Researcher, Fact Checker, Writer, Editor.

@@ -101,7 +101,7 @@ echo "📚 [Main] Installing remaining requirements..."
 
 # 6. Final Validation
 echo "🎨 [Summary]# Global variables
-LOG_FILE="/var/log/viral_forge_setup.log"
+LOG_FILE="/var/log/ettametta_setup.log"
 PYTHON_VERSION="3.12"
 NODE_VERSION="20"
 

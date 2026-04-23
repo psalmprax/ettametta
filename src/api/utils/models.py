@@ -15,7 +15,15 @@ from .user_models import UserDB, UserRole, SubscriptionTier
 from datetime import datetime
 import enum
 import uuid
-from shared.enums import SystemJobStatus
+from src.shared.enums import (
+    SystemJobStatus,
+    ContentPublishStatus,
+    ScanStatus,
+    ABTestStatus,
+    SessionStatus,
+    ExperimentCohortStatus,
+    StrategyStatus,
+)
 
 
 class SystemSettings(Base):
@@ -82,7 +90,6 @@ class ContentCandidateDB(Base):
     creator_name = Column(String, nullable=True)  # Channel/author name
     creator_id = Column(String, nullable=True)  # Channel/author ID
     source_url = Column(String)  # Primary canonical URL
-    url = Column(String, nullable=True)  # Legacy - will be phased out
     thumbnail_url = Column(String, nullable=True)
 
     # Timing fields
@@ -183,7 +190,11 @@ class PublishedContentDB(Base):
     )
     title = Column(String)
     platform = Column(String)
-    status = Column(String)  # Published, Failed
+    status = Column(
+        Enum(ContentPublishStatus, native_enum=False),
+        default=ContentPublishStatus.PENDING,
+        nullable=False,
+    )
     source_url = Column(String, nullable=True)
     published_at = Column(DateTime, default=lambda: datetime.utcnow())
     account_id = Column(String(36), ForeignKey("social_accounts.id"), index=True)
@@ -212,9 +223,9 @@ class VideoJobDB(Base):
     time_remaining = Column(String, nullable=True)
     source_url = Column(String)
     output_path = Column(String, nullable=True)
-    generation_params = Column(
+    job_metadata = Column(
         JSON, default=dict
-    )  # Stores original generation parameters for retry
+    )  # Stores original generation parameters and other metadata for retry
     error_message = Column(String, nullable=True)  # Detailed error information
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
@@ -276,7 +287,11 @@ class ScanHistoryDB(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(36), ForeignKey("users.id"), index=True, nullable=False)
     niche = Column(String, index=True)
-    status = Column(String, default="pending")  # pending, completed, failed
+    status = Column(
+        Enum(ScanStatus, native_enum=False),
+        default=ScanStatus.PENDING,
+        nullable=False,
+    )
     results_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
@@ -331,7 +346,7 @@ class NexusJobDB(Base):
     )
     status = Column(
         Enum(SystemJobStatus, native_enum=False),
-        default=SystemJobStatus.PENDING,
+        default=SystemJobStatus.QUEUED,
         nullable=False,
     )  # Unified status tracking
     niche = Column(String)
@@ -371,7 +386,11 @@ class ABTestDB(Base):
     variant_a_conversion_count = Column(Integer, default=0)
     variant_b_conversion_count = Column(Integer, default=0)
     target_metric = Column(String, default="views")  # views, clicks, conversions
-    status = Column(String, default="active")  # active, completed, paused
+    status = Column(
+        Enum(ABTestStatus, native_enum=False),
+        default=ABTestStatus.ACTIVE,
+        nullable=False,
+    )
     winner_variant = Column(String, nullable=True)  # 'A' or 'B'
     confidence_level = Column(Float, nullable=True)
     p_value = Column(Float, nullable=True)
@@ -388,7 +407,11 @@ class ScheduledPostDB(Base):
     video_path = Column(String)
     platform = Column(String)
     scheduled_time = Column(DateTime)
-    status = Column(String, default="PENDING")  # PENDING, PUBLISHED, FAILED
+    status = Column(
+        Enum(ContentPublishStatus, native_enum=False),
+        default=ContentPublishStatus.PENDING,
+        nullable=False,
+    )
     metadata_json = Column(JSON)
     account_id = Column(String(36), ForeignKey("social_accounts.id"), index=True)
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
@@ -472,8 +495,10 @@ class OpenCLISessionDB(Base):
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
     platform = Column(String, index=True)  # youtube, tiktok, instagram, x, reddit, etc.
     status = Column(
-        String, default="disconnected"
-    )  # connected, disconnected, expired, error
+        Enum(SessionStatus, native_enum=False),
+        default=SessionStatus.DISCONNECTED,
+        nullable=False,
+    )
     session_data = Column(
         String, nullable=True
     )  # Encrypted cookie/session blob from extension
@@ -614,8 +639,10 @@ class ExperimentCohortDB(Base):
     strategy = Column(String, index=True)
     size = Column(Integer)
     status = Column(
-        String, default="ROLLING_OUT"
-    )  # ROLLING_OUT, FULL_WAITING_DATA, COMPLETED
+        Enum(ExperimentCohortStatus, native_enum=False),
+        default=ExperimentCohortStatus.ROLLING_OUT,
+        nullable=False,
+    )
     participants = Column(JSON, default=list)  # list of video IDs
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
@@ -632,7 +659,11 @@ class StrategyRegistryDB(Base):
         String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
     )
     name = Column(String, unique=True, index=True)
-    status = Column(String, default="ACTIVE")  # ACTIVE, DOMINANT, KILLED
+    status = Column(
+        Enum(StrategyStatus, native_enum=False),
+        default=StrategyStatus.ACTIVE,
+        nullable=False,
+    )
     avg_score = Column(Float, nullable=True)
     failure_reason = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
@@ -641,3 +672,22 @@ class StrategyRegistryDB(Base):
         default=lambda: datetime.utcnow(),
         onupdate=lambda: datetime.utcnow(),
     )
+
+
+class IncidentWebhookDB(Base):
+    """
+    Standard 3.12: Compliance Hardening (EU AI Act Article 71).
+    Stores external webhook endpoints for reporting serious incidents.
+    """
+
+    __tablename__ = "incident_webhooks"
+
+    id = Column(
+        String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
+    )
+    url = Column(String, nullable=False)
+    name = Column(String, nullable=True)  # e.g., "EU Market Surveillance Authority"
+    secret = Column(String, nullable=True)  # HMAC secret for signing
+    is_active = Column(Boolean, default=True)
+    last_triggered_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())

@@ -2,7 +2,7 @@ import os
 import subprocess
 import json
 import logging
-from api.config import settings
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +18,11 @@ class RemotionTool:
         """
         Render a specific composition with text and theme props.
         """
-        output_file = str(settings.OUTPUT_DIR / f"agent_zero_{composition}.mp4")
+        output_file = str(settings.REMOTION_OUTPUT_DIR / f"agent_zero_{composition}.mp4")
         props = {
             "title": text,
             "theme": theme,
-            "brand": "ViralForge"
+            "brand": "Ettametta"
         }
         
         cmd = [

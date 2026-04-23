@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /home/psalmprax/ALL_PROJECTS/viral_forge/remote_ai_setup/ai_venv
+set -gx VIRTUAL_ENV /home/psalmprax/ALL_PROJECTS/ettametta/remote_ai_setup/ai_venv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH

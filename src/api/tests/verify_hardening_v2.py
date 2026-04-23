@@ -24,7 +24,7 @@ mock_config.settings.EFFECTIVE_GPU_QUEUE_SLOTS = 2
 sys.modules["api.config"] = mock_config
 
 async def run_audit():
-    print("🚀 VIRALFORGE RED-TEAM HARDENING AUDIT (25/25 TARGET)")
+    print("🚀 ETTAMETTA RED-TEAM HARDENING AUDIT (25/25 TARGET)")
     print("-" * 50)
     
     services = [
@@ -65,7 +65,7 @@ async def run_audit():
     print("-" * 50)
     
     try:
-        from services.interpreter.service import interpreter_service
+        from src.services.interpreter.service import interpreter_service
         
         # Test 1: Direct getattr
         payload1 = "getattr(str, 'upper')"

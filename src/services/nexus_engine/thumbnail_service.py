@@ -3,8 +3,8 @@ import logging
 import os
 import uuid
 from pathlib import Path
-from services.storage.service import base_storage_service
-from api.config import settings
+from src.services.storage.service import base_storage_service
+from src.api.config import settings
 
 class ThumbnailGenerator:
     def __init__(self, output_dir: str = "outputs/thumbnails"):
@@ -41,7 +41,8 @@ class ThumbnailGenerator:
                 
                 # 3. Upload to official storage
                 storage_path = base_storage_service.upload_file(temp_path)
-                public_url = base_storage_service.get_public_url(storage_path)
+                public_url = base_storage_service.get_file_url(storage_path)
+
                 
                 logging.info(f"[Thumbnail] Successfully stored at: {public_url}")
                 return public_url

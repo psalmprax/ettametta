@@ -59,6 +59,7 @@ function TransformationPageContent() {
     const [enableSoundDesign, setEnableSoundDesign] = useState(false);
     const [enableMotionGraphics, setEnableMotionGraphics] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isBatchMode, setIsBatchMode] = useState(false);
     const [aiInsight, setAiInsight] = useState<any>(null);
     const [currentNiche, setCurrentNiche] = useState("Motivation");
 
@@ -80,51 +81,68 @@ function TransformationPageContent() {
             setIsSubmitting(false);
             return;
         }
+
+        const urls = isBatchMode 
+            ? newJobUrl.split(/[\n,]+/).map(u => u.trim()).filter(u => u.length > 0)
+            : [newJobUrl.trim()];
+
+        if (urls.length === 0) return;
+
         setIsSubmitting(true);
-        await withRealFallback(
-            async () => {
-                return fetch(`${API_BASE}/video/transform`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        source_url: newJobUrl,
-                        platform: targetPlatform,
-                        niche: currentNiche,
-                        generate_thumbnail: generateThumbnail,
-                        quality_tier: premiumQuality ? "premium" : "standard",
-                        sound_design: enableSoundDesign,
-                        motion_graphics: enableMotionGraphics
-                    })
-                });
-            },
-            {
-                fallback: null,
-                onSuccess: async () => {
-                    toast.success("Job Dispatched", {
-                        description: "Video transformation has been queued in the engine."
+        let successCount = 0;
+
+        for (const url of urls) {
+            await withRealFallback(
+                async () => {
+                    return fetch(`${API_BASE}/video/transform`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            source_url: url,
+                            platform: targetPlatform,
+                            niche: currentNiche,
+                            generate_thumbnail: generateThumbnail,
+                            quality_tier: premiumQuality ? "premium" : "standard",
+                            sound_design: enableSoundDesign,
+                            motion_graphics: enableMotionGraphics
+                        })
                     });
-                    setNewJobUrl("");
-                    setIsJobModalOpen(false);
-                    await withRealFallback<any>(
-                        () => fetch(`${API_BASE}/video/jobs`, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        }),
-                        {
-                            fallback: [],
-                            onSuccess: (data) => setProcessingJobs(data)
-                        }
-                    );
                 },
-                onFallback: (err: any) => {
-                    toast.error("Dispatch Failed", {
-                        description: err.message || "Check your credits and engine access."
-                    });
+                {
+                    fallback: null,
+                    onSuccess: () => {
+                        successCount++;
+                    },
+                    onFallback: (err: any) => {
+                        toast.error(`Failed to dispatch: ${url.substring(0, 30)}...`, {
+                            description: err.message
+                        });
+                    }
                 }
-            }
-        );
+            );
+        }
+
+        if (successCount > 0) {
+            toast.success(`Dispatched ${successCount} Job(s)`, {
+                description: `${successCount} transformation(s) queued in the engine.`
+            });
+            setNewJobUrl("");
+            setIsJobModalOpen(false);
+            
+            // Refresh jobs list
+            await withRealFallback<any>(
+                () => fetch(`${API_BASE}/video/jobs`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                }),
+                {
+                    fallback: [],
+                    onSuccess: (data) => setProcessingJobs(data)
+                }
+            );
+        }
         setIsSubmitting(false);
     };
 
@@ -345,15 +363,6 @@ function TransformationPageContent() {
                                     <p className="text-zinc-500 font-medium leading-relaxed">Input source telemetry (Video URL) to apply high-velocity <span className="text-primary font-bold">Neural pattern injection</span>.</p>
                                 </div>
                                 <form onSubmit={handleNewJob} className="space-y-8">
-                                    <div className="relative group">
-                                        <Video className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-zinc-600 group-focus-within:text-primary transition-all duration-300" />
-                                        <input
-                                            id="video-url"
-                                            name="video-url"
-                                            autoFocus
-                                            type="url"
-                                            placeholder="https://tiktok.com/video/123..."
-                                            value={newJobUrl}
                                             onChange={(e) => setNewJobUrl(e.target.value)}
                                             className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-6 pl-16 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all text-white font-bold placeholder:text-zinc-700 tracking-tight"
                                         />

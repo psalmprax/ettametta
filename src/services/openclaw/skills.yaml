@@ -49,7 +49,7 @@ skills:
       message: "string"
       channel: "email|whatsapp|social"
   - name: PERSONA
-    description: "Generate a deepfake video using the user's uploaded persona/avatar."
+    description: "Generate an animated persona video using the user's uploaded avatar."
     params:
       action: "generate"
       persona_id: "int"

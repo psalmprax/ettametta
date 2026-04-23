@@ -1,6 +1,6 @@
 import os
 import asyncio
-from api.utils.os_worker import ai_worker
+from src.api.utils.os_worker import ai_worker
 from .ffmpeg_utils import base_ffmpeg_transformer
 
 
