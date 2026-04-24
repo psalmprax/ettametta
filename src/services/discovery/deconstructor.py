@@ -1,3 +1,4 @@
+import logging
 import os
 from .models import ContentCandidate, ViralPattern
 import json
@@ -62,9 +63,8 @@ class PatternDeconstructor:
                 emotional_triggers=res.get("emotional_triggers", []),
             )
         except Exception as e:
-            import logging
-
-            logging.error(f"Groq analysis failed: {e}")
+            logger = logging.getLogger(__name__)
+            logger.error(f"Groq analysis failed: {e}")
             return self._fallback_pattern(transcript)
 
     def _fallback_pattern(self, transcript: str) -> ViralPattern:

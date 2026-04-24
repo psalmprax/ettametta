@@ -1,3 +1,4 @@
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.models import BlueprintDB
@@ -83,10 +84,9 @@ async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
     Execute a blueprint workflow with given inputs.
     This provides the missing blueprint execution engine.
     """
-    import logging
+    logger = logging.getLogger(__name__)
     from src.api.routes.ws import notify_nexus_job_update_sync
 
-    logger = logging.getLogger(__name__)
     results = {}
     current_step = 0
 
@@ -208,7 +208,6 @@ async def _execute_cognition_node(inputs: dict, ingress_result: dict) -> dict:
 async def _execute_synthesis_node(inputs: dict, previous_results: dict) -> dict:
     """Execute content synthesis node using real AI models."""
     from src.services.video_engine.synthesis_service import GenerativeService
-    import logging
 
     logger = logging.getLogger(__name__)
     service = GenerativeService()
