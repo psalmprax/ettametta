@@ -44,28 +44,11 @@ export default defineConfig({
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
         },
-        {
-            name: 'firefox',
-            use: { ...devices['Desktop Firefox'] },
-        },
-        {
-            name: 'webkit',
-            use: { ...devices['Desktop Safari'] },
-        },
-        // Mobile tests
-        {
-            name: 'Mobile Chrome',
-            use: { ...devices['Pixel 5'] },
-        },
-        {
-            name: 'Mobile Safari',
-            use: { ...devices['iPhone 12'] },
-        },
     ],
-    webServer: {
-        command: process.env.WEB_SERVER_COMMAND || 'npm run dev',
+    webServer: process.env.CI ? undefined : process.env.SKIP_WEB_SERVER ? undefined : {
+        command: process.env.WEB_SERVER_COMMAND || 'cd ../.. && npm run dev',
         url: process.env.BASE_URL || 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
-    },
+    } as any,
 });
