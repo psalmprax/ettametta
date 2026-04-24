@@ -12,45 +12,40 @@ import redis
 import time
 from contextlib import asynccontextmanager
 
-# Graceful imports for optional dependencies
-try:
-    import torch
+import importlib.util
 
-    TORCH_AVAILABLE = True
-except ImportError:
-    TORCH_AVAILABLE = False
+def check_module_available(module_name: str) -> bool:
+    return importlib.util.find_spec(module_name) is not None
+
+# Graceful imports for optional dependencies
+TORCH_AVAILABLE = check_module_available("torch")
+if TORCH_AVAILABLE:
+    import torch
+else:
     torch = None
 
-try:
+CV2_AVAILABLE = check_module_available("cv2")
+if CV2_AVAILABLE:
     import cv2
-
-    CV2_AVAILABLE = True
-except ImportError:
-    CV2_AVAILABLE = False
+else:
     cv2 = None
 
-try:
+MOVIEPY_AVAILABLE = check_module_available("moviepy")
+if MOVIEPY_AVAILABLE:
     import moviepy
-
-    MOVIEPY_AVAILABLE = True
-except ImportError:
-    MOVIEPY_AVAILABLE = False
+else:
     moviepy = None
 
-try:
+DIFFUSERS_AVAILABLE = check_module_available("diffusers")
+if DIFFUSERS_AVAILABLE:
     import diffusers
-
-    DIFFUSERS_AVAILABLE = True
-except ImportError:
-    DIFFUSERS_AVAILABLE = False
+else:
     diffusers = None
 
-try:
+FASTER_WHISPER_AVAILABLE = check_module_available("faster_whisper")
+if FASTER_WHISPER_AVAILABLE:
     import faster_whisper
-
-    FASTER_WHISPER_AVAILABLE = True
-except ImportError:
-    FASTER_WHISPER_AVAILABLE = False
+else:
     faster_whisper = None
 
 
@@ -99,13 +94,13 @@ class ModelManager:
         """
         Download model from HuggingFace Hub.
         """
-        try:
-            from huggingface_hub import hf_hub_download
-        except ImportError:
+        if not check_module_available("huggingface_hub"):
             logging.warning(
                 "[ModelManager] huggingface_hub not installed, skipping real download"
             )
             raise RuntimeError("huggingface_hub not available")
+
+        from huggingface_hub import hf_hub_download
 
         # Map model names to HuggingFace repo/file paths
         model_mapping = {
@@ -1205,14 +1200,14 @@ class GenerativeService:
 
         try:
             # Import enhancement libraries
-            try:
-                from realesrgan import RealESRGANer
-                from basicsr.archs.rrdbnet_arch import RRDBNet
-            except ImportError:
+            if not check_module_available("realesrgan") or not check_module_available("basicsr"):
                 logging.warning(
-                    "[GenerativeService] Real-ESRGAN not available, skipping enhancement"
+                    "[GenerativeService] Real-ESRGAN or BasicSR not available, skipping enhancement"
                 )
                 return video_path
+
+            from realesrgan import RealESRGANer
+            from basicsr.archs.rrdbnet_arch import RRDBNet
 
             # Create enhanced output path
             video_dir = Path(video_path).parent
