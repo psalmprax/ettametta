@@ -160,11 +160,14 @@ class DiscoveryService:
 
         all_candidates = []
 
+        # Prepare scanner tasks - used for both fast and deep scans
+        tasks = []
+        
         if deep_scan:
             await self._log(
                 f"Deploying Intelligent Discovery Swarm for '{niche}'...", "SYSTEM"
             )
-            # The intelligent workflow already performs expanding, multi-platform search, and failovers
+            # The intelligent workflow performs expanding, multi-platform search
             intelligent_results = await discover_multi_platform(
                 niche,
                 max_per_platform=max(
@@ -191,7 +194,7 @@ class DiscoveryService:
                         duration_seconds=float(res.get("duration_seconds", 0.0)),
                         category=res.get("platform", "video"),
                         niche=niche,
-                        metadata=res.get(
+                        metadata_json=res.get(
                             "metadata", {"source": "intelligent_workflow"}
                         ),
                     )
@@ -201,18 +204,21 @@ class DiscoveryService:
                 f"Intelligent Swarm returned {len(all_candidates)} candidates.",
                 "SUCCESS",
             )
+            
+            # For deep scan, use all available scanners with extended time horizon
+            scanners_to_use = self.global_scanners + self.scanners
+            published_after = datetime.datetime.utcnow() - datetime.timedelta(days=90)
         else:
-            # Prepare scanner tasks for Fast Scan
-            tasks = []
-            for scanner in self.scanners:
-                tasks.append(
-                    scanner.scan_trends(
-                        niche, published_after=None if deep_scan else None
-                    )
-                )  # Deep scan might use different horizon
+            # Fast Scan: Use primary scanners only
+            scanners_to_use = self.scanners
+            published_after = datetime.datetime.utcnow() - datetime.timedelta(days=30)
 
-        # Deep scan unleashes ALL scanners regardless of tier for that specific request
-        scanners_to_use = (
+        # Add scanner tasks for both fast and deep scans
+        for scanner in scanners_to_use:
+            tasks.append(scanner.scan_trends(niche, published_after=published_after))
+
+        # Add global/supplementary scanners based on tier and deep scan status
+        supplementary_scanners = (
             self.global_scanners
             if deep_scan or tier != "free"
             else [
@@ -224,13 +230,9 @@ class DiscoveryService:
                 base_rumble_scanner,
             ]
         )
-
-        await self._log(
-            f"Deploying swarm: {len(self.scanners) + len(scanners_to_use)} specialized scanners active.",
-            "INFO",
-        )
-        for g_scanner in scanners_to_use:
-            tasks.append(g_scanner.scan_trends(niche, published_after=None))
+        
+        for g_scanner in supplementary_scanners:
+            tasks.append(g_scanner.scan_trends(niche, published_after=published_after))
 
         # Execute all scans concurrently
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -482,7 +484,7 @@ class DiscoveryService:
                     except Exception:
                         continue
 
-                # Default calculation if no scanner worked
+                 # Default calculation if no scanner worked
                 if velocity == 0.0:
                     import datetime
 
@@ -504,6 +506,10 @@ class DiscoveryService:
                 if velocity > 0:
                     new_score = min(int(velocity / 10), 100)
                     candidate.viral_score = int(0.7 * new_score + 0.3 * old_score)
+                    # Store the calculated velocity in the model
+                    candidate.velocity = velocity
+                else:
+                    candidate.velocity = 0.0
 
             except Exception as e:
                 logger.debug(
