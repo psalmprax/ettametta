@@ -76,6 +76,7 @@ services:
     networks:
       - ettametta
       - default
+
     command: python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --log-level debug --timeout-keep-alive 600
     restart: always
     env_file: .env
@@ -122,6 +123,16 @@ services:
       - CORS_ORIGINS
       - OLLAMA_MODEL
       - OLLAMA_URL=http://ollama:11434
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: ./apps/dashboard/Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=http://149.104.110.122.sslip.io:7200/api/v1
+    restart: always
+    networks:
+      - ettametta
 
   celery_worker:
     build:
