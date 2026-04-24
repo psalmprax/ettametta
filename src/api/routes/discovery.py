@@ -592,8 +592,8 @@ async def auto_transform(
     db=Depends(get_db),
 ):
     """
-    One-shot pipeline: Discover best content → Analyze → Create video transformation.
-    Combines 3 steps into 1 call for autonomous operation.
+    One-shot pipeline: Discover best content → Create video transformation.
+    Combines discovery and video creation into 1 call for autonomous operation.
     """
     from src.api.utils.celery import celery_app
     from src.services.video_engine.tasks import download_and_process_task
