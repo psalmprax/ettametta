@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from src.services.analytics.service import base_analytics_service
 from src.services.analytics.models import ContentPerformance
@@ -322,7 +323,6 @@ async def get_stats_summary(
             }
         )
     except Exception as e:
-        import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Stats summary failed: {e}")
         return success_response(
