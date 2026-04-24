@@ -478,7 +478,7 @@ export default function EmpirePage() {
 
                             <div className="space-y-4">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 border-b border-white/5 pb-3">Strategic Pivots Required:</p>
-                                {sentinelStatus?.recommendations.map((rec: string, i: number) => (
+                                {sentinelStatus?.recommendations?.map((rec: string, i: number) => (
                                     <div key={i} className="flex gap-4 group cursor-pointer hover:bg-white/[0.02] p-2 rounded-xl transition-all">
                                         <ChevronRight className="h-4 w-4 text-primary shrink-0 transition-transform group-hover:translate-x-1" />
                                         <p className="text-[11px] text-zinc-400 font-medium leading-relaxed">{rec}</p>
@@ -539,7 +539,7 @@ export default function EmpirePage() {
                                 </div>
                                 <h3 className="font-black uppercase text-white tracking-tight">Cross-Account Velocity</h3>
                                 <div className="space-y-6 pt-4">
-                                    {empireMetrics?.velocity.length > 0 ? empireMetrics.velocity.map((v: any, i: number) => (
+                                    {empireMetrics?.velocity?.length > 0 ? empireMetrics.velocity.map((v: any, i: number) => (
                                         <div key={i} className="space-y-2">
                                             <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-zinc-600">
                                                 <span>{v.name}</span>

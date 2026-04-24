@@ -36,7 +36,7 @@ def admin_required(current_user: UserDB = Depends(get_current_user)):
 
 @router.get("/")
 async def get_settings(
-    db: AsyncSession = Depends(get_db), current_user: UserDB = Depends(get_current_user)
+    db=Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
     from src.api.config import settings as app_settings
     from src.api.utils.models import UserSetting
@@ -190,7 +190,7 @@ async def get_settings(
 @router.post("/")
 async def update_setting(
     request: SettingUpdateRequest,
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     from src.api.utils.models import UserSetting
@@ -223,7 +223,7 @@ async def update_setting(
 
 
 @router.get("/monetization/strategies")
-async def get_monetization_strategies(db: AsyncSession = Depends(get_db)):
+async def get_monetization_strategies(db=Depends(get_db)):
     """Returns all available monetization strategies with their configuration status"""
     from src.api.config import settings as app_settings
 
@@ -306,7 +306,7 @@ async def get_monetization_strategies(db: AsyncSession = Depends(get_db)):
 
 @router.get("/system")
 async def get_system_settings(
-    db: AsyncSession = Depends(get_db), _admin=Depends(admin_required)
+    db=Depends(get_db), _admin=Depends(admin_required)
 ):
     """Get all system-wide settings (admin only)"""
     stmt = select(SystemSettings)
@@ -318,7 +318,7 @@ async def get_system_settings(
 
 @router.post("/system")
 async def update_system_settings(
-    settings_dict: dict, db: AsyncSession = Depends(get_db), _admin=Depends(admin_required)
+    settings_dict: dict, db=Depends(get_db), _admin=Depends(admin_required)
 ):
     """Update system-wide settings (admin only)"""
     for key, value in settings_dict.items():
@@ -350,7 +350,7 @@ async def update_system_settings(
 @router.post("/bulk")
 async def bulk_update_settings(
     settings_list: list[SettingUpdateRequest],
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     _admin=Depends(admin_required),
 ):
     for req in settings_list:
@@ -373,7 +373,7 @@ async def bulk_update_settings(
 @router.post("/user")
 async def bulk_update_user_settings(
     settings_list: list[SettingUpdateRequest],
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     """Bulk update user-specific settings (non-admin users)"""
@@ -405,7 +405,7 @@ async def bulk_update_user_settings(
 @router.post("/filters/{filter_id}/toggle")
 async def toggle_filter(
     filter_id: str,
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     # Handle service-level filters (Sound Design, Motion Graphics)
@@ -464,7 +464,7 @@ async def toggle_filter(
 
 @router.get("/filters")
 async def get_available_filters(
-    db: AsyncSession = Depends(get_db), current_user: UserDB = Depends(get_current_user)
+    db=Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
     from src.api.utils.models import VideoFilterDB
     from src.api.config import settings as app_settings
@@ -582,7 +582,7 @@ async def get_available_filters(
 @router.post("/verify/{service_id}")
 async def verify_service(
     service_id: str,
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     """
@@ -857,7 +857,7 @@ async def verify_service(
 
 
 @router.post("/webhooks/telegram")
-async def telegram_webhook(update: dict, db: AsyncSession = Depends(get_db)):
+async def telegram_webhook(update: dict, db=Depends(get_db)):
     """Handle Telegram bot webhook for configuration"""
     try:
         if "message" in update:
@@ -888,7 +888,7 @@ async def telegram_webhook(update: dict, db: AsyncSession = Depends(get_db)):
 
 @router.post("/webhooks/whatsapp")
 async def whatsapp_webhook(
-    Body: str = Form(...), From: str = Form(...), db: AsyncSession = Depends(get_db)
+    Body: str = Form(...), From: str = Form(...), db=Depends(get_db)
 ):
     """Handle WhatsApp webhook for configuration"""
     try:
@@ -918,7 +918,7 @@ async def whatsapp_webhook(
 
 @router.get("/user-settings")
 async def get_user_settings(
-    db: AsyncSession = Depends(get_db), current_user: UserDB = Depends(get_current_user)
+    db=Depends(get_db), current_user: UserDB = Depends(get_current_user)
 ):
     """Retrieve user-specific settings including notifications and API integrations"""
     return {
@@ -932,7 +932,7 @@ async def get_user_settings(
 @router.put("/user-settings")
 async def update_user_settings(
     request: UserSettingsUpdate,
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     """Update user-specific settings including notifications and API integrations"""
@@ -953,7 +953,7 @@ async def update_user_settings(
 @router.post("/generate-bot-code")
 async def generate_bot_code(
     platform: str,
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     """Generate a code for bot configuration"""

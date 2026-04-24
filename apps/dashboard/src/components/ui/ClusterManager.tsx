@@ -154,7 +154,7 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
             <div className="w-full max-w-4xl bg-zinc-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
                 
                 {/* Header */}
-                <div className="p-8 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-zinc-950 to-zinc-900 shrink-0">
+                <div className="p-8 border-b border-white/5 flex items-center justify-between bg-linear-to-r from-zinc-950 to-zinc-900 shrink-0">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-neon-cyan/20 rounded-2xl animate-pulse-slow">
                             <Cpu className="h-8 w-8 text-neon-cyan" />

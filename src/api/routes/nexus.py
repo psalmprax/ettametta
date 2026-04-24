@@ -197,7 +197,7 @@ async def compose_video(
     request: NexusComposeRequest,
     background_tasks: BackgroundTasks,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Triggers the high-fidelity video assembly pipeline.
@@ -214,7 +214,7 @@ async def compose_video(
 
 @router.get("/blueprints")
 async def list_nexus_blueprints(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Returns the available Nexus production recipes/blueprints.
@@ -236,7 +236,7 @@ class BlueprintCreate(BaseModel):
 async def create_nexus_blueprint(
     blueprint: BlueprintCreate,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Creates a new custom Nexus blueprint.
@@ -266,7 +266,7 @@ async def create_nexus_blueprint(
 
 @router.get("/jobs")
 async def list_nexus_jobs(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Returns the latest production jobs for the Nexus matrix.
@@ -283,7 +283,7 @@ async def list_nexus_jobs(
 
 @router.get("/stats")
 async def get_nexus_stats(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Returns Nexus performance statistics.
@@ -330,7 +330,7 @@ async def get_nexus_stats(
 
 @router.get("/queue")
 async def get_nexus_queue(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Returns current job queue status.
@@ -369,7 +369,7 @@ async def get_nexus_queue(
 async def get_nexus_job(
     job_id: str,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
     result = await db.execute(stmt)
@@ -382,7 +382,7 @@ async def get_nexus_job(
 
 @router.get("/telemetry")
 async def get_nexus_telemetry(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Returns real-time health and performance metrics for the Nexus cluster.

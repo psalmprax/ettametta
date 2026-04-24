@@ -157,7 +157,7 @@ from src.api.routes import (
     opencli,
     tools,
     llm,
-    ab_testing,
+    reasoning,
 )
 
 from fastapi.staticfiles import StaticFiles
@@ -294,9 +294,12 @@ app.add_exception_handler(RateLimitExceeded, custom_rate_limit_exceeded_handler)
 cors_origins = [
     origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()
 ]
+
+# Standard 1.2: Permissive CORS with credential support
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|149\.104\.110\.122)(\.sslip\.io)?(:[0-9]+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -377,6 +380,7 @@ v1_router.include_router(zero.router, tags=["Agent Zero"])
 v1_router.include_router(opencli.router, tags=["opencli-rs"])
 v1_router.include_router(tools.router, tags=["Free Tools"])
 v1_router.include_router(llm.router, tags=["LLM - Multi-Provider"])
+v1_router.include_router(reasoning.router)
 v1_router.include_router(ws.router, tags=["WebSockets"])
 v1_router.include_router(health.router, tags=["Health"])
 v1_router.include_router(proxy.router, tags=["Proxy"])

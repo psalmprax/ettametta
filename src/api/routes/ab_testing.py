@@ -117,7 +117,7 @@ def calculate_statistics(
 async def start_ab_test(
     request: ABTestCreate,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Initializes an A/B test for a piece of content with proper statistical setup.
@@ -150,7 +150,7 @@ async def start_ab_test(
 @router.get("/test/{test_id}")
 async def get_test_results(
     test_id: str,
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """Get detailed test results with statistical analysis"""
@@ -262,7 +262,7 @@ def _interpret_effect_size(effect_size: float) -> str:
 
 @router.post("/record/{test_id}/event")
 async def record_variant_event(
-    test_id: str, event: ABTestVariantEvent, db: AsyncSession = Depends(get_db)
+    test_id: str, event: ABTestVariantEvent, db=Depends(get_db)
 ):
     """
     Records a view, click, or conversion event for a specific variant.
@@ -306,7 +306,7 @@ async def record_variant_event(
 @router.post("/test/{test_id}/determine-winner")
 async def determine_winner(
     test_id: str,
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """
@@ -388,7 +388,7 @@ async def determine_winner(
 
 
 @router.get("/test/{test_id}/recommend-variant")
-async def recommend_variant(test_id: str, db: AsyncSession = Depends(get_db)):
+async def recommend_variant(test_id: str, db=Depends(get_db)):
     """
     Returns which variant should be shown based on statistical analysis.
     """
@@ -447,7 +447,7 @@ async def recommend_variant(test_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.get("/tests/active")
 async def get_active_tests(
-    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
+    db=Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Get all active A/B tests with statistics"""
     stmt = select(ABTestDB).where(ABTestDB.status == ABTestStatus.ACTIVE)
@@ -481,7 +481,7 @@ async def get_active_tests(
 
 @router.get("/tests/completed")
 async def get_completed_tests(
-    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
+    db=Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Get all completed A/B tests with winner analysis"""
     stmt = select(ABTestDB).where(ABTestDB.status == ABTestStatus.COMPLETED)
@@ -520,7 +520,7 @@ async def get_completed_tests(
 @router.delete("/test/{test_id}")
 async def delete_test(
     test_id: str,
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     """Delete an A/B test (admin only)"""
@@ -544,7 +544,7 @@ async def delete_test(
 async def trigger_flywheel_evolution(
     parent_job_id: str,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db=Depends(get_db)
 ):
     """
     Triggers the 'Find Winners Fast' Flywheel Evolution (Standard 4.1).

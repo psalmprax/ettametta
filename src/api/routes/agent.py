@@ -48,11 +48,6 @@ async def chat_with_agent(
     # Add correlation ID for tracing
     correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
 
-    # Check for video generation intent first
-    video_trigger = await trigger_video_generation(body.message, body.context)
-    if video_trigger:
-        return video_trigger
-
     try:
         hub = IntelligenceHub()
         system_prompt = "You are a helpful AI assistant for a viral content creation platform. Be concise and actionable."
@@ -73,29 +68,37 @@ async def chat_with_agent(
         )
     except HTTPException:
         raise
-        except Exception as e:
-            logger.error(f"[Agent] Code execution failed: {e}")
-            raise HTTPException(status_code=503, detail="Code execution service unavailable")
+    except Exception as e:
+        logger.error(f"[Agent] Chat failed: {e}")
+        raise HTTPException(status_code=503, detail="AI service unavailable")
 
-    # Fallback: IntelligenceHub code analysis
+
+@router.post("/analyze-code")
+async def analyze_code(
+    body: CodeRequest,
+    current_user: UserDB = Depends(get_current_user),
+):
+    """
+    IntelligenceHub code analysis
+    """
     try:
         hub = IntelligenceHub()
         ai_data = await hub.chat(
-            prompt=request.code,
+            prompt=body.code,
             system_prompt=(
-                f"You are a {request.language} code assistant. "
+                f"You are a {body.language} code assistant. "
                 "Analyze, explain, and improve code. "
                 "Provide corrected/enhanced code with explanations. "
                 "NEVER execute code. Only analyze and generate."
             ),
-            temperature=0.3,
+            complexity="high",
         )
 
         return success_response(
             data={
                 "result": {
-                    "analysis": ai_data.get("content", ""),
-                    "language": request.language,
+                    "analysis": ai_data.get("response", ai_data.get("content", "")),
+                    "language": body.language,
                     "note": "Code Interpreter not enabled. Using AI analysis instead of execution.",
                 },
                 "status": "success",
@@ -103,7 +106,7 @@ async def chat_with_agent(
             }
         )
     except Exception as e:
-        logger.error(f"[Agent] Code execution failed: {e}")
+        logger.error(f"[Agent] Code analysis failed: {e}")
         raise HTTPException(status_code=503, detail=str(e))
 
 
@@ -116,7 +119,7 @@ class TrademarkRequest(BaseModel):
 async def generate_trademark(
     body: TrademarkRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Autonomous Brand Factory: Generates a brand identity (Logo, Name, Color) for a niche.

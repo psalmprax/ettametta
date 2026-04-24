@@ -83,7 +83,7 @@ async def _get_package_by_id(package_id: str, db: AsyncSession) -> dict | None:
 
 @router.get("/balance")
 async def get_credit_balance(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     """Get user's current credit balance"""
     balance = await credit_service.get_balance(current_user.id, db)
@@ -95,7 +95,7 @@ async def get_transaction_history(
     limit: int = 50,
     offset: int = 0,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Get credit transaction history with pagination"""
     if limit < 1 or limit > 100:
@@ -118,7 +118,7 @@ async def get_transaction_history(
 
 # === Credit Packages ===
 @router.get("/packages")
-async def get_credit_packages(db: AsyncSession = Depends(get_db)):
+async def get_credit_packages(db=Depends(get_db)):
     """Get available credit packages for purchase"""
     packages = await _get_packages(db)
     return success_response(data={"packages": packages, "count": len(packages)})
@@ -129,7 +129,7 @@ async def get_credit_packages(db: AsyncSession = Depends(get_db)):
 async def purchase_credits(
     request: PurchaseCreditsRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Purchase credits - creates Stripe checkout session"""
     from src.services.payment.stripe_service import get_payment_service
@@ -249,7 +249,7 @@ async def get_credit_costs(current_user: UserDB = Depends(get_current_user)):
 # === Referral System ===
 @router.get("/referral/code")
 async def get_referral_code(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     """Get user's referral code with share URL"""
     code = await credit_service.get_referral_code(current_user.id, db)
@@ -264,7 +264,7 @@ async def get_referral_code(
 async def apply_referral_code(
     request: ApplyReferralRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Apply a referral code with validation"""
     if not request.referral_code or len(request.referral_code.strip()) < 4:
@@ -282,7 +282,7 @@ async def apply_referral_code(
 
 @router.get("/referrals")
 async def get_referrals(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     """Get user's referrals with stats"""
     referrals = await credit_service.get_referrals(current_user.id, db)
@@ -292,7 +292,7 @@ async def get_referrals(
 
 @router.get("/referral/stats")
 async def get_referral_stats(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     """Get referral statistics"""
     stats = await credit_service.get_referral_stats(current_user.id, db)

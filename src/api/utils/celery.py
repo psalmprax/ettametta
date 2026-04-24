@@ -11,13 +11,13 @@ celery_app = Celery(
     broker=CELERY_BROKER_URL,
     backend=CELERY_RESULT_BACKEND,
     include=[
-        "services.video_engine.tasks",
-        "services.discovery.tasks",
-        "services.discovery.scanner_service",
-        "services.optimization.scheduler_tasks",
-        "services.security.tasks",
-        "services.storage.tasks",
-        "services.openclaw.tasks",
+        "src.services.video_engine.tasks",
+        "src.services.discovery.tasks",
+        "src.services.discovery.scanner_service",
+        "src.services.optimization.scheduler_tasks",
+        "src.services.security.tasks",
+        "src.services.storage.tasks",
+        "src.services.openclaw.tasks",
     ],
 )
 
@@ -29,31 +29,31 @@ celery_app.conf.update(
     enable_utc=True,
     beat_schedule={
         "sentinel-trend-watcher-4h": {
-            "task": "discovery.sentinel_watcher",
+            "task": "src.services.discovery.tasks.sentinel_watcher",
             "schedule": 14400.0,  # Every 4 hours
         },
         "scan-trending-content-2h": {
-            "task": "services.discovery.scanner_service.scan_trending_content",
+            "task": "src.services.discovery.scanner_service.scan_trending_content",
             "schedule": 7200.0,  # Every 2 hours
         },
         "check-scheduled-posts-5m": {
-            "task": "optimization.check_and_post_scheduled",
+            "task": "src.services.optimization.scheduler_tasks.check_and_post_scheduled",
             "schedule": 300.0,  # Every 5 minutes
         },
         "retry-missed-schedules-5m": {
-            "task": "optimization.retry_missed_schedules",
+            "task": "src.services.optimization.scheduler_tasks.retry_missed_schedules",
             "schedule": 300.0,  # Every 5 minutes
         },
         "system-security-audit-daily": {
-            "task": "security.system_audit",
+            "task": "src.services.security.tasks.system_audit",
             "schedule": 86400.0,  # Every 24 hours
         },
         "storage-lifecycle-manager-daily": {
-            "task": "storage.manage_lifecycle",
+            "task": "src.services.storage.tasks.manage_lifecycle",
             "schedule": 86400.0,  # Every 24 hours
         },
         "ettametta-job-polling-10m": {
-            "task": "openclaw.ettametta_polling",
+            "task": "src.services.openclaw.tasks.ettametta_polling",
             "schedule": 600.0,  # Every 10 minutes
         },
     },

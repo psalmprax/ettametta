@@ -10,7 +10,7 @@ test.describe('Simple Autonomous Operations Test', () => {
         await expect(page.locator('input[name="password"]')).toBeVisible();
         
         // Login
-        await page.fill('input[name="username"]', 'testuser');
+        await page.fill('input[name="username"]', 'test');
         await page.fill('input[name="password"]', 'testpassword');
         await page.click('button[type="submit"]');
         

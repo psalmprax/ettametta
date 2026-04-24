@@ -36,7 +36,7 @@ async def create_persona(
     image: UploadFile = File(None),
     audio: UploadFile = File(None),
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Registers a new Persona for autonomous character generation.
@@ -80,7 +80,7 @@ async def create_persona(
 async def generate_persona_video(
     request: PersonaGenerateRequest,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Initiates the autonomous character generation pipeline via PersonaService.
@@ -110,7 +110,7 @@ async def generate_persona_video(
 
 @router.get("/list")
 async def list_personas(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Returns all personas created by the current user.
@@ -125,7 +125,7 @@ async def list_personas(
 
 @router.get("/active")
 async def list_active_personas(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Returns only active personas (all personas for now).
