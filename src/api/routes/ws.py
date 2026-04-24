@@ -273,6 +273,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     "oracle_status": drift_report["status"],
                 },
             }
+            logging.info(f"[WS] Sending telemetry pulse: {pulse_data['metrics']}")
             await websocket.send_text(json.dumps(pulse_data))
             await asyncio.sleep(3.0)
     except WebSocketDisconnect:
