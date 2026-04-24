@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.shared.enums import SystemJobStatus
 from src.api.utils.models import VideoJobDB
@@ -12,6 +13,8 @@ from src.services.payment.credit_service import credit_service
 from src.api.utils.limiter import limiter
 from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response
+from src.services.discovery.service import base_discovery_service
+from src.api.utils.models import ContentCandidateDB
 import logging
 
 router = APIRouter(prefix="/video", tags=["Video Transformation"])
@@ -56,6 +59,7 @@ async def start_transformation(
                 sound_design=body.sound_design or False,
                 motion_graphics=body.motion_graphics or False,
                 analysis_data=body.analysis_data,
+                user_id=current_user.id,
             )
             if not task.id:
                 raise Exception("Celery task ID generation failed")
@@ -132,9 +136,6 @@ async def test_drive(
     """
     Identifies the top viral candidate and triggers a preview transformation.
     """
-    from src.services.discovery.service import base_discovery_service
-    from src.api.utils.models import ContentCandidateDB
-
     try:
         await check_daily_limit(current_user, db)
 
@@ -159,6 +160,7 @@ async def test_drive(
             platform="YouTube Shorts",
             preview_only=True,
             style=request.style,
+            user_id=current_user.id,
         )
 
         new_job = VideoJobDB(

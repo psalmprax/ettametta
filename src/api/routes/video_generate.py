@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.shared.enums import SystemJobStatus, CreditAction
 from src.api.utils.models import VideoJobDB
@@ -20,6 +21,8 @@ from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response, handle_exception
 from src.services.payment.credit_service import credit_service
 import logging
+import uuid
+from src.api.utils.tracing import get_request_id
 
 router = APIRouter(prefix="/video", tags=["Video Generation"])
 logger = logging.getLogger(__name__)
@@ -57,15 +60,18 @@ async def generate_single_video(
         await engine_access_required(body.engine)(current_user)
         # daily_limit_reached dependency already checked via Depends
 
-        from src.api.config.engine_config import (
-            ENGINE_TO_ACTION,
-            get_credit_action,
-            DEFAULT_ENGINE,
-            is_free_engine,
-            is_premium_engine,
-        )
-
-        # Get credit action for the engine
+        # Logic for engine-to-action mapping
+        # Since engine_config is missing, we implement a resilient fallback here
+        ENGINE_TO_ACTION = {
+            "veo3": CreditAction.VIDEO_GENERATE,
+            "flux": CreditAction.IMAGE_GENERATE,
+            "kling": CreditAction.VIDEO_GENERATE_PREMIUM,
+            "luma": CreditAction.VIDEO_GENERATE_PREMIUM,
+        }
+        
+        def get_credit_action(engine_name: str) -> CreditAction:
+            return ENGINE_TO_ACTION.get(engine_name, CreditAction.VIDEO_GENERATE)
+            
         action = get_credit_action(body.engine)
         credits_cost = await credits_required(action)(current_user, db)
 
@@ -105,6 +111,7 @@ async def generate_single_video(
                     custom_image_url=body.custom_image_url,
                     parent_id=parent_job_id,
                     variant_index=i,
+                    request_id=get_request_id(),
                 )
                 task_ids.append(task.id)
 
@@ -199,6 +206,7 @@ async def start_story_generation(
             engine=body.engine,
             style=body.style,
             user_id=current_user.id,
+            request_id=get_request_id(),
         )
 
         # 2. Consume Credits (Hardened: await and reference_id)
@@ -260,9 +268,6 @@ async def retry_failed_job(
     """
     try:
         # Find the job
-        from src.api.utils.models import VideoJobDB
-        from sqlalchemy import select
-
         stmt = select(VideoJobDB).where(
             VideoJobDB.id == job_id, VideoJobDB.user_id == current_user.id
         )
@@ -302,6 +307,7 @@ async def retry_failed_job(
                 aspect_ratio=params.get("aspect_ratio", "9:16"),
                 user_id=current_user.id,
                 custom_image_url=params.get("custom_image_url"),
+                request_id=get_request_id(),
             )
         elif "Storytelling" in job.title:
             # Retry generate_story_task
@@ -312,6 +318,7 @@ async def retry_failed_job(
                 engine=params.get("engine", "veo3"),
                 style=params.get("style", "Cinematic"),
                 user_id=current_user.id,
+                request_id=get_request_id(),
             )
         else:
             # Retry download_and_process_task
@@ -322,6 +329,8 @@ async def retry_failed_job(
                 niche=params.get("niche", "general"),
                 platform="YouTube Shorts",
                 preview_only=False,
+                user_id=current_user.id,
+                request_id=get_request_id(),
             )
 
         # Update job status

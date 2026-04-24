@@ -1,18 +1,16 @@
 import logging
 import json
 from typing import Any
-from groq import AsyncGroq
-from src.api.config import settings
+from src.services.llm.intelligence_hub import base_intelligence_hub
 from src.services.voiceover.service import base_voiceover_service
 
 class GlobalReachAdapter:
     def __init__(self):
-        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-        self.model = "llama-3.3-70b-versatile"
+        self.logger = logging.getLogger("GlobalReachAdapter")
 
     async def translate_metadata(self, title: str, description: str, tags: list[str], target_lang: str) -> dict[str, Any]:
         """
-        Translates video metadata using Groq/LLM.
+        Translates video metadata using IntelligenceHub.
         """
         prompt = f"""
         Translate the following video metadata into {target_lang}.
@@ -31,19 +29,17 @@ class GlobalReachAdapter:
         """
         
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": f"You are a native {target_lang} viral marketing expert. Output JSON."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={"type": "json_object"}
+            result = await base_intelligence_hub.chat(
+                prompt=prompt,
+                system_prompt=f"You are a native {target_lang} viral marketing expert. Output JSON.",
+                json_mode=True,
+                complexity="medium"
             )
             
-            content = response.choices[0].message.content
+            content = result["response"]
             return json.loads(content)
         except Exception as e:
-            logging.error(f"[GlobalReachAdapter] Translation Error: {e}")
+            self.logger.error(f"[GlobalReachAdapter] Translation Error: {e}")
             return {
                 "title": title,
                 "description": description,
@@ -57,9 +53,13 @@ class GlobalReachAdapter:
         """
         prompt = f"""
         Translate these video script segments into {target_lang}.
-        Keep the timing and tone consistent with the original.
         
-        SEGMENTS:
+        CRITICAL RULES:
+        1. Keep the EXACT same JSON structure and ALL keys (type, text, visual_cue, visual_style, tone, pattern_interrupt, duration).
+        2. ONLY translate the content of the "text" and "visual_cue" fields.
+        3. Do NOT change the number of segments.
+        
+        SEGMENTS TO TRANSLATE:
         {json.dumps(segments, indent=2)}
         
         OUTPUT FORMAT (JSON ONLY):
@@ -69,20 +69,25 @@ class GlobalReachAdapter:
         """
         
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": f"You are a native {target_lang} scriptwriter. Output JSON."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={"type": "json_object"}
+            result = await base_intelligence_hub.chat(
+                prompt=prompt,
+                system_prompt=f"You are a native {target_lang} scriptwriter. You translate video scripts while preserving all metadata. Output JSON.",
+                json_mode=True,
+                complexity="medium"
             )
             
-            content = response.choices[0].message.content
+            content = result["response"]
             translated_data = json.loads(content)
-            return translated_data.get("segments", segments)
+            
+            # Safety Check: Handle both { "segments": [...] } and direct [...] formats
+            if isinstance(translated_data, list):
+                return translated_data
+            if isinstance(translated_data, dict):
+                return translated_data.get("segments", segments)
+            
+            return segments
         except Exception as e:
-            logging.error(f"[GlobalReachAdapter] Script Translation Error: {e}")
+            self.logger.error(f"[GlobalReachAdapter] Script Translation Error: {e}")
             return segments
 
 base_global_adapter = GlobalReachAdapter()
