@@ -321,6 +321,21 @@ async def get_stats_summary(
                 "velocity": "High" if recent_count > 5 else "Nominal",
             }
         )
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Stats summary failed: {e}")
+        return success_response(
+            data={
+                "active_trends": 0,
+                "videos_processed": 0,
+                "total_reach": "0",
+                "success_rate": "0%",
+                "recent_discovery_count": 0,
+                "engine_load": "0%",
+                "velocity": "Nominal",
+            }
+        )
     finally:
         pass
 

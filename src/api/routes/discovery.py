@@ -52,7 +52,7 @@ async def get_trends(
     current_user: UserDB = Depends(get_current_user),
 ):
     try:
-        if niche:
+        if niche and niche.strip():
             trends = await base_discovery_service.find_trending_content(
                 niche,
                 horizon=horizon,
@@ -61,13 +61,14 @@ async def get_trends(
                 exclude_shorts=exclude_shorts,
             )
         else:
-            # Fallback to global trending if no niche specified
+            # Fallback to global trending if no niche specified or empty
             trends = await base_discovery_service.get_global_trending(
                 limit=limit * page, min_viral_score=float(min_viral_score)
             )
 
         return success_response(data=paginate_list(trends, page=page, page_size=limit))
     except Exception as e:
+        logger.error(f"Discovery trends failed: {e}")
         return handle_exception(e)
 
 
@@ -313,7 +314,54 @@ async def get_niche_trends(
                 )
         return success_response(data=trend)
     except Exception as e:
+        logger.error(f"Niche trends failed for {niche}: {e}")
         return handle_exception(e)
+
+
+@router.get("/niche-trends")
+async def get_all_niche_trends(current_user: UserDB = Depends(get_current_user)):
+    """Alias for niche trends when no niche is specified."""
+    return success_response(data={"message": "Select a niche to see trends", "top_keywords": []})
+
+
+@router.get("/summary")
+async def get_discovery_summary(
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """Get discovery module summary statistics."""
+    try:
+        # Total candidates discovered
+        stmt_total = select(func.count()).select_from(ContentCandidateDB)
+        total_candidates = await db.execute(stmt_total)
+        total_count = total_candidates.scalar() or 0
+
+        # High viral score candidates (> 80)
+        stmt_high = (
+            select(func.count())
+            .select_from(ContentCandidateDB)
+            .where(ContentCandidateDB.viral_score >= 80)
+        )
+        high_count_res = await db.execute(stmt_high)
+        high_count = high_count_res.scalar() or 0
+
+        # Platform distribution
+        stmt_platforms = select(
+            ContentCandidateDB.platform, func.count()
+        ).group_by(ContentCandidateDB.platform)
+        platforms_res = await db.execute(stmt_platforms)
+        platform_dist = {row[0]: row[1] for row in platforms_res.all()}
+
+        return success_response(
+            data={
+                "total_candidates": total_count,
+                "high_velocity_candidates": high_count,
+                "platform_distribution": platform_dist,
+                "last_scan": datetime.datetime.utcnow().isoformat(),
+            }
+        )
+    except Exception as e:
+        logger.error(f"Discovery summary failed: {e}")
+        return success_response(data={"total_candidates": 0, "status": "partial_offline"})
 
 
 @router.get("/niches")
