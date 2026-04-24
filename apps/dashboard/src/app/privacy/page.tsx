@@ -14,7 +14,7 @@ export default function PrivacyPage() {
                         <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Data Protection</span>
                     </div>
                     <h1 className="text-5xl font-black tracking-tighter uppercase text-white leading-none">
-                        Privacy <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">Policy</span>
+                        Privacy <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400">Policy</span>
                     </h1>
                 </div>
 

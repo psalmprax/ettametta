@@ -8,13 +8,16 @@ import {
   ArrowRight, 
   Play, 
   Layers, 
-  ShieldCheck, 
+  Search, 
   Globe,
-  Database,
-  Users,
-  ShieldAlert
+  Sparkles,
+  Crown,
+  TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -37,6 +40,23 @@ const itemVariants: Variants = {
 };
 
 export default function LandingPage() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading || user) {
+    return (
+      <div className="min-h-screen bg-brand-dark flex items-center justify-center">
+        <div className="h-12 w-12 border-4 border-cyan-glow border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-brand-dark text-white selection:bg-cyan-glow selection:text-black font-sans">
       {/* Navbar */}
@@ -46,7 +66,7 @@ export default function LandingPage() {
             <div className="h-10 w-10 rounded-xl bg-linear-to-br from-violet-600 to-cyan-500 flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.3)]">
               <Zap className="h-6 w-6 text-white fill-white" />
             </div>
-            <span className="text-2xl font-black tracking-tighter uppercase">AlphaHecta</span>
+            <span className="text-2xl font-black tracking-tighter uppercase">Ettametta</span>
           </div>
 
           <div className="hidden md:flex items-center gap-8">
@@ -75,21 +95,21 @@ export default function LandingPage() {
           >
             <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-glow/10 border border-cyan-glow/20">
               <div className="h-1.5 w-1.5 rounded-full bg-cyan-glow animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-cyan-glow">Next Gen Autonomous AI Orchestration</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-cyan-glow">Autonomous Viral Content Intelligence</span>
             </motion.div>
             
             <motion.h1 variants={itemVariants} className="text-6xl md:text-7xl font-black tracking-tighter leading-[0.9] uppercase">
-              Deploy Production-Ready AI <br />
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-glow via-emerald-accent to-violet-500">In Days, Not Months</span>
+              Discover, Transform <br />
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-glow via-emerald-accent to-violet-500">& Dominate Every Feed</span>
             </motion.h1>
 
             <motion.p variants={itemVariants} className="text-zinc-500 text-lg font-medium max-w-xl leading-relaxed">
-              The unified platform to deploy autonomous agents, enforce regulatory compliance, and protect your brand from synthetic threats with military grade precision.
+              The autonomous engine that scans global social clusters for viral opportunities, transforms them with AI synthesis, and publishes across every platform — on autopilot.
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-wrap gap-4 pt-4">
               <Link href="/register" className="bg-violet-600 hover:bg-violet-700 text-white font-black px-8 py-4 rounded-2xl transition-all flex items-center gap-3 group shadow-lg shadow-violet-600/20">
-                Start Building <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                Start Discovering <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <button className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black px-8 py-4 rounded-2xl transition-all flex items-center gap-3">
                 <Play className="h-5 w-5 fill-white" /> View Demo
@@ -137,18 +157,18 @@ export default function LandingPage() {
             variants={containerVariants}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
-            <MetricTile label="Uptime" value="99.99%" />
-            <MetricTile label="Global Clients" value="10K+" />
-            <MetricTile label="Venture Funding" value="$100M+" />
-            <MetricTile label="Daily Predictions" value="1B+" />
+            <MetricTile label="Viral Candidates Scanned" value="1M+" />
+            <MetricTile label="Synthesis Speed" value="<60s" />
+            <MetricTile label="Predictive Accuracy" value="85%" />
+            <MetricTile label="Platforms Supported" value="7+" />
           </motion.div>
         </section>
 
         {/* 3 Simple Steps */}
         <section className="max-w-7xl mx-auto mb-32 text-center space-y-16">
           <div className="space-y-4">
-            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">Production AI in 3 Simple Steps</h2>
-            <p className="text-zinc-500 font-medium max-w-xl mx-auto uppercase text-xs tracking-widest">We've abstracted the complexity of enterprise AI infrastructure.</p>
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">Viral Domination in 3 Steps</h2>
+            <p className="text-zinc-500 font-medium max-w-xl mx-auto uppercase text-xs tracking-widest">From trend discovery to autonomous publishing — fully automated.</p>
           </div>
 
           <motion.div 
@@ -159,19 +179,19 @@ export default function LandingPage() {
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
             <StepCard 
-              icon={<Database className="h-8 w-8 text-cyan-glow" />} 
-              title="Connect Your Stack" 
-              description="Securely integrate enterprise data, cloud infrastructure, and existing software beds." 
+              icon={<Search className="h-8 w-8 text-cyan-glow" />} 
+              title="Neural Discovery" 
+              description="AI scans YouTube, TikTok, Instagram & more to identify high-velocity viral candidates in your niches." 
             />
             <StepCard 
-              icon={<Users className="h-8 w-8 text-violet-500" />} 
-              title="Deploy Agents" 
-              description="Launch specialized AI workflows tailored to your agents' workflows and business logic." 
+              icon={<Sparkles className="h-8 w-8 text-violet-500" />} 
+              title="AI Transformation" 
+              description="Synthesize original content with AI-driven voice, face, and script transformation — zero manual effort." 
             />
             <StepCard 
-              icon={<ShieldCheck className="h-8 w-8 text-emerald-accent" />} 
-              title="Scale & Protect" 
-              description="Maintain performance in production while enforcing system-level compliance and safety." 
+              icon={<Crown className="h-8 w-8 text-emerald-accent" />} 
+              title="Autonomous Growth" 
+              description="Publish across multiple accounts and platforms simultaneously. Scale your empire on autopilot." 
             />
           </motion.div>
         </section>
@@ -179,7 +199,7 @@ export default function LandingPage() {
         {/* The Portfolio */}
         <section className="max-w-7xl mx-auto mb-32 space-y-16">
           <div className="text-center">
-            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter underline decoration-cyan-glow decoration-8 underline-offset-8">The Portfolio</h2>
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter underline decoration-cyan-glow decoration-8 underline-offset-8">The Platform</h2>
           </div>
 
           <motion.div 
@@ -190,22 +210,22 @@ export default function LandingPage() {
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
             <PortfolioCard 
-              icon={<Layers className="h-10 w-10 text-cyan-glow" />} 
-              title="AgentOps" 
-              description="Autonomous companies and solution-led platforms built to orchestrate the future of enterprise." 
-              tag="FEATURED"
+              icon={<Search className="h-10 w-10 text-cyan-glow" />} 
+              title="Viral Intelligence" 
+              description="Real-time trend scanning and predictive viral scoring across global social clusters — powered by AI pattern recognition." 
+              tag="DISCOVERY"
             />
             <PortfolioCard 
-              icon={<Globe className="h-10 w-10 text-emerald-accent" />} 
-              title="AI Compliance Hub" 
-              description="AI Governance frameworks dedicated to ensuring ethical and regulatory AI operationalization." 
-              tag="ENTERPRISE"
+              icon={<Sparkles className="h-10 w-10 text-emerald-accent" />} 
+              title="Synthesis Studio" 
+              description="AI-driven content transformation engine with voice cloning, face synthesis, and script generation for original short-form video." 
+              tag="CREATION"
             />
             <PortfolioCard 
-              icon={<ShieldAlert className="h-10 w-10 text-violet-500" />} 
-              title="Deepfake Defense" 
-              description="Real-time detection and mitigation of synthetic media across enterprise communication channels." 
-              tag="SECURITY"
+              icon={<TrendingUp className="h-10 w-10 text-violet-500" />} 
+              title="Empire Monetization" 
+              description="Multi-account publishing, affiliate injection, auto-merch generation, and revenue optimization across every platform." 
+              tag="GROWTH"
             />
           </motion.div>
         </section>
@@ -216,10 +236,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-3 opacity-50">
             <Zap className="h-5 w-5" />
-            <span className="font-black uppercase tracking-widest text-sm">AlphaHecta</span>
+            <span className="font-black uppercase tracking-widest text-sm">Ettametta</span>
           </div>
           <div className="text-zinc-600 text-[10px] font-black uppercase tracking-widest">
-            © 2026 ALPHAHECTA TECHNOLOGIES. ALL RIGHTS RESERVED.
+            © 2026 ETTAMETTA. ALL RIGHTS RESERVED.
           </div>
         </div>
       </footer>

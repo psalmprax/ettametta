@@ -75,7 +75,7 @@ class VideoJobService:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-async def update_job_status(self, job_id: str, status: SystemJobStatus | str) -> bool:
+    async def update_job_status(self, job_id: str, status: SystemJobStatus | str) -> bool:
         """Update job status with strict enum enforcement"""
         if isinstance(status, str):
             try:
@@ -116,7 +116,10 @@ async def update_job_status(self, job_id: str, status: SystemJobStatus | str) ->
         return result.scalar() or 0
 
 
+from fastapi import Depends
+from src.api.utils.database import get_db
+
 # Dependency injection helper
-def get_video_job_service(db: AsyncSession) -> VideoJobService:
+def get_video_job_service(db=Depends(get_db)) -> VideoJobService:
     """Factory for VideoJobService"""
     return VideoJobService(db)

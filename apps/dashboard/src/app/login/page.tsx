@@ -70,13 +70,19 @@ export default function LoginPage() {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log("Login Response Structure:", data);
+                const authToken = data.data?.access_token || data.access_token;
+                
                 try {
                     // Only proceed if login actually succeeds and user is verified
-                    await login(data.access_token, remember);
+                    if (!authToken) {
+                        throw new Error("No access token found in response");
+                    }
+                    await login(authToken, remember);
                     // Force a small delay to ensure React state has fully propagated across context boundaries
                     setTimeout(() => {
                         // User is definitely loaded at this point, safe to redirect
-                        router.push("/");
+                        router.push("/dashboard");
                     }, 50);
                 } catch (loginErr) {
                     setError("Session verification failed. Please try again.");
@@ -96,10 +102,10 @@ export default function LoginPage() {
         <div className="min-h-screen bg-black flex items-center justify-center p-6 selection:bg-primary selection:text-black">
             <div className="w-full max-w-md space-y-8">
                 <div className="text-center space-y-4">
-                    <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 border border-primary/20 animate-pulse">
+                    <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 border border-primary/20 animate-pulse shrink-0">
                         <Zap className="h-10 w-10 text-primary fill-primary" />
                     </div>
-                    <h1 className="text-5xl font-black uppercase tracking-tighter text-white">ALPHA<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400 text-hollow">HECTA</span></h1>
+                    <h1 className="text-5xl font-black uppercase tracking-tighter text-white">ETTA<span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">METTA</span></h1>
                     <p className="text-zinc-500 font-medium">Log in to your high-velocity workflow</p>
                 </div>
 
@@ -199,7 +205,7 @@ export default function LoginPage() {
                 </form>
 
                 <p className="text-center text-zinc-600 text-sm font-medium">
-                    New to AlphaHecta?{" "}
+                    New to Ettametta?{" "}
                     <Link href="/register" className="text-white hover:text-primary transition-colors">
                         Register Access
                     </Link>

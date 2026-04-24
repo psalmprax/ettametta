@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     OLLAMA_CLOUD_API_KEY: str | None = None  # Ollama Cloud
     SILICONFLOW_API_KEY: str | None = None  # SiliconFlow - 1K RPM, 50K TPM free
     OLLAMA_URL: str = "http://127.0.0.1:11434"  # Local Ollama server
-    OLLAMA_MODEL: str = "hermes3"  # Default model for Ollama
+    OLLAMA_MODEL: str = "llama3.2:3b"  # Default model for Ollama
     LM_STUDIO_URL: str = "http://localhost:1234"  # Local LM Studio server
     DEFAULT_LLM_PROVIDER: str = "ollama"  # groq, openai, xai, deepseek, anthropic, cohere, mistral, cerebras, cloudflare, huggingface, openrouter, nvidia, ollama_cloud, siliconflow, ollama, lm_studio
     FALLBACK_LLM_PROVIDER: str = "openai"
@@ -146,9 +146,9 @@ class Settings(BaseSettings):
     _detected_gpu_info: dict[str, Any] = hardware_detector.get_gpu_info()
 
     # Rate Limiting (Requests per hour)
-    LIMIT_FREE: int = 5
-    LIMIT_PRO: int = 50
-    LIMIT_SOVEREIGN: int = 500
+    LIMIT_FREE: int = 100
+    LIMIT_PRO: int = 500
+    LIMIT_SOVEREIGN: int = 5000
 
     @property
     def DETECTED_GPU_VRAM_GB(self) -> int | None:

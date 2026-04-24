@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Autonomous Operations - End-to-End', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/login');
-        await page.fill('input[name="username"]', 'testuser');
+        await page.fill('input[name="username"]', 'test');
         await page.fill('input[name="password"]', 'testpassword');
         await page.click('button[type="submit"]');
         await page.waitForURL('/');

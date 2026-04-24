@@ -29,7 +29,7 @@ class AutoMerchRequest(BaseModel):
 async def recommend_links(
     request: LinkRecommendationRequest,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Recommends products/links based on script content.
@@ -52,7 +52,7 @@ async def recommend_links(
 async def auto_merch(
     request: AutoMerchRequest,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     credits_cost: int = Depends(credits_required("auto_merch")),
 ):
     """
@@ -89,7 +89,7 @@ async def auto_merch(
 
 @router.get("/report")
 async def get_monetization_report(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Aggregates revenue tracking data for the dashboard.
@@ -107,7 +107,7 @@ async def get_monetization_report(
 
 @router.get("/empire/metrics")
 async def get_empire_metrics(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """Get empire metrics - returns basic stats for now."""
     import datetime
@@ -156,7 +156,7 @@ async def get_empire_metrics(
 
 @router.get("/empire/activity")
 async def get_empire_activity(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Returns the recent activity logs for the empire timeline.
@@ -198,7 +198,7 @@ class CloneRequest(BaseModel):
 
 @router.get("/empire/blueprints")
 async def get_winning_blueprints(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """Get winning content blueprints from past publishes."""
     from sqlalchemy import select, desc, func
@@ -230,7 +230,7 @@ async def get_winning_blueprints(
 
 @router.get("/empire/network")
 async def get_network_graph(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Returns the visualization graph (nodes/links) for the empire mesh.
@@ -289,7 +289,7 @@ async def get_network_graph(
 async def sync_commerce_products(
     niche: str = "General",
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Triggers a test sync with the configured Shopify store.
@@ -318,7 +318,7 @@ async def sync_commerce_products(
 async def clone_strategy(
     request: CloneRequest,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     from src.services.monetization.empire_service import base_empire_service
 
@@ -346,7 +346,7 @@ class LinkCreate(BaseModel):
 
 @router.get("/links")
 async def list_affiliate_links(
-    current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user=Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Lists all affiliate links for the current user.
@@ -361,7 +361,7 @@ async def list_affiliate_links(
 async def create_affiliate_link(
     link: LinkCreate,
     current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Registers a new affiliate link.

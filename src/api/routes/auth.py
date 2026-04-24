@@ -98,7 +98,7 @@ from src.api.utils.database import get_db
 
 
 @router.post("/register")
-async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(user: UserCreate, db=Depends(get_db)):
     stmt = select(UserDB).where(UserDB.email == user.email)
     result = await db.execute(stmt)
     db_user = result.scalar_one_or_none()
@@ -111,7 +111,7 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
 
     new_user = UserDB(
         username=username,
-        email=current_user.email,
+        email=user.email,
         hashed_password=hashed_pwd,
     )
     db.add(new_user)
@@ -124,7 +124,7 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
 @router.post("/login")
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     # Support login with either username OR email
     stmt = select(UserDB).where(
@@ -140,13 +140,13 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = create_access_token(data={"sub": current_user.email})
+    access_token = create_access_token(data={"sub": user.email})
 
     return success_response(data={"access_token": access_token, "token_type": "bearer"})
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
+    token: str = Depends(oauth2_scheme), db=Depends(get_db)
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -217,7 +217,7 @@ async def google_auth_callback(
     request: Request,
     code: str | None = None,
     state: str | None = None,
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Google OAuth callback endpoint.
@@ -275,7 +275,7 @@ async def google_auth_callback(
             await db.refresh(user)
 
         # Create access token
-        access_token = create_access_token(data={"sub": current_user.email})
+        access_token = create_access_token(data={"sub": user.email})
 
         # Redirect to frontend with token
         dashboard_url = (
@@ -295,7 +295,7 @@ async def google_auth_callback(
 
 # Internal endpoint for OpenClaw to fetch users with Telegram bots
 @router.get("/internal/users-with-bots", tags=["Internal"])
-async def get_users_with_bots(request: Request, db: AsyncSession = Depends(get_db)):
+async def get_users_with_bots(request: Request, db=Depends(get_db)):
     """Internal endpoint for OpenClaw to get users configured with Telegram bots."""
     from sqlalchemy import select
 
@@ -315,10 +315,10 @@ async def get_users_with_bots(request: Request, db: AsyncSession = Depends(get_d
 
     return [
         {
-            "id": current_user.id,
-            "email": current_user.email,
-            "telegram_bot_token": user.telegram_bot_token,
-            "role": current_user.role,
+            "id": user.id,
+            "email": user.email,
+            "telegram_bot_token": user.telegram_token,
+            "role": user.role,
         }
         for user in users
     ]

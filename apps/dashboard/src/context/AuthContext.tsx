@@ -19,6 +19,7 @@ interface AuthContextType {
     credits: number | null;
     isLoading: boolean;
     login: (token: string, remember?: boolean) => Promise<boolean>;
+    register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
     refreshCredits: () => Promise<void>;
 }
@@ -30,6 +31,7 @@ class TokenManager {
     private static readonly CREDITS_KEY = "et_credits";
 
     static setToken(token: string, remember: boolean = false): void {
+        if (!token || token === "undefined" || token === "null") return;
         // Hotfix: Always use localStorage for production stability since many pages 
         // directly reach into localStorage bypass-ing the context.
         localStorage.setItem(this.TOKEN_KEY, token);
@@ -45,7 +47,10 @@ class TokenManager {
             // Sync to localStorage to satisfy direct access from sub-pages
             localStorage.setItem(this.TOKEN_KEY, token);
         }
-        if (token === "null") return null;
+        if (token === "null" || token === "undefined") {
+            this.clearToken();
+            return null;
+        }
         return token;
     }
 
@@ -101,6 +106,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const login = async (authToken: string, remember: boolean = false) => {
+        if (!authToken || authToken === "undefined" || authToken === "null") {
+            console.error("AuthContext: Attempted login with invalid token:", authToken);
+            return false;
+        }
+
         TokenManager.setToken(authToken, remember);
         setToken(authToken);
         
@@ -127,6 +137,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
             logout();
             throw e;
+        }
+    };
+
+    const register = async (email: string, password: string) => {
+        try {
+            const response = await fetch(`${API_BASE}/auth/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            if (response.ok) {
+                return { success: true };
+            } else {
+                const data = await response.json();
+                return { success: false, error: data.detail || "Registration failed" };
+            }
+        } catch (err) {
+            return { success: false, error: "Connection failed" };
         }
     };
 
@@ -242,6 +271,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 isLoading,
                 credits,
                 login,
+                register,
                 logout,
                 refreshCredits,
             }}
