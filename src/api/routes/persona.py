@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -104,7 +105,7 @@ async def generate_persona_video(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Persona animation failed: {e}")
+        logging.error(f"Persona animation failed: {e}")
         raise HTTPException(status_code=503, detail="Persona service unavailable")
 
 
