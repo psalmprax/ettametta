@@ -137,9 +137,9 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
     from src.services.analytics.signal_bus import base_signal_bus
     import psutil
 
-    logging.info("[WS] Telemetry Handshake Attempt Received")
+    print("[WS] Telemetry Handshake Attempt Received")
     await manager.city_connect(websocket)
-    logging.info("[WS] Telemetry Connection Accepted")
+    print("[WS] Telemetry Connection Accepted")
 
     try:
         while True:
@@ -273,7 +273,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     "oracle_status": drift_report["status"],
                 },
             }
-            logging.info(f"[WS] Sending telemetry pulse: {pulse_data['metrics']}")
+            print(f"[WS] Sending telemetry pulse: {pulse_data['metrics']}")
             await websocket.send_text(json.dumps(pulse_data))
             await asyncio.sleep(3.0)
     except WebSocketDisconnect:
