@@ -99,6 +99,9 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 class TracingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        if request.scope["type"] == "websocket":
+            return await call_next(request)
+            
         # Extract or generate Request-ID
         rid = request.headers.get("X-Request-ID") or str(uuid.uuid4())
         set_request_id(rid)
@@ -113,6 +116,9 @@ app.add_middleware(TracingMiddleware)
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
+        if request.scope["type"] == "websocket":
+            return await call_next(request)
+            
         start_time = time.time()
         rid = get_request_id()
         response = await call_next(request)
