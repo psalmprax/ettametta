@@ -2,6 +2,7 @@
 LLM Routes - Unified Multi-Provider LLM API
 """
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Any
