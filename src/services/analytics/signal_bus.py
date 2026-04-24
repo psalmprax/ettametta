@@ -26,6 +26,16 @@ class SignalBus:
 
     def _init_db(self):
         with sqlite3.connect(self.db_path) as conn:
+            # Migration: Standardize column names (Handle legacy 'topic' field)
+            try:
+                cursor = conn.execute("PRAGMA table_info(signals)")
+                cols = [row[1] for row in cursor.fetchall()]
+                if cols and "topic" in cols and "niche" not in cols:
+                    logger.info("🔧 [Bus] Migrating 'topic' column to 'niche' in signal_vault.db")
+                    conn.execute("ALTER TABLE signals RENAME COLUMN topic TO niche")
+            except Exception as e:
+                logger.error(f"Migration error: {e}")
+
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS signals (
                     timestamp REAL,
