@@ -225,6 +225,8 @@ async def retry_job(
                 platform="YouTube Shorts",
                 style="Default",
                 quality_tier="standard",
+                user_id=current_user.id,
+                request_id=get_request_id(),
             )
         elif job.source_url == "Generation Prompt":
             stmt_audit = select(AuditLogDB).where(
@@ -242,6 +244,7 @@ async def retry_job(
                     style=details.get("style", "Cinematic"),
                     aspect_ratio="9:16",
                     user_id=current_user.id,
+                    request_id=get_request_id(),
                 )
 
         if not task:

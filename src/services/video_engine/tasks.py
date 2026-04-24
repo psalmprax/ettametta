@@ -10,6 +10,7 @@ import logging
 import os
 from src.api.config import settings
 from src.shared.internal_client import internal_job_client
+from src.api.utils.tracing import set_request_id, setup_tracing_logger
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,7 @@ def download_and_process_task(
     motion_graphics: bool = False,
     analysis_data: dict = None,
     user_id: str | None = None,
+    request_id: str | None = None,
 ):
     """
     Main background task to transform and publish content.
@@ -87,6 +89,7 @@ def download_and_process_task(
     import asyncio
 
     task_id = self.request.id
+    set_request_id(request_id or task_id)
 
     # Initialize paths for cleanup closure
     video_path = None
@@ -369,6 +372,7 @@ def generate_video_task(
     custom_image_url: str = None,
     parent_id: str = None,  # Standard 4.1: Variant Tracking
     variant_index: int = None,
+    request_id: str | None = None,
 ):
     """
     Background task for AI Video Synthesis (T2V).
@@ -381,6 +385,7 @@ def generate_video_task(
     import uuid
 
     task_id = self.request.id
+    set_request_id(request_id or task_id)
 
     def update_job(status=None, progress=None, output_path=None, error_message=None):
         """Standardized job status update via Internal API (Decoupled)"""
@@ -517,7 +522,7 @@ def generate_video_task(
     max_retries=3,
     retry_kwargs={"max_retries": 3},
 )
-def generate_story_task(self, prompt: str, engine: str, style: str, user_id: str):
+def generate_story_task(self, prompt: str, engine: str, style: str, user_id: str, request_id: str | None = None):
     """
     Orchestrates the synthesis of a multi-scene narrative story.
     """
@@ -531,6 +536,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: str
     import asyncio
 
     task_id = self.request.id
+    set_request_id(request_id or task_id)
 
     def update_job(status=None, progress=None, output_path=None, error_message=None):
         """Standardized job status update via Internal API (Decoupled)"""
@@ -651,7 +657,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: str
     retry_backoff=True,
     max_retries=2,
 )
-def narrative_fusion_task(self, niche: str, duration_sec: int = 60, user_id: str = None):
+def narrative_fusion_task(self, niche: str, duration_sec: int = 60, user_id: str = None, request_id: str | None = None):
     """
     Tier 10 Autonomous Narrative Fusion task.
     Discovers multiple assets from 15+ platforms and fuses them into a cinematic narrative.
@@ -667,6 +673,7 @@ def narrative_fusion_task(self, niche: str, duration_sec: int = 60, user_id: str
     import asyncio
 
     task_id = self.request.id
+    set_request_id(request_id or task_id)
 
     def update_job(status=None, progress=None, output_path=None, error_message=None):
         """Standardized job status update via Internal API (Decoupled)"""

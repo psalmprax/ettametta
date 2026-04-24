@@ -7,7 +7,10 @@ import logging
 request_id_var: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("request_id", default=None)
 
 def get_request_id() -> str:
-    """Get current request ID or generate a new one if none exists."""
+    """
+    Get current request ID or generate a new one if none exists.
+    Used in both API requests and background tasks.
+    """
     rid = request_id_var.get()
     if not rid:
         rid = str(uuid.uuid4())
@@ -15,8 +18,12 @@ def get_request_id() -> str:
     return rid
 
 def set_request_id(rid: str):
-    """Set the current request ID."""
-    request_id_var.set(rid)
+    """
+    Explicitly set the current request ID.
+    Used by middleware and task entry points to propagate IDs.
+    """
+    if rid:
+        request_id_var.set(rid)
 
 class TracingFilter(logging.Filter):
     """Logging filter that adds request_id to every log record."""
