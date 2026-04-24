@@ -31,11 +31,15 @@ interface ScriptSegment {
     type: string;
     text: string;
     visual_cue: string;
+    visual_style?: string;
+    tone?: string;
+    pattern_interrupt?: string;
     duration: number;
 }
 
 interface ScriptOutput {
     title: string;
+    emotional_arc?: string;
     segments: ScriptSegment[];
     hashtags: string[];
 }
@@ -554,6 +558,12 @@ export default function CreationPage() {
                                         <div className="space-y-2">
                                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Viral Title</span>
                                             <h2 className="text-3xl font-black text-white uppercase tracking-tighter">{script.title}</h2>
+                                            {script.emotional_arc && (
+                                                <div className="flex items-center gap-3 pt-2">
+                                                    <Target className="h-3 w-3 text-zinc-600" />
+                                                    <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em]">{script.emotional_arc}</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="space-y-10">
@@ -579,41 +589,59 @@ export default function CreationPage() {
                                                         </div>
                                                         <p className="text-lg font-bold text-zinc-200 leading-relaxed">{seg.text}</p>
 
-                                                        <div className="flex gap-4 items-center">
+                                                        <div className="flex flex-wrap gap-3 items-center">
                                                             <div className="flex items-center gap-3 bg-zinc-950/40 p-3 rounded-xl border border-white/5 w-fit">
                                                                 <Film className="h-3 w-3 text-zinc-500" />
                                                                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{seg.visual_cue}</span>
                                                             </div>
+                                                            {seg.tone && (
+                                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/20">
+                                                                    <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                                                    <span className="text-[8px] font-black uppercase tracking-widest text-primary">{seg.tone}</span>
+                                                                </div>
+                                                            )}
+                                                            {seg.visual_style && (
+                                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/5 border border-violet-500/20">
+                                                                    <Zap className="h-2.5 w-2.5 text-violet-500" />
+                                                                    <span className="text-[8px] font-black uppercase tracking-widest text-violet-400">{seg.visual_style}</span>
+                                                                </div>
+                                                            )}
+                                                            {seg.pattern_interrupt && (
+                                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/5 border border-orange-500/20">
+                                                                    <RefreshCw className="h-2.5 w-2.5 text-orange-500" />
+                                                                    <span className="text-[8px] font-black uppercase tracking-widest text-orange-400">{seg.pattern_interrupt}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
 
-                                                            <div className="flex gap-2">
-                                                                <button
-                                                                    onClick={() => handleSynthesizeAudio(i, seg.text)}
-                                                                    className={cn(
-                                                                        "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
-                                                                        segmentAssets[i]?.audio ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
-                                                                    )}
-                                                                >
-                                                                    {loadingSegment === `audio-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Zap className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.audio ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleSearchStock(i, seg.visual_cue)}
-                                                                    className={cn(
-                                                                        "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
-                                                                        segmentAssets[i]?.videos ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
-                                                                    )}
-                                                                >
-                                                                    {loadingSegment === `stock-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Film className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.videos ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleGenerateSegmentImage(i, seg.visual_cue)}
-                                                                    className={cn(
-                                                                        "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
-                                                                        segmentAssets[i]?.image ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
-                                                                    )}
-                                                                >
-                                                                    {loadingSegment === `image-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Wand2 className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.image ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
-                                                                </button>
-                                                            </div>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => handleSynthesizeAudio(i, seg.text)}
+                                                                className={cn(
+                                                                    "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
+                                                                    segmentAssets[i]?.audio ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
+                                                                )}
+                                                            >
+                                                                {loadingSegment === `audio-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Zap className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.audio ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleSearchStock(i, seg.visual_cue)}
+                                                                className={cn(
+                                                                    "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
+                                                                    segmentAssets[i]?.videos ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
+                                                                )}
+                                                            >
+                                                                {loadingSegment === `stock-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Film className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.videos ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleGenerateSegmentImage(i, seg.visual_cue)}
+                                                                className={cn(
+                                                                    "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
+                                                                    segmentAssets[i]?.image ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
+                                                                )}
+                                                            >
+                                                                {loadingSegment === `image-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Wand2 className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.image ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
+                                                            </button>
                                                         </div>
 
                                                         {/* Asset Previews */}

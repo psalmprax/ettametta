@@ -30,6 +30,7 @@ class ContentCandidate(BaseModel):
     like_count: int = 0
     comment_count: int = 0
     share_count: int = 0
+    # Velocity (views per hour) - calculated from view count and time since publish
     velocity: float = 0.0
     engagement_score: float = 0.0
     viral_score: int = 0
