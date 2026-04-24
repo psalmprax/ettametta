@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 import random
 from src.shared.enums import ContentPublishStatus
@@ -53,8 +54,6 @@ class SmartScheduler:
                     return sorted(windows, key=lambda x: x["start"])
         except Exception as e:
             # If DB error or missing models, we fall back to defaults
-            import logging
-
             logging.getLogger("SmartScheduler").warning(
                 f"Failed to calculate dynamic peak windows: {e}. Using fallback."
             )
