@@ -20,7 +20,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Step 4: Autonomous Operations - Agent Zero & Nexus Flow', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/login');
-        await page.fill('input[name="username"]', 'testuser');
+        await page.fill('input[name="username"]', 'test');
         await page.fill('input[name="password"]', 'testpassword');
         await page.click('button[type="submit"]');
         await page.waitForURL('/');

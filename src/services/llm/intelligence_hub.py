@@ -113,6 +113,7 @@ class IntelligenceHub:
         session_id: str | None = None,
         json_mode: bool = False,
         complexity: str = "medium",  # "low", "medium", "high"
+        provider: str | None = None, # Explicit provider override
     ) -> dict[str, Any]:
         """
         Unified chat interface with complexity-based routing and failure persistence.
@@ -123,20 +124,24 @@ class IntelligenceHub:
         primary = self._route_complexity(complexity)
         
         # Step 2: Define candidates (Primary -> Fallbacks)
-        candidates = [primary, "ollama", "gemini", "groq", "openai"]
+        if provider:
+            candidates = [provider]
+        else:
+            candidates = [primary, "ollama", "gemini", "groq", "openai"]
+        
         # Remove duplicates while preserving order
         candidates = list(dict.fromkeys(candidates))
 
-        for provider in candidates:
-            if provider not in self.breakers:
-                logger.warning(f"Provider {provider} not in breakers, skipping")
+        for p in candidates:
+            if p not in self.breakers:
+                logger.warning(f"Provider {p} not in breakers, skipping")
                 continue
-            if not self.breakers[provider].can_attempt():
+            if not self.breakers[p].can_attempt():
                 logger.warning(
                     json.dumps(
                         {
                             "event": "provider_skipped",
-                            "provider": provider,
+                            "provider": p,
                             "request_id": request_id,
                             "msg": "Circuit is OPEN",
                         }
@@ -146,18 +151,18 @@ class IntelligenceHub:
 
             try:
                 result = await self._call_provider(
-                    provider, prompt, system_prompt, request_id, json_mode
+                    p, prompt, system_prompt, request_id, json_mode
                 )
-                self.breakers[provider].record_success()
-                return {**result, "request_id": request_id, "provider": provider}
+                self.breakers[p].record_success()
+                return {**result, "request_id": request_id, "provider": p}
             except Exception as e:
-                self.breakers[provider].record_failure()
+                self.breakers[p].record_failure()
                 logger.error(
                     json.dumps(
                         {
                             "event": "provider_error",
-                            "provider": provider,
-                            "error": f"{type(e).__name__}: {str(e)}",
+                            "provider": p,
+                            "error": str(e),
                             "request_id": request_id,
                         }
                     )

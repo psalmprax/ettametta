@@ -30,7 +30,7 @@ export function Skeleton({ className, variant = "default" }: SkeletonProps) {
                     duration: 2,
                     ease: "linear",
                 }}
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent"
+                className="absolute inset-0 bg-linear-to-r from-transparent via-white/[0.05] to-transparent"
             />
         </div>
     );

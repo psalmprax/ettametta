@@ -1,7 +1,14 @@
+import sys
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+
+# Add project root to sys.path
+root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if root_path not in sys.path:
+    sys.path.insert(0, root_path)
 
 from alembic import context
 
@@ -16,9 +23,17 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from api.utils.models import Base
-from api.utils.user_models import UserDB
-from api.config import settings
+from src.api.utils.models import Base
+from src.api.utils.user_models import UserDB
+from src.api.utils.credit_models import (
+    UserCreditDB,
+    CreditTransactionDB,
+    CreditPackageDB,
+    ReferralDB,
+    CreditUsageRuleDB,
+    SubscriptionCreditDB,
+)
+from src.api.config import settings
 
 target_metadata = Base.metadata
 

@@ -47,7 +47,7 @@ async def generate_single_video(
     request: Request,
     body: GenerationRequest,
     current_user: UserDB = Depends(daily_limit_reached()),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Hardened AI video synthesis endpoint with atomic credit flow.
@@ -183,7 +183,7 @@ async def start_story_generation(
     body: StoryRequest,
     current_user: UserDB = Depends(daily_limit_reached()),
     credits_cost: int = Depends(credits_required("storytelling")),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Triggers a multi-scene storytelling narrative task.
@@ -252,7 +252,7 @@ async def retry_failed_job(
     request: Request,
     job_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Retry a failed video generation job.
@@ -355,7 +355,7 @@ async def retry_failed_job(
 async def get_video_preview(
     job_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Get video preview information including public URL and status.

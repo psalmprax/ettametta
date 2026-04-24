@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AlphaHecta | Production-Ready AI",
-  description: "The unified platform to deploy autonomous agents with military grade precision.",
+  title: "Ettametta | Autonomous Viral Content Intelligence",
+  description: "Discover, transform, and dominate every feed with AI-powered content discovery, synthesis, and autonomous multi-platform publishing.",
 };
 
 import RootClientContext from "@/components/providers/RootClientContext";

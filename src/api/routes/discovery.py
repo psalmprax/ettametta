@@ -263,7 +263,7 @@ async def analyze_candidate(
     candidate: ContentCandidate,
     current_user: UserDB = Depends(get_current_user),
     credits_cost: int = Depends(credits_required("viral_analysis")),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Asynchronous deconstruction: Dispatches deep AI analysis to Celery
@@ -318,7 +318,7 @@ async def get_niche_trends(
 
 @router.get("/niches")
 async def list_monitored_niches(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     from src.api.utils.models import MonitoredNiche
 
@@ -339,7 +339,7 @@ async def list_monitored_niches(
 async def watch_niche(
     request: NicheWatchRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Persistently watch/monitor a niche for this current_user.
@@ -438,7 +438,7 @@ async def create_video_from_analysis(
     request: CreateVideoFromAnalysisRequest,
     current_user: UserDB = Depends(get_current_user),
     credits_cost: int = Depends(credits_required("video_transformation")),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Create a video transformation from completed analysis.
@@ -540,7 +540,7 @@ class AutoTransformRequest(BaseModel):
 async def auto_transform(
     request: AutoTransformRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     One-shot pipeline: Discover best content → Analyze → Create video transformation.
@@ -782,7 +782,7 @@ class InteractionRequest(BaseModel):
 async def record_interaction(
     request: InteractionRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Records a UI interaction with a discovery candidate.
@@ -832,7 +832,7 @@ class AnalysisResponse(BaseModel):
 async def get_content_analysis(
     content_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     force: bool = False,
 ):
     """
@@ -890,7 +890,7 @@ async def get_content_analysis(
 async def get_content_velocity(
     content_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Get viral velocity score for a specific content item.
@@ -963,7 +963,7 @@ async def get_content_velocity(
 async def get_content_reuploads(
     content_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     limit: int = 20,
 ):
     """
@@ -1193,7 +1193,7 @@ class NicheAlertRequest(BaseModel):
 @router.get("/alerts")
 async def get_niche_alerts(
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Get current_user's niche alerts."""
     from src.api.utils.models import DiscoveryAlertDB
@@ -1228,7 +1228,7 @@ async def get_niche_alerts(
 async def create_niche_alert(
     request: NicheAlertRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Create an alert for when new trending content is found in a niche."""
     from src.api.utils.models import DiscoveryAlertDB
@@ -1262,7 +1262,7 @@ async def create_niche_alert(
 async def delete_niche_alert(
     alert_id: int,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Delete a niche alert."""
     from src.api.utils.models import DiscoveryAlertDB
@@ -1296,7 +1296,7 @@ class BulkFavoriteRequest(BaseModel):
 async def bulk_favorites(
     request: BulkFavoriteRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Add or remove multiple candidates from favorites."""
     from src.api.utils.models import DiscoveryFavoriteDB
@@ -1339,7 +1339,7 @@ async def bulk_favorites(
 @router.get("/favorites")
 async def get_favorites(
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     limit: int = 50,
 ):
     """Get current_user's favorite content."""
@@ -1382,7 +1382,7 @@ async def get_favorites(
 @router.get("/history")
 async def get_scan_history(
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     limit: int = 20,
 ):
     """Get scan history for the current_user."""

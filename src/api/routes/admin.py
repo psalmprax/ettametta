@@ -55,7 +55,7 @@ async def upload_env_file(
     request: Request,
     file: UploadFile = File(...),
     current_user: UserDB = Depends(admin_required),
-    db: AsyncSession = Depends(get_db)
+    db=Depends(get_db)
 ):
     """
     Securely uploads and replaces the system .env file.
@@ -136,7 +136,7 @@ async def upload_env_file(
 async def restart_system(
     request: Request,
     current_user: UserDB = Depends(admin_required),
-    db: AsyncSession = Depends(get_db)
+    db=Depends(get_db)
 ):
     """
     Triggers a controlled shutdown of the API process. 
@@ -174,7 +174,7 @@ async def register_incident_webhook(
     name: str | None = None,
     secret: str | None = None,
     current_user: UserDB = Depends(admin_required),
-    db: AsyncSession = Depends(get_db)
+    db=Depends(get_db)
 ):
     """
     Registers an external incident reporting webhook (Standard 3.12).
@@ -195,7 +195,7 @@ async def register_incident_webhook(
 @router.get("/compliance/webhooks")
 async def list_incident_webhooks(
     current_user: UserDB = Depends(admin_required),
-    db: AsyncSession = Depends(get_db)
+    db=Depends(get_db)
 ):
     """Lists all registered incident reporting webhooks."""
     from src.api.utils.models import IncidentWebhookDB
