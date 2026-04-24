@@ -1137,6 +1137,9 @@ async def get_publish_history(
         result = await db.execute(stmt)
         history = result.scalars().all()
         return success_response(data=history)
+    except Exception as e:
+        logger.error(f"Publish history failed: {e}")
+        return success_response(data=[])
     finally:
         pass
 
