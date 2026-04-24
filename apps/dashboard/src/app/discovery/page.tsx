@@ -699,7 +699,7 @@ function DiscoveryContent() {
                             Viral <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">{mode === "discovery" ? "Discovery" : "Synthesis"}</span>
                         </h1>
                         <p className="text-zinc-500 mt-2 max-w-lg text-sm font-medium leading-relaxed">
-                            Scanning <span className="text-zinc-300 font-bold">{telemetry ? Math.floor(telemetry.bitrate * 34.5).toLocaleString() : "14,000+"}</span> data points per second to identify high-velocity content opportunities before they peak.
+                            Scanning <span className="text-zinc-300 font-bold">{telemetry ? Math.floor((telemetry.metrics?.bitrate || telemetry.bitrate) * 34.5).toLocaleString() : "14,000+"}</span> data points per second to identify high-velocity content opportunities before they peak.
                         </p>
                     </div>
 

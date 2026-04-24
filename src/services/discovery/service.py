@@ -405,7 +405,6 @@ class DiscoveryService:
                         creator_name=c.creator_name,
                         creator_id=c.creator_id,
                         source_url=c.source_url,
-                        url=c.source_url,  # Maintain legacy URL for now
                         thumbnail_url=c.thumbnail_url,
                         published_at=c.published_at,
                         scanned_at=c.scanned_at,
@@ -419,7 +418,7 @@ class DiscoveryService:
                         category=c.category,
                         tags=c.tags,
                         niche=c.niche or niche,
-                        metadata_json=c.metadata,
+                        metadata_json=c.metadata_json,
                     )
                     await db.merge(db_c)
 
@@ -434,6 +433,25 @@ class DiscoveryService:
         # 5. Recalculate viral scores with fresh velocity data
         if all_candidates:
             all_candidates = await self._recalculate_viral_scores(all_candidates)
+            
+            # 📡 [Intelligence Bridge] Ingest aggregate discovery signal into SignalBus
+            try:
+                from src.services.analytics.signal_bus import base_signal_bus
+                avg_views = sum(c.view_count for c in all_candidates) / len(all_candidates)
+                avg_viral = sum(c.viral_score for c in all_candidates) / len(all_candidates)
+                
+                base_signal_bus.ingest_signal(
+                    niche=niche,
+                    platform="discovery_aggregate",
+                    raw_metrics={
+                        "growth_rate": (avg_viral / 100.0),  # Normalize 0-100 to 0-1.0
+                        "avg_views": avg_views,
+                        "saturation": min(1.0, len(all_candidates) / 50.0)
+                    }
+                )
+                logger.info(f"📡 [Discovery] Signal bus updated for '{niche}' with {len(all_candidates)} candidates.")
+            except Exception as e:
+                logger.error(f"Failed to ingest signal to bus: {e}")
 
         # 6. Recursive Discovery Expansion (Autonomous Scaling)
         if len(all_candidates) > 0:
