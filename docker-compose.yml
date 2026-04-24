@@ -24,7 +24,41 @@ services:
       - "traefik.http.routers.traefik.entrypoints=web"
     networks:
       - ettametta
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-psalmprax}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ettametta_pass}
+      POSTGRES_DB: ettametta
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ettametta
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-psalmprax} -d ettametta"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD:-ettametta_redis_pass}
+    networks:
+      - ettametta
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-ettametta_redis_pass}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     build:
       context: .
       dockerfile: ./infra/docker/api.Dockerfile
@@ -419,6 +453,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   voiceover_cache:
   video_cache:
   prometheus_data:
