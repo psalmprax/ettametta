@@ -61,6 +61,9 @@ temp/
 tmp/
 tmp_verify/
 outputs/
+output/
+local_downloads/
+src/tests/e2e/node_modules/
 curl_error.log
 curl_success.log
 final_build_log.txt
