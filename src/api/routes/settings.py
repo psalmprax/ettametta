@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -335,14 +336,14 @@ async def update_system_settings(
 
     await db.commit()
     
-    # Broadcast reload signal to all components
+     # Broadcast reload signal to all components
     try:
         from src.api.routes.ws import redis
         from src.api.config import settings as app_settings
         r = redis.from_url(app_settings.REDIS_URL)
         await r.publish("system_config_reload", "settings_update")
     except Exception as e:
-        logger.error(f"Failed to broadcast settings reload: {e}")
+        logging.error(f"Failed to broadcast settings reload: {e}")
 
     return success_response(data={"status": "success", "updated_count": len(settings_dict)})
 
