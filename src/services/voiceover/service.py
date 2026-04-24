@@ -1,7 +1,11 @@
 import os
 import httpx
 import logging
+import importlib.util
 from src.api.utils.vault import get_secret
+
+def check_module_available(module_name: str) -> bool:
+    return importlib.util.find_spec(module_name) is not None
 
 class VoiceoverService:
     @property
@@ -75,13 +79,17 @@ class VoiceoverService:
                 logging.error(f"[VoiceoverService] ElevenLabs failed: {e}")
 
         # 3. Fallback to gTTS (Free)
-        try:
-            from gtts import gTTS
-            tts = gTTS(text=text, lang='en')
-            tts.save(file_path)
-            return f"audio/{file_name}"
-        except Exception as e:
-            logging.error(f"[VoiceoverService] gTTS Fallback Failed: {e}")
-            return None
+        if check_module_available("gtts"):
+            try:
+                from gtts import gTTS
+                tts = gTTS(text=text, lang='en')
+                tts.save(file_path)
+                return f"audio/{file_name}"
+            except Exception as e:
+                logging.error(f"[VoiceoverService] gTTS Fallback Failed: {e}")
+        else:
+            logging.warning("[VoiceoverService] gTTS not available, skipping fallback")
+        
+        return None
 
 base_voiceover_service = VoiceoverService()

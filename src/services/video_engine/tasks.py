@@ -68,6 +68,7 @@ def download_and_process_task(
     sound_design: bool = False,
     motion_graphics: bool = False,
     analysis_data: dict = None,
+    user_id: str | None = None,
 ):
     """
     Main background task to transform and publish content.
@@ -77,7 +78,7 @@ def download_and_process_task(
     - enhanced: Tier 2 + sound design
     - premium: Tier 3 full processing (sound + motion graphics)
     """
-    from src.api.utils.database import get_async_db_url, AsyncSession
+    from src.api.utils.database import get_async_db_url, AsyncSession, async_session_factory
     from src.api.utils.models import VideoJobDB
     from sqlalchemy import select
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -86,6 +87,10 @@ def download_and_process_task(
     import asyncio
 
     task_id = self.request.id
+
+    # Initialize paths for cleanup closure
+    video_path = None
+    processed_path = None
 
     # Create fresh async engine per task to avoid event loop issues with Celery
     _async_engine = create_async_engine(
@@ -98,24 +103,23 @@ def download_and_process_task(
         bind=_async_engine, class_=AsyncSession, expire_on_commit=False
     )
 
-    def update_job(status=None, progress=None, output_path=None, error_message=None):
+    async def update_job(status=None, progress=None, output_path=None, error_message=None):
         """Standardized job status update via Internal API (Decoupled)"""
-        run_async(
-            internal_job_client.update_job(
-                job_id=task_id,
-                status=status,
-                progress=progress,
-                output_path=output_path,
-                error_message=error_message,
-            )
+        await internal_job_client.update_job(
+            job_id=task_id,
+            status=status,
+            progress=progress,
+            output_path=output_path,
+            error_message=error_message,
         )
 
-    try:
+    async def _run_task():
+        nonlocal video_path, processed_path
         # 1. Download
-        update_job(status=SystemJobStatus.VALIDATING, progress=5)
-        is_valid = run_async(base_video_downloader.verify_video_asset(source_url))
+        await update_job(status=SystemJobStatus.VALIDATING, progress=5)
+        is_valid = await base_video_downloader.verify_video_asset(source_url)
         if not is_valid:
-            update_job(
+            await update_job(
                 status=SystemJobStatus.FAILED_INVALID_INPUT,
                 progress=0,
                 error_message="Asset validation failed: Source appears to be audio-only or invalid.",
@@ -127,10 +131,10 @@ def download_and_process_task(
                 "message": "Asset validation failed: Source appears to be audio-only or invalid.",
             }
 
-        update_job(status=SystemJobStatus.DOWNLOADING, progress=10)
-        video_path = run_async(base_video_downloader.download_video(source_url))
+        await update_job(status=SystemJobStatus.DOWNLOADING, progress=10)
+        video_path = await base_video_downloader.download_video(source_url)
         if not video_path:
-            update_job(
+            await update_job(
                 status=SystemJobStatus.FAILED_DOWNLOAD_ERROR,
                 progress=0,
                 error_message="Video download failed",
@@ -139,34 +143,30 @@ def download_and_process_task(
             raise Exception("Download failed - retryable")
 
         # B. Analyze Visuals via Gemini (VLM)
-        update_job(status=SystemJobStatus.ANALYZING_VISUALS, progress=35)
+        await update_job(status=SystemJobStatus.ANALYZING_VISUALS, progress=35)
         from .vlm_service import base_vlm_service
 
-        visual_insights = run_async(base_vlm_service.analyze_video_content(video_path))
+        visual_insights = await base_vlm_service.analyze_video_content(video_path)
 
         # C. Generate Strategy via Groq (Integrated Scraper + VLM Intelligence)
-        update_job(status=SystemJobStatus.STRATEGIZING, progress=40)
+        await update_job(status=SystemJobStatus.STRATEGIZING, progress=40)
         from src.services.decision_engine.service import base_strategy_service
 
         # Extract transcript from video if available
         from .transcription import base_transcription_service
 
-        transcript_segments = run_async(
-            base_transcription_service.transcribe_video(video_path)
-        )
+        transcript_segments = await base_transcription_service.transcribe_video(video_path)
         transcript = (
             " ".join(seg.get("text", "") for seg in transcript_segments)
             if transcript_segments
             else "Visual-only analysis conducted."
         )
-        strategy_obj = run_async(
-            base_strategy_service.generate_visual_strategy(
-                transcript,
-                niche,
-                style=style,
-                visual_insights=visual_insights,
-                analysis_data=analysis_data,
-            )
+        strategy_obj = await base_strategy_service.generate_visual_strategy(
+            transcript,
+            niche,
+            style=style,
+            visual_insights=visual_insights,
+            analysis_data=analysis_data,
         )
         strategy = (
             strategy_obj.model_dump(mode="json")
@@ -179,7 +179,7 @@ def download_and_process_task(
         if visual_insights.get("visual_mood"):
             logging.info(f"[Task] VLM Intuition: {visual_insights['visual_mood']}")
 
-        update_job(status=SystemJobStatus.RENDERING, progress=50)
+        await update_job(status=SystemJobStatus.RENDERING, progress=50)
 
         # C. Render with Full Pipeline
         processor = VideoProcessor()
@@ -188,58 +188,51 @@ def download_and_process_task(
         from src.api.utils.models import VideoFilterDB
         from sqlalchemy import select
 
-        async def get_filters():
-            async with async_session_factory() as db:
+        # Fetch enabled filters safely
+        try:
+            async with _task_session_factory() as db:
                 stmt = select(VideoFilterDB).where(VideoFilterDB.enabled == True)
                 result = await db.execute(stmt)
-                return [f.id for f in result.scalars().all()]
+                enabled_filters = [f.id for f in result.scalars().all()]
+        except Exception as db_err:
+            logging.warning(f"[Task] DB Filter fetch failed: {db_err}. Using default filters.")
+            enabled_filters = []
 
-        enabled_filters = run_async(get_filters())
-
-        processed_path = run_async(
-            processor.process_full_pipeline(
-                video_path,
-                output_name,
-                enabled_filters=enabled_filters,
-                strategy=strategy,
-            )
+        processed_path = await processor.process_full_pipeline(
+            video_path,
+            output_name=f"processed_{task_id}.mp4",
+            strategy=strategy,
         )
 
         # ===== TIER 3 ENHANCEMENTS (Any) =====
         # Sound Design: enabled by explicit flag OR quality_tier
         if sound_design or quality_tier in ("enhanced", "premium"):
-            update_job(status=SystemJobStatus.ADDING_SOUND_DESIGN, progress=55)
+            await update_job(status=SystemJobStatus.ADDING_SOUND_DESIGN, progress=55)
             from src.services.audio.sound_design import sound_design_service
 
-            enhanced_path = run_async(
-                sound_design_service.add_background_music(processed_path, niche=niche)
-            )
+            enhanced_path = await sound_design_service.add_background_music(processed_path, niche=niche)
             if enhanced_path:
                 processed_path = enhanced_path
                 logger.info(f"[Task] Sound design applied")
 
         # Motion Graphics: enabled by explicit flag OR premium tier
         if motion_graphics or quality_tier == "premium":
-            update_job(status=SystemJobStatus.ADDING_MOTION_GRAPHICS, progress=60)
+            await update_job(status=SystemJobStatus.ADDING_MOTION_GRAPHICS, progress=60)
             from src.services.video_engine.motion_graphics import (
                 base_motion_graphics_service,
             )
 
             title = f"{niche} Secrets" if niche else "Viral Content"
-            mg_path = run_async(
-                base_motion_graphics_service.add_title_sequence(
-                    processed_path, title=title, style="cinematic"
-                )
+            mg_path = await base_motion_graphics_service.add_title_sequence(
+                processed_path, title=title, style="cinematic"
             )
             if mg_path:
                 processed_path = mg_path
                 logger.info(f"[Task] Motion graphics applied")
 
         # 3. Generate SEO metadata/package (USING REAL SERVICE)
-        update_job(status=SystemJobStatus.OPTIMIZING, progress=70)
-        metadata = run_async(
-            base_optimization_service.generate_viral_package(task_id, niche, platform)
-        )
+        await update_job(status=SystemJobStatus.OPTIMIZING, progress=70)
+        metadata = await base_optimization_service.generate_viral_package(task_id, niche, platform)
 
         # 3.5 Storage (Upload to S3 or prepare local URL)
         from src.services.storage.service import base_storage_service
@@ -266,26 +259,21 @@ def download_and_process_task(
             }
 
         # 4. Upload to Social Platform
-        update_job(status=SystemJobStatus.UPLOADING, progress=85)
+        await update_job(status=SystemJobStatus.UPLOADING, progress=85)
         url = ""
+        current_user_id = user_id 
         if platform == "YouTube Shorts":
-            url = run_async(
-                base_youtube_publisher.upload_video(processed_path, metadata)
-            )
+            url = await base_youtube_publisher.upload_video(processed_path, metadata, user_id=current_user_id)
         elif platform == "TikTok":
-            # Use Real TikTok Publisher
             from src.services.optimization.tiktok_publisher import base_tiktok_publisher
-
-            update_job(status=SystemJobStatus.TIKTOK_UPLOAD, progress=90)
-            url = run_async(
-                base_tiktok_publisher.upload_video(processed_path, metadata)
-            )
+            await update_job(status=SystemJobStatus.TIKTOK_UPLOAD, progress=90)
+            url = await base_tiktok_publisher.upload_video(processed_path, metadata)
             if not url:
                 url = "tiktok_upload_failed_check_logs"
         else:
             url = "platform_not_supported_yet"
 
-        update_job(
+        await update_job(
             status=SystemJobStatus.COMPLETED, progress=100, output_path=public_url
         )
 
@@ -293,7 +281,6 @@ def download_and_process_task(
         if settings.STORAGE_PROVIDER != "LOCAL":
             cleanup_local_files(video_path, processed_path)
         else:
-            # If local, only delete the raw download
             cleanup_local_files(video_path)
 
         return {
@@ -302,6 +289,9 @@ def download_and_process_task(
             "processed_file": processed_path,
             "public_url": public_url,
         }
+
+    try:
+        return run_async(_run_task())
     except Exception as e:
         error_msg = str(e)
 
@@ -328,18 +318,31 @@ def download_and_process_task(
             logging.warning(
                 f"[Celery Task] Retryable ERROR (attempt {self.request.retries + 1}/{self.max_retries + 1}): {e}"
             )
-            update_job(
-                status=status,
-                error_message=f"Attempt {self.request.retries + 1} failed: {error_msg}",
+            # Update status for retry
+            run_async(
+                internal_job_client.update_job(
+                    job_id=task_id,
+                    status=status,
+                    error_message=f"Attempt {self.request.retries + 1} failed: {error_msg}",
+                )
             )
-            raise  # Re-raise to trigger retry
+            raise 
 
-        update_job(status=status, error_message=error_msg)
+        # We can't await here because we're in the except block of run_async wrapper
+        # But we want to update the job status.
+        # We'll use a NEW loop for the final status update if it failed.
+        run_async(
+            internal_job_client.update_job(
+                job_id=task_id,
+                status=status,
+                error_message=error_msg,
+            )
+        )
 
         # Ensure cleanup on failure
-        if "video_path" in locals():
+        if video_path:
             cleanup_local_files(video_path)
-        if "processed_path" in locals() and settings.STORAGE_PROVIDER != "LOCAL":
+        if processed_path and settings.STORAGE_PROVIDER != "LOCAL":
             cleanup_local_files(processed_path)
         return {"status": "error", "message": error_msg}
     finally:
@@ -523,7 +526,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: str
     from sqlalchemy import select
     from src.services.decision_engine.service import base_strategy_service
     from src.services.video_engine.synthesis_service import base_generative_service
-    from src.services.video_engine.voiceover import base_voiceover_service
+    from src.services.voiceover.service import base_voiceover_service
     import uuid
     import asyncio
 
