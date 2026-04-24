@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Any
@@ -43,7 +44,7 @@ async def generate_script(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Voiceover generation failed: {e}")
+        logging.error(f"Voiceover generation failed: {e}")
         raise HTTPException(status_code=503, detail="Voiceover service unavailable")
 
 
@@ -58,7 +59,7 @@ async def validate_hook(request: HookRequest, current_user=Depends(get_current_u
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Voiceover generation failed: {e}")
+        logging.error(f"Voiceover generation failed: {e}")
         raise HTTPException(status_code=503, detail="Voiceover service unavailable")
 
 

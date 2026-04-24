@@ -95,7 +95,7 @@ async def complete(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"LLM completion failed: {e}")
+        logging.error(f"LLM completion failed: {e}")
         raise HTTPException(status_code=503, detail="LLM service unavailable")
 
 
@@ -135,7 +135,7 @@ async def chat(request: ChatRequest, current_user: UserDB = Depends(get_current_
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"LLM chat failed: {e}")
+        logging.error(f"LLM chat failed: {e}")
         raise HTTPException(status_code=503, detail="LLM service unavailable")
 
 
@@ -180,5 +180,5 @@ async def create_embedding(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"LLM embed failed: {e}")
+        logging.error(f"LLM embed failed: {e}")
         raise HTTPException(status_code=503, detail="LLM service unavailable")
