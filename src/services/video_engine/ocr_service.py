@@ -10,22 +10,18 @@ _cv2_available = None
 def check_easyocr_available():
     global _easyocr_available
     if _easyocr_available is None:
-        try:
-            import easyocr
-            _easyocr_available = True
-        except ImportError:
-            _easyocr_available = False
+        import importlib.util
+        _easyocr_available = importlib.util.find_spec("easyocr") is not None
+        if not _easyocr_available:
             logger.warning("[OCRService] easyocr not installed. OCR features disabled.")
     return _easyocr_available
 
 def check_cv2_available():
     global _cv2_available
     if _cv2_available is None:
-        try:
-            import cv2
-            _cv2_available = True
-        except ImportError:
-            _cv2_available = False
+        import importlib.util
+        _cv2_available = importlib.util.find_spec("cv2") is not None
+        if not _cv2_available:
             logger.warning("[OCRService] OpenCV not available. Video analysis disabled.")
     return _cv2_available
 

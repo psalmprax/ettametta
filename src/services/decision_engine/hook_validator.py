@@ -1,13 +1,11 @@
 import json
 import logging
 from typing import Any
-from groq import AsyncGroq
-from src.api.config import settings
+from src.services.llm.intelligence_hub import base_intelligence_hub
 
 class HookValidator:
     def __init__(self):
-        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
-        self.model = "llama-3.3-70b-versatile"
+        self.logger = logging.getLogger("HookValidator")
 
     async def validate_hook(self, hook_text: str) -> dict[str, Any]:
         """
@@ -37,19 +35,17 @@ class HookValidator:
         """
         
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a viral retention specialist. Output JSON."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={"type": "json_object"}
+            result = await base_intelligence_hub.chat(
+                prompt=prompt,
+                system_prompt="You are a viral retention specialist. Output JSON.",
+                json_mode=True,
+                complexity="medium"
             )
             
-            content = response.choices[0].message.content
+            content = result["response"]
             return json.loads(content)
         except Exception as e:
-            logging.error(f"Hook Validation Error: {e}")
+            self.logger.error(f"Hook Validation Error: {e}")
             return {
                 "score": 0,
                 "analysis": f"Error: {e}",

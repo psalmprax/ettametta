@@ -9,6 +9,7 @@ performance and flexibility. This replaces MoviePy for core transformations.
 import os
 import subprocess
 import logging
+import asyncio
 from pathlib import Path
 from src.api.config import settings
 from src.services.infrastructure.resource_governor import base_resource_governor
@@ -319,6 +320,24 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         ]
         return self._run_cmd(cmd)
 
+    def extract_audio(self, input_path: str, output_path: str) -> bool:
+        """Extract audio from video file to WAV/MP3"""
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            input_path,
+            "-vn",
+            "-acodec",
+            "pcm_s16le",
+            "-ar",
+            "16000",
+            "-ac",
+            "1",
+            output_path,
+        ]
+        return self._run_cmd(cmd)
+
     def xfade_concatenate(self, video_paths: list[str], output_path: str, transition: str = "fade", trans_duration: float = 0.5) -> bool:
         """Concatenates videos using cinematic transitions (xfade) and audio crossfades."""
         if len(video_paths) < 2: return self.concatenate_videos(video_paths, output_path)
@@ -365,6 +384,63 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         ]
         
         return self._run_cmd(cmd)
+
+    async def apply_cinematic_filters(self, input_path: str, output_path: str, title: str = "", subtitle: str = ""):
+        """Applies high-quality cinematic filters and titles via FFmpeg."""
+        # Use simple but effective filters: 
+        # - vignette
+        # - drawtext for top title
+        # - drawtext for bottom subtitle
+        # - hqdn3d (denoise for premium feel)
+        # - unsharp (sharpening)
+        
+        # Clean strings for ffmpeg
+        title = title.replace("'", "").replace(":", "")
+        subtitle = subtitle.replace("'", "").replace(":", "")
+        
+        font_path = settings.FONT_PATH if os.path.exists(settings.FONT_PATH) else "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+        
+        # Check if drawtext is actually available in this FFmpeg build
+        drawtext_available = False
+        try:
+            check_cmd = ["ffmpeg", "-filters"]
+            proc = await asyncio.create_subprocess_exec(*check_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+            stdout, _ = await proc.communicate()
+            if b"drawtext" in stdout:
+                drawtext_available = True
+        except:
+            pass
+
+        if drawtext_available:
+            filter_complex = (
+                f"vignette=angle=0.5, hqdn3d, unsharp, "
+                f"drawtext=fontfile='{font_path}':text='{title}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=60:box=1:boxcolor=black@0.5:boxborderw=10, "
+                f"drawtext=fontfile='{font_path}':text='{subtitle}':fontcolor=yellow:fontsize=32:x=(w-text_w)/2:y=h-100:box=1:boxcolor=black@0.5:boxborderw=10"
+            )
+        else:
+            logging.warning("[FFmpegTransformer] drawtext filter missing. Skipping title overlays.")
+            filter_complex = "vignette=angle=0.5, hqdn3d, unsharp"
+        
+        cmd = [
+            "ffmpeg", "-y", "-i", input_path,
+            "-vf", filter_complex,
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+            "-c:a", "copy",
+            output_path
+        ]
+        
+        logging.info(f"[FFmpegTransformer] Running: {' '.join(cmd)}")
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        if process.returncode != 0:
+            logging.error(f"[FFmpegTransformer] Cinematic filters FAILED (Code {process.returncode})")
+            logging.error(f"[FFmpegTransformer] Stderr: {stderr.decode()}")
+        else:
+            logging.info(f"[FFmpegTransformer] Cinematic filters applied successfully to {output_path}")
 
 # Singleton Instance
 base_ffmpeg_transformer = FFmpegTransformer()

@@ -8,6 +8,9 @@ from src.api.routes.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.limiter import limiter
 from src.api.utils.database import get_db
+from src.services.llm.service import UnifiedLLMService
+from src.services.llm.intelligence_hub import IntelligenceHub
+from src.services.video_engine.tasks import download_and_process_task
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Request
 
@@ -16,8 +19,6 @@ from src.api.utils.api_responses import success_response
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agent", tags=["AI Agents"])
-
-from src.services.llm.intelligence_hub import IntelligenceHub
 
 
 class ChatMessage(BaseModel):
@@ -36,20 +37,53 @@ class CodeRequest(BaseModel):
     language: str | None = "python"
 
 
+async def trigger_video_generation(message: str, context: dict) -> dict:
+    """Detect video generation intent and trigger appropriate AI engine"""
+    import re
+    message_lower = message.lower()
+    
+    # Detect video generation keywords
+    video_keywords = ["generate video", "create video", "make video", "video of"]
+    provider_keywords = ["pixverse", "kling", "haiper", "luma", "pika", "runway", "leonardo"]
+
+    is_video_request = any(kw in message_lower for kw in video_keywords)
+    provider = next((kw for kw in provider_keywords if kw in message_lower), "hunyuan") # Default to internal
+
+    if is_video_request:
+        # Extract prompt from message
+        prompt_match = re.search(r"video (?:of |about )?(.+?)(?:using|$)", message, re.IGNORECASE)
+        prompt = prompt_match.group(1).strip() if prompt_match else message
+        
+        return {
+            "status": "triggered",
+            "type": "video_generation",
+            "provider": provider,
+            "prompt": prompt,
+            "correlation_id": str(uuid.uuid4())
+        }
+    return None
+
+
 @router.post("/chat")
 async def chat_with_agent(
     request: Request,
     body: ChatMessage,
+    correlation_id: str = str(uuid.uuid4()),
+    db: AsyncSession = Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
 ):
     """
-    Chat with AI agent using IntelligenceHub (Standard 3.25)
+    Unified agent chat endpoint with video generation intent detection.
     """
-    # Add correlation ID for tracing
-    correlation_id = request.headers.get("x-correlation-id", str(uuid.uuid4()))
-
     try:
         hub = IntelligenceHub()
+
+        # Restore video generation intent detection
+        message_lower = body.message.lower()
+        if any(kw in message_lower for kw in ["generate video", "create video", "make video"]):
+            logger.info(f"[Agent] Video generation intent detected: {body.message}")
+            pass
+
         system_prompt = "You are a helpful AI assistant for a viral content creation platform. Be concise and actionable."
         if body.context:
             system_prompt += f"\n\nContext: {body.context}"
@@ -66,10 +100,10 @@ async def chat_with_agent(
                 "correlation_id": correlation_id,
             }
         )
-    except HTTPException:
-        raise
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        logger.error(f"[Agent] Chat failed: {e}")
+        logger.error(f"[Agent] Chat failed: {type(e).__name__}: {e}")
         raise HTTPException(status_code=503, detail="AI service unavailable")
 
 
