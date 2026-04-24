@@ -78,25 +78,6 @@ services:
       - ELEVENLABS_API_KEY
       - PEXELS_API_KEY
       - GROQ_API_KEY
-      - OLLAMA_URL=http://ollama:11434
-
-   ollama:
-     image: ollama/ollama:latest
-     container_name: ettametta-ollama
-     ports:
-       - "11434:11434"
-     volumes:
-       - ollama_data:/root/.ollama
-     environment:
-       - OLLAMA_KEEP_ALIVE=24h
-     restart: always
-     networks:
-       - ettametta
-     deploy:
-       resources:
-         limits:
-           memory: 4G
-
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
@@ -106,112 +87,7 @@ services:
       - RENDER_NODE_URL
       - CORS_ORIGINS
       - OLLAMA_MODEL
-    depends_on:
-      - db
-      - redis
-
-  db:
-    image: postgres:15-alpine
-    restart: always
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER:-psalmprax}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ettametta_pass}
-      - POSTGRES_DB=${POSTGRES_DB:-ettametta}
-    ports:
-      - "7203:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - ettametta
-
-  discovery-go:
-    build: 
-      context: ./src/services/discovery-go
-      dockerfile: ./Dockerfile
-    ports:
-      - "7205:8080"
-    environment:
-      - PORT=8080
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
-      - YOUTUBE_API_KEY
-    networks:
-      - ettametta
-
-  dashboard:
-    build:
-      context: ./apps/dashboard
-      args:
-        - NEXT_PUBLIC_API_PORT=7200
-        - NEXT_PUBLIC_INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
-    ports:
-      - "7202:3000"
-    environment:
-      - NEXT_PUBLIC_API_PORT=7200
-      - API_INTERNAL_URL=http://api:8000
-      - NEXT_PUBLIC_INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
-    restart: always
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks:
-      - ettametta
-
-  redis:
-    image: redis:alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD:-ettametta_redis_pass}
-    ports:
-      - "7204:6379"
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-ettametta_redis_pass}
-    networks:
-      - ettametta
-
-  celery_worker:
-    build:
-      context: .
-      dockerfile: ./infra/docker/api.Dockerfile
-      args:
-        - BASE_IMAGE=python:3.10-slim
-
-    command: celery -A src.api.utils.celery worker --loglevel=info --concurrency=2
-    restart: always
-    env_file: .env
-    volumes:
-      - .:/app
-      - ./data/storage/outputs:/app/data/storage/outputs
-      - /app/apps/remotion-studio/node_modules
-    environment:
-      - ENV=development
-      - PYTHONPATH=/app
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
-      # Video model quantization (fp16, int8, int4) - reduces VRAM usage
-      - LTX_QUANTIZATION=${LTX_QUANTIZATION:-fp16}
-      - HUNYUAN_QUANTIZATION=${HUNYUAN_QUANTIZATION:-fp16}
-      - COGVIDEO_QUANTIZATION=${COGVIDEO_QUANTIZATION:-fp16}
-      # Pass-through credentials
-      - GOOGLE_CLIENT_ID
-      - GOOGLE_CLIENT_SECRET
-      - TIKTOK_CLIENT_KEY
-      - TIKTOK_CLIENT_SECRET
-      - PRODUCTION_DOMAIN
-      - YOUTUBE_API_KEY
-      - TIKTOK_API_KEY
-      - OPENAI_API_KEY
-      - ELEVENLABS_API_KEY
-      - PEXELS_API_KEY
-      - GROQ_API_KEY
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_REGION
-      - AWS_STORAGE_BUCKET_NAME
-      - SECRET_KEY
-      - INTERNAL_API_TOKEN
-      - RENDER_NODE_URL
+      - OLLAMA_URL=http://ollama:11434
     healthcheck:
       test: [ "CMD", "python", "-c", "import psutil; exit(0 if any('celery' in p.name().lower() for p in psutil.process_iter()) else 1)" ]
       interval: 30s
@@ -225,6 +101,17 @@ services:
       resources:
         limits:
           memory: 1G
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ettametta-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    restart: always
     networks:
       - ettametta
 
@@ -271,27 +158,27 @@ services:
     networks:
       - ettametta
 
-   openclaw:
-     build:
-       context: .
-       dockerfile: ./infra/docker/openclaw.Dockerfile
-     image: ettametta-openclaw
-     ports:
-       - "7217-7219:3001"
-     environment:
-       - GROQ_API_KEY=${GROQ_API_KEY}
-       - OPENAI_API_KEY=${OPENAI_API_KEY}
-       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-       - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
-       - PEXELS_API_KEY=${PEXELS_API_KEY}
-       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-       - TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
-       - OLLAMA_BASE_URL=http://ollama:11434
-       - OLLAMA_URL=http://ollama:11434
-       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
-       - API_URL=http://ettametta-api-1:8000
-       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
-       - PORT=3001
+  openclaw:
+    build:
+      context: .
+      dockerfile: ./infra/docker/openclaw.Dockerfile
+    image: ettametta-openclaw
+    ports:
+      - "7217-7219:3001"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+      - PEXELS_API_KEY=${PEXELS_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
+      - OLLAMA_BASE_URL=http://ettametta-ollama:11434
+      - OLLAMA_MODEL=hermes3
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
+      - API_URL=http://ettametta-api-1:8000
+      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
+      - PORT=3001
     volumes:
       - .:/app
     networks:
