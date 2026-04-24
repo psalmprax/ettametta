@@ -37,7 +37,7 @@ class InternalJobUpdate(BaseModel):
 @router.post("/jobs", dependencies=[Depends(verify_internal_token)])
 async def create_internal_job(
     body: InternalJobCreate,
-    db: AsyncSession = Depends(get_db)
+    db=Depends(get_db)
 ):
     """Allows internal services to register jobs without direct DB access."""
     new_job = VideoJobDB(
@@ -55,7 +55,7 @@ async def create_internal_job(
 async def update_internal_job(
     job_id: str,
     body: InternalJobUpdate,
-    db: AsyncSession = Depends(get_db)
+    db=Depends(get_db)
 ):
     """Atomic update for job status from internal workers."""
     from sqlalchemy import select

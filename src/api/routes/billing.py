@@ -30,7 +30,7 @@ class SubscriptionResponse(BaseModel):
 async def create_checkout_session(
     request: CreateCheckoutRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Create a Stripe checkout session for subscription"""
     from src.services.payment.stripe_service import (
@@ -78,7 +78,7 @@ async def create_checkout_session(
 
 @router.get("/subscription")
 async def get_subscription(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     """Get current user's subscription status"""
     from src.services.payment.stripe_service import (
@@ -131,7 +131,7 @@ async def get_subscription(
 
 @router.post("/cancel")
 async def cancel_subscription(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     """Cancel current subscription"""
     from src.services.payment.stripe_service import get_payment_service

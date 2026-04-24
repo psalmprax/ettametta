@@ -262,7 +262,7 @@ async def auth_youtube_callback(
 
 @router.get("/accounts")
 async def list_accounts(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     try:
         stmt = select(SocialAccount)
@@ -289,7 +289,7 @@ async def list_accounts(
 async def delete_account(
     account_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     try:
         stmt = select(SocialAccount).where(SocialAccount.id == account_id)
@@ -318,7 +318,7 @@ async def delete_account(
 async def retry_publish(
     content_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Retry publishing a video that was pending authentication.
@@ -888,7 +888,7 @@ async def generate_package(
 async def get_content_comments(
     content_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     limit: int = 10,
 ):
     """
@@ -986,7 +986,7 @@ async def get_content_comments(
 async def sync_content_metrics(
     content_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Syncs live metrics from the social platform to the database for a specific post.
@@ -1126,7 +1126,7 @@ async def sync_content_metrics(
 
 @router.get("/history")
 async def get_publish_history(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     try:
         stmt = select(PublishedContentDB)
@@ -1143,7 +1143,7 @@ async def get_publish_history(
 
 @router.get("/scheduled")
 async def get_scheduled_posts(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     """Get scheduled posts waiting for publish."""
     from src.api.utils.models import ScheduledPostDB
@@ -1201,7 +1201,7 @@ async def schedule_post(
     parallel_allowed: bool = False,
     user_timezone: str = "UTC",
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     credits_cost: int = Depends(credits_required("social_publish")),
 ):
     """
@@ -1258,7 +1258,7 @@ async def schedule_post(
 async def publish_video(
     request: PublishRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
     credits_cost: int = Depends(credits_required("social_publish")),
 ):
     from src.api.utils.models import PublishedContentDB, ABTestDB
@@ -1558,7 +1558,7 @@ async def publish_video(
 async def publish_multi_platform(
     request: MultiPlatformPublishRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Publish video to multiple platforms at once.

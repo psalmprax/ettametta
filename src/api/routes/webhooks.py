@@ -84,7 +84,7 @@ async def youtube_upload_status(
     payload: YouTubeWebhookPayload,
     request: Request,
     x_youtube_signature: str | None = Header(None, alias="X-Youtube-Signature"),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Receive upload status updates from YouTube
@@ -198,7 +198,7 @@ async def get_webhook_events(
     limit: int = 20,
     offset: int = 0,
     admin=Depends(admin_required),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Get recent webhook events (admin only)"""
     if limit < 1 or limit > 100:

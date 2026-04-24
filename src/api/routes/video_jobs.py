@@ -42,7 +42,7 @@ async def list_jobs(
 async def abort_job(
     job_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Abort a running video processing job.
@@ -91,7 +91,7 @@ async def abort_job(
 async def get_job_details(
     job_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Get comprehensive metadata for a video generation task.
@@ -186,7 +186,7 @@ async def get_job_details(
 async def retry_job(
     job_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Retry a failed video processing job.
@@ -281,7 +281,7 @@ async def retry_job(
 
 @router.get("/quotas")
 async def get_video_quotas(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Get current current_user's video generation quotas and usage.

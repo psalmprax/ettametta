@@ -79,7 +79,7 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
             )}>
                 <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
-                    className="h-11 w-11 rounded-xl bg-linear-to-br from-violet-600 to-cyan-500 flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.3)] relative overflow-hidden flex-shrink-0"
+                    className="h-11 w-11 rounded-xl bg-linear-to-br from-violet-600 to-cyan-500 flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.3)] relative overflow-hidden shrink-0"
                 >
                     <div className="absolute inset-0 shimmer opacity-20" />
                     <Zap className="h-6 w-6 text-white fill-white neon-glow-violet" />
@@ -92,7 +92,7 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
                             exit={{ opacity: 0, width: 0 }}
                             className="flex flex-col overflow-hidden"
                         >
-                            <span className="text-xl font-black text-white tracking-tighter uppercase leading-none group-hover:text-cyan-400 transition-colors whitespace-nowrap">AlphaHecta</span>
+                            <span className="text-xl font-black text-white tracking-tighter uppercase leading-none group-hover:text-cyan-400 transition-colors whitespace-nowrap">Ettametta</span>
                             <span className="text-[9px] font-black text-cyan-400 tracking-[0.4em] uppercase mt-1.5 opacity-80 flex items-center gap-1.5">
                                 <div className="h-1 w-1 rounded-full bg-cyan-400 animate-pulse" />
                                 OS // V3.0
@@ -132,7 +132,7 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
                             </AnimatePresence>
                             <motion.div
                                 whileHover={{ scale: 1.1 }}
-                                className="z-10 flex-shrink-0"
+                                className="z-10 shrink-0"
                             >
                                 <item.icon className={cn(
                                     "h-4.5 w-4.5 transition-all duration-300",

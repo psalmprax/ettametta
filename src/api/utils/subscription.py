@@ -84,7 +84,7 @@ def daily_limit_reached():
 
     async def dependency(
         current_user: UserDB = Depends(get_current_user),
-        db: AsyncSession = Depends(get_db),
+        db=Depends(get_db),
     ):
         await check_daily_limit(current_user, db)
         return current_user
@@ -164,7 +164,7 @@ def credits_required(action: CreditAction | str):
 
     async def dependency(
         current_user: UserDB = Depends(get_current_user),
-        db: AsyncSession = Depends(get_db),
+        db=Depends(get_db),
     ):
         from src.services.payment.credit_service import credit_service
 

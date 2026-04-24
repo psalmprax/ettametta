@@ -15,7 +15,7 @@ export default function TermsPage() {
                         <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Legal Framework</span>
                     </div>
                     <h1 className="text-5xl font-black tracking-tighter uppercase text-white leading-none">
-                        Terms of <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">Service</span>
+                        Terms of <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400">Service</span>
                     </h1>
                 </div>
 

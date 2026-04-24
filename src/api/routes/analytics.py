@@ -25,7 +25,7 @@ async def list_analytics_posts(
     page: int = 1,
     size: int = 20,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     try:
         stmt = select(PublishedContentDB).where(
@@ -58,7 +58,7 @@ async def list_analytics_posts(
 
 @router.get("/report")
 async def get_analytics_report(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     """
     Get overall analytics report summary.
@@ -106,7 +106,7 @@ async def get_report(
     post_id: str,
     platform: str = "youtube",
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     try:
         # Verify user owns this content
@@ -164,7 +164,7 @@ async def get_report(
 async def get_insights(
     post_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     try:
         # Verify user owns this content
@@ -197,7 +197,7 @@ async def get_monetization_suggestions(
     post_id: str,
     niche: str = "Motivation",
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     try:
         # Verify user owns this content
@@ -231,7 +231,7 @@ async def get_monetization_suggestions(
 @router.get("/stats/summary")
 @cache(expire=600)
 async def get_stats_summary(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     """Get dashboard summary stats for the home page."""
     try:
@@ -362,7 +362,7 @@ async def get_storage_stats(current_user: UserDB = Depends(get_current_user)):
 async def get_ab_results(
     content_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     try:
         stmt = select(ABTestDB).where(ABTestDB.content_id == content_id)
@@ -413,7 +413,7 @@ async def get_report_history(
 async def inject_pattern(
     post_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     try:
         # Verify user owns this content
@@ -440,7 +440,7 @@ async def inject_pattern(
 
 @router.get("/export")
 async def export_analytics(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
     import csv
     import io

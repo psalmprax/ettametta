@@ -37,7 +37,7 @@ async def start_transformation(
     body: TransformationRequest,
     current_user: UserDB = Depends(get_current_user),
     credits_cost: int = Depends(credits_required("video_transformation")),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Hardened transformation endpoint with atomicity between task dispatch and credit consumption.
@@ -127,7 +127,7 @@ class TestDriveRequest(BaseModel):
 async def test_drive(
     request: TestDriveRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Identifies the top viral candidate and triggers a preview transformation.

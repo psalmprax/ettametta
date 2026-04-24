@@ -101,7 +101,7 @@ export default React.memo(function GlobalPulseGlobe({ pulseIntensity }: { pulseI
             role="img"
             aria-label="Premium 3D neural globe visualization"
         >
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-zinc-950/80 z-10 pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-zinc-950/80 z-10 pointer-events-none" />
             <Canvas shadows gl={{ antialias: true }}>
                 <PerspectiveCamera makeDefault position={[0, 0, 8]} />
                 <Stars radius={100} depth={50} count={3000} factor={2} saturation={0} fade speed={1} />

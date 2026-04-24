@@ -442,7 +442,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between mb-10">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-white">My <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-400 to-white text-hollow">Settings</span></h1>
+                            <h1 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-white">My <span className="text-transparent bg-clip-text bg-linear-to-r from-zinc-400 to-white text-hollow">Settings</span></h1>
                             <div className={cn(
                                 "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
                                 userProfile.subscription === "studio" ? "bg-purple-500/10 text-purple-500 border-purple-500/20 shadow-[0_0_10px_rgba(168,85,247,0.2)]" :

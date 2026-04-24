@@ -23,4 +23,6 @@ from . import (
     llm,
     video_generate,
     content_editor,
+    health,
+    proxy,
 )

@@ -41,7 +41,8 @@ services:
       - "traefik.http.services.api.loadbalancer.server.port=8000"
     networks:
       - ettametta
-    command: python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --log-level debug
+      - default
+    command: python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --log-level debug --timeout-keep-alive 600
     restart: always
     env_file: .env
     deploy:
@@ -50,9 +51,9 @@ services:
           memory: 1G
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 30s
+      timeout: 10s
+      retries: 10
       start_period: 30s
     volumes:
       - .:/app
@@ -60,7 +61,7 @@ services:
       - /app/apps/remotion-studio/node_modules
     environment:
       - ENV=development
-      - PYTHONPATH=/app/src
+      - PYTHONPATH=/app
       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
@@ -85,6 +86,7 @@ services:
       - INTERNAL_API_TOKEN
       - RENDER_NODE_URL
       - CORS_ORIGINS
+      - OLLAMA_MODEL
     depends_on:
       - db
       - redis
@@ -154,7 +156,7 @@ services:
       args:
         - BASE_IMAGE=python:3.10-slim
 
-    command: celery -A api.utils.celery worker --loglevel=info --concurrency=2
+    command: celery -A src.api.utils.celery worker --loglevel=info --concurrency=2
     restart: always
     env_file: .env
     volumes:
@@ -163,7 +165,7 @@ services:
       - /app/apps/remotion-studio/node_modules
     environment:
       - ENV=development
-      - PYTHONPATH=/app/src
+      - PYTHONPATH=/app
       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
@@ -214,14 +216,14 @@ services:
       args:
         - BASE_IMAGE=python:3.10-slim
 
-    command: celery -A api.utils.celery beat --loglevel=info
+    command: celery -A src.api.utils.celery beat --loglevel=info
     restart: always
     env_file: .env
     volumes:
       - .:/app
     environment:
       - ENV=development
-      - PYTHONPATH=/app/src
+      - PYTHONPATH=/app
       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
       - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
@@ -352,7 +354,7 @@ services:
       - video_cache:/app/cache
     environment:
       - ENV=development
-      - PYTHONPATH=/app/src
+      - PYTHONPATH=/app
       # Video processing environment
       - TORCH_USE_CUDA_DSA=1
       - CUDA_VISIBLE_DEVICES=all

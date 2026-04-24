@@ -93,7 +93,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                     className="relative w-full max-w-5xl aspect-video bg-zinc-950 rounded-[2.5rem] border border-white/10 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] pointer-events-auto"
                 >
                     {/* Header */}
-                    <div className="absolute top-0 inset-x-0 p-8 flex items-center justify-between z-20 bg-gradient-to-b from-black/80 to-transparent">
+                    <div className="absolute top-0 inset-x-0 p-8 flex items-center justify-between z-20 bg-linear-to-b from-black/80 to-transparent">
                         <div className="space-y-1">
                             <div className="flex items-center gap-3">
                                 <div className="h-1 w-6 bg-primary rounded-full" />
@@ -129,7 +129,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                     </div>
 
                     {/* Controls/Actions Overlay */}
-                    <div className="absolute bottom-0 inset-x-0 p-8 flex items-center justify-between z-20 bg-gradient-to-t from-black/80 to-transparent">
+                    <div className="absolute bottom-0 inset-x-0 p-8 flex items-center justify-between z-20 bg-linear-to-t from-black/80 to-transparent">
                         <div className="flex items-center gap-4">
                             {originalUrl && (
                                 <button

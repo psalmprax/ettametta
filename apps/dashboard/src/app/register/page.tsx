@@ -2,36 +2,46 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Zap, Loader2, Mail, Lock, User } from "lucide-react";
+import { Zap, Loader2, Mail, Lock } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 import { API_BASE } from "@/lib/config";
 
 export default function RegisterPage() {
-    const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+    const { register } = useAuth();
     const router = useRouter();
+
+    const validatePassword = (pass: string) => {
+        if (pass.length < 8) return "Password must be at least 8 characters long";
+        if (!/[A-Z]/.test(pass)) return "Password must contain at least one uppercase letter";
+        if (!/[a-z]/.test(pass)) return "Password must contain at least one lowercase letter";
+        if (!/[0-9]/.test(pass)) return "Password must contain at least one digit";
+        return null;
+    };
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        const passError = validatePassword(password);
+        if (passError) {
+            setError(passError);
+            return;
+        }
+
         setIsLoading(true);
         setError("");
 
         try {
-            const response = await fetch(`${API_BASE}/auth/register`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, email, password }),
-            });
-
-            if (response.ok) {
+            const result = await register(email, password);
+            if (result.success) {
                 router.push("/login?registered=true");
             } else {
-                const data = await response.json();
-                setError(data.detail || "Registration failed");
+                setError(result.error || "Registration failed");
             }
         } catch (err) {
             setError("Connection failed. Is the API running?");
@@ -47,28 +57,11 @@ export default function RegisterPage() {
                     <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 border border-primary/20 animate-pulse">
                         <Zap className="h-10 w-10 text-primary fill-primary" />
                     </div>
-                    <h1 className="text-5xl font-black uppercase tracking-tighter text-white">JOIN THE <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 text-hollow">FORGE</span></h1>
+                    <h1 className="text-5xl font-black uppercase tracking-tighter text-white">JOIN THE <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-cyan-400 text-hollow">METTA</span></h1>
                     <p className="text-zinc-500 font-medium">Scale your content with AI precision</p>
                 </div>
 
                 <form onSubmit={handleRegister} className="space-y-4">
-                    <div className="space-y-2">
-                        <label htmlFor="username" className="text-xs font-black text-zinc-500 uppercase tracking-widest ml-1">Username</label>
-                        <div className="relative group">
-                            <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-600 group-focus-within:text-primary transition-colors" />
-                            <input
-                                id="username"
-                                name="username"
-                                type="text"
-                                required
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-white font-medium"
-                                placeholder="commander"
-                            />
-                        </div>
-                    </div>
-
                     <div className="space-y-2">
                         <label htmlFor="email" className="text-xs font-black text-zinc-500 uppercase tracking-widest ml-1">Email</label>
                         <div className="relative group">

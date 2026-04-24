@@ -182,7 +182,7 @@ export default function AutonomousPage() {
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Autonomous Director</span>
                         </div>
                         <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
-                            Agent <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 text-hollow">Zero</span>
+                            Agent <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-400 to-emerald-600 text-hollow">Zero</span>
                         </h1>
                         <p className="text-zinc-500 font-medium max-w-xl">
                             Orchestrating the full faceless cycle: <span className="text-zinc-300 font-bold">Trend scouting, Analysis, Synthesis, and Publishing</span>.
