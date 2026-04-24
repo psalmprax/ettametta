@@ -78,6 +78,25 @@ services:
       - ELEVENLABS_API_KEY
       - PEXELS_API_KEY
       - GROQ_API_KEY
+      - OLLAMA_URL=http://ollama:11434
+
+   ollama:
+     image: ollama/ollama:latest
+     container_name: ettametta-ollama
+     ports:
+       - "11434:11434"
+     volumes:
+       - ollama_data:/root/.ollama
+     environment:
+       - OLLAMA_KEEP_ALIVE=24h
+     restart: always
+     networks:
+       - ettametta
+     deploy:
+       resources:
+         limits:
+           memory: 4G
+
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
@@ -252,27 +271,27 @@ services:
     networks:
       - ettametta
 
-  openclaw:
-    build:
-      context: .
-      dockerfile: ./infra/docker/openclaw.Dockerfile
-    image: ettametta-openclaw
-    ports:
-      - "7217-7219:3001"
-    environment:
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
-      - PEXELS_API_KEY=${PEXELS_API_KEY}
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
-      - OLLAMA_BASE_URL=http://ettametta-ollama:11434
-      - OLLAMA_MODEL=hermes3
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
-      - API_URL=http://ettametta-api-1:8000
-      - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
-      - PORT=3001
+   openclaw:
+     build:
+       context: .
+       dockerfile: ./infra/docker/openclaw.Dockerfile
+     image: ettametta-openclaw
+     ports:
+       - "7217-7219:3001"
+     environment:
+       - GROQ_API_KEY=${GROQ_API_KEY}
+       - OPENAI_API_KEY=${OPENAI_API_KEY}
+       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+       - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+       - PEXELS_API_KEY=${PEXELS_API_KEY}
+       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+       - TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
+       - OLLAMA_BASE_URL=http://ollama:11434
+       - OLLAMA_URL=http://ollama:11434
+       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
+       - API_URL=http://ettametta-api-1:8000
+       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
+       - PORT=3001
     volumes:
       - .:/app
     networks:
@@ -505,3 +524,4 @@ volumes:
   grafana_data:
   loki_data:
   gateway_data:
+  ollama_data:
