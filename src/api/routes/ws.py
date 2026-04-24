@@ -200,33 +200,43 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                 total_likes = 0
 
             # Derive metrics from real system state
-            cpu_usage = psutil.cpu_percent(interval=None)
+            try:
+                cpu_usage = psutil.cpu_percent(interval=None)
 
-            # 10/10 INTELLIGENCE BRIDGE: Pull real metrics from the Signal Bus
-            drift_report = base_drift_monitor.audit_system_honesty()
+                # 10/10 INTELLIGENCE BRIDGE: Pull real metrics from the Signal Bus
+                drift_report = base_drift_monitor.audit_system_honesty()
 
-            # Use current topic if available, else global aggregate
-            features = base_signal_bus.get_feature_vector("global_trend") or [
-                0.5,
-                0.0,
-                0.1,
-            ]
-            global_velocity = round(features[0] * 5, 2)  # Normalizing velocity
-            signal_strength = round(
-                max(0.1, 1.0 - (drift_report["current_mae"] * 2)), 3
-            )
+                # Use current topic if available, else global aggregate
+                features = base_signal_bus.get_feature_vector("global_trend") or [
+                    0.5,
+                    0.0,
+                    0.1,
+                ]
+                global_velocity = round(features[0] * 5, 2)  # Normalizing velocity
+                signal_strength = round(
+                    max(0.1, 1.0 - (drift_report["current_mae"] * 2)), 3
+                )
 
-            # Bitrate: Derived from active stream signals
-            bitrate = round(400 + (global_velocity * 100), 2)
+                # Bitrate: Derived from active stream signals
+                bitrate = round(400 + (global_velocity * 100), 2)
 
-            # Latency: Real processing lag
-            latency = 20.0 + (
-                drift_report["current_mae"] * 100
-            )  # Simulation of compute pressure
+                # Latency: Real processing lag
+                latency = 20.0 + (
+                    drift_report["current_mae"] * 100
+                )  # Simulation of compute pressure
+            except Exception as metric_err:
+                logging.error(f"[WS] Telemetry Metric Derivation Error: {metric_err}")
+                bitrate = 400.0
+                latency = 20.0
+                signal_strength = 0.5
+                global_velocity = 0.0
+                drift_report = {"current_mae": 0.0, "status": "STABLE"}
 
             pulse_data = {
                 "type": "telemetry_pulse",
                 "timestamp": time.time(),
+                "bitrate": bitrate,  # Top-level for legacy/simple access
+                "signal_strength": signal_strength,
                 "metrics": {
                     "bitrate": bitrate,
                     "latency": latency,
