@@ -476,6 +476,7 @@ async def create_video_from_analysis(
                 platform=request.platform,
                 style=request.style,
                 quality_tier=request.quality_tier,
+                user_id=current_user.id,
             )
         except Exception as task_err:
             logger.error(f"Task dispatch failure: {task_err}")
@@ -590,6 +591,7 @@ async def auto_transform(
             platform=request.platform,
             style=request.style,
             quality_tier=request.quality_tier,
+            user_id=current_user.id,
         )
 
         # Create job record

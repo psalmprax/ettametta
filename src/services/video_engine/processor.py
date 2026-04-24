@@ -5,6 +5,20 @@ import random
 import logging
 import asyncio
 import subprocess
+try:
+    from moviepy import VideoFileClip, CompositeVideoClip, TextClip, concatenate_videoclips
+except ImportError:
+    VideoFileClip = Any
+    CompositeVideoClip = Any
+    TextClip = Any
+    concatenate_videoclips = Any
+
+try:
+    import cv2
+except ImportError:
+    cv2 = None
+
+import numpy as np
 from .transcription import TranscriptionService
 from .ocr_service import check_easyocr_available
 from .stock_service import StockService
@@ -498,6 +512,7 @@ class VideoProcessor:
         """
         import moviepy.video.fx as vfx
 
+        speed = random.uniform(speed_range[0], speed_range[1])
         return clip.with_effects([vfx.MultiplySpeed(speed)])
 
     def apply_dynamic_jitter(
@@ -999,9 +1014,36 @@ class VideoProcessor:
 
         except Exception as e:
             logging.error(
-                f"[VideoProcessor] Remotion pipeline failed: {e}. Falling back to basic ffmpeg."
+                f"[VideoProcessor] Remotion pipeline failed: {e}. Falling back to high-quality FFmpeg transformation."
             )
-            # Basic fallback: just return the input or do a simple copy
+            
+            # High-fidelity FFmpeg Fallback (Standard 4.1)
+            try:
+                # 1. Generate Captions
+                caption = strategy.get("vibe", "Viral Moment") if strategy else "Viral Clip"
+                sub_caption = strategy.get("visual_mood", "Ettametta Studio") if strategy else "Cinematic"
+                
+                fallback_path = os.path.join(self.output_dir, f"fallback_{output_name}")
+                
+                # Apply cinematic overlays, vignettes, and dynamic captions via FFmpeg
+                # We use complex filter for: 
+                # - Vignette (cinematic feel)
+                # - Drawtext (Top/Bottom titles)
+                # - Color balance (vibrant)
+                from .ffmpeg_utils import base_ffmpeg_transformer
+                
+                await base_ffmpeg_transformer.apply_cinematic_filters(
+                    input_path,
+                    fallback_path,
+                    title=caption,
+                    subtitle=sub_caption
+                )
+                
+                if os.path.exists(fallback_path):
+                    return fallback_path
+            except Exception as fallback_err:
+                logging.error(f"[VideoProcessor] FFmpeg fallback failed: {fallback_err}")
+                
             return input_path
 
 

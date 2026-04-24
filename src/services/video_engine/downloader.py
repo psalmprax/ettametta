@@ -6,7 +6,14 @@ import yt_dlp
 class VideoDownloader:
     def __init__(self, download_dir: str = "temp/downloads"):
         self.download_dir = download_dir
-        os.makedirs(self.download_dir, exist_ok=True)
+        # Ensure we have write access, fallback to user_downloads if needed
+        if os.path.exists(self.download_dir) and not os.access(self.download_dir, os.W_OK):
+            self.download_dir = "temp/user_downloads"
+            
+        try:
+            os.makedirs(self.download_dir, exist_ok=True)
+        except Exception as e:
+            logging.error(f"[VideoDownloader] Failed to prepare download dir: {e}")
 
     async def download_video(self, url: str) -> str | None:
         """

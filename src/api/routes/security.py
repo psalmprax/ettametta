@@ -71,7 +71,7 @@ async def trigger_security_audit(current_user=Depends(admin_required)):
 
 
 @router.get("/events")
-async def get_security_events(current_user=Depends(admin_required)):
+async def get_security_events(current_user=Depends(get_current_user)):
     """
     Returns the raw list of security events from the sentinel.
     Requires authentication.

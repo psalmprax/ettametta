@@ -181,12 +181,24 @@ class IntelligenceHub:
         raise RuntimeError(f"IntelligenceHub total failure for request {request_id}")
 
     def _route_complexity(self, complexity: str) -> str:
-        """Determines the best provider based on task complexity."""
+        """Determines the best provider based on task complexity (Economic Optimization)."""
         if complexity == "low":
-            return "ollama"  # Low cost, fast
+            return "ollama"  # Local/Zero Cost
+        if complexity == "medium":
+            # Prefer Gemini (Cost-effective) or Groq (Fast)
+            if self.google_key:
+                return "gemini"
+            if self.groq_key:
+                return "groq"
+            return "ollama"
         if complexity == "high":
-            return "openai" if self.openai_key else "ollama" # Quality first
-        return "ollama" # Balance
+            # Premium reasoning
+            if self.openai_key:
+                return "openai"
+            if self.google_key:
+                return "gemini"
+            return "ollama"
+        return "ollama"
 
     async def _call_provider(
         self, provider: str, prompt: str, system: str, rid: str, json_mode: bool

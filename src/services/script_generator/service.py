@@ -75,36 +75,48 @@ class ScriptGenerator:
                 analysis = clip.get("analysis", {})
                 asset_context += f"Clip {i+1}: ID={clip.get('id')}, Title='{clip.get('title')}', Pattern='{analysis.get('content_type')}', Sentiment='{analysis.get('sentiment')}'\n"
 
-        # 3. Build the mission prompt with Asset-Aware Discovery
+        # 3. Build the mission prompt with Dynamism Engine (Tier 10.0 Upgrade)
+        style_guidance = {
+            "story": "Focus on a 'Character-Climbing' arc. Start with a relatable struggle and end with an unexpected triumph.",
+            "educational": "Use the 'Inverted Pyramid' of curiosity. Start with a mind-blowing anomaly and explain the mechanics.",
+            "aggressive": "High-velocity delivery. Rapid-fire facts. Use 'Staccato' rhythm in sentences.",
+            "asmr": "Sensory-heavy descriptions. Slow pacing. Focus on texture and sound visual cues.",
+            "motivation": "Emotional Crescendo. Start with low-energy vulnerability and build to high-energy breakthrough."
+        }.get(style.lower(), "Ensure high-retention pacing and viral delivery.")
+
         prompt = f"""
-        You are a Viral Narrator. Your mission is to narrate the transitions and relationships between specific video clips to create a cohesive {duration_sec}-second video.
+        You are a Viral Narrative Architect. Your mission is to engineer a high-velocity {duration_sec}-second video script for the {niche} niche.
         
         TOPIC: {topic}
-        NICHE: {niche}
         STYLE: {style}
+        GUIDANCE: {style_guidance}
         
         {f"⚡ WINNING PATTERNS (Crystallized from viral hits):" if hermes_context else ""}
         {hermes_context}
 
-        {f"🎬 ASSET CONTEXT (Use these clips):" if asset_context else ""}
+        {f"🎬 ASSET CONTEXT (Available Clips):" if asset_context else ""}
         {asset_context}
 
-        REQUIREMENTS:
-        1. NARRATE THE RELATIONSHIPS: Don't just talk about the topic. Explain how one clip builds on the next.
-        2. ASSET BINDING: For every segment, specify which 'target_clip_id' from the assets above you are talking about.
-        3. HOOK (0-5 sec): Use the most high-impact asset.
-        4. MID-CONTENT ENGAGEMENT: Call to action at 50% mark.
-        5. B-ROLL CUES: Description of visual overlays.
+        DYNAMISM REQUIREMENTS:
+        1. ADAPTIVE STRUCTURE: You are NOT restricted to a fixed segment count. Decide how many beats are needed to maximize retention for a {duration_sec}s video.
+        2. EMOTIONAL ARC: Define a 'tone' for every segment (e.g., Suspenseful, Revelation, Hype, Vulnerable).
+        3. PATTERN INTERRUPTS: Every 7-10 seconds, inject a visual or narrative pattern interrupt (e.g., a sudden change in angle, a shocking fact, or a sound effect cue).
+        4. ASSET BINDING: Use 'target_clip_id' from the assets above to ground your narration in reality.
+        5. VISUAL PACING: Provide 'visual_style' hints (e.g., 'Rapid cuts', 'Slow pan', 'Glitch overlay').
         
         OUTPUT FORMAT (JSON ONLY):
         {{
-            "title": "Viral title idea",
+            "title": "Aggressive Viral Title",
+            "emotional_arc": "The progression of feelings (e.g., Curiosity -> Shock -> FOMO)",
             "segments": [
                 {{
-                    "type": "hook | content | engagement | cta",
-                    "text": "The script text here",
-                    "visual_cue": "Visual description",
-                    "target_clip_id": "The ID from the asset context if applicable",
+                    "type": "hook | insight | build | transition | cta",
+                    "tone": "The specific emotion of this beat",
+                    "text": "The spoken narration (pacing-optimized)",
+                    "visual_cue": "Specific visual description",
+                    "visual_style": "How the visual should behave (pacing/effects)",
+                    "pattern_interrupt": "Description of the interrupt at this beat",
+                    "target_clip_id": "ID from asset context",
                     "duration": 5
                 }}
             ],
