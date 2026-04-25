@@ -217,7 +217,7 @@ function DiscoveryContent() {
          setIsLoading(true);
          try {
              const token = getAuthToken();
-             if (!token) { setIsLoading(false); return; }
+             if (!token || searchQuery) { setIsLoading(false); return; }
              const params = new URLSearchParams({
                  niche: activeNiche,
                  horizon: timeHorizon,
@@ -623,7 +623,6 @@ function DiscoveryContent() {
                      if (!niches.includes(query)) {
                          setNiches(prev => Array.from(new Set([...prev, query])));
                      }
-                     setActiveNiche(query);
                  }
              }
          );

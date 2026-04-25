@@ -25,10 +25,6 @@ export function useNiches() {
                 if (Array.isArray(data)) {
                     // Filter out any empty strings or duplicates
                     let validNiches = Array.from(new Set(data.filter(n => n && n.trim() !== "")));
-                    // Safety fallback if no niches are active yet
-                    if (validNiches.length === 0) {
-                        validNiches = ["Motivation", "AI Technology", "Stoic Wisdom", "Market Trends"];
-                    }
                     setNiches(validNiches);
                 }
             }
