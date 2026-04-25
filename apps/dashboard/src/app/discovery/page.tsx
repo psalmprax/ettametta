@@ -45,7 +45,7 @@ const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: 
 interface ContentCandidate {
     id: string;
     platform: string;
-    category: string; // video, blog, social, news, other
+    category: string; // video, article, social, news, other
     description: string;
     thumbnail_url: string;
     view_count: number;
@@ -77,7 +77,7 @@ function DiscoveryContent() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeNiche, setActiveNiche] = useState(searchParams.get("q") || "");
     const [filter, setFilter] = useState("all"); // all, youtube, tiktok, instagram, facebook, x, twitch, etc.
-    const [activeCategory, setActiveCategory] = useState("all"); // all, video, blog, social, news
+    const [activeCategory, setActiveCategory] = useState("all"); // all, video, article, social, news
     const [showConfig, setShowConfig] = useState(false);
     const [mode, setMode] = useState<"discovery" | "generative">("discovery");
     const [timeHorizon, setTimeHorizon] = useState("30d"); // 24h, 7d, 30d
@@ -918,7 +918,7 @@ function DiscoveryContent() {
                     {[
                         { id: 'all', label: 'All Content', icon: Globe },
                         { id: 'video', label: 'Videos', icon: Play },
-                        { id: 'blog', label: 'Blogs', icon: BookOpen },
+                        { id: 'article', label: 'Articles', icon: BookOpen },
                         { id: 'social', label: 'Social', icon: MessageSquare },
                         { id: 'news', label: 'News', icon: Newspaper },
                     ].map((cat) => (

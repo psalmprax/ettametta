@@ -4,11 +4,11 @@ import logging
 import yt_dlp
 
 class VideoDownloader:
-    def __init__(self, download_dir: str = "temp/downloads"):
+    def __init__(self, download_dir: str = "data/storage/downloads"):
         self.download_dir = download_dir
-        # Ensure we have write access, fallback to user_downloads if needed
+        # Ensure we have write access, fallback to data/storage/user_downloads if needed
         if os.path.exists(self.download_dir) and not os.access(self.download_dir, os.W_OK):
-            self.download_dir = "temp/user_downloads"
+            self.download_dir = "data/storage/user_downloads"
             
         try:
             os.makedirs(self.download_dir, exist_ok=True)

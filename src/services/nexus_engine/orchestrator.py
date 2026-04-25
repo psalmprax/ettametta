@@ -273,7 +273,9 @@ class NexusOrchestrator:
 
             output_filename = f"nexus_{job_id}_{niche.replace(' ', '_')}.mp4"
             rendered_path = await self._retry_remotion_render(
-                composition_id="ViralClip", props=props, output_name=output_filename
+                composition_id=blueprint.get("composition_id", "ViralClip"), 
+                props=props, 
+                output_name=output_filename
             )
 
             if not rendered_path:

@@ -9,6 +9,7 @@ FALLBACK_BLUEPRINTS = [
         "id": "viral-reskin",
         "name": "Viral Re-skinner",
         "description": "Auto-discovery of high-velocity clips with neural style injection.",
+        "composition_id": "ViralClip",
         "nodes": [
             {
                 "type": "ingress",
@@ -36,6 +37,7 @@ FALLBACK_BLUEPRINTS = [
         "id": "test-e2e-remote",
         "name": "Remote GPU E2E Test",
         "description": "Verification of remote AI worker synthesis and local assembly.",
+        "composition_id": "RemoteGPU",
         "nodes": [
             {
                 "type": "ingress",
@@ -74,7 +76,13 @@ async def get_blueprints(db: AsyncSession) -> list[dict]:
         return FALLBACK_BLUEPRINTS
 
     return [
-        {"id": bp.id, "name": bp.name, "description": bp.description, "nodes": bp.nodes}
+        {
+            "id": bp.id, 
+            "name": bp.name, 
+            "description": bp.description, 
+            "composition_id": bp.composition_id or "ViralClip",
+            "nodes": bp.nodes
+        }
         for bp in blueprints
     ]
 
@@ -90,12 +98,12 @@ async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
     results = {}
     current_step = 0
 
-    def update_progress(step_name: str, progress: int):
+    def update_progress(node_type: str, step_label: str, progress: int):
         notify_nexus_job_update_sync(
             {
                 "id": str(job_id),
-                "status": f"EXECUTING_{step_name.upper()}",
-                "current_node": step_name.lower(),
+                "status": f"EXECUTING_{node_type.upper()}",
+                "current_node": node_type.lower(),
                 "progress": progress,
             }
         )
@@ -107,7 +115,7 @@ async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
             current_step += 1
 
             update_progress(
-                node_label, int((current_step / len(blueprint["nodes"])) * 100)
+                node_type, node_label, int((current_step / len(blueprint["nodes"])) * 100)
             )
 
             # Execute node based on type
@@ -140,7 +148,7 @@ async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
                     f"[Blueprint] Custom node '{node_label}' completed for job {job_id}"
                 )
 
-        update_progress("complete", 100)
+        update_progress("complete", "Complete", 100)
 
         return {
             "status": "success",
@@ -151,7 +159,7 @@ async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
 
     except Exception as e:
         logger.error(f"[Blueprint] Execution failed for job {job_id}: {e}")
-        update_progress("failed", 0)
+        update_progress("failed", "Failed", 0)
         return {
             "status": "failed",
             "error": str(e),
@@ -303,5 +311,6 @@ async def get_blueprint_by_id(db: AsyncSession, blueprint_id: str) -> dict | Non
         "id": bp.id,
         "name": bp.name,
         "description": bp.description,
+        "composition_id": bp.composition_id or "ViralClip",
         "nodes": bp.nodes,
     }

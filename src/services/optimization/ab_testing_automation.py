@@ -86,15 +86,28 @@ class ABTestingAutomation:
             ):
                 return  # Need more data
 
+            # Get the right metrics based on target
+            if test.target_metric == "clicks":
+                views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
+                conv_a, conv_b = test.variant_a_click_count, test.variant_b_click_count
+            elif test.target_metric == "conversions":
+                views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
+                conv_a, conv_b = (
+                    test.variant_a_conversion_count,
+                    test.variant_b_conversion_count,
+                )
+            else:  # default to views
+                views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
+                conv_a, conv_b = test.variant_a_click_count, test.variant_b_click_count
+
             # Use proper statistical testing
             from src.api.routes.ab_testing import calculate_statistics
 
-            # For views-based tests, use views as conversions
             stats = calculate_statistics(
-                test.variant_a_view_count,
-                test.variant_b_view_count,
-                test.variant_a_view_count,
-                test.variant_b_view_count,  # Using views as conversions for simplicity
+                views_a,
+                views_b,
+                conv_a,
+                conv_b,
             )
 
             # Check if statistically significant

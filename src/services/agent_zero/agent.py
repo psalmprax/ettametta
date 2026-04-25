@@ -89,6 +89,21 @@ class AgentZero(BaseEttamettaAgent):
 
         while self.is_running:
             try:
+                # Check if we need to wait for the next scheduled run
+                current_time = time.time()
+                if self.next_run_at and current_time < self.next_run_at:
+                    wait_seconds = int(self.next_run_at - current_time)
+                    await self._log(f"Standby: Next cycle scheduled in {wait_seconds} seconds.", "SYSTEM")
+                    # Break wait into small chunks to remain responsive to stop signals
+                    for _ in range(wait_seconds):
+                        if not self.is_running:
+                            break
+                        await asyncio.sleep(1)
+                    
+                    if not self.is_running:
+                        break
+
+                # Update run timestamps
                 self.last_run_at = time.time()
                 self.next_run_at = self.last_run_at + (4 * 3600)
                 await self._persist_state()
@@ -99,11 +114,7 @@ class AgentZero(BaseEttamettaAgent):
                     f"Cycle Complete. Engine entering standby. Next run in 4 hours.",
                     "SUCCESS",
                 )
-                # Wait for 4 hours between iterations (configurable)
-                for _ in range(4 * 3600):
-                    if not self.is_running:
-                        break
-                    await asyncio.sleep(1)
+                # The loop will naturally wait at the beginning of the next iteration
             except Exception as e:
                 self.current_step = "ERROR"
                 await self._log(f"Loop Integrity Failure: {e}", "ERROR")

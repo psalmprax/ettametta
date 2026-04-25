@@ -49,6 +49,7 @@ class CommerceService:
                 "id": f"aff_{a.id}",
                 "name": a.product_name,
                 "url": a.link,
+                "cta_text": a.cta_text or "Check it out",
                 "price": "N/A",
                 "source": "affiliate"
             } for a in affiliates]
@@ -83,6 +84,7 @@ class CommerceService:
                             "name": p.get("title"),
                             "price": p.get("variants", [{}])[0].get("price", "0.00"),
                             "url": product_url,
+                            "cta_text": "Shop Now",
                             "source": "shopify"
                         })
                     return products

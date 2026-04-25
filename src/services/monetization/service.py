@@ -107,6 +107,7 @@ class MonetizationEngine:
 
             data = json.loads(content)
             aid = data.get("asset_id")
+            # Alignment fix: using 'url' instead of 'link' and providing fallback
             return next((p for p in assets if p["id"] == aid), assets[0])
         except Exception as e:
             self.logger.error(f"[Monetization] Asset matching failed: {e}")
@@ -176,7 +177,8 @@ class MonetizationEngine:
         Uses AI to plan where and how to insert affiliate links in video content.
         """
         asset_text = "\n".join(
-            [f"- {a['name']}: {a['cta_text']} -> {a['link']}" for a in assets]
+            # Alignment fix: Use 'url' instead of 'link' and handle missing cta_text
+            [f"- {a['name']}: {a.get('cta_text', 'Check it out')} -> {a['url']}" for a in assets]
         )
 
         prompt = f"""
@@ -238,7 +240,9 @@ class MonetizationEngine:
         try:
             for i, insertion in enumerate(insertion_plan.get("insertions", [])):
                 if insertion["type"] == "overlay" or insertion["type"] == "end_screen":
-                    output_path = f"monetized_{i}_{uuid.uuid4().hex[:8]}.mp4"
+                    # Alignment fix: Use absolute path in STORAGE_OUTPUT_DIR
+                    filename = f"monetized_{i}_{uuid.uuid4().hex[:8]}.mp4"
+                    output_path = os.path.join(settings.STORAGE_OUTPUT_DIR, filename)
                     
                     # Parse timing
                     start_time = 0.0
