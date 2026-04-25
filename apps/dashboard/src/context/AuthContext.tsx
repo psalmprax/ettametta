@@ -2,16 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-
-interface User {
-    username: string;
-    email: string;
-    role: string;
-    subscription: string;
-    telegram_chat_id?: string;
-    telegram_token?: string;
-    whatsapp_number?: string;
-}
+import { User } from "@/lib/types";
 
 interface AuthContextType {
     user: User | null;
@@ -168,14 +159,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
             {
                 fallback: null,
-                onSuccess: (userData: any) => {
-                    if (userData && userData.username) {
-                        setUser(userData);
-                        TokenManager.setUser(userData);
-                    } else {
-                        logout();
-                    }
-                },
+            onSuccess: (userData: User) => {
+                if (userData && userData.username) {
+                    setUser(userData);
+                    TokenManager.setUser(userData);
+                } else {
+                    logout();
+                }
+            },
                 onFallback: () => {
                     logout();
                 }
@@ -194,12 +185,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
             {
                 fallback: null,
-                onSuccess: (data: any) => {
-                    if (data && typeof data.balance === "number") {
-                        setCredits(data.balance);
-                        TokenManager.setCredits(data.balance);
-                    }
+            onSuccess: (data: { balance: number }) => {
+                if (data && typeof data.balance === "number") {
+                    setCredits(data.balance);
+                    TokenManager.setCredits(data.balance);
                 }
+            }
             }
         );
     };

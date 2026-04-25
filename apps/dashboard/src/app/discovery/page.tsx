@@ -169,7 +169,11 @@ function DiscoveryContent() {
                 {
                     fallback: {},
                     onSuccess: (data) => {
-                        // Handle summary data
+                        if (data && data.total_candidates) {
+                            toast.info("Market Summary Updated", {
+                                description: `Neural mesh synchronized with ${data.total_candidates} active candidates.`
+                            });
+                        }
                     }
                 }
             );
@@ -207,9 +211,7 @@ function DiscoveryContent() {
         loadUserSettings();
     }, []);
 
-    useEffect(() => {
-        fetchTrends();
-    }, [activeNiche, timeHorizon]);
+
 
      const fetchTrends = useCallback(async () => {
          setIsLoading(true);
@@ -319,7 +321,6 @@ function DiscoveryContent() {
                         while (attempts < maxAttempts) {
                             await new Promise(resolve => setTimeout(resolve, 2000));
                             try {
-                            try {
                                 const statusData = await withRealFallback<any>(
                                     () => fetch(`${API_BASE}/discovery/analyze/${taskId}`, {
                                         headers: { Authorization: `Bearer ${token}` }
@@ -341,8 +342,9 @@ function DiscoveryContent() {
                                     setAnalysisResults(prev => ({ ...prev, [candidate.id]: { status: "failed", result: statusData.error } }));
                                     return;
                                 }
-                            } catch (e) {}
-                            } catch (e) {}
+                            } catch (e) {
+                                console.error("Polling error:", e);
+                            }
                             attempts++;
                         }
                     };
@@ -1110,9 +1112,9 @@ function DiscoveryContent() {
 
                                                         <div className="flex items-center gap-10 relative z-10">
                                                             <div className="h-28 w-44 rounded-4xl bg-zinc-950 border border-white/5 shrink-0 relative overflow-hidden group-hover:border-primary/50 transition-all duration-700 shadow-2xl">
-                                                                {candidate.thumbnail_url ? (
-                                                                    <img src={candidate.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
-                                                                ) : (
+                                                                 {candidate.thumbnail_url ? (
+                                                                     <img src={candidate.thumbnail_url} alt={`Thumbnail for ${candidate.title || candidate.niche}`} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
+                                                                 ) : (
                                                                     <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                                                                         <TrendingUp className="h-10 w-10 text-zinc-800" />
                                                                     </div>
@@ -1149,22 +1151,45 @@ function DiscoveryContent() {
                                                         </div>
 
                                                         <div className="hidden xl:grid grid-cols-2 gap-x-12 gap-y-4 px-12 border-x border-white/5 relative z-10">
-                                                            <div className="space-y-1">
-                                                                <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Viral_Velocity</p>
-                                                                <p className="text-xs font-black text-white">{velocity}.4%</p>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Growth_Curve</p>
-                                                                <p className="text-xs font-black text-emerald-500">+{growth}%</p>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Est_Revenue</p>
-                                                                <p className="text-xs font-black text-primary">${((candidate.view_count || 0) * 0.002).toFixed(2)}</p>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Signal_Node</p>
-                                                                <p className="text-xs font-black text-zinc-400">CLUSTER_{candidate.id.slice(0, 4).toUpperCase()}</p>
-                                                            </div>
+                                                            {analysisResults[candidate.id]?.status === "completed" ? (
+                                                                <>
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[8px] font-black text-emerald-500 uppercase tracking-[0.2em]">Hook_Score</p>
+                                                                        <p className="text-xs font-black text-white">{Math.round((analysisResults[candidate.id]?.result?.hook_score || 0) * 100)}%</p>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[8px] font-black text-violet-400 uppercase tracking-[0.2em]">Retention</p>
+                                                                        <p className="text-xs font-black text-white">{Math.round((analysisResults[candidate.id]?.result?.retention_estimate || 0) * 100)}%</p>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[8px] font-black text-amber-500 uppercase tracking-[0.2em]">Pacing_BPM</p>
+                                                                        <p className="text-xs font-black text-white">{analysisResults[candidate.id]?.result?.pacing_bpm || 120}</p>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em]">Neural_Triggers</p>
+                                                                        <p className="text-[9px] font-bold text-zinc-400 line-clamp-1">{analysisResults[candidate.id]?.result?.emotional_triggers?.join(", ") || "N/A"}</p>
+                                                                    </div>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Viral_Velocity</p>
+                                                                        <p className="text-xs font-black text-white">{velocity}.4%</p>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Growth_Curve</p>
+                                                                        <p className="text-xs font-black text-emerald-500">+{growth}%</p>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Est_Revenue</p>
+                                                                        <p className="text-xs font-black text-primary">${((candidate.view_count || 0) * 0.002).toFixed(2)}</p>
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Signal_Node</p>
+                                                                        <p className="text-xs font-black text-zinc-400">CLUSTER_{candidate.id.slice(0, 4).toUpperCase()}</p>
+                                                                    </div>
+                                                                </>
+                                                            )}
                                                         </div>
 
                                                         <div className="flex items-center gap-10 mt-6 lg:mt-0 relative z-10">
