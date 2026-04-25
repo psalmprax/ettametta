@@ -701,8 +701,8 @@ class IncidentWebhookDB(Base):
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
 
-class SystemSettingDB(Base):
-    __tablename__ = "system_settings"
+class AgentZeroState(Base):
+    __tablename__ = "agent_zero_state"
 
     key = Column(String, primary_key=True, index=True)
     value = Column(JSON, nullable=False)
