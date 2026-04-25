@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 });
             },
             {
-                fallback: null,
+                fallback: null as any,
             onSuccess: (userData: User) => {
                 if (userData && userData.username) {
                     setUser(userData);
@@ -184,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 });
             },
             {
-                fallback: null,
+                fallback: null as any,
             onSuccess: (data: { balance: number }) => {
                 if (data && typeof data.balance === "number") {
                     setCredits(data.balance);
