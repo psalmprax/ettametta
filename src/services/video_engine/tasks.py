@@ -68,6 +68,7 @@ def download_and_process_task(
     quality_tier: str = "standard",
     sound_design: bool = False,
     motion_graphics: bool = False,
+    generate_thumbnail: bool = False,
     analysis_data: dict = None,
     user_id: str | None = None,
     request_id: str | None = None,
@@ -244,6 +245,28 @@ def download_and_process_task(
         storage_key = base_storage_service.upload_file(processed_path)
         # Get public URL for dashboard preview
         public_url = base_storage_service.get_file_url(storage_key)
+
+        # 3.6 Neural Thumbnail Generation
+        thumbnail_url = None
+        if generate_thumbnail:
+            logger.info(f"[Task] Generating neural thumbnail for {task_id}")
+            from src.services.video_engine.ffmpeg_utils import base_ffmpeg_transformer
+            
+            # Ensure temp dir exists
+            thumb_dir = f"temp/thumbnails/{task_id}"
+            os.makedirs(thumb_dir, exist_ok=True)
+            
+            thumbs = base_ffmpeg_transformer.generate_thumbnails(processed_path, thumb_dir, count=1)
+            if thumbs:
+                thumb_key = base_storage_service.upload_file(thumbs[0])
+                thumbnail_url = base_storage_service.get_file_url(thumb_key)
+                logger.info(f"[Task] Neural thumbnail ready: {thumbnail_url}")
+                # Cleanup local thumb
+                cleanup_local_files(thumbs[0])
+                try:
+                    os.removedirs(thumb_dir)
+                except:
+                    pass
 
         if preview_only:
             update_job(

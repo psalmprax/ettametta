@@ -46,34 +46,112 @@ class VideoJobService:
         await self.db.refresh(job)
         return job
 
-    async def get_user_jobs(self, user_id: str | None = None, limit: int = 10, offset: int = 0, include_all: bool = False) -> tuple[list[VideoJobDB], int]:
-        """Get jobs for a user or all jobs if include_all=True (admin). Returns (jobs, total_count)."""
+    async def get_user_jobs(self, user_id: str | None = None, limit: int = 10, offset: int = 0, include_all: bool = False) -> tuple[list[dict], int]:
+        """
+        Get jobs for a user or all jobs if include_all=True (admin). 
+        Aggregates results from both standard Video engine and Nexus high-fidelity engine.
+        Returns (unified_jobs, total_count).
+        """
         from sqlalchemy import func
+        from src.api.utils.models import NexusJobDB
         
-        base_stmt = select(VideoJobDB)
-        
+        # 1. Fetch Video Jobs
+        video_stmt = select(VideoJobDB)
         if user_id and not include_all:
-            base_stmt = base_stmt.where(VideoJobDB.user_id == user_id)
+            video_stmt = video_stmt.where(VideoJobDB.user_id == user_id)
         
-        # Get total count
-        count_stmt = select(func.count(VideoJobDB.id)).select_from(base_stmt.subquery())
-        total_result = await self.db.execute(count_stmt)
-        total_count = total_result.scalar() or 0
+        video_result = await self.db.execute(video_stmt.order_by(VideoJobDB.created_at.desc()))
+        video_jobs = list(video_result.scalars().all())
         
-        # Get paginated results
-        stmt = base_stmt.order_by(VideoJobDB.created_at.desc()).offset(offset).limit(limit)
-        result = await self.db.execute(stmt)
-        jobs = list(result.scalars().all())
+        # 2. Fetch Nexus Jobs
+        nexus_stmt = select(NexusJobDB)
+        if user_id and not include_all:
+            nexus_stmt = nexus_stmt.where(NexusJobDB.user_id == user_id)
+            
+        nexus_result = await self.db.execute(nexus_stmt.order_by(NexusJobDB.created_at.desc()))
+        nexus_jobs = list(nexus_result.scalars().all())
         
-        return jobs, total_count
+        # 3. Unify and Normalize
+        unified_list = []
+        
+        for v in video_jobs:
+            unified_list.append({
+                "id": v.id,
+                "title": v.title,
+                "status": v.status,
+                "progress": v.progress,
+                "source_url": v.source_url,
+                "output_path": v.output_path,
+                "job_metadata": v.job_metadata,
+                "created_at": v.created_at,
+                "engine": "video_transform"
+            })
+            
+        for n in nexus_jobs:
+            unified_list.append({
+                "id": n.id,
+                "title": f"Nexus Production: {n.niche}",
+                "status": n.status,
+                "progress": n.progress,
+                "source_url": "Cinema Mode / Studio",
+                "output_path": n.output_path,
+                "job_metadata": n.job_metadata,
+                "created_at": n.created_at,
+                "engine": "nexus_compose"
+            })
+            
+        # 4. Sort and Paginate
+        unified_list.sort(key=lambda x: x["created_at"], reverse=True)
+        total_count = len(unified_list)
+        paginated_jobs = unified_list[offset:offset+limit]
+        
+        return paginated_jobs, total_count
 
-    async def get_job_by_id(self, job_id: str, user_id: str) -> VideoJobDB | None:
-        """Get a specific job"""
+    async def get_job_by_id(self, job_id: str, user_id: str) -> dict | None:
+        """Get a specific job from either Video or Nexus tables"""
+        from src.api.utils.models import NexusJobDB
+        
+        # Check Video jobs first
         stmt = select(VideoJobDB).where(
             VideoJobDB.id == job_id, VideoJobDB.user_id == user_id
         )
         result = await self.db.execute(stmt)
-        return result.scalar_one_or_none()
+        v = result.scalar_one_or_none()
+        if v:
+            return {
+                "id": v.id,
+                "title": v.title,
+                "status": v.status,
+                "progress": v.progress,
+                "source_url": v.source_url,
+                "output_path": v.output_path,
+                "job_metadata": v.job_metadata,
+                "created_at": v.created_at,
+                "updated_at": v.updated_at,
+                "engine": "video_transform"
+            }
+            
+        # Check Nexus jobs
+        stmt_n = select(NexusJobDB).where(
+            NexusJobDB.id == job_id, NexusJobDB.user_id == user_id
+        )
+        result_n = await self.db.execute(stmt_n)
+        n = result_n.scalar_one_or_none()
+        if n:
+            return {
+                "id": n.id,
+                "title": f"Nexus Production: {n.niche}",
+                "status": n.status,
+                "progress": n.progress,
+                "source_url": "Cinema Mode / Studio",
+                "output_path": n.output_path,
+                "job_metadata": n.job_metadata,
+                "created_at": n.created_at,
+                "updated_at": n.updated_at,
+                "engine": "nexus_compose"
+            }
+            
+        return None
 
     async def update_job_status(self, job_id: str, status: SystemJobStatus | str) -> bool:
         """Update job status with strict enum enforcement"""

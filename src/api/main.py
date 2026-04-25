@@ -356,6 +356,11 @@ async def startup_event():
     asyncio.create_task(base_consistency_sentinel.start())
     logger.info("🛡️ [Startup] ConsistencySentinel enforcement loop activated.")
 
+    # Agent Zero Auto-Resume
+    from src.services.agent_zero.agent import base_agent_zero
+    asyncio.create_task(base_agent_zero.load_and_resume())
+    logger.info("🤖 [Startup] Agent Zero state recovery initiated.")
+
 
 # API Versioning: v1
 v1_router = APIRouter(prefix="/v1")
