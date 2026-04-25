@@ -240,6 +240,7 @@ class BlueprintCreate(BaseModel):
     id: str
     name: str
     description: str
+    composition_id: str = Field("ViralClip", description="The composition/template to use for rendering")
     nodes: list[dict]
 
 
@@ -266,6 +267,7 @@ async def create_nexus_blueprint(
         id=blueprint.id,
         name=blueprint.name,
         description=blueprint.description,
+        composition_id=blueprint.composition_id,
         nodes=blueprint.nodes,
     )
     db.add(new_bp)

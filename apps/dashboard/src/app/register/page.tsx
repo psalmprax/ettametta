@@ -90,6 +90,7 @@ export default function RegisterPage() {
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                aria-describedby={error ? "register-error" : undefined}
                                 className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-white font-medium"
                                 placeholder="••••••••"
                             />
@@ -97,7 +98,7 @@ export default function RegisterPage() {
                     </div>
 
                     {error && (
-                        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold text-center animate-shake">
+                        <div id="register-error" className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold text-center animate-shake" role="alert" aria-live="assertive">
                             {error}
                         </div>
                     )}

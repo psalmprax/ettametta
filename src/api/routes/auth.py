@@ -80,7 +80,9 @@ class PasswordChange(BaseModel):
 
 class UserResponse(BaseModel):
     id: str
+    username: str
     email: str
+    role: str
     subscription: SubscriptionTier | None = None
 
     class Config:

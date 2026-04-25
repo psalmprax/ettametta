@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, Plus, Trash2, Save, Layers, Cpu, Database, Play, RefreshCw } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Plus, Trash2, Save, Database, Cpu, Sparkles, Share2, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -9,40 +9,80 @@ import { NodeType } from "./NexusNode";
 import { withRealFallback } from "@/lib/real_first_utils";
 import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
+import { BlueprintNode, Blueprint } from "@/lib/types";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 interface BlueprintBuilderProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: (newBlueprint: any) => void;
+    onSuccess: (newBlueprint: Blueprint) => void;
 }
 
 export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilderProps) {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [compositionId, setCompositionId] = useState("ViralClip");
-    const [nodes, setNodes] = useState<{ id: string; type: NodeType; label: string; desc: string }[]>([
+    const [nodes, setNodes] = useState<BlueprintNode[]>([
         { id: crypto.randomUUID(), type: "ingress", label: "Initial Node", desc: "Data entry point" }
     ]);
     const [isSaving, setIsSaving] = useState(false);
+    const [nodeToDelete, setNodeToDelete] = useState<BlueprintNode | null>(null);
+    const previousActiveElement = useRef<HTMLElement | null>(null);
+
+    // Handle escape key and focus management
+    useEffect(() => {
+        if (isOpen) {
+            // Save the currently focused element
+            previousActiveElement.current = document.activeElement as HTMLElement;
+
+            // Focus first input after modal opens
+            const timer = setTimeout(() => {
+                const firstInput = document.querySelector('[data-modal-first-focus]');
+                if (firstInput) (firstInput as HTMLElement).focus();
+            }, 100);
+
+            // Handle escape key
+            const handleEscape = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') onClose();
+            };
+            document.addEventListener('keydown', handleEscape);
+
+            // Cleanup: restore focus when modal closes or component unmounts
+            return () => {
+                clearTimeout(timer);
+                document.removeEventListener('keydown', handleEscape);
+                if (previousActiveElement.current) {
+                    previousActiveElement.current.focus();
+                }
+            };
+        }
+    }, [isOpen, onClose]);
 
     const addNode = (type: NodeType) => {
-        setNodes([...nodes, { 
+        const newNode: BlueprintNode = {
             id: crypto.randomUUID(),
-            type, 
-            label: `New ${type.toUpperCase()} Node`, 
-            desc: "Configure this node" 
-        }]);
+            type,
+            label: `New ${type.toUpperCase()} Node`,
+            desc: "Configure this node"
+        };
+        setNodes([...nodes, newNode]);
     };
 
-    const removeNode = (id: string) => {
-        setNodes(nodes.filter(node => node.id !== id));
+    const removeNode = (node: BlueprintNode) => {
+        setNodeToDelete(node);
     };
 
-    const updateNode = (id: string, field: string, value: string) => {
-        const newNodes = nodes.map(node => 
+    const confirmRemoveNode = () => {
+        if (nodeToDelete) {
+            setNodes(nodes.filter(n => n.id !== nodeToDelete.id));
+            setNodeToDelete(null);
+        }
+    };
+
+    const updateNode = (id: string, field: 'label' | 'desc', value: string) => {
+        setNodes(nodes.map(node =>
             node.id === id ? { ...node, [field]: value } : node
-        );
-        setNodes(newNodes);
+        ));
     };
 
     const handleSave = async () => {
@@ -78,7 +118,15 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                 fallback: null,
                 onSuccess: (data) => {
                     toast.success("Blueprint Saved", { description: `Recipe "${name}" is now available in the neural cluster.` });
-                    onSuccess(data);
+                    // Transform DB response to frontend Blueprint interface
+                    const blueprint: Blueprint = {
+                        id: data.id || blueprintId,
+                        name: data.name || name,
+                        description: data.description || description,
+                        composition_id: data.composition_id || compositionId,
+                        nodes: data.nodes || nodes
+                    };
+                    onSuccess(blueprint);
                     onClose();
                 },
                 onFallback: (err) => {
@@ -91,6 +139,26 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
 
     if (!isOpen) return null;
 
+    // Handle escape key
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [onClose]);
+
+    // Focus management: focus first input when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            const timer = setTimeout(() => {
+                const firstInput = document.querySelector('[data-modal-first-focus]');
+                if (firstInput) (firstInput as HTMLElement).focus();
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12">
             <motion.div
@@ -99,6 +167,7 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 bg-black/90 backdrop-blur-xl"
                 onClick={onClose}
+                aria-hidden="true"
             />
             
             <motion.div
@@ -106,13 +175,16 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
                 className="relative w-full max-w-4xl bg-zinc-950 border border-white/10 rounded-5xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="blueprint-builder-title"
             >
                 <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/2">
                     <div className="space-y-1">
-                        <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Blueprint <span className="text-primary">Architect</span></h2>
+                        <h2 id="blueprint-builder-title" className="text-3xl font-black text-white uppercase tracking-tighter">Blueprint <span className="text-primary">Architect</span></h2>
                         <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Neural Pipeline Configuration</p>
                     </div>
-                    <button onClick={onClose} className="h-10 w-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors">
+                    <button onClick={onClose} className="h-10 w-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors" aria-label="Close blueprint builder">
                         <X className="h-5 w-5 text-zinc-500" />
                     </button>
                 </div>
@@ -122,6 +194,7 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-2">Recipe Name</label>
                             <input
+                                data-modal-first-focus
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Viral Re-skinner V2..."
@@ -173,10 +246,10 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                                         node.type === 'synthesis' && "bg-cyan-500/10 border-cyan-500/20 text-cyan-500",
                                         node.type === 'egress' && "bg-rose-500/10 border-rose-500/20 text-rose-500",
                                     )}>
-                                        {node.type === 'ingress' && <Layers className="h-5 w-5" />}
+                                        {node.type === 'ingress' && <Database className="h-5 w-5" />}
                                         {node.type === 'cognition' && <Cpu className="h-5 w-5" />}
-                                        {node.type === 'synthesis' && <Database className="h-5 w-5" />}
-                                        {node.type === 'egress' && <Play className="h-5 w-5" />}
+                                        {node.type === 'synthesis' && <Sparkles className="h-5 w-5" />}
+                                        {node.type === 'egress' && <Share2 className="h-5 w-5" />}
                                     </div>
 
                                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -194,7 +267,7 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                                         />
                                     </div>
 
-                                    <button onClick={() => removeNode(node.id)} className="opacity-0 group-hover:opacity-100 p-2 text-zinc-700 hover:text-rose-500 transition-all">
+                                    <button onClick={() => removeNode(node)} className="opacity-0 group-hover:opacity-100 p-2 text-zinc-700 hover:text-rose-500 transition-all" aria-label={`Delete node ${node.label}`}>
                                         <Trash2 className="h-4 w-4" />
                                     </button>
                                 </div>
@@ -205,7 +278,7 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
 
                 <div className="p-8 border-t border-white/5 bg-zinc-950 flex justify-end gap-4">
                     <button onClick={onClose} className="px-8 py-4 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:bg-white/5 transition-all">Cancel</button>
-                    <button 
+                    <button
                         onClick={handleSave}
                         disabled={isSaving}
                         className="px-10 py-4 rounded-2xl bg-linear-to-r from-violet-600 to-cyan-500 text-[10px] font-black uppercase tracking-widest text-white hover:scale-105 active:scale-95 transition-all shadow-glow-violet/20 flex items-center gap-3"
@@ -215,6 +288,18 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                     </button>
                 </div>
             </motion.div>
+
+            {/* Confirmation Modal for Node Deletion */}
+            <ConfirmModal
+                isOpen={!!nodeToDelete}
+                onClose={() => setNodeToDelete(null)}
+                onConfirm={confirmRemoveNode}
+                title="Delete Node?"
+                description={`Remove node "${nodeToDelete?.label}" from the blueprint? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Keep"
+                variant="danger"
+            />
         </div>
     );
 }

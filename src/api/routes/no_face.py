@@ -59,8 +59,8 @@ async def validate_hook(request: HookRequest, current_user=Depends(get_current_u
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Voiceover generation failed: {e}")
-        raise HTTPException(status_code=503, detail="Voiceover service unavailable")
+        logging.error(f"Hook validation failed: {e}")
+        raise HTTPException(status_code=503, detail="Hook validation service unavailable")
 
 
 class VoiceoverRequest(BaseModel):

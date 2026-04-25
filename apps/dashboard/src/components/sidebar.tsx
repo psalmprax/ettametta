@@ -69,6 +69,7 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
             <button
                 onClick={onToggle}
                 className="absolute top-4 right-4 z-50 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
                 {collapsed ? <Menu className="h-5 w-5 text-zinc-400" /> : <X className="h-5 w-5 text-zinc-400" />}
             </button>
@@ -116,6 +117,7 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
                                     ? "text-cyan-400 bg-white/2"
                                     : "hover:text-white"
                             )}
+                            aria-label={collapsed ? item.name : undefined}
                         >
                             <AnimatePresence>
                                 {isActive && (
