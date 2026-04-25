@@ -632,21 +632,23 @@ function TransformationPageContent() {
                                         <p className="text-xs font-black uppercase tracking-[0.3em] text-zinc-700">Intel Lost // Asset Not Found</p>
                                     </div>
                                 ) : selectedJob ? (
-                                    <div className="flex flex-col items-center gap-8 p-12 text-center relative z-10">
-                                        <div className="relative">
-                                            <RefreshCw className="h-32 w-32 text-primary/10 animate-spin-slow transition-transform" />
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <Layers className="h-14 w-14 text-primary animate-pulse shadow-[0_0_50px_rgba(var(--primary-rgb),0.4)]" />
+                                    <>
+                                        <div className="flex flex-col items-center gap-8 p-12 text-center relative z-10">
+                                            <div className="relative">
+                                                <RefreshCw className="h-32 w-32 text-primary/10 animate-spin-slow transition-transform" />
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <Layers className="h-14 w-14 text-primary animate-pulse shadow-[0_0_50px_rgba(var(--primary-rgb),0.4)]" />
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <h4 className="text-3xl font-black tracking-tighter text-white uppercase">Injecting Originality...</h4>
-                                            <p className="text-zinc-500 font-medium max-w-sm mx-auto leading-relaxed">Applying high-velocity neural transforms to maximize reach and bypass platform signatures.</p>
-                                        </div>
-                                        <div className="w-80 space-y-3">
-                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                                                <span>Render Progress</span>
-                                                <span className="text-primary">{selectedJob.progress}%</span>
+                                            <div className="space-y-3">
+                                                <h4 className="text-3xl font-black tracking-tighter text-white uppercase">Injecting Originality...</h4>
+                                                <p className="text-zinc-500 font-medium max-w-sm mx-auto leading-relaxed">Applying high-velocity neural transforms to maximize reach and bypass platform signatures.</p>
+                                            </div>
+                                            <div className="w-80 space-y-3">
+                                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                                                    <span>Render Progress</span>
+                                                    <span className="text-primary">{selectedJob.progress}%</span>
+                                                </div>
                                             </div>
                                         </div>
                                         {selectedJob.status.toLowerCase() === 'failed' && selectedJob.error_message && (
@@ -658,7 +660,7 @@ function TransformationPageContent() {
                                                 <p className="text-sm font-medium opacity-90 leading-relaxed">{selectedJob.error_message}</p>
                                             </div>
                                         )}
-                                    </div>
+                                    </>
                                 ) : (
                                     <div className="flex flex-col items-center gap-6 opacity-30">
                                         <Video className="h-24 w-24 text-zinc-800" />
