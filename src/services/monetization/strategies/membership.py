@@ -30,6 +30,7 @@ class MembershipStrategy(BaseMonetizationStrategy):
                         "id": str(plan.id),
                         "name": plan.name,
                         "url": plan.sign_up_url,
+                        "cta_text": plan.cta_text or "Join Now",
                         "price": str(plan.monthly_price),
                         "source": "membership"
                     } for plan in plans]

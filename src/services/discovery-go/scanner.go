@@ -270,10 +270,10 @@ func classifyURL(url string, platform string) string {
 	// 1. VIDEOS (Highest priority)
 	if platform == "YouTube" {
 		if strings.Contains(url, "/shorts/") {
-			return "video_short"
+			return "video"
 		}
 		if strings.Contains(url, "/watch?v=") || strings.Contains(url, "youtu.be/") {
-			return "video_long"
+			return "video"
 		}
 		return "skip"
 	}
@@ -286,20 +286,20 @@ func classifyURL(url string, platform string) string {
 	}
 
 	if strings.Contains(url, "/reels/") || strings.Contains(url, "/reel/") {
-		return "video_short"
+		return "video"
 	}
 	if strings.Contains(url, "/watch/") || strings.Contains(url, "/videos/") {
-		return "video_long"
+		return "video"
 	}
 
-	// 2. BLOGS / ARTICLES
-	blogPatterns := []string{
+	// 2. ARTICLES (Blogs/Substack/LinkedIn Pulse)
+	articlePatterns := []string{
 		"medium.com", "substack.com", "linkedin.com/pulse", "ghost.io", "wordpress.com",
 		"blogger.com", "dev.to", "hashnode.com", "/blog/", "/article/", "/posts/",
 	}
-	for _, pattern := range blogPatterns {
+	for _, pattern := range articlePatterns {
 		if strings.Contains(url, pattern) {
-			return "blog"
+			return "article"
 		}
 	}
 
@@ -322,17 +322,14 @@ func classifyURL(url string, platform string) string {
 		return "social"
 	}
 
-	// 5. OTHER (Generic page)
-	if strings.Contains(url, "rumble.com/v/") {
-		return "video_long"
-	}
-	if strings.Contains(url, "bilibili.com/video/") {
-		return "video_long"
+	// 5. OTHER
+	if strings.Contains(url, "rumble.com/v/") || strings.Contains(url, "bilibili.com/video/") {
+		return "video"
 	}
 
 	parts := strings.Split(url, "/")
 	if len(parts) > 3 {
-		return "other"
+		return "social"
 	}
 
 	return "skip"

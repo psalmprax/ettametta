@@ -23,6 +23,7 @@ class DigitalProductStrategy(BaseMonetizationStrategy):
                     "id": str(product.id),
                     "name": product.name,
                     "url": product.purchase_url,
+                    "cta_text": product.cta_text or "Download Now",
                     "price": str(product.price),
                     "source": "digital_product"
                 } for product in products]

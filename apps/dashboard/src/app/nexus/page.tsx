@@ -46,6 +46,7 @@ interface Blueprint {
     id: string;
     name: string;
     description: string;
+    composition_id: string;
     nodes: { type: NodeType; label: string; desc: string }[];
 }
 
@@ -226,7 +227,15 @@ export default function NexusPage() {
 
     const handleInspectResult = (job: any) => {
         if (job.output_path) {
-            window.open(`/api/${job.output_path}`, '_blank');
+            // Fix: handle absolute paths from backend by stripping the storage root if present
+            // or just prepending the correct proxy path.
+            let cleanPath = job.output_path;
+            if (cleanPath.startsWith('/app/data/storage/')) {
+                cleanPath = cleanPath.replace('/app/data/storage/', '');
+            }
+            // Ensure we don't have double slashes
+            cleanPath = cleanPath.startsWith('/') ? cleanPath.substring(1) : cleanPath;
+            window.open(`/api/storage/${cleanPath}`, '_blank');
         } else {
             toast.message("Output Incomplete", {
                 description: "The pipeline is still processing this segment.",
@@ -317,16 +326,18 @@ export default function NexusPage() {
             async () => {
                 const token = getAuthToken();
                 if (!token) throw new Error("Authentication required");
-                return fetch(`${API_BASE}/persona/create`, {
+                
+                // Use URLSearchParams for simple fields and FormData for files
+                // Since our current UI only has text fields, we'll use query params
+                const params = new URLSearchParams();
+                params.append("name", personaName);
+                if (personaImageUrl) params.append("reference_image_url", personaImageUrl);
+
+                return fetch(`${API_BASE}/persona/create?${params.toString()}`, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        name: personaName,
-                        reference_image_url: personaImageUrl
-                    })
+                    }
                 });
             },
             {
@@ -394,7 +405,7 @@ export default function NexusPage() {
                 const token = getAuthToken();
                 if (!token) throw new Error("Authentication required");
                 const body: Record<string, string> = {
-                    reference_image_url: createdPersona.reference_image_url,
+                    persona_id: String(createdPersona.id || createdPersona._id),
                     topic: videoTopic,
                 };
                 if (videoScript) body.script = videoScript;

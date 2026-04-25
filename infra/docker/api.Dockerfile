@@ -38,7 +38,7 @@ ENV PATH="/root/.deno/bin:$PATH"
 RUN curl -fsSL https://raw.githubusercontent.com/nashsu/opencli-rs/main/scripts/install.sh | sh && \
     ln -sf /usr/local/bin/opencli-rs /usr/local/bin/opencli
 
-ENV PYTHONPATH=/app/src
+ENV PYTHONPATH=/app
 COPY src/api/requirements.txt ./requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir --default-timeout=100 --upgrade pip && \
@@ -56,5 +56,5 @@ WORKDIR /app
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 

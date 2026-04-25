@@ -40,7 +40,8 @@ class SponsorshipStrategy(BaseMonetizationStrategy):
                 assets.append({
                     "id": f"sponsor_{i}",
                     "name": brand.strip(),
-                    "url": "", # Hardened: Do not generate fake URLs based on name.
+                    "url": f"mailto:{contact_email}",
+                    "cta_text": "Become a Sponsor",
                     "contact": contact_email,
                     "type": "sponsorship",
                     "source": "sponsorship"

@@ -113,7 +113,7 @@ class ContentCandidateDB(Base):
     viral_score = Column(Integer, default=0)
 
     # Categorization
-    category = Column(String, default="video")  # video, blog, social, news, other
+    category = Column(String, default="video")  # video, article, social, news
     tags = Column(JSON, nullable=True)  # Array of strings
     niche = Column(String, index=True, nullable=True)
 
@@ -372,6 +372,7 @@ class BlueprintDB(Base):
     name = Column(String)
     description = Column(String)
     nodes = Column(JSON)  # list of node dictionaries
+    composition_id = Column(String, default="ViralClip")
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
 
@@ -591,7 +592,22 @@ class MembershipPlanDB(Base):
     description = Column(String, nullable=True)
     monthly_price = Column(Float)
     sign_up_url = Column(String)
+    cta_text = Column(String, nullable=True)
     benefits = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+
+
+class LeadGenDB(Base):
+    __tablename__ = "lead_gen_configs"
+
+    id = Column(
+        String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id = Column(String(36), ForeignKey("users.id"), index=True)
+    name = Column(String)
+    niche = Column(String, index=True)
+    form_url = Column(String)
+    cta_text = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
 

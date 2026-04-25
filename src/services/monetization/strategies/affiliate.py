@@ -22,6 +22,7 @@ class AffiliateStrategy(BaseMonetizationStrategy):
                 "id": str(link.id),
                 "name": link.product_name,
                 "url": link.link,
+                "cta_text": link.cta_text or "Check it out",
                 "price": "N/A",
                 "source": "affiliate"
             } for link in links]
