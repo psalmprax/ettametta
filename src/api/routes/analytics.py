@@ -18,6 +18,8 @@ from src.api.utils.models import (
     ABTestDB,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 
@@ -139,17 +141,7 @@ async def get_report(
             )
         )
 
-        # Hardened: If retention_data is empty, compute a realistic decay curve from avg_duration
-        if not report.retention_data or sum(report.retention_data) == 0:
-            avg_dur = getattr(report, "avg_duration", 0) or (
-                report.view_count / 10 if report.view_count > 0 else 0
-            )  # Fake but proportional if missing
-            # Simple decay model: Start at 100, end near 20 based on avg_dur
-            points = []
-            for i in range(12):
-                decay = 100 * (0.9**i)
-                points.append(round(max(decay, 10 if i > 6 else 30), 1))
-            report.retention_data = points
+
 
         return success_response(data=report)
     except HTTPException:
@@ -323,7 +315,6 @@ async def get_stats_summary(
             }
         )
     except Exception as e:
-        logger = logging.getLogger(__name__)
         logger.error(f"Stats summary failed: {e}")
         return success_response(
             data={

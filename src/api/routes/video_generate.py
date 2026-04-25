@@ -174,6 +174,7 @@ async def generate_single_video(
             data={
                 "message": f"Started {len(task_ids)} video variants",
                 "parent_id": parent_job_id,
+                "task_id": task_ids[0] if task_ids else None,
                 "task_ids": task_ids,
             }
         )
@@ -247,7 +248,9 @@ async def start_story_generation(
             db=db,
         )
 
-        return {"message": "Storytelling started", "task_id": task.id}
+        return success_response(
+            data={"message": "Storytelling started", "task_id": task.id}
+        )
     except HTTPException:
         raise
     except Exception as e:

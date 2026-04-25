@@ -11,6 +11,7 @@ from src.services.multiplatform.translator import base_global_adapter
 from src.services.scheduler.empire_mode import base_empire_scheduler
 from src.services.sentinel.algorithm_tracker import base_algorithm_sentinel
 from src.api.routes.auth import get_current_user
+from src.api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/no-face", tags=["No-Face Monetization"])
 
@@ -40,12 +41,11 @@ async def generate_script(
             duration_sec=request.duration,
             style=request.style,
         )
-        return script
+        return success_response(data=script)
     except HTTPException:
         raise
-    except Exception as e:
-        logging.error(f"Voiceover generation failed: {e}")
-        raise HTTPException(status_code=503, detail="Voiceover service unavailable")
+        logging.error(f"Script generation failed: {e}")
+        raise HTTPException(status_code=503, detail="Script generation service unavailable")
 
 
 @router.post("/validate-hook")
@@ -55,7 +55,7 @@ async def validate_hook(request: HookRequest, current_user=Depends(get_current_u
     """
     try:
         analysis = await base_hook_validator.validate_hook(request.hook)
-        return analysis
+        return success_response(data=analysis)
     except HTTPException:
         raise
     except Exception as e:
@@ -80,7 +80,7 @@ async def generate_voiceover(
     )
     if not path:
         raise HTTPException(status_code=503, detail="Failed to generate voiceover")
-    return {"audio_url": path}
+    return success_response(data={"audio_url": path})
 
 
 @router.get("/search-stock")
@@ -89,7 +89,7 @@ async def search_stock(query: str, current_user=Depends(get_current_user)):
     Searches for Pexels stock video assets.
     """
     results = await base_stock_media_service.search_videos(query)
-    return results
+    return success_response(data=results)
 
 
 class ImageGenRequest(BaseModel):
@@ -106,7 +106,7 @@ async def generate_image(
     path = await base_visual_generator.generate_image(request.prompt)
     if not path:
         raise HTTPException(status_code=503, detail="Failed to generate image")
-    return {"image_url": path}
+    return success_response(data={"image_url": path})
 
 
 class LocalizeRequest(BaseModel):
@@ -124,7 +124,7 @@ async def localize_script(
     translated = await base_global_adapter.translate_script_segments(
         request.segments, request.target_lang
     )
-    return translated
+    return success_response(data=translated)
 
 
 class EmpireCloneRequest(BaseModel):
@@ -142,7 +142,7 @@ async def empire_clone(
     cloned = await base_empire_scheduler.clone_strategy(
         request.base_script, request.target_niche
     )
-    return cloned
+    return success_response(data=cloned)
 
 
 @router.get("/sentinel/status")
@@ -151,4 +151,4 @@ async def get_sentinel_status(current_user=Depends(get_current_user)):
     Returns the algorithm sync status.
     """
     status = await base_algorithm_sentinel.get_sync_status()
-    return status
+    return success_response(data=status)

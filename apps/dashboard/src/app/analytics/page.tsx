@@ -218,13 +218,13 @@ export default function AnalyticsPage() {
 
         // Global Tests
         const testsData = await withRealFallback<any>(
-            () => fetch(`${API_BASE}/ab-testing/ab-tests/active`, { headers }),
+            () => fetch(`${API_BASE}/ab-testing/tests/active`, { headers }),
             { fallback: {} }
         );
         setActiveTests(testsData.active_tests || testsData.tests || testsData || []);
 
         const compData = await withRealFallback<any>(
-            () => fetch(`${API_BASE}/ab-testing/ab-tests/completed`, { headers }),
+            () => fetch(`${API_BASE}/ab-testing/tests/completed`, { headers }),
             { fallback: {} }
         );
         setCompletedTests(compData.completed_tests || compData || []);
@@ -334,6 +334,29 @@ export default function AnalyticsPage() {
     const velocityData = getVelocityPoints(history, metrics.view_count);
 
     const handleAutoApply = async () => setIsConfirmingApply(true);
+
+    const handleEvolution = async (parentJobId: string) => {
+        const token = getAuthToken();
+        if (!token) return;
+
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/ab-testing/evolution/${parentJobId}`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    toast.success("Flywheel Evolution Initiated", {
+                        description: `Scaling winner: ${data.winner_id}. Evolution strategy applied.`
+                    });
+                    setShowWinnerModal(false);
+                    fetchData();
+                },
+                errorMessage: "Failed to trigger evolution"
+            }
+        );
+    };
 
     const confirmApplyAction = async () => {
         setIsConfirmingApply(false);
@@ -1092,12 +1115,21 @@ export default function AnalyticsPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => setShowWinnerModal(false)}
-                                    className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black py-5 rounded-2xl transition-all uppercase text-xs tracking-[0.2em] shadow-[0_0_30px_rgba(245,158,11,0.3)]"
-                                >
-                                    Seal Result
-                                </button>
+                                <div className="grid grid-cols-1 gap-3">
+                                    <button
+                                        onClick={() => handleEvolution(lastWinner.parent_job_id)}
+                                        className="w-full bg-primary hover:bg-primary/90 text-white font-black py-4 rounded-2xl transition-all uppercase text-[10px] tracking-widest shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] flex items-center justify-center gap-2"
+                                    >
+                                        <Zap className="h-4 w-4" />
+                                        Trigger Evolution
+                                    </button>
+                                    <button
+                                        onClick={() => setShowWinnerModal(false)}
+                                        className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-black py-4 rounded-2xl transition-all uppercase text-[10px] tracking-widest"
+                                    >
+                                        Seal Result
+                                    </button>
+                                </div>
                             </motion.div>
                         </motion.div>
                     )}

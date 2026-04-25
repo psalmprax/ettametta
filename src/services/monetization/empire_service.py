@@ -221,7 +221,12 @@ class EmpireService:
         return blueprints[:10]
 
     async def clone_strategy(
-        self, db: Session, user_id: str, source_niche: str, target_niche: str
+        self,
+        db: Session,
+        user_id: str,
+        source_niche: str,
+        target_niche: str,
+        auto_publish: bool = False,
     ) -> bool:
         """
         Clones system settings/parameters from a source niche to a target niche.

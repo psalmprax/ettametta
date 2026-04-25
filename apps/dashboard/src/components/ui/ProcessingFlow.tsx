@@ -18,9 +18,14 @@ const STAGE_DETAILS: Record<string, { desc: string; icon: any; default_metric: s
     render: { desc: "High-velocity parallel synthesis and encoding.", icon: Info, default_metric: "GPU Synthesis" }
 };
 
-export default React.memo(function ProcessingFlow({ steps }: { steps: FlowStep[] }) {
+export default React.memo(function ProcessingFlow({ steps, telemetry }: { steps: FlowStep[], telemetry?: any }) {
     const [selectedDetail, setSelectedDetail] = useState<string | null>(null);
     const completedSteps = steps.filter(s => s.status === 'complete').length;
+
+    // Extract real-time metrics for active stages
+    const activeMetrics = telemetry?.metrics || {};
+    const bitrate = activeMetrics.bitrate ? `${activeMetrics.bitrate} kbps` : null;
+    const latency = activeMetrics.latency ? `${activeMetrics.latency.toFixed(1)}ms` : null;
 
     return (
         <div
@@ -92,7 +97,14 @@ export default React.memo(function ProcessingFlow({ steps }: { steps: FlowStep[]
                                                 step.status === 'active' ? "text-black" : "text-primary"
                                             )}>
                                                 <DetailIcon className="h-3 w-3" />
-                                                {STAGE_DETAILS[step.id]?.default_metric}
+                                                {step.status === 'active' && bitrate ? (
+                                                    <span className="flex items-center gap-3">
+                                                        <span>{bitrate}</span>
+                                                        {latency && <span className="opacity-40">| {latency}</span>}
+                                                    </span>
+                                                ) : (
+                                                    STAGE_DETAILS[step.id]?.default_metric
+                                                )}
                                             </div>
                                         </motion.div>
                                     )}
