@@ -62,20 +62,21 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
     return (
         <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-6"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="confirm-modal-title"
-            >
-                <div 
-                    className="absolute inset-0 bg-black/80 backdrop-blur-xl transition-all" 
-                    onClick={onClose}
-                    aria-hidden="true"
-                />
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-50 flex items-center justify-center p-6"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="confirm-modal-title"
+                >
+                    <div 
+                        className="absolute inset-0 bg-black/80 backdrop-blur-xl transition-all" 
+                        onClick={onClose}
+                        aria-hidden="true"
+                    />
 
                     <motion.div
                         initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -97,14 +98,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                                  <AlertTriangle className="h-10 w-10" />}
                             </div>
 
-                        <div className="space-y-2">
-                            <h3 id="confirm-modal-title" className="text-3xl font-black text-white uppercase tracking-tighter">
-                                {title}
-                            </h3>
-                            <p className="text-zinc-500 font-medium text-sm leading-relaxed max-w-xs mx-auto">
-                                {description}
-                            </p>
-                        </div>
+                            <div className="space-y-2">
+                                <h3 id="confirm-modal-title" className="text-3xl font-black text-white uppercase tracking-tighter">
+                                    {title}
+                                </h3>
+                                <p className="text-zinc-500 font-medium text-sm leading-relaxed max-w-xs mx-auto">
+                                    {description}
+                                </p>
+                            </div>
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-4 relative z-10">
