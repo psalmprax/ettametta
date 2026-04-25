@@ -693,7 +693,7 @@ export default function EmpirePage() {
                                                     <p className="text-[9px] text-zinc-500 truncate">{link.link}</p>
                                                     {link.cta_text && <p className="text-[9px] text-amber-500 font-bold">{link.cta_text}</p>}
                                                     <button 
-                                                        onClick={() => handleDeleteAffiliateLink(link.id || link._id)}
+                                                        onClick={() => handleDeleteAffiliateLink((link.id || link._id || "") as string)}
                                                         className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
                                                      >
                                                         <Trash2 className="h-3 w-3" />
