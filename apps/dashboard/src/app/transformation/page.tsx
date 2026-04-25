@@ -71,7 +71,13 @@ function TransformationPageContent() {
             setNewJobUrl(urlParam);
             setIsJobModalOpen(true);
         }
-    }, [searchParams]);
+
+        const jobIdParam = searchParams.get("job_id");
+        if (jobIdParam && processingJobs.length > 0) {
+            const job = processingJobs.find(j => j.id === jobIdParam);
+            if (job) setSelectedJob(job);
+        }
+    }, [searchParams, processingJobs]);
 
     // ... handleNewJob update
     const handleNewJob = async (e?: React.FormEvent) => {
@@ -213,6 +219,7 @@ function TransformationPageContent() {
     };
 
     const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/jobs`);
+    const { data: telemetryData } = useWebSocket<any>(`${WS_BASE}/telemetry`);
 
     useEffect(() => {
         if (!jobUpdate) return;
@@ -547,7 +554,7 @@ function TransformationPageContent() {
 
                 {/* Processing Flow Diagram */}
                 <div className="mb-16">
-                    <ProcessingFlow steps={flowSteps} />
+                    <ProcessingFlow steps={flowSteps} telemetry={telemetryData} />
                 </div>
 
                 <div className="flex items-end justify-between mb-12">
@@ -686,7 +693,7 @@ function TransformationPageContent() {
                                                     <h5 className="text-sm font-black text-white uppercase tracking-tighter">Ready for Global Distribution</h5>
                                                 </div>
                                             </div>
-                                            <Link href="/publishing" className="bg-primary text-white text-[11px] font-black px-6 py-3 rounded-2xl hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] transition-all uppercase tracking-widest">
+                                            <Link href={`/publishing${selectedJob ? `?job_id=${selectedJob.id}` : ''}`} className="bg-primary text-white text-[11px] font-black px-6 py-3 rounded-2xl hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] transition-all uppercase tracking-widest">
                                                 Deploy Matrix
                                             </Link>
                                         </motion.div>
