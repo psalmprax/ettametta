@@ -116,13 +116,11 @@ export const CandidateList = memo<CandidateListProps>(function CandidateList({
                             >
                                 <div className="flex items-start space-x-4">
                                     <div className="relative">
-                                        <img
-                                            src={candidate.thumbnail_url}
-                                            alt={candidate.title}
-                                            className="w-24 h-16 object-cover rounded-lg group-hover:scale-105 transition-transform"
-                                            onError={(e) => {
-                                                e.currentTarget.src = "/placeholder-thumbnail.png";
-                                            }}
+                                        <div 
+                                            className="w-24 h-16 bg-cover bg-center rounded-lg group-hover:scale-105 transition-transform"
+                                            style={{ backgroundImage: `url(${candidate.thumbnail_url})` }}
+                                            role="img"
+                                            aria-label={candidate.title}
                                         />
                                         <div className="absolute inset-0 bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <Play className="h-6 w-6 text-white" />
