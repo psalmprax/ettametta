@@ -108,7 +108,7 @@ export default function CreationPage() {
             }
         );
         setIsGenerating(false);
-    }, [topic, niche, style, setHookAnalysis, setIsGenerating]);
+    }, [topic, niche, style, duration, setScript, setHookAnalysis, setIsGenerating]);
 
 
 
@@ -348,6 +348,7 @@ export default function CreationPage() {
             toast.warning("No Recipe Selected", {
                 description: "Please select a neural recipe or create a custom one."
             });
+            setIsLaunchingProduction(false);
             return;
         }
         setIsLaunchingProduction(true);
@@ -756,6 +757,7 @@ export default function CreationPage() {
                                                             </button>
                                                             <button
                                                                 onClick={() => handleSearchStock(i, seg.visual_cue)}
+                                                                aria-label={`Search stock videos for segment ${i + 1}`}
                                                                 className={cn(
                                                                     "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
                                                                     segmentAssets[i]?.videos ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"

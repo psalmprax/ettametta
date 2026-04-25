@@ -215,39 +215,47 @@ function DiscoveryContent() {
 
      const fetchTrends = useCallback(async () => {
          setIsLoading(true);
-         const token = getAuthToken();
-         if (!token) { setIsLoading(false); return; }
-         const params = new URLSearchParams({
-             niche: activeNiche,
-             horizon: timeHorizon,
-             min_viral_score: minViralScore.toString(),
-             exclude_shorts: excludeShorts.toString()
-         });
+         try {
+             const token = getAuthToken();
+             if (!token) { setIsLoading(false); return; }
+             const params = new URLSearchParams({
+                 niche: activeNiche,
+                 horizon: timeHorizon,
+                 min_viral_score: minViralScore.toString(),
+                 exclude_shorts: excludeShorts.toString()
+             });
 
-         // Trends
-         const trends = await withRealFallback<ContentCandidate[]>(
-             () => fetch(`${API_BASE}/discovery/trends?${params.toString()}`, {
-                 headers: { Authorization: `Bearer ${token}` }
-             }),
-             { fallback: [] }
-         );
-         setCandidates(trends);
+             // Trends
+             const response = await withRealFallback<any>(
+                 () => fetch(`${API_BASE}/discovery/trends?${params.toString()}`, {
+                     headers: { Authorization: `Bearer ${token}` }
+                 }),
+                 { fallback: { trends: [] } }
+             );
+             setCandidates(response.trends || []);
 
-         // Keywords
-         await withRealFallback<any>(
-             () => fetch(`${API_BASE}/discovery/niche-trends/${activeNiche}`, {
-                 headers: { Authorization: `Bearer ${token}` }
-             }),
-             {
-                 fallback: { top_keywords: [] },
-                 onSuccess: (data) => {
-                     if (data.top_keywords && data.top_keywords.length > 0) {
-                         setTopKeywords(data.top_keywords);
+             // Keywords
+             await withRealFallback<any>(
+                 () => fetch(`${API_BASE}/discovery/niche-trends/${activeNiche}`, {
+                     headers: { Authorization: `Bearer ${token}` }
+                 }),
+                 {
+                     fallback: { top_keywords: [] },
+                     onSuccess: (data) => {
+                         if (data.top_keywords && data.top_keywords.length > 0) {
+                             setTopKeywords(data.top_keywords);
+                         }
                      }
                  }
-             }
-         );
-         setIsLoading(false);
+             );
+         } catch (error) {
+             console.error("fetchTrends failed:", error);
+             toast.error("Discovery Error", { 
+                 description: "The neural discovery link is unstable. Please check your connection." 
+             });
+         } finally {
+             setIsLoading(false);
+         }
      }, [activeNiche, timeHorizon, minViralScore, excludeShorts]);
 
     useEffect(() => {
@@ -400,12 +408,12 @@ function DiscoveryContent() {
                             Authorization: `Bearer ${token}`
                         },
                         body: JSON.stringify({
-                            platform: candidate.platform?.toLowerCase().includes('youtube') ? 'youtube' : 
-                                     candidate.platform?.toLowerCase().includes('tiktok') ? 'tiktok' : 
-                                     candidate.platform?.toLowerCase().includes('x') ? 'x' : 
-                                     candidate.platform?.toLowerCase().includes('twitter') ? 'x' :
-                                     candidate.platform?.toLowerCase().includes('instagram') ? 'instagram' :
-                                     candidate.platform?.toLowerCase().split(' ')[0] || "unknown",
+                            platform: (candidate.platform || '').toLowerCase().includes('youtube') ? 'youtube' : 
+                                     (candidate.platform || '').toLowerCase().includes('tiktok') ? 'tiktok' : 
+                                     (candidate.platform || '').toLowerCase().includes('x') ? 'x' : 
+                                     (candidate.platform || '').toLowerCase().includes('twitter') ? 'x' :
+                                     (candidate.platform || '').toLowerCase().includes('instagram') ? 'instagram' :
+                                     (candidate.platform || '').toLowerCase().split(' ')[0] || "unknown",
                             action: action,
                             content_url: candidate.source_url
                         })
@@ -560,7 +568,7 @@ function DiscoveryContent() {
     const filteredCandidates = React.useMemo(() => {
         if (!Array.isArray(candidates)) return [];
         return candidates.filter(c => {
-            const platformMatch = filter === 'all' || c.platform?.toLowerCase().includes(filter.toLowerCase());
+            const platformMatch = filter === 'all' || (c.platform || '').toLowerCase().includes(filter.toLowerCase());
             const categoryMatch = activeCategory === 'all' || (c.category || 'video').toLowerCase() === activeCategory.toLowerCase();
             return platformMatch && categoryMatch;
         });
@@ -604,21 +612,21 @@ function DiscoveryContent() {
         const token = getAuthToken();
         if (!token) { setIsLoading(false); setIsSearching(false); return; }
 
-        await withRealFallback<ContentCandidate[]>(
-            () => fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(query)}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: [],
-                onSuccess: (data) => {
-                    setCandidates(data);
-                    if (!niches.includes(query)) {
-                        setNiches(prev => Array.from(new Set([...prev, query])));
-                    }
-                    setActiveNiche(query);
-                }
-            }
-        );
+         await withRealFallback<any>(
+             () => fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(query)}`, {
+                 headers: { Authorization: `Bearer ${token}` }
+             }),
+             {
+                 fallback: { results: [] },
+                 onSuccess: (data) => {
+                     setCandidates(data.results || []);
+                     if (!niches.includes(query)) {
+                         setNiches(prev => Array.from(new Set([...prev, query])));
+                     }
+                     setActiveNiche(query);
+                 }
+             }
+         );
         setIsLoading(false);
         setIsSearching(false);
     };
@@ -1104,14 +1112,17 @@ function DiscoveryContent() {
                                                         transition={{ delay: idx * 0.08, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                                                         layout
                                                         onClick={() => candidate.source_url && handleOpenUrl(candidate.source_url)}
-                                                        className="p-10 px-12 flex flex-col lg:flex-row lg:items-center justify-between hover:bg-white/3 transition-all group relative overflow-hidden cursor-pointer"
+                                                        className="p-10 px-12 flex flex-col lg:flex-row lg:items-center justify-between hover:bg-white/3 transition-all group relative overflow-hidden"
                                                     >
                                                         {/* ... (existing candidate UI) */}
                                                         <div className="absolute inset-x-0 top-0 h-full bg-linear-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                                         <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-(--shimmer-opacity) pointer-events-none" />
 
                                                         <div className="flex items-center gap-10 relative z-10">
-                                                            <div className="h-28 w-44 rounded-4xl bg-zinc-950 border border-white/5 shrink-0 relative overflow-hidden group-hover:border-primary/50 transition-all duration-700 shadow-2xl">
+                                                            <div 
+                                                                onClick={() => candidate.source_url && handleOpenUrl(candidate.source_url)}
+                                                                className="h-28 w-44 rounded-4xl bg-zinc-950 border border-white/5 shrink-0 relative overflow-hidden group-hover:border-primary/50 transition-all duration-700 shadow-2xl cursor-pointer"
+                                                            >
                                                                  {candidate.thumbnail_url ? (
                                                                      <div 
                                                                          className="absolute inset-0 w-full h-full bg-cover bg-center opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" 
@@ -1318,16 +1329,35 @@ function DiscoveryContent() {
                                                 );
                                             })
                                         ) : (
-                                            <div className="py-40 flex flex-col items-center justify-center gap-10 text-center relative overflow-hidden">
+                                            <div className="py-40 flex flex-col items-center justify-center gap-6 text-center relative overflow-hidden">
                                                 <div className="absolute inset-0 bg-radial from-primary/5 to-transparent opacity-30" />
                                                 <div className="h-24 w-24 rounded-full bg-zinc-950 border border-white/5 flex items-center justify-center shadow-2xl relative">
                                                     <Search className="h-10 w-10 text-zinc-800" />
-                                                    <div className="absolute inset-0 border-2 border-dashed border-zinc-800 rounded-full animate-spin-slow" />
                                                 </div>
                                                 <div className="space-y-3 relative z-10">
-                                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">Scanning {telemetry ? Math.floor(telemetry.bitrate * 34.5).toLocaleString() : "..."} data points per second</p>
-                                                    <p className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest">Scanning Inter-Social Cluster High-Velocity Nodes</p>
-                                                    <button onClick={fetchTrends} className="mt-6 text-xs font-black uppercase tracking-[0.4em] text-primary hover:neon-glow transition-all">Re-Initialize Scan</button>
+                                                    <p className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest">No Candidates Match Current Filters</p>
+                                                    <p className="text-[9px] text-zinc-600 max-w-md leading-relaxed">
+                                                        {filter !== 'all' 
+                                                            ? `No ${filter} content found for "${activeNiche}". Try a different platform or adjust your viral score threshold.`
+                                                            : `No results for "${activeNiche}". This niche may not have been scanned yet, or try a broader search term.`
+                                                        }
+                                                    </p>
+                                                    <div className="flex items-center gap-4 mt-4">
+                                                        <button 
+                                                            onClick={fetchTrends}
+                                                            className="text-xs font-black uppercase tracking-[0.4em] text-primary hover:neon-glow transition-all"
+                                                        >
+                                                            Refresh Discovery Feed
+                                                        </button>
+                                                        {filter !== 'all' && (
+                                                            <button 
+                                                                onClick={() => setFilter('all')}
+                                                                className="text-xs font-bold text-zinc-500 hover:text-white transition-colors"
+                                                            >
+                                                                Show All Platforms
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -1641,7 +1671,7 @@ function DiscoveryContent() {
                 title={previewTitle}
                 onProceedToTransformation={() => {
                     setShowPreview(false);
-                    router.push("/transformation");
+                    router.push(`/transformation${testJobId ? `?job_id=${testJobId}` : ''}`);
                 }}
             />
         </DashboardLayout>

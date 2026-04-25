@@ -17,7 +17,7 @@ import {
     CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { API_BASE } from "@/lib/config";
+import { API_BASE, WS_BASE } from "@/lib/config";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { getAuthToken } from "@/lib/auth_utils";
@@ -70,7 +70,7 @@ export default function AutonomousPage() {
         fetchStatus();
         const interval = setInterval(fetchStatus, 30000);
 
-        const wsUrl = API_BASE.replace("http", "ws") + "/ws/logs";
+        const wsUrl = `${WS_BASE}/logs`;
         const ws = new WebSocket(wsUrl);
 
         ws.onmessage = (event) => {
