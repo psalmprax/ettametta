@@ -648,7 +648,6 @@ function TransformationPageContent() {
                                                 <span>Render Progress</span>
                                                 <span className="text-primary">{selectedJob.progress}%</span>
                                             </div>
-                                            </div>
                                         </div>
                                         {selectedJob.status.toLowerCase() === 'failed' && selectedJob.error_message && (
                                             <div className="mt-8 p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 max-w-sm mx-auto">
