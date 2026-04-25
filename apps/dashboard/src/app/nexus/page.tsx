@@ -776,8 +776,8 @@ export default function NexusPage() {
                             <div className="space-y-3 pt-4 border-t border-white/5">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Active Identities</p>
                                 <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-                                    {personas.map((p) => (
-                                        <div key={p.id || p._id} className="group flex items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5 hover:border-primary/20 transition-all cursor-pointer" onClick={() => setCreatedPersona(p)}>
+                                    {personas.map((p, i) => (
+                                        <div key={p.id || p._id || i} className="group flex items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5 hover:border-primary/20 transition-all cursor-pointer" onClick={() => setCreatedPersona(p)}>
                                             <div className="flex items-center gap-3">
                                                 <div className="h-8 w-8 rounded-lg bg-zinc-800 border border-white/5 overflow-hidden">
                                                     <div 
@@ -790,7 +790,7 @@ export default function NexusPage() {
                                                 <span className="text-xs font-black text-white uppercase tracking-tight">{p.name}</span>
                                             </div>
                                             <button 
-                                                onClick={(e) => { e.stopPropagation(); handleDeletePersona(p.id || p._id); }}
+                                                onClick={(e) => { e.stopPropagation(); handleDeletePersona((p.id || p._id || "") as string); }}
                                                 className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
                                             >
                                                 <Trash2 className="h-3 w-3" />
