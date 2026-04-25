@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import DashboardLayout from "@/components/layout";
+import { BlueprintBuilder } from "@/components/ui/BlueprintBuilder";
+import { Blueprint } from "@/lib/types";
 import {
     Sparkles,
     Zap,
@@ -12,14 +14,12 @@ import {
     Play,
     Edit3,
     ShieldAlert,
-    AlertTriangle,
     Plus,
     Film,
     Wand2,
-    Clock,
     Target,
-    Globe,
-    ChevronDown
+    ChevronDown,
+    Globe
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -27,29 +27,11 @@ import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { useNiches } from "@/hooks/useNiches";
-
-interface ScriptSegment {
-    type: string;
-    text: string;
-    visual_cue: string;
-    visual_style?: string;
-    tone?: string;
-    pattern_interrupt?: string;
-    duration: number;
-}
-
-interface ScriptOutput {
-    title: string;
-    emotional_arc?: string;
-    segments: ScriptSegment[];
-    hashtags: string[];
-}
-
 export default function CreationPage() {
     const { niches, styles: availableStyles, isLoading: isLoadingNiches } = useNiches();
     const [topic, setTopic] = useState("");
-    const [niche, setNiche] = useState("Motivation");
-    const [style, setStyle] = useState("story");
+    const [niche, setNiche] = useState(() => niches && niches.length > 0 ? niches[0] : "Motivation");
+    const [style, setStyle] = useState(() => availableStyles && availableStyles.length > 0 ? availableStyles[0] : "story");
     const [duration, setDuration] = useState(60);
     const [isGenerating, setIsGenerating] = useState(false);
     const [script, setScript] = useState<ScriptOutput | null>(null);
@@ -59,11 +41,38 @@ export default function CreationPage() {
     const [isCinemaLaunching, setIsCinemaLaunching] = useState(false);
 
     const [isValidating, setIsValidating] = useState(false);
-    const [hookAnalysis, setHookAnalysis] = useState<any>(null);
+    const [hookAnalysis, setHookAnalysis] = useState<HookAnalysis | null>(null);
     const [isExporting, setIsExporting] = useState(false);
     const [isLaunchingProduction, setIsLaunchingProduction] = useState(false);
+    const [showBlueprintBuilder, setShowBlueprintBuilder] = useState(false);
+    const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
+    const [selectedBlueprint, setSelectedBlueprint] = useState<Blueprint | null>(null);
 
-    const handleApplyAlternativeHook = (newHook: string) => {
+    useEffect(() => {
+        if (niches && niches.length > 0 && niche === "Motivation") {
+            setNiche(niches[0]);
+        }
+    }, [niches, niche]);
+
+    useEffect(() => {
+        const fetchBlueprints = async () => {
+            const token = getAuthToken();
+            if (!token) return;
+            await withRealFallback<Blueprint[]>(
+                () => fetch(`${API_BASE}/nexus/blueprints`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                }),
+                {
+                    fallback: [],
+                    onSuccess: (data) => setBlueprints(Array.isArray(data) ? data : []),
+                    errorMessage: "Failed to load neural recipes"
+                }
+            );
+        };
+        fetchBlueprints();
+    }, []);
+
+    const handleApplyAlternativeHook = useCallback((newHook: string) => {
         if (!script) return;
         const newSegments = script.segments.map(s => 
             s.type === "hook" ? { ...s, text: newHook } : s
@@ -71,10 +80,10 @@ export default function CreationPage() {
         setScript({ ...script, segments: newSegments });
         setHookAnalysis(null);
         toast.success("Hook Updated", { description: "Neural blueprint synchronized with new hook." });
-    };
+    }, [script]);
 
-    const handleGenerateScript = async () => {
-        if (!topic) return;
+    const handleGenerateScript = useCallback(async () => {
+        if (!topic || !niche || !style) return;
         setIsGenerating(true);
         setHookAnalysis(null);
         const token = getAuthToken();
@@ -99,9 +108,11 @@ export default function CreationPage() {
             }
         );
         setIsGenerating(false);
-    };
+    }, [topic, niche, style, setHookAnalysis, setIsGenerating]);
 
-    const handleValidateHook = async () => {
+
+
+    const handleValidateHook = useCallback(async () => {
         if (!script) return;
         const hookSegment = Array.isArray(script.segments) ? script.segments.find(s => s.type === "hook") : null;
         if (!hookSegment) return;
@@ -128,9 +139,9 @@ export default function CreationPage() {
             }
         );
         setIsValidating(false);
-    };
+    }, [script]);
 
-    const handleSynthesizeAudio = async (index: number, text: string) => {
+    const handleSynthesizeAudio = useCallback(async (index: number, text: string) => {
         setLoadingSegment(`audio-${index}`);
         const token = getAuthToken();
         if (!token) {
@@ -138,29 +149,47 @@ export default function CreationPage() {
             return;
         }
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/no-face/generate-voiceover`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ text })
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    setSegmentAssets(prev => ({
-                        ...prev,
-                        [index]: { ...prev[index], audio: data.audio_url || data.url }
-                    }));
+        const doRequest = async (): Promise<any> => {
+            return await withRealFallback<any>(
+                () => fetch(`${API_BASE}/no-face/generate-voiceover`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ text })
+                }),
+                {
+                    fallback: null,
+                    onSuccess: (data) => {
+                        setSegmentAssets(prev => ({
+                            ...prev,
+                            [index]: { ...prev[index], audio: data.audio_url || data.url }
+                        }));
+                    },
+                    silent: true
                 }
-            }
-        );
-        setLoadingSegment(null);
-    };
+            );
+        };
 
-    const handleGenerateSegmentImage = async (index: number, prompt: string) => {
+        let result = await doRequest();
+        let retries = 0;
+        const maxRetries = 2;
+        while (!result && retries < maxRetries) {
+            retries++;
+            const delay = Math.pow(2, retries) * 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+            result = await doRequest();
+        }
+        setLoadingSegment(null);
+        if (!result) {
+            toast.error("Audio synthesis failed", {
+                description: `Segment ${index + 1}: Voiceover generation failed after 3 attempts. Please try again or use a different voice.`
+            });
+        }
+    }, [setLoadingSegment, setSegmentAssets]);
+
+    const handleGenerateSegmentImage = useCallback(async (index: number, prompt: string) => {
         setLoadingSegment(`image-${index}`);
         const token = getAuthToken();
         if (!token) {
@@ -168,29 +197,47 @@ export default function CreationPage() {
             return;
         }
 
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/no-face/generate-image`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ prompt })
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    setSegmentAssets(prev => ({
-                        ...prev,
-                        [index]: { ...prev[index], image: data.image_url || data.url }
-                    }));
+        const doRequest = async (): Promise<any> => {
+            return await withRealFallback<any>(
+                () => fetch(`${API_BASE}/no-face/generate-image`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ prompt })
+                }),
+                {
+                    fallback: null,
+                    onSuccess: (data) => {
+                        setSegmentAssets(prev => ({
+                            ...prev,
+                            [index]: { ...prev[index], image: data.image_url || data.url }
+                        }));
+                    },
+                    silent: true
                 }
-            }
-        );
-        setLoadingSegment(null);
-    };
+            );
+        };
 
-    const handleSearchStock = async (index: number, query: string) => {
+        let result = await doRequest();
+        let retries = 0;
+        const maxRetries = 2;
+        while (!result && retries < maxRetries) {
+            retries++;
+            const delay = Math.pow(2, retries) * 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+            result = await doRequest();
+        }
+        setLoadingSegment(null);
+        if (!result) {
+            toast.error("Image generation failed", {
+                description: `Segment ${index + 1}: Image creation failed after 3 attempts. Please try again or adjust the prompt.`
+            });
+        }
+    }, [setLoadingSegment, setSegmentAssets]);
+
+    const handleSearchStock = useCallback(async (index: number, query: string) => {
         setLoadingSegment(`stock-${index}`);
         const token = getAuthToken();
         if (!token) {
@@ -198,24 +245,43 @@ export default function CreationPage() {
             return;
         }
 
-        await withRealFallback<any[]>(
-            () => fetch(`${API_BASE}/no-face/search-stock?query=${encodeURIComponent(query)}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: [],
-                onSuccess: (data) => {
-                    setSegmentAssets(prev => ({
-                        ...prev,
-                        [index]: { ...prev[index], videos: data }
-                    }));
+        const doRequest = async (): Promise<any[]> => {
+            return await withRealFallback<any[]>(
+                () => fetch(`${API_BASE}/no-face/search-stock?query=${encodeURIComponent(query)}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                }),
+                {
+                    fallback: [],
+                    onSuccess: (data) => {
+                        setSegmentAssets(prev => ({
+                            ...prev,
+                            [index]: { ...prev[index], videos: data }
+                        }));
+                    },
+                    silent: true
                 }
-            }
-        );
-        setLoadingSegment(null);
-    };
+            );
+        };
 
-    const handleGlobalize = async (lang: string) => {
+        let result = await doRequest();
+        let retries = 0;
+        const maxRetries = 2;
+        while (!result || !result.length) {
+            if (retries >= maxRetries) break;
+            retries++;
+            const delay = Math.pow(2, retries) * 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+            result = await doRequest();
+        }
+        setLoadingSegment(null);
+        if (!result || !result.length) {
+            toast.error("Stock video search failed", {
+                description: `Segment ${index + 1}: Could not find stock videos after 3 attempts. Try a different query.`
+            });
+        }
+    }, [setLoadingSegment, setSegmentAssets]);
+
+    const handleGlobalize = useCallback(async (lang: string) => {
         if (!script) return;
         setIsGenerating(true);
         const token = getAuthToken();
@@ -240,9 +306,9 @@ export default function CreationPage() {
             }
         );
         setIsGenerating(false);
-    };
+    }, [script]);
 
-    const handleExportAssets = () => {
+    const handleExportAssets = useCallback(() => {
         if (!script) return;
         setIsExporting(true);
         try {
@@ -274,10 +340,16 @@ export default function CreationPage() {
         } finally {
             setIsExporting(false);
         }
-    };
+    }, [script, segmentAssets, niche, style, duration]);
 
-    const handleLaunchProduction = async () => {
+    const handleLaunchProduction = useCallback(async () => {
         if (!script) return;
+        if (!selectedBlueprint) {
+            toast.warning("No Recipe Selected", {
+                description: "Please select a neural recipe or create a custom one."
+            });
+            return;
+        }
         setIsLaunchingProduction(true);
         const token = getAuthToken();
         if (!token) {
@@ -295,7 +367,7 @@ export default function CreationPage() {
                 body: JSON.stringify({
                     niche,
                     topic,
-                    blueprint_id: "story-factory",
+                    blueprint_id: selectedBlueprint?.id || "story-factory",
                     cinema_mode: false,
                     script_data: {
                         title: script.title,
@@ -313,9 +385,9 @@ export default function CreationPage() {
             }
         );
         setIsLaunchingProduction(false);
-    };
+    }, [script, niche, topic, selectedBlueprint]);
 
-    const handleLaunchCinema = async () => {
+    const handleLaunchCinema = useCallback(async () => {
         if (!topic) return;
         setIsCinemaLaunching(true);
         const token = getAuthToken();
@@ -346,7 +418,7 @@ export default function CreationPage() {
             }
         );
         setIsCinemaLaunching(false);
-    };
+    }, [topic, niche]);
 
     return (
         <DashboardLayout>
@@ -383,9 +455,9 @@ export default function CreationPage() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label htmlFor="niche" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Niche</label>
+                                        <label htmlFor="niche" className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-2">Niche</label>
                                         <div className="relative group">
                                             <select
                                                 id="niche"
@@ -406,7 +478,7 @@ export default function CreationPage() {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Style</label>
+                                        <label className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-2">Style</label>
                                         <div className="relative group">
                                             <select
                                                 value={style}
@@ -452,7 +524,51 @@ export default function CreationPage() {
                                         />
                                     </div>
                                 </div>
-                            </div>
+                                </div>
+
+                                {/* Blueprint Selection */}
+                                <div className="glass-card p-6 rounded-2xl space-y-4 mb-8">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center border border-violet-500/20">
+                                                <Cpu className="h-5 w-5 text-violet-500" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-black uppercase tracking-tight text-white">Neural Recipe</h3>
+                                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Select processing pipeline</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowBlueprintBuilder(true)}
+                                            className="px-4 py-2 bg-violet-500/10 border border-violet-500/20 rounded-lg text-xs font-black text-violet-400 hover:bg-violet-500/20 transition-all"
+                                        >
+                                            Create Recipe
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {blueprints.length === 0 ? (
+                                            <p className="text-zinc-500 text-sm col-span-2">No recipes found. Create your first neural recipe.</p>
+                                        ) : (
+                                            blueprints.map((bp) => (
+                                                <div
+                                                    key={bp.id}
+                                                    onClick={() => setSelectedBlueprint(bp)}
+                                                    className={cn(
+                                                        "p-4 rounded-xl border cursor-pointer transition-all",
+                                                        selectedBlueprint?.id === bp.id
+                                                            ? "bg-violet-500/10 border-violet-500/40"
+                                                            : "bg-white/2 border-white/5 hover:border-white/10"
+                                                    )}
+                                                >
+                                                    <p className="text-sm font-bold text-white">{bp.name}</p>
+                                                    <p className="text-[10px] text-zinc-500 line-clamp-1">{bp.description}</p>
+                                                    <p className="text-[9px] text-zinc-600 mt-2">Composition: {bp.composition_id}</p>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
 
                             <motion.button
                                 whileHover={{ scale: 1.02, y: -4 }}
@@ -628,13 +744,14 @@ export default function CreationPage() {
                                                         </div>
 
                                                         <div className="flex gap-2">
-                                                            <button
-                                                                onClick={() => handleSynthesizeAudio(i, seg.text)}
-                                                                className={cn(
-                                                                    "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
-                                                                    segmentAssets[i]?.audio ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
-                                                                )}
-                                                            >
+                                                             <button
+                                                                 onClick={() => handleSynthesizeAudio(i, seg.text)}
+                                                                 aria-label={`Generate audio for segment ${i + 1}`}
+                                                                 className={cn(
+                                                                     "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
+                                                                     segmentAssets[i]?.audio ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
+                                                                 )}
+                                                             >
                                                                 {loadingSegment === `audio-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Zap className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.audio ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
                                                             </button>
                                                             <button
@@ -646,13 +763,14 @@ export default function CreationPage() {
                                                             >
                                                                 {loadingSegment === `stock-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Film className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.videos ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
                                                             </button>
-                                                            <button
-                                                                onClick={() => handleGenerateSegmentImage(i, seg.visual_cue)}
-                                                                className={cn(
-                                                                    "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
-                                                                    segmentAssets[i]?.image ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
-                                                                )}
-                                                            >
+                                                             <button
+                                                                 onClick={() => handleGenerateSegmentImage(i, seg.visual_cue)}
+                                                                 aria-label={`Generate image for segment ${i + 1}`}
+                                                                 className={cn(
+                                                                     "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
+                                                                     segmentAssets[i]?.image ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
+                                                                 )}
+                                                             >
                                                                 {loadingSegment === `image-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Wand2 className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.image ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
                                                             </button>
                                                         </div>
@@ -730,6 +848,20 @@ export default function CreationPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Blueprint Builder Modal */}
+            <BlueprintBuilder
+                isOpen={showBlueprintBuilder}
+                onClose={() => setShowBlueprintBuilder(false)}
+                onSuccess={(newBlueprint) => {
+                    setBlueprints(prev => [...prev, newBlueprint]);
+                    setSelectedBlueprint(newBlueprint);
+                    setShowBlueprintBuilder(false);
+                    toast.success("Recipe Created", {
+                        description: `'${newBlueprint.name}' is now available.`
+                    });
+                }}
+            />
         </DashboardLayout>
     );
 }

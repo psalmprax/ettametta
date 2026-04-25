@@ -13,8 +13,6 @@ export function useWebSocket<T>(url: string) {
     const connect = useCallback(() => {
         if (!isMounted.current) return;
 
-        console.log(`[WS] Attempting to connect to ${url}`);
-
         if (reconnectAttempts.current >= maxReconnectAttempts) {
             console.warn(`[WS] Max reconnect attempts (${maxReconnectAttempts}) reached for ${url}`);
             setStatus('closed');
@@ -45,7 +43,6 @@ export function useWebSocket<T>(url: string) {
                     socket.close();
                     return;
                 }
-                console.log(`[WS] Connected to ${url}`);
                 setStatus('open');
                 reconnectAttempts.current = 0;
             };
@@ -65,14 +62,12 @@ export function useWebSocket<T>(url: string) {
                     clearTimeout(connectionTimeout.current);
                 }
                 if (!isMounted.current) return;
-                console.log(`[WS] Disconnected from ${url} (code: ${event.code})`);
                 setStatus('closed');
 
                 // Retry with exponential backoff
                 if (reconnectAttempts.current < maxReconnectAttempts) {
                     const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
                     reconnectAttempts.current++;
-                    console.log(`[WS] Reconnecting to ${url} in ${delay}ms (attempt ${reconnectAttempts.current})`);
                     if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
                     reconnectTimeout.current = setTimeout(() => {
                         if (isMounted.current) connect();
@@ -110,7 +105,6 @@ export function useWebSocket<T>(url: string) {
 
         // Longer delay to ensure component is fully mounted and network is ready
         const initTimeout = setTimeout(() => {
-            console.log(`[WS] Initial connection attempt to ${url}`);
             connect();
         }, 500);
 

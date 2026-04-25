@@ -70,7 +70,6 @@ export default function LoginPage() {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("Login Response Structure:", data);
                 const authToken = data.data?.access_token || data.access_token;
                 
                 try {
@@ -127,6 +126,7 @@ export default function LoginPage() {
                                         setFieldErrors(prev => ({...prev, username: undefined}));
                                     }
                                 }}
+                                aria-describedby={fieldErrors.username ? "username-error" : undefined}
                                 className={`w-full bg-zinc-900 border rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 transition-all text-white font-medium ${
                                     fieldErrors.username
                                         ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500'
@@ -136,7 +136,7 @@ export default function LoginPage() {
                             />
                         </div>
                         {fieldErrors.username && (
-                            <p className="text-red-500 text-xs font-medium ml-1">{fieldErrors.username}</p>
+                            <p id="username-error" className="text-red-500 text-xs font-medium ml-1">{fieldErrors.username}</p>
                         )}
                     </div>
 
@@ -157,6 +157,7 @@ export default function LoginPage() {
                                         setFieldErrors(prev => ({...prev, password: undefined}));
                                     }
                                 }}
+                                aria-describedby={fieldErrors.password ? "password-error" : undefined}
                                 className={`w-full bg-zinc-900 border rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 transition-all text-white font-medium ${
                                     fieldErrors.password
                                         ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500'
@@ -166,7 +167,7 @@ export default function LoginPage() {
                             />
                         </div>
                         {fieldErrors.password && (
-                            <p className="text-red-500 text-xs font-medium ml-1">{fieldErrors.password}</p>
+                            <p id="password-error" className="text-red-500 text-xs font-medium ml-1">{fieldErrors.password}</p>
                         )}
                     </div>
 
@@ -183,7 +184,7 @@ export default function LoginPage() {
                     </div>
 
                     {error && (
-                        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold text-center animate-shake">
+                        <div id="login-error" className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold text-center animate-shake" role="alert" aria-live="assertive">
                             {error}
                         </div>
                     )}

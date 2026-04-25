@@ -296,6 +296,7 @@ export default function AutonomousPage() {
                                         <div className="space-y-2">
                                             <p className="text-[8px] font-black text-primary uppercase tracking-[0.4em]">Current Strategy</p>
                                             <h4 className="text-2xl font-black tracking-tighter text-white uppercase">{insights.title}</h4>
+                                            {insights.subtitle && <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">{insights.subtitle}</p>}
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                             <div className="space-y-1">

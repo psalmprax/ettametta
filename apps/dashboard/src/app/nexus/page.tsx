@@ -42,19 +42,13 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ClusterManager } from "@/components/ui/ClusterManager";
 import { BlueprintBuilder } from "@/components/ui/BlueprintBuilder";
 
-interface Blueprint {
-    id: string;
-    name: string;
-    description: string;
-    composition_id: string;
-    nodes: { type: NodeType; label: string; desc: string }[];
-}
+import { Blueprint, NexusJob, Persona } from "@/lib/types";
 
 export default function NexusPage() {
     const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
     const [activeBlueprint, setActiveBlueprint] = useState<Blueprint | null>(null);
     const [isLaunching, setIsLaunching] = useState(false);
-    const [nexusJobs, setNexusJobs] = useState<any[]>([]);
+    const [nexusJobs, setNexusJobs] = useState<NexusJob[]>([]);
     const [niches, setNiches] = useState<string[]>([]);
     const [selectedNiche, setSelectedNiche] = useState("");
     const [userTier, setUserTier] = useState<string>("free");
@@ -80,8 +74,8 @@ export default function NexusPage() {
     const [personaName, setPersonaName] = useState("");
     const [personaImageUrl, setPersonaImageUrl] = useState("");
     const [isCreatingPersona, setIsCreatingPersona] = useState(false);
-    const [personas, setPersonas] = useState<any[]>([]);
-    const [createdPersona, setCreatedPersona] = useState<{ id?: string; _id?: string; name: string; reference_image_url: string } | null>(null);
+    const [personas, setPersonas] = useState<Persona[]>([]);
+    const [createdPersona, setCreatedPersona] = useState<Persona | null>(null);
     const [videoTopic, setVideoTopic] = useState("");
     const [videoScript, setVideoScript] = useState("");
     const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
@@ -102,7 +96,7 @@ export default function NexusPage() {
                         onSuccess: (data) => setUserTier(data.subscription?.toLowerCase() || "free")
                     }
                 ),
-                withRealFallback<any>(
+                withRealFallback<Blueprint[]>(
                     () => fetch(`${API_BASE}/nexus/blueprints`, { headers }),
                     {
                         fallback: [],
@@ -112,7 +106,7 @@ export default function NexusPage() {
                         }
                     }
                 ),
-                withRealFallback<any>(
+                withRealFallback<string[]>(
                     () => fetch(`${API_BASE}/discovery/niches`, { headers }),
                     {
                         fallback: [],
@@ -122,7 +116,7 @@ export default function NexusPage() {
                         }
                     }
                 ),
-                withRealFallback<any>(
+                withRealFallback<NexusJob[]>(
                     () => fetch(`${API_BASE}/nexus/jobs`, { headers }),
                     {
                         fallback: [],
@@ -155,13 +149,15 @@ export default function NexusPage() {
                         }
                     }
                 ),
-                withRealFallback<any>(
+                withRealFallback<
+                    Array<{ id?: string; _id?: string; name: string; reference_image_url: string }>
+                >(
                     () => fetch(`${API_BASE}/persona/list`, { headers }),
                     {
                         fallback: [],
                         onSuccess: (data) => setPersonas(data)
                     }
-                )
+                ),
             ]);
         };
 
@@ -225,7 +221,15 @@ export default function NexusPage() {
         setShowBlueprintBuilder(true);
     };
 
-    const handleInspectResult = (job: any) => {
+    const handleBlueprintCreated = (newBlueprint: Blueprint) => {
+        setBlueprints(prev => [...prev, newBlueprint]);
+        setActiveBlueprint(newBlueprint);
+        toast.success("Recipe Created", {
+            description: `"${newBlueprint.name}" is now available in the neural cluster.`
+        });
+    };
+
+    const handleInspectResult = (job: NexusJob) => {
         if (job.output_path) {
             // Fix: handle absolute paths from backend by stripping the storage root if present
             // or just prepending the correct proxy path.
@@ -322,7 +326,7 @@ export default function NexusPage() {
     const handleCreatePersona = async () => {
         if (!personaName || !personaImageUrl) return;
         setIsCreatingPersona(true);
-        await withRealFallback(
+        await withRealFallback<Persona>(
             async () => {
                 const token = getAuthToken();
                 if (!token) throw new Error("Authentication required");
@@ -341,8 +345,8 @@ export default function NexusPage() {
                 });
             },
             {
-                fallback: null,
-                onSuccess: (data: any) => {
+                fallback: { name: personaName, reference_image_url: personaImageUrl } as Persona,
+                onSuccess: (data) => {
                     const newPersona = { id: data.id || Date.now().toString(), name: personaName, reference_image_url: personaImageUrl };
                     setCreatedPersona(newPersona);
                     setPersonas(prev => [newPersona, ...prev]);
@@ -350,9 +354,9 @@ export default function NexusPage() {
                         description: `Persona "${personaName}" is ready for video generation.`
                     });
                 },
-                onFallback: (err: any) => {
+                onFallback: (err: unknown) => {
                     toast.error("Creation Failed", {
-                        description: err.message || "Could not create the persona."
+                        description: err instanceof Error ? err.message : "Could not create the persona."
                     });
                 }
             }
@@ -1055,7 +1059,7 @@ export default function NexusPage() {
                                                     <AlertCircle className="h-3 w-3" />
                                                     <p className="text-[9px] font-black uppercase tracking-widest">Degraded Capabilities</p>
                                                 </div>
-                                                {Object.values(workforceReport.report.impact).map((msg: any, idx) => (
+                                                {Object.values(workforceReport.report.impact).map((msg: string, idx) => (
                                                     <p key={idx} className="text-[10px] text-zinc-500 leading-tight">• {msg}</p>
                                                 ))}
                                             </div>
@@ -1101,6 +1105,15 @@ export default function NexusPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Blueprint Builder Modal */}
+            {showBlueprintBuilder && (
+                <BlueprintBuilder
+                    isOpen={showBlueprintBuilder}
+                    onClose={() => setShowBlueprintBuilder(false)}
+                    onSuccess={handleBlueprintCreated}
+                />
+            )}
 
             {/* Confirmation Modals */}
             <ConfirmModal
