@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import DashboardLayout from "@/components/layout";
 import { BlueprintBuilder } from "@/components/ui/BlueprintBuilder";
-import { Blueprint } from "@/lib/types";
+import { Blueprint, ScriptOutput, HookAnalysis } from "@/lib/types";
 import {
     Sparkles,
     Zap,
