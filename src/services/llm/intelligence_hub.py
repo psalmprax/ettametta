@@ -66,6 +66,21 @@ class CircuitBreaker:
         self.failure_count = 0
         self.state = "CLOSED"
 
+    def reset(self):
+        """Manually reset the circuit breaker to CLOSED state."""
+        if self.state != "CLOSED":
+            logger.info(
+                json.dumps(
+                    {
+                        "event": "circuit_breaker_manual_reset",
+                        "name": self.name,
+                        "msg": f"Circuit breaker {self.name} manually reset",
+                    }
+                )
+            )
+        self.failure_count = 0
+        self.state = "CLOSED"
+
     def can_attempt(self) -> bool:
         """Check if circuit breaker allows requests."""
         if self.state == "CLOSED":
@@ -144,6 +159,8 @@ class IntelligenceHub:
                             "provider": p,
                             "request_id": request_id,
                             "msg": "Circuit is OPEN",
+                            "failures": self.breakers[p].failure_count,
+                            "last_failure": self.breakers[p].last_failure_time,
                         }
                     )
                 )
@@ -179,6 +196,18 @@ class IntelligenceHub:
             )
         )
         raise RuntimeError(f"IntelligenceHub total failure for request {request_id}")
+
+    def reset_circuit(self, provider: str):
+        """Manually reset a provider's circuit breaker."""
+        if provider in self.breakers:
+            self.breakers[provider].reset()
+            logger.info(f"Circuit breaker reset for provider: {provider}")
+
+    def reset_all_circuits(self):
+        """Reset all provider circuit breakers."""
+        for provider, breaker in self.breakers.items():
+            breaker.reset()
+        logger.info("All provider circuits reset")
 
     def _route_complexity(self, complexity: str) -> str:
         """Determines the best provider based on task complexity (Economic Optimization)."""
