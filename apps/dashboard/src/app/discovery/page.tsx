@@ -1116,8 +1116,6 @@ function DiscoveryContent() {
                                                                      <div 
                                                                          className="absolute inset-0 w-full h-full bg-cover bg-center opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" 
                                                                          style={{ backgroundImage: `url(${candidate.thumbnail_url})` }}
-                                                                         role="img"
-                                                                         aria-label={`Thumbnail for ${candidate.title || candidate.niche}`}
                                                                      />
                                                                  ) : (
                                                                     <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
