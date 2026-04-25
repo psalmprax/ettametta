@@ -38,7 +38,9 @@ class CryptoStrategy(BaseMonetizationStrategy):
                         "id": "btc_wallet",
                         "name": "Bitcoin",
                         "symbol": "BTC",
+                        "url": f"bitcoin:{btc_addr}",
                         "address": btc_addr,
+                        "cta_text": "Send BTC Tip",
                         "type": "crypto"
                     })
             
@@ -49,7 +51,9 @@ class CryptoStrategy(BaseMonetizationStrategy):
                         "id": "eth_wallet",
                         "name": "Ethereum", 
                         "symbol": "ETH",
+                        "url": f"ethereum:{eth_addr}",
                         "address": eth_addr,
+                        "cta_text": "Send ETH Tip",
                         "type": "crypto"
                     })
             
@@ -60,7 +64,9 @@ class CryptoStrategy(BaseMonetizationStrategy):
                         "id": "usdt_wallet",
                         "name": "Tether (USDT)",
                         "symbol": "USDT",
+                        "url": usdt_addr,
                         "address": usdt_addr,
+                        "cta_text": "Support via USDT",
                         "type": "crypto"
                     })
             
@@ -74,6 +80,7 @@ class CryptoStrategy(BaseMonetizationStrategy):
                     "id": "donation_link",
                     "name": "Support via PayPal/Donation",
                     "url": donation_setting.value,
+                    "cta_text": "Donate Now",
                     "type": "donation"
                 })
             

@@ -607,6 +607,12 @@ class GenerativeService:
             params = {}
 
         try:
+            # Check for remote GPU dispatch if local resources are constrained or explicitly configured
+            remote_url = settings.RENDER_NODE_URL
+            if remote_url and engine in ["hunyuan", "mochi", "cogvideo", "wan", "ltx-video"]:
+                logging.info(f"[GenerativeService] Dispatching {engine} synthesis to remote node: {remote_url}")
+                return await self._dispatch_remote_synthesis(remote_url, prompt, engine, aspect_ratio, params)
+
             if engine == "veo3":
                 return await self._synthesize_veo3(prompt, aspect_ratio)
             elif engine in ["wan2.2", "wan"]:
@@ -711,6 +717,39 @@ class GenerativeService:
             logging.error(
                 f"[GenerativeService] Dispatch failed for engine {engine}: {e}"
             )
+            return None
+
+    async def _dispatch_remote_synthesis(
+        self, remote_url: str, prompt: str, engine: str, aspect_ratio: str, params: dict
+    ) -> str | None:
+        """Dispatches synthesis task to a remote Colab/GPU node."""
+        import httpx
+
+        try:
+            payload = {
+                "prompt": prompt,
+                "engine": engine,
+                "aspect_ratio": aspect_ratio,
+                "steps": params.get("steps", 30),
+                "cfg": params.get("cfg", 6.0),
+                "cluster_secret": settings.AI_CLUSTER_SECRET,
+            }
+
+            async with httpx.AsyncClient(timeout=600) as client:
+                response = await client.post(
+                    f"{remote_url.rstrip('/')}/synthesize", json=payload
+                )
+
+            if response.status_code == 200:
+                data = response.json()
+                job_id = data.get("job_id")
+                # The remote node returns a direct download URL or a local path that we can proxy
+                return f"{remote_url.rstrip('/')}/download/{job_id}"
+            else:
+                logging.error(f"[GenerativeService] Remote node failed: {response.text}")
+                return None
+        except Exception as e:
+            logging.error(f"[GenerativeService] Failed to connect to remote node: {e}")
             return None
 
     async def _synthesize_comfy(

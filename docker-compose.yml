@@ -77,7 +77,7 @@ services:
       - ettametta
       - default
 
-    command: python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --log-level debug --timeout-keep-alive 600
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --log-level debug --timeout-keep-alive 600
     restart: always
     env_file: .env
     deploy:
@@ -120,6 +120,7 @@ services:
       - SECRET_KEY
       - INTERNAL_API_TOKEN
       - RENDER_NODE_URL
+      - AI_CLUSTER_SECRET=${AI_CLUSTER_SECRET:-psalm_cluster_v1}
       - CORS_ORIGINS
       - OLLAMA_MODEL
       - OLLAMA_URL=http://ollama:11434
@@ -234,9 +235,9 @@ services:
       - TELEGRAM_ADMIN_ID=${TELEGRAM_ADMIN_ID}
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_URL=http://ollama:11434
-      - OLLAMA_MODEL=hermes3
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
       - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
-      - API_URL=http://ettametta-api-1:8000
+      - API_URL=http://api:8000
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
       - PORT=3001
     volumes:
@@ -277,7 +278,7 @@ services:
     environment:
       - AI_NODES=${AI_NODES:-""}
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
-      - AI_CLUSTER_SECRET=${AI_CLUSTER_SECRET:-"ettametta_neural_default_secret"}
+      - AI_CLUSTER_SECRET=${AI_CLUSTER_SECRET:-psalm_cluster_v1}
     volumes:
       - ./src/engines/remote_ai_setup:/app
       - gateway_data:/workspace

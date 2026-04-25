@@ -205,7 +205,7 @@ class DiscoveryService:
                         engagement_score=res.get("engagement_score", 0.1),
                         viral_score=vs,
                         duration_seconds=float(res.get("duration_seconds", 0.0)),
-                        category=res.get("platform", "video"),
+                        category=res.get("category") or res.get("content_type") or "video",
                         niche=niche,
                         metadata_json=res.get(
                             "metadata", {"source": "intelligent_workflow"}

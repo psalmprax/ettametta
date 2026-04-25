@@ -27,6 +27,7 @@ class CourseStrategy(BaseMonetizationStrategy):
                     "id": "course_1",
                     "name": f"Complete {niche.title()} Masterclass",
                     "url": platform_url,
+                    "cta_text": "Enroll Now",
                     "price": "$97",
                     "description": f"Learn everything about {niche} from scratch to advanced",
                     "source": "course"
@@ -35,6 +36,7 @@ class CourseStrategy(BaseMonetizationStrategy):
                     "id": "course_2",
                     "name": f"{niche.title()} Crash Course",
                     "url": platform_url,
+                    "cta_text": "Get Started",
                     "price": "$47",
                     "description": f"Quickstart guide to {niche}",
                     "source": "course"
@@ -43,6 +45,7 @@ class CourseStrategy(BaseMonetizationStrategy):
                     "id": "course_3",
                     "name": f"Advanced {niche.title()} Strategies",
                     "url": platform_url,
+                    "cta_text": "Learn More",
                     "price": "$197",
                     "description": f"Master advanced {niche} techniques",
                     "source": "course"
