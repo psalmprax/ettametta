@@ -76,6 +76,7 @@ export interface NexusJob {
     created_at: string;
     user_id: string;
     job_metadata?: Record<string, any>;
+    node_status?: Record<string, string>;
 }
 
 export interface CreditBalance {
