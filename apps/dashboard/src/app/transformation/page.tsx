@@ -40,6 +40,7 @@ interface VideoJob {
     progress: number;
     time_remaining?: string;
     output_path?: string;
+    error_message?: string;
 }
 
 import { useSearchParams } from "next/navigation";
@@ -308,13 +309,29 @@ function TransformationPageContent() {
         // Define mapping of backend status to step indices
         const statusMap: Record<string, number> = {
             'queued': 0,
+            'validating': 0,
             'downloading': 0,
+            'downloading asset': 0,
+            'analyzing visuals': 1,
+            'strategizing': 1,
+            'scripting': 1,
+            'narrative analysis': 1,
             'transcribing': 1,
             'analyzing': 1,
             'processing': 2,
+            'transforming': 2,
             'remixing': 2,
             'composing': 2,
+            'cinematic fusion': 2,
             'rendering': 3,
+            'synthesizing': 3,
+            'synthesizing story': 3,
+            'assembling': 3,
+            'adding sound design': 3,
+            'adding motion graphics': 3,
+            'optimizing': 4,
+            'uploading': 4,
+            'tiktok upload': 4,
             'completed': 4,
             'failed': -1
         };
@@ -631,15 +648,17 @@ function TransformationPageContent() {
                                                 <span>Render Progress</span>
                                                 <span className="text-primary">{selectedJob.progress}%</span>
                                             </div>
-                                            <div className="bg-zinc-900 h-2 rounded-full overflow-hidden border border-white/5">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${selectedJob.progress}%` }}
-                                                    transition={{ duration: 1 }}
-                                                    className="bg-primary h-full shadow-[0_0_20px_rgba(var(--primary-rgb),0.5)]"
-                                                />
                                             </div>
                                         </div>
+                                        {selectedJob.status.toLowerCase() === 'failed' && selectedJob.error_message && (
+                                            <div className="mt-8 p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 max-w-sm mx-auto">
+                                                <div className="flex items-center gap-3 mb-2 font-black uppercase text-xs tracking-widest justify-center">
+                                                    <X className="h-4 w-4" />
+                                                    Engine Failure
+                                                </div>
+                                                <p className="text-sm font-medium opacity-90 leading-relaxed">{selectedJob.error_message}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-6 opacity-30">
@@ -726,6 +745,9 @@ function TransformationPageContent() {
                                                 <div className="flex-1 min-w-0 space-y-3">
                                                     <div className="flex items-center justify-between gap-2">
                                                         <h4 className="font-black text-sm tracking-tight truncate uppercase text-white">{job.title || "VIRAL_TRANSFORM_1"}</h4>
+                                                        {job.status.toLowerCase() === 'failed' && (
+                                                            <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+                                                        )}
                                                         {job.status !== "Completed" && job.status !== "Failed" && job.status !== "Aborted" && (
                                                             <button
                                                                 onClick={(e) => {

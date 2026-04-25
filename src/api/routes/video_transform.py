@@ -58,6 +58,7 @@ async def start_transformation(
                 quality_tier=body.quality_tier,
                 sound_design=body.sound_design or False,
                 motion_graphics=body.motion_graphics or False,
+                generate_thumbnail=body.generate_thumbnail or False,
                 analysis_data=body.analysis_data,
                 user_id=current_user.id,
             )
@@ -98,6 +99,16 @@ async def start_transformation(
             progress=0,
             source_url=body.source_url,
             user_id=current_user.id,
+            job_metadata={
+                "niche": body.niche,
+                "platform": body.platform,
+                "style": body.style,
+                "quality_tier": body.quality_tier,
+                "sound_design": body.sound_design,
+                "motion_graphics": body.motion_graphics,
+                "generate_thumbnail": body.generate_thumbnail,
+                "analysis_data": body.analysis_data,
+            }
         )
         db.add(new_job)
         await db.commit()
@@ -169,6 +180,13 @@ async def test_drive(
             status=SystemJobStatus.QUEUED,
             source_url=candidate.source_url,
             user_id=current_user.id,
+            job_metadata={
+                "niche": request.niche,
+                "style": request.style,
+                "preview_only": True,
+                "platform": "YouTube Shorts",
+                "candidate_id": candidate.id
+            }
         )
         db.add(new_job)
         await db.commit()

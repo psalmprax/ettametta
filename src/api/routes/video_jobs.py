@@ -51,9 +51,17 @@ async def abort_job(
     from src.api.routes.ws import notify_job_update_sync
 
     try:
+        # Try Video jobs
         stmt = select(VideoJobDB).where(VideoJobDB.id == job_id)
         result = await db.execute(stmt)
         job = result.scalar_one_or_none()
+
+        if not job:
+            # Try Nexus jobs
+            from src.api.utils.models import NexusJobDB
+            stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
+            result = await db.execute(stmt)
+            job = result.scalar_one_or_none()
 
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
@@ -98,15 +106,11 @@ async def get_job_details(
     Includes model used, provider, cost, and generation details.
     """
     try:
-        # Get video job
-        stmt = select(VideoJobDB).where(
-            VideoJobDB.id == job_id, VideoJobDB.user_id == current_user.id
-        )
-        result = await db.execute(stmt)
-        job = result.scalar_one_or_none()
+        # Get job via service (handles both Video and Nexus)
+        job = await job_service.get_job_by_id(job_id, current_user.id)
 
         if not job:
-            raise HTTPException(status_code=404, detail="Video job not found")
+            raise HTTPException(status_code=404, detail="Job not found")
 
         # Get audit logs for this task
         stmt_audit = (
@@ -123,17 +127,18 @@ async def get_job_details(
         # Extract metadata from audit logs
         metadata = {
             "job_id": job_id,
-            "title": job.title,
-            "status": job.status,
-            "progress": job.progress,
-            "created_at": job.created_at.isoformat(),
-            "updated_at": job.updated_at.isoformat(),
-            "input_prompt": job.source_url
-            if job.source_url not in ["Generation Prompt", "Narrative Prompt"]
+            "title": job["title"],
+            "status": job["status"],
+            "progress": job["progress"],
+            "created_at": job["created_at"].isoformat(),
+            "updated_at": job["updated_at"].isoformat(),
+            "input_prompt": job["source_url"]
+            if job["source_url"] not in ["Generation Prompt", "Narrative Prompt", "Cinema Mode / Studio"]
             else None,
-            "output_path": job.output_path,
+            "output_path": job["output_path"],
             "generation_details": {},
             "cost_info": {},
+            "engine": job.get("engine", "unknown")
         }
 
         # Parse audit log details for generation metadata

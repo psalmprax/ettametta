@@ -35,7 +35,7 @@ async def stop_zero(current_user: UserDB = Depends(get_current_user)):
     """
     Sends a halt signal to the autonomous engine.
     """
-    base_agent_zero.stop()
+    await base_agent_zero.stop()
     return {"message": "Halt Signal Received. Agent Zero stopping...", "status": "stopping"}
 
 @router.get("/insights")

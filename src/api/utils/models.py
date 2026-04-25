@@ -352,8 +352,16 @@ class NexusJobDB(Base):
     niche = Column(String)
     output_path = Column(String, nullable=True)
     progress = Column(Integer, default=0)
+    current_node = Column(String, nullable=True)
+    node_status = Column(JSON, default=dict)
+    job_metadata = Column(JSON, default=dict)
     error_log = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.utcnow(),
+        onupdate=lambda: datetime.utcnow(),
+    )
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
 
 
@@ -691,3 +699,15 @@ class IncidentWebhookDB(Base):
     is_active = Column(Boolean, default=True)
     last_triggered_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
+
+
+class SystemSettingDB(Base):
+    __tablename__ = "system_settings"
+
+    key = Column(String, primary_key=True, index=True)
+    value = Column(JSON, nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.utcnow(),
+        onupdate=lambda: datetime.utcnow(),
+    )
