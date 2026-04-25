@@ -478,6 +478,8 @@ class CreateVideoFromAnalysisRequest(BaseModel):
     platform: str = "YouTube Shorts"
     style: str | None = "Default"
     quality_tier: str | None = "standard"
+    generate_thumbnail: bool | None = False
+
 
 
 @router.post("/analyze/{task_id}/create-video")
@@ -524,6 +526,7 @@ async def create_video_from_analysis(
                 platform=request.platform,
                 style=request.style,
                 quality_tier=request.quality_tier,
+                generate_thumbnail=request.generate_thumbnail or False,
                 user_id=current_user.id,
             )
         except Exception as task_err:
@@ -555,6 +558,14 @@ async def create_video_from_analysis(
             progress=0,
             source_url=candidate_url,
             user_id=current_user.id,
+            job_metadata={
+                "niche": request.niche,
+                "platform": request.platform,
+                "style": request.style,
+                "quality_tier": request.quality_tier,
+                "generate_thumbnail": request.generate_thumbnail,
+                "analysis_task_id": task_id
+            }
         )
         db.add(new_job)
         await db.commit()
@@ -583,6 +594,7 @@ class AutoTransformRequest(BaseModel):
     style: str | None = "Default"
     quality_tier: str | None = "standard"
     min_viral_score: int = 7
+    generate_thumbnail: bool | None = False
 
 
 @router.post("/auto-transform")
@@ -639,6 +651,7 @@ async def auto_transform(
             platform=request.platform,
             style=request.style,
             quality_tier=request.quality_tier,
+            generate_thumbnail=request.generate_thumbnail or False,
             user_id=current_user.id,
         )
 
@@ -650,6 +663,15 @@ async def auto_transform(
             progress=0,
             source_url=source_url,
             user_id=current_user.id,
+            job_metadata={
+                "niche": request.niche,
+                "platform": request.platform,
+                "style": request.style,
+                "quality_tier": request.quality_tier,
+                "generate_thumbnail": request.generate_thumbnail,
+                "min_viral_score": request.min_viral_score,
+                "discovery_method": "auto-transform"
+            }
         )
         db.add(new_job)
         await db.commit()

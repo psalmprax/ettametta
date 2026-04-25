@@ -29,6 +29,7 @@ class NexusComposeRequest(BaseModel):
     generate_thumbnail: bool = False
     cinema_mode: bool = False
     blueprint_id: str | None = Field("viral-reskin", description="The Nexus blueprint to execute.")
+    job_metadata: dict | None = None
 
 
 async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
@@ -202,7 +203,17 @@ async def compose_video(
     """
     Triggers the high-fidelity video assembly pipeline.
     """
-    new_job = NexusJobDB(niche=request.niche, user_id=current_user.id, status=SystemJobStatus.QUEUED)
+    # Initialize job with metadata for persistence and studio visibility
+    new_job = NexusJobDB(
+        niche=request.niche,
+        user_id=current_user.id,
+        status=SystemJobStatus.QUEUED,
+        job_metadata={
+            "blueprint_id": request.blueprint_id,
+            "cinema_mode": request.cinema_mode,
+            **(request.job_metadata or {}),
+        },
+    )
     db.add(new_job)
     await db.commit()
     await db.refresh(new_job)

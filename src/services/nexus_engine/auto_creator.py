@@ -170,7 +170,29 @@ class AutoCreator:
 
         logger.info(f"[AutoCreator] Launching Cinema Mode: {topic} in {niche}")
 
-        def notify(node: str, status: str, progress: int):
+        async def notify(node: str, status: str, progress: int):
+            # 1. Update Database for persistence
+            try:
+                from src.api.utils.database import async_session_factory
+                from src.api.utils.models import NexusJobDB
+                from sqlalchemy import select
+
+                async with async_session_factory() as db:
+                    stmt = select(NexusJobDB).where(NexusJobDB.id == str(job_id))
+                    result = await db.execute(stmt)
+                    job = result.scalar_one_or_none()
+                    if job:
+                        job.current_node = node
+                        # Update specific node status in JSON
+                        current_status = dict(job.node_status or {})
+                        current_status[node] = status
+                        job.node_status = current_status
+                        job.progress = progress
+                        await db.commit()
+            except Exception as e:
+                logger.error(f"[AutoCreator] Failed to persist node update: {e}")
+
+            # 2. Notify WebSocket for real-time UI
             notify_nexus_job_update_sync(
                 {
                     "id": str(job_id),
@@ -183,24 +205,25 @@ class AutoCreator:
             )
 
         # 1. Ingress: Script Generation
-        notify("ingress", "ACTIVE", 10)
+        await notify("ingress", "ACTIVE", 10)
         segments = await self.generate_viral_script(topic, niche)
         if not segments:
-            notify("ingress", "FAILED", 0)
+            await notify("ingress", "FAILED", 0)
             raise ValueError("Script generation produced no segments")
-        notify("ingress", "COMPLETED", 20)
+        await notify("ingress", "COMPLETED", 20)
 
         # 2. Cognition: Asset Sourcing
-        notify("cognition", "ACTIVE", 30)
+        await notify("cognition", "ACTIVE", 30)
         visual_paths = await self._source_visual_assets(segments, job_id, niche)
         voice_paths = await self._generate_voiceovers(segments, job_id)
 
         if not visual_paths or not voice_paths:
-            notify("cognition", "FAILED", 0)
+            await notify("cognition", "FAILED", 0)
             raise ValueError("Failed to source required assets for synthesis")
-        notify("cognition", "COMPLETED", 50)
+        await notify("cognition", "COMPLETED", 50)
 
         # 3. Synthesis & Egress: Assembly
+        await notify("synthesis", "ACTIVE", 60)
         from src.services.nexus_engine.orchestrator import base_nexus_orchestrator
 
         output_path = await base_nexus_orchestrator.assemble_video(
@@ -212,6 +235,12 @@ class AutoCreator:
             music_path=None,
             blueprint_id=blueprint_id,
         )
+        
+        if output_path:
+            await notify("synthesis", "COMPLETED", 100)
+            await notify("egress", "COMPLETED", 100)
+        else:
+            await notify("synthesis", "FAILED", 0)
 
         return output_path
 

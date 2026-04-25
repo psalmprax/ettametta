@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import json
+import time
 from typing import Any
 from groq import Groq
 from src.api.config import settings
@@ -42,21 +43,57 @@ class AgentZero(BaseEttamettaAgent):
             "ab_testing": ab_testing_automation,
         }
 
-    async def start(self):
+    async def _persist_state(self):
+        """Saves current engine state to DB."""
+        try:
+            from src.api.utils.database import async_session_factory
+            from src.api.utils.models import SystemSettingDB
+            from sqlalchemy import select
+
+            async with async_session_factory() as db:
+                state = {
+                    "is_running": self.is_running,
+                    "last_run_at": self.last_run_at,
+                    "next_run_at": self.next_run_at,
+                    "current_step": self.current_step
+                }
+                
+                stmt = select(SystemSettingDB).where(SystemSettingDB.key == "agent_zero_state")
+                result = await db.execute(stmt)
+                setting = result.scalar_one_or_none()
+                
+                if setting:
+                    setting.value = state
+                else:
+                    db.add(SystemSettingDB(key="agent_zero_state", value=state))
+                
+                await db.commit()
+        except Exception as e:
+            logger.error(f"[AgentZero] Persistence failed: {e}")
+
+    async def start(self, auto_resume: bool = False):
         """Starts the autonomous production loop."""
         if self.is_running:
             return
         self.is_running = True
         self.current_step = "IDLE"
-        await self._log("Autonomous Loop Ignition Sequence Initiated.", "SYSTEM")
+        
+        if auto_resume:
+            await self._log("Autonomous Loop Resuming from persistent state.", "SYSTEM")
+        else:
+            await self._log("Autonomous Loop Ignition Sequence Initiated.", "SYSTEM")
+        
+        await self._persist_state()
 
         # Start A/B testing automation in background
         asyncio.create_task(ab_testing_automation.start())
 
         while self.is_running:
             try:
-                self.last_run_at = asyncio.get_event_loop().time()
+                self.last_run_at = time.time()
                 self.next_run_at = self.last_run_at + (4 * 3600)
+                await self._persist_state()
+                
                 await self.run_iteration()
                 self.current_step = "WAITING"
                 await self._log(
@@ -73,10 +110,36 @@ class AgentZero(BaseEttamettaAgent):
                 await self._log(f"Loop Integrity Failure: {e}", "ERROR")
                 await asyncio.sleep(300)  # Wait 5 mins before retry on error
 
-    def stop(self):
+    async def stop(self):
         """Stops the autonomous loop."""
         self.is_running = False
+        self.current_step = "IDLE"
+        await self._persist_state()
         logger.info("[AgentZero] Autonomous Loop Stopped.")
+
+    async def load_and_resume(self):
+        """Loads state from DB and resumes if was running."""
+        try:
+            from src.api.utils.database import async_session_factory
+            from src.api.utils.models import SystemSettingDB
+            from sqlalchemy import select
+
+            async with async_session_factory() as db:
+                stmt = select(SystemSettingDB).where(SystemSettingDB.key == "agent_zero_state")
+                result = await db.execute(stmt)
+                setting = result.scalar_one_or_none()
+                
+                if setting and setting.value:
+                    state = setting.value
+                    self.last_run_at = state.get("last_run_at")
+                    self.next_run_at = state.get("next_run_at")
+                    self.current_step = state.get("current_step", "IDLE")
+                    
+                    if state.get("is_running"):
+                        # Launch in background
+                        asyncio.create_task(self.start(auto_resume=True))
+        except Exception as e:
+            logger.error(f"[AgentZero] Load state failed: {e}")
 
     async def run_iteration(self):
         """A single iteration of the autonomous cycle."""

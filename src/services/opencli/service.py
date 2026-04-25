@@ -423,7 +423,7 @@ class OpenCLIService:
                 "author": item.get("author")
                 or item.get("username")
                 or item.get("channel", ""),
-                "views": self._parse_count(
+                "view_count": self._parse_count(
                     item.get("views") or item.get("view_count", 0)
                 ),
                 "engagement_score": float(
@@ -480,7 +480,7 @@ class OpenCLIService:
                 "author": item.get("author")
                 or item.get("username")
                 or item.get("channel", ""),
-                "views": self._parse_count(
+                "view_count": self._parse_count(
                     item.get("views") or item.get("view_count", 0)
                 ),
                 "engagement_score": float(
