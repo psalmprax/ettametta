@@ -549,12 +549,17 @@ export default function NexusPage() {
                                 {activeBlueprint?.nodes.map((node, idx) => {
                                     const isActive = activeJobId && selectedNodeIndex === idx;
                                     const job = nexusJobs.find(j => String(j.id) === activeJobId);
-                                    const nodeStatus = (job?.node_status && job.node_status[node.type]) || 'IDLE';
+                                    const rawStatus = (job?.node_status && job.node_status[node.type]) || 'IDLE';
+                                    
+                                    const nodeStatus: 'pending' | 'processing' | 'complete' | 'error' = 
+                                        rawStatus === 'COMPLETED' ? 'complete' :
+                                        rawStatus === 'PROCESSING' ? 'processing' :
+                                        rawStatus === 'ERROR' ? 'error' : 'pending';
 
                                     return (
                                         <div key={idx} className="relative z-10">
                                             <NexusNode 
-                                                type={node.type}
+                                                type={node.type as any}
                                                 label={node.label}
                                                 description={node.desc}
                                                 status={nodeStatus}
