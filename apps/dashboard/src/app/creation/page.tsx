@@ -785,14 +785,16 @@ export default function CreationPage() {
                                                             )}
                                                             {segmentAssets[i]?.image && (
                                                                 <div className="h-16 w-16 rounded-xl border border-emerald-500/20 overflow-hidden shadow-lg">
-                                                                    <img src={`${API_BASE}/static/${segmentAssets[i].image}`} className="w-full h-full object-cover" />
+                                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                    <img src={`${API_BASE}/static/${segmentAssets[i].image}`} alt="Segment Asset" className="w-full h-full object-cover" />
                                                                 </div>
                                                             )}
                                                             {segmentAssets[i]?.videos && (
                                                                 <div className="flex gap-2">
                                                                     {segmentAssets[i].videos.slice(0, 2).map((v: any, j: number) => (
                                                                         <div key={j} className="h-16 w-12 rounded-lg border border-emerald-500/20 overflow-hidden relative group/v">
-                                                                            <img src={v.preview} className="w-full h-full object-cover" />
+                                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                            <img src={v.preview} alt="Video Preview" className="w-full h-full object-cover" />
                                                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/v:opacity-100 flex items-center justify-center transition-all">
                                                                                 <Plus className="h-4 w-4 text-white" />
                                                                             </div>
