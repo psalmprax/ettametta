@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/layout";
 import {
     Youtube,
@@ -62,7 +63,10 @@ import { toast } from "sonner";
 
 const POLL_INTERVAL_MS = 10000;
 
-export default function PublishingPage() {
+function PublishingContent() {
+    const searchParams = useSearchParams();
+    const jobIdParam = searchParams.get("job_id");
+
     const [accounts, setAccounts] = useState<SocialAccount[]>([]);
     const [history, setHistory] = useState<SocialPost[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -183,6 +187,18 @@ export default function PublishingPage() {
         const interval = setInterval(fetchData, POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, []);
+    
+    React.useEffect(() => {
+        if (jobIdParam && jobs.length > 0) {
+            const job = jobs.find(j => j.id === jobIdParam);
+            if (job) {
+                setSelectedJobForDeploy(job);
+                setIsDeployModalOpen(true);
+                // Reset search params to avoid re-opening on manual refresh if desired, 
+                // but Next.js router.replace is better for that.
+            }
+        }
+    }, [jobIdParam, jobs]);
 
     const handleSync = async (postId: number) => {
         const token = getAuthToken();
@@ -1156,5 +1172,13 @@ export default function PublishingPage() {
                 </div>
             </div>
         </DashboardLayout >
+    );
+}
+
+export default function PublishingPage() {
+    return (
+        <React.Suspense fallback={<DashboardLayout><div className="flex items-center justify-center min-h-screen"><RefreshCw className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>}>
+            <PublishingContent />
+        </React.Suspense>
     );
 }

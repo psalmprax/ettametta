@@ -66,7 +66,9 @@ async def get_trends(
                 limit=limit * page, min_viral_score=float(min_viral_score)
             )
 
-        return success_response(data=paginate_list(trends, page=page, page_size=limit))
+        paginated = paginate_list(trends, page=page, page_size=limit)
+        paginated["trends"] = paginated["items"]
+        return success_response(data=paginated)
     except Exception as e:
         logger.error(f"Discovery trends failed: {e}")
         return handle_exception(e)
@@ -102,7 +104,9 @@ async def search_discovery(
             limit=limit,
             offset=offset,
         )
-        return success_response(data=paginate_list(results, page=page, page_size=limit))
+        paginated = paginate_list(results, page=page, page_size=limit)
+        paginated["results"] = paginated["items"]
+        return success_response(data=paginated)
     except Exception as e:
         return handle_exception(e)
 
@@ -845,9 +849,11 @@ async def opencli_scan(
 
 
 class InteractionRequest(BaseModel):
-    candidate_id: str
-    niche: str
+    candidate_id: str | None = None
+    niche: str | None = None
+    platform: str | None = None
     action: str = "handshake"
+    content_url: str | None = None
 
 
 @router.post("/interact")
@@ -862,14 +868,29 @@ async def record_interaction(
     from src.api.utils.models import DiscoveryInteractionDB
     import datetime
 
+    candidate_id = request.candidate_id
+    if not candidate_id and request.content_url:
+        # Try to find candidate by source_url
+        stmt = select(ContentCandidateDB).filter(ContentCandidateDB.source_url == request.content_url)
+        result = await db.execute(stmt)
+        candidate = result.scalar_one_or_none()
+        if candidate:
+            candidate_id = candidate.id
+        else:
+            # Use content_url as fallback identifier or hashed value
+            import hashlib
+            candidate_id = f"ext_{hashlib.md5(request.content_url.encode()).hexdigest()}"
+
     try:
         new_interaction = DiscoveryInteractionDB(
-            candidate_id=request.candidate_id,
+            candidate_id=candidate_id or "unknown",
             user_id=current_user.id,
             action=request.action,
             status=1,  # Established
             details={
                 "niche": request.niche,
+                "platform": request.platform,
+                "content_url": request.content_url,
                 "timestamp": datetime.datetime.utcnow().isoformat(),
             },
         )
@@ -880,7 +901,7 @@ async def record_interaction(
         return success_response(
             data={
                 "status": "Handshake Established",
-                "candidate_id": request.candidate_id,
+                "candidate_id": candidate_id,
                 "interaction_id": new_interaction.id,
                 "timestamp": new_interaction.created_at.isoformat(),
                 "message": "Protocol established with target node.",

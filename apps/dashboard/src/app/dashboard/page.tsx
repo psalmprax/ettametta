@@ -74,8 +74,32 @@ export default function Home() {
   const { data: wsData } = useWebSocket<any>(`${WS_BASE}/telemetry`);
 
   useEffect(() => {
-    if (wsData && (wsData.type === 'stats_update' || wsData.type === 'discovery_completed')) {
+    if (!wsData) return;
+
+    if (wsData.type === 'stats_update' || wsData.type === 'discovery_completed') {
       fetchStats();
+    } else if (wsData.type === 'telemetry_pulse') {
+      setStats(prev => {
+        const pulse = wsData;
+        const real = pulse.real_stats || {};
+        const metrics = pulse.metrics || {};
+        
+        // Format reach if available
+        let reach = prev.total_reach;
+        if (real.total_views !== undefined) {
+           const v = real.total_views;
+           reach = v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(1)}K` : String(v);
+        }
+
+        return {
+          ...prev,
+          active_trends: real.total_discovered ?? prev.active_trends,
+          videos_processed: real.completed_jobs ?? prev.videos_processed,
+          total_reach: reach,
+          velocity: metrics.global_velocity > 0.8 ? "Extreme" : metrics.global_velocity > 0.5 ? "High" : "Nominal",
+          engine_load: `${Math.min(100, Math.round((metrics.active_nodes / 10) * 100))}%`
+        };
+      });
     }
   }, [wsData]);
 

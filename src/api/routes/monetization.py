@@ -43,8 +43,9 @@ async def recommend_links(
     result = await db.execute(stmt)
     db_links = result.scalars().all()
 
+    # Merge suggestions with actual DB links for the frontend
     return success_response(
-        data={"suggestions": recommendations, "available_links": db_links}
+        data={"links": db_links, "suggestions": recommendations}
     )
 
 
@@ -102,7 +103,19 @@ async def get_monetization_report(
     total_views = sum(log.view_count for log in logs)
     epm = base_monetization_engine.calculate_epm(total_rev, total_views)
 
-    return success_response(data={"total_revenue": total_rev, "epm": epm, "logs": logs})
+    # Group by platform
+    by_platform = {}
+    for log in logs:
+        by_platform[log.platform] = by_platform.get(log.platform, 0) + log.amount
+
+    return success_response(
+        data={
+            "total_revenue": total_rev,
+            "epm": epm,
+            "by_platform": by_platform,
+            "logs": logs,
+        }
+    )
 
 
 @router.get("/empire/metrics")
@@ -194,6 +207,7 @@ async def get_empire_activity(
 class CloneRequest(BaseModel):
     source_niche: str
     target_niche: str
+    auto_publish: bool = False
 
 
 @router.get("/empire/blueprints")
@@ -323,7 +337,11 @@ async def clone_strategy(
     from src.services.monetization.empire_service import base_empire_service
 
     success = await base_empire_service.clone_strategy(
-        db, current_user.id, request.source_niche, request.target_niche
+        db,
+        current_user.id,
+        request.source_niche,
+        request.target_niche,
+        request.auto_publish,
     )
     if not success:
         raise HTTPException(

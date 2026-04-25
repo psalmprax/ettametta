@@ -178,7 +178,7 @@ class Paginator:
         total_pages = (total + self.page_size - 1) // self.page_size
 
         return {
-            "data": items,
+            "items": items,
             "pagination": {
                 "page": self.page,
                 "page_size": self.page_size,
