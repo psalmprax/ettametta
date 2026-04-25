@@ -1112,9 +1112,11 @@ function DiscoveryContent() {
 
                                                         <div className="flex items-center gap-10 relative z-10">
                                                             <div className="h-28 w-44 rounded-4xl bg-zinc-950 border border-white/5 shrink-0 relative overflow-hidden group-hover:border-primary/50 transition-all duration-700 shadow-2xl">
-                                                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                                                  {candidate.thumbnail_url ? (
-                                                                     <img src={candidate.thumbnail_url} alt={`Thumbnail for ${candidate.title || candidate.niche}`} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
+                                                                     <>
+                                                                         {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                         <img src={candidate.thumbnail_url} alt={`Thumbnail for ${candidate.title || candidate.niche}`} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
+                                                                     </>
                                                                  ) : (
                                                                     <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                                                                         <TrendingUp className="h-10 w-10 text-zinc-800" />
