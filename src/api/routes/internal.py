@@ -45,7 +45,7 @@ async def create_internal_job(
         title=body.title,
         user_id=body.user_id,
         status=SystemJobStatus.QUEUED,
-        metadata=body.metadata or {}
+        job_metadata=body.metadata or {}
     )
     db.add(new_job)
     await db.commit()
@@ -84,7 +84,8 @@ async def update_internal_job(
             "id": job_id,
             "status": job.status,
             "progress": job.progress,
-            "output_path": job.output_path
+            "output_path": job.output_path,
+            "error_message": job.error_message
         })
     except Exception as e:
         logger.warning(f"WS notification failed: {e}")
