@@ -115,7 +115,7 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                 })
             }),
             {
-                fallback: null,
+                fallback: {} as any,
                 onSuccess: (data) => {
                     toast.success("Blueprint Saved", { description: `Recipe "${name}" is now available in the neural cluster.` });
                     // Transform DB response to frontend Blueprint interface
