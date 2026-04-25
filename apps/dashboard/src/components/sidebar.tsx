@@ -20,7 +20,8 @@ import {
     X,
     Crown,
     Coins,
-    CheckCircle2
+    CheckCircle2,
+    Layers
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
