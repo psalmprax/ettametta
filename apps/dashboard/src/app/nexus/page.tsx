@@ -889,7 +889,7 @@ export default function NexusPage() {
                                         <p className="text-xs font-black uppercase tracking-tight text-white">{job.niche} / {String(job.status)}</p>
                                         <span className="text-[8px] font-bold text-zinc-600 font-mono">{new Date(job.created_at).toLocaleTimeString()}</span>
                                     </div>
-                                    <p className="text-[10px] font-medium text-zinc-500">{(job.job_metadata?.blueprint_id || job.blueprint_id || 'autonomous')} pipeline {job.status === 'COMPLETED' ? 'successfully finished' : 'is currently in ' + (job.node_status ? (Object.entries(job.node_status).find(([_, s]) => s === 'ACTIVE' || s === 'PROCESSING')?.[0] || 'active') : 'idle') + ' state'}.</p>
+                                    <p className="text-[10px] font-medium text-zinc-500">{(job.job_metadata?.blueprint_id || job.blueprint_id || 'autonomous')} pipeline {job.status === 'COMPLETED' ? 'successfully finished' : 'is currently processing'}.</p>
                                 </div>
                                 {job.output_path && (
                                     <button 
