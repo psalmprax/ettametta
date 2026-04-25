@@ -1069,7 +1069,7 @@ export default function NexusPage() {
                                                     <AlertCircle className="h-3 w-3" />
                                                     <p className="text-[9px] font-black uppercase tracking-widest">Degraded Capabilities</p>
                                                 </div>
-                                                {Object.values(workforceReport.report.impact).map((msg: string, idx) => (
+                                                {Object.values(workforceReport.report.impact || {}).map((msg: any, idx) => (
                                                     <p key={idx} className="text-[10px] text-zinc-500 leading-tight">• {msg}</p>
                                                 ))}
                                             </div>
