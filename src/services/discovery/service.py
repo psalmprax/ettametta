@@ -349,7 +349,6 @@ class DiscoveryService:
                         },
                     )
                 )
-                )
 
         # 4. Neural Ranking & Quality Auditing
         from .eligibility import audit_content_quality
