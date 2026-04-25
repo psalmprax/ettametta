@@ -120,11 +120,11 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                     toast.success("Blueprint Saved", { description: `Recipe "${name}" is now available in the neural cluster.` });
                     // Transform DB response to frontend Blueprint interface
                     const blueprint: Blueprint = {
-                        id: data.id || blueprintId,
-                        name: data.name || name,
-                        description: data.description || description,
-                        composition_id: data.composition_id || compositionId,
-                        nodes: data.nodes || nodes
+                        id: data?.id || blueprintId,
+                        name: data?.name || name,
+                        description: data?.description || description,
+                        composition_id: data?.composition_id || compositionId,
+                        nodes: data?.nodes || nodes
                     };
                     onSuccess(blueprint);
                     onClose();
