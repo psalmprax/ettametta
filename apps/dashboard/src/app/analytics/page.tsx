@@ -152,13 +152,13 @@ export default function AnalyticsPage() {
             const headers = { Authorization: `Bearer ${token}` };
             
             const testsData = await withRealFallback<any>(
-                () => fetch(`${API_BASE}/ab-testing/ab/tests/active`, { headers }),
+                () => fetch(`${API_BASE}/ab-testing/tests/active`, { headers }),
                 { fallback: {} }
             );
             setActiveTests(testsData.active_tests || testsData.tests || testsData || []);
 
             const compData = await withRealFallback<any>(
-                () => fetch(`${API_BASE}/ab-testing/ab/tests/completed`, { headers }),
+                () => fetch(`${API_BASE}/ab-testing/tests/completed`, { headers }),
                 { fallback: {} }
             );
             setCompletedTests(compData.completed_tests || compData || []);
@@ -246,7 +246,7 @@ export default function AnalyticsPage() {
                 // Threshold: 100 views per variant roughly
                 if (totalViews >= 200 && test.variant_a_view_count > 50 && test.variant_b_view_count > 50) {
                     await withRealFallback<any>(
-                        () => fetch(`${API_BASE}/ab-testing/ab/test/${test.id}/determine-winner`, {
+                        () => fetch(`${API_BASE}/ab-testing/test/${test.id}/determine-winner`, {
                             method: "POST",
                             headers: { Authorization: `Bearer ${token}` }
                         }),
@@ -925,7 +925,7 @@ export default function AnalyticsPage() {
                                         if (!token) return;
 
                                         await withRealFallback<any>(
-                                            () => fetch(`${API_BASE}/ab-testing/ab/test/start`, {
+                                            () => fetch(`${API_BASE}/ab-testing/test/start`, {
                                                 method: "POST",
                                                 headers: {
                                                     "Content-Type": "application/json",
@@ -979,7 +979,7 @@ export default function AnalyticsPage() {
                                                 const token = getAuthToken();
                                                 if (!token) return;
                                                 await withRealFallback<any>(
-                                                    () => fetch(`${API_BASE}/ab-testing/ab/test/${test.id}/determine-winner`, {
+                                                    () => fetch(`${API_BASE}/ab-testing/test/${test.id}/determine-winner`, {
                                                         method: "POST",
                                                         headers: { Authorization: `Bearer ${token}` }
                                                     }),

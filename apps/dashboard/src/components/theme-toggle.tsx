@@ -19,6 +19,7 @@ export function ThemeToggle({ className, showLabel = false }: ThemeToggleProps) 
                 "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700",
                 className
             )}
+            aria-label={`Switch to ${theme === "legacy" ? "modern" : "legacy"} design`}
             title={`Switch to ${theme === "legacy" ? "modern" : "legacy"} design`}
         >
             <span className="text-sm">{theme === "legacy" ? "🕐" : "✨"}</span>

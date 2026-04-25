@@ -32,9 +32,52 @@ export async function withRealFallback<T>(
             const result = await operation();
             
             if (result instanceof Response) {
-                // Special handling for authentication errors - they are expected when unauthenticated
+                // Handle authentication errors globally - force logout and redirect
                 if (result.status === 401) {
-                    options.onFallback?.(new Error("Unauthorized"));
+                    // Clear all auth storage
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem("et_token");
+                        localStorage.removeItem("et_user");
+                        localStorage.removeItem("et_credits");
+                        sessionStorage.removeItem("et_token");
+                    }
+                    // Redirect to login page with return URL
+                    if (typeof window !== 'undefined') {
+                        const returnUrl = encodeURIComponent(window.location.pathname);
+                        window.location.href = `/login?redirect=${returnUrl}`;
+                    }
+                    return options.fallback;
+                }
+                if (!result.ok) {
+                    throw new Error(`API Signal Failure: ${result.status} (${result.statusText})`);
+                }
+                const data = await result.json();
+                
+                // Real-First Unwrapping: If backend uses the success_response wrapper, unwrap it.
+                if (data && typeof data === 'object' && data.success === true && 'data' in data) {
+                    options.onSuccess?.(data.data);
+                    return data.data as T;
+                }
+
+                options.onSuccess?.(data);
+                return data as T;
+            } else {
+                options.onSuccess?.(result);
+                return result as T;
+            }
+        } catch (error) {
+            console.error("[Real-First] Signal Failure:", error);
+            if (options.onFallback) {
+                options.onFallback(error as Error);
+                return options.fallback;
+            }
+            throw error;
+        }
+                    // Redirect to login page with return URL
+                    if (typeof window !== 'undefined') {
+                        const returnUrl = encodeURIComponent(window.location.pathname);
+                        window.location.href = `/login?redirect=${returnUrl}`;
+                    }
                     return options.fallback;
                 }
                 if (!result.ok) {

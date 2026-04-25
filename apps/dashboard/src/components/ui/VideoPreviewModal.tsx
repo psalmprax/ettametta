@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Download, Share2, Zap } from "lucide-react";
 
@@ -18,6 +18,35 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
     const [showOriginal, setShowOriginal] = React.useState(false);
     const [isExporting, setIsExporting] = React.useState(false);
     const [shareStatus, setShareStatus] = React.useState<string | null>(null);
+    const previousActiveElement = useRef<HTMLElement | null>(null);
+
+    // Handle escape key and focus management
+    useEffect(() => {
+        if (isOpen) {
+            previousActiveElement.current = document.activeElement as HTMLElement;
+
+            // Focus close button after modal opens
+            const timer = setTimeout(() => {
+                const closeBtn = document.querySelector('[data-video-preview-close]');
+                if (closeBtn) (closeBtn as HTMLElement).focus();
+            }, 100);
+
+            const handleEscape = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') onClose();
+            };
+            document.addEventListener('keydown', handleEscape);
+
+            return () => {
+                clearTimeout(timer);
+                document.removeEventListener('keydown', handleEscape);
+            };
+        } else {
+            // Restore focus when modal closes
+            if (previousActiveElement.current) {
+                previousActiveElement.current.focus();
+            }
+        }
+    }, [isOpen, onClose]);
 
     const activeUrl = showOriginal && originalUrl ? originalUrl : videoUrl;
 
@@ -82,8 +111,12 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 pointer-events-none"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="video-preview-title"
+                aria-describedby="video-preview-description"
             >
-                <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl pointer-events-auto" onClick={onClose} />
+                <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl pointer-events-auto" onClick={onClose} aria-hidden="true" />
 
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -99,16 +132,23 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                                 <div className="h-1 w-6 bg-primary rounded-full" />
                                 <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Outcome Preview</span>
                             </div>
-                            <h2 className="text-2xl font-black text-white uppercase tracking-tighter truncate max-w-md">
+                            <h2 id="video-preview-title" className="text-2xl font-black text-white uppercase tracking-tighter truncate max-w-md">
                                 {title || "Untitled Viral Fragment"}
                             </h2>
                         </div>
                         <button
+                            data-video-preview-close
                             onClick={onClose}
                             className="h-12 w-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white/10 hover:border-white/20 transition-all"
+                            aria-label="Close video preview"
                         >
                             <X className="h-6 w-6" />
                         </button>
+                    </div>
+
+                    {/* Visually hidden description for accessibility */}
+                    <div id="video-preview-description" className="sr-only">
+                        Video preview player. Use the controls to play, export, or proceed to transformation.
                     </div>
 
                     {/* Video Content */}

@@ -14,14 +14,24 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
 
     // Initial load from localStorage
     useEffect(() => {
-        const saved = localStorage.getItem("vf_pro_mode");
-        if (saved === "true") setIsProMode(true);
+        const saved = localStorage.getItem("et_pro_mode");
+        if (saved === "true") {
+            setIsProMode(true);
+        } else {
+            // Migrate from old vf_pro_mode key
+            const legacy = localStorage.getItem("vf_pro_mode");
+            if (legacy === "true") {
+                setIsProMode(true);
+                localStorage.setItem("et_pro_mode", "true");
+                localStorage.removeItem("vf_pro_mode");
+            }
+        }
     }, []);
 
     const toggleProMode = () => {
         setIsProMode(prev => {
             const next = !prev;
-            localStorage.setItem("vf_pro_mode", String(next));
+            localStorage.setItem("et_pro_mode", String(next));
             return next;
         });
     };
