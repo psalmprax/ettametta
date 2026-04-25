@@ -784,17 +784,23 @@ export default function CreationPage() {
                                                                 </div>
                                                             )}
                                                             {segmentAssets[i]?.image && (
-                                                                <div className="h-16 w-16 rounded-xl border border-emerald-500/20 overflow-hidden shadow-lg">
-                                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                                    <img src={`${API_BASE}/static/${segmentAssets[i].image}`} alt="Segment Asset" className="w-full h-full object-cover" />
-                                                                </div>
+                                                                <div 
+                                                                    className="h-16 w-16 rounded-xl border border-emerald-500/20 overflow-hidden shadow-lg bg-cover bg-center" 
+                                                                    style={{ backgroundImage: `url(${API_BASE}/static/${segmentAssets[i].image})` }}
+                                                                    role="img"
+                                                                    aria-label="Segment Asset"
+                                                                />
                                                             )}
                                                             {segmentAssets[i]?.videos && (
                                                                 <div className="flex gap-2">
                                                                     {segmentAssets[i].videos.slice(0, 2).map((v: any, j: number) => (
-                                                                        <div key={j} className="h-16 w-12 rounded-lg border border-emerald-500/20 overflow-hidden relative group/v">
-                                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                                            <img src={v.preview} alt="Video Preview" className="w-full h-full object-cover" />
+                                                                        <div 
+                                                                            key={j} 
+                                                                            className="h-16 w-12 rounded-lg border border-emerald-500/20 overflow-hidden relative group/v bg-cover bg-center"
+                                                                            style={{ backgroundImage: `url(${v.preview})` }}
+                                                                            role="img"
+                                                                            aria-label="Video Preview"
+                                                                        >
                                                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/v:opacity-100 flex items-center justify-center transition-all">
                                                                                 <Plus className="h-4 w-4 text-white" />
                                                                             </div>
