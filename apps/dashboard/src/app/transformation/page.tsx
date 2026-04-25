@@ -764,8 +764,8 @@ function TransformationPageContent() {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-zinc-500">
-                                                            <span>{job.status}</span>
-                                                            <span className={job.status === 'Completed' ? 'text-emerald-500' : 'text-primary'}>{job.progress}%</span>
+                                                            <span>{String(job.status)}</span>
+                                                            <span className={job.status === 'Completed' ? 'text-emerald-500' : 'text-primary'}>{String(job.progress)}%</span>
                                                         </div>
                                                         <div className="bg-zinc-950 h-1 rounded-full overflow-hidden border border-white/5">
                                                             <motion.div
