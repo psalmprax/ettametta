@@ -80,15 +80,15 @@ class VideoProcessor:
         font_path (str): Path to the primary font for captions.
     """
 
-    def __init__(self, output_dir: str = "outputs"):
+    def __init__(self, output_dir: str = None):
         """
         Initializes the Video Engine with dynamic font resolution and FFmpeg patching.
 
         Args:
-            output_dir (str): Root directory for video outputs. Defaults to "outputs".
+            output_dir (str): Root directory for video outputs. Defaults to settings.STORAGE_OUTPUT_DIR.
         """
-        self.output_dir = output_dir
-        os.makedirs(output_dir, exist_ok=True)
+        self.output_dir = output_dir or settings.STORAGE_OUTPUT_DIR
+        os.makedirs(self.output_dir, exist_ok=True)
         # Force high-optimized CPU rendering (libx264)
         self.use_gpu = False
         # Default font path for captions (can be overridden)

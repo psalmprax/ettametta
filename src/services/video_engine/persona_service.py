@@ -9,7 +9,7 @@ class PersonaService:
     def __init__(self):
         self.render_node_url = os.getenv("RENDER_NODE_URL")
 
-    async def _generate_tts(self, text: str) -> str | None:
+    async def _generate_tts(self, text: str, voice_id: str | None = None) -> str | None:
         """
         Generate TTS audio for persona animation.
         Tries voiceover service, then remote render node TTS.
@@ -18,7 +18,7 @@ class PersonaService:
         try:
             from src.services.voiceover.service import voiceover_service
 
-            audio_path = await voiceover_service.generate_voiceover(text)
+            audio_path = await voiceover_service.generate_voiceover(text, voice_id=voice_id)
             if audio_path:
                 logger.info(
                     f"[PersonaService] TTS generated via voiceover service: {audio_path}"
@@ -48,7 +48,7 @@ class PersonaService:
         return None
 
     async def animate_persona(
-        self, reference_image_url: str, niche: str, script: str | None = None
+        self, reference_image_url: str, niche: str, script: str | None = None, voice_id: str | None = None
     ) -> str:
         """
         Orchestrates the animation of a personalized persona video via external rendering services.
@@ -66,13 +66,13 @@ class PersonaService:
         script_text = script or f"Hey everyone, let's talk about {niche}."
 
         # Step 1: Generate TTS audio
-        audio_path = await self._generate_tts(script_text)
+        audio_path = await self._generate_tts(script_text, voice_id=voice_id)
 
         try:
             payload = {
                 "image_url": reference_image_url,
                 "text": script_text,
-                "voice_id": "default_xtts",
+                "voice_id": voice_id or "default_xtts",
             }
 
             # If we have audio, send it to the render node

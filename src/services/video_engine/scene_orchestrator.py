@@ -23,6 +23,8 @@ from src.services.monetization.service import MonetizationEngine
 logger = logging.getLogger(__name__)
 
 
+from src.api.config import settings
+
 class SceneBasedVideoOrchestrator:
     """Orchestrates scene-based video production with audio overlay"""
 
@@ -30,7 +32,7 @@ class SceneBasedVideoOrchestrator:
         self.video_scanner = video_lead_scanner
         self.video_processor = VideoProcessor()
         self.monetization_engine = MonetizationEngine()
-        self.output_dir = Path("outputs/scene_based_videos")
+        self.output_dir = Path(settings.STORAGE_OUTPUT_DIR) / "scene_based_videos"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Check available capabilities

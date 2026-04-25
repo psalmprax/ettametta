@@ -18,7 +18,8 @@ import {
     Wand2,
     Clock,
     Target,
-    Globe
+    Globe,
+    ChevronDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -45,7 +46,7 @@ interface ScriptOutput {
 }
 
 export default function CreationPage() {
-    const { niches, styles: availableStyles } = useNiches();
+    const { niches, styles: availableStyles, isLoading: isLoadingNiches } = useNiches();
     const [topic, setTopic] = useState("");
     const [niche, setNiche] = useState("Motivation");
     const [style, setStyle] = useState("story");
@@ -377,7 +378,7 @@ export default function CreationPage() {
                                             value={topic}
                                             onChange={(e) => setTopic(e.target.value)}
                                             placeholder="The History of Quantum AI..."
-                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-5 pl-16 pr-6 focus:outline-none focus:ring-1 focus:ring-primary/40 text-sm font-bold text-white placeholder:text-zinc-700"
+                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-5 pl-16 pr-6 focus:outline-none focus:ring-1 focus:ring-primary/40 text-base font-bold text-white placeholder:text-zinc-700 transition-all"
                                         />
                                     </div>
                                 </div>
@@ -385,30 +386,42 @@ export default function CreationPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label htmlFor="niche" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Niche</label>
-                                        <select
-                                            id="niche"
-                                            name="niche"
-                                            value={niche}
-                                            onChange={(e) => setNiche(e.target.value)}
-                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-5 focus:outline-none focus:ring-1 focus:ring-primary/40 text-xs font-black uppercase tracking-wider text-zinc-400 appearance-none cursor-pointer hover:bg-zinc-900/50"
-                                        >
-                                            {niches.map(n => <option key={n} value={n}>{n}</option>)}
-                                        </select>
+                                        <div className="relative group">
+                                            <select
+                                                id="niche"
+                                                name="niche"
+                                                value={niche}
+                                                onChange={(e) => setNiche(e.target.value)}
+                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-5 pr-12 focus:outline-none focus:ring-1 focus:ring-primary/40 text-base font-bold uppercase tracking-wide text-zinc-300 appearance-none cursor-pointer hover:bg-zinc-900/50 transition-all"
+                                            >
+                                                {isLoadingNiches ? (
+                                                    <option disabled>Loading...</option>
+                                                ) : niches.length > 0 ? (
+                                                    niches.map(n => <option key={n} value={n}>{n}</option>)
+                                                ) : (
+                                                    <option value="Motivation">Motivation</option>
+                                                )}
+                                            </select>
+                                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600 group-hover:text-primary pointer-events-none transition-all" />
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Style</label>
-                                        <select
-                                            value={style}
-                                            onChange={(e) => setStyle(e.target.value)}
-                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-5 focus:outline-none focus:ring-1 focus:ring-primary/40 text-xs font-black uppercase tracking-wider text-zinc-400 appearance-none cursor-pointer hover:bg-zinc-900/50"
-                                        >
-                                            {availableStyles.map(s => <option key={s} value={s.toLowerCase()}>{s}</option>)}
-                                        </select>
+                                        <div className="relative group">
+                                            <select
+                                                value={style}
+                                                onChange={(e) => setStyle(e.target.value)}
+                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-5 pr-12 focus:outline-none focus:ring-1 focus:ring-primary/40 text-base font-bold uppercase tracking-wide text-zinc-300 appearance-none cursor-pointer hover:bg-zinc-900/50 transition-all"
+                                            >
+                                                {availableStyles.map(s => <option key={s} value={s.toLowerCase()}>{s}</option>)}
+                                            </select>
+                                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600 group-hover:text-primary pointer-events-none transition-all" />
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label htmlFor="duration" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Duration: {duration}s</label>
+                                    <label htmlFor="duration" className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-2">Duration: {duration}s</label>
                                     <input
                                         id="duration"
                                         name="duration"
@@ -428,8 +441,8 @@ export default function CreationPage() {
                                             <Film className="h-4 w-4" />
                                         </div>
                                         <div className="space-y-0.5">
-                                            <p className="text-[10px] font-black uppercase tracking-tight text-white group-hover:text-violet-400 transition-colors">Cinema Mode</p>
-                                            <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Fully Autonomous</p>
+                                            <p className="text-xs font-black uppercase tracking-tight text-white group-hover:text-violet-400 transition-colors">Cinema Mode</p>
+                                            <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Fully Autonomous</p>
                                         </div>
                                     </div>
                                     <div className={cn("w-10 h-5 rounded-full relative transition-all duration-500", cinemaMode ? "bg-violet-600" : "bg-zinc-800")}>
@@ -447,7 +460,7 @@ export default function CreationPage() {
                                 onClick={cinemaMode ? handleLaunchCinema : handleGenerateScript}
                                 disabled={isGenerating || isCinemaLaunching || !topic}
                                 className={cn(
-                                    "w-full font-black py-5 rounded-xl transition-all flex items-center justify-center gap-3 uppercase text-xs tracking-widest",
+                                    "w-full font-black py-5 rounded-xl transition-all flex items-center justify-center gap-3 uppercase text-sm tracking-widest",
                                     cinemaMode ? "bg-violet-600 hover:bg-violet-500 shadow-[0_0_40px_rgba(139,92,246,0.3)] text-white" : "bg-primary hover:bg-primary/90 shadow-[0_0_40px_rgba(var(--primary-rgb),0.3)] text-white"
                                 )}
                             >

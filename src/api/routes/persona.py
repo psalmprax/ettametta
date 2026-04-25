@@ -34,6 +34,7 @@ class PersonaGenerateRequest(BaseModel):
 @router.post("/create")
 async def create_persona(
     name: str,
+    reference_image_url: str | None = None,
     image: UploadFile = File(None),
     audio: UploadFile = File(None),
     current_user=Depends(get_current_user),
@@ -42,11 +43,12 @@ async def create_persona(
     """
     Registers a new Persona for autonomous character generation.
     Files are uploaded to the configured S3-compatible storage.
+    If reference_image_url is provided, it is used directly.
     """
     from src.api.utils.storage import storage_service
     import tempfile
-
-    persona = PersonaDB(name=name, user_id=current_user.id)
+    
+    persona = PersonaDB(name=name, user_id=current_user.id, reference_image_url=reference_image_url)
 
     # Handle image upload to S3 storage
     if image:
@@ -99,7 +101,10 @@ async def generate_persona_video(
 
     try:
         url = await base_persona_service.animate_persona(
-            persona.reference_image_url, request.topic, request.script
+            persona.reference_image_url, 
+            request.topic, 
+            request.script,
+            voice_id=persona.voice_clone_id
         )
         return success_response(data={"status": "success", "video_url": url})
     except HTTPException:

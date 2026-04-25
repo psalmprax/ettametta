@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     INTERNAL_API_TOKEN: str | None = None  # Master token for internal services
-    AI_CLUSTER_SECRET: str | None = "psalm_cluster_v1"  # Secret for remote GPU nodes
+    AI_CLUSTER_SECRET: str | None = "psalm_cluster_v1"  # Default cluster secret
     PORT: int = 8000  # API port
 
     # Lean Infrastructure (CPU-First Hardening)

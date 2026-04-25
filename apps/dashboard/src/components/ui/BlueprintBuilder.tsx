@@ -19,6 +19,7 @@ interface BlueprintBuilderProps {
 export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilderProps) {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
+    const [compositionId, setCompositionId] = useState("ViralClip");
     const [nodes, setNodes] = useState<{ id: string; type: NodeType; label: string; desc: string }[]>([
         { id: crypto.randomUUID(), type: "ingress", label: "Initial Node", desc: "Data entry point" }
     ]);
@@ -69,6 +70,7 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                     id: blueprintId,
                     name,
                     description,
+                    composition_id: compositionId,
                     nodes
                 })
             }),
@@ -116,7 +118,7 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-2">Recipe Name</label>
                             <input
@@ -125,6 +127,19 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
                                 placeholder="Viral Re-skinner V2..."
                                 className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-6 text-sm font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary/40"
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-2">Composition ID</label>
+                            <select
+                                value={compositionId}
+                                onChange={(e) => setCompositionId(e.target.value)}
+                                className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 px-6 text-sm font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary/40"
+                            >
+                                <option value="ViralClip">ViralClip (Standard)</option>
+                                <option value="CinematicShorts">CinematicShorts (Premium)</option>
+                                <option value="ShortsVertical">ShortsVertical (Clean)</option>
+                                <option value="AI_TalkingHead">AI_TalkingHead (Persona)</option>
+                            </select>
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-2">Description</label>
