@@ -619,7 +619,7 @@ export default function CreationPage() {
                                     {hookAnalysis.status === "KILL" && (
                                         <div className="space-y-4 pt-2">
                                             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Suggested Pivots:</p>
-                                            {hookAnalysis.alternatives.map((alt: string, i: number) => (
+                                            {hookAnalysis.alternatives?.map((alt: string, i: number) => (
                                                 <div 
                                                     key={i} 
                                                     onClick={() => handleApplyAlternativeHook(alt)}
