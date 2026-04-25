@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Plus, Trash2, Save, Database, Cpu, Sparkles, Share2, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn, safeRandomUUID } from "@/lib/utils";
 import { toast } from "sonner";
 import { NodeType } from "./NexusNode";
 import { withRealFallback } from "@/lib/real_first_utils";
@@ -23,7 +23,7 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
     const [description, setDescription] = useState("");
     const [compositionId, setCompositionId] = useState("ViralClip");
     const [nodes, setNodes] = useState<BlueprintNode[]>([
-        { id: crypto.randomUUID(), type: "ingress", label: "Initial Node", desc: "Data entry point" }
+        { id: safeRandomUUID(), type: "ingress", label: "Initial Node", desc: "Data entry point" }
     ]);
     const [isSaving, setIsSaving] = useState(false);
     const [nodeToDelete, setNodeToDelete] = useState<BlueprintNode | null>(null);
@@ -60,7 +60,7 @@ export function BlueprintBuilder({ isOpen, onClose, onSuccess }: BlueprintBuilde
 
     const addNode = (type: NodeType) => {
         const newNode: BlueprintNode = {
-            id: crypto.randomUUID(),
+            id: safeRandomUUID(),
             type,
             label: `New ${type.toUpperCase()} Node`,
             desc: "Configure this node"
