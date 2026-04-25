@@ -780,7 +780,12 @@ export default function NexusPage() {
                                         <div key={p.id || p._id} className="group flex items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5 hover:border-primary/20 transition-all cursor-pointer" onClick={() => setCreatedPersona(p)}>
                                             <div className="flex items-center gap-3">
                                                 <div className="h-8 w-8 rounded-lg bg-zinc-800 border border-white/5 overflow-hidden">
-                                                    <img src={p.reference_image_url} alt={p.name} className="h-full w-full object-cover" />
+                                                    <div 
+                                                        className="h-full w-full bg-cover bg-center" 
+                                                        style={{ backgroundImage: `url(${p.reference_image_url})` }}
+                                                        role="img"
+                                                        aria-label={p.name}
+                                                    />
                                                 </div>
                                                 <span className="text-xs font-black text-white uppercase tracking-tight">{p.name}</span>
                                             </div>
