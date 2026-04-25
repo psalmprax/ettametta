@@ -81,7 +81,7 @@ export default function NexusPage() {
     const [personaImageUrl, setPersonaImageUrl] = useState("");
     const [isCreatingPersona, setIsCreatingPersona] = useState(false);
     const [personas, setPersonas] = useState<any[]>([]);
-    const [createdPersona, setCreatedPersona] = useState<{ id: string; name: string; reference_image_url: string } | null>(null);
+    const [createdPersona, setCreatedPersona] = useState<{ id?: string; _id?: string; name: string; reference_image_url: string } | null>(null);
     const [videoTopic, setVideoTopic] = useState("");
     const [videoScript, setVideoScript] = useState("");
     const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
