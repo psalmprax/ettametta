@@ -44,10 +44,9 @@ class AgentZero(BaseEttamettaAgent):
         }
 
     async def _persist_state(self):
-        """Saves current engine state to DB."""
         try:
             from src.api.utils.database import async_session_factory
-            from src.api.utils.models import SystemSettingDB
+            from src.api.utils.models import AgentZeroState
             from sqlalchemy import select
 
             async with async_session_factory() as db:
@@ -58,14 +57,14 @@ class AgentZero(BaseEttamettaAgent):
                     "current_step": self.current_step
                 }
                 
-                stmt = select(SystemSettingDB).where(SystemSettingDB.key == "agent_zero_state")
+                stmt = select(AgentZeroState).where(AgentZeroState.key == "agent_zero_state")
                 result = await db.execute(stmt)
                 setting = result.scalar_one_or_none()
                 
                 if setting:
                     setting.value = state
                 else:
-                    db.add(SystemSettingDB(key="agent_zero_state", value=state))
+                    db.add(AgentZeroState(key="agent_zero_state", value=state))
                 
                 await db.commit()
         except Exception as e:
@@ -121,20 +120,20 @@ class AgentZero(BaseEttamettaAgent):
         """Loads state from DB and resumes if was running."""
         try:
             from src.api.utils.database import async_session_factory
-            from src.api.utils.models import SystemSettingDB
+            from src.api.utils.models import AgentZeroState
             from sqlalchemy import select
 
             async with async_session_factory() as db:
-                stmt = select(SystemSettingDB).where(SystemSettingDB.key == "agent_zero_state")
+                stmt = select(AgentZeroState).where(AgentZeroState.key == "agent_zero_state")
                 result = await db.execute(stmt)
                 setting = result.scalar_one_or_none()
-                
+
                 if setting and setting.value:
                     state = setting.value
                     self.last_run_at = state.get("last_run_at")
                     self.next_run_at = state.get("next_run_at")
                     self.current_step = state.get("current_step", "IDLE")
-                    
+
                     if state.get("is_running"):
                         # Launch in background
                         asyncio.create_task(self.start(auto_resume=True))
