@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary": "#520070",
+                    "surface-container": "#201f1f",
+                    "on-error-container": "#ffdad6",
+                    "tertiary": "#ffffff",
+                    "secondary-container": "#d05bff",
+                    "on-background": "#e5e2e1",
+                    "surface-variant": "#353534",
+                    "on-secondary-fixed-variant": "#75009e",
+                    "outline-variant": "#3a4a49",
+                    "tertiary-fixed-dim": "#2ae500",
+                    "error-container": "#93000a",
+                    "surface-dim": "#131313",
+                    "on-primary-fixed-variant": "#004f4f",
+                    "surface": "#131313",
+                    "primary-container": "#00fbfb",
+                    "on-tertiary": "#053900",
+                    "surface-container-lowest": "#0e0e0e",
+                    "surface-container-low": "#1c1b1b",
+                    "on-tertiary-fixed": "#022100",
+                    "inverse-surface": "#e5e2e1",
+                    "on-secondary-container": "#480063",
+                    "on-primary-container": "#007070",
+                    "on-error": "#690005",
+                    "tertiary-fixed": "#79ff5b",
+                    "primary-fixed-dim": "#00dddd",
+                    "on-tertiary-container": "#117500",
+                    "inverse-on-surface": "#313030",
+                    "tertiary-container": "#79ff5b",
+                    "primary-fixed": "#00fbfb",
+                    "primary": "#ffffff",
+                    "surface-tint": "#00dddd",
+                    "error": "#ffb4ab",
+                    "on-primary": "#003737",
+                    "surface-container-high": "#2a2a2a",
+                    "on-surface": "#e5e2e1",
+                    "secondary-fixed-dim": "#ecb1ff",
+                    "secondary": "#ecb1ff",
+                    "on-secondary-fixed": "#320046",
+                    "surface-bright": "#393939",
+                    "on-primary-fixed": "#002020",
+                    "secondary-fixed": "#f9d8ff",
+                    "surface-container-highest": "#353534",
+                    "on-surface-variant": "#b9cac9",
+                    "background": "#131313",
+                    "inverse-primary": "#006a6a",
+                    "outline": "#839493",
+                    "on-tertiary-fixed-variant": "#095300"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "container-margin": "20px",
+                    "gutter": "12px",
+                    "unit": "4px",
+                    "xs": "4px",
+                    "xl": "40px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "sm": "8px"
+            },
+            "fontFamily": {
+                    "data-mono": ["Space Grotesk"],
+                    "label-caps": ["Space Grotesk"],
+                    "display-lg": ["Space Grotesk"],
+                    "headline-md": ["Space Grotesk"],
+                    "body-base": ["Inter"]
+            },
+            "fontSize": {
+                    "data-mono": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-caps": ["12px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "display-lg": ["40px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "body-base": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .surface-glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+        }
+        .rim-glow {
+            box-shadow: inset 0 0 0 1px rgba(0, 251, 251, 0.15);
+        }
+        .viral-glow {
+            text-shadow: 0 0 15px rgba(0, 251, 251, 0.6);
+        }
+        .sparkline-gradient {
+            background: linear-gradient(180deg, rgba(0, 251, 251, 0.2) 0%, rgba(0, 251, 251, 0) 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-base selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_15px_rgba(0,255,255,0.1)] h-16 flex justify-between items-center px-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-cyan-400 active:scale-95 duration-200 cursor-pointer">language</span>
+<h1 class="text-xl font-bold tracking-widest text-white uppercase font-space-grotesk tracking-tighter">ETTAMETTA</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full border border-cyan-500/30 overflow-hidden active:scale-95 duration-200">
+<img alt="User" class="w-full h-full object-cover" data-alt="close-up portrait of a digital artist with neon rim lighting and a futuristic aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC39D_UlSSD1wcEtbGRGUfTaGAKrAdT3J5co8kzufnx0ZmNnoAMv5ywPZhsb_D9lAo-nmhBnJbrvJAdcGEMQqOaqo_pdnAx88sgJWnKPqS4am4IwuprhvbDJ9ZOiALlTPy7wot9ZgW7M91EqRGTiPPDcCFYCBZ7jCFf-gB_5zL476aw27106X7A59T-2FzFG964pMP1V1Iweht2XpxB8xESS4TF_U9rCU9RbbmfvWPfVAQ-wQQ1Blgl4BQwajmJoIEqZMou_A9wewRI"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-20 pb-24 px-container-margin">
+<!-- Header Info -->
+<section class="mb-lg">
+<div class="flex justify-between items-end mb-sm">
+<div>
+<span class="font-label-caps text-label-caps text-cyan-400 uppercase tracking-widest">LIVE_SIGNALS</span>
+<h2 class="font-display-lg text-display-lg text-white">Trending Feed</h2>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-low px-3 py-1 border border-white/10">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed animate-pulse"></span>
+<span class="font-data-mono text-data-mono text-tertiary-fixed">SYNCED</span>
+</div>
+</div>
+<div class="h-[1px] w-full bg-gradient-to-r from-cyan-500/50 via-transparent to-transparent"></div>
+</section>
+<!-- Vertical Scrollable List -->
+<div class="space-y-lg">
+<!-- Signal Card 1 -->
+<article class="surface-glass rim-glow border border-white/10 p-0 relative overflow-hidden">
+<div class="relative h-48 w-full group">
+<img alt="Thumbnail" class="w-full h-full object-cover" data-alt="abstract flowing liquid metal textures in neon cyan and deep black with cinematic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAndsKPqSOh9z-2WduiP9dSfZZLIL3v12fvCjaChB30O0HR8J_F02bUJsX_4gCbjPOqwWPKseEGkhEfnTwTkcC9ICIrqiCKu7LnUp4WWDQbFF9sejGYhJcnv1BrOv2PlPHhFomv5RUNTLdks8rkOFfSAl12VKlTHCe8wR-0BpGQraDAKf6WpYrD5Vh0s0j8olk9O1AweCXFWC0yIt3iWrokxgmiDUNKfUqkWpEsDMjFoJTUxxQM6Qk8UsrxYfMUuRFa46vXR-5dFMba"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+<div class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+<div class="bg-black/60 backdrop-blur-md px-2 py-1 flex items-center gap-2 border border-white/10">
+<span class="material-symbols-outlined text-cyan-400 text-sm">visibility</span>
+<span class="font-data-mono text-data-mono text-white text-xs">42.8K</span>
+</div>
+<div class="bg-primary-container text-on-primary-container font-label-caps text-[10px] px-2 py-1">
+                            LIVE STREAMING
+                        </div>
+</div>
+</div>
+<div class="p-lg space-y-md">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<h3 class="font-headline-md text-headline-md text-white">Untitled Intel Stream</h3>
+<div class="flex gap-2">
+<span class="bg-surface-container-high px-2 py-0.5 text-[10px] font-bold text-white/60 tracking-tighter">#NEURAL_NET</span>
+<span class="bg-surface-container-high px-2 py-0.5 text-[10px] font-bold text-white/60 tracking-tighter">#AIGEN</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-display-lg text-display-lg text-cyan-400 viral-glow leading-none">99</div>
+<div class="font-label-caps text-[10px] text-cyan-400/60 uppercase">Viral Score</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-md pt-md border-t border-white/5">
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-[10px] text-white/40 uppercase">Viral Velocity</span>
+<span class="text-tertiary-fixed text-[10px] font-data-mono">+24%</span>
+</div>
+<div class="h-12 w-full sparkline-gradient relative border-b border-cyan-500/20">
+<svg class="w-full h-full overflow-visible">
+<path d="M0 40 Q 20 10, 40 30 T 80 5 T 120 25 T 160 0" fill="none" stroke="#00fbfb" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-[10px] text-white/40 uppercase">Growth Curve</span>
+<span class="text-cyan-400 text-[10px] font-data-mono">EXPONENTIAL</span>
+</div>
+<div class="h-12 w-full sparkline-gradient relative border-b border-cyan-500/20">
+<svg class="w-full h-full overflow-visible">
+<path d="M0 45 L 30 40 L 60 35 L 90 20 L 120 10 L 160 2" fill="none" stroke="#00fbfb" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Signal Card 2 -->
+<article class="surface-glass rim-glow border border-white/10 p-0 relative overflow-hidden opacity-90">
+<div class="relative h-48 w-full">
+<img alt="Thumbnail" class="w-full h-full object-cover" data-alt="close-up of a high-tech computer server with glowing blue indicator lights and sleek metallic surfaces" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAk69mt1qVpJDmVR8EkJGQGvmXFBlkaSEq9LbrTNDfIPUYwRbrTxhIn0SoGuNzWXbfO-Tm-_HdWVTufuurDiMZWiAWLWQAFibjy5NckubKLssSiyLoNR-EdCXg1mIPs5B2tlLetLdqSOafPRgw82WAgPZ0VZWWawUlcknsp6_90mrFHM0xraKjzf4IDE8wFItznbZjKWFQM_fHaHsoQBkE2PYbamHy5FEc2IKpTD3XUTLc2CIO5XZHVT00K6ZbIc3_w-g-GDP7T1irl"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+<div class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+<div class="bg-black/60 backdrop-blur-md px-2 py-1 flex items-center gap-2 border border-white/10">
+<span class="material-symbols-outlined text-cyan-400 text-sm">visibility</span>
+<span class="font-data-mono text-data-mono text-white text-xs">12.5K</span>
+</div>
+</div>
+</div>
+<div class="p-lg space-y-md">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<h3 class="font-headline-md text-headline-md text-white uppercase tracking-tight">Cyber-Nexus Protocol</h3>
+<div class="flex gap-2">
+<span class="bg-surface-container-high px-2 py-0.5 text-[10px] font-bold text-white/60 tracking-tighter">#DATA_LEAK</span>
+<span class="bg-surface-container-high px-2 py-0.5 text-[10px] font-bold text-white/60 tracking-tighter">#SECURITY</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-display-lg text-display-lg text-cyan-400 viral-glow leading-none">82</div>
+<div class="font-label-caps text-[10px] text-cyan-400/60 uppercase">Viral Score</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-md pt-md border-t border-white/5">
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-[10px] text-white/40 uppercase">Viral Velocity</span>
+<span class="text-tertiary-fixed text-[10px] font-data-mono">+12%</span>
+</div>
+<div class="h-12 w-full sparkline-gradient relative border-b border-cyan-500/20">
+<svg class="w-full h-full overflow-visible">
+<path d="M0 30 Q 40 40, 80 20 T 160 35" fill="none" stroke="#00fbfb" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-[10px] text-white/40 uppercase">Growth Curve</span>
+<span class="text-white/60 text-[10px] font-data-mono">STABLE</span>
+</div>
+<div class="h-12 w-full sparkline-gradient relative border-b border-cyan-500/20">
+<svg class="w-full h-full overflow-visible">
+<path d="M0 25 L 160 25" fill="none" stroke="#00fbfb" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Signal Card 3 -->
+<article class="surface-glass rim-glow border border-white/10 p-0 relative overflow-hidden opacity-80">
+<div class="relative h-48 w-full">
+<img alt="Thumbnail" class="w-full h-full object-cover" data-alt="high-angle satellite view of earth at night with glowing network connections and data pathways across continents" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHnqxuKTlFFEaWDLQ66K5IV_-W78F1SCeUaFdXgRIgrv7HK_B_wR-6wUW8vb0a5zSMdW_CyS0Mrr5qVHoQFkhA8zxCfxv3Ml6nRdnb6dz3gvbkr-CpcQZufR2nE5BcsbIc4gzDocj04c8ijwV0GLpBtJ7dtFveVLULhwu7srizgO4MmCezDm9_Nbp0FyCH91-ZFFdX-x-IbTfE8mFkXOiTOuQuggnASSURMAH0Z7tDqSoHNU2RlIpnWCyQYaQG3PwrG5tS5j8i1LAa"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+</div>
+<div class="p-lg space-y-md">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<h3 class="font-headline-md text-headline-md text-white uppercase tracking-tight">Global Grid Drift</h3>
+<div class="flex gap-2">
+<span class="bg-surface-container-high px-2 py-0.5 text-[10px] font-bold text-white/60 tracking-tighter">#MACRO</span>
+<span class="bg-surface-container-high px-2 py-0.5 text-[10px] font-bold text-white/60 tracking-tighter">#WEB4</span>
+</div>
+</div>
+<div class="text-right">
+<div class="font-display-lg text-display-lg text-cyan-400 viral-glow leading-none">67</div>
+<div class="font-label-caps text-[10px] text-cyan-400/60 uppercase">Viral Score</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-md pt-md border-t border-white/5">
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-[10px] text-white/40 uppercase">Viral Velocity</span>
+<span class="text-error text-[10px] font-data-mono">-04%</span>
+</div>
+<div class="h-12 w-full sparkline-gradient relative border-b border-cyan-500/20">
+<svg class="w-full h-full overflow-visible">
+<path d="M0 10 L 40 15 L 80 25 L 160 45" fill="none" stroke="#00fbfb" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-[10px] text-white/40 uppercase">Growth Curve</span>
+<span class="text-white/60 text-[10px] font-data-mono">COOLING</span>
+</div>
+<div class="h-12 w-full sparkline-gradient relative border-b border-cyan-500/20 opacity-50">
+<svg class="w-full h-full overflow-visible">
+<path d="M0 45 Q 80 40, 160 45" fill="none" stroke="#00fbfb" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 h-20 bg-black/90 backdrop-blur-2xl border-t border-cyan-500/20 shadow-[0_-4px_20px_rgba(0,0,0,0.9)] flex justify-around items-center px-6 pb-safe">
+<!-- Explore -->
+<a class="flex flex-col items-center justify-center text-white/40 hover:bg-white/5 transition-all active:scale-90 duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1">explore</span>
+<span class="font-space-grotesk text-[10px] uppercase font-bold">explore</span>
+</a>
+<!-- Signals (ACTIVE) -->
+<a class="flex flex-col items-center justify-center text-cyan-400 border-b-2 border-cyan-400 pb-1 hover:bg-white/5 transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined mb-1">sensors</span>
+<span class="font-space-grotesk text-[10px] uppercase font-bold">signals</span>
+</a>
+<!-- Add Box -->
+<a class="flex flex-col items-center justify-center text-white/40 hover:bg-white/5 transition-all active:scale-90 duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1">add_box</span>
+<span class="font-space-grotesk text-[10px] uppercase font-bold">create</span>
+</a>
+<!-- Analytics -->
+<a class="flex flex-col items-center justify-center text-white/40 hover:bg-white/5 transition-all active:scale-90 duration-150 group" href="#">
+<span class="material-symbols-outlined mb-1">analytics</span>
+<span class="font-space-grotesk text-[10px] uppercase font-bold">stats</span>
+</a>
+</nav>
+<!-- Status Bar Background for Mobile -->
+<div class="fixed top-0 w-full h-4 bg-black z-[100] md:hidden"></div>
+</body></html>
