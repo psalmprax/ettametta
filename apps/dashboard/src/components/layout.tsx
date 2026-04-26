@@ -6,6 +6,7 @@ import { SearchBar } from "@/components/search-bar";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { useAuth } from "@/context/AuthContext";
 
+import { motion, AnimatePresence } from "framer-motion";
 import { Coins, User } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
