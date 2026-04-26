@@ -127,7 +127,7 @@ export default function LandingPage() {
             <div className="absolute -inset-4 bg-linear-to-r from-cyan-glow/20 via-violet-500/10 to-emerald-accent/20 blur-3xl opacity-30 animate-pulse" />
             <div className="glass-card p-2 rounded-[2.5rem] border-white/10 relative overflow-hidden group">
               <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
-              <div className="bg-zinc-950 rounded-[2rem] aspect-video flex items-center justify-center border border-white/5 overflow-hidden">
+              <div className="bg-zinc-950 rounded-4xl aspect-video flex items-center justify-center border border-white/5 overflow-hidden">
                 {/* Mockup Dashboard Preview */}
                 <div className="w-full h-full p-6 space-y-6 opacity-40 group-hover:opacity-100 transition-opacity duration-700">
                   <div className="h-8 w-1/3 bg-white/5 rounded-lg" />
