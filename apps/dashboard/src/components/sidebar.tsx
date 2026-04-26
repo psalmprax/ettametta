@@ -21,7 +21,9 @@ import {
     Crown,
     Coins,
     CheckCircle2,
-    Layers
+    Layers,
+    PlusSquare,
+    Activity
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -219,10 +221,10 @@ export function MobileNav() {
     const pathname = usePathname();
     
     const mobileNavItems = [
-        { name: "Explore", href: "/discovery", icon: "explore" },
-        { name: "Creation", href: "/creation", icon: "add_box" },
-        { name: "Live", href: "/nexus", icon: "sensors" },
-        { name: "Insights", href: "/analytics", icon: "analytics" },
+        { name: "Explore", href: "/discovery", Icon: Search },
+        { name: "Creation", href: "/creation", Icon: PlusSquare },
+        { name: "Live", href: "/nexus", Icon: Activity },
+        { name: "Insights", href: "/analytics", Icon: BarChart3 },
     ];
 
     return (
@@ -234,12 +236,13 @@ export function MobileNav() {
                         key={item.href}
                         href={item.href}
                         className={cn(
-                            "flex flex-col items-center justify-center transition-all active:scale-90 duration-150 cursor-pointer hover:bg-white/5",
-                            isActive ? "text-cyan-400 border-b-2 border-cyan-400 pb-1" : "text-white/40"
+                            "flex flex-col items-center justify-center transition-all active:scale-90 duration-150 cursor-pointer",
+                            isActive ? "text-cyan-400" : "text-white/40"
                         )}
                     >
-                        <span className="material-symbols-outlined">{item.icon}</span>
+                        <item.Icon className={cn("h-6 w-6", isActive && "text-cyan-400")} />
                         <span className="font-space-grotesk text-[10px] uppercase font-bold mt-1">{item.name}</span>
+                        {isActive && <div className="absolute bottom-0 h-1 w-8 bg-cyan-400 shadow-[0_0_10px_#00ffff]" />}
                     </Link>
                 );
             })}
@@ -252,7 +255,7 @@ export function MobileHeader({ onMenuClick }: { onMenuClick?: () => void }) {
         <header className="bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_15px_rgba(0,255,255,0.1)] fixed top-0 z-50 flex justify-between items-center w-full px-5 h-16 md:hidden">
             <div className="flex items-center gap-3">
                 <button onClick={onMenuClick} className="p-1 -ml-1">
-                    <span className="material-symbols-outlined text-cyan-400">menu</span>
+                    <Menu className="h-6 w-6 text-cyan-400" />
                 </button>
                 <span className="text-xl font-bold tracking-widest text-white uppercase font-space-grotesk tracking-tighter">ETTAMETTA</span>
             </div>
