@@ -23,10 +23,13 @@ import {
     CheckCircle2,
     Layers,
     PlusSquare,
-    Activity
+    Activity,
+    Bell,
+    User,
+    ChevronRight,
+    Terminal
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
@@ -53,166 +56,98 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
     const pathname = usePathname();
     const { logout, user } = useAuth();
 
-    // Memoize nav items to avoid recreation on every render
     const memoizedNavItems = useMemo(() => navItems, []);
 
     return (
         <motion.div
             initial={{ x: -280, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-                "flex flex-col h-full glass-sidebar text-zinc-400 relative overflow-hidden z-40 transition-all duration-300",
+                "flex flex-col h-full surface-glass text-zinc-400 relative overflow-hidden z-40 transition-all duration-300 border-r border-white/5",
                 collapsed ? "w-20" : "w-72"
             )}
         >
             <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-linear-to-r from-transparent via-cyan-400/30 to-transparent shadow-[0_0_15px_rgba(34,211,238,0.5)]" />
-
-            {/* Toggle Button */}
-            <button
-                onClick={onToggle}
-                className="absolute top-4 right-4 z-50 p-2 rounded-lg hover:bg-white/5 transition-colors"
-                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-                {collapsed ? <Menu className="h-5 w-5 text-zinc-400" /> : <X className="h-5 w-5 text-zinc-400" />}
-            </button>
-
-            <Link href="/" className={cn(
-                "flex items-center gap-4 py-10 hover:opacity-90 transition-all relative group",
+            
+            {/* Logo Section */}
+            <div className={cn(
+                "flex items-center py-10 transition-all",
                 collapsed ? "px-4 justify-center" : "px-8"
             )}>
-                <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    className="h-11 w-11 rounded-xl bg-linear-to-br from-violet-600 to-cyan-500 flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.3)] relative overflow-hidden shrink-0"
-                >
-                    <div className="absolute inset-0 shimmer opacity-20" />
-                    <Zap className="h-6 w-6 text-white fill-white neon-glow-violet" />
-                </motion.div>
-                <AnimatePresence>
+                <Link href="/" className="flex items-center gap-4 group">
+                    <div className="h-10 w-10 bg-cyan-400 flex items-center justify-center shadow-[0_0_20px_rgba(0,251,251,0.3)] relative group-hover:scale-110 transition-transform">
+                        <Zap className="h-5 w-5 text-black fill-black" />
+                    </div>
                     {!collapsed && (
-                        <motion.div
-                            initial={{ opacity: 0, width: 0 }}
-                            animate={{ opacity: 1, width: "auto" }}
-                            exit={{ opacity: 0, width: 0 }}
-                            className="flex flex-col overflow-hidden"
-                        >
-                            <span className="text-xl font-black text-white tracking-tighter uppercase leading-none group-hover:text-cyan-400 transition-colors whitespace-nowrap">Ettametta</span>
-                            <span className="text-[9px] font-black text-cyan-400 tracking-[0.4em] uppercase mt-1.5 opacity-80 flex items-center gap-1.5">
-                                <div className="h-1 w-1 rounded-full bg-cyan-400 animate-pulse" />
-                                OS // V3.0
-                            </span>
-                        </motion.div>
+                        <div className="flex flex-col">
+                            <span className="text-xl font-black text-white tracking-tighter uppercase leading-none neon-text-cyan">Ettametta</span>
+                            <span className="font-data-mono text-[8px] text-zinc-500 mt-1">Intelligence OS v3</span>
+                        </div>
                     )}
-                </AnimatePresence>
-            </Link>
+                </Link>
+            </div>
 
-            <nav className={cn("flex-1 px-4 space-y-1 relative z-10", collapsed ? "px-2" : "")}>
-                {navItems.map((item, index) => {
+            {/* Navigation */}
+            <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar pt-4">
+                {memoizedNavItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all duration-300 group relative cyber-border",
-                                collapsed && "justify-center px-3",
-                                isActive
-                                    ? "text-cyan-400 bg-white/2"
-                                    : "hover:text-white"
+                                "flex items-center gap-4 px-4 py-3 group transition-all relative overflow-hidden",
+                                isActive 
+                                    ? "bg-cyan-400/5 text-cyan-400 border border-cyan-400/20" 
+                                    : "text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent"
                             )}
-                            aria-label={collapsed ? item.name : undefined}
                         >
-                            <AnimatePresence>
-                                {isActive && (
-                                    <motion.div
-                                        layoutId="nav-active"
-                                        className="absolute inset-0 bg-cyan-400/5 rounded-xl"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                    >
-                                        <div className="absolute -left-px top-1/4 w-[2px] h-1/2 bg-cyan-400 neon-glow-cyan" />
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                            <motion.div
-                                whileHover={{ scale: 1.1 }}
-                                className="z-10 shrink-0"
-                            >
-                                <item.icon className={cn(
-                                    "h-4.5 w-4.5 transition-all duration-300",
-                                    isActive ? "text-cyan-400 neon-glow-cyan" : "text-zinc-500 group-hover:text-zinc-200"
-                                )} />
-                            </motion.div>
-                            <AnimatePresence>
-                                {!collapsed && (
-                                    <motion.span
-                                        initial={{ opacity: 0, width: 0 }}
-                                        animate={{ opacity: 1, width: "auto" }}
-                                        exit={{ opacity: 0, width: 0 }}
-                                        className={cn(
-                                            "font-black text-[10px] uppercase tracking-[0.2em] z-10 whitespace-nowrap overflow-hidden",
-                                            isActive ? "text-cyan-400" : "text-zinc-500 group-hover:text-zinc-200"
-                                        )}
-                                    >
-                                        {item.name}
-                                    </motion.span>
-                                )}
-                            </AnimatePresence>
+                            <item.icon className={cn("h-5 w-5 shrink-0 transition-colors", isActive ? "text-cyan-400" : "group-hover:text-cyan-400/50")} />
+                            {!collapsed && (
+                                <span className="font-label-caps text-[10px] whitespace-nowrap">{item.name}</span>
+                            )}
+                            {isActive && !collapsed && (
+                                <motion.div 
+                                    layoutId="active-pill"
+                                    className="absolute right-0 w-1 h-4 bg-cyan-400 shadow-[0_0_10px_#00fbfb]"
+                                />
+                            )}
                         </Link>
                     );
                 })}
             </nav>
 
-            <AnimatePresence>
-                {!collapsed && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="px-6 py-8 space-y-6 relative z-10 border-t border-white/5 bg-zinc-950/20 overflow-hidden"
+            {/* Footer / User Profile */}
+            <div className="p-4 mt-auto border-t border-white/5">
+                {!collapsed ? (
+                    <div className="p-4 bg-white/5 rim-light space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-zinc-800 border border-white/10 overflow-hidden">
+                                <img src={user?.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"} alt="User" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-bold text-white truncate">{user?.displayName || "Agent Null"}</span>
+                                <span className="font-data-mono text-[8px] text-zinc-500 truncate">Core Access: Level 4</span>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => logout()}
+                            className="w-full py-2 flex items-center justify-center gap-2 font-label-caps text-[8px] text-zinc-500 hover:text-red-400 transition-colors border border-white/5 hover:border-red-400/20"
+                        >
+                            <LogOut className="h-3 w-3" />
+                            Terminate Session
+                        </button>
+                    </div>
+                ) : (
+                    <button 
+                        onClick={() => logout()}
+                        className="w-12 h-12 flex items-center justify-center text-zinc-600 hover:text-red-400 transition-colors"
                     >
-                        <div className="p-5 rounded-2xl bg-zinc-900/50 border border-white/5 space-y-4 relative overflow-hidden group shadow-inner">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">Engine Core</span>
-                                <div className="h-1 w-8 rounded-full bg-cyan-400/20 relative overflow-hidden">
-                                    <motion.div 
-                                        className="absolute inset-0 bg-cyan-400"
-                                        animate={{ x: ["-100%", "100%"] }}
-                                        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2.5">
-                                <StatusLine label="Neural Network" pulse color="bg-cyan-400" />
-                                <StatusLine label="Distribution" color="bg-violet-500" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-1">
-                            <Link
-                                href="/settings"
-                                className={cn(
-                                    "flex items-center gap-4 px-5 py-3 rounded-xl transition-all duration-300 hover:text-white group border border-transparent hover:border-white/5",
-                                    pathname === "/settings" ? "text-white" : ""
-                                )}
-                            >
-                                <Settings className="h-4 w-4 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
-                                <span className="font-black text-[9px] uppercase tracking-[0.25em]">Config</span>
-                            </Link>
-
-                            <button
-                                onClick={logout}
-                                className="w-full flex items-center gap-4 px-5 py-3 rounded-xl transition-all duration-300 hover:bg-violet-500/10 hover:text-violet-400 group border border-transparent hover:border-violet-500/10"
-                            >
-                                <LogOut className="h-4 w-4 text-zinc-600 group-hover:text-violet-400" />
-                                <span className="font-black text-[9px] uppercase tracking-[0.25em]">Exit</span>
-                            </button>
-                        </div>
-                    </motion.div>
+                        <LogOut className="h-5 w-5" />
+                    </button>
                 )}
-            </AnimatePresence>
+            </div>
         </motion.div>
     );
 });
@@ -228,7 +163,8 @@ export function MobileNav() {
     ];
 
     return (
-        <nav className="bg-black/90 backdrop-blur-2xl border-t border-cyan-500/20 fixed bottom-0 w-full z-50 h-20 shadow-[0_-4px_20px_rgba(0,0,0,0.9)] flex justify-around items-center px-6 pb-safe md:hidden">
+        <nav className="bg-black/90 backdrop-blur-2xl border-t border-cyan-400/20 fixed bottom-0 w-full z-50 h-20 shadow-[0_-4px_30px_rgba(0,251,251,0.1)] flex justify-around items-center px-6 pb-safe md:hidden">
+            <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
             {mobileNavItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -236,13 +172,18 @@ export function MobileNav() {
                         key={item.href}
                         href={item.href}
                         className={cn(
-                            "flex flex-col items-center justify-center transition-all active:scale-90 duration-150 cursor-pointer",
-                            isActive ? "text-cyan-400" : "text-white/40"
+                            "flex flex-col items-center justify-center transition-all relative px-4",
+                            isActive ? "text-cyan-400" : "text-zinc-600"
                         )}
                     >
-                        <item.Icon className={cn("h-6 w-6", isActive && "text-cyan-400")} />
-                        <span className="font-space-grotesk text-[10px] uppercase font-bold mt-1">{item.name}</span>
-                        {isActive && <div className="absolute bottom-0 h-1 w-8 bg-cyan-400 shadow-[0_0_10px_#00ffff]" />}
+                        <item.Icon className={cn("h-6 w-6 mb-1 transition-all", isActive && "scale-110 shadow-[0_0_15px_rgba(0,251,251,0.5)]")} />
+                        <span className="font-label-caps text-[8px]">{item.name}</span>
+                        {isActive && (
+                            <motion.div 
+                                layoutId="mobile-active"
+                                className="absolute -bottom-2 h-1 w-8 bg-cyan-400 shadow-[0_0_10px_#00fbfb]"
+                            />
+                        )}
                     </Link>
                 );
             })}
@@ -252,34 +193,27 @@ export function MobileNav() {
 
 export function MobileHeader({ onMenuClick }: { onMenuClick?: () => void }) {
     return (
-        <header className="bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_15px_rgba(0,255,255,0.1)] fixed top-0 z-50 flex justify-between items-center w-full px-5 h-16 md:hidden">
-            <div className="flex items-center gap-3">
-                <button onClick={onMenuClick} className="p-1 -ml-1">
-                    <Menu className="h-6 w-6 text-cyan-400" />
+        <header className="bg-black/80 backdrop-blur-xl border-b border-white/5 shadow-[0_0_20px_rgba(0,0,0,0.5)] fixed top-0 z-50 flex justify-between items-center w-full px-5 h-16 md:hidden">
+            <div className="flex items-center gap-4">
+                <button 
+                    onClick={onMenuClick} 
+                    className="h-10 w-10 flex items-center justify-center bg-white/5 border border-white/10"
+                >
+                    <Menu className="h-5 w-5 text-cyan-400" />
                 </button>
-                <span className="text-xl font-bold tracking-widest text-white uppercase font-space-grotesk tracking-tighter">ETTAMETTA</span>
-            </div>
-            <div className="w-8 h-8 rounded-full overflow-hidden border border-cyan-400/30">
-                <img alt="User profile avatar" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgvZ0UVOL1jD326czv0qLaLG2xB5FrH8UoPSrH4kY0F-vlWvKq_iZgtxxwzCOmmDgdm-QEyDoWWV5C-ABgfSd18kFTaEa8xxEoFGIhING6Sk9ReQe7PAhPcIPayn9iOrWMD1mWLnFv5FDZYXlwrPAUPrCW5bd_pu1hi43VL-P83ztaE_kJpJGgzRCWb7mHrNrIRWpXVai55ZFeOn80nDNTuCmpDsViB8auSO-LQdDWv18MGmNJHzqU2tKEzB0WoO_ptCdPlUVz6xte"/>
-            </div>
-        </header>
-    );
-}
-
-function StatusLine({ label, color, pulse = false }: { label: string, color: string, pulse?: boolean }) {
-    return (
-        <div className="flex items-center justify-between group/line">
-            <span className="text-[9px] font-black text-zinc-500 tracking-widest uppercase transition-colors group-hover/line:text-zinc-300">{label}</span>
-            <div className="flex items-center gap-3">
-                <span className="text-[8px] font-black font-mono text-zinc-700 uppercase tracking-tighter group-hover/line:text-zinc-500 transition-colors">Nominal</span>
-                <div className={cn(
-                    "h-2 w-2 rounded-full relative shadow-lg",
-                    color
-                )}>
-                    {pulse && <div className={cn("absolute inset-0 rounded-full animate-ping opacity-40", color)} />}
-                    <div className="absolute inset-0 rounded-full bg-white/20" />
+                <div className="flex flex-col">
+                    <span className="text-sm font-black text-white tracking-tighter uppercase leading-none">Ettametta</span>
+                    <span className="font-data-mono text-[8px] text-cyan-400/50 mt-0.5">Neural Core</span>
                 </div>
             </div>
-        </div>
+            <div className="flex items-center gap-3">
+                <div className="h-8 w-8 bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Bell className="h-4 w-4 text-zinc-500" />
+                </div>
+                <div className="h-8 w-8 border border-cyan-400/30">
+                    <img alt="User" className="w-full h-full object-cover" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"/>
+                </div>
+            </div>
+        </header>
     );
 }
