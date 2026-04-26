@@ -142,12 +142,10 @@ export default function LandingPage() {
                     <p className="text-2xl font-black text-white italic uppercase tracking-tighter">Global Viral Feed</p>
                 </div>
               </div>
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center">
                    <div className="h-16 w-16 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center group-hover:scale-110 transition-transform cursor-pointer">
                      <Play className="h-8 w-8 text-white fill-white ml-1" />
                    </div>
-                </div>
               </div>
             </div>
           </motion.div>
