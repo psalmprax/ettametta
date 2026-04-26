@@ -336,7 +336,7 @@ export default function CreationPage() {
                             animate={{ opacity: 1, x: 0 }}
                             className="flex items-center gap-4"
                         >
-                            <div className="surface-glass rim-light p-6 flex items-center gap-10">
+                            <div className="surface-glass glass-refraction cyber-border rim-light p-6 flex items-center gap-10">
                                 <div className="space-y-1">
                                     <p className="font-label-caps text-[8px] text-zinc-600">Sync Status</p>
                                     <div className="flex items-center gap-2">
@@ -373,8 +373,8 @@ export default function CreationPage() {
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start">
                         {/* LEFT: COMMAND CONSOLE */}
                         <div className="xl:col-span-4 space-y-10">
-                            <section className="surface-glass rim-light p-10 space-y-10 relative overflow-hidden group">
-                                <div className="absolute -right-10 -top-10 w-40 h-40 bg-cyan-400/5 blur-3xl rounded-full group-hover:bg-cyan-400/10 transition-all" />
+                            <section className="surface-glass glass-refraction cyber-border rim-light p-10 space-y-10 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(0,251,251,0.05),transparent_40%)]" />
                                 
                                 <div className="flex items-center justify-between">
                                     <h2 className="font-label-caps text-cyan-400 flex items-center gap-3 text-xs">

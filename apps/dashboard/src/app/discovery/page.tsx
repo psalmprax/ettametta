@@ -192,9 +192,8 @@ function DiscoveryContent() {
                         </div>
                     </div>
 
-                    {/* SEARCH CONSOLE */}
                     <form onSubmit={handleSearch} className="flex-1 max-w-2xl group">
-                        <div className="relative surface-glass rim-light flex items-center">
+                        <div className="relative surface-glass glass-refraction cyber-border rim-light flex items-center">
                             <div className="pl-6 text-zinc-600 group-focus-within:text-cyan-400 transition-colors">
                                 <Search className="h-5 w-5" />
                             </div>
@@ -216,7 +215,7 @@ function DiscoveryContent() {
 
                 {/* CONTROL HUD */}
                 <div className="flex flex-wrap items-center gap-6 mb-16">
-                    <div className="surface-glass rim-light p-2 flex gap-1">
+                    <div className="surface-glass glass-refraction cyber-border rim-light p-2 flex gap-1">
                         {["YouTube", "TikTok", "Instagram", "X"].map(plat => (
                             <button 
                                 key={plat}
@@ -231,7 +230,7 @@ function DiscoveryContent() {
                         ))}
                     </div>
 
-                    <div className="surface-glass rim-light p-2 flex gap-1">
+                    <div className="surface-glass glass-refraction cyber-border rim-light p-2 flex gap-1">
                         {["24H", "7D", "30D"].map(h => (
                             <button 
                                 key={h}
