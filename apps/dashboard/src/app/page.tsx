@@ -285,7 +285,7 @@ function PortfolioCard({ icon, title, description, tag }: { icon: React.ReactNod
        <div className="absolute top-6 right-6">
          <span className="text-[9px] font-black px-3 py-1 bg-white/5 border border-white/10 rounded-full text-zinc-500 tracking-widest uppercase">{tag}</span>
        </div>
-       <div className="h-20 w-20 rounded-[2rem] bg-white/3 border border-white/5 flex items-center justify-center group-hover:rotate-6 transition-all duration-500">
+       <div className="h-20 w-20 rounded-4xl bg-white/3 border border-white/5 flex items-center justify-center group-hover:rotate-6 transition-all duration-500">
         {icon}
       </div>
       <div className="space-y-4">
