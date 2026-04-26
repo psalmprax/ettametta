@@ -6,10 +6,49 @@ import { SearchBar } from "@/components/search-bar";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { useAuth } from "@/context/AuthContext";
 
-import { motion, AnimatePresence } from "framer-motion";
 import { Coins, User } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Activity, Shield, Cpu, Network, Zap, Lock } from "lucide-react";
+
+function IntelligenceHUD() {
+    return (
+        <div className="hidden xl:flex items-center gap-10 px-8 py-3 mb-8 border-b border-white/5 font-data-mono text-[9px] text-zinc-500 overflow-hidden">
+            <div className="flex items-center gap-3">
+                <Activity className="h-3 w-3 text-cyan-400 animate-pulse" />
+                <span className="text-white tracking-[0.3em]">SYSTEM_STABILITY:</span>
+                <span className="text-emerald-400 font-bold">99.8%_ACTIVE</span>
+            </div>
+            <div className="flex items-center gap-3">
+                <Shield className="h-3 w-3 text-indigo-400" />
+                <span className="text-white tracking-[0.3em]">ENCRYPTION_LAYER:</span>
+                <span className="text-zinc-300">X_RSA_64K</span>
+            </div>
+            <div className="flex items-center gap-3">
+                <Cpu className="h-3 w-3 text-purple-400" />
+                <span className="text-white tracking-[0.3em]">NEURAL_LOAD:</span>
+                <div className="w-20 h-1 bg-zinc-900 rounded-full overflow-hidden">
+                    <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: "65%" }}
+                        transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                        className="h-full bg-linear-to-r from-purple-500 to-indigo-500"
+                    />
+                </div>
+            </div>
+            <div className="ml-auto flex items-center gap-6">
+                <div className="flex items-center gap-2 text-cyan-400">
+                    <Zap className="h-3 w-3 fill-cyan-400" />
+                    <span className="font-black italic tracking-tighter">OS_VERSION: 3.4.1_STABLE</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Lock className="h-3 w-3 text-zinc-600" />
+                    <span className="text-zinc-700">AUTH_UPLINK: SECURE</span>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 function LegacyLayout({ children }: { children: React.ReactNode }) {
     const { user, credits } = useAuth();
@@ -40,6 +79,7 @@ function LegacyLayout({ children }: { children: React.ReactNode }) {
                         transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], opacity: { duration: 0.8 } }}
                         className="max-w-7xl mx-auto w-full"
                     >
+                        <IntelligenceHUD />
                         {children}
                     </motion.div>
                 </main>
@@ -111,6 +151,7 @@ function LegacyLayout({ children }: { children: React.ReactNode }) {
                         transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], opacity: { duration: 0.8 } }}
                         className="max-w-7xl mx-auto w-full"
                     >
+                        <IntelligenceHUD />
                         {children}
                     </motion.div>
                 </main>

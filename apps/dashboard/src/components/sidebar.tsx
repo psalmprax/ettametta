@@ -72,6 +72,8 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
         >
             <div className="noise-overlay" />
             <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
+            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" 
+                 style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 0)", backgroundSize: "40px 40px" }} />
             
             {/* Logo Section */}
             <div className={cn(
@@ -80,19 +82,19 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
             )}>
                 <Link href="/" className="flex items-center gap-5 group">
                     <motion.div 
-                        whileHover={{ scale: 1.2, rotate: 90 }}
+                        whileHover={{ scale: 1.1, rotateY: 20, rotateX: -20 }}
                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                        className="h-12 w-12 bg-cyan-400 flex items-center justify-center shadow-[0_0_30px_rgba(0,251,251,0.4)] relative"
+                        className="h-14 w-14 bg-cyan-400 flex items-center justify-center shadow-[0_0_40px_rgba(0,251,251,0.5)] relative cyber-border"
                     >
-                        <Zap className="h-6 w-6 text-black fill-black" />
+                        <Zap className="h-7 w-7 text-black fill-black" />
                         <div className="absolute inset-0 border-2 border-cyan-400 animate-ping opacity-20" />
                     </motion.div>
                     {!collapsed && (
                         <div className="flex flex-col">
                             <span className="text-2xl font-black text-white tracking-tighter uppercase leading-none neon-text-cyan italic">Ettametta</span>
                             <div className="flex items-center gap-2 mt-1">
-                                <div className="w-1 h-1 bg-cyan-400 rounded-full animate-pulse" />
-                                <span className="font-data-mono text-[8px] text-zinc-500">INTELLIGENCE OS V3.2</span>
+                                <div className="w-1 h-1 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_#00fbfb]" />
+                                <span className="font-data-mono text-[8px] text-zinc-500 tracking-[0.3em]">INTELLIGENCE OS_CORE</span>
                             </div>
                         </div>
                     )}
@@ -108,10 +110,10 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-4 px-5 py-4 group transition-all relative overflow-hidden",
+                                "flex items-center gap-4 px-6 py-5 group transition-all relative overflow-hidden cyber-border",
                                 isActive 
-                                    ? "bg-cyan-400/10 text-cyan-400 border border-cyan-400/30 shadow-[0_0_15px_rgba(0,251,251,0.1)]" 
-                                    : "text-zinc-600 hover:text-zinc-200 hover:bg-white/5 border border-transparent"
+                                    ? "bg-cyan-400/5 text-cyan-400 rim-glow-cyan shadow-[0_0_20px_rgba(0,251,251,0.05)]" 
+                                    : "text-zinc-600 hover:text-zinc-200 hover:bg-white/5"
                             )}
                         >
                             <item.icon className={cn("h-5 w-5 shrink-0 transition-all duration-500", isActive ? "text-cyan-400 scale-110" : "group-hover:text-cyan-400/50 group-hover:scale-110")} />
