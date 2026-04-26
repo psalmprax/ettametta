@@ -2,7 +2,10 @@
 
 import { withRealFallback } from "@/lib/real_first_utils";
 import { getAuthToken } from "@/lib/auth_utils";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, Suspense, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { Float, Sphere, MeshDistortMaterial, Points, PointMaterial } from "@react-three/drei";
+import * as THREE from "three";
 import DashboardLayout from "@/components/layout";
 import {
     Search,
@@ -20,19 +23,23 @@ import {
     ChevronDown,
     Sparkles,
     Flame,
-    BookOpen,
-    Calendar,
     MessageSquare,
-    Newspaper,
     Heart,
     UserPlus,
-    Wand2
+    Wand2,
+    Target,
+    Terminal,
+    Database,
+    Network,
+    Shield,
+    Activity,
+    ArrowRight,
+    Monitor
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import dynamic from "next/dynamic";
-import * as d3 from "d3";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useRouter, useSearchParams } from "next/navigation";
 import { VideoPreviewModal } from "@/components/ui/VideoPreviewModal";
@@ -41,11 +48,38 @@ import { toast } from "sonner";
 const Geomap = dynamic(() => import("@/components/ui/Geomap"), { ssr: false });
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
 
-// Types
+// --- REDESIGN COMPONENTS ---
+
+function DiscoveryBackground() {
+    return (
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-30">
+            <Canvas camera={{ position: [0, 0, 5] }}>
+                <Suspense fallback={null}>
+                    <ambientLight intensity={0.4} />
+                    <pointLight position={[10, 10, 10]} intensity={1} color="#00fbfb" />
+                    <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
+                        <Sphere args={[1, 64, 64]} scale={2}>
+                            <MeshDistortMaterial
+                                color="#00fbfb"
+                                speed={3}
+                                distort={0.3}
+                                radius={1}
+                                wireframe
+                                transparent
+                                opacity={0.1}
+                            />
+                        </Sphere>
+                    </Float>
+                </Suspense>
+            </Canvas>
+        </div>
+    );
+}
+
 interface ContentCandidate {
     id: string;
     platform: string;
-    category: string; // video, article, social, news, other
+    category: string;
     description: string;
     thumbnail_url: string;
     view_count: number;
@@ -58,1630 +92,287 @@ interface ContentCandidate {
     title: string;
 }
 
-interface OpenCLISession {
-    platform: string;
-    status: string;
-    last_verified: string | null;
-}
-
-interface NicheTrend {
-    niche: string;
-    top_keywords: string[];
-    avg_engagement_score: number;
-}
-
-function DiscoveryContent() {
+export default function DiscoveryPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [candidates, setCandidates] = useState<ContentCandidate[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeNiche, setActiveNiche] = useState(searchParams.get("q") || "");
-    const [filter, setFilter] = useState("all"); // all, youtube, tiktok, instagram, facebook, x, twitch, etc.
-    const [activeCategory, setActiveCategory] = useState("all"); // all, video, article, social, news
-    const [showConfig, setShowConfig] = useState(false);
+    const [activeNiche, setActiveNiche] = useState(searchParams.get("q") || "Motivation");
+    const [filter, setFilter] = useState("all");
+    const [activeCategory, setActiveCategory] = useState("all");
     const [mode, setMode] = useState<"discovery" | "generative">("discovery");
-    const [timeHorizon, setTimeHorizon] = useState("30d"); // 24h, 7d, 30d
+    const [timeHorizon, setTimeHorizon] = useState("30d");
     const [niches, setNiches] = useState<string[]>([]);
-    const [topKeywords, setTopKeywords] = useState<string[]>([]);
     const [userTier, setUserTier] = useState<string>("free");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isSearching, setIsSearching] = useState(false);
 
-    // New State for "Neural Config"
-    const [minViralScore, setMinViralScore] = useState(75);
-    const [excludeShorts, setExcludeShorts] = useState(false);
-    const [styleLoaded, setStyleLoaded] = useState(false);
-
-    // Test Drive State
-    const [isTestDriving, setIsTestDriving] = useState(false);
-    const [testJobId, setTestJobId] = useState<string | null>(null);
-    const [showPreview, setShowPreview] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const [previewTitle, setPreviewTitle] = useState("");
-
-    const styles = ["Default", "Cinematic", "Hectic/Viral", "ASMR/Calm", "Educational", "Dramatic", "Glitch/High-Art", "Noir/Classic"];
-    const [selectedStyle, setSelectedStyle] = useState("Default");
-
-    // Generative State
-    const [genPrompt, setGenPrompt] = useState("");
-    const [genEngine, setGenEngine] = useState("veo3"); // veo3, wan2.2, hunyuan, mochi, cogvideo, wan
-    const [genStack, setGenStack] = useState<"cloud" | "self-hosted">("cloud");
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [isStoryMode, setIsStoryMode] = useState(false);
-    const [busyInteractions, setBusyInteractions] = useState<Record<string, boolean>>({});
-    const [sessions, setSessions] = useState<OpenCLISession[]>([]);
-
-    // Deep Analysis Results State
-    const [analysisResults, setAnalysisResults] = useState<Record<string, { status: string, result?: any }>>({});
-    const [analysisTaskId, setAnalysisTaskId] = useState<string | null>(null);
-
-
+    // Fetch Initial Data
     useEffect(() => {
-        const fetchNiches = async () => {
-            const token = getAuthToken();
-            await withRealFallback<string[]>(
-                () => fetch(`${API_BASE}/discovery/niches`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                {
-                    fallback: [],
-                    onSuccess: (data) => {
-                        if (data && data.length > 0) {
-                            setNiches(prev => Array.from(new Set([...prev, ...data])));
-                        }
-                    }
-                }
-            );
+        const load = async () => {
+            const token = await getAuthToken();
+            // Niche clusters
+            const nicheRes = await fetch(`${API_BASE}/v1/discovery/niches`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (nicheRes.ok) setNiches(await nicheRes.json());
         };
-
-        const fetchProfile = async () => {
-            const token = getAuthToken();
-            await withRealFallback<any>(
-                () => fetch(`${API_BASE}/auth/me`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                {
-                    fallback: { subscription: "free" },
-                    onSuccess: (data) => setUserTier(data.subscription || "free")
-                }
-            );
-        };
-
-        const fetchSessions = async () => {
-            const token = getAuthToken();
-            if (!token) return;
-            await withRealFallback<any>(
-                () => fetch(`${API_BASE}/opencli/sessions`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                {
-                    fallback: { sessions: [] },
-                    onSuccess: (data) => setSessions(data.sessions || [])
-                }
-            );
-        };
-
-        const fetchSummary = async () => {
-            const token = getAuthToken();
-            if (!token) return;
-            await withRealFallback<any>(
-                () => fetch(`${API_BASE}/discovery/summary`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                {
-                    fallback: {},
-                    onSuccess: (data) => {
-                        if (data && data.total_candidates) {
-                            toast.info("Market Summary Updated", {
-                                description: `Neural mesh synchronized with ${data.total_candidates} active candidates.`
-                            });
-                        }
-                    }
-                }
-            );
-        };
-
-        const loadUserSettings = async () => {
-            const token = getAuthToken();
-            if (!token) return;
-            await withRealFallback<any>(
-                () => fetch(`${API_BASE}/settings/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                {
-                    fallback: {},
-                    onSuccess: (data) => {
-                        if (data.discovery_min_viral_score) {
-                            setMinViralScore(parseInt(data.discovery_min_viral_score));
-                        }
-                        if (data.discovery_exclude_shorts) {
-                            setExcludeShorts(data.discovery_exclude_shorts === "true");
-                        }
-                        if (data.discovery_style) {
-                            setSelectedStyle(data.discovery_style);
-                        }
-                        setStyleLoaded(true);
-                    }
-                }
-            );
-        };
-
-        fetchNiches();
-        fetchProfile();
-        fetchSessions();
-        fetchSummary();
-        loadUserSettings();
+        load();
     }, []);
 
-
-
-     const fetchTrends = useCallback(async () => {
-         setIsLoading(true);
-         try {
-             const token = getAuthToken();
-             if (!token || searchQuery) { setIsLoading(false); return; }
-             const params = new URLSearchParams({
-                 niche: activeNiche,
-                 horizon: timeHorizon,
-                 min_viral_score: minViralScore.toString(),
-                 exclude_shorts: excludeShorts.toString()
-             });
-
-             // Trends
-             const response = await withRealFallback<any>(
-                 () => fetch(`${API_BASE}/discovery/trends?${params.toString()}`, {
-                     headers: { Authorization: `Bearer ${token}` }
-                 }),
-                 { fallback: { trends: [] } }
-             );
-             setCandidates(response.trends || []);
-
-             // Keywords
-             await withRealFallback<any>(
-                 () => fetch(`${API_BASE}/discovery/niche-trends/${activeNiche}`, {
-                     headers: { Authorization: `Bearer ${token}` }
-                 }),
-                 {
-                     fallback: { top_keywords: [] },
-                     onSuccess: (data) => {
-                         if (data.top_keywords && data.top_keywords.length > 0) {
-                             setTopKeywords(data.top_keywords);
-                         }
-                     }
-                 }
-             );
-         } catch (error) {
-             console.error("fetchTrends failed:", error);
-             toast.error("Discovery Error", { 
-                 description: "The neural discovery link is unstable. Please check your connection." 
-             });
-         } finally {
-             setIsLoading(false);
-         }
-     }, [activeNiche, timeHorizon, minViralScore, excludeShorts]);
+    const fetchTrends = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const token = await getAuthToken();
+            const res = await fetch(`${API_BASE}/v1/discovery/trends?niche=${activeNiche}&horizon=${timeHorizon}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setCandidates(data.trends || []);
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Discovery module unstable");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [activeNiche, timeHorizon]);
 
     useEffect(() => {
         fetchTrends();
     }, [fetchTrends]);
 
-    const handleAddToQueue = useCallback(async (candidate: ContentCandidate) => {
-        const token = getAuthToken();
-        if (!token) return;
-
-        // Check if we have analysis data for this candidate
-        const analysisResult = analysisResults[candidate.id];
-        const analysisData = analysisResult?.status === "completed" ? analysisResult.result : null;
-
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/video/transform`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    source_url: candidate.source_url,
-                    niche: activeNiche,
-                    platform: "YouTube Shorts",
-                    style: selectedStyle,
-                    analysis_data: analysisData  // Pass analysis data if available
-                })
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    // Show preview modal with the job details
-                    setPreviewUrl(null); // Clear previous preview
-                    setPreviewTitle(`Transforming: ${candidate.title}`);
-                    setShowPreview(true);
-                    setTestJobId(data.task_id || data.id); // Track the job for updates
-                    toast.success("Transformation Started", {
-                        description: "Preview will be available shortly. Neural processing in progress..."
-                    });
-                },
-                errorMessage: "Transformation queue full. Try again shortly."
-            }
-        );
-    }, [activeNiche, selectedStyle, analysisResults]);
-
-    const handleAnalyze = useCallback(async (candidate: ContentCandidate) => {
-        const token = getAuthToken();
-        if (!token) return;
-        
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/discovery/analyze`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(candidate)
-            }),
-            {
-                fallback: { status: "failed", error: "Offline" },
-                onSuccess: (data) => {
-                    const taskId = data.task_id;
-                    setAnalysisTaskId(taskId);
-                    setAnalysisResults(prev => ({ ...prev, [candidate.id]: { status: "pending" } }));
-                    toast.success("Analysis Started", { description: "Processing content analysis..." });
-
-                    const pollResults = async () => {
-                        let attempts = 0;
-                        const maxAttempts = 30;
-                        while (attempts < maxAttempts) {
-                            await new Promise(resolve => setTimeout(resolve, 2000));
-                            try {
-                                const statusData = await withRealFallback<any>(
-                                    () => fetch(`${API_BASE}/discovery/analyze/${taskId}`, {
-                                        headers: { Authorization: `Bearer ${token}` }
-                                    }),
-                                    {
-                                        fallback: { status: "pending" },
-                                        silent: true
-                                    }
-                                );
-
-                                if (statusData?.status === "completed") {
-                                    setAnalysisResults(prev => ({ ...prev, [candidate.id]: { status: "completed", result: statusData.result } }));
-                                    toast.success("Analysis Complete", {
-                                        description: "Click 'Create Video' to transform this content with analysis insights.",
-                                        action: { label: "Create Video", onClick: () => handleCreateVideoFromAnalysis(taskId, candidate) }
-                                    });
-                                    return;
-                                } else if (statusData?.status === "failed") {
-                                    setAnalysisResults(prev => ({ ...prev, [candidate.id]: { status: "failed", result: statusData.error } }));
-                                    return;
-                                }
-                            } catch (e) {
-                                console.error("Polling error:", e);
-                            }
-                            attempts++;
-                        }
-                    };
-                    pollResults();
-                },
-                errorMessage: "Neural analysis link failed. Cluster overloaded."
-            }
-        );
-    }, [handleAddToQueue]);
-
-
-// ... in DiscoveryPage ...
-    const handleInteract = useCallback(async (candidate: ContentCandidate, action: string) => {
-        const interactionKey = `${candidate.id}-${action}`;
-        setBusyInteractions(prev => ({ ...prev, [interactionKey]: true }));
-        
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            
-            // Real-First Interaction Protocol
-            const data = await withRealFallback<any>(
-                () => fetch(`${API_BASE}/discovery/interact`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        candidate_id: candidate.id,
-                        niche: activeNiche,
-                        action: action
-                    })
-                }),
-                {
-                    fallback: null
-                }
-            );
-
-            if (data?.status === "Handshake Established") {
-                toast.success(`${action.charAt(0).toUpperCase() + action.slice(1)} Handshake Verified`, {
-                    description: data.message,
-                    icon: action === 'like' ? <Heart className="h-4 w-4 text-primary fill-primary" /> : <UserPlus className="h-4 w-4 text-primary" />
-                });
-            } else {
-                // Secondary Fallback Attempt (OpenCLI)
-                // Secondary Fallback Attempt (OpenCLI)
-                await withRealFallback<any>(
-                    () => fetch(`${API_BASE}/opencli/interact`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            platform: (candidate.platform || '').toLowerCase().includes('youtube') ? 'youtube' : 
-                                     (candidate.platform || '').toLowerCase().includes('tiktok') ? 'tiktok' : 
-                                     (candidate.platform || '').toLowerCase().includes('x') ? 'x' : 
-                                     (candidate.platform || '').toLowerCase().includes('twitter') ? 'x' :
-                                     (candidate.platform || '').toLowerCase().includes('instagram') ? 'instagram' :
-                                     (candidate.platform || '').toLowerCase().split(' ')[0] || "unknown",
-                            action: action,
-                            content_url: candidate.source_url
-                        })
-                    }),
-                    {
-                        fallback: null,
-                        onSuccess: () => {
-                            toast.success("Secondary Handshake Verified", {
-                                description: `Successfully synchronized ${action} via OpenCLI.`
-                            });
-                        }
-                    }
-                );
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error("Neural Disconnect", {
-                description: "Failed to reach the interaction cluster."
-            });
-        } finally {
-            setBusyInteractions(prev => {
-                const newState = { ...prev };
-                delete newState[interactionKey];
-                return newState;
-            });
-        }
-    }, [activeNiche]);
-
-    // Open candidate URL in new tab
-    const handleOpenUrl = useCallback((url: string) => {
-        if (url) {
-            window.open(url, '_blank', 'noopener,noreferrer');
-        }
-    }, []);
-
-    const handleTestDrive = useCallback(async () => {
-        setIsTestDriving(true);
-        const token = getAuthToken();
-        if (!token) { setIsTestDriving(false); return; }
-
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/video/test-drive`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ niche: activeNiche, style: selectedStyle })
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    setTestJobId(data.task_id);
-                    setPreviewTitle(`Test Drive Outcome: ${activeNiche}`);
-                    toast.info("Test Drive Initiated", { description: `Finding and transforming top viral candidate for ${activeNiche}...` });
-                },
-                errorMessage: "Deep discovery module offline. Check API connectivity."
-            }
-        );
-        setIsTestDriving(false);
-    }, [activeNiche, selectedStyle]);
-
-    const handleCreateVideoFromAnalysis = useCallback(async (analysisTaskId: string, candidate: ContentCandidate) => {
-        const token = getAuthToken();
-        if (!token) return;
-
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/discovery/analyze/${analysisTaskId}/create-video`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    niche: activeNiche,
-                    platform: "YouTube Shorts",
-                    style: selectedStyle,
-                    quality_tier: "standard"
-                })
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    setTestJobId(data.task_id);
-                    setPreviewTitle(`Analysis-Based Transform: ${candidate.title}`);
-                    toast.success("Analysis-Driven Transformation Started", {
-                        description: "Using neural insights to optimize video creation..."
-                    });
-                },
-                errorMessage: "Analysis-based transformation failed. Using standard transform."
-            }
-        );
-    }, [activeNiche, selectedStyle]);
-
-    const handleGenerate = async () => {
-        if (!genPrompt) return;
-        setIsGenerating(true);
-        const token = getAuthToken();
-        if (!token) {
-            setIsGenerating(false);
-            return;
-        }
-        const endpoint = isStoryMode ? "/video/generate-story" : "/video/generate";
-
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}${endpoint}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    prompt: genPrompt,
-                    engine: genEngine,
-                    style: selectedStyle,
-                    aspect_ratio: "9:16",
-                    tier: ["veo3", "wan2.2"].includes(genEngine) ? 'studio' :
-                          ["hunyuan", "mochi", "cogvideo", "wan", "ltx-video"].includes(genEngine) ? 'sovereign' :
-                          'premium'
-                })
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    setTestJobId(data.task_id);
-                    setPreviewTitle(isStoryMode ? `Story: ${genPrompt.substring(0, 20)}...` : `Generative: ${genPrompt.substring(0, 20)}...`);
-                    toast.success(isStoryMode ? "Narrative Synthesis Started" : "Synthesis Started", {
-                        description: isStoryMode ? "ettametta is orchestrating your multi-scene story..." : `Creating an original video using ${genEngine.toUpperCase()}...`
-                    });
-                }
-            }
-        );
-        setIsGenerating(false);
-    };
-
-    const saveNeuralConfig = useCallback(async (key: string, value: string) => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/settings/`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ key, value, category: "discovery" })
-            }),
-            { fallback: {} }
-        );
-    }, []);
-
-    const filteredCandidates = React.useMemo(() => {
-        if (!Array.isArray(candidates)) return [];
-        return candidates.filter(c => {
-            const platformMatch = filter === 'all' || (c.platform || '').toLowerCase().includes(filter.toLowerCase());
-            const categoryMatch = activeCategory === 'all' || (c.category || 'video').toLowerCase() === activeCategory.toLowerCase();
-            return platformMatch && categoryMatch;
-        });
-    }, [candidates, filter, activeCategory]);
-
-    const [searchQuery, setSearchQuery] = useState("");
-    const [isSearching, setIsSearching] = useState(false);
-
-    const handleRemoveNiche = useCallback(async (nicheToRemove: string) => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback(
-            () => fetch(`${API_BASE}/discovery/niches/${encodeURIComponent(nicheToRemove)}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: null,
-                onSuccess: () => {
-                    setNiches(prev => prev.filter(n => n !== nicheToRemove));
-                    if (activeNiche === nicheToRemove) {
-                        const remaining = niches.filter(n => n !== nicheToRemove);
-                        setActiveNiche(remaining[0] || "");
-                    }
-                    toast.success("Niche Purged", { description: `"${nicheToRemove}" has been removed from your discovery clusters.` });
-                }
-            }
-        );
-    }, [activeNiche, niches]);
-
-    const handleSearch = async (e?: React.FormEvent, customQuery?: string) => {
-        if (e) e.preventDefault();
-        const query = customQuery !== undefined ? customQuery : searchQuery;
-        if (!query.trim()) {
-            fetchTrends();
-            return;
-        }
-
+    const handleSearch = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!searchQuery.trim()) return;
         setIsSearching(true);
-        setIsLoading(true);
-        const token = getAuthToken();
-        if (!token) { setIsLoading(false); setIsSearching(false); return; }
-
-         await withRealFallback<any>(
-             () => fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(query)}`, {
-                 headers: { Authorization: `Bearer ${token}` }
-             }),
-             {
-                 fallback: { results: [] },
-                 onSuccess: (data) => {
-                     setCandidates(data.results || []);
-                     if (!niches.includes(query)) {
-                         setNiches(prev => Array.from(new Set([...prev, query])));
-                     }
-                 }
-             }
-         );
-        setIsLoading(false);
-        setIsSearching(false);
-    };
-
-    const { data: telemetryData } = useWebSocket(`${WS_BASE}/telemetry`);
-    const telemetry = telemetryData as any;
-    const [mapPoints, setMapPoints] = useState<any[]>([]);
-
-    useEffect(() => {
-        if (telemetryData) {
-            try {
-                // telemetryData is already parsed by the hook
-                const data = telemetryData as any;
-                if (data.type === "telemetry_pulse" && data.geo_activity) {
-                    // Merge new points with existing ones, keeping the list size manageable
-                    setMapPoints(prev => {
-                        const newPoints = [...prev, ...data.geo_activity];
-                        return newPoints.slice(-15); // Keep last 15 active pulses
-                    });
-                }
-
-                if (data.type === "job_update" && data.data && data.data.id === testJobId) {
-                    if (data.data.status === "Completed" && data.data.output_path) {
-                        setPreviewUrl(data.data.output_path);
-                        setShowPreview(true);
-                        setIsTestDriving(false);
-                        setTestJobId(null);
-                    } else if (data.data.status === "Failed") {
-                        toast.error("Test Drive Failed", {
-                            description: "Review system logs in Settings for error details."
-                        });
-                        setIsTestDriving(false);
-                        setTestJobId(null);
-                    }
-                }
-            } catch (e) {
-                console.error("Error processing telemetry for map:", e);
+        try {
+            const token = await getAuthToken();
+            const res = await fetch(`${API_BASE}/v1/discovery/search?q=${encodeURIComponent(searchQuery)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setCandidates(data.results || []);
+                setActiveNiche(searchQuery);
             }
+        } finally {
+            setIsSearching(false);
         }
-    }, [telemetryData]);
+    };
 
     return (
         <DashboardLayout>
-            <div className="space-y-8 relative">
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                    <div>
-                        <div className="flex items-center gap-4 mb-2">
-                            <div className="flex items-center gap-3">
-                                <div className="h-1 w-8 bg-primary rounded-full" />
-                                <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Global Intelligence</span>
-                            </div>
-                            
-                            {/* Neural Session Heartbeat */}
-                            <div className="flex items-center gap-2 bg-zinc-950/50 border border-white/5 px-3 py-1.5 rounded-xl ml-4">
-                                <div className="flex -space-x-1">
-                                    {['youtube', 'tiktok', 'x'].map(plat => {
-                                        const session = sessions.find(s => s.platform === plat);
-                                        const isActive = session?.status === 'connected';
-                                        return (
-                                            <div 
-                                                key={plat}
-                                                className={cn(
-                                                    "h-4 w-4 rounded-full border-2 border-zinc-950 flex items-center justify-center text-[6px] font-black uppercase",
-                                                    isActive ? "bg-primary text-black" : "bg-zinc-800 text-zinc-500"
-                                                )}
-                                                title={`${plat.toUpperCase()}: ${session?.status || 'Disconnected'}`}
-                                            >
-                                                {plat[0]}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest hidden sm:block">
-                                    {sessions.some(s => s.status === 'connected') ? 'Neural Link Active' : 'Link Offline'}
-                                </span>
-                            </div>
-                        </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
-                            Viral <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">{mode === "discovery" ? "Discovery" : "Synthesis"}</span>
-                        </h1>
-                        <p className="text-zinc-500 mt-2 max-w-lg text-sm font-medium leading-relaxed">
-                            Scanning <span className="text-zinc-300 font-bold">{telemetry ? Math.floor((telemetry.metrics?.bitrate || telemetry.bitrate) * 34.5).toLocaleString() : "14,000+"}</span> data points per second to identify high-velocity content opportunities before they peak.
-                        </p>
-                    </div>
+            <div className="min-h-screen bg-[#050507] relative flex flex-col font-sans overflow-hidden">
+                <div className="noise-overlay" />
+                <DiscoveryBackground />
+                <div className="absolute inset-0 cyber-grid opacity-20 pointer-events-none" />
+                <div className="absolute inset-0 scanline opacity-10 pointer-events-none z-50" />
 
-                    <div className="flex items-center gap-4">
-                        <form onSubmit={handleSearch} className="relative group flex items-center gap-2">
-                            <div className="relative">
-                                <input
-                                    id="neural-search"
-                                    name="neural-search"
-                                    type="text"
-                                    placeholder="Niche Search (e.g. True Crime)..."
-                                    aria-label="Search for viral content"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="bg-zinc-950/50 backdrop-blur-md border border-white/10 rounded-2xl py-3 pl-12 pr-6 text-sm font-bold text-white focus:outline-none focus:border-primary/50 transition-all w-80 group-hover:border-white/20"
-                                />
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-hover:text-primary transition-colors" />
-                            </div>
-                            {searchQuery && (
-                                <motion.button
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    type="button"
-                                    onClick={async () => {
-                                        const token = getAuthToken();
-                                        if (!token) return;
-                                        setIsLoading(true);
-                                        await withRealFallback<any>(
-                                            () => fetch(`${API_BASE}/discovery/scan`, {
-                                                method: "POST",
-                                                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                                                body: JSON.stringify({ niches: [searchQuery], deep: true })
-                                            }),
-                                            {
-                                                fallback: null,
-                                                onSuccess: () => fetchTrends()
-                                            }
-                                        );
-                                    }}
-                                    className="px-4 py-3 rounded-2xl bg-primary/20 border border-primary/30 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary hover:text-black transition-all"
-                                >
-                                    Deep Scan
-                                </motion.button>
-                            )}
-                        </form>
-                        <button
-                            onClick={handleTestDrive}
-                            disabled={isTestDriving}
-                            className={cn(
-                                "flex items-center gap-2 px-6 py-3 rounded-2xl bg-zinc-950/80 border border-primary/20 text-xs font-black uppercase tracking-widest transition-all hover:bg-primary hover:text-black",
-                                isTestDriving && "opacity-50 cursor-not-allowed"
-                            )}
-                        >
-                            {isTestDriving ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Zap className="h-4 w-4 text-primary" />}
-                            Test Drive
-                        </button>
-                        <button
-                            onClick={fetchTrends}
-                            className="p-3 rounded-2xl bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white transition-all"
-                        >
-                            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Mode Selector */}
-                <div className="flex items-center gap-6 mb-8">
-                    <button
-                        onClick={() => setMode("discovery")}
-                        className={cn(
-                            "px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-3",
-                            mode === "discovery"
-                                ? "bg-primary text-black shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)]"
-                                : "text-zinc-500 hover:text-white"
-                        )}
-                    >
-                        <TrendingUp className="h-4 w-4" />
-                        Discovery Scanning
-                    </button>
-                    <button
-                        onClick={() => {
-                            if (userTier === "free") {
-                                toast.error("Subscription Required", {
-                                    description: "AI Synthesis requires Basic or Premium tier. Please upgrade.",
-                                    action: {
-                                        label: "Pricing",
-                                        onClick: () => router.push("/settings?tab=billing")
-                                    }
-                                });
-                            } else {
-                                setMode("generative");
-                            }
-                        }}
-                        className={cn(
-                            "px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-3",
-                            mode === "generative"
-                                ? "bg-emerald-500 text-black shadow-[0_0_30px_rgba(16,185,129,0.3)]"
-                                : "text-zinc-500 hover:text-white",
-                            userTier === "free" && "opacity-50 cursor-not-allowed"
-                        )}
-                    >
-                        <Sparkles className="h-4 w-4" />
-                        AI Synthesis
-                        {userTier === "free" && <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1 py-0.5 rounded ml-1">PAID</span>}
-                        {userTier === "premium" && <span className="text-[8px] bg-purple-500/20 text-purple-500 px-1 py-0.5 rounded ml-1">STUDIO REQ FOR VEO3</span>}
-                    </button>
-                </div>
-
-                {/* Viral Intelligence Map */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
-                    <div className="lg:col-span-2">
-                        <Geomap points={mapPoints} />
-                    </div>
-                    <div className="glass-card p-10 flex flex-col justify-center space-y-8 bg-primary/[0.02] border-primary/20 relative overflow-hidden">
-                        <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
-                        <div className="space-y-1">
-                            <h3 className="text-xl font-black text-white uppercase tracking-tighter">Keyword <span className="text-primary">Neural Cloud</span></h3>
-                            <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Semantic Density Analysis</p>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                            {topKeywords.map((word: string, i: number) => (
-                                <motion.span
-                                    key={i}
-                                    initial={{ opacity: 0, scale: 0.5 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    whileHover={{ scale: 1.1, y: -2 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    onClick={() => {
-                                        setSearchQuery(word);
-                                        handleSearch(undefined, word);
-                                    }}
-                                    className={cn(
-                                        "px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest border transition-all cursor-pointer",
-                                        i === 0 ? "bg-primary text-black border-white/20 shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]" :
-                                            "bg-zinc-950/50 text-zinc-500 border-white/5 hover:border-primary/30 hover:text-white"
-                                    )}
-                                >
-                                    {word}
-                                </motion.span>
-                            ))}
-                        </div>
-                        <div className="pt-6 border-t border-white/5">
-                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4">
-                                <span>Signal Clarity</span>
-                                <span>{telemetry ? (telemetry.signal_strength * 100).toFixed(1) : " -- "}%</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${(telemetry?.signal_strength || 0.92) * 100}%` }}
-                                    className="h-full bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Live Search Status Banner */}
-                <AnimatePresence>
-                    {isLoading && searchQuery && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="mb-8 p-4 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-between"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="h-2 w-2 bg-primary rounded-full animate-ping" />
-                                <p className="text-xs font-black uppercase tracking-widest text-primary">
-                                    Sourcing Intelligence: <span className="text-white">"{searchQuery}"</span>
+                <div className="flex-1 section-container relative py-16 px-8 lg:px-24 max-w-screen-2xl mx-auto w-full z-10">
+                    
+                    {/* DISCOVERY HEADER HUD */}
+                    <header className="mb-20 flex flex-col xl:flex-row xl:items-end justify-between gap-12">
+                        <div className="space-y-6">
+                            <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: 100 }}
+                                className="h-1 bg-cyan-400"
+                            />
+                            <div className="space-y-2">
+                                <h1 className="text-6xl md:text-8xl font-black text-white uppercase tracking-tighter leading-none glitch-text italic" data-text="GLOBAL SCAN">
+                                    Global Scan
+                                </h1>
+                                <p className="font-data-mono text-zinc-500 text-[10px] flex items-center gap-3">
+                                    <Activity className="h-3 w-3 text-cyan-400 animate-pulse" />
+                                    TRACKING_VELOCITY: 14.2K_PPS
+                                    <span className="w-1 h-1 bg-zinc-800 rounded-full" />
+                                    STATUS: SCANNING_ACTIVE
                                 </p>
                             </div>
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">Fast-Scanning YouTube & TikTok Clusters...</p>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Niche Selector & Neural Config */}
-                <div className="flex flex-wrap items-center gap-3">
-                    {niches.map((n) => (
-                        <div key={n} className="group relative">
-                            <button
-                                onClick={() => { setActiveNiche(n); setSearchQuery(""); }}
-                                className={cn(
-                                    "px-6 py-3 rounded-xl border text-xs font-black uppercase tracking-widest transition-all",
-                                    activeNiche === n && !searchQuery
-                                        ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-105"
-                                        : "bg-black/40 border-white/10 text-zinc-500 hover:border-white/30 hover:text-zinc-300"
-                                )}
-                            >
-                                {n}
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); handleRemoveNiche(n); }}
-                                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-lg z-10"
-                            >
-                                <X className="h-3 w-3" />
-                            </button>
                         </div>
-                    ))}
-                    <button
-                        onClick={() => setShowConfig(!showConfig)}
-                        className={cn(
-                            "px-4 py-3 rounded-xl border border-dashed border-zinc-700 text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2",
-                            showConfig ? "bg-zinc-800 text-white" : "text-zinc-600 hover:text-zinc-400"
-                        )}
-                    >
-                        <Sparkles className="h-4 w-4" />
-                        Neural Config
-                    </button>
-                </div>
 
-                {/* Category Filtering Tabs */}
-                <div className="flex items-center gap-2 p-1.5 bg-zinc-950/50 backdrop-blur-xl border border-white/5 rounded-2xl w-fit">
-                    {[
-                        { id: 'all', label: 'All Content', icon: Globe },
-                        { id: 'video', label: 'Videos', icon: Play },
-                        { id: 'article', label: 'Articles', icon: BookOpen },
-                        { id: 'social', label: 'Social', icon: MessageSquare },
-                        { id: 'news', label: 'News', icon: Newspaper },
-                    ].map((cat) => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setActiveCategory(cat.id)}
-                            className={cn(
-                                "flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                activeCategory === cat.id
-                                    ? "bg-primary text-black shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]"
-                                    : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
-                            )}
-                        >
-                            <cat.icon className="h-3.5 w-3.5" />
-                            {cat.label}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Neural Config Drawer (Animate Height) */}
-                <AnimatePresence>
-                    {showConfig && (
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden"
-                        >
-                            <div className="p-6 rounded-3xl bg-zinc-900/50 border border-white/5 grid grid-cols-1 md:grid-cols-3 gap-8">
-                                <div className="space-y-4">
-                                    <label htmlFor="min-viral-score" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Min Viral Score Threshold</label>
-                                    <div className="flex items-center gap-4">
-                                        <input
-                                            id="min-viral-score"
-                                            name="min-viral-score"
-                                            type="range"
-                                            min="0"
-                                            max="100"
-                                            value={minViralScore}
-                                            onChange={(e) => {
-                                                const val = parseInt(e.target.value);
-                                                setMinViralScore(val);
-                                                if (styleLoaded) saveNeuralConfig("discovery_min_viral_score", val.toString());
-                                            }}
-                                            className="flex-1 accent-primary h-2 bg-zinc-800 rounded-full appearance-none"
-                                        />
-                                        <span className="text-xl font-black text-primary">{minViralScore}</span>
-                                    </div>
+                        {/* SEARCH CONSOLE */}
+                        <form onSubmit={handleSearch} className="flex-1 max-w-2xl group">
+                            <div className="relative surface-glass rim-light flex items-center">
+                                <div className="pl-6 text-zinc-600 group-focus-within:text-cyan-400 transition-colors">
+                                    <Search className="h-5 w-5" />
                                 </div>
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Creative Style Overlay</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {styles.map((s) => (
-                                            <button
-                                                key={s}
-                                                onClick={() => {
-                                                    setSelectedStyle(s);
-                                                    if (styleLoaded) saveNeuralConfig("discovery_style", s);
-                                                }}
-                                                className={cn(
-                                                    "px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all border",
-                                                    selectedStyle === s
-                                                        ? "bg-primary text-black border-white shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]"
-                                                        : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-600"
-                                                )}
-                                            >
-                                                {s}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest leading-relaxed">
-                                        Forces AI Decision Engine to prioritize <span className="text-zinc-400">"{selectedStyle}"</span> pacing and filters.
-                                    </p>
-                                </div>
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Format Filters</label>
-                                    <div className="flex items-center gap-4">
-                                        <button
-                                            onClick={() => {
-                                                const newVal = !excludeShorts;
-                                                setExcludeShorts(newVal);
-                                                if (styleLoaded) saveNeuralConfig("discovery_exclude_shorts", newVal.toString());
-                                            }}
-                                            className={cn(
-                                                "px-4 py-2 rounded-lg text-xs font-bold transition-all border",
-                                                excludeShorts ? "bg-red-500/20 border-red-500 text-red-500" : "bg-zinc-950 border-zinc-800 text-zinc-500"
-                                            )}
-                                        >
-                                            Exclude Shorts
-                                        </button>
-                                    </div>
-                                </div>
+                                <input 
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="INITIATE NICHE SEARCH..."
+                                    className="w-full bg-transparent p-6 text-white font-label-caps text-xs tracking-widest outline-none placeholder:text-zinc-800"
+                                />
+                                <button 
+                                    type="submit"
+                                    className="h-full px-10 action-primary border-l border-white/5 font-black italic text-xs tracking-tighter"
+                                >
+                                    {isSearching ? <RefreshCw className="h-4 w-4 animate-spin" /> : "SEARCH"}
+                                </button>
                             </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        </form>
+                    </header>
 
-                {/* Content Grid */}
-                <div className="space-y-6">
-                    <div className="glass-card p-0! overflow-hidden shadow-[0_32px_128px_rgba(0,0,0,0.5)] border-white/5">
-                        <div className="px-10 py-12 border-b border-white/5 bg-white/1 flex flex-col md:flex-row md:items-center justify-between gap-8 relative overflow-hidden">
-                            <div className="absolute inset-0 scanline opacity-10 pointer-events-none" />
-                            <div className="flex items-center gap-8 relative z-10">
-                                <div className="relative">
-                                    <Flame className={cn("h-10 w-10 neon-glow animate-pulse", searchQuery ? "text-primary" : "text-orange-500")} />
-                                    <div className={cn("absolute -inset-2 blur-xl rounded-full opacity-50 animate-pulse", searchQuery ? "bg-primary/20" : "bg-orange-500/20")} />
-                                </div>
+                    {/* CONTROL HUD */}
+                    <div className="flex flex-wrap items-center gap-6 mb-16">
+                        <div className="surface-glass rim-light p-2 flex gap-1">
+                            {["YouTube", "TikTok", "Instagram", "X"].map(plat => (
+                                <button 
+                                    key={plat}
+                                    onClick={() => setFilter(plat.toLowerCase())}
+                                    className={cn(
+                                        "px-6 py-3 font-label-caps text-[9px] transition-all",
+                                        filter === plat.toLowerCase() ? "bg-cyan-400 text-black shadow-[0_0_15px_rgba(0,251,251,0.3)]" : "text-zinc-600 hover:text-zinc-300"
+                                    )}
+                                >
+                                    {plat}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="surface-glass rim-light p-2 flex gap-1">
+                            {["24H", "7D", "30D"].map(h => (
+                                <button 
+                                    key={h}
+                                    onClick={() => setTimeHorizon(h.toLowerCase())}
+                                    className={cn(
+                                        "px-6 py-3 font-label-caps text-[9px] transition-all",
+                                        timeHorizon === h.toLowerCase() ? "bg-white text-black" : "text-zinc-600 hover:text-zinc-300"
+                                    )}
+                                >
+                                    {h}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="ml-auto flex items-center gap-6">
+                            <span className="font-data-mono text-[9px] text-zinc-700">TARGET_NICHE:</span>
+                            <span className="px-4 py-2 bg-cyan-400/5 border border-cyan-400/20 text-cyan-400 font-label-caps text-[10px] italic">
+                                {activeNiche || "GLOBAL_FEED"}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* MAIN CONTENT GRID */}
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
+                        
+                        {/* LEFT: TREND CLUSTERS */}
+                        <div className="xl:col-span-3 space-y-10">
+                            <section className="surface-glass rim-light p-8 space-y-8">
+                                <h2 className="font-label-caps text-xs text-zinc-500 flex items-center gap-3">
+                                    <Network className="h-4 w-4" />
+                                    NEURAL_CLUSTERS
+                                </h2>
                                 <div className="space-y-2">
-                                    <h3 className="font-black text-4xl uppercase tracking-tighter text-white leading-none">
-                                        {searchQuery ? "Neural" : "Trending"} <span className="text-hollow opacity-50">{searchQuery ? "Search" : "Signals"}</span>
-                                    </h3>
-                                    <div className="flex items-center gap-3">
-                                        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em]">
-                                            {searchQuery ? `Analyzing Cluster: "${searchQuery}"` : "Global High-Velocity Content Feed"}
-                                        </p>
-                                        <div className="flex gap-0.5">
-                                            {[1, 2, 3].map(i => (
-                                                <div key={i} className="h-1 w-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: `${i * 0.2}s` }} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-6 relative z-10">
-                                <div className="flex items-center bg-black/60 backdrop-blur-md rounded-2xl p-1.5 border border-white/5 shadow-2xl">
-                                    {["24h", "7d", "30d"].map((t) => (
-                                        <button
-                                            key={t}
-                                            onClick={() => setTimeHorizon(t)}
+                                    {niches.slice(0, 10).map(n => (
+                                        <button 
+                                            key={n}
+                                            onClick={() => setActiveNiche(n)}
                                             className={cn(
-                                                "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                                timeHorizon === t ? "bg-primary text-white shadow-[0_0_20px_rgba(var(--primary-rgb),0.4)]" : "text-zinc-600 hover:text-zinc-400"
+                                                "w-full text-left p-4 font-data-mono text-[9px] transition-all flex items-center justify-between group",
+                                                activeNiche === n ? "text-cyan-400 bg-cyan-400/5 border-l-2 border-cyan-400" : "text-zinc-600 hover:text-zinc-300 hover:bg-white/5"
                                             )}
                                         >
-                                            {t}
+                                            {n}
+                                            <ArrowRight className={cn("h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity", activeNiche === n && "opacity-100")} />
                                         </button>
                                     ))}
                                 </div>
-                                <div className="h-10 w-px bg-white/10 hidden md:block" />
-                                <button
-                                    onClick={() => {
-                                        const platforms = ['all', 'youtube', 'tiktok', 'instagram', 'facebook', 'x', 'reddit', 'twitch', 'bilibili', 'rumble'];
-                                        const idx = platforms.indexOf(filter);
-                                        setFilter(platforms[(idx + 1) % platforms.length]);
-                                    }}
-                                    className="flex items-center gap-3 bg-zinc-950/80 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/5 shadow-2xl group transition-all hover:border-primary/50"
-                                >
-                                    <Filter className="h-4 w-4 text-zinc-500 group-hover:text-primary transition-colors" />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                                        Filter: <span className="text-primary">{filter}</span>
-                                    </span>
+                                <button className="w-full py-4 border border-dashed border-white/10 font-label-caps text-[8px] text-zinc-700 hover:border-cyan-400/30 hover:text-cyan-400 transition-all">
+                                    + ADD_NEW_CLUSTER
                                 </button>
+                            </section>
+
+                            <div className="surface-glass rim-light p-6 h-64 overflow-hidden relative group">
+                                <div className="absolute inset-0 bg-black/40 z-10 flex items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span className="font-label-caps text-[9px] text-cyan-400 tracking-[0.5em]">LIVE_MAP_SYNC</span>
+                                </div>
+                                <Geomap />
                             </div>
                         </div>
 
-                        <div className="divide-y divide-white/5 relative">
-                            {mode === "discovery" ? (
-                                <>
-                                    {isLoading && (
-                                        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500">
-                                            <div className="absolute inset-0 scanline opacity-10 pointer-events-none" />
-                                            <Loader2 className="h-16 w-16 text-primary animate-spin mb-6" />
-                                            <p className="text-sm font-black uppercase tracking-[0.4em] text-primary neon-glow animate-pulse">Syncing Neural Nodes</p>
-                                        </div>
-                                    )}
-
-                                    <AnimatePresence mode="popLayout">
-                                        {Array.isArray(filteredCandidates) && filteredCandidates.length > 0 ? (
-                                            filteredCandidates.map((candidate, idx) => {
-                                                // ... (existing mapping code)
-                                                const hash = candidate.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                                                const velocity = 85 + (hash % 15);
-                                                const growth = 20 + (hash % 80);
-
-                                                return (
-                                                    <motion.div
-                                                        key={candidate.id}
-                                                        initial={{ opacity: 0, x: -30, filter: "blur(10px)" }}
-                                                        animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-                                                        transition={{ delay: idx * 0.08, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                                                        layout
-                                                        onClick={() => candidate.source_url && handleOpenUrl(candidate.source_url)}
-                                                        className="p-10 px-12 flex flex-col lg:flex-row lg:items-center justify-between hover:bg-white/3 transition-all group relative overflow-hidden"
-                                                    >
-                                                        {/* ... (existing candidate UI) */}
-                                                        <div className="absolute inset-x-0 top-0 h-full bg-linear-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                                                        <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-(--shimmer-opacity) pointer-events-none" />
-
-                                                        <div className="flex items-center gap-10 relative z-10">
-                                                            <div 
-                                                                onClick={() => candidate.source_url && handleOpenUrl(candidate.source_url)}
-                                                                className="h-28 w-44 rounded-4xl bg-zinc-950 border border-white/5 shrink-0 relative overflow-hidden group-hover:border-primary/50 transition-all duration-700 shadow-2xl cursor-pointer"
-                                                            >
-                                                                 {candidate.thumbnail_url ? (
-                                                                     <div 
-                                                                         className="absolute inset-0 w-full h-full bg-cover bg-center opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" 
-                                                                         style={{ backgroundImage: `url(${candidate.thumbnail_url})` }}
-                                                                     />
-                                                                 ) : (
-                                                                    <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
-                                                                        <TrendingUp className="h-10 w-10 text-zinc-800" />
-                                                                    </div>
-                                                                )}
-                                                                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-60" />
-                                                                <div className="absolute bottom-4 left-4 flex items-center gap-2">
-                                                                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                                                                    <span className="text-[8px] font-black text-white uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Live Alpha</span>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="space-y-4">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="h-1 w-8 bg-primary/40 rounded-full" />
-                                                                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">
-                                                                        {candidate.platform} <span className="text-zinc-600 mx-2">/</span> <span className="text-zinc-500 uppercase">Opportunity Node</span>
-                                                                    </span>
-                                                                </div>
-                                                                <h4 className="font-black text-2xl tracking-tighter text-white uppercase line-clamp-1 group-hover:text-primary transition-colors duration-300 max-w-xl">
-                                                                    {candidate.description?.split('\n')[0] || "UNTITLED_INTEL_STREAM"}
-                                                                </h4>
-                                                                <div className="flex items-center gap-6">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Globe className="h-3.5 w-3.5 text-zinc-600" />
-                                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{candidate.creator_name}</span>
-                                                                    </div>
-                                                                    <div className="h-1 w-1 rounded-full bg-zinc-800" />
-                                                                    <div className="flex items-center gap-2">
-                                                                        <BarChart3 className="h-3.5 w-3.5 text-zinc-600" />
-                                                                        <span className="text-[10px] font-bold text-zinc-500 tabular-nums">{(candidate.view_count || 0).toLocaleString()} Views</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="hidden xl:grid grid-cols-2 gap-x-12 gap-y-4 px-12 border-x border-white/5 relative z-10">
-                                                            {analysisResults[candidate.id]?.status === "completed" ? (
-                                                                <>
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-[8px] font-black text-emerald-500 uppercase tracking-[0.2em]">Hook_Score</p>
-                                                                        <p className="text-xs font-black text-white">{Math.round((analysisResults[candidate.id]?.result?.hook_score || 0) * 100)}%</p>
-                                                                    </div>
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-[8px] font-black text-violet-400 uppercase tracking-[0.2em]">Retention</p>
-                                                                        <p className="text-xs font-black text-white">{Math.round((analysisResults[candidate.id]?.result?.retention_estimate || 0) * 100)}%</p>
-                                                                    </div>
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-[8px] font-black text-amber-500 uppercase tracking-[0.2em]">Pacing_BPM</p>
-                                                                        <p className="text-xs font-black text-white">{analysisResults[candidate.id]?.result?.pacing_bpm || 120}</p>
-                                                                    </div>
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em]">Neural_Triggers</p>
-                                                                        <p className="text-[9px] font-bold text-zinc-400 line-clamp-1">{analysisResults[candidate.id]?.result?.emotional_triggers?.join(", ") || "N/A"}</p>
-                                                                    </div>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Viral_Velocity</p>
-                                                                        <p className="text-xs font-black text-white">{velocity}.4%</p>
-                                                                    </div>
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Growth_Curve</p>
-                                                                        <p className="text-xs font-black text-emerald-500">+{growth}%</p>
-                                                                    </div>
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Est_Revenue</p>
-                                                                        <p className="text-xs font-black text-primary">${((candidate.view_count || 0) * 0.002).toFixed(2)}</p>
-                                                                    </div>
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] text-hollow">Signal_Node</p>
-                                                                        <p className="text-xs font-black text-zinc-400">CLUSTER_{candidate.id.slice(0, 4).toUpperCase()}</p>
-                                                                    </div>
-                                                                </>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="flex items-center gap-10 mt-6 lg:mt-0 relative z-10">
-                                                            <div className="text-right flex flex-col items-end gap-2">
-                                                                <div className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]">Viral Score</div>
-                                                                <div className="text-2xl font-black text-white tabular-nums drop-shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]">
-                                                                    {candidate.viral_score}<span className="text-primary text-sm">/100</span>
-                                                                </div>
-                                                            </div>
-
-                                                         <div className="flex flex-col items-center gap-4">
-                                                              {/* Analyze Button */}
-                                                              <motion.button
-                                                                  whileHover={{ scale: 1.1, rotate: 5 }}
-                                                                  whileTap={{ scale: 0.95 }}
-                                                                  onClick={(e) => {
-                                                                      e.stopPropagation();
-                                                                      handleAnalyze(candidate);
-                                                                  }}
-                                                                  className={cn(
-                                                                      "h-12 w-12 rounded-3xl flex items-center justify-center transition-all",
-                                                                      analysisResults[candidate.id]?.status === "completed"
-                                                                          ? "bg-emerald-500/20 text-emerald-500 border border-emerald-500/30"
-                                                                          : analysisResults[candidate.id]?.status === "pending"
-                                                                          ? "bg-amber-500/20 text-amber-500 border border-amber-500/30 animate-pulse"
-                                                                          : "bg-zinc-800 text-white hover:bg-primary hover:text-black"
-                                                                  )}
-                                                              >
-                                                                  {analysisResults[candidate.id]?.status === "completed" ? (
-                                                                      <CheckCircle2 className="h-5 w-5" />
-                                                                  ) : analysisResults[candidate.id]?.status === "pending" ? (
-                                                                      <Loader2 className="h-5 w-5 animate-spin" />
-                                                                  ) : (
-                                                                      <BarChart3 className="h-5 w-5" />
-                                                                  )}
-                                                              </motion.button>
-                                                              <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">
-                                                                  {analysisResults[candidate.id]?.status === "completed" ? "Done" : 
-                                                                   analysisResults[candidate.id]?.status === "pending" ? "Processing" : "Analyze"}
-                                                              </span>
-                                                              
-                                                              {/* Create Video from Analysis (shows after analysis complete) */}
-                                                              {analysisResults[candidate.id]?.status === "completed" && (
-                                                                  <motion.button
-                                                                      whileHover={{ scale: 1.1, rotate: 5 }}
-                                                                      whileTap={{ scale: 0.95 }}
-                                                                      onClick={(e) => {
-                                                                          e.stopPropagation();
-                                                                          router.push("/creation?fromAnalysis=true&topic=" + encodeURIComponent(candidate.description?.split('\n')[0] || ""));
-                                                                      }}
-                                                                      className="h-12 w-12 rounded-3xl bg-violet-500 text-white flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] transition-all"
-                                                                  >
-                                                                      <Wand2 className="h-5 w-5" />
-                                                                  </motion.button>
-                                                              )}
-                                                             
-                                                             {/* Transform Button */}
-                                                             <motion.button
-                                                                 whileHover={{ scale: 1.1, rotate: 5 }}
-                                                                 whileTap={{ scale: 0.95 }}
-                                                                 onClick={(e) => {
-                                                                     e.stopPropagation();
-                                                                     handleAddToQueue(candidate);
-                                                                 }}
-                                                                 className="h-16 w-16 rounded-3xl bg-primary text-black flex items-center justify-center shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] transition-all group/btn"
-                                                             >
-                                                                 <Zap className="h-8 w-8 fill-black group-hover/btn:scale-125 transition-transform duration-500" />
-                                                             </motion.button>
-                                                             <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">Transform</span>
-
-                                                             <div className="h-px w-8 bg-white/5 my-2" />
-
-                                                             {/* Like Button */}
-                                                             <motion.button
-                                                                 whileHover={{ scale: 1.1, y: -2 }}
-                                                                 whileTap={{ scale: 0.9 }}
-                                                                 disabled={busyInteractions[`${candidate.id}-like`]}
-                                                                 onClick={(e) => {
-                                                                     e.stopPropagation();
-                                                                     handleInteract(candidate, "like");
-                                                                 }}
-                                                                 className={cn(
-                                                                     "h-10 w-10 rounded-2xl flex items-center justify-center transition-all",
-                                                                     busyInteractions[`${candidate.id}-like`] 
-                                                                         ? "bg-zinc-900 border border-white/5" 
-                                                                         : "bg-zinc-800 text-zinc-400 hover:bg-primary/20 hover:text-primary hover:border-primary/30 border border-transparent"
-                                                                 )}
-                                                             >
-                                                                 {busyInteractions[`${candidate.id}-like`] ? (
-                                                                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                                                                 ) : (
-                                                                     <Heart className="h-4 w-4" />
-                                                                 )}
-                                                             </motion.button>
-                                                             <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">Like</span>
-
-                                                             {/* Follow Button */}
-                                                             <motion.button
-                                                                 whileHover={{ scale: 1.1, y: -2 }}
-                                                                 whileTap={{ scale: 0.9 }}
-                                                                 disabled={busyInteractions[`${candidate.id}-follow`]}
-                                                                 onClick={(e) => {
-                                                                     e.stopPropagation();
-                                                                     handleInteract(candidate, "follow");
-                                                                 }}
-                                                                 className={cn(
-                                                                     "h-10 w-10 rounded-2xl flex items-center justify-center transition-all",
-                                                                     busyInteractions[`${candidate.id}-follow`] 
-                                                                         ? "bg-zinc-900 border border-white/5" 
-                                                                         : "bg-zinc-800 text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-500 hover:border-emerald-500/30 border border-transparent"
-                                                                 )}
-                                                             >
-                                                                 {busyInteractions[`${candidate.id}-follow`] ? (
-                                                                     <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
-                                                                 ) : (
-                                                                     <UserPlus className="h-4 w-4" />
-                                                                 )}
-                                                             </motion.button>
-                                                             <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">Follow</span>
-                                                         </div>
-                                                        </div>
-                                                    </motion.div>
-                                                );
-                                            })
-                                        ) : (
-                                            <div className="py-40 flex flex-col items-center justify-center gap-6 text-center relative overflow-hidden">
-                                                <div className="absolute inset-0 bg-radial from-primary/5 to-transparent opacity-30" />
-                                                <div className="h-24 w-24 rounded-full bg-zinc-950 border border-white/5 flex items-center justify-center shadow-2xl relative">
-                                                    <Search className="h-10 w-10 text-zinc-800" />
-                                                </div>
-                                                <div className="space-y-3 relative z-10">
-                                                    <p className="text-[10px] font-bold text-zinc-800 uppercase tracking-widest">No Candidates Match Current Filters</p>
-                                                    <p className="text-[9px] text-zinc-600 max-w-md leading-relaxed">
-                                                        {filter !== 'all' 
-                                                            ? `No ${filter} content found for "${activeNiche}". Try a different platform or adjust your viral score threshold.`
-                                                            : `No results for "${activeNiche}". This niche may not have been scanned yet, or try a broader search term.`
-                                                        }
-                                                    </p>
-                                                    <div className="flex items-center gap-4 mt-4">
-                                                        <button 
-                                                            onClick={fetchTrends}
-                                                            className="text-xs font-black uppercase tracking-[0.4em] text-primary hover:neon-glow transition-all"
-                                                        >
-                                                            Refresh Discovery Feed
-                                                        </button>
-                                                        {filter !== 'all' && (
-                                                            <button 
-                                                                onClick={() => setFilter('all')}
-                                                                className="text-xs font-bold text-zinc-500 hover:text-white transition-colors"
-                                                            >
-                                                                Show All Platforms
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </AnimatePresence>
-                                </>
+                        {/* RIGHT: CANDIDATE GRID */}
+                        <div className="xl:col-span-9">
+                            {isLoading ? (
+                                <div className="h-[600px] flex flex-col items-center justify-center space-y-6">
+                                    <RefreshCw className="h-12 w-12 text-cyan-400 animate-spin" />
+                                    <span className="font-data-mono text-[10px] text-zinc-600 tracking-[0.5em]">SYNCHRONIZING_STREAM</span>
+                                </div>
                             ) : (
-                                /* Generative UI */
-                                <div className="p-20 flex flex-col items-center max-w-4xl mx-auto space-y-12">
-                                    <div className="text-center space-y-4">
-                                        <h2 className="text-4xl font-black uppercase tracking-tighter text-white">AI Video <span className="text-emerald-400">Synthesis</span></h2>
-                                        <p className="text-xs font-bold text-zinc-500 tracking-widest leading-relaxed">
-                                            Compose original viral assets from scratch using the world's most advanced text-to-video models.
-                                        </p>
-                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {candidates.map((c, i) => (
+                                        <motion.div 
+                                            key={c.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.05 }}
+                                            className="surface-glass rim-light group/card overflow-hidden flex flex-col h-full hover:rim-glow-cyan transition-all duration-500"
+                                        >
+                                            {/* Thumbnail Section */}
+                                            <div className="relative aspect-video overflow-hidden">
+                                                <img 
+                                                    src={c.thumbnail_url || "https://api.dicebear.com/7.x/shapes/svg?seed=" + c.id} 
+                                                    alt={c.title}
+                                                    className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-700"
+                                                />
+                                                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent opacity-60" />
+                                                
+                                                <div className="absolute top-4 left-4 flex gap-2">
+                                                    <span className="bg-black/80 border border-white/10 px-2 py-1 font-data-mono text-[8px] text-cyan-400">
+                                                        {c.platform}
+                                                    </span>
+                                                </div>
 
-                                    {/* Stack Selection & Comparison */}
-                                    <div className="w-full space-y-10">
-                                        <div className="flex items-center justify-center p-2 bg-zinc-950/80 rounded-4xl border border-white/5 w-fit mx-auto mb-10">
-                                            <button 
-                                                onClick={() => {
-                                                    setGenStack("cloud");
-                                                    setGenEngine("veo3");
-                                                }}
-                                                className={cn(
-                                                    "px-10 py-5 rounded-3xl text-xs font-black uppercase tracking-widest transition-all",
-                                                    genStack === "cloud" ? "bg-white text-black shadow-2xl" : "text-zinc-600 hover:text-white"
-                                                )}
-                                            >
-                                                Premium Cloud
-                                            </button>
-                                            <button 
-                                                onClick={() => {
-                                                    setGenStack("self-hosted");
-                                                    setGenEngine("wan");
-                                                }}
-                                                className={cn(
-                                                    "px-10 py-5 rounded-3xl text-xs font-black uppercase tracking-widest transition-all",
-                                                    genStack === "self-hosted" ? "bg-primary text-black shadow-2xl" : "text-zinc-600 hover:text-white"
-                                                )}
-                                            >
-                                                Open-Source Stack
-                                            </button>
-                                        </div>
+                                                <div className="absolute bottom-4 left-4 flex gap-3">
+                                                    <div className="flex items-center gap-2 px-2 py-1 bg-emerald-500/20 border border-emerald-500/40 rounded-sm">
+                                                        <Activity className="h-3 w-3 text-emerald-400" />
+                                                        <span className="font-data-mono text-[9px] text-emerald-400">{c.viral_score}%</span>
+                                                    </div>
+                                                </div>
 
-                                        {/* Side-by-Side Comparison */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                                            <div className={cn(
-                                                "p-10 rounded-5xl border transition-all relative overflow-hidden",
-                                                genStack === "cloud" ? "bg-white/3 border-emerald-500/20 shadow-2xl" : "bg-black/20 border-white/5 opacity-50"
-                                            )}>
-                                                <div className="flex items-center gap-4 mb-8">
-                                                    <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                                                        <Globe className="h-6 w-6 text-emerald-400" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-xl font-black text-white uppercase">Premium Cloud</h4>
-                                                        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Luma / Google / Runway</p>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                                                        <p className="text-[10px] font-bold text-zinc-300 uppercase">Top Cinematic Quality</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                                                        <p className="text-[10px] font-bold text-zinc-300 uppercase">Plug-and-play Integration</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                                                        <p className="text-[10px] font-bold text-zinc-500 uppercase">Higher Cost per Video</p>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-10 pt-8 border-t border-white/5 flex items-center justify-between">
-                                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Est. Cost</span>
-                                                    <span className="text-xl font-black text-white">$0.40 - $1.00 / vid</span>
-                                                </div>
-                                            </div>
-
-                                            <div className={cn(
-                                                "p-10 rounded-5xl border transition-all relative overflow-hidden",
-                                                genStack === "self-hosted" ? "bg-primary/3 border-primary/20 shadow-2xl" : "bg-black/20 border-white/5 opacity-50"
-                                            )}>
-                                                <div className="flex items-center gap-4 mb-8">
-                                                    <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                                                        <Zap className="h-6 w-6 text-primary" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-xl font-black text-white uppercase">Open Source</h4>
-                                                        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">ComfyUI + Wan + Hunyuan</p>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                                        <p className="text-[10px] font-bold text-zinc-300 uppercase">Full Workflow Control</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                                        <p className="text-[10px] font-bold text-zinc-300 uppercase">Unlimited Generation</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                                        <p className="text-[10px] font-bold text-zinc-300 uppercase">Lowest Cost at Scale</p>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-10 pt-8 border-t border-white/5 flex items-center justify-between">
-                                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Est. Cost</span>
-                                                    <span className="text-xl font-black text-primary">$0.05 - $0.20 / vid</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Model Selection grid based on stack */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {genStack === "cloud" ? (
-                                                <>
-                                                     {/* Removed Veo3 and Luma - No real API implementations available */}
-                                                     <div className="p-8 rounded-4xl border border-dashed border-zinc-700 bg-zinc-950/30 text-center">
-                                                         <div className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-4">COMING SOON</div>
-                                                         <h4 className="text-lg font-black text-zinc-700 uppercase">Premium Cloud Engines</h4>
-                                                         <p className="text-[10px] font-medium text-zinc-600 mt-2 uppercase">Veo3, Luma, Runway, Pika</p>
-                                                         <div className="mt-6 flex gap-2 justify-center">
-                                                             <span className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-[8px] font-black uppercase text-zinc-600">Coming Soon</span>
-                                                         </div>
-                                                     </div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        onClick={() => setGenEngine("wan")}
-                                                        className={cn(
-                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
-                                                            genEngine === "wan" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
-                                                        )}
-                                                    >
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">Self-Hosted</span>
-                                                            {genEngine === "wan" && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                                                        </div>
-                                                        <h4 className="text-xl font-black text-white uppercase">Wan-AI 2.2</h4>
-                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Multi-Expert Video Architecture</p>
-                                                        <div className="mt-6 flex gap-2">
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Open Weights</span>
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">16-24GB VRAM</span>
-                                                        </div>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setGenEngine("hunyuan")}
-                                                        className={cn(
-                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
-                                                            genEngine === "hunyuan" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
-                                                        )}
-                                                    >
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">VERIFIED STABLE</span>
-                                                            {genEngine === "hunyuan" && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                                                        </div>
-                                                        <h4 className="text-xl font-black text-white uppercase">HunyuanVideo 1.5</h4>
-                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Advanced Visual Semantic Model</p>
-                                                        <div className="mt-6 flex gap-2">
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">24GB VRAM+</span>
-                                                            <span className="px-2 py-1 rounded bg-primary/20 border border-primary/30 text-[8px] font-black uppercase text-primary">BEST ON SERVER</span>
-                                                        </div>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setGenEngine("ltx-video")}
-                                                        className={cn(
-                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
-                                                            genEngine === "ltx-video" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
-                                                        )}
-                                                    >
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">VERIFIED STABLE</span>
-                                                            {genEngine === "ltx-video" && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                                                        </div>
-                                                        <h4 className="text-xl font-black text-white uppercase">LTX-Video</h4>
-                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Lightricks Real-time T2V</p>
-                                                        <div className="mt-6 flex gap-2">
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">16GB VRAM</span>
-                                                            <span className="px-2 py-1 rounded bg-primary/20 border border-primary/30 text-[8px] font-black uppercase text-primary">RECOMMENDED</span>
-                                                        </div>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setGenEngine("zeroscope")}
-                                                        className={cn(
-                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
-                                                            genEngine === "zeroscope" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
-                                                        )}
-                                                    >
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">Self-Hosted</span>
-                                                            {genEngine === "zeroscope" && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                                                        </div>
-                                                        <h4 className="text-xl font-black text-white uppercase">Zeroscope v2 XL</h4>
-                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Fast Multi-stage refinement</p>
-                                                        <div className="mt-6 flex gap-2">
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Fast</span>
-                                                        </div>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setGenEngine("mochi")}
-                                                        className={cn(
-                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
-                                                            genEngine === "mochi" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
-                                                        )}
-                                                    >
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">Transient</span>
-                                                            {genEngine === "mochi" && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                                                        </div>
-                                                        <h4 className="text-xl font-black text-white uppercase">Mochi-1</h4>
-                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">Extreme Motion + Real-time Physics</p>
-                                                        <div className="mt-6 flex gap-2">
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-primary">Space Saving</span>
-                                                        </div>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setGenEngine("cogvideo")}
-                                                        className={cn(
-                                                            "p-8 rounded-4xl border text-left transition-all relative overflow-hidden",
-                                                            genEngine === "cogvideo" ? "bg-primary/10 border-primary shadow-2xl" : "border-white/5 bg-black/40 text-zinc-600"
-                                                        )}
-                                                    >
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">Persistent</span>
-                                                            {genEngine === "cogvideo" && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                                                        </div>
-                                                        <h4 className="text-xl font-black text-white uppercase">CogVideoX-5b</h4>
-                                                        <p className="text-[10px] font-medium text-zinc-500 mt-2 uppercase">3D-Causal Convolutional Engine</p>
-                                                        <div className="mt-6 flex gap-2">
-                                                            <span className="px-2 py-1 rounded bg-zinc-900 border border-white/5 text-[8px] font-black uppercase text-zinc-500">Installed</span>
-                                                        </div>
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-
-                                        <div className="bg-zinc-950/30 border border-white/5 rounded-5xl p-10 space-y-8">
-                                            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                                                <div className="space-y-1">
-                                                    <h4 className="text-xl font-black text-white uppercase tracking-tight">Synthesis <span className="text-primary">Orchestration</span></h4>
-                                                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Configure Narrative Depth</p>
-                                                </div>
-                                                <button
-                                                    onClick={() => setIsStoryMode(!isStoryMode)}
-                                                    className={cn(
-                                                        "group relative flex items-center gap-4 px-8 py-4 rounded-3xl border transition-all overflow-hidden",
-                                                        isStoryMode ? "bg-violet-500/10 border-violet-500/50 shadow-[0_0_40px_rgba(139,92,246,0.2)]" : "bg-black/40 border-white/5 hover:border-white/10"
-                                                    )}
-                                                >
-                                                    <div className={cn(
-                                                        "h-10 w-10 rounded-xl flex items-center justify-center transition-all",
-                                                        isStoryMode ? "bg-violet-500 text-white" : "bg-zinc-900 text-zinc-600"
-                                                    )}>
-                                                        <BookOpen className="h-5 w-5" />
-                                                    </div>
-                                                    <div className="text-left pr-4">
-                                                        <p className={cn("text-[8px] font-black uppercase tracking-widest", isStoryMode ? "text-violet-400" : "text-zinc-600")}>Neural Mode</p>
-                                                        <h4 className={cn("text-xs font-black uppercase", isStoryMode ? "text-white" : "text-zinc-500")}>Multi-Scene Story</h4>
-                                                    </div>
-                                                    <div className={cn(
-                                                        "w-10 h-5 rounded-full relative transition-all duration-500",
-                                                        isStoryMode ? "bg-violet-600" : "bg-zinc-800"
-                                                    )}>
-                                                        <motion.div
-                                                            animate={{ x: isStoryMode ? 22 : 2 }}
-                                                            className="absolute top-1 left-0 h-3 w-3 rounded-full bg-white shadow-sm"
-                                                        />
+                                                <button className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm">
+                                                    <div className="w-16 h-16 rounded-full bg-cyan-400 flex items-center justify-center shadow-[0_0_30px_rgba(0,251,251,0.5)] transform scale-50 group-hover/card:scale-100 transition-transform duration-500">
+                                                        <Play className="h-6 w-6 text-black fill-black ml-1" />
                                                     </div>
                                                 </button>
                                             </div>
 
-                                            <div className="space-y-4">
-                                                <div className="flex items-center justify-between">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Video {isStoryMode ? "Narrative Blueprint" : "Prompt"}</label>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="h-1 w-1 rounded-full bg-primary" />
-                                                        <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Neural Link Sync</span>
-                                                    </div>
+                                            {/* Info Section */}
+                                            <div className="p-6 flex-1 flex flex-col space-y-4">
+                                                <h3 className="text-sm font-bold text-white line-clamp-2 leading-snug group-hover/card:text-cyan-400 transition-colors">
+                                                    {c.title}
+                                                </h3>
+                                                
+                                                <div className="flex items-center justify-between text-zinc-600 font-data-mono text-[8px]">
+                                                    <span className="flex items-center gap-2 italic">
+                                                        <UserPlus className="h-3 w-3" />
+                                                        {c.creator_name}
+                                                    </span>
+                                                    <span>{Math.floor(c.view_count / 1000)}K VIEWS</span>
                                                 </div>
-                                                <textarea
-                                                    value={genPrompt}
-                                                    onChange={(e) => setGenPrompt(e.target.value)}
-                                                    placeholder={isStoryMode ? "Act 1: The discovery... Act 2: The realization... Act 3: The legacy..." : "A cinematic shot of a cyberpunk city at night with glowing neon rain..."}
-                                                    className="w-full h-40 bg-zinc-950/50 border border-white/5 rounded-4xl p-8 text-sm font-bold text-white focus:outline-none focus:border-emerald-500/50 transition-all placeholder:text-zinc-800 resize-none shadow-inner"
-                                                />
-                                            </div>
-                                        </div>
 
-                                        <button
-                                            onClick={handleGenerate}
-                                            disabled={isGenerating || !genPrompt.trim()}
-                                            className="w-full py-6 rounded-4xl bg-emerald-500 text-black font-black uppercase tracking-[0.3em] flex items-center justify-center gap-4 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:scale-100"
-                                        >
-                                            {isGenerating ? <Loader2 className="h-6 w-6 animate-spin" /> : <Sparkles className="h-6 w-6" />}
-                                            Synthesize Video
-                                        </button>
-                                    </div>
+                                                <div className="pt-4 mt-auto border-t border-white/5 flex gap-2">
+                                                    <button 
+                                                        onClick={() => router.push(`/creation?seed=${encodeURIComponent(c.title)}`)}
+                                                        className="flex-1 action-primary py-4 font-black italic text-[9px] tracking-tighter"
+                                                    >
+                                                        REPLICATE
+                                                    </button>
+                                                    <button className="px-4 bg-white/5 border border-white/10 text-zinc-500 hover:text-white hover:bg-white/10 transition-all">
+                                                        <BarChart3 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
             </div>
-
-            <VideoPreviewModal
-                isOpen={showPreview}
-                onClose={() => setShowPreview(false)}
-                videoUrl={previewUrl}
-                title={previewTitle}
-                onProceedToTransformation={() => {
-                    setShowPreview(false);
-                    router.push(`/transformation${testJobId ? `?job_id=${testJobId}` : ''}`);
-                }}
-            />
         </DashboardLayout>
     );
 }
-
-export default function DiscoveryPage() {
-    return (
-        <React.Suspense fallback={<DashboardLayout><div className="flex items-center justify-center min-vh-100"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></DashboardLayout>}>
-            <DiscoveryContent />
-        </React.Suspense>
-    );
-}
-
