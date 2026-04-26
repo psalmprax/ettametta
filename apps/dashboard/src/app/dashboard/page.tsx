@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import DashboardLayout from "@/components/layout";
 import { withRealFallback } from "@/lib/real_first_utils";
 import Link from "next/link";
@@ -10,7 +10,16 @@ import {
   Clock,
   PlusCircle,
   Play,
-  CheckCircle2
+  CheckCircle2,
+  Activity,
+  Cpu,
+  Globe,
+  Radio,
+  ArrowRight,
+  Database,
+  Terminal,
+  Infinity as InfinityIcon,
+  Fingerprint
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,47 +29,38 @@ import { API_BASE, WS_BASE } from "@/lib/config";
 import { useNiches } from "@/hooks/useNiches";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getAuthToken } from "@/lib/auth_utils";
+import { Canvas } from "@react-three/fiber";
+import { Float, Sphere, MeshDistortMaterial } from "@react-three/drei";
 
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2
-    }
-  }
-};
-
-const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] }
-  }
-};
-
-interface DashboardStats {
-  active_trends: number;
-  videos_processed: number;
-  total_reach: string;
-  success_rate: string;
-  recent_discovery_count?: number;
-  engine_load?: string;
-  velocity?: string;
-  storage?: {
-    current_size_gb: number;
-    threshold_gb: number;
-    usage_percent: number;
-    status: string;
-    provider: string;
-  };
+function DashboardBackground() {
+    return (
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
+            <Canvas camera={{ position: [0, 0, 5] }}>
+                <Suspense fallback={null}>
+                    <ambientLight intensity={0.4} />
+                    <pointLight position={[10, 10, 10]} intensity={1} color="#00fbfb" />
+                    <Float speed={1} rotationIntensity={0.5} floatIntensity={0.5}>
+                        <Sphere args={[1.5, 64, 64]} scale={2}>
+                            <MeshDistortMaterial
+                                color="#00fbfb"
+                                speed={2}
+                                distort={0.2}
+                                radius={1}
+                                wireframe
+                                transparent
+                                opacity={0.1}
+                            />
+                        </Sphere>
+                    </Float>
+                </Suspense>
+            </Canvas>
+        </div>
+    );
 }
 
 export default function Home() {
   const { niches } = useNiches();
-  const [stats, setStats] = useState<DashboardStats>({
+  const [stats, setStats] = useState({
     active_trends: 0,
     videos_processed: 0,
     total_reach: "0",
@@ -69,69 +69,30 @@ export default function Home() {
     engine_load: "0%"
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [isScanning, setIsScanning] = useState(false);
   const [activityFeed, setActivityFeed] = useState<any[]>([]);
   const { data: wsData } = useWebSocket<any>(`${WS_BASE}/telemetry`);
 
-  useEffect(() => {
-    if (!wsData) return;
-
-    if (wsData.type === 'stats_update' || wsData.type === 'discovery_completed') {
-      fetchStats();
-    } else if (wsData.type === 'telemetry_pulse') {
-      setStats(prev => {
-        const pulse = wsData;
-        const real = pulse.real_stats || {};
-        const metrics = pulse.metrics || {};
-        
-        // Format reach if available
-        let reach = prev.total_reach;
-        if (real.total_views !== undefined) {
-           const v = real.total_views;
-           reach = v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(1)}K` : String(v);
-        }
-
-        return {
-          ...prev,
-          active_trends: real.total_discovered ?? prev.active_trends,
-          videos_processed: real.completed_jobs ?? prev.videos_processed,
-          total_reach: reach,
-          velocity: metrics.global_velocity > 0.8 ? "Extreme" : metrics.global_velocity > 0.5 ? "High" : "Nominal",
-          engine_load: `${Math.min(100, Math.round((metrics.active_nodes / 10) * 100))}%`
-        };
-      });
-    }
-  }, [wsData]);
-
   const fetchStats = async () => {
-    const token = getAuthToken();
+    const token = await getAuthToken();
     if (!token) {
       setIsLoading(false);
       return;
     }
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Parallel fetches for efficiency
     await Promise.all([
       withRealFallback<any>(
-        () => fetch(`${API_BASE}/analytics/stats/summary`, { headers }),
+        () => fetch(`${API_BASE}/v1/analytics/stats/summary`, { headers }),
         {
           fallback: null,
-          onSuccess: (data: DashboardStats) => data && setStats(prev => ({ ...prev, ...data }))
-        }
-      ),
-      withRealFallback<any>(
-        () => fetch(`${API_BASE}/analytics/stats/storage`, { headers }),
-        {
-          fallback: null,
-          onSuccess: (data: any) => data && setStats(prev => ({ ...prev, storage: data }))
+          onSuccess: (data) => data && setStats(prev => ({ ...prev, ...data }))
         }
       ),
       withRealFallback<any[]>(
-        () => fetch(`${API_BASE}/publish/history`, { headers }),
+        () => fetch(`${API_BASE}/v1/publish/history`, { headers }),
         {
           fallback: [],
-          onSuccess: (data: any[]) => data && setActivityFeed(data.slice(0, 6))
+          onSuccess: (data) => data && setActivityFeed(data.slice(0, 6))
         }
       )
     ]);
@@ -142,283 +103,158 @@ export default function Home() {
     fetchStats();
   }, []);
 
-  const handleTriggerScan = async () => {
-    setIsScanning(true);
-    const token = getAuthToken();
-    if (!token) {
-      setIsScanning(false);
-      return;
-    }
-    const scanNiches = niches.slice(0, 3);
-
-    await withRealFallback<any>(
-      () => fetch(`${API_BASE}/discovery/scan`, {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ niches: scanNiches })
-      }),
-      {
-        fallback: null,
-        onSuccess: () => {
-          toast.info("Discovery Cycle Initiated", {
-            description: `Scanning clusters for ${scanNiches.join(", ")}...`
-          });
-          fetchStats();
-        },
-        errorMessage: "Failed to trigger scan"
-      }
-    );
-    setIsScanning(false);
-  };
-
   return (
     <DashboardLayout>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-10"
-      >
-        <motion.div variants={itemVariants} className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="h-1 w-8 bg-neon-violet rounded-full shadow-glow-violet/50" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neon-violet">System Command</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white">Neural <span className="text-transparent bg-clip-text bg-linear-to-r from-violet-500 to-cyan-400 text-hollow">Dashboard</span></h1>
-          <p className="text-zinc-500 font-medium max-w-lg tracking-tight">
-            Aggregated intelligence from global social clusters.
-            Engine status: <span className={`${stats.velocity === 'High' ? 'text-neon-cyan' : 'text-neon-cyan'} font-bold uppercase neon-glow-cyan`}>{stats.velocity || "Nominal"}</span>
-          </p>
-        </motion.div>
+      <div className="min-h-screen bg-[#050507] relative flex flex-col font-sans overflow-hidden">
+        <div className="noise-overlay" />
+        <DashboardBackground />
+        <div className="absolute inset-0 cyber-grid opacity-10 pointer-events-none" />
+        <div className="absolute inset-0 scanline opacity-10 pointer-events-none z-50" />
 
-        {/* Stats Grid */}
-        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <TelemetryTile
-            title="Active Trends"
-            value={stats.active_trends.toString()}
-            icon={<TrendingUp className="h-5 w-5 text-emerald-400" />}
-            label="Real-time scan"
-            subtext={`+${stats.recent_discovery_count || 0} discovered`}
-          />
-          <TelemetryTile
-            title="Core Throughput"
-            value={stats.videos_processed.toString()}
-            icon={<Zap className="h-5 w-5 text-neon-violet" />}
-            label="Total Processed"
-            subtext={`Load: ${stats.engine_load || "0%"}`}
-          />
-          <TelemetryTile
-            title="Global Reach"
-            value={stats.total_reach}
-            icon={<Play className="h-5 w-5 text-blue-400" />}
-            label="Est. Impressions"
-            subtext={`Velocity: ${stats.velocity || "Nominal"}`}
-          />
-          <TelemetryTile
-            title="Model Precision"
-            value={stats.success_rate}
-            icon={<CheckCircle2 className="h-5 w-5 text-zinc-400" />}
-            label="Accuracy Index"
-            subtext="Verified"
-          />
-        </motion.div>
-
-        {/* Core Actions */}
-        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <ActionCard
-            title="Trend Discovery"
-            description="Autonomous social mining for high-velocity niche opportunities."
-            buttonText="Trigger Scan"
-            href="/discovery"
-          />
-          <ActionCard
-            title="Mirror Studio"
-            description="Generative originality transforms with AI-driven face & voice synthesis."
-            buttonText="Open Studio"
-            href="/transformation"
-          />
-          <ActionCard
-            title="Global Distribution"
-            description="Manage multi-node publishing cycles for verified Social Assets."
-            buttonText="Command Center"
-            href="/publishing"
-          />
-        </motion.div>
-
-        {/* Storage Monitoring Section */}
-        {stats.storage && (
-          <motion.div variants={itemVariants} className="glass-card p-8 rounded-4xl relative overflow-hidden group border border-white/5 hover:border-primary/30 transition-all">
-            <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="space-y-4 text-center md:text-left">
-                <div className="flex items-center gap-3 justify-center md:justify-start">
-                  <div className={`h-2 w-2 rounded-full animate-pulse ${stats.storage.status === 'Healthy' ? 'bg-neon-cyan shadow-glow-cyan/50' : stats.storage.status === 'Warning' ? 'bg-amber-500' : 'bg-red-500'}`} />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Storage Lifecycle Manager</span>
-                </div>
-                <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Autonomous <span className="text-neon-cyan">Archival</span> Status</h3>
-                <p className="text-zinc-500 font-medium max-w-md">
-                  Monitoring local video assets. Automatic migration to <span className="text-white font-bold">{stats.storage.provider}</span> triggers at {stats.storage.threshold_gb}GB.
-                </p>
-              </div>
-
-              <div className="flex-1 w-full max-w-md space-y-4">
-                <div className="flex justify-between items-end">
-                  <span className="text-2xl font-black text-white">{stats.storage.current_size_gb} <span className="text-sm text-zinc-500 uppercase font-bold tracking-widest">GB Used</span></span>
-                  <span className="text-sm font-black text-primary">{stats.storage.usage_percent}%</span>
-                </div>
-                <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-1">
-                  <motion.div
+        <div className="flex-1 section-container relative py-16 px-8 lg:px-24 max-w-screen-2xl mx-auto w-full z-10">
+          
+          {/* DASHBOARD HEADER */}
+          <header className="mb-20 flex flex-col xl:flex-row xl:items-end justify-between gap-12">
+            <div className="space-y-6">
+                <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: `${stats.storage.usage_percent}%` }}
-                    transition={{ duration: 1.5, ease: "easeOut" }}
-                    className={`h-full rounded-full ${stats.storage.status === 'Healthy' ? 'bg-neon-cyan shadow-glow-cyan/50' : stats.storage.status === 'Warning' ? 'bg-amber-500' : 'bg-red-500'}`}
-                  />
+                    animate={{ width: 140 }}
+                    className="h-1 bg-cyan-400"
+                />
+                <div className="space-y-2">
+                    <h1 className="text-6xl md:text-8xl font-black text-white uppercase tracking-tighter leading-none glitch-text italic" data-text="NEURAL_OS">
+                        Neural OS
+                    </h1>
+                    <p className="font-data-mono text-zinc-500 text-[10px] flex items-center gap-3">
+                        <Terminal className="h-3 w-3 text-cyan-400" />
+                        SYSTEM_ARCH: QUANTUM_LATTICE
+                        <span className="w-1 h-1 bg-zinc-800 rounded-full" />
+                        UPTIME: 100.0%
+                    </p>
                 </div>
-                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-600">
-                  <span>0 GB</span>
-                  <span>Threshold: {stats.storage.threshold_gb} GB</span>
-                </div>
-              </div>
             </div>
-          </motion.div>
-        )}
 
-        {/* Recent Activity Section */}
-        <motion.div variants={itemVariants} className="space-y-6">
-          <div className="flex items-center justify-between px-4">
-            <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-zinc-500" />
-              <h3 className="text-xs font-black uppercase tracking-[0.25em] text-zinc-500">Global Egress Feed</h3>
+            <div className="flex items-center gap-6">
+                <div className="surface-glass rim-light p-6 flex flex-col items-end">
+                    <span className="font-data-mono text-[8px] text-zinc-600 mb-1">ENGINE_LOAD</span>
+                    <span className="text-xl font-black text-white tabular-nums tracking-tighter">
+                        {stats.engine_load}
+                    </span>
+                </div>
+                <Link href="/creation" className="action-primary h-20 px-12 flex items-center italic text-xs tracking-tighter">
+                    INITIATE_CREATION
+                </Link>
             </div>
-            <Link href="/publishing" className="text-[10px] font-black text-neon-cyan uppercase tracking-widest hover:underline transition-all neon-glow-cyan">
-              View Node Matrix →
-            </Link>
+          </header>
+
+          {/* TELEMETRY TILES */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+            {[
+              { label: "TREND_CLUSTERS", val: stats.active_trends, icon: TrendingUp, color: "text-cyan-400" },
+              { label: "CORE_OUTPUT", val: stats.videos_processed, icon: Zap, color: "text-purple-400" },
+              { label: "EST_REACH", val: stats.total_reach, icon: Globe, color: "text-emerald-400" },
+              { label: "VIRAL_ACCURACY", val: stats.success_rate, icon: CheckCircle2, color: "text-amber-400" },
+            ].map((stat, i) => (
+              <motion.div 
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="surface-glass rim-light p-8 space-y-4 hover:rim-glow-cyan transition-all group"
+              >
+                <div className="flex items-center justify-between">
+                    <stat.icon className={cn("h-5 w-5", stat.color)} />
+                    <span className="font-data-mono text-[8px] text-zinc-700 tracking-[0.5em]">{stat.label}</span>
+                </div>
+                <h4 className="text-4xl font-black text-white tracking-tighter italic group-hover:text-cyan-400 transition-colors">{stat.val}</h4>
+                <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                    <span className="font-label-caps text-[8px] text-zinc-600 tracking-widest">REAL_TIME_PULSE</span>
+                    <Activity className="h-3 w-3 text-emerald-500 animate-pulse" />
+                </div>
+              </motion.div>
+            ))}
           </div>
 
-          {!activityFeed || activityFeed.length === 0 ? (
-            <motion.div className="glass-card flex flex-col items-center justify-center text-center py-16 gap-6 relative overflow-hidden group">
-              <div className="absolute inset-0 scanline opacity-(--scanline-opacity) pointer-events-none" />
-              <div className="h-16 w-16 rounded-3xl bg-white/3 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                <Clock className="h-8 w-8 text-zinc-600" />
-              </div>
-              <div className="space-y-2 relative">
-                <h3 className="text-2xl font-black tracking-tight text-white uppercase">Awaiting Telemetry</h3>
-                <p className="text-zinc-500 max-w-sm mx-auto font-medium">Your command buffer is empty. Start a discovery cycle to find viral opportunities.</p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 items-center">
-                <Link href="/discovery" className="bg-primary hover:bg-primary/90 text-white font-black py-4 px-10 rounded-2xl transition-all flex items-center gap-3 shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)] group-hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.4)] relative">
-                  <PlusCircle className="h-5 w-5" />
-                  Initiate Discovery
+          {/* ACCESS TERMINALS */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-20">
+            {[
+              { title: "Discovery Console", desc: "Scan global clusters for high-velocity viral seeds.", href: "/discovery", icon: Database },
+              { title: "Synthesis Hub", desc: "Transform seeds into premium social assets.", href: "/creation", icon: Cpu },
+              { title: "Egress Matrix", desc: "Broadcast validated assets to the national grid.", href: "/publishing", icon: Radio },
+            ].map((node, i) => (
+              <Link 
+                key={node.title}
+                href={node.href}
+                className="surface-glass rim-light p-10 space-y-6 group hover:rim-glow-cyan transition-all relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 transition-opacity">
+                    <node.icon className="h-32 w-32 text-cyan-400" />
+                </div>
+                <div className="space-y-2 relative">
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter group-hover:text-cyan-400 transition-colors italic">{node.title}</h3>
+                    <p className="text-zinc-500 text-sm font-medium leading-relaxed">{node.desc}</p>
+                </div>
+                <div className="pt-6 relative">
+                    <div className="w-full bg-zinc-950 border border-white/5 group-hover:border-cyan-400/30 text-zinc-600 group-hover:text-cyan-400 py-4 font-label-caps text-[10px] text-center tracking-[0.4em] transition-all">
+                        ENTER_TERMINAL
+                    </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* EGRESS FEED */}
+          <div className="space-y-10">
+            <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                <div className="flex items-center gap-4">
+                    <div className="h-3 w-3 bg-cyan-400 animate-ping rounded-full" />
+                    <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">Live Egress Stream</h2>
+                </div>
+                <Link href="/publishing" className="font-label-caps text-[9px] text-zinc-500 hover:text-cyan-400 transition-colors tracking-widest">
+                    VIEW_FULL_HISTORY →
                 </Link>
-              </div>
-            </motion.div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {activityFeed.map((activity, idx) => {
-                const activityUrl = activity.url || activity.source_url || activity.output_path;
-                return (
-                  <motion.div
-                    key={activity.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                    onClick={() => activityUrl && window.open(activityUrl, "_blank", "noopener,noreferrer")}
-                    className={cn(
-                      "glass-card p-6 flex items-center gap-4 group hover:border-primary/30 transition-all border border-white/5",
-                      activityUrl ? "cursor-pointer" : ""
-                    )}
-                  >
-                    <div className="h-12 w-12 rounded-2xl bg-neon-violet/10 flex items-center justify-center shrink-0 border border-neon-violet/20">
-                      <Zap className="h-6 w-6 text-neon-violet neon-glow-violet" />
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{activity.platform || "Video Node"}</p>
-                        <p className="text-[9px] font-bold text-zinc-600 tabular-nums uppercase">{new Date(activity.published_at || activity.created_at).toLocaleTimeString()}</p>
-                      </div>
-                      <h4 className="text-sm font-black text-white truncate uppercase tracking-tight">{activity.title || activity.niche || "Untitled Fragment"}</h4>
-                    </div>
-                  </motion.div>
-                );
-              })}
             </div>
-          )}
-        </motion.div>
-      </motion.div>
+
+            {activityFeed.length === 0 ? (
+                <div className="surface-glass rim-light py-20 flex flex-col items-center justify-center text-center space-y-6">
+                    <div className="h-16 w-16 bg-white/5 border border-white/10 flex items-center justify-center rounded-3xl">
+                        <Radio className="h-8 w-8 text-zinc-700" />
+                    </div>
+                    <div className="space-y-1">
+                        <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Awaiting Signal</h3>
+                        <p className="text-zinc-500 font-medium text-sm">No recent egress detected in the local cluster.</p>
+                    </div>
+                    <Link href="/creation" className="action-primary py-4 px-10 italic text-[10px] tracking-tighter">
+                        START_INITIAL_SEQUENCE
+                    </Link>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {activityFeed.map((activity, idx) => (
+                        <motion.div
+                            key={activity.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className="surface-glass rim-light p-6 flex items-center gap-5 group hover:rim-glow-cyan transition-all border border-white/5"
+                        >
+                            <div className="h-14 w-14 bg-cyan-400/5 border border-cyan-400/20 flex items-center justify-center group-hover:bg-cyan-400 group-hover:text-black transition-all">
+                                <Play className="h-6 w-6 text-cyan-400 group-hover:text-black fill-current" />
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-data-mono text-[8px] text-cyan-400/60 uppercase">{activity.platform}</span>
+                                    <span className="font-data-mono text-[7px] text-zinc-700">{new Date(activity.published_at).toLocaleTimeString()}</span>
+                                </div>
+                                <h4 className="text-sm font-black text-white truncate uppercase tracking-tight group-hover:text-cyan-400 transition-colors">{activity.title}</h4>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+            )}
+          </div>
+        </div>
+      </div>
     </DashboardLayout>
-  );
-}
-
-function TelemetryTile({ title, value, icon, label, subtext }: { title: string, value: string, icon: React.ReactNode, label: string, subtext: string }) {
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -5 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className="glass-card p-6 rounded-3xl space-y-4 relative group overflow-hidden"
-    >
-      <div className="absolute inset-0 shimmer-elite opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{title}</p>
-          <h2 className="text-3xl font-black text-white tracking-tighter">{value}</h2>
-        </div>
-        <div className="p-3 rounded-2xl bg-white/3 border border-white/5 group-hover:border-primary/30 transition-colors">
-          {icon}
-        </div>
-      </div>
-      <div className="pt-2 flex items-center justify-between border-t border-white/5">
-        <span className="text-[10px] font-bold text-zinc-400">{label}</span>
-        <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">{subtext}</span>
-      </div>
-    </motion.div>
-  );
-}
-
-function ActionCard({ 
-  title, 
-  description, 
-  buttonText, 
-  href, 
-  onClick, 
-  isLoading 
-}: { 
-  title: string, 
-  description: string, 
-  buttonText: string, 
-  href?: string, 
-  onClick?: () => void, 
-  isLoading?: boolean 
-}) {
-  const content = (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -8 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 350, damping: 20 }}
-      className={`glass-card p-8 rounded-4xl h-full flex flex-col justify-between space-y-6 hover:border-primary/50 transition-all duration-300 group text-left relative overflow-hidden ${isLoading ? 'opacity-70 pointer-events-none' : ''}`}
-    >
-      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
-        <Zap className="h-24 w-24 text-primary" />
-      </div>
-      <div className="space-y-3 relative">
-        <h3 className="text-xl font-black text-white uppercase tracking-tight">{title}</h3>
-        <p className="text-zinc-500 text-sm font-medium leading-relaxed">{description}</p>
-      </div>
-      <div className="w-full bg-zinc-900 border border-white/10 group-hover:border-primary/50 text-zinc-400 group-hover:text-white font-black py-4 px-6 rounded-xl transition-all duration-300 text-center uppercase text-xs tracking-widest relative">
-        {buttonText}
-      </div>
-    </motion.div>
-  );
-
-  if (onClick) {
-    return <button onClick={onClick} className="w-full text-left appearance-none focus:outline-none">{content}</button>;
-  }
-
-  return (
-    <Link href={href || "#"}>
-      {content}
-    </Link>
   );
 }
