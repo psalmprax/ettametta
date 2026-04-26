@@ -219,48 +219,47 @@ export function MobileNav() {
     const pathname = usePathname();
     
     const mobileNavItems = [
-        { name: "Home", href: "/", icon: LayoutDashboard },
-        { name: "Discovery", href: "/discovery", icon: Search },
-        { name: "Create", href: "/creation", icon: Sparkles },
-        { name: "Nexus", href: "/nexus", icon: Zap },
-        { name: "Profile", href: "/settings", icon: Settings },
+        { name: "Explore", href: "/discovery", icon: "explore" },
+        { name: "Creation", href: "/creation", icon: "add_box" },
+        { name: "Live", href: "/nexus", icon: "sensors" },
+        { name: "Insights", href: "/analytics", icon: "analytics" },
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 h-16 bg-zinc-950 border-t border-white/5 z-50 md:hidden">
-            <nav className="flex items-center justify-around h-full px-2">
-                {mobileNavItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex flex-col items-center justify-center w-16 h-12 rounded-xl transition-all",
-                                isActive ? "text-cyan-400" : "text-zinc-500"
-                            )}
-                        >
-                            <item.icon className={cn("h-6 w-6", isActive && "neon-glow-cyan")} />
-                            <span className="text-[10px] font-black uppercase tracking-wider mt-1">{item.name}</span>
-                        </Link>
-                    );
-                })}
-            </nav>
-        </div>
+        <nav className="bg-black/90 backdrop-blur-2xl border-t border-cyan-500/20 fixed bottom-0 w-full z-50 h-20 shadow-[0_-4px_20px_rgba(0,0,0,0.9)] flex justify-around items-center px-6 pb-safe md:hidden">
+            {mobileNavItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                            "flex flex-col items-center justify-center transition-all active:scale-90 duration-150 cursor-pointer hover:bg-white/5",
+                            isActive ? "text-cyan-400 border-b-2 border-cyan-400 pb-1" : "text-white/40"
+                        )}
+                    >
+                        <span className="material-symbols-outlined">{item.icon}</span>
+                        <span className="font-space-grotesk text-[10px] uppercase font-bold mt-1">{item.name}</span>
+                    </Link>
+                );
+            })}
+        </nav>
     );
 }
 
 export function MobileHeader({ onMenuClick }: { onMenuClick?: () => void }) {
     return (
-        <div className="fixed top-0 left-0 right-0 h-14 bg-zinc-950 border-b border-white/5 z-50 md:hidden flex items-center justify-between px-4">
-            <button onClick={onMenuClick} className="p-2 -ml-2">
-                <Menu className="h-6 w-6 text-zinc-400" />
-            </button>
-            <span className="text-lg font-bold text-violet-500">AH</span>
-            <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center">
-                <span className="text-xs font-bold text-white">U</span>
+        <header className="bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_15px_rgba(0,255,255,0.1)] fixed top-0 z-50 flex justify-between items-center w-full px-5 h-16 md:hidden">
+            <div className="flex items-center gap-3">
+                <button onClick={onMenuClick} className="p-1 -ml-1">
+                    <span className="material-symbols-outlined text-cyan-400">menu</span>
+                </button>
+                <span className="text-xl font-bold tracking-widest text-white uppercase font-space-grotesk tracking-tighter">ETTAMETTA</span>
             </div>
-        </div>
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-cyan-400/30">
+                <img alt="User profile avatar" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgvZ0UVOL1jD326czv0qLaLG2xB5FrH8UoPSrH4kY0F-vlWvKq_iZgtxxwzCOmmDgdm-QEyDoWWV5C-ABgfSd18kFTaEa8xxEoFGIhING6Sk9ReQe7PAhPcIPayn9iOrWMD1mWLnFv5FDZYXlwrPAUPrCW5bd_pu1hi43VL-P83ztaE_kJpJGgzRCWb7mHrNrIRWpXVai55ZFeOn80nDNTuCmpDsViB8auSO-LQdDWv18MGmNJHzqU2tKEzB0WoO_ptCdPlUVz6xte"/>
+            </div>
+        </header>
     );
 }
 
