@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary": "#520070",
+                    "surface-container": "#201f1f",
+                    "on-error-container": "#ffdad6",
+                    "tertiary": "#ffffff",
+                    "secondary-container": "#d05bff",
+                    "on-background": "#e5e2e1",
+                    "surface-variant": "#353534",
+                    "on-secondary-fixed-variant": "#75009e",
+                    "outline-variant": "#3a4a49",
+                    "tertiary-fixed-dim": "#2ae500",
+                    "error-container": "#93000a",
+                    "surface-dim": "#131313",
+                    "on-primary-fixed-variant": "#004f4f",
+                    "surface": "#131313",
+                    "primary-container": "#00fbfb",
+                    "on-tertiary": "#053900",
+                    "surface-container-lowest": "#0e0e0e",
+                    "surface-container-low": "#1c1b1b",
+                    "on-tertiary-fixed": "#022100",
+                    "inverse-surface": "#e5e2e1",
+                    "on-secondary-container": "#480063",
+                    "on-primary-container": "#007070",
+                    "on-error": "#690005",
+                    "tertiary-fixed": "#79ff5b",
+                    "primary-fixed-dim": "#00dddd",
+                    "on-tertiary-container": "#117500",
+                    "inverse-on-surface": "#313030",
+                    "tertiary-container": "#79ff5b",
+                    "primary-fixed": "#00fbfb",
+                    "primary": "#ffffff",
+                    "surface-tint": "#00dddd",
+                    "error": "#ffb4ab",
+                    "on-primary": "#003737",
+                    "surface-container-high": "#2a2a2a",
+                    "on-surface": "#e5e2e1",
+                    "secondary-fixed-dim": "#ecb1ff",
+                    "secondary": "#ecb1ff",
+                    "on-secondary-fixed": "#320046",
+                    "surface-bright": "#393939",
+                    "on-primary-fixed": "#002020",
+                    "secondary-fixed": "#f9d8ff",
+                    "surface-container-highest": "#353534",
+                    "on-surface-variant": "#b9cac9",
+                    "background": "#131313",
+                    "inverse-primary": "#006a6a",
+                    "outline": "#839493",
+                    "on-tertiary-fixed-variant": "#095300"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "container-margin": "20px",
+                    "gutter": "12px",
+                    "unit": "4px",
+                    "xs": "4px",
+                    "xl": "40px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "sm": "8px"
+            },
+            "fontFamily": {
+                    "data-mono": ["Space Grotesk"],
+                    "label-caps": ["Space Grotesk"],
+                    "display-lg": ["Space Grotesk"],
+                    "headline-md": ["Space Grotesk"],
+                    "body-base": ["Inter"]
+            },
+            "fontSize": {
+                    "data-mono": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-caps": ["12px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "display-lg": ["40px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "body-base": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .surface-glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .rim-glow-cyan {
+            box-shadow: inset 0 0 10px rgba(0, 251, 251, 0.1);
+            border: 1px solid rgba(0, 251, 251, 0.2);
+        }
+        .action-primary {
+            background: linear-gradient(135deg, #00fbfb 0%, #00dddd 100%);
+            box-shadow: 0 0 15px rgba(0, 251, 251, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-base antialiased min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_15px_rgba(0,255,255,0.1)] fixed top-0 w-full z-50 h-16 flex justify-between items-center px-5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cyan-400">language</span>
+<span class="text-xl font-bold tracking-widest text-white uppercase font-space-grotesk">ETTAMETTA</span>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-white/20">
+<img class="w-full h-full object-cover" data-alt="Cyberpunk style user profile avatar with neon cyan highlights and futuristic headset silhouette" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOgb6O-8RriXD7m4e1iGEv6o67tERUx98PRqEQ0oi4lNB7ABRtrkzSumJnFk5CmztZcC52swESbHOKKxz9TQg35hIVMXFNfUcFIPyKcBvxXutaPBdH9PeHHAJhOBGUArCzxr1gUhWKgZh9e8FnDY4HD4NEmOuycwdD4wsqQgZNO7cjoABYnnGZhuoCUqbdqrM-reUlLHUiy-9ZyuUgunkwB_ojZeMZZ37qck0KeaGGQVrt_pMxR-A7iXTKdRmV_uddL1nAm8E4V7FY"/>
+</div>
+</header>
+<main class="pt-20 px-container-margin space-y-lg">
+<!-- Hero Section: Global Intelligence -->
+<section class="relative aspect-square w-full surface-glass rounded-xl overflow-hidden rim-glow-cyan flex flex-col items-center justify-center">
+<div class="absolute inset-0 z-0 opacity-40">
+<img class="w-full h-full object-cover" data-alt="A sleek minimal 3D wireframe globe representing global network connectivity in glowing cyan lines on a pitch black background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEGngAGxb-3A9pDd_qmEczqveU0lWft1dllTn_QNT0WUpWLzLum-MEsRnJH7vZeOsfu5Mq_EUF8HtdRPm3OYpqa6ZArUV3moGI1X-G3NtheQq1eVkRQfE4epZHbL3Am7j4OjU99E2X-qwpnGYhF5S7mS2MVfMzr4AcizqEQAxU8mJ-ydFN5IyAIaNGN6vJKlF8UrwHlRaOJo145FCXpNfaAchx6x_L2E7PvhKIfSjGGsNxUuXmZ9liGwtDBQARQmTFQqpV7bgk05UF"/>
+</div>
+<div class="relative z-10 text-center space-y-xs">
+<span class="font-label-caps text-cyan-400 tracking-[0.2em] uppercase">Status: Live</span>
+<h1 class="font-display-lg text-white">Global Intelligence</h1>
+<p class="font-data-mono text-white/60 text-xs">MONITORING 1.2M DATA STREAMS</p>
+</div>
+<!-- Data Grid Overlay -->
+<div class="absolute bottom-4 left-4 right-4 flex justify-between font-data-mono text-[10px] text-cyan-500/50">
+<span>LAT: 40.7128° N</span>
+<span>LNG: 74.0060° W</span>
+</div>
+</section>
+<!-- Metrics Grid -->
+<section class="grid grid-cols-1 gap-gutter">
+<div class="surface-glass p-lg flex justify-between items-center rim-glow-cyan">
+<div>
+<p class="font-label-caps text-white/40 uppercase">Scanning Speed</p>
+<p class="font-headline-md text-cyan-400">4.2 GB/S</p>
+</div>
+<div class="w-16 h-8 bg-cyan-400/10 border-b border-cyan-400 relative">
+<div class="absolute inset-0 bg-gradient-to-t from-cyan-400/20 to-transparent"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-gutter">
+<div class="surface-glass p-md rim-glow-cyan space-y-sm">
+<p class="font-label-caps text-white/40 uppercase">Active Nodes</p>
+<p class="font-headline-md text-white">12,804</p>
+<div class="h-1 w-full bg-white/10">
+<div class="h-full bg-cyan-400 w-3/4"></div>
+</div>
+</div>
+<div class="surface-glass p-md rim-glow-cyan space-y-sm">
+<p class="font-label-caps text-white/40 uppercase">Signal Clarity</p>
+<p class="font-headline-md text-white">99.2%</p>
+<div class="flex gap-1">
+<div class="h-1 flex-1 bg-cyan-400"></div>
+<div class="h-1 flex-1 bg-cyan-400"></div>
+<div class="h-1 flex-1 bg-cyan-400"></div>
+<div class="h-1 flex-1 bg-cyan-400/20"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom Section: Search & CTA -->
+<section class="space-y-md">
+<div class="relative">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-white/40">search</span>
+<input class="w-full bg-white/5 border border-white/10 focus:border-cyan-400/50 focus:ring-0 text-white font-data-mono py-4 pl-12 pr-4 rounded-lg placeholder:text-white/20 transition-all" placeholder="Niche Search" type="text"/>
+</div>
+<button class="w-full action-primary py-lg rounded-lg flex items-center justify-center gap-sm active:scale-95 transition-transform duration-200">
+<span class="font-label-caps text-on-primary text-sm uppercase">Test Drive</span>
+<span class="material-symbols-outlined text-on-primary" data-weight="fill">bolt</span>
+</button>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-black/90 backdrop-blur-2xl fixed bottom-0 w-full z-50 h-20 border-t border-cyan-500/20 shadow-[0_-4px_20px_rgba(0,0,0,0.9)] flex justify-around items-center px-6 pb-safe">
+<!-- Explore (Discovery) - Active -->
+<a class="flex flex-col items-center justify-center text-cyan-400 border-b-2 border-cyan-400 pb-1 font-space-grotesk text-[10px] uppercase font-bold hover:bg-white/5 transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" data-weight="fill">explore</span>
+<span>Discovery</span>
+</a>
+<!-- Add Box -->
+<a class="flex flex-col items-center justify-center text-white/40 font-space-grotesk text-[10px] uppercase font-bold hover:bg-white/5 transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">add_box</span>
+<span>Generate</span>
+</a>
+<!-- Sensors -->
+<a class="flex flex-col items-center justify-center text-white/40 font-space-grotesk text-[10px] uppercase font-bold hover:bg-white/5 transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">sensors</span>
+<span>Streams</span>
+</a>
+<!-- Analytics -->
+<a class="flex flex-col items-center justify-center text-white/40 font-space-grotesk text-[10px] uppercase font-bold hover:bg-white/5 transition-all active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Stats</span>
+</a>
+</nav>
+</body></html>

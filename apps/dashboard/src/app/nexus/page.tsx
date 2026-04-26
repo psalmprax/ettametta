@@ -446,7 +446,7 @@ export default function NexusPage() {
                 {showBlueprintBuilder && (
                     <BlueprintBuilder 
                         onClose={() => setShowBlueprintBuilder(false)} 
-                        onCreated={handleBlueprintCreated as any}
+                        onSuccess={handleBlueprintCreated as any}
                     />
                 )}
             </AnimatePresence>
