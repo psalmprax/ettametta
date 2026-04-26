@@ -93,18 +93,18 @@ export default function LandingPage() {
             variants={containerVariants}
             className="space-y-8"
           >
-            <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-glow/10 border border-cyan-glow/20">
-              <div className="h-1.5 w-1.5 rounded-full bg-cyan-glow animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-cyan-glow">Autonomous Viral Content Intelligence</span>
+            <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-social-pink/10 border border-social-pink/20">
+              <div className="h-1.5 w-1.5 rounded-full bg-social-pink animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-social-pink">V4.0 CREATIVE_CORE LIVE</span>
             </motion.div>
             
-            <motion.h1 variants={itemVariants} className="text-4xl md:text-5xl font-bold tracking-tighter leading-[0.9] uppercase">
-              Discover, Transform <br />
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-glow via-emerald-accent to-violet-500">& Dominate Every Feed</span>
+            <motion.h1 variants={itemVariants} className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter leading-[0.9] uppercase italic glitch-text" data-text="CREATIVE ENGINE">
+              The Creative Engine <br />
+              <span className="text-social-blue">For Viral Success</span>
             </motion.h1>
 
-            <motion.p variants={itemVariants} className="text-zinc-500 text-lg font-medium max-w-xl leading-relaxed">
-              The autonomous engine that scans global social clusters for viral opportunities, transforms them with AI synthesis, and publishes across every platform — on autopilot.
+            <motion.p variants={itemVariants} className="text-zinc-500 text-lg md:text-xl font-medium max-w-xl leading-relaxed">
+              Find trends before they peak, transform them with high-end AI synthesis, and dominate the global feed. The ultimate intelligence suite for modern creators.
             </motion.p>
 
             <motion.div variants={itemVariants} className="flex flex-wrap gap-4 pt-4">
@@ -125,18 +125,23 @@ export default function LandingPage() {
             className="relative"
           >
             <div className="absolute -inset-4 bg-linear-to-r from-cyan-glow/20 via-violet-500/10 to-emerald-accent/20 blur-3xl opacity-30 animate-pulse" />
-            <div className="glass-card p-2 rounded-[2.5rem] border-white/10 relative overflow-hidden group">
+            <div className="glass-card p-2 rounded-[2.5rem] border-white/10 relative overflow-hidden group shadow-[0_0_50px_rgba(255,0,80,0.1)]">
               <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
-              <div className="bg-zinc-950 rounded-4xl aspect-video flex items-center justify-center border border-white/5 overflow-hidden">
-                {/* Mockup Dashboard Preview */}
-                <div className="w-full h-full p-6 space-y-6 opacity-40 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="h-8 w-1/3 bg-white/5 rounded-lg" />
-                  <div className="grid grid-cols-3 gap-4 h-32">
-                    <div className="bg-white/5 rounded-xl border border-white/5" />
-                    <div className="bg-white/5 rounded-xl border border-white/5" />
-                    <div className="bg-white/5 rounded-xl border border-white/5" />
-                  </div>
-                  <div className="h-40 w-full bg-white/5 rounded-2xl border border-white/5" />
+              <div className="bg-zinc-950 rounded-4xl aspect-video flex items-center justify-center border border-white/5 overflow-hidden relative">
+                <img 
+                    src="/_next/image?url=%2Fhome%2Fpsalmprax%2F.gemini%2Fantigravity%2Fbrain%2F0062f090-f109-43f9-bcae-caf9a3b45531%2Fviral_content_gallery_mockup_1777245002910.png&w=1080&q=75" 
+                    alt="Viral Content Gallery" 
+                    className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-1000"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent opacity-60" />
+                <div className="absolute bottom-10 left-10 space-y-2">
+                    <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 bg-social-pink rounded-full animate-ping" />
+                        <span className="font-data-mono text-[10px] text-white tracking-widest">LIVE_TREND_STREAM</span>
+                    </div>
+                    <p className="text-2xl font-black text-white italic uppercase tracking-tighter">Global Viral Feed</p>
+                </div>
+              </div>
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
                    <div className="h-16 w-16 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center group-hover:scale-110 transition-transform cursor-pointer">
