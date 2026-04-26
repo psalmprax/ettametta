@@ -124,10 +124,10 @@ export const Sidebar = memo<SidebarProps>(function Sidebar({ collapsed = false, 
                     <div className="p-4 bg-white/5 rim-light space-y-4">
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 bg-zinc-800 border border-white/10 overflow-hidden">
-                                <img src={user?.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"} alt="User" className="w-full h-full object-cover" />
+                                <img src={"https://api.dicebear.com/7.x/avataaars/svg?seed=" + (user?.username || "Felix")} alt="User" className="w-full h-full object-cover" />
                             </div>
                             <div className="flex flex-col min-w-0">
-                                <span className="text-xs font-bold text-white truncate">{user?.displayName || "Agent Null"}</span>
+                                <span className="text-xs font-bold text-white truncate">{user?.username || "Agent Null"}</span>
                                 <span className="font-data-mono text-[8px] text-zinc-500 truncate">Core Access: Level 4</span>
                             </div>
                         </div>
