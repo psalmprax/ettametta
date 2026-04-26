@@ -445,6 +445,7 @@ export default function NexusPage() {
                 )}
                 {showBlueprintBuilder && (
                     <BlueprintBuilder 
+                        isOpen={true}
                         onClose={() => setShowBlueprintBuilder(false)} 
                         onSuccess={handleBlueprintCreated as any}
                     />
