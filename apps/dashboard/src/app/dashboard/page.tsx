@@ -33,8 +33,27 @@ import { Canvas } from "@react-three/fiber";
 import { Float, Sphere, MeshDistortMaterial } from "@react-three/drei";
 
 function DashboardBackground() {
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            setMousePos({ x: e.clientX / window.innerWidth - 0.5, y: e.clientY / window.innerHeight - 0.5 });
+        };
+        window.addEventListener("mousemove", handleMouseMove);
+        return () => window.removeEventListener("mousemove", handleMouseMove);
+    }, []);
+
     return (
         <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
+            <motion.div 
+                animate={{ 
+                    x: mousePos.x * 20, 
+                    y: mousePos.y * 20,
+                    rotateX: mousePos.y * 10,
+                    rotateY: -mousePos.x * 10 
+                }}
+                className="absolute inset-0 cyber-grid opacity-30"
+            />
             <Canvas camera={{ position: [0, 0, 5] }}>
                 <Suspense fallback={null}>
                     <ambientLight intensity={0.4} />
@@ -141,7 +160,7 @@ export default function Home() {
                         {stats.engine_load}
                     </span>
                 </div>
-                <Link href="/creation" className="action-primary h-20 px-12 flex items-center italic text-xs tracking-tighter">
+                <Link href="/creation" className="action-primary h-20 px-12 flex items-center italic text-xs tracking-tighter shadow-[0_0_50px_rgba(0,251,251,0.2)]">
                     INITIATE_CREATION
                 </Link>
             </div>
@@ -155,13 +174,14 @@ export default function Home() {
               { label: "EST_REACH", val: stats.total_reach, icon: Globe, color: "text-emerald-400" },
               { label: "VIRAL_ACCURACY", val: stats.success_rate, icon: CheckCircle2, color: "text-amber-400" },
             ].map((stat, i) => (
-              <motion.div 
+                <motion.div 
                 key={stat.label}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="surface-glass rim-light p-8 space-y-4 hover:rim-glow-cyan transition-all group"
+                className="surface-glass cyber-border rim-light rim-glow-cyan-pulse p-8 space-y-4 hover:rim-glow-cyan transition-all group overflow-hidden"
               >
+                <div className="absolute inset-0 glass-refraction opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="flex items-center justify-between">
                     <stat.icon className={cn("h-5 w-5", stat.color)} />
                     <span className="font-data-mono text-[8px] text-zinc-700 tracking-[0.5em]">{stat.label}</span>
@@ -185,7 +205,7 @@ export default function Home() {
               <Link 
                 key={node.title}
                 href={node.href}
-                className="surface-glass rim-light p-10 space-y-6 group hover:rim-glow-cyan transition-all relative overflow-hidden"
+                className="surface-glass glass-refraction cyber-border rim-light p-10 space-y-6 group hover:rim-glow-cyan transition-all relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 transition-opacity">
                     <node.icon className="h-32 w-32 text-cyan-400" />
