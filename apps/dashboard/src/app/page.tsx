@@ -98,7 +98,7 @@ export default function LandingPage() {
               <span className="text-[10px] font-black uppercase tracking-widest text-cyan-glow">Autonomous Viral Content Intelligence</span>
             </motion.div>
             
-            <motion.h1 variants={itemVariants} className="text-6xl md:text-7xl font-black tracking-tighter leading-[0.9] uppercase">
+            <motion.h1 variants={itemVariants} className="text-4xl md:text-5xl font-bold tracking-tighter leading-[0.9] uppercase">
               Discover, Transform <br />
               <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-glow via-emerald-accent to-violet-500">& Dominate Every Feed</span>
             </motion.h1>

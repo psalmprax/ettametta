@@ -295,7 +295,7 @@ export default function SettingsPage() {
                                 className="h-1 bg-indigo-500 shadow-[0_0_20px_#6366f1]"
                             />
                             <div className="space-y-2">
-                                <h1 className="text-6xl md:text-8xl font-black text-white uppercase tracking-tighter leading-none glitch-text italic" data-text="CORE_CONFIG">
+                                <h1 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tighter leading-none glitch-text italic" data-text="CORE_CONFIG">
                                     Core Config
                                 </h1>
                                 <p className="font-data-mono text-zinc-500 text-[10px] flex items-center gap-3">
