@@ -83,7 +83,12 @@ export default function CreationPage() {
     }, [script]);
 
     const handleGenerateScript = useCallback(async () => {
-        if (!topic || !niche || !style) return;
+        if (!topic || !niche || !style) {
+            toast.error("Missing Information", {
+                description: "Please provide an Objective/Topic to generate the script."
+            });
+            return;
+        }
         setIsGenerating(true);
         setHookAnalysis(null);
         const token = getAuthToken();
@@ -389,7 +394,12 @@ export default function CreationPage() {
     }, [script, niche, topic, selectedBlueprint]);
 
     const handleLaunchCinema = useCallback(async () => {
-        if (!topic) return;
+        if (!topic) {
+            toast.error("Missing Topic", {
+                description: "Please provide an Objective/Topic to launch Cinema Mode."
+            });
+            return;
+        }
         setIsCinemaLaunching(true);
         const token = getAuthToken();
         if (!token) {
@@ -424,168 +434,141 @@ export default function CreationPage() {
     return (
         <DashboardLayout>
             <div className="section-container relative pb-20">
-                <div className="flex items-end justify-between mb-12">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Intelligence Hub</span>
-                        </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">Creation <span className="text-transparent bg-clip-text bg-linear-to-r from-violet-500 to-fuchsia-500 text-hollow">Suite</span></h1>
-                        <p className="text-zinc-500 font-medium">Engineer high-velocity <span className="text-zinc-300 font-bold">faceless content</span> with neural script generation.</p>
+                <div className="mb-lg">
+                    <h1 className="font-display-lg text-display-lg text-white mb-xs uppercase">Creation Suite</h1>
+                    <p className="font-data-mono text-data-mono text-outline uppercase tracking-widest text-zinc-500">Engineer high-velocity faceless content</p>
+                </div>
+
+                {/* Cinema Mode Toggle */}
+                <div className="flex items-center justify-between mb-lg p-md surface-glass rim-light">
+                    <div className="flex items-center gap-sm">
+                        <span className="material-symbols-outlined text-cyan-400">movie</span>
+                        <span className="font-label-caps text-label-caps uppercase text-white">Cinema Mode</span>
                     </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input checked={cinemaMode} onChange={() => setCinemaMode(!cinemaMode)} className="sr-only peer" type="checkbox" />
+                        <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+                    </label>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     {/* Input Controls */}
-                    <div className="space-y-8">
-                        <div className="glass-card space-y-8 relative overflow-hidden">
-                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity) pointer-events-none" />
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label htmlFor="topic" className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Objective / Topic</label>
-                                    <div className="relative group">
-                                        <Target className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-600 group-focus-within:text-primary transition-all" />
-                                        <input
-                                            id="topic"
-                                            name="topic"
-                                            value={topic}
-                                            onChange={(e) => setTopic(e.target.value)}
-                                            placeholder="The History of Quantum AI..."
-                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-5 pl-16 pr-6 focus:outline-none focus:ring-1 focus:ring-primary/40 text-base font-bold text-white placeholder:text-zinc-700 transition-all"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label htmlFor="niche" className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-2">Niche</label>
-                                        <div className="relative group">
-                                            <select
-                                                id="niche"
-                                                name="niche"
-                                                value={niche}
-                                                onChange={(e) => setNiche(e.target.value)}
-                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-5 pr-12 focus:outline-none focus:ring-1 focus:ring-primary/40 text-base font-bold uppercase tracking-wide text-zinc-300 appearance-none cursor-pointer hover:bg-zinc-900/50 transition-all"
-                                            >
-                                                {isLoadingNiches ? (
-                                                    <option disabled>Loading...</option>
-                                                ) : niches.length > 0 ? (
-                                                    niches.map(n => <option key={n} value={n}>{n}</option>)
-                                                ) : (
-                                                    <option value="Motivation">Motivation</option>
-                                                )}
-                                            </select>
-                                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600 group-hover:text-primary pointer-events-none transition-all" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-2">Style</label>
-                                        <div className="relative group">
-                                            <select
-                                                value={style}
-                                                onChange={(e) => setStyle(e.target.value)}
-                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-5 pr-12 focus:outline-none focus:ring-1 focus:ring-primary/40 text-base font-bold uppercase tracking-wide text-zinc-300 appearance-none cursor-pointer hover:bg-zinc-900/50 transition-all"
-                                            >
-                                                {availableStyles.map(s => <option key={s} value={s.toLowerCase()}>{s}</option>)}
-                                            </select>
-                                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600 group-hover:text-primary pointer-events-none transition-all" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label htmlFor="duration" className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-2">Duration: {duration}s</label>
+                    <div className="space-y-lg">
+                        <div className="grid grid-cols-1 gap-md">
+                            {/* Objective/Topic */}
+                            <div className="flex flex-col gap-xs">
+                                <label htmlFor="topic" className="font-label-caps text-label-caps text-outline-variant uppercase text-zinc-500">Objective / Topic</label>
+                                <div className="surface-glass rim-light p-xs flex items-center">
+                                    <span className="material-symbols-outlined px-sm text-cyan-400/50">psychology</span>
                                     <input
-                                        id="duration"
-                                        name="duration"
-                                        type="range"
-                                        min="15"
-                                        max="60"
-                                        step="1"
-                                        value={duration}
-                                        onChange={(e) => setDuration(parseInt(e.target.value))}
-                                        className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-primary"
+                                        id="topic"
+                                        name="topic"
+                                        value={topic}
+                                        onChange={(e) => setTopic(e.target.value)}
+                                        className="bg-transparent border-none w-full text-white placeholder-white/20 font-body-base py-sm focus:ring-0"
+                                        placeholder="Quantum Computing Basics"
+                                        type="text"
                                     />
                                 </div>
-
-                                <div className="p-4 rounded-xl border border-white/5 bg-zinc-950/20 flex items-center justify-between group hover:border-violet-500/30 transition-all cursor-pointer" onClick={() => setCinemaMode(!cinemaMode)}>
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center transition-all", cinemaMode ? "bg-violet-500/20 text-violet-500" : "bg-zinc-900 text-zinc-700")}>
-                                            <Film className="h-4 w-4" />
-                                        </div>
-                                        <div className="space-y-0.5">
-                                            <p className="text-xs font-black uppercase tracking-tight text-white group-hover:text-violet-400 transition-colors">Cinema Mode</p>
-                                            <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Fully Autonomous</p>
-                                        </div>
-                                    </div>
-                                    <div className={cn("w-10 h-5 rounded-full relative transition-all duration-500", cinemaMode ? "bg-violet-600" : "bg-zinc-800")}>
-                                        <motion.div
-                                            animate={{ x: cinemaMode ? 20 : 2 }}
-                                            className="absolute top-1 left-0 h-3 w-3 rounded-full bg-white shadow-sm"
-                                        />
-                                    </div>
-                                </div>
-                                </div>
-
-                                {/* Blueprint Selection */}
-                                <div className="glass-card p-6 rounded-2xl space-y-4 mb-8">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center border border-violet-500/20">
-                                                <Cpu className="h-5 w-5 text-violet-500" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-black uppercase tracking-tight text-white">Neural Recipe</h3>
-                                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Select processing pipeline</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => setShowBlueprintBuilder(true)}
-                                            className="px-4 py-2 bg-violet-500/10 border border-violet-500/20 rounded-lg text-xs font-black text-violet-400 hover:bg-violet-500/20 transition-all"
-                                        >
-                                            Create Recipe
-                                        </button>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {blueprints.length === 0 ? (
-                                            <p className="text-zinc-500 text-sm col-span-2">No recipes found. Create your first neural recipe.</p>
+                            </div>
+                            
+                            {/* Niche */}
+                            <div className="flex flex-col gap-xs">
+                                <label htmlFor="niche" className="font-label-caps text-label-caps text-outline-variant uppercase text-zinc-500">Niche</label>
+                                <div className="surface-glass rim-light p-xs flex items-center">
+                                    <span className="material-symbols-outlined px-sm text-cyan-400/50">category</span>
+                                    <select
+                                        id="niche"
+                                        name="niche"
+                                        value={niche}
+                                        onChange={(e) => setNiche(e.target.value)}
+                                        className="bg-transparent border-none w-full text-white font-body-base py-sm focus:ring-0 appearance-none [&>option]:bg-surface"
+                                    >
+                                        {isLoadingNiches ? (
+                                            <option disabled>Loading...</option>
+                                        ) : niches.length > 0 ? (
+                                            niches.map(n => <option key={n} value={n}>{n}</option>)
                                         ) : (
-                                            blueprints.map((bp) => (
-                                                <div
-                                                    key={bp.id}
-                                                    onClick={() => setSelectedBlueprint(bp)}
-                                                    className={cn(
-                                                        "p-4 rounded-xl border cursor-pointer transition-all",
-                                                        selectedBlueprint?.id === bp.id
-                                                            ? "bg-violet-500/10 border-violet-500/40"
-                                                            : "bg-white/2 border-white/5 hover:border-white/10"
-                                                    )}
-                                                >
-                                                    <p className="text-sm font-bold text-white">{bp.name}</p>
-                                                    <p className="text-[10px] text-zinc-500 line-clamp-1">{bp.description}</p>
-                                                    <p className="text-[9px] text-zinc-600 mt-2">Composition: {bp.composition_id}</p>
-                                                </div>
-                                            ))
+                                            <option value="Motivation">Motivation</option>
                                         )}
-                                    </div>
+                                    </select>
                                 </div>
+                            </div>
 
-                            <motion.button
-                                whileHover={{ scale: 1.02, y: -4 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={cinemaMode ? handleLaunchCinema : handleGenerateScript}
-                                disabled={isGenerating || isCinemaLaunching || !topic}
-                                className={cn(
-                                    "w-full font-black py-5 rounded-xl transition-all flex items-center justify-center gap-3 uppercase text-sm tracking-widest",
-                                    cinemaMode ? "bg-violet-600 hover:bg-violet-500 shadow-[0_0_40px_rgba(139,92,246,0.3)] text-white" : "bg-primary hover:bg-primary/90 shadow-[0_0_40px_rgba(var(--primary-rgb),0.3)] text-white"
-                                )}
-                            >
-                                {isGenerating || isCinemaLaunching ? <RefreshCw className="h-5 w-5 animate-spin" /> : cinemaMode ? <Zap className="h-5 w-5" /> : <Wand2 className="h-5 w-5" />}
-                                {isGenerating || isCinemaLaunching ? "Synthesizing..." : cinemaMode ? "Launch Cinema Production" : "Generate Script"}
-                            </motion.button>
+                            {/* Style */}
+                            <div className="flex flex-col gap-xs">
+                                <label className="font-label-caps text-label-caps text-outline-variant uppercase text-zinc-500">Style</label>
+                                <div className="surface-glass rim-light p-xs flex items-center">
+                                    <span className="material-symbols-outlined px-sm text-cyan-400/50">palette</span>
+                                    <select
+                                        value={style}
+                                        onChange={(e) => setStyle(e.target.value)}
+                                        className="bg-transparent border-none w-full text-white font-body-base py-sm focus:ring-0 appearance-none [&>option]:bg-surface"
+                                    >
+                                        {availableStyles.map(s => <option key={s} value={s.toLowerCase()}>{s}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Duration Slider */}
+                            <div className="flex flex-col gap-sm py-sm">
+                                <div className="flex justify-between items-center">
+                                    <label htmlFor="duration" className="font-label-caps text-label-caps text-outline-variant uppercase text-zinc-500">Duration</label>
+                                    <span className="font-data-mono text-data-mono text-cyan-400">{duration}s</span>
+                                </div>
+                                <input
+                                    id="duration"
+                                    name="duration"
+                                    type="range"
+                                    min="15"
+                                    max="60"
+                                    step="1"
+                                    value={duration}
+                                    onChange={(e) => setDuration(parseInt(e.target.value))}
+                                    className="w-full"
+                                />
+                            </div>
                         </div>
 
+                        {/* Visualization / Preview Area (Bento Component) */}
+                        <div className="grid grid-cols-2 gap-gutter">
+                            <div className="surface-glass rim-light p-md col-span-2 aspect-video flex flex-col justify-end relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"></div>
+                                <img alt="Data stream" className="absolute inset-0 w-full h-full object-cover opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-FrlreC3nNUT6-A3Bge55Oz0cI4Nxn_QrFNnVgfcw8f5YCqdiQ5YIrRTDGDl7Q7kDUVFnqffQ7bQyY9uhjHg5NYML-2InmRTMSOLCW1zfJq6NFYQ86YpMSrZHYEA-F2EV0lOa0Qu9uldAS4opInFC4r6i1BgiDpxBwSsaBvIQLzGLAdmPqg9AP4WXMftMdU4bZfhg9arjoka9lpquLB5zvNmxuInu-ieki0mORkz6Wu1BbmvJBRmdVy-_5fxuSFiWlHGClY3wuoPm" />
+                                <div className="relative z-20">
+                                    <div className="flex items-center gap-xs mb-xs">
+                                        <span className="w-2 h-2 bg-cyan-400 shadow-[0_0_5px_#00fbfb]"></span>
+                                        <span className="font-label-caps text-[10px] text-cyan-400 uppercase tracking-widest">System Ready</span>
+                                    </div>
+                                    <p className="font-data-mono text-xs text-white/70">Engine initialized for high-velocity output...</p>
+                                </div>
+                            </div>
+                            <div className="surface-glass rim-light p-md flex flex-col items-center justify-center gap-xs">
+                                <span className="font-display-lg text-headline-md text-white">4K</span>
+                                <span className="font-label-caps text-[10px] text-outline-variant uppercase text-zinc-500">Resolution</span>
+                            </div>
+                            <div className="surface-glass rim-light p-md flex flex-col items-center justify-center gap-xs">
+                                <span className="font-display-lg text-headline-md text-white">AI</span>
+                                <span className="font-label-caps text-[10px] text-outline-variant uppercase text-zinc-500">Engine V4</span>
+                            </div>
+                        </div>
+
+                        {/* Generate Button */}
+                        <button
+                            onClick={cinemaMode ? handleLaunchCinema : handleGenerateScript}
+                            disabled={isGenerating || isCinemaLaunching || !topic}
+                            className="w-full py-lg mt-md action-primary rounded-none flex items-center justify-center gap-sm active:scale-95 duration-200 group"
+                        >
+                            <span className="font-label-caps text-headline-md text-black uppercase tracking-tighter">
+                                {isGenerating || isCinemaLaunching ? "SYNTHESIZING..." : cinemaMode ? "LAUNCH CINEMA" : "GENERATE SCRIPT"}
+                            </span>
+                            {isGenerating || isCinemaLaunching ? (
+                                <RefreshCw className="h-6 w-6 text-black animate-spin" />
+                            ) : (
+                                <span className="material-symbols-outlined text-black group-hover:translate-x-1 transition-transform">bolt</span>
+                            )}
+                        </button>
+                        
                         {/* Analysis Insights */}
                         <AnimatePresence>
                             {hookAnalysis && (
@@ -593,7 +576,7 @@ export default function CreationPage() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className={cn(
-                                        "glass-card p-8 rounded-4xl space-y-6 relative overflow-hidden border",
+                                        "surface-glass p-8 rounded-4xl space-y-6 relative overflow-hidden border",
                                         hookAnalysis.status === "KILL" ? "border-red-500/20 bg-red-500/5" : "border-emerald-500/20 bg-emerald-500/5"
                                     )}
                                 >
@@ -624,7 +607,7 @@ export default function CreationPage() {
                                                 <div 
                                                     key={i} 
                                                     onClick={() => handleApplyAlternativeHook(alt)}
-                                                    className="p-4 bg-zinc-950/80 rounded-xl border border-white/5 text-[11px] font-bold text-zinc-300 group hover:border-primary/40 transition-all cursor-pointer"
+                                                    className="p-4 bg-zinc-950/80 rounded-xl border border-white/5 text-[11px] font-bold text-zinc-300 group hover:border-cyan-400/40 transition-all cursor-pointer"
                                                 >
                                                     {alt}
                                                 </div>
@@ -637,21 +620,20 @@ export default function CreationPage() {
                     </div>
 
                     {/* Script Workspace */}
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="glass-card overflow-hidden min-h-[600px] flex flex-col shadow-2xl relative">
-                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity) pointer-events-none" />
-                            <div className="p-8 border-b border-white/5 bg-white/2 flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                                        <Edit3 className="h-5 w-5 text-primary neon-glow" />
+                    <div className="lg:col-span-2 space-y-lg">
+                        <div className="surface-glass rim-light overflow-hidden min-h-[600px] flex flex-col relative">
+                            <div className="p-md border-b border-white/5 flex items-center justify-between">
+                                <div className="flex items-center gap-md">
+                                    <div className="h-10 w-10 bg-surface-container-high flex items-center justify-center border border-cyan-400/20">
+                                        <span className="material-symbols-outlined text-cyan-400">edit_square</span>
                                     </div>
                                     <div className="space-y-0.5">
-                                        <h3 className="font-black uppercase tracking-tight text-white">Neural Blueprint</h3>
-                                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Script & Retention Architecture</p>
+                                        <h3 className="font-label-caps text-headline-md uppercase tracking-tight text-white">Neural Blueprint</h3>
+                                        <p className="font-label-caps text-[10px] text-outline-variant uppercase tracking-widest">Script & Retention Architecture</p>
                                     </div>
                                 </div>
                                 {script && (
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-sm">
                                         {[
                                             { code: "ES", name: "Spanish" },
                                             { code: "DE", name: "German" },
@@ -664,18 +646,18 @@ export default function CreationPage() {
                                             <button
                                                 key={lang.code}
                                                 onClick={() => handleGlobalize(lang.name)}
-                                                className="px-3 py-2 rounded-lg bg-zinc-900 border border-white/5 text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white hover:border-primary/50 transition-all flex items-center gap-1.5"
+                                                className="px-sm py-sm bg-surface-container-high border border-white/5 font-label-caps text-[10px] uppercase tracking-widest text-on-surface-variant hover:text-white hover:border-cyan-400/50 transition-all flex items-center gap-xs"
                                             >
-                                                <Globe className="h-2.5 w-2.5" />
+                                                <span className="material-symbols-outlined text-[12px]">language</span>
                                                 {lang.code}
                                             </button>
                                         ))}
                                         <button
                                             onClick={handleValidateHook}
                                             disabled={isValidating}
-                                            className="glass-card hover:border-primary/50 text-zinc-400 hover:text-white text-[10px] font-black py-3 px-6 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest ml-auto"
+                                            className="surface-glass rim-light hover:border-cyan-400/50 text-cyan-400 hover:text-cyan-300 font-label-caps text-[10px] py-sm px-md transition-all flex items-center gap-xs uppercase tracking-widest ml-auto"
                                         >
-                                            {isValidating ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                            {isValidating ? <RefreshCw className="h-3 w-3 animate-spin" /> : <span className="material-symbols-outlined text-[14px]">auto_awesome</span>}
                                             Analyze Retention
                                         </button>
                                     </div>
