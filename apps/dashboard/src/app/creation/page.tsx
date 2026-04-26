@@ -19,7 +19,10 @@ import {
     Wand2,
     Target,
     ChevronDown,
-    Globe
+    Globe,
+    Brain,
+    Palette,
+    Layers
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -442,7 +445,7 @@ export default function CreationPage() {
                 {/* Cinema Mode Toggle */}
                 <div className="flex items-center justify-between mb-lg p-md surface-glass rim-light">
                     <div className="flex items-center gap-sm">
-                        <span className="material-symbols-outlined text-cyan-400">movie</span>
+                        <Film className="h-5 w-5 text-cyan-400" />
                         <span className="font-label-caps text-label-caps uppercase text-white">Cinema Mode</span>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -451,15 +454,15 @@ export default function CreationPage() {
                     </label>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
                     {/* Input Controls */}
-                    <div className="space-y-lg">
+                    <div className="xl:col-span-1 space-y-lg">
                         <div className="grid grid-cols-1 gap-md">
                             {/* Objective/Topic */}
                             <div className="flex flex-col gap-xs">
                                 <label htmlFor="topic" className="font-label-caps text-label-caps text-outline-variant uppercase text-zinc-500">Objective / Topic</label>
                                 <div className="surface-glass rim-light p-xs flex items-center">
-                                    <span className="material-symbols-outlined px-sm text-cyan-400/50">psychology</span>
+                                    <Brain className="mx-sm h-5 w-5 text-cyan-400/50" />
                                     <input
                                         id="topic"
                                         name="topic"
@@ -476,7 +479,7 @@ export default function CreationPage() {
                             <div className="flex flex-col gap-xs">
                                 <label htmlFor="niche" className="font-label-caps text-label-caps text-outline-variant uppercase text-zinc-500">Niche</label>
                                 <div className="surface-glass rim-light p-xs flex items-center">
-                                    <span className="material-symbols-outlined px-sm text-cyan-400/50">category</span>
+                                    <Layers className="mx-sm h-5 w-5 text-cyan-400/50" />
                                     <select
                                         id="niche"
                                         name="niche"
@@ -499,7 +502,7 @@ export default function CreationPage() {
                             <div className="flex flex-col gap-xs">
                                 <label className="font-label-caps text-label-caps text-outline-variant uppercase text-zinc-500">Style</label>
                                 <div className="surface-glass rim-light p-xs flex items-center">
-                                    <span className="material-symbols-outlined px-sm text-cyan-400/50">palette</span>
+                                    <Palette className="mx-sm h-5 w-5 text-cyan-400/50" />
                                     <select
                                         value={style}
                                         onChange={(e) => setStyle(e.target.value)}
@@ -565,7 +568,7 @@ export default function CreationPage() {
                             {isGenerating || isCinemaLaunching ? (
                                 <RefreshCw className="h-6 w-6 text-black animate-spin" />
                             ) : (
-                                <span className="material-symbols-outlined text-black group-hover:translate-x-1 transition-transform">bolt</span>
+                                <Zap className="h-6 w-6 text-black group-hover:translate-x-1 transition-transform" />
                             )}
                         </button>
                         
@@ -620,12 +623,12 @@ export default function CreationPage() {
                     </div>
 
                     {/* Script Workspace */}
-                    <div className="lg:col-span-2 space-y-lg">
+                    <div className="xl:col-span-2 space-y-lg">
                         <div className="surface-glass rim-light overflow-hidden min-h-[600px] flex flex-col relative">
                             <div className="p-md border-b border-white/5 flex items-center justify-between">
                                 <div className="flex items-center gap-md">
                                     <div className="h-10 w-10 bg-surface-container-high flex items-center justify-center border border-cyan-400/20">
-                                        <span className="material-symbols-outlined text-cyan-400">edit_square</span>
+                                        <Edit3 className="h-5 w-5 text-cyan-400" />
                                     </div>
                                     <div className="space-y-0.5">
                                         <h3 className="font-label-caps text-headline-md uppercase tracking-tight text-white">Neural Blueprint</h3>
@@ -648,7 +651,7 @@ export default function CreationPage() {
                                                 onClick={() => handleGlobalize(lang.name)}
                                                 className="px-sm py-sm bg-surface-container-high border border-white/5 font-label-caps text-[10px] uppercase tracking-widest text-on-surface-variant hover:text-white hover:border-cyan-400/50 transition-all flex items-center gap-xs"
                                             >
-                                                <span className="material-symbols-outlined text-[12px]">language</span>
+                                                <Globe className="h-3 w-3" />
                                                 {lang.code}
                                             </button>
                                         ))}
@@ -657,7 +660,7 @@ export default function CreationPage() {
                                             disabled={isValidating}
                                             className="surface-glass rim-light hover:border-cyan-400/50 text-cyan-400 hover:text-cyan-300 font-label-caps text-[10px] py-sm px-md transition-all flex items-center gap-xs uppercase tracking-widest ml-auto"
                                         >
-                                            {isValidating ? <RefreshCw className="h-3 w-3 animate-spin" /> : <span className="material-symbols-outlined text-[14px]">auto_awesome</span>}
+                                            {isValidating ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                                             Analyze Retention
                                         </button>
                                     </div>
