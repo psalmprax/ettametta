@@ -22,7 +22,13 @@ import {
     Globe,
     Brain,
     Palette,
-    Layers
+    Layers,
+    Monitor,
+    Database,
+    ZapOff,
+    Terminal,
+    Dna,
+    Network
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -30,6 +36,7 @@ import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { useNiches } from "@/hooks/useNiches";
+
 export default function CreationPage() {
     const { niches, styles: availableStyles, isLoading: isLoadingNiches } = useNiches();
     const [topic, setTopic] = useState("");
@@ -41,822 +48,489 @@ export default function CreationPage() {
     const [segmentAssets, setSegmentAssets] = useState<Record<number, { audio?: string, image?: string, videos?: any[] }>>({});
     const [loadingSegment, setLoadingSegment] = useState<string | null>(null);
     const [cinemaMode, setCinemaMode] = useState(false);
-    const [isCinemaLaunching, setIsCinemaLaunching] = useState(false);
-
     const [isValidating, setIsValidating] = useState(false);
+    const [isCinemaLaunching, setIsCinemaLaunching] = useState(false);
     const [hookAnalysis, setHookAnalysis] = useState<HookAnalysis | null>(null);
-    const [isExporting, setIsExporting] = useState(false);
-    const [isLaunchingProduction, setIsLaunchingProduction] = useState(false);
-    const [showBlueprintBuilder, setShowBlueprintBuilder] = useState(false);
-    const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
-    const [selectedBlueprint, setSelectedBlueprint] = useState<Blueprint | null>(null);
 
-    useEffect(() => {
-        if (niches && niches.length > 0 && niche === "Motivation") {
-            setNiche(niches[0]);
-        }
-    }, [niches, niche]);
-
-    useEffect(() => {
-        const fetchBlueprints = async () => {
-            const token = getAuthToken();
-            if (!token) return;
-            await withRealFallback<Blueprint[]>(
-                () => fetch(`${API_BASE}/nexus/blueprints`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                {
-                    fallback: [],
-                    onSuccess: (data) => setBlueprints(Array.isArray(data) ? data : []),
-                    errorMessage: "Failed to load neural recipes"
-                }
-            );
-        };
-        fetchBlueprints();
-    }, []);
-
-    const handleApplyAlternativeHook = useCallback((newHook: string) => {
-        if (!script) return;
-        const newSegments = script.segments.map(s => 
-            s.type === "hook" ? { ...s, text: newHook } : s
-        );
-        setScript({ ...script, segments: newSegments });
-        setHookAnalysis(null);
-        toast.success("Hook Updated", { description: "Neural blueprint synchronized with new hook." });
-    }, [script]);
-
-    const handleGenerateScript = useCallback(async () => {
-        if (!topic || !niche || !style) {
-            toast.error("Missing Information", {
-                description: "Please provide an Objective/Topic to generate the script."
-            });
-            return;
-        }
-        setIsGenerating(true);
-        setHookAnalysis(null);
-        const token = getAuthToken();
-        if (!token) {
-            setIsGenerating(false);
-            return;
-        }
-
-        await withRealFallback<ScriptOutput | null>(
-            () => fetch(`${API_BASE}/no-face/generate-script`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ topic, niche, style, duration })
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => setScript(data),
-                errorMessage: "Neural script engine desynced. Market link unstable."
-            }
-        );
-        setIsGenerating(false);
-    }, [topic, niche, style, duration, setScript, setHookAnalysis, setIsGenerating]);
-
-
-
-    const handleValidateHook = useCallback(async () => {
-        if (!script) return;
-        const hookSegment = Array.isArray(script.segments) ? script.segments.find(s => s.type === "hook") : null;
-        if (!hookSegment) return;
-
-        setIsValidating(true);
-        const token = getAuthToken();
-        if (!token) {
-            setIsValidating(false);
-            return;
-        }
-
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/no-face/validate-hook`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ hook: hookSegment.text })
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => setHookAnalysis(data)
-            }
-        );
-        setIsValidating(false);
-    }, [script]);
-
-    const handleSynthesizeAudio = useCallback(async (index: number, text: string) => {
-        setLoadingSegment(`audio-${index}`);
-        const token = getAuthToken();
-        if (!token) {
-            setLoadingSegment(null);
-            return;
-        }
-
-        const doRequest = async (): Promise<any> => {
-            return await withRealFallback<any>(
-                () => fetch(`${API_BASE}/no-face/generate-voiceover`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ text })
-                }),
-                {
-                    fallback: null,
-                    onSuccess: (data) => {
-                        setSegmentAssets(prev => ({
-                            ...prev,
-                            [index]: { ...prev[index], audio: data.audio_url || data.url }
-                        }));
-                    },
-                    silent: true
-                }
-            );
-        };
-
-        let result = await doRequest();
-        let retries = 0;
-        const maxRetries = 2;
-        while (!result && retries < maxRetries) {
-            retries++;
-            const delay = Math.pow(2, retries) * 1000;
-            await new Promise(resolve => setTimeout(resolve, delay));
-            result = await doRequest();
-        }
-        setLoadingSegment(null);
-        if (!result) {
-            toast.error("Audio synthesis failed", {
-                description: `Segment ${index + 1}: Voiceover generation failed after 3 attempts. Please try again or use a different voice.`
-            });
-        }
-    }, [setLoadingSegment, setSegmentAssets]);
-
-    const handleGenerateSegmentImage = useCallback(async (index: number, prompt: string) => {
-        setLoadingSegment(`image-${index}`);
-        const token = getAuthToken();
-        if (!token) {
-            setLoadingSegment(null);
-            return;
-        }
-
-        const doRequest = async (): Promise<any> => {
-            return await withRealFallback<any>(
-                () => fetch(`${API_BASE}/no-face/generate-image`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ prompt })
-                }),
-                {
-                    fallback: null,
-                    onSuccess: (data) => {
-                        setSegmentAssets(prev => ({
-                            ...prev,
-                            [index]: { ...prev[index], image: data.image_url || data.url }
-                        }));
-                    },
-                    silent: true
-                }
-            );
-        };
-
-        let result = await doRequest();
-        let retries = 0;
-        const maxRetries = 2;
-        while (!result && retries < maxRetries) {
-            retries++;
-            const delay = Math.pow(2, retries) * 1000;
-            await new Promise(resolve => setTimeout(resolve, delay));
-            result = await doRequest();
-        }
-        setLoadingSegment(null);
-        if (!result) {
-            toast.error("Image generation failed", {
-                description: `Segment ${index + 1}: Image creation failed after 3 attempts. Please try again or adjust the prompt.`
-            });
-        }
-    }, [setLoadingSegment, setSegmentAssets]);
-
-    const handleSearchStock = useCallback(async (index: number, query: string) => {
-        setLoadingSegment(`stock-${index}`);
-        const token = getAuthToken();
-        if (!token) {
-            setLoadingSegment(null);
-            return;
-        }
-
-        const doRequest = async (): Promise<any[]> => {
-            return await withRealFallback<any[]>(
-                () => fetch(`${API_BASE}/no-face/search-stock?query=${encodeURIComponent(query)}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                {
-                    fallback: [],
-                    onSuccess: (data) => {
-                        setSegmentAssets(prev => ({
-                            ...prev,
-                            [index]: { ...prev[index], videos: data }
-                        }));
-                    },
-                    silent: true
-                }
-            );
-        };
-
-        let result = await doRequest();
-        let retries = 0;
-        const maxRetries = 2;
-        while (!result || !result.length) {
-            if (retries >= maxRetries) break;
-            retries++;
-            const delay = Math.pow(2, retries) * 1000;
-            await new Promise(resolve => setTimeout(resolve, delay));
-            result = await doRequest();
-        }
-        setLoadingSegment(null);
-        if (!result || !result.length) {
-            toast.error("Stock video search failed", {
-                description: `Segment ${index + 1}: Could not find stock videos after 3 attempts. Try a different query.`
-            });
-        }
-    }, [setLoadingSegment, setSegmentAssets]);
-
-    const handleGlobalize = useCallback(async (lang: string) => {
-        if (!script) return;
-        setIsGenerating(true);
-        const token = getAuthToken();
-        if (!token) {
-            setIsGenerating(false);
-            return;
-        }
-
-        await withRealFallback<ScriptSegment[]>(
-            () => fetch(`${API_BASE}/no-face/localize`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ segments: script.segments, target_lang: lang })
-            }),
-            {
-                fallback: script.segments,
-                onSuccess: (data) => setScript({ ...script, segments: data }),
-                errorMessage: "Localization cluster busy. Reverting to primary language."
-            }
-        );
-        setIsGenerating(false);
-    }, [script]);
-
-    const handleExportAssets = useCallback(() => {
-        if (!script) return;
-        setIsExporting(true);
-        try {
-            const exportData = {
-                title: script.title,
-                segments: script.segments.map((seg, i) => ({
-                    ...seg,
-                    audio_url: segmentAssets[i]?.audio || null,
-                    image_url: segmentAssets[i]?.image || null,
-                    stock_videos: segmentAssets[i]?.videos || []
-                })),
-                hashtags: script.hashtags,
-                metadata: {
-                    niche,
-                    style,
-                    duration,
-                    exported_at: new Date().toISOString()
-                }
-            };
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${script.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_blueprint.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        } finally {
-            setIsExporting(false);
-        }
-    }, [script, segmentAssets, niche, style, duration]);
-
-    const handleLaunchProduction = useCallback(async () => {
-        if (!script) return;
-        if (!selectedBlueprint) {
-            toast.warning("No Recipe Selected", {
-                description: "Please select a neural recipe or create a custom one."
-            });
-            setIsLaunchingProduction(false);
-            return;
-        }
-        setIsLaunchingProduction(true);
-        const token = getAuthToken();
-        if (!token) {
-            setIsLaunchingProduction(false);
-            return;
-        }
-
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/nexus/compose`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    niche,
-                    topic,
-                    blueprint_id: selectedBlueprint?.id || "story-factory",
-                    cinema_mode: false,
-                    script_data: {
-                        title: script.title,
-                        segments: script.segments,
-                        hashtags: script.hashtags
-                    }
-                })
-            }),
-            {
-                fallback: null,
-                onSuccess: () => {
-                    toast.success("Production pipeline activated.");
-                    window.location.href = "/transformation";
-                }
-            }
-        );
-        setIsLaunchingProduction(false);
-    }, [script, niche, topic, selectedBlueprint]);
-
-    const handleLaunchCinema = useCallback(async () => {
+    const handleGenerateScript = async () => {
         if (!topic) {
-            toast.error("Missing Topic", {
-                description: "Please provide an Objective/Topic to launch Cinema Mode."
+            toast.error("Enter a topic first");
+            return;
+        }
+        setIsGenerating(true);
+        try {
+            const token = await getAuthToken();
+            const res = await fetch(`${API_BASE}/v1/video/script`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ topic, niche, style, duration_seconds: duration })
             });
+            if (!res.ok) throw new Error("Synthesis failure");
+            const data = await res.json();
+            setScript(data);
+            toast.success("Script synthesized successfully");
+        } catch (err) {
+            console.error(err);
+            toast.error("Neural link failed");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleLaunchCinema = async () => {
+        if (!topic) {
+            toast.error("Enter a topic first");
             return;
         }
         setIsCinemaLaunching(true);
-        const token = getAuthToken();
-        if (!token) {
-            setIsCinemaLaunching(false);
-            return;
-        }
-
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/nexus/compose`, {
+        try {
+            const token = await getAuthToken();
+            const res = await fetch(`${API_BASE}/v1/video/launch-cinema`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
+                    "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    niche,
-                    topic,
-                    cinema_mode: true
-                })
-            }),
-            {
-                fallback: null,
-                onSuccess: () => {
-                    toast.success("Cinema Mode: Autonomous production launched.");
-                    window.location.href = "/transformation";
-                }
-            }
-        );
-        setIsCinemaLaunching(false);
-    }, [topic, niche]);
+                body: JSON.stringify({ topic, niche, style, duration_seconds: duration })
+            });
+            if (!res.ok) throw new Error("Cinema launch failure");
+            toast.success("Cinema sequence initiated");
+        } catch (err) {
+            console.error(err);
+            toast.error("System override required");
+        } finally {
+            setIsCinemaLaunching(false);
+        }
+    };
+
+    const handleValidateHook = async () => {
+        if (!script?.segments?.[0]?.text) return;
+        setIsValidating(true);
+        try {
+            const token = await getAuthToken();
+            const res = await fetch(`${API_BASE}/v1/video/validate-hook`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ hook: script.segments[0].text })
+            });
+            if (!res.ok) throw new Error("Validation failed");
+            const data = await res.json();
+            setHookAnalysis(data);
+        } catch (err) {
+            console.error(err);
+            toast.error("Retention analysis offline");
+        } finally {
+            setIsValidating(false);
+        }
+    };
+
+    const handleGlobalize = async (targetLang: string) => {
+        if (!script) return;
+        setIsGenerating(true);
+        try {
+            const token = await getAuthToken();
+            const res = await fetch(`${API_BASE}/v1/video/translate-script`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ script, target_language: targetLang })
+            });
+            if (!res.ok) throw new Error("Translation failed");
+            const data = await res.json();
+            setScript(data);
+            toast.success(`Localized to ${targetLang}`);
+        } catch (err) {
+            console.error(err);
+            toast.error("Linguistic module error");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleSynthesizeAudio = async (index: number, text: string) => {
+        setLoadingSegment(`audio-${index}`);
+        try {
+            const token = await getAuthToken();
+            const res = await fetch(`${API_BASE}/v1/video/synthesize-audio`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ text, segment_index: index })
+            });
+            if (!res.ok) throw new Error("Audio synthesis failed");
+            const data = await res.json();
+            setSegmentAssets(prev => ({
+                ...prev,
+                [index]: { ...prev[index], audio: data.audio_url }
+            }));
+            toast.success("Vocal pattern synthesized");
+        } catch (err) {
+            console.error(err);
+            toast.error("Audio engine failed");
+        } finally {
+            setLoadingSegment(null);
+        }
+    };
+
+    const handleSearchStock = async (index: number, query: string) => {
+        setLoadingSegment(`stock-${index}`);
+        try {
+            const token = await getAuthToken();
+            const res = await fetch(`${API_BASE}/v1/video/search-stock`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ query, segment_index: index })
+            });
+            if (!res.ok) throw new Error("Stock search failed");
+            const data = await res.json();
+            setSegmentAssets(prev => ({
+                ...prev,
+                [index]: { ...prev[index], videos: data.videos }
+            }));
+            toast.success("Visual assets retrieved");
+        } catch (err) {
+            console.error(err);
+            toast.error("Archive link failure");
+        } finally {
+            setLoadingSegment(null);
+        }
+    };
 
     return (
         <DashboardLayout>
-            <div className="section-container relative pb-20">
-                <div className="mb-lg">
-                    <h1 className="font-display-lg text-display-lg text-white mb-xs uppercase">Creation Suite</h1>
-                    <p className="font-data-mono text-data-mono text-outline uppercase tracking-widest text-zinc-500">Engineer high-velocity faceless content</p>
-                </div>
+            <div className="min-h-screen bg-[#08080a] relative overflow-hidden flex flex-col">
+                {/* Background Cyber Grid */}
+                <div className="absolute inset-0 cyber-grid opacity-20 pointer-events-none" />
+                
+                {/* Scanline Overlay */}
+                <div className="absolute inset-0 scanline opacity-10 pointer-events-none z-50" />
 
-                {/* Cinema Mode Toggle */}
-                <div className="flex items-center justify-between mb-lg p-md surface-glass rim-light">
-                    <div className="flex items-center gap-sm">
-                        <Film className="h-5 w-5 text-cyan-400" />
-                        <span className="font-label-caps text-label-caps uppercase text-white">Cinema Mode</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input checked={cinemaMode} onChange={() => setCinemaMode(!cinemaMode)} className="sr-only peer" type="checkbox" />
-                        <div className="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
-                    </label>
-                </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-                    {/* Input Controls */}
-                    <div className="xl:col-span-1 space-y-lg">
-                        <div className="grid grid-cols-1 gap-md">
-                            {/* Objective/Topic */}
-                            <div className="flex flex-col gap-xs">
-                                <label htmlFor="topic" className="font-label-caps text-label-caps text-outline-variant uppercase text-zinc-500">Objective / Topic</label>
-                                <div className="surface-glass rim-light p-xs flex items-center">
-                                    <Brain className="mx-sm h-5 w-5 text-cyan-400/50" />
-                                    <input
-                                        id="topic"
-                                        name="topic"
-                                        value={topic}
-                                        onChange={(e) => setTopic(e.target.value)}
-                                        className="bg-transparent border-none w-full text-white placeholder-white/20 font-body-base py-sm focus:ring-0"
-                                        placeholder="Quantum Computing Basics"
-                                        type="text"
-                                    />
-                                </div>
-                            </div>
-                            
-                            {/* Niche */}
-                            <div className="flex flex-col gap-xs">
-                                <label htmlFor="niche" className="font-label-caps text-label-caps text-outline-variant uppercase text-zinc-500">Niche</label>
-                                <div className="surface-glass rim-light p-xs flex items-center">
-                                    <Layers className="mx-sm h-5 w-5 text-cyan-400/50" />
-                                    <select
-                                        id="niche"
-                                        name="niche"
-                                        value={niche}
-                                        onChange={(e) => setNiche(e.target.value)}
-                                        className="bg-transparent border-none w-full text-white font-body-base py-sm focus:ring-0 appearance-none [&>option]:bg-surface"
-                                    >
-                                        {isLoadingNiches ? (
-                                            <option disabled>Loading...</option>
-                                        ) : niches.length > 0 ? (
-                                            niches.map(n => <option key={n} value={n}>{n}</option>)
-                                        ) : (
-                                            <option value="Motivation">Motivation</option>
-                                        )}
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Style */}
-                            <div className="flex flex-col gap-xs">
-                                <label className="font-label-caps text-label-caps text-outline-variant uppercase text-zinc-500">Style</label>
-                                <div className="surface-glass rim-light p-xs flex items-center">
-                                    <Palette className="mx-sm h-5 w-5 text-cyan-400/50" />
-                                    <select
-                                        value={style}
-                                        onChange={(e) => setStyle(e.target.value)}
-                                        className="bg-transparent border-none w-full text-white font-body-base py-sm focus:ring-0 appearance-none [&>option]:bg-surface"
-                                    >
-                                        {availableStyles.map(s => <option key={s} value={s.toLowerCase()}>{s}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Duration Slider */}
-                            <div className="flex flex-col gap-sm py-sm">
-                                <div className="flex justify-between items-center">
-                                    <label htmlFor="duration" className="font-label-caps text-label-caps text-outline-variant uppercase text-zinc-500">Duration</label>
-                                    <span className="font-data-mono text-data-mono text-cyan-400">{duration}s</span>
-                                </div>
-                                <input
-                                    id="duration"
-                                    name="duration"
-                                    type="range"
-                                    min="15"
-                                    max="60"
-                                    step="1"
-                                    value={duration}
-                                    onChange={(e) => setDuration(parseInt(e.target.value))}
-                                    className="w-full"
-                                />
-                            </div>
+                <div className="flex-1 section-container relative py-12 px-6 lg:px-12 max-w-7xl mx-auto w-full">
+                    {/* Header */}
+                    <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div>
+                            <motion.h1 
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter mb-2 neon-text-cyan"
+                            >
+                                Creation Suite
+                            </motion.h1>
+                            <motion.p 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.2 }}
+                                className="font-data-mono text-cyan-400/60 uppercase flex items-center gap-3"
+                            >
+                                <Terminal className="h-3 w-3" />
+                                Neural Content Engineering Terminal v3.0.4
+                            </motion.p>
                         </div>
 
-                        {/* Visualization / Preview Area (Bento Component) */}
-                        <div className="grid grid-cols-2 gap-gutter">
-                            <div className="surface-glass rim-light p-md col-span-2 aspect-video flex flex-col justify-end relative overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"></div>
-                                <img alt="Data stream" className="absolute inset-0 w-full h-full object-cover opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-FrlreC3nNUT6-A3Bge55Oz0cI4Nxn_QrFNnVgfcw8f5YCqdiQ5YIrRTDGDl7Q7kDUVFnqffQ7bQyY9uhjHg5NYML-2InmRTMSOLCW1zfJq6NFYQ86YpMSrZHYEA-F2EV0lOa0Qu9uldAS4opInFC4r6i1BgiDpxBwSsaBvIQLzGLAdmPqg9AP4WXMftMdU4bZfhg9arjoka9lpquLB5zvNmxuInu-ieki0mORkz6Wu1BbmvJBRmdVy-_5fxuSFiWlHGClY3wuoPm" />
-                                <div className="relative z-20">
-                                    <div className="flex items-center gap-xs mb-xs">
-                                        <span className="w-2 h-2 bg-cyan-400 shadow-[0_0_5px_#00fbfb]"></span>
-                                        <span className="font-label-caps text-[10px] text-cyan-400 uppercase tracking-widest">System Ready</span>
-                                    </div>
-                                    <p className="font-data-mono text-xs text-white/70">Engine initialized for high-velocity output...</p>
-                                </div>
-                            </div>
-                            <div className="surface-glass rim-light p-md flex flex-col items-center justify-center gap-xs">
-                                <span className="font-display-lg text-headline-md text-white">4K</span>
-                                <span className="font-label-caps text-[10px] text-outline-variant uppercase text-zinc-500">Resolution</span>
-                            </div>
-                            <div className="surface-glass rim-light p-md flex flex-col items-center justify-center gap-xs">
-                                <span className="font-display-lg text-headline-md text-white">AI</span>
-                                <span className="font-label-caps text-[10px] text-outline-variant uppercase text-zinc-500">Engine V4</span>
-                            </div>
-                        </div>
-
-                        {/* Generate Button */}
-                        <button
-                            onClick={cinemaMode ? handleLaunchCinema : handleGenerateScript}
-                            disabled={isGenerating || isCinemaLaunching || !topic}
-                            className="w-full py-lg mt-md action-primary rounded-none flex items-center justify-center gap-sm active:scale-95 duration-200 group"
+                        {/* Cinema Mode Switch */}
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="surface-glass rim-light p-4 flex items-center gap-6"
                         >
-                            <span className="font-label-caps text-headline-md text-black uppercase tracking-tighter">
-                                {isGenerating || isCinemaLaunching ? "SYNTHESIZING..." : cinemaMode ? "LAUNCH CINEMA" : "GENERATE SCRIPT"}
-                            </span>
-                            {isGenerating || isCinemaLaunching ? (
-                                <RefreshCw className="h-6 w-6 text-black animate-spin" />
-                            ) : (
-                                <Zap className="h-6 w-6 text-black group-hover:translate-x-1 transition-transform" />
-                            )}
-                        </button>
-                        
-                        {/* Analysis Insights */}
-                        <AnimatePresence>
-                            {hookAnalysis && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
+                            <div className="flex items-center gap-3">
+                                <Film className={cn("h-4 w-4 transition-colors", cinemaMode ? "text-cyan-400" : "text-zinc-600")} />
+                                <span className="font-label-caps text-xs text-white">Cinema Mode</span>
+                            </div>
+                            <button 
+                                onClick={() => setCinemaMode(!cinemaMode)}
+                                className={cn(
+                                    "w-12 h-6 rounded-full transition-all relative p-1",
+                                    cinemaMode ? "bg-cyan-500/20" : "bg-zinc-800"
+                                )}
+                            >
+                                <motion.div 
+                                    animate={{ x: cinemaMode ? 24 : 0 }}
                                     className={cn(
-                                        "surface-glass p-8 rounded-4xl space-y-6 relative overflow-hidden border",
-                                        hookAnalysis.status === "KILL" ? "border-red-500/20 bg-red-500/5" : "border-emerald-500/20 bg-emerald-500/5"
+                                        "w-4 h-4 rounded-full shadow-lg",
+                                        cinemaMode ? "bg-cyan-400" : "bg-zinc-500"
                                     )}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            {hookAnalysis.status === "KILL" ? (
-                                                <ShieldAlert className="h-5 w-5 text-red-500" />
-                                            ) : (
-                                                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                                            )}
-                                            <span className={cn(
-                                                "text-[10px] font-black uppercase tracking-[0.2em]",
-                                                hookAnalysis.status === "KILL" ? "text-red-500" : "text-emerald-500"
-                                            )}>
-                                                {hookAnalysis.status === "KILL" ? "Neural Kill-Switch Activated" : "Hook Validated"}
-                                            </span>
-                                        </div>
-                                        <span className="text-2xl font-black text-white">{hookAnalysis.score}%</span>
-                                    </div>
-                                    <p className="text-zinc-400 text-xs leading-relaxed font-medium">
-                                        "{hookAnalysis.analysis}"
-                                    </p>
+                                />
+                            </button>
+                        </motion.div>
+                    </header>
 
-                                    {hookAnalysis.status === "KILL" && (
-                                        <div className="space-y-4 pt-2">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Suggested Pivots:</p>
-                                            {hookAnalysis.alternatives?.map((alt: string, i: number) => (
-                                                <div 
-                                                    key={i} 
-                                                    onClick={() => handleApplyAlternativeHook(alt)}
-                                                    className="p-4 bg-zinc-950/80 rounded-xl border border-white/5 text-[11px] font-bold text-zinc-300 group hover:border-cyan-400/40 transition-all cursor-pointer"
-                                                >
-                                                    {alt}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+                        {/* Control Panel */}
+                        <div className="xl:col-span-4 space-y-8">
+                            <section className="surface-glass rim-light p-8 space-y-8 relative group">
+                                <div className="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition-opacity">
+                                    <Dna className="h-4 w-4 text-cyan-400" />
+                                </div>
+                                
+                                <h2 className="font-label-caps text-cyan-400 mb-6 flex items-center gap-2">
+                                    <Cpu className="h-4 w-4" />
+                                    Input Parameters
+                                </h2>
 
-                    {/* Script Workspace */}
-                    <div className="xl:col-span-2 space-y-lg">
-                        <div className="surface-glass rim-light overflow-hidden min-h-[600px] flex flex-col relative">
-                            <div className="p-md border-b border-white/5 flex items-center justify-between">
-                                <div className="flex items-center gap-md">
-                                    <div className="h-10 w-10 bg-surface-container-high flex items-center justify-center border border-cyan-400/20">
-                                        <Edit3 className="h-5 w-5 text-cyan-400" />
+                                <div className="space-y-6">
+                                    {/* Topic */}
+                                    <div className="space-y-2">
+                                        <label className="font-label-caps text-[10px] text-zinc-500">Target Objective</label>
+                                        <div className="relative">
+                                            <input 
+                                                value={topic}
+                                                onChange={(e) => setTopic(e.target.value)}
+                                                placeholder="Enter neural seed..."
+                                                className="w-full bg-black/40 border border-white/5 p-4 text-white font-body-base focus:border-cyan-400/50 transition-all outline-none"
+                                            />
+                                            <Brain className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-700" />
+                                        </div>
                                     </div>
-                                    <div className="space-y-0.5">
-                                        <h3 className="font-label-caps text-headline-md uppercase tracking-tight text-white">Neural Blueprint</h3>
-                                        <p className="font-label-caps text-[10px] text-outline-variant uppercase tracking-widest">Script & Retention Architecture</p>
+
+                                    {/* Niche & Style */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="font-label-caps text-[10px] text-zinc-500">Niche</label>
+                                            <select 
+                                                value={niche}
+                                                onChange={(e) => setNiche(e.target.value)}
+                                                className="w-full bg-black/40 border border-white/5 p-4 text-white font-label-caps text-[10px] outline-none"
+                                            >
+                                                {niches.map(n => <option key={n} value={n}>{n}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="font-label-caps text-[10px] text-zinc-500">Style</label>
+                                            <select 
+                                                value={style}
+                                                onChange={(e) => setStyle(e.target.value)}
+                                                className="w-full bg-black/40 border border-white/5 p-4 text-white font-label-caps text-[10px] outline-none"
+                                            >
+                                                {availableStyles.map(s => <option key={s} value={s.toLowerCase()}>{s}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Duration */}
+                                    <div className="space-y-4 pt-4">
+                                        <div className="flex justify-between items-center">
+                                            <label className="font-label-caps text-[10px] text-zinc-500">Output Duration</label>
+                                            <span className="font-data-mono text-cyan-400 text-sm">{duration}s</span>
+                                        </div>
+                                        <input 
+                                            type="range"
+                                            min="15"
+                                            max="60"
+                                            value={duration}
+                                            onChange={(e) => setDuration(parseInt(e.target.value))}
+                                            className="w-full"
+                                        />
                                     </div>
                                 </div>
-                                {script && (
-                                    <div className="flex flex-wrap gap-sm">
-                                        {[
-                                            { code: "ES", name: "Spanish" },
-                                            { code: "DE", name: "German" },
-                                            { code: "FR", name: "French" },
-                                            { code: "IT", name: "Italian" },
-                                            { code: "PT", name: "Portuguese" },
-                                            { code: "JP", name: "Japanese" },
-                                            { code: "ZH", name: "Chinese" }
-                                        ].map(lang => (
-                                            <button
-                                                key={lang.code}
-                                                onClick={() => handleGlobalize(lang.name)}
-                                                className="px-sm py-sm bg-surface-container-high border border-white/5 font-label-caps text-[10px] uppercase tracking-widest text-on-surface-variant hover:text-white hover:border-cyan-400/50 transition-all flex items-center gap-xs"
-                                            >
-                                                <Globe className="h-3 w-3" />
-                                                {lang.code}
-                                            </button>
-                                        ))}
-                                        <button
-                                            onClick={handleValidateHook}
-                                            disabled={isValidating}
-                                            className="surface-glass rim-light hover:border-cyan-400/50 text-cyan-400 hover:text-cyan-300 font-label-caps text-[10px] py-sm px-md transition-all flex items-center gap-xs uppercase tracking-widest ml-auto"
-                                        >
-                                            {isValidating ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                                            Analyze Retention
-                                        </button>
+
+                                <button 
+                                    onClick={cinemaMode ? handleLaunchCinema : handleGenerateScript}
+                                    disabled={isGenerating || isCinemaLaunching || !topic}
+                                    className="w-full action-primary py-6 mt-8 flex items-center justify-center gap-4 group overflow-hidden relative"
+                                >
+                                    <span className="relative z-10 font-black tracking-widest uppercase">
+                                        {isGenerating || isCinemaLaunching ? "Synthesizing..." : cinemaMode ? "Launch Cinema" : "Generate Script"}
+                                    </span>
+                                    {isGenerating || isCinemaLaunching ? (
+                                        <RefreshCw className="h-5 w-5 animate-spin relative z-10" />
+                                    ) : (
+                                        <Zap className="h-5 w-5 relative z-10 group-hover:scale-125 transition-transform" />
+                                    )}
+                                    <motion.div 
+                                        className="absolute inset-0 bg-white/20 translate-x-[-100%]"
+                                        whileHover={{ translateX: "100%" }}
+                                        transition={{ duration: 0.5 }}
+                                    />
+                                </button>
+                            </section>
+
+                            {/* Status Terminal */}
+                            <div className="surface-glass rim-light p-6 font-data-mono text-[10px] space-y-2">
+                                <p className="text-zinc-600 flex items-center gap-2">
+                                    <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
+                                    AI Engine V4 ACTIVE
+                                </p>
+                                <p className="text-zinc-600 flex items-center gap-2">
+                                    <span className="w-1 h-1 bg-cyan-500 rounded-full" />
+                                    Neural Resolution: 4K Ultra
+                                </p>
+                                <p className="text-zinc-600 flex items-center gap-2">
+                                    <span className={cn("w-1 h-1 rounded-full", topic ? "bg-emerald-500" : "bg-red-500")} />
+                                    Neural Seed: {topic || "Waiting..."}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Workspace */}
+                        <div className="xl:col-span-8">
+                            <div className="surface-glass rim-light min-h-[700px] flex flex-col relative group">
+                                {/* Video Preview CRT Effect */}
+                                {!script && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6 z-10">
+                                        <div className="w-32 h-32 relative">
+                                            <motion.div 
+                                                animate={{ rotate: 360 }}
+                                                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                                                className="absolute inset-0 border-2 border-cyan-400/20 rounded-full border-t-cyan-400"
+                                            />
+                                            <div className="absolute inset-4 border border-zinc-800 rounded-full flex items-center justify-center">
+                                                <Network className="h-12 w-12 text-zinc-800" />
+                                            </div>
+                                        </div>
+                                        <div className="text-center">
+                                            <h3 className="font-label-caps text-zinc-500 mb-2">Neural Workspace Ready</h3>
+                                            <p className="font-data-mono text-zinc-700 text-[10px]">Awaiting system initialization...</p>
+                                        </div>
                                     </div>
                                 )}
-                            </div>
 
-                            <div className="flex-1 p-10 space-y-10">
-                                {script ? (
-                                    <div className="space-y-12">
-                                        <div className="space-y-2">
-                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Viral Title</span>
-                                            <h2 className="text-3xl font-black text-white uppercase tracking-tighter">{script.title}</h2>
-                                            {script.emotional_arc && (
-                                                <div className="flex items-center gap-3 pt-2">
-                                                    <Target className="h-3 w-3 text-zinc-600" />
-                                                    <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em]">{script.emotional_arc}</span>
+                                {/* Script Content */}
+                                {script && (
+                                    <div className="flex-1 flex flex-col">
+                                        <div className="p-8 border-b border-white/5 bg-black/20 flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-12 w-12 bg-cyan-400/10 flex items-center justify-center border border-cyan-400/20">
+                                                    <Dna className="h-6 w-6 text-cyan-400" />
                                                 </div>
-                                            )}
-                                        </div>
+                                                <div>
+                                                    <h3 className="font-label-caps text-xl text-white tracking-tight">Neural Blueprint</h3>
+                                                    <p className="font-data-mono text-zinc-500">Retention Optimized Architecture</p>
+                                                </div>
+                                            </div>
 
-                                        <div className="space-y-10">
-                                            {Array.isArray(script.segments) && script.segments.map((seg, i) => (
-                                                <motion.div
-                                                    key={i}
-                                                    initial={{ opacity: 0, x: -10 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    whileHover={{ x: 5 }}
-                                                    transition={{
-                                                        delay: i * 0.1,
-                                                        x: { type: "spring", stiffness: 400, damping: 25 }
-                                                    }}
-                                                    className="relative pl-12 group"
+                                            <div className="flex items-center gap-2">
+                                                <button 
+                                                    onClick={handleValidateHook}
+                                                    disabled={isValidating}
+                                                    className="px-6 py-3 border border-cyan-400/20 text-cyan-400 font-label-caps text-[10px] hover:bg-cyan-400/10 transition-all flex items-center gap-2"
                                                 >
-                                                    <div className="absolute left-0 top-0 bottom-0 w-px bg-white/5 group-hover:bg-primary/40 transition-all" />
-                                                    <div className="absolute left-[-4px] top-0 h-2 w-2 rounded-full bg-zinc-800 group-hover:bg-primary transition-all" />
+                                                    {isValidating ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                                    Analyze Hook
+                                                </button>
+                                            </div>
+                                        </div>
 
-                                                    <div className="space-y-4">
-                                                        <div className="flex items-center gap-4">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">{seg.type}</span>
-                                                            <span className="text-[10px] font-mono text-zinc-800 tracking-tighter">{seg.duration} SEC</span>
+                                        <div className="flex-1 p-10 space-y-12 overflow-y-auto max-h-[800px] custom-scrollbar">
+                                            <div className="space-y-4">
+                                                <span className="font-label-caps text-cyan-400">Project Master Title</span>
+                                                <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter border-l-4 border-cyan-400 pl-6">
+                                                    {script.title}
+                                                </h2>
+                                            </div>
+
+                                            <div className="grid gap-8">
+                                                {script.segments?.map((seg, i) => (
+                                                    <motion.div 
+                                                        key={i}
+                                                        initial={{ opacity: 0, y: 20 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: i * 0.1 }}
+                                                        className="relative p-8 bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all"
+                                                    >
+                                                        <div className="absolute top-0 right-0 p-4 font-data-mono text-zinc-800">
+                                                            #{i + 1}
                                                         </div>
-                                                        <p className="text-lg font-bold text-zinc-200 leading-relaxed">{seg.text}</p>
-
-                                                        <div className="flex flex-wrap gap-3 items-center">
-                                                            <div className="flex items-center gap-3 bg-zinc-950/40 p-3 rounded-xl border border-white/5 w-fit">
-                                                                <Film className="h-3 w-3 text-zinc-500" />
-                                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{seg.visual_cue}</span>
+                                                        
+                                                        <div className="flex flex-col md:flex-row gap-8">
+                                                            <div className="flex-1 space-y-6">
+                                                                <div className="flex items-center gap-4">
+                                                                    <span className="font-label-caps text-[10px] bg-cyan-400/10 text-cyan-400 px-2 py-1">
+                                                                        {seg.type}
+                                                                    </span>
+                                                                    <span className="font-data-mono text-zinc-600">
+                                                                        {seg.duration}s
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-xl font-medium text-zinc-200 leading-relaxed italic">
+                                                                    "{seg.text}"
+                                                                </p>
+                                                                <div className="flex items-center gap-3 text-zinc-500">
+                                                                    <Monitor className="h-4 w-4" />
+                                                                    <span className="font-data-mono text-[10px] uppercase tracking-widest">
+                                                                        Visual: {seg.visual_cue}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                            {seg.tone && (
-                                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/20">
-                                                                    <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                                                                    <span className="text-[8px] font-black uppercase tracking-widest text-primary">{seg.tone}</span>
-                                                                </div>
-                                                            )}
-                                                            {seg.visual_style && (
-                                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/5 border border-violet-500/20">
-                                                                    <Zap className="h-2.5 w-2.5 text-violet-500" />
-                                                                    <span className="text-[8px] font-black uppercase tracking-widest text-violet-400">{seg.visual_style}</span>
-                                                                </div>
-                                                            )}
-                                                            {seg.pattern_interrupt && (
-                                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/5 border border-orange-500/20">
-                                                                    <RefreshCw className="h-2.5 w-2.5 text-orange-500" />
-                                                                    <span className="text-[8px] font-black uppercase tracking-widest text-orange-400">{seg.pattern_interrupt}</span>
-                                                                </div>
-                                                            )}
+
+                                                            <div className="flex md:flex-col gap-2">
+                                                                <button 
+                                                                    onClick={() => handleSynthesizeAudio(i, seg.text)}
+                                                                    className={cn(
+                                                                        "p-4 border transition-all",
+                                                                        segmentAssets[i]?.audio ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400" : "border-white/5 hover:border-cyan-400/50 text-zinc-500 hover:text-cyan-400"
+                                                                    )}
+                                                                >
+                                                                    {loadingSegment === `audio-${i}` ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5" />}
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleSearchStock(i, seg.visual_cue)}
+                                                                    className={cn(
+                                                                        "p-4 border transition-all",
+                                                                        segmentAssets[i]?.videos ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400" : "border-white/5 hover:border-cyan-400/50 text-zinc-500 hover:text-cyan-400"
+                                                                    )}
+                                                                >
+                                                                    {loadingSegment === `stock-${i}` ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Film className="h-5 w-5" />}
+                                                                </button>
+                                                            </div>
                                                         </div>
-
-                                                        <div className="flex gap-2">
-                                                             <button
-                                                                 onClick={() => handleSynthesizeAudio(i, seg.text)}
-                                                                 aria-label={`Generate audio for segment ${i + 1}`}
-                                                                 className={cn(
-                                                                     "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
-                                                                     segmentAssets[i]?.audio ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
-                                                                 )}
-                                                             >
-                                                                {loadingSegment === `audio-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Zap className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.audio ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleSearchStock(i, seg.visual_cue)}
-                                                                aria-label={`Search stock videos for segment ${i + 1}`}
-                                                                className={cn(
-                                                                    "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
-                                                                    segmentAssets[i]?.videos ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
-                                                                )}
-                                                            >
-                                                                {loadingSegment === `stock-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Film className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.videos ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
-                                                            </button>
-                                                             <button
-                                                                 onClick={() => handleGenerateSegmentImage(i, seg.visual_cue)}
-                                                                 aria-label={`Generate image for segment ${i + 1}`}
-                                                                 className={cn(
-                                                                     "p-2.5 rounded-lg border border-white/5 hover:border-primary/40 transition-all group/btn",
-                                                                     segmentAssets[i]?.image ? "bg-emerald-500/10 border-emerald-500/20" : "bg-zinc-900/50"
-                                                                 )}
-                                                             >
-                                                                {loadingSegment === `image-${i}` ? <RefreshCw className="h-4 w-4 animate-spin text-primary" /> : <Wand2 className={cn("h-4 w-4 transition-colors", segmentAssets[i]?.image ? "text-emerald-500" : "text-zinc-600 group-hover/btn:text-primary")} />}
-                                                            </button>
-                                                        </div>
-
-                                                        {/* Asset Previews */}
-                                                        <div className="flex gap-4">
-                                                            {segmentAssets[i]?.audio && (
-                                                                <div className="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
-                                                                    <Play className="h-3 w-3 text-emerald-500" />
-                                                                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">WAV Ready</span>
-                                                                </div>
-                                                            )}
-                                                            {segmentAssets[i]?.image && (
-                                                                <div 
-                                                                    className="h-16 w-16 rounded-xl border border-emerald-500/20 overflow-hidden shadow-lg bg-cover bg-center" 
-                                                                    style={{ backgroundImage: `url(${API_BASE}/static/${segmentAssets[i].image})` }}
-                                                                    role="img"
-                                                                    aria-label="Segment Asset"
-                                                                />
-                                                            )}
-                                                            {segmentAssets[i]?.videos && (
-                                                                <div className="flex gap-2">
-                                                                    {segmentAssets[i].videos.slice(0, 2).map((v: any, j: number) => (
-                                                                        <div 
-                                                                            key={j} 
-                                                                            className="h-16 w-12 rounded-lg border border-emerald-500/20 overflow-hidden relative group/v bg-cover bg-center"
-                                                                            style={{ backgroundImage: `url(${v.preview})` }}
-                                                                            role="img"
-                                                                            aria-label="Video Preview"
-                                                                        >
-                                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/v:opacity-100 flex items-center justify-center transition-all">
-                                                                                <Plus className="h-4 w-4 text-white" />
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </motion.div>
-                                            ))}
+                                                    </motion.div>
+                                                ))}
+                                            </div>
                                         </div>
-
-                                        <div className="flex flex-wrap gap-2 pt-8">
-                                            {script.hashtags.map((tag, i) => (
-                                                <span key={i} className="text-[10px] font-black tracking-widest text-primary uppercase py-2 px-4 rounded-lg bg-primary/5 border border-primary/10">
-                                                    {tag}
-                                                </span>
-                                            ))}
-                                        </div>
-
-                                        <div className="pt-10 flex gap-4">
-                                            <button
-                                                onClick={handleExportAssets}
-                                                disabled={isExporting}
-                                                className="flex-1 bg-white/5 hover:bg-white/10 text-zinc-400 font-black py-5 rounded-2xl transition-all uppercase text-xs tracking-[0.2em] border border-white/5"
-                                            >
-                                                {isExporting ? "Exporting..." : "Export Assets"}
-                                            </button>
-                                            <motion.button
-                                                whileHover={{ scale: 1.05, y: -2 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                onClick={handleLaunchProduction}
-                                                disabled={isLaunchingProduction}
-                                                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-5 rounded-2xl transition-all shadow-[0_0_40px_rgba(16,185,129,0.2)] flex items-center justify-center gap-3 uppercase text-xs tracking-[0.2em]"
-                                            >
-                                                <Zap className="h-5 w-5" />
-                                                {isLaunchingProduction ? "Launching..." : "Launch Production"}
-                                            </motion.button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center space-y-6 opacity-30">
-                                        <div className="relative">
-                                            <Cpu className="h-24 w-24 text-zinc-800" />
-                                            {isGenerating && <RefreshCw className="absolute inset-0 h-24 w-24 text-primary animate-spin opacity-40" />}
-                                        </div>
-                                        <p className="text-xs font-black uppercase tracking-[0.3em] text-zinc-700">Waiting for Neutral Input...</p>
                                     </div>
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Blueprint Builder Modal */}
-            <BlueprintBuilder
-                isOpen={showBlueprintBuilder}
-                onClose={() => setShowBlueprintBuilder(false)}
-                onSuccess={(newBlueprint) => {
-                    setBlueprints(prev => [...prev, newBlueprint]);
-                    setSelectedBlueprint(newBlueprint);
-                    setShowBlueprintBuilder(false);
-                    toast.success("Recipe Created", {
-                        description: `'${newBlueprint.name}' is now available.`
-                    });
-                }}
-            />
+                {/* Globalization Sidebar - Floating */}
+                {script && (
+                    <motion.div 
+                        initial={{ opacity: 0, x: 100 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="fixed right-8 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40 hidden xl:flex"
+                    >
+                        <div className="surface-glass rim-light p-2 flex flex-col gap-2">
+                            {[
+                                { code: "ES", name: "Spanish" },
+                                { code: "DE", name: "German" },
+                                { code: "FR", name: "French" },
+                                { code: "IT", name: "Italian" },
+                                { code: "PT", name: "Portuguese" },
+                                { code: "JP", name: "Japanese" }
+                            ].map(lang => (
+                                <button
+                                    key={lang.code}
+                                    onClick={() => handleGlobalize(lang.name)}
+                                    title={`Localize to ${lang.name}`}
+                                    className="w-12 h-12 flex items-center justify-center font-label-caps text-[10px] text-zinc-500 hover:text-cyan-400 hover:bg-white/5 transition-all border border-transparent hover:border-white/5"
+                                >
+                                    {lang.code}
+                                </button>
+                            ))}
+                            <div className="h-px bg-white/5 mx-2" />
+                            <div className="w-12 h-12 flex items-center justify-center text-zinc-700">
+                                <Globe className="h-4 w-4" />
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </div>
         </DashboardLayout>
     );
 }
