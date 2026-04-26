@@ -304,7 +304,7 @@ export default function CreationPage() {
                                 <motion.h1 
                                     initial={{ opacity: 0, y: 30 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="text-6xl md:text-9xl font-black text-white uppercase tracking-tighter leading-none glitch-text"
+                                    className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tighter leading-none glitch-text"
                                     data-text="CREATION SUITE"
                                 >
                                     Creation Suite
@@ -564,7 +564,7 @@ export default function CreationPage() {
                                                     <div className="w-4 h-px bg-cyan-400/40" />
                                                     MASTER_ASSET_TITLE
                                                 </span>
-                                                <h2 className="text-6xl font-black text-white uppercase italic tracking-tighter leading-none">
+                                                <h2 className="text-4xl font-bold text-white uppercase italic tracking-tighter leading-none">
                                                     {script.title}
                                                 </h2>
                                             </div>
