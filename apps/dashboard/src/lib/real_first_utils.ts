@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * "Real-First" Utility Suite
  * Prioritizes live backend data and operational coupling, 
