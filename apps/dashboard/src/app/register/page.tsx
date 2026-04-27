@@ -54,61 +54,60 @@ export default function RegisterPage() {
 
     return (
         <BaseLayout variant="auth">
-            <Card variant="solid" className="p-10 md:p-14 max-w-lg mx-auto rounded-[3rem] border border-white/5 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent" />
+            <Card variant="solid" className="p-12 md:p-16 max-w-lg mx-auto rounded-3xl border border-slate-200 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
                 
                 <div className="text-center space-y-6 mb-12">
-                    <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-cyan-500/10 border border-cyan-400/20 shadow-[0_0_30px_rgba(34,211,238,0.1)]">
-                        <Zap className="h-10 w-10 text-cyan-400" />
+                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 border border-indigo-100 shadow-lg">
+                        <Zap className="h-8 w-8 text-indigo-600" />
                     </div>
                     <div className="space-y-2">
-                        <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-tight text-white">
-                            Initialize Registry
+                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">
+                            Create Account
                         </h1>
-                        <p className="text-zinc-600 font-bold uppercase tracking-[0.2em] text-[10px]">Secure Protocol Enrollment</p>
+                        <p className="text-slate-500 font-medium text-sm">Join Ettametta today</p>
                     </div>
                 </div>
 
-                <form onSubmit={handleRegister} className="space-y-8">
+                <form onSubmit={handleRegister} className="space-y-6">
                     <Input
-                        label="PROTOCOL_EMAIL"
+                        label="Email"
                         type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="ENTER_EMAIL"
+                        placeholder="you@example.com"
                         icon={<Mail className="h-5 w-5" />}
-                        variant="cyber"
-                        className="rounded-2xl border-white/5 focus:border-cyan-400/50"
+                        variant="default"
+                        error={error}
                     />
 
                     <Input
-                        label="ACCESS_KEY"
+                        label="Password"
                         type="password"
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
+                        placeholder="Create a secure password"
                         icon={<Lock className="h-5 w-5" />}
-                        variant="cyber"
-                        className="rounded-2xl border-white/5 focus:border-cyan-400/50"
+                        variant="default"
                         error={error}
                     />
 
-                    <div className="bg-white/5 rounded-2xl p-6 text-[10px] text-zinc-500 space-y-3 border border-white/5">
-                        <p className="font-bold text-zinc-400 uppercase tracking-widest">Key Requirements:</p>
-                        <ul className="space-y-2 ml-2 font-bold uppercase tracking-widest">
-                            <li className="flex items-center gap-2">
-                                <div className="w-1 h-1 bg-cyan-400 rounded-full" />
-                                8+ Characters
+                    <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-600 space-y-2">
+                        <p className="font-semibold text-slate-800">Password Requirements:</p>
+                        <ul className="space-y-1 ml-4 text-sm">
+                            <li className="flex items-center gap-2 text-slate-600">
+                                <span className="w-1 h-1 bg-indigo-500 rounded-full" />
+                                8+ characters
                             </li>
-                            <li className="flex items-center gap-2">
-                                <div className="w-1 h-1 bg-cyan-400 rounded-full" />
-                                Alpha-Numeric Mix
+                            <li className="flex items-center gap-2 text-slate-600">
+                                <span className="w-1 h-1 bg-indigo-500 rounded-full" />
+                                Uppercase and lowercase letters
                             </li>
-                            <li className="flex items-center gap-2">
-                                <div className="w-1 h-1 bg-cyan-400 rounded-full" />
-                                Upper/Lower Case
+                            <li className="flex items-center gap-2 text-slate-600">
+                                <span className="w-1 h-1 bg-indigo-500 rounded-full" />
+                                At least one number
                             </li>
                         </ul>
                     </div>
@@ -119,17 +118,17 @@ export default function RegisterPage() {
                         size="lg"
                         isLoading={isLoading}
                         fullWidth
-                        className="rounded-2xl py-8 font-bold tracking-[0.3em] uppercase text-xs"
+                        className="rounded-xl py-4 font-semibold"
                     >
-                        {isLoading ? "Enrolling..." : "Register Protocol"}
+                        {isLoading ? "Creating Account..." : "Create Account"}
                     </Button>
                 </form>
 
-                <div className="mt-12 pt-8 border-t border-white/5 text-center">
-                    <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">
-                        Already Synchronized?{" "}
-                        <Link href="/login" className="text-cyan-400 hover:text-cyan-300 transition-colors">
-                            Initialize Session
+                <div className="mt-8 pt-6 border-t border-slate-200 text-center">
+                    <p className="text-slate-500 text-sm">
+                        Already have an account?{" "}
+                        <Link href="/login" className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors">
+                            Sign in
                         </Link>
                     </p>
                 </div>

@@ -2,12 +2,13 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "danger";
+  variant?: "primary" | "secondary" | "ghost" | "danger" | "outline";
   size?: "sm" | "md" | "lg" | "xl";
   isLoading?: boolean;
   fullWidth?: boolean;
   icon?: React.ReactNode;
   iconPosition?: "left" | "right";
+  rounded?: "md" | "lg" | "xl" | "full";
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -19,17 +20,26 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     fullWidth = false,
     icon,
     iconPosition = "left",
+    rounded = "lg",
     children,
     disabled,
     ...props
   }, ref) => {
-    const baseStyles = "relative font-bold uppercase tracking-wide transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border rounded-full";
+    const baseStyles = "relative font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500/20";
     
+    const radius = {
+      md: "rounded-lg",
+      lg: "rounded-xl",
+      xl: "rounded-2xl",
+      full: "rounded-full",
+    };
+
     const variants = {
-      primary: "bg-cyan-500 text-black border-cyan-500 shadow-[0_0_20px_rgba(0,251,251,0.2)] hover:shadow-[0_0_35px_rgba(0,251,251,0.4)] hover:scale-[1.02] overflow-hidden",
-      secondary: "bg-white/5 text-white border-white/10 hover:border-cyan-400/50 hover:text-cyan-400 hover:bg-white/10",
-      ghost: "bg-transparent text-white border-transparent hover:bg-white/5 hover:text-cyan-400",
-      danger: "bg-red-500 text-white border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.2)] hover:shadow-[0_0_30px_rgba(239,68,68,0.4)] overflow-hidden",
+      primary: `bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 shadow-md hover:shadow-lg border border-indigo-600/20 hover:border-indigo-400/30`,
+      secondary: "bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm hover:shadow-md",
+      outline: "bg-transparent text-slate-700 border border-slate-300 hover:bg-slate-50 hover:border-slate-400 shadow-sm",
+      ghost: "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent",
+      danger: "bg-gradient-to-r from-rose-500 to-rose-600 text-white hover:from-rose-600 hover:to-rose-700 shadow-md hover:shadow-lg border border-rose-500/20",
     };
 
     const sizes = {
@@ -45,6 +55,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           baseStyles,
           variants[variant],
+          radius[rounded],
           sizes[size],
           fullWidth && "w-full",
           isLoading && "cursor-wait",
@@ -54,7 +65,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading ? (
-          <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-white/50 border-t-transparent rounded-full animate-spin" />
         ) : icon && iconPosition === "left" ? (
           <span className="flex-shrink-0">{icon}</span>
         ) : null}
