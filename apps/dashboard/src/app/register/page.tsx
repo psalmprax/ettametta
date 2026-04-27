@@ -78,7 +78,7 @@ export default function RegisterPage() {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="ENTER_EMAIL"
                         icon={<Mail className="h-5 w-5" />}
-                        variant="solid"
+                        variant="cyber"
                         className="rounded-2xl border-white/5 focus:border-cyan-400/50"
                     />
 
@@ -90,7 +90,7 @@ export default function RegisterPage() {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
                         icon={<Lock className="h-5 w-5" />}
-                        variant="solid"
+                        variant="cyber"
                         className="rounded-2xl border-white/5 focus:border-cyan-400/50"
                         error={error}
                     />
