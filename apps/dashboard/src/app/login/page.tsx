@@ -130,7 +130,7 @@ export default function LoginPage() {
                         }}
                         placeholder="ENTER_ID"
                         icon={<Mail className="h-5 w-5" />}
-                        variant="solid"
+                        variant="cyber"
                         className="rounded-2xl border-white/5 focus:border-cyan-400/50"
                         error={fieldErrors.username}
                     />
@@ -148,7 +148,7 @@ export default function LoginPage() {
                         }}
                         placeholder="••••••••"
                         icon={<Lock className="h-5 w-5" />}
-                        variant="solid"
+                        variant="cyber"
                         className="rounded-2xl border-white/5 focus:border-cyan-400/50"
                         error={fieldErrors.password}
                     />
