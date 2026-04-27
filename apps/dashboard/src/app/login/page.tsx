@@ -101,24 +101,24 @@ export default function LoginPage() {
 
     return (
         <BaseLayout variant="auth">
-            <Card variant="solid" className="p-10 md:p-14 max-w-lg mx-auto rounded-[3rem] border border-white/5 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent" />
+            <Card variant="solid" className="p-12 md:p-16 max-w-lg mx-auto rounded-3xl border border-slate-200 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
                 
                 <div className="text-center space-y-6 mb-12">
-                    <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-cyan-500/10 border border-cyan-400/20 shadow-[0_0_30px_rgba(34,211,238,0.1)]">
-                        <Zap className="h-10 w-10 text-cyan-400" />
+                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 border border-indigo-100 shadow-lg">
+                        <Zap className="h-8 w-8 text-indigo-600" />
                     </div>
                     <div className="space-y-2">
-                        <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-tight text-white">
-                            Initialize Protocol
+                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">
+                            Sign In
                         </h1>
-                        <p className="text-zinc-600 font-bold uppercase tracking-[0.2em] text-[10px]">Authentication Required</p>
+                        <p className="text-slate-500 font-medium text-sm">Welcome back to Ettametta</p>
                     </div>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-8">
+                <form onSubmit={handleLogin} className="space-y-6">
                     <Input
-                        label="PROTOCOL_ID"
+                        label="Username"
                         type="text"
                         required
                         value={username}
@@ -128,15 +128,14 @@ export default function LoginPage() {
                                 setFieldErrors(prev => ({...prev, username: undefined}));
                             }
                         }}
-                        placeholder="ENTER_ID"
+                        placeholder="Enter your username"
                         icon={<Mail className="h-5 w-5" />}
-                        variant="cyber"
-                        className="rounded-2xl border-white/5 focus:border-cyan-400/50"
+                        variant="default"
                         error={fieldErrors.username}
                     />
 
                     <Input
-                        label="ACCESS_KEY"
+                        label="Password"
                         type="password"
                         required
                         value={password}
@@ -146,10 +145,9 @@ export default function LoginPage() {
                                 setFieldErrors(prev => ({...prev, password: undefined}));
                             }
                         }}
-                        placeholder="••••••••"
+                        placeholder="Enter your password"
                         icon={<Lock className="h-5 w-5" />}
-                        variant="cyber"
-                        className="rounded-2xl border-white/5 focus:border-cyan-400/50"
+                        variant="default"
                         error={fieldErrors.password}
                     />
 
@@ -159,14 +157,14 @@ export default function LoginPage() {
                                 type="checkbox"
                                 checked={remember}
                                 onChange={(e) => setRemember(e.target.checked)}
-                                className="w-5 h-5 rounded-lg border-white/10 bg-black/60 text-cyan-400 focus:ring-cyan-400 transition-all"
+                                className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                             />
-                            <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest group-hover:text-zinc-300 transition-colors">Persistent Link</span>
+                            <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">Remember me</span>
                         </label>
                     </div>
 
                     {error && (
-                        <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-500 text-xs font-bold text-center uppercase tracking-widest" role="alert">
+                        <div className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm font-medium text-center" role="alert">
                             {error}
                         </div>
                     )}
@@ -177,17 +175,17 @@ export default function LoginPage() {
                         size="lg"
                         isLoading={isLoading}
                         fullWidth
-                        className="rounded-2xl py-8 font-bold tracking-[0.3em] uppercase text-xs"
+                        className="rounded-xl py-4 font-semibold"
                     >
-                        {isLoading ? "Executing..." : "Initialize Session"}
+                        {isLoading ? "Signing in..." : "Sign In"}
                     </Button>
                 </form>
 
-                <div className="mt-12 pt-8 border-t border-white/5 text-center">
-                    <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">
-                        New Protocol?{" "}
-                        <Link href="/register" className="text-cyan-400 hover:text-cyan-300 transition-colors">
-                            Initialize Registry
+                <div className="mt-8 pt-6 border-t border-slate-200 text-center">
+                    <p className="text-slate-500 text-sm">
+                        Don&apos;t have an account?{" "}
+                        <Link href="/register" className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors">
+                            Create account
                         </Link>
                     </p>
                 </div>
@@ -195,4 +193,3 @@ export default function LoginPage() {
         </BaseLayout>
     );
 }
-
