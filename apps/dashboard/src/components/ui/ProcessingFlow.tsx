@@ -60,7 +60,7 @@ export default React.memo(function ProcessingFlow({ steps, telemetry }: { steps:
                             >
                                 <div className="flex items-center justify-between mb-4">
                                     <span className={cn(
-                                        "text-[8px] font-black uppercase tracking-widest",
+                                        "text-[8px] font-bold uppercase tracking-widest",
                                         step.status === 'active' ? "text-black" : 
                                         step.status === 'complete' ? "text-emerald-500" : 
                                         step.status === 'error' ? "text-red-500" : "text-zinc-600"
@@ -72,7 +72,7 @@ export default React.memo(function ProcessingFlow({ steps, telemetry }: { steps:
                                     {step.status === 'error' && <div className="h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" />}
                                 </div>
                                 <h4 className={cn(
-                                    "text-lg font-black uppercase tracking-tighter",
+                                    "text-lg font-bold uppercase tracking-tighter",
                                     step.status === 'active' ? "text-black" : "text-white"
                                 )}>
                                     {step.label}
@@ -93,7 +93,7 @@ export default React.memo(function ProcessingFlow({ steps, telemetry }: { steps:
                                                 {STAGE_DETAILS[step.id]?.desc}
                                             </p>
                                             <div className={cn(
-                                                "flex items-center gap-2 text-[8px] font-black uppercase tracking-widest",
+                                                "flex items-center gap-2 text-[8px] font-bold uppercase tracking-widest",
                                                 step.status === 'active' ? "text-black" : "text-primary"
                                             )}>
                                                 <DetailIcon className="h-3 w-3" />
