@@ -340,9 +340,9 @@ export default function CreditsPage() {
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Credits System</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Credits System</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
+                        <h1 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-white leading-none">
                             Credit <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-purple-500 text-hollow">Vault</span>
                         </h1>
                         <p className="text-zinc-500 font-medium">Manage your <span className="text-zinc-300 font-bold">credit balance</span>, purchase packages, and track usage.</p>
@@ -350,7 +350,7 @@ export default function CreditsPage() {
                     <button
                         onClick={refreshAll}
                         disabled={isRefreshing}
-                        className="glass-card px-6 py-4 rounded-xl flex items-center gap-3 group hover:border-primary/50 transition-all font-black uppercase tracking-widest text-[10px]"
+                        className="glass-card px-6 py-4 rounded-xl flex items-center gap-3 group hover:border-primary/50 transition-all font-bold uppercase tracking-widest text-[10px]"
                     >
                         <RefreshCw className={cn("h-4 w-4 text-zinc-500 group-hover:text-primary transition-colors", isRefreshing && "animate-spin")} />
                         <span className="text-zinc-500 group-hover:text-white">Refresh</span>
@@ -365,20 +365,20 @@ export default function CreditsPage() {
                             <div className="space-y-4 text-center md:text-left">
                                 <div className="flex items-center gap-3 justify-center md:justify-start">
                                     <div className="h-3 w-3 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Current Balance</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Current Balance</span>
                                 </div>
                                 <div className="flex items-baseline gap-3">
-                                    <h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter">
+                                    <h2 className="text-6xl md:text-7xl font-bold text-white tracking-tighter">
                                         {balance?.balance ?? "--"}
                                     </h2>
-                                    <span className="text-xl font-black text-primary uppercase tracking-tight">Credits</span>
+                                    <span className="text-xl font-bold text-primary uppercase tracking-tight">Credits</span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                                         Tier: <span className="text-primary">{balance?.tier || "Free"}</span>
                                     </span>
                                     {balance?.tier_discount_percent ? (
-                                        <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-[9px] font-black uppercase tracking-widest">
+                                        <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-[9px] font-bold uppercase tracking-widest">
                                             {balance.tier_discount_percent}% Discount Active
                                         </span>
                                     ) : null}
@@ -395,7 +395,7 @@ export default function CreditsPage() {
                 <motion.div variants={itemVariants} className="space-y-6">
                     <div className="flex items-center gap-3">
                         <CreditCard className="h-5 w-5 text-zinc-500" />
-                        <h3 className="text-xs font-black uppercase tracking-[0.25em] text-zinc-500">Credit Packages</h3>
+                        <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">Credit Packages</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {packages.length > 0 ? packages.map((pkg) => {
@@ -411,7 +411,7 @@ export default function CreditsPage() {
                                     )}
                                 >
                                     {pkg.popular && (
-                                        <div className="absolute top-0 right-0 bg-primary text-white text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-bl-2xl">
+                                        <div className="absolute top-0 right-0 bg-primary text-white text-[8px] font-bold uppercase tracking-widest px-4 py-2 rounded-bl-2xl">
                                             Most Popular
                                         </div>
                                     )}
@@ -425,7 +425,7 @@ export default function CreditsPage() {
                                             {style.icon}
                                         </div>
                                         <div className="space-y-1">
-                                            <h3 className="text-xl font-black text-white uppercase tracking-tight">{pkg.name}</h3>
+                                            <h3 className="text-xl font-bold text-white uppercase tracking-tight">{pkg.name}</h3>
                                             {pkg.features && pkg.features.length > 0 && (
                                                 <ul className="space-y-1">
                                                     {pkg.features.map((feature, fi) => (
@@ -439,7 +439,7 @@ export default function CreditsPage() {
                                     </div>
                                     <div className="space-y-1">
                                         <div className="flex items-baseline gap-2">
-                                            <span className="text-4xl font-black text-white tracking-tighter">{pkg.price_formatted || `$${(pkg.price / 100).toFixed(2)}`}</span>
+                                            <span className="text-4xl font-bold text-white tracking-tighter">{pkg.price_formatted || `$${(pkg.price / 100).toFixed(2)}`}</span>
                                             <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{style.perCredit}</span>
                                         </div>
                                         <p className="text-sm font-bold text-primary">{pkg.credits} Credits</p>
@@ -448,7 +448,7 @@ export default function CreditsPage() {
                                         onClick={() => handlePurchase(pkg.id)}
                                         disabled={isPurchasing === pkg.id}
                                         className={cn(
-                                            "w-full font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px]",
+                                            "w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px]",
                                             pkg.popular
                                                 ? "bg-primary hover:bg-primary/90 text-white shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)]"
                                                 : "bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/50 text-zinc-300 hover:text-white"
@@ -465,7 +465,7 @@ export default function CreditsPage() {
                             );
                         }) : (
                             <div className="col-span-3 glass-card p-12 rounded-3xl text-center">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Loading packages...</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-700">Loading packages...</p>
                             </div>
                         )}
                     </div>
@@ -480,7 +480,7 @@ export default function CreditsPage() {
                                 <Zap className="h-5 w-5 text-amber-500" />
                             </div>
                             <div className="space-y-0.5">
-                                <h3 className="font-black uppercase tracking-tight text-white">Credit Costs</h3>
+                                <h3 className="font-bold uppercase tracking-tight text-white">Credit Costs</h3>
                                 <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Action Cost Matrix</p>
                             </div>
                         </div>
@@ -496,7 +496,7 @@ export default function CreditsPage() {
                                             <span className="text-[9px] font-bold text-zinc-600 line-through uppercase tracking-widest">{cost.base_cost}</span>
                                         )}
                                         <span className={cn(
-                                            "text-sm font-black tabular-nums",
+                                            "text-sm font-bold tabular-nums",
                                             cost.user_cost < cost.base_cost ? "text-emerald-500" : "text-primary"
                                         )}>
                                             {cost.user_cost} <span className="text-[9px] text-zinc-600 font-bold">cr</span>
@@ -505,7 +505,7 @@ export default function CreditsPage() {
                                 </div>
                             )) : (
                                 <div className="p-12 text-center">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700">Loading cost matrix...</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-700">Loading cost matrix...</p>
                                 </div>
                             )}
                         </div>
@@ -518,7 +518,7 @@ export default function CreditsPage() {
                                 <Clock className="h-5 w-5 text-primary neon-glow" />
                             </div>
                             <div className="space-y-0.5">
-                                <h3 className="font-black uppercase tracking-tight text-white">Transaction History</h3>
+                                <h3 className="font-bold uppercase tracking-tight text-white">Transaction History</h3>
                                 <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Recent Credit Activity</p>
                             </div>
                         </div>
@@ -545,7 +545,7 @@ export default function CreditsPage() {
                                     </div>
                                     <div className="text-right">
                                         <p className={cn(
-                                            "text-sm font-black tabular-nums",
+                                            "text-sm font-bold tabular-nums",
                                             tx.amount > 0 ? "text-emerald-500" : "text-red-500"
                                         )}>
                                             {tx.amount > 0 ? "+" : ""}{tx.amount}
@@ -558,7 +558,7 @@ export default function CreditsPage() {
                             )) : (
                                 <div className="p-12 text-center">
                                     <Clock className="h-8 w-8 text-zinc-800 mx-auto mb-3" />
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700">No transactions yet</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-700">No transactions yet</p>
                                 </div>
                             )}
                         </div>
@@ -569,7 +569,7 @@ export default function CreditsPage() {
                 <motion.div variants={itemVariants} className="space-y-6">
                     <div className="flex items-center gap-3">
                         <Gift className="h-5 w-5 text-zinc-500" />
-                        <h3 className="text-xs font-black uppercase tracking-[0.25em] text-zinc-500">Referral Program</h3>
+                        <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">Referral Program</h3>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -577,12 +577,12 @@ export default function CreditsPage() {
                         <div className="glass-card p-8 rounded-3xl space-y-6 bg-primary/5 border-primary/10 relative overflow-hidden">
                             <div className="absolute inset-0 scanline opacity-(--scanline-opacity) pointer-events-none" />
                             <div className="space-y-1">
-                                <h3 className="font-black uppercase tracking-tight text-white">Your Referral Code</h3>
+                                <h3 className="font-bold uppercase tracking-tight text-white">Your Referral Code</h3>
                                 <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Share and earn credits</p>
                             </div>
                             <div className="space-y-4">
                                 <div className="bg-zinc-950/50 rounded-2xl border border-white/10 p-5 flex items-center justify-between">
-                                    <span className="text-2xl font-black text-primary tracking-[0.2em] uppercase">
+                                    <span className="text-2xl font-bold text-primary tracking-[0.2em] uppercase">
                                         {referralCode?.code || "LOADING..."}
                                     </span>
                                     <button
@@ -608,31 +608,31 @@ export default function CreditsPage() {
                         {/* Referral Stats */}
                         <div className="glass-card p-8 rounded-3xl space-y-6">
                             <div className="space-y-1">
-                                <h3 className="font-black uppercase tracking-tight text-white">Referral Stats</h3>
+                                <h3 className="font-bold uppercase tracking-tight text-white">Referral Stats</h3>
                                 <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Network growth metrics</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-white/2 rounded-2xl border border-white/5 p-5 text-center space-y-2">
                                     <Users className="h-6 w-6 text-blue-400 mx-auto" />
-                                    <p className="text-3xl font-black text-white tracking-tighter">{referralStats?.total_referrals ?? 0}</p>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Referrals</p>
+                                    <p className="text-3xl font-bold text-white tracking-tighter">{referralStats?.total_referrals ?? 0}</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Referrals</p>
                                 </div>
                                 <div className="bg-white/2 rounded-2xl border border-white/5 p-5 text-center space-y-2">
                                     <Coins className="h-6 w-6 text-primary mx-auto" />
-                                    <p className="text-3xl font-black text-white tracking-tighter">{referralStats?.credits_earned ?? 0}</p>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Earned</p>
+                                    <p className="text-3xl font-bold text-white tracking-tighter">{referralStats?.credits_earned ?? 0}</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Earned</p>
                                 </div>
                             </div>
                             {referralStats?.referrals && referralStats.referrals.length > 0 && (
                                 <div className="space-y-3 pt-2 border-t border-white/5">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Recent Referrals</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Recent Referrals</p>
                                     {referralStats.referrals.slice(0, 5).map((ref) => (
                                         <div key={ref.id} className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
                                                 <span className="text-xs font-bold text-zinc-400">{ref.username}</span>
                                             </div>
-                                            <span className="text-[10px] font-black text-emerald-500">+{ref.credits_awarded} cr</span>
+                                            <span className="text-[10px] font-bold text-emerald-500">+{ref.credits_awarded} cr</span>
                                         </div>
                                     ))}
                                 </div>
@@ -642,7 +642,7 @@ export default function CreditsPage() {
                         {/* Apply Referral Code */}
                         <div className="glass-card p-8 rounded-3xl space-y-6">
                             <div className="space-y-1">
-                                <h3 className="font-black uppercase tracking-tight text-white">Apply Code</h3>
+                                <h3 className="font-bold uppercase tracking-tight text-white">Apply Code</h3>
                                 <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Have a referral code?</p>
                             </div>
                             <div className="space-y-4">
@@ -658,7 +658,7 @@ export default function CreditsPage() {
                                 <button
                                     onClick={handleApplyReferral}
                                     disabled={isApplying || !applyCode.trim()}
-                                    className="w-full bg-primary hover:bg-primary/90 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50 shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)]"
+                                    className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50 shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)]"
                                 >
                                     {isApplying ? (
                                         <RefreshCw className="h-4 w-4 animate-spin" />
@@ -675,7 +675,7 @@ export default function CreditsPage() {
                     <div className="glass-card p-8 rounded-3xl bg-primary/5 border-primary/10 relative overflow-hidden">
                         <div className="absolute inset-0 scanline opacity-(--scanline-opacity) pointer-events-none" />
                         <div className="space-y-1 mb-6">
-                            <h3 className="font-black uppercase tracking-tight text-white">Referral Statistics</h3>
+                            <h3 className="font-bold uppercase tracking-tight text-white">Referral Statistics</h3>
                             <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Overall referral performance</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -684,8 +684,8 @@ export default function CreditsPage() {
                                     <Users className="h-7 w-7 text-blue-400" />
                                 </div>
                                 <div>
-                                    <p className="text-4xl font-black text-white tracking-tighter">{referralStatsOverview?.total_referrals ?? referralStats?.total_referrals ?? 0}</p>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Total Referrals</p>
+                                    <p className="text-4xl font-bold text-white tracking-tighter">{referralStatsOverview?.total_referrals ?? referralStats?.total_referrals ?? 0}</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Total Referrals</p>
                                 </div>
                             </div>
                             <div className="bg-white/2 rounded-2xl border border-white/5 p-6 flex items-center gap-5">
@@ -693,8 +693,8 @@ export default function CreditsPage() {
                                     <Coins className="h-7 w-7 text-emerald-400" />
                                 </div>
                                 <div>
-                                    <p className="text-4xl font-black text-white tracking-tighter">{referralStatsOverview?.total_credits_earned ?? referralStats?.credits_earned ?? 0}</p>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Total Credits Earned from Referrals</p>
+                                    <p className="text-4xl font-bold text-white tracking-tighter">{referralStatsOverview?.total_credits_earned ?? referralStats?.credits_earned ?? 0}</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Total Credits Earned from Referrals</p>
                                 </div>
                             </div>
                         </div>

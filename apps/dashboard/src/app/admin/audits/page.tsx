@@ -129,9 +129,9 @@ export default function AuditsPage() {
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="h-1 w-8 bg-cyan-400 rounded-full shadow-[0_0_15px_rgba(34,211,238,0.5)]" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-400">Governance & Compliance</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400">Governance & Compliance</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white">Trust <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-blue-600 text-hollow">Matrix</span></h1>
+                        <h1 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-white">Trust <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-blue-600 text-hollow">Matrix</span></h1>
                         <p className="text-zinc-500 font-medium">Verify system integrity, platform compliance, and <span className="text-zinc-300 font-bold">neural bias neutrality</span>.</p>
                     </div>
 
@@ -159,7 +159,7 @@ export default function AuditsPage() {
                     {/* Sidebar Stats */}
                     <div className="space-y-8">
                         <div className="glass-card p-8 rounded-4xl space-y-6">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500">Compliance Health</h3>
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500">Compliance Health</h3>
                             <div className="space-y-4">
                                 <HealthMetric label="Global Integrity" value={`${securityStatus?.health_score || 98.2}%`} color="text-cyan-400" />
                                 <HealthMetric label="Privacy Parity" value={`${securityStatus?.privacy_score || 100}%`} color="text-emerald-400" />
@@ -175,7 +175,7 @@ export default function AuditsPage() {
                         <div className="glass-card p-8 rounded-4xl bg-violet-500/5 border-violet-500/10 space-y-4">
                             <div className="flex items-center gap-3">
                                 <Terminal className="h-4 w-4 text-violet-400" />
-                                <span className="text-[9px] font-black uppercase tracking-widest text-violet-400">Node Advisory</span>
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-violet-400">Node Advisory</span>
                             </div>
                             <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">
                                 Red Team audits monitor for generative drift. We recommend a full system scan every 72 hours of autonomous production.
@@ -193,7 +193,7 @@ function TabButton({ active, onClick, icon: Icon, label }: any) {
         <button
             onClick={onClick}
             className={cn(
-                "flex items-center gap-2 px-6 py-3 rounded-xl transition-all uppercase text-[10px] font-black tracking-widest",
+                "flex items-center gap-2 px-6 py-3 rounded-xl transition-all uppercase text-[10px] font-bold tracking-widest",
                 active ? "bg-white/5 text-white shadow-xl" : "text-zinc-600 hover:text-zinc-400"
             )}
         >
@@ -206,8 +206,8 @@ function TabButton({ active, onClick, icon: Icon, label }: any) {
 function HealthMetric({ label, value, color }: any) {
     return (
         <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-tight text-zinc-500">{label}</span>
-            <span className={cn("text-lg font-black tabular-nums", color)}>{value}</span>
+            <span className="text-[10px] font-bold uppercase tracking-tight text-zinc-500">{label}</span>
+            <span className={cn("text-lg font-bold tabular-nums", color)}>{value}</span>
         </div>
     );
 }
@@ -227,7 +227,7 @@ function AccountAuditSection({ onAudit, onDownload, reports }: any) {
                         <div className="h-10 w-10 rounded-xl bg-white/3 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <RefreshCw className="h-5 w-5 text-zinc-600 group-hover:text-cyan-400" />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-white transition-colors">{p}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 group-hover:text-white transition-colors">{p}</span>
                     </button>
                 ))}
             </div>
@@ -235,13 +235,13 @@ function AccountAuditSection({ onAudit, onDownload, reports }: any) {
             <div className="space-y-6">
                 <div className="flex items-center gap-3 px-2">
                     <FileText className="h-4 w-4 text-zinc-500" />
-                    <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500">Recent Compliance Reports</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500">Recent Compliance Reports</h3>
                 </div>
                 
                 {reports.length === 0 ? (
                     <div className="glass-card py-20 flex flex-col items-center gap-4 opacity-40">
                         <AlertTriangle className="h-10 w-10 text-zinc-700" />
-                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">No Audits Performed</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No Audits Performed</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -252,7 +252,7 @@ function AccountAuditSection({ onAudit, onDownload, reports }: any) {
                                         <CheckCircle2 className="h-6 w-6 text-emerald-500" />
                                     </div>
                                     <div>
-                                        <h4 className="text-sm font-black text-white uppercase">{report.platform} Growth Audit</h4>
+                                        <h4 className="text-sm font-bold text-white uppercase">{report.platform} Growth Audit</h4>
                                         <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{new Date(report.timestamp).toLocaleString()}</p>
                                     </div>
                                 </div>
@@ -277,12 +277,12 @@ function SecurityAuditSection({ status, events, onScan, isLoading }: any) {
             <div className="glass-card p-10 rounded-[3rem] bg-white/[0.01] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
                 <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
                 <div className="space-y-4 text-center md:text-left">
-                    <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Red Team <span className="text-cyan-400">Integrity</span> Audit</h3>
+                    <h3 className="text-3xl font-bold uppercase tracking-tighter text-white">Red Team <span className="text-cyan-400">Integrity</span> Audit</h3>
                     <p className="text-zinc-500 font-medium max-w-sm">Trigger a comprehensive scan of API endpoints, database encryption, and workforce isolation nodes.</p>
                     <button 
                         onClick={onScan}
                         disabled={isLoading}
-                        className="bg-white text-black font-black py-4 px-8 rounded-xl uppercase text-[10px] tracking-widest flex items-center gap-3 hover:bg-cyan-400 transition-all"
+                        className="bg-white text-black font-bold py-4 px-8 rounded-xl uppercase text-[10px] tracking-widest flex items-center gap-3 hover:bg-cyan-400 transition-all"
                     >
                         {isLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-black" />}
                         Run Full Scan
@@ -291,23 +291,23 @@ function SecurityAuditSection({ status, events, onScan, isLoading }: any) {
                 <div className="h-48 w-48 rounded-full border-8 border-white/5 flex items-center justify-center relative">
                     <div className="absolute inset-4 rounded-full border border-cyan-400/30 animate-ping" />
                     <div className="flex flex-col items-center">
-                        <span className="text-4xl font-black text-white">{status?.health_score || "100"}</span>
-                        <span className="text-[8px] font-black uppercase tracking-widest text-zinc-600">Integrity Score</span>
+                        <span className="text-4xl font-bold text-white">{status?.health_score || "100"}</span>
+                        <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-600">Integrity Score</span>
                     </div>
                 </div>
             </div>
 
             <div className="space-y-4">
-                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 px-2">Live Threat Stream</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 px-2">Live Threat Stream</h3>
                 <div className="glass-card divide-y divide-white/5 rounded-[2rem] overflow-hidden">
-                    {events?.length === 0 && <div className="p-10 text-center text-[10px] font-black uppercase tracking-widest text-zinc-700">No security events detected</div>}
+                    {events?.length === 0 && <div className="p-10 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-700">No security events detected</div>}
                     {events?.map((e: any, i: number) => (
                         <div key={i} className="p-5 flex items-center justify-between group hover:bg-white/2 transition-colors">
                             <div className="flex items-center gap-4">
                                 <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                 <span className="text-[11px] font-bold text-zinc-300">{e.message || e}</span>
                             </div>
-                            <span className="text-[9px] font-black text-zinc-700 uppercase tabular-nums">{new Date().toLocaleTimeString()}</span>
+                            <span className="text-[9px] font-bold text-zinc-700 uppercase tabular-nums">{new Date().toLocaleTimeString()}</span>
                         </div>
                     ))}
                 </div>
@@ -326,10 +326,10 @@ function BiasScanSection() {
                 </div>
             </div>
             <div className="space-y-3">
-                <h3 className="text-2xl font-black uppercase tracking-tight text-white">Neural Bias Neutrals</h3>
+                <h3 className="text-2xl font-bold uppercase tracking-tight text-white">Neural Bias Neutrals</h3>
                 <p className="text-zinc-500 font-medium max-w-sm">Synchronizing with Global Compliance Mesh to verify generative neutrality across all 12 autonomous clusters.</p>
             </div>
-            <button className="bg-zinc-900 text-zinc-400 border border-white/10 px-10 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest cursor-not-allowed">
+            <button className="bg-zinc-900 text-zinc-400 border border-white/10 px-10 py-4 rounded-xl font-bold uppercase text-[10px] tracking-widest cursor-not-allowed">
                 Initializing Cluster Sync...
             </button>
         </div>

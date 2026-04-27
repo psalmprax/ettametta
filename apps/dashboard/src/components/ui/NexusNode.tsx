@@ -65,7 +65,7 @@ export function NexusNode({ type, label, description, status, active, progress, 
                     {status === 'processing' && (
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/20 border border-primary/20">
                             <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                            <span className="text-[8px] font-black text-primary uppercase tracking-widest">Active</span>
+                            <span className="text-[8px] font-bold text-primary uppercase tracking-widest">Active</span>
                         </div>
                     )}
                     {status === 'complete' && <CheckCircle2 className="h-4 w-4 text-neon-cyan neon-glow-cyan" />}
@@ -75,7 +75,7 @@ export function NexusNode({ type, label, description, status, active, progress, 
             </div>
 
             <div className="space-y-1 mb-4">
-                <h4 className="text-sm font-black text-white uppercase tracking-tight group-hover:text-neon-cyan transition-colors">
+                <h4 className="text-sm font-bold text-white uppercase tracking-tight group-hover:text-neon-cyan transition-colors">
                     {label}
                 </h4>
                 <p className="text-[10px] font-medium text-zinc-500 leading-relaxed line-clamp-2">
@@ -85,7 +85,7 @@ export function NexusNode({ type, label, description, status, active, progress, 
 
             {active && progress !== undefined && (
                 <div className="space-y-2 mb-6">
-                    <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-zinc-500">
+                    <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-zinc-500">
                         <span>Progress</span>
                         <span className="text-primary">{progress}%</span>
                     </div>
@@ -103,8 +103,8 @@ export function NexusNode({ type, label, description, status, active, progress, 
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
                     {metrics.map((m, i) => (
                         <div key={i} className="space-y-1">
-                            <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">{m.label}</p>
-                            <p className="text-[10px] font-black text-white">{m.value}</p>
+                            <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">{m.label}</p>
+                            <p className="text-[10px] font-bold text-white">{m.value}</p>
                         </div>
                     ))}
                 </div>
