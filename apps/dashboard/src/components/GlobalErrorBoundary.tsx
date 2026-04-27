@@ -75,10 +75,10 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
                 <AlertTriangle className="h-12 w-12 text-red-500" />
               </div>
               <div>
-                <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter">
+                <h1 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tighter">
                   Nexus <span className="text-hollow text-red-500">Critical Error</span>
                 </h1>
-                <p className="text-zinc-500 text-sm mt-3 uppercase tracking-widest font-black opacity-60">
+                <p className="text-zinc-500 text-sm mt-3 uppercase tracking-widest font-bold opacity-60">
                   The dashboard encountered an unhandled exception.
                 </p>
               </div>
@@ -93,14 +93,14 @@ export default class GlobalErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 relative z-10">
               <button
                 onClick={() => window.location.reload()}
-                className="w-full md:w-auto bg-zinc-800 hover:bg-zinc-700 text-white font-black py-4 px-8 rounded-2xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[10px] border border-white/5"
+                className="w-full md:w-auto bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-4 px-8 rounded-2xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[10px] border border-white/5"
               >
                 <RefreshCcw className="h-4 w-4" />
                 Retry Connection
               </button>
               <button
                 onClick={this.handleReset}
-                className="w-full md:w-auto bg-red-500 hover:bg-red-600 text-white font-black py-4 px-10 rounded-2xl transition-all shadow-[0_0_30px_rgba(239,68,68,0.3)] flex items-center justify-center gap-2 uppercase tracking-widest text-[10px]"
+                className="w-full md:w-auto bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-10 rounded-2xl transition-all shadow-[0_0_30px_rgba(239,68,68,0.3)] flex items-center justify-center gap-2 uppercase tracking-widest text-[10px]"
               >
                 <Home className="h-4 w-4" />
                 Return to Nexus Home

@@ -11,16 +11,16 @@ export default function PrivacyPage() {
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">
                         <div className="h-1 w-8 bg-primary rounded-full shadow-sm" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">Data Protection</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-primary">Data Protection</span>
                     </div>
-                    <h1 className="text-5xl font-black tracking-tighter uppercase text-white leading-none">
+                    <h1 className="text-5xl font-bold tracking-tighter uppercase text-white leading-none">
                         Privacy <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400">Policy</span>
                     </h1>
                 </div>
 
                 <div className="glass-card p-10 rounded-[3rem] space-y-8 text-zinc-400 leading-relaxed font-medium border-white/5 bg-zinc-950/30">
                     <section className="space-y-4">
-                        <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-white uppercase tracking-tight flex items-center gap-3">
                             <Lock className="h-6 w-6 text-primary" />
                             1. Data Collection
                         </h2>
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section className="space-y-4">
-                        <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-white uppercase tracking-tight flex items-center gap-3">
                             <Eye className="h-6 w-6 text-primary" />
                             2. Use of Information
                         </h2>
@@ -40,7 +40,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section className="space-y-4">
-                        <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-white uppercase tracking-tight flex items-center gap-3">
                             <CheckCircle2 className="h-6 w-6 text-primary" />
                             3. Security Measures
                         </h2>

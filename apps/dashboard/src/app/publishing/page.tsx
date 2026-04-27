@@ -114,7 +114,7 @@ export default function PublishingPage() {
 
     return (
         <DashboardLayout>
-            <div className="min-h-screen bg-[#050507] relative flex flex-col font-sans overflow-hidden">
+            <div className="min-h-screen bg-bg-base relative flex flex-col font-sans overflow-hidden">
                 <div className="noise-overlay" />
                 <PublishingBackground />
                 <div className="absolute inset-0 cyber-grid opacity-10 pointer-events-none" />
@@ -131,7 +131,7 @@ export default function PublishingPage() {
                                 className="h-1 bg-blue-500 shadow-[0_0_20px_#3b82f6]"
                             />
                             <div className="space-y-2">
-                                <h1 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tighter leading-none glitch-text italic" data-text="EGRESS_HUB">
+                                <h1 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tighter leading-none  " data-text="EGRESS_HUB">
                                     Egress Hub
                                 </h1>
                                 <p className="font-data-mono text-zinc-500 text-[10px] flex items-center gap-3">
@@ -146,13 +146,13 @@ export default function PublishingPage() {
                         <div className="flex items-center gap-6">
                             <div className="surface-glass rim-light p-6 flex flex-col items-end">
                                 <span className="font-data-mono text-[8px] text-zinc-600 mb-1">TOTAL_EGRESS</span>
-                                <span className="text-xl font-black text-white tabular-nums tracking-tighter">
+                                <span className="text-xl font-bold text-white tabular-nums tracking-tighter">
                                     {history.length} ASSETS
                                 </span>
                             </div>
                             <button 
                                 onClick={() => setIsDeployModalOpen(true)}
-                                className="action-primary h-20 px-12 italic text-xs tracking-tighter flex items-center gap-4"
+                                className="action-primary h-20 px-12  text-xs tracking-tighter flex items-center gap-4"
                             >
                                 <ArrowUpRight className="h-4 w-4" />
                                 MANUAL_BROADCAST
@@ -189,7 +189,7 @@ export default function PublishingPage() {
                                         <span className="font-data-mono text-[8px] text-zinc-700 tracking-widest">STABLE_LINK</span>
                                     </div>
                                     <div className="space-y-1">
-                                        <h3 className="text-xl font-black text-white italic tracking-tighter uppercase group-hover:text-blue-400 transition-colors">{acc.username}</h3>
+                                        <h3 className="text-xl font-bold text-white  tracking-tighter uppercase group-hover:text-blue-400 transition-colors">{acc.username}</h3>
                                         <p className="font-data-mono text-[7px] text-zinc-600 uppercase">{acc.platform}</p>
                                     </div>
                                     <div className="pt-4 border-t border-white/5 flex items-center justify-between">
@@ -205,7 +205,7 @@ export default function PublishingPage() {
                     <div className="space-y-10">
                         <div className="flex items-center justify-between border-b border-white/5 pb-8">
                             <div className="space-y-2">
-                                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Transmission Matrix</h2>
+                                <h2 className="text-3xl font-bold text-white uppercase  tracking-tighter">Transmission Matrix</h2>
                                 <p className="font-data-mono text-zinc-500 text-[9px]">LIVE_GLOBAL_DISTRIBUTION_LOG</p>
                             </div>
                             <div className="flex gap-4">
@@ -222,7 +222,7 @@ export default function PublishingPage() {
                                     <Globe className="h-10 w-10 text-white" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">No Active Egress</h3>
+                                    <h3 className="text-2xl font-bold text-white uppercase  tracking-tighter">No Active Egress</h3>
                                     <p className="text-zinc-500 font-medium text-sm max-w-sm">Initiate a manual broadcast or check the autonomous pipeline.</p>
                                 </div>
                             </div>
@@ -242,11 +242,11 @@ export default function PublishingPage() {
                                         </div>
                                         <div className="flex-1 space-y-4 min-w-0">
                                             <div className="flex items-center justify-between">
-                                                <span className="font-data-mono text-[9px] text-blue-400 uppercase tracking-widest font-black">{post.platform}</span>
+                                                <span className="font-data-mono text-[9px] text-blue-400 uppercase tracking-widest font-bold">{post.platform}</span>
                                                 <span className="font-data-mono text-[8px] text-zinc-600 uppercase tabular-nums">{new Date(post.published_at).toLocaleDateString()}</span>
                                             </div>
                                             <div className="space-y-2">
-                                                <h4 className="text-xl font-black text-white uppercase italic tracking-tight truncate group-hover:text-blue-400 transition-colors">{post.title}</h4>
+                                                <h4 className="text-xl font-bold text-white uppercase  tracking-tight truncate group-hover:text-blue-400 transition-colors">{post.title}</h4>
                                                 <div className="flex gap-4">
                                                     <div className="flex items-center gap-2">
                                                         <Activity className="h-3 w-3 text-emerald-500" />

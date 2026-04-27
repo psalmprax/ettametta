@@ -176,7 +176,7 @@ export default React.memo(function NetworkMesh({ nodes, links }: NetworkProps) {
                     className="h-2 w-2 rounded-full bg-primary animate-pulse"
                     aria-hidden="true"
                 />
-                <span className="text-[10px] font-black text-white uppercase tracking-widest">
+                <span className="text-[10px] font-bold text-white uppercase tracking-widest">
                     Network Hierarchy Simulation
                 </span>
             </div>

@@ -43,6 +43,9 @@ import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { useNiches } from "@/hooks/useNiches";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 // --- TOP NOTCH 3D COMPONENTS ---
 
@@ -283,7 +286,7 @@ export default function CreationPage() {
 
     return (
         <DashboardLayout>
-            <div className="min-h-screen bg-[#050507] relative flex flex-col font-sans">
+            <div className="min-h-screen bg-bg-base relative flex flex-col font-sans">
                 {/* ADVANCED UI LAYERS */}
                 <div className="noise-overlay" />
                 <NeuralCore />
@@ -294,7 +297,7 @@ export default function CreationPage() {
                     
                     {/* SYSTEM HUD */}
                     <header className="mb-20 flex flex-col xl:flex-row xl:items-end justify-between gap-10">
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             <motion.div 
                                 initial={{ opacity: 0, scaleX: 0 }}
                                 animate={{ opacity: 1, scaleX: 1 }}
@@ -304,8 +307,7 @@ export default function CreationPage() {
                                 <motion.h1 
                                     initial={{ opacity: 0, y: 30 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tighter leading-none glitch-text"
-                                    data-text="CREATION SUITE"
+                                    className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tight leading-none"
                                 >
                                     Creation Suite
                                 </motion.h1>
@@ -314,7 +316,7 @@ export default function CreationPage() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.4 }}
-                                className="flex items-center gap-6 font-data-mono text-zinc-500"
+                                className="flex items-center gap-6 font-data-mono text-zinc-500 uppercase tracking-widest text-[10px]"
                             >
                                 <span className="flex items-center gap-2 text-cyan-400/80">
                                     <Radio className="h-3 w-3 animate-pulse" />
@@ -336,31 +338,31 @@ export default function CreationPage() {
                             animate={{ opacity: 1, x: 0 }}
                             className="flex items-center gap-4"
                         >
-                            <div className="surface-glass glass-refraction cyber-border rim-light p-6 flex items-center gap-10">
+                            <div className="surface-glass rounded-[2rem] border border-white/5 p-6 flex items-center gap-10">
                                 <div className="space-y-1">
-                                    <p className="font-label-caps text-[8px] text-zinc-600">Sync Status</p>
+                                    <p className="font-bold text-[8px] text-zinc-600 uppercase tracking-widest">Sync Status</p>
                                     <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_#10b981]" />
-                                        <span className="font-data-mono text-white text-xs">ENCRYPTED</span>
+                                        <span className="font-bold text-white text-xs tracking-widest">ENCRYPTED</span>
                                     </div>
                                 </div>
                                 <div className="w-px h-10 bg-white/5" />
                                 <div className="flex items-center gap-4">
                                     <div className="flex flex-col items-end">
-                                        <span className="font-label-caps text-white text-[10px]">Cinema Mode</span>
-                                        <span className="font-data-mono text-[8px] text-zinc-500">Auto-Cinematography</span>
+                                        <span className="font-bold text-white text-[10px] uppercase tracking-widest">Cinema Mode</span>
+                                        <span className="font-data-mono text-[8px] text-zinc-500 uppercase">Auto-Cinematography</span>
                                     </div>
                                     <button 
                                         onClick={() => setCinemaMode(!cinemaMode)}
                                         className={cn(
-                                            "w-16 h-8 rounded-none transition-all relative p-1 border",
+                                            "w-16 h-8 rounded-full transition-all relative p-1 border",
                                             cinemaMode ? "border-cyan-400 bg-cyan-400/10" : "border-zinc-800 bg-zinc-900"
                                         )}
                                     >
                                         <motion.div 
                                             animate={{ x: cinemaMode ? 32 : 0 }}
                                             className={cn(
-                                                "w-6 h-6 shadow-2xl transition-colors",
+                                                "w-6 h-6 rounded-full shadow-2xl transition-colors",
                                                 cinemaMode ? "bg-cyan-400" : "bg-zinc-700"
                                             )}
                                         />
@@ -373,18 +375,18 @@ export default function CreationPage() {
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start">
                         {/* LEFT: COMMAND CONSOLE */}
                         <div className="xl:col-span-4 space-y-10">
-                            <section className="surface-glass glass-refraction cyber-border rim-light p-10 space-y-10 relative overflow-hidden">
+                            <Card variant="solid" className="rounded-[2.5rem] border border-white/5 p-10 space-y-10">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(0,251,251,0.05),transparent_40%)]" />
                                 
                                 <div className="flex items-center justify-between">
-                                    <h2 className="font-label-caps text-cyan-400 flex items-center gap-3 text-xs">
+                                    <h2 className="font-bold text-cyan-400 flex items-center gap-3 text-xs uppercase tracking-widest">
                                         <Command className="h-4 w-4" />
-                                        CORE_CONFIGURATION
+                                        Core Configuration
                                     </h2>
                                     <div className="flex gap-1">
-                                        <div className="w-1 h-1 bg-zinc-800" />
-                                        <div className="w-1 h-1 bg-zinc-800" />
-                                        <div className="w-1 h-1 bg-zinc-800" />
+                                        <div className="w-1 h-1 bg-zinc-800 rounded-full" />
+                                        <div className="w-1 h-1 bg-zinc-800 rounded-full" />
+                                        <div className="w-1 h-1 bg-zinc-800 rounded-full" />
                                     </div>
                                 </div>
 
@@ -392,17 +394,17 @@ export default function CreationPage() {
                                     {/* Topic */}
                                     <div className="space-y-3">
                                         <div className="flex justify-between">
-                                            <label className="font-label-caps text-zinc-500">Neural Seed (Topic)</label>
-                                            <span className="font-data-mono text-[8px] text-cyan-400/40">STRING_INPUT</span>
+                                            <label className="font-bold text-zinc-500 uppercase tracking-widest text-[10px]">Neural Seed (Topic)</label>
+                                            <span className="font-data-mono text-[8px] text-cyan-400/40 uppercase">String_Input</span>
                                         </div>
                                         <div className="relative group/input">
                                             <input 
                                                 value={topic}
                                                 onChange={(e) => setTopic(e.target.value)}
                                                 placeholder="Inject topic..."
-                                                className="w-full bg-black/60 border border-white/5 p-6 text-white font-body-base focus:border-cyan-400 transition-all outline-none text-lg placeholder:text-zinc-800"
+                                                className="w-full bg-black/60 border border-white/5 rounded-2xl p-6 text-white font-bold focus:border-cyan-400 transition-all outline-none text-lg placeholder:text-zinc-800 uppercase tracking-tight"
                                             />
-                                            <div className="absolute bottom-0 left-0 h-[2px] bg-cyan-400 w-0 group-focus-within/input:w-full transition-all duration-500" />
+                                            <div className="absolute bottom-0 left-0 h-[2px] bg-cyan-400 w-0 group-focus-within/input:w-full transition-all duration-500 rounded-full" />
                                             <Brain className="absolute right-6 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-800 group-focus-within/input:text-cyan-400 transition-colors" />
                                         </div>
                                     </div>
@@ -410,27 +412,27 @@ export default function CreationPage() {
                                     {/* Selectors */}
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-3">
-                                            <label className="font-label-caps text-zinc-500">Niche</label>
+                                            <label className="font-bold text-zinc-500 uppercase tracking-widest text-[10px]">Niche</label>
                                             <div className="relative">
                                                 <select 
                                                     value={niche}
                                                     onChange={(e) => setNiche(e.target.value)}
-                                                    className="w-full bg-black/60 border border-white/5 p-5 text-white font-label-caps outline-none appearance-none cursor-pointer focus:border-cyan-400/50 transition-all"
+                                                    className="w-full bg-black/60 border border-white/5 rounded-2xl p-5 text-white font-bold outline-none appearance-none cursor-pointer focus:border-cyan-400/50 transition-all uppercase tracking-widest text-xs"
                                                 >
-                                                    {niches.map(n => <option key={n} value={n} className="bg-[#050507]">{n}</option>)}
+                                                    {niches.map(n => <option key={n} value={n} className="bg-bg-base">{n}</option>)}
                                                 </select>
                                                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600 pointer-events-none" />
                                             </div>
                                         </div>
                                         <div className="space-y-3">
-                                            <label className="font-label-caps text-zinc-500">Style</label>
+                                            <label className="font-bold text-zinc-500 uppercase tracking-widest text-[10px]">Style</label>
                                             <div className="relative">
                                                 <select 
                                                     value={style}
                                                     onChange={(e) => setStyle(e.target.value)}
-                                                    className="w-full bg-black/60 border border-white/5 p-5 text-white font-label-caps outline-none appearance-none cursor-pointer focus:border-cyan-400/50 transition-all"
+                                                    className="w-full bg-black/60 border border-white/5 rounded-2xl p-5 text-white font-bold outline-none appearance-none cursor-pointer focus:border-cyan-400/50 transition-all uppercase tracking-widest text-xs"
                                                 >
-                                                    {availableStyles.map(s => <option key={s} value={s.toLowerCase()} className="bg-[#050507]">{s}</option>)}
+                                                    {availableStyles.map(s => <option key={s} value={s.toLowerCase()} className="bg-bg-base">{s}</option>)}
                                                 </select>
                                                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-600 pointer-events-none" />
                                             </div>
@@ -440,9 +442,9 @@ export default function CreationPage() {
                                     {/* Slider */}
                                     <div className="space-y-6 pt-4">
                                         <div className="flex justify-between items-center">
-                                            <label className="font-label-caps text-zinc-500">Output Duration</label>
-                                            <div className="px-3 py-1 bg-cyan-400/10 border border-cyan-400/20">
-                                                <span className="font-data-mono text-cyan-400">{duration}S</span>
+                                            <label className="font-bold text-zinc-500 uppercase tracking-widest text-[10px]">Output Duration</label>
+                                            <div className="px-4 py-1 bg-cyan-400/10 border border-cyan-400/20 rounded-full">
+                                                <span className="font-data-mono text-cyan-400 text-xs">{duration}S</span>
                                             </div>
                                         </div>
                                         <input 
@@ -451,51 +453,52 @@ export default function CreationPage() {
                                             max="180"
                                             value={duration}
                                             onChange={(e) => setDuration(parseInt(e.target.value))}
-                                            className="w-full h-8"
+                                            className="w-full h-8 accent-cyan-400"
                                         />
-                                        <div className="flex justify-between font-data-mono text-[8px] text-zinc-800">
-                                            <span>MIN_15S</span>
-                                            <span>MAX_180S</span>
+                                        <div className="flex justify-between font-data-mono text-[8px] text-zinc-800 uppercase tracking-widest">
+                                            <span>Min_15s</span>
+                                            <span>Max_180s</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <button 
+                                <Button 
                                     onClick={cinemaMode ? handleLaunchCinema : handleGenerateScript}
                                     disabled={isGenerating || isCinemaLaunching || !topic}
-                                    className="w-full action-primary py-8 mt-4 flex items-center justify-center gap-6 group overflow-hidden"
+                                    variant="primary"
+                                    className="w-full py-10 mt-4 flex items-center justify-center gap-6 group overflow-hidden rounded-3xl"
                                 >
-                                    <span className="relative z-10 font-black tracking-widest uppercase text-lg italic">
-                                        {isGenerating || isCinemaLaunching ? "PROCESSING..." : cinemaMode ? "INITIATE CINEMA" : "SYNTHESIZE SCRIPT"}
+                                    <span className="relative z-10 font-bold tracking-[0.2em] uppercase text-lg">
+                                        {isGenerating || isCinemaLaunching ? "Processing..." : cinemaMode ? "Initialize Cinema" : "Synthesize Script"}
                                     </span>
                                     <div className="relative z-10">
                                         {isGenerating || isCinemaLaunching ? (
                                             <RefreshCw className="h-6 w-6 animate-spin" />
                                         ) : (
-                                            <Zap className="h-6 w-6 group-hover:scale-150 transition-transform duration-500" />
+                                            <Zap className="h-6 w-6 group-hover:scale-125 transition-transform duration-500" />
                                         )}
                                     </div>
-                                </button>
-                            </section>
+                                </Button>
+                            </Card>
 
                             {/* LOGS HUD */}
-                            <div className="surface-glass rim-light p-8 font-data-mono text-[9px] space-y-3 border-l-4 border-cyan-400/30">
+                            <div className="surface-glass rounded-[2rem] border border-white/5 p-8 font-data-mono text-[9px] space-y-3 border-l-4 border-cyan-400/30 uppercase tracking-widest">
                                 <div className="flex items-center justify-between text-zinc-600">
-                                    <span>SYSTEM_LOG</span>
+                                    <span>System_Log</span>
                                     <span>v3.0.4-REV</span>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-emerald-500 flex items-center gap-2">
-                                        <span className="w-1 h-1 bg-emerald-500" />
-                                        &gt; [SUCCESS] NEURAL_CORE_LOADED
+                                        <span className="w-1 h-1 bg-emerald-500 rounded-full" />
+                                        &gt; [Success] Neural_Core_Loaded
                                     </p>
                                     <p className="text-zinc-600 flex items-center gap-2">
-                                        <span className="w-1 h-1 bg-zinc-800" />
-                                        &gt; [INFO] WAITING_FOR_USER_INPUT
+                                        <span className="w-1 h-1 bg-zinc-800 rounded-full" />
+                                        &gt; [Info] Waiting_For_User_Input
                                     </p>
                                     <p className="text-zinc-800 flex items-center gap-2">
-                                        <span className="w-1 h-1 bg-zinc-900" />
-                                        &gt; [DEBUG] NO_SEED_DETECTED
+                                        <span className="w-1 h-1 bg-zinc-900 rounded-full" />
+                                        &gt; [Debug] No_Seed_Detected
                                     </p>
                                 </div>
                             </div>
@@ -503,7 +506,7 @@ export default function CreationPage() {
 
                         {/* RIGHT: WORKSPACE CONSOLE */}
                         <div className="xl:col-span-8">
-                            <div className="surface-glass rim-light min-h-[850px] flex flex-col relative group overflow-hidden">
+                            <Card variant="solid" className="min-h-[850px] flex flex-col relative group rounded-[3rem] border border-white/5 overflow-hidden">
                                 <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent" />
                                 
                                 {/* EMPTY STATE */}
@@ -520,8 +523,8 @@ export default function CreationPage() {
                                             </div>
                                         </div>
                                         <div className="text-center space-y-4">
-                                            <h3 className="font-label-caps text-zinc-600 text-sm tracking-[0.5em]">SYSTEM_IDLE</h3>
-                                            <p className="font-data-mono text-zinc-800 text-[10px]">INJECT TOPIC TO INITIALIZE WORKSPACE</p>
+                                            <h3 className="font-bold text-zinc-600 text-sm tracking-[0.5em] uppercase">System_Idle</h3>
+                                            <p className="font-data-mono text-zinc-800 text-[10px] uppercase tracking-widest">Inject Topic To Initialize Workspace</p>
                                         </div>
                                     </div>
                                 )}
@@ -534,37 +537,38 @@ export default function CreationPage() {
                                             <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-cyan-400/40 to-transparent" />
                                             
                                             <div className="flex items-center gap-6">
-                                                <div className="h-16 w-16 bg-cyan-400/5 flex items-center justify-center border border-cyan-400/10 shadow-[0_0_20px_rgba(0,251,251,0.05)]">
+                                                <div className="h-16 w-16 bg-cyan-400/5 flex items-center justify-center border border-cyan-400/10 rounded-2xl shadow-[0_0_20px_rgba(0,251,251,0.05)]">
                                                     <Dna className="h-8 w-8 text-cyan-400" />
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-3 mb-1">
-                                                        <span className="font-data-mono text-[8px] text-cyan-400/60">FILE_STATUS: ACTIVE</span>
-                                                        <div className="w-1 h-1 bg-emerald-500 rounded-full" />
+                                                        <span className="font-bold text-[8px] text-cyan-400/60 uppercase tracking-widest">File Status: Active</span>
+                                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981]" />
                                                     </div>
-                                                    <h3 className="font-label-caps text-2xl text-white tracking-tight italic">Neural_Blueprint_01.pen</h3>
+                                                    <h3 className="font-bold text-2xl text-white tracking-tight uppercase">Neural_Blueprint_01.sys</h3>
                                                 </div>
                                             </div>
 
-                                            <button 
+                                            <Button 
                                                 onClick={handleValidateHook}
                                                 disabled={isValidating}
-                                                className="px-10 py-4 bg-white/5 border border-white/10 text-white font-label-caps text-[10px] hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-4 group"
+                                                variant="secondary"
+                                                className="px-10 py-6 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center gap-4 group"
                                             >
                                                 {isValidating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 group-hover:scale-125 transition-transform" />}
-                                                ANALYZE_HOOK_RELIABILITY
-                                            </button>
+                                                Analyze Hook Reliability
+                                            </Button>
                                         </div>
 
                                         <div className="flex-1 p-12 space-y-16 overflow-y-auto max-h-[900px] custom-scrollbar relative">
                                             {/* Master Title */}
                                             <div className="space-y-6 relative">
-                                                <div className="absolute -left-12 top-0 h-full w-1 bg-cyan-400" />
-                                                <span className="font-label-caps text-cyan-400/60 flex items-center gap-3 text-[10px]">
-                                                    <div className="w-4 h-px bg-cyan-400/40" />
-                                                    MASTER_ASSET_TITLE
+                                                <div className="absolute -left-12 top-0 h-full w-1.5 bg-cyan-400 rounded-full" />
+                                                <span className="font-bold text-cyan-400/60 flex items-center gap-3 text-[10px] uppercase tracking-[0.3em]">
+                                                    <div className="w-6 h-px bg-cyan-400/40" />
+                                                    Master Asset Title
                                                 </span>
-                                                <h2 className="text-4xl font-bold text-white uppercase italic tracking-tighter leading-none">
+                                                <h2 className="text-4xl font-bold text-white uppercase tracking-tight leading-none">
                                                     {script.title}
                                                 </h2>
                                             </div>
@@ -574,15 +578,15 @@ export default function CreationPage() {
                                                 <motion.div 
                                                     initial={{ opacity: 0, height: 0 }}
                                                     animate={{ opacity: 1, height: "auto" }}
-                                                    className="p-8 bg-cyan-400/5 border border-cyan-400/20 space-y-6"
+                                                    className="p-10 bg-cyan-400/5 border border-cyan-400/20 rounded-[2rem] space-y-6"
                                                 >
                                                     <div className="flex justify-between items-center">
-                                                        <span className="font-label-caps text-cyan-400 text-xs">RETENTION_AUDIT</span>
-                                                        <div className="px-4 py-1 bg-cyan-400 text-black font-black text-[10px]">
-                                                            SCORE: {hookAnalysis.score}%
+                                                        <span className="font-bold text-cyan-400 text-xs uppercase tracking-widest">Retention Audit</span>
+                                                        <div className="px-6 py-2 bg-cyan-400 rounded-full text-black font-bold text-[10px] uppercase tracking-widest">
+                                                            Score: {hookAnalysis.score}%
                                                         </div>
                                                     </div>
-                                                    <p className="text-sm text-cyan-200 leading-relaxed font-medium italic">
+                                                    <p className="text-lg text-cyan-200 leading-relaxed font-bold tracking-tight">
                                                         "{hookAnalysis.analysis}"
                                                     </p>
                                                 </motion.div>
@@ -596,41 +600,41 @@ export default function CreationPage() {
                                                         initial={{ opacity: 0, x: -20 }}
                                                         whileInView={{ opacity: 1, x: 0 }}
                                                         viewport={{ once: true }}
-                                                        className="group/segment relative p-10 bg-black/40 border border-white/5 hover:border-cyan-400/30 transition-all duration-500"
+                                                        className="group/segment relative p-10 bg-black/40 border border-white/5 rounded-[2rem] hover:border-cyan-400/30 transition-all duration-500"
                                                     >
-                                                        <div className="absolute -left-[1px] top-0 h-full w-1 bg-white/5 group-hover/segment:bg-cyan-400 transition-colors" />
+                                                        <div className="absolute -left-[1px] top-10 bottom-10 w-1 bg-white/5 group-hover/segment:bg-cyan-400 transition-colors rounded-full" />
                                                         
                                                         <div className="flex flex-col lg:flex-row gap-12">
                                                             <div className="flex-1 space-y-8">
-                                                                <div className="flex items-center justify-between">
+                                                                 <div className="flex items-center justify-between">
                                                                     <div className="flex items-center gap-6">
-                                                                        <span className="font-data-mono text-[10px] text-cyan-400">0{i + 1}</span>
-                                                                        <span className="font-label-caps text-[9px] bg-white/5 px-3 py-1 text-zinc-500 border border-white/5">
+                                                                        <span className="font-bold text-[10px] text-cyan-400 uppercase tracking-widest">Segment 0{i + 1}</span>
+                                                                        <span className="font-bold text-[9px] bg-white/5 px-4 py-1 rounded-full text-zinc-500 border border-white/5 uppercase tracking-widest">
                                                                             {seg.type}
                                                                         </span>
                                                                     </div>
-                                                                    <div className="font-data-mono text-zinc-700 text-[9px]">
-                                                                        DURATION: {seg.duration}S
+                                                                    <div className="font-bold text-zinc-700 text-[9px] uppercase tracking-widest">
+                                                                        Duration: {seg.duration}S
                                                                     </div>
                                                                 </div>
                                                                 
                                                                 <div className="space-y-4">
-                                                                    <p className="text-2xl font-bold text-white leading-tight tracking-tight">
+                                                                    <p className="text-2xl font-bold text-white leading-tight tracking-tight uppercase">
                                                                         {seg.text}
                                                                     </p>
-                                                                    <div className="flex items-center gap-4 text-zinc-500 font-data-mono text-[9px] italic bg-white/5 p-4 border-l-2 border-zinc-800">
+                                                                    <div className="flex items-center gap-4 text-zinc-500 font-bold text-[9px] uppercase tracking-widest bg-white/5 p-5 rounded-2xl border-l-2 border-zinc-800">
                                                                         <Monitor className="h-4 w-4 opacity-50" />
-                                                                        VISUAL_PROMPT: {seg.visual_cue}
+                                                                        Visual Prompt: {seg.visual_cue}
                                                                     </div>
                                                                 </div>
                                                             </div>
 
-                                                            <div className="flex lg:flex-col gap-3 justify-end lg:justify-start">
+                                                            <div className="flex lg:flex-col gap-4 justify-end lg:justify-start">
                                                                 <button 
                                                                     onClick={() => handleSynthesizeAudio(i, seg.text)}
                                                                     title="Synthesize Voiceover"
                                                                     className={cn(
-                                                                        "w-16 h-16 flex items-center justify-center transition-all border",
+                                                                        "w-16 h-16 rounded-2xl flex items-center justify-center transition-all border",
                                                                         segmentAssets[i]?.audio 
                                                                             ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
                                                                             : "border-white/5 hover:border-cyan-400 hover:text-cyan-400 bg-black/40"
@@ -642,7 +646,7 @@ export default function CreationPage() {
                                                                     onClick={() => handleSearchStock(i, seg.visual_cue)}
                                                                     title="Retrieve Visual Stock"
                                                                     className={cn(
-                                                                        "w-16 h-16 flex items-center justify-center transition-all border",
+                                                                        "w-16 h-16 rounded-2xl flex items-center justify-center transition-all border",
                                                                         segmentAssets[i]?.videos 
                                                                             ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
                                                                             : "border-white/5 hover:border-cyan-400 hover:text-cyan-400 bg-black/40"
@@ -658,43 +662,43 @@ export default function CreationPage() {
                                         </div>
                                     </div>
                                 )}
-                            </div>
+                            </Card>
                         </div>
                     </div>
-                </div>
 
-                {/* GLOBAL HUD - FLOATING LOCALIZATION */}
-                {script && (
-                    <motion.div 
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="fixed right-10 top-1/2 -translate-y-1/2 flex flex-col gap-6 z-40 hidden 2xl:flex"
-                    >
-                        <div className="surface-glass rim-light p-3 flex flex-col gap-4 border-r-4 border-cyan-400/20">
-                            {[
-                                { code: "ES", name: "Spanish" },
-                                { code: "DE", name: "German" },
-                                { code: "FR", name: "French" },
-                                { code: "IT", name: "Italian" },
-                                { code: "PT", name: "Portuguese" },
-                                { code: "JP", name: "Japanese" }
-                            ].map(lang => (
-                                <button
-                                    key={lang.code}
-                                    onClick={() => handleGlobalize(lang.name)}
-                                    className="w-14 h-14 flex items-center justify-center font-label-caps text-xs text-zinc-600 hover:text-cyan-400 hover:bg-cyan-400/5 transition-all relative group"
-                                >
-                                    <span className="relative z-10">{lang.code}</span>
-                                    <div className="absolute inset-0 border border-transparent group-hover:border-cyan-400/20 transition-all" />
-                                </button>
-                            ))}
-                            <div className="h-[2px] bg-white/5 mx-2" />
-                            <div className="w-14 h-14 flex items-center justify-center text-zinc-800">
-                                <Globe className="h-5 w-5" />
+                    {/* GLOBAL HUD - FLOATING LOCALIZATION */}
+                    {script && (
+                        <motion.div 
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="fixed right-10 top-1/2 -translate-y-1/2 flex flex-col gap-6 z-40 hidden 2xl:flex"
+                        >
+                            <div className="surface-glass rim-light p-3 flex flex-col gap-4 border-r-4 border-cyan-400/20">
+                                {[
+                                    { code: "ES", name: "Spanish" },
+                                    { code: "DE", name: "German" },
+                                    { code: "FR", name: "French" },
+                                    { code: "IT", name: "Italian" },
+                                    { code: "PT", name: "Portuguese" },
+                                    { code: "JP", name: "Japanese" }
+                                ].map(lang => (
+                                    <button
+                                        key={lang.code}
+                                        onClick={() => handleGlobalize(lang.name)}
+                                        className="w-14 h-14 flex items-center justify-center font-label-caps text-xs text-zinc-600 hover:text-cyan-400 hover:bg-cyan-400/5 transition-all relative group"
+                                    >
+                                        <span className="relative z-10">{lang.code}</span>
+                                        <div className="absolute inset-0 border border-transparent group-hover:border-cyan-400/20 transition-all" />
+                                    </button>
+                                ))}
+                                <div className="h-[2px] bg-white/5 mx-2" />
+                                <div className="w-14 h-14 flex items-center justify-center text-zinc-800">
+                                    <Globe className="h-5 w-5" />
+                                </div>
                             </div>
-                        </div>
-                    </motion.div>
-                )}
+                        </motion.div>
+                    )}
+                </div>
             </div>
         </DashboardLayout>
     );

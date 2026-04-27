@@ -4,9 +4,11 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Zap, Loader2, Mail, Lock } from "lucide-react";
 import Link from "next/link";
-
-import { API_BASE } from "@/lib/config";
 import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
+import { BaseLayout } from "@/components/layout/BaseLayout";
 
 // Input validation utilities
 const validateUsername = (username: string): string | null => {
@@ -63,7 +65,7 @@ export default function LoginPage() {
             formData.append("username", username);
             formData.append("password", password);
 
-            const response = await fetch(`${API_BASE}/auth/login`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || '/api'}/auth/login`, {
                 method: "POST",
                 body: formData,
             });
@@ -98,120 +100,99 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-black flex items-center justify-center p-6 selection:bg-primary selection:text-black">
-            <div className="w-full max-w-md space-y-8">
-                <div className="text-center space-y-4">
-                    <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 border border-primary/20 animate-pulse shrink-0">
-                        <Zap className="h-10 w-10 text-primary fill-primary" />
+        <BaseLayout variant="auth">
+            <Card variant="solid" className="p-10 md:p-14 max-w-lg mx-auto rounded-[3rem] border border-white/5 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent" />
+                
+                <div className="text-center space-y-6 mb-12">
+                    <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-cyan-500/10 border border-cyan-400/20 shadow-[0_0_30px_rgba(34,211,238,0.1)]">
+                        <Zap className="h-10 w-10 text-cyan-400" />
                     </div>
-                    <h1 className="text-5xl font-black uppercase tracking-tighter text-white">ETTA<span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-emerald-400 text-hollow">METTA</span></h1>
-                    <p className="text-zinc-500 font-medium">Log in to your high-velocity workflow</p>
+                    <div className="space-y-2">
+                        <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-tight text-white">
+                            Initialize Protocol
+                        </h1>
+                        <p className="text-zinc-600 font-bold uppercase tracking-[0.2em] text-[10px]">Authentication Required</p>
+                    </div>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                        <label htmlFor="username" className="text-xs font-black text-zinc-500 uppercase tracking-widest ml-1">Username</label>
-                        <div className="relative group">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-600 group-focus-within:text-primary transition-colors" />
-                            <input
-                                id="username"
-                                name="username"
-                                type="text"
-                                required
-                                value={username}
-                                onChange={(e) => {
-                                    setUsername(e.target.value);
-                                    // Clear field error when user starts typing
-                                    if (fieldErrors.username) {
-                                        setFieldErrors(prev => ({...prev, username: undefined}));
-                                    }
-                                }}
-                                aria-describedby={fieldErrors.username ? "username-error" : undefined}
-                                className={`w-full bg-zinc-900 border rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 transition-all text-white font-medium ${
-                                    fieldErrors.username
-                                        ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500'
-                                        : 'border-zinc-800 focus:ring-primary/50 focus:border-primary'
-                                }`}
-                                placeholder="commander"
-                            />
-                        </div>
-                        {fieldErrors.username && (
-                            <p id="username-error" className="text-red-500 text-xs font-medium ml-1">{fieldErrors.username}</p>
-                        )}
-                    </div>
+                <form onSubmit={handleLogin} className="space-y-8">
+                    <Input
+                        label="PROTOCOL_ID"
+                        type="text"
+                        required
+                        value={username}
+                        onChange={(e) => {
+                            setUsername(e.target.value);
+                            if (fieldErrors.username) {
+                                setFieldErrors(prev => ({...prev, username: undefined}));
+                            }
+                        }}
+                        placeholder="ENTER_ID"
+                        icon={<Mail className="h-5 w-5" />}
+                        variant="solid"
+                        className="rounded-2xl border-white/5 focus:border-cyan-400/50"
+                        error={fieldErrors.username}
+                    />
 
-                    <div className="space-y-2">
-                        <label htmlFor="password" className="text-xs font-black text-zinc-500 uppercase tracking-widest ml-1">Password</label>
-                        <div className="relative group">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-600 group-focus-within:text-primary transition-colors" />
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                required
-                                value={password}
-                                onChange={(e) => {
-                                    setPassword(e.target.value);
-                                    // Clear field error when user starts typing
-                                    if (fieldErrors.password) {
-                                        setFieldErrors(prev => ({...prev, password: undefined}));
-                                    }
-                                }}
-                                aria-describedby={fieldErrors.password ? "password-error" : undefined}
-                                className={`w-full bg-zinc-900 border rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 transition-all text-white font-medium ${
-                                    fieldErrors.password
-                                        ? 'border-red-500 focus:ring-red-500/50 focus:border-red-500'
-                                        : 'border-zinc-800 focus:ring-primary/50 focus:border-primary'
-                                }`}
-                                placeholder="••••••••"
-                            />
-                        </div>
-                        {fieldErrors.password && (
-                            <p id="password-error" className="text-red-500 text-xs font-medium ml-1">{fieldErrors.password}</p>
-                        )}
-                    </div>
+                    <Input
+                        label="ACCESS_KEY"
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => {
+                            setPassword(e.target.value);
+                            if (fieldErrors.password) {
+                                setFieldErrors(prev => ({...prev, password: undefined}));
+                            }
+                        }}
+                        placeholder="••••••••"
+                        icon={<Lock className="h-5 w-5" />}
+                        variant="solid"
+                        className="rounded-2xl border-white/5 focus:border-cyan-400/50"
+                        error={fieldErrors.password}
+                    />
 
                     <div className="flex items-center justify-between">
-                        <label className="flex items-center space-x-2 cursor-pointer">
+                        <label className="flex items-center gap-3 cursor-pointer group">
                             <input
                                 type="checkbox"
                                 checked={remember}
                                 onChange={(e) => setRemember(e.target.checked)}
-                                className="w-4 h-4 bg-zinc-900 border border-zinc-800 rounded focus:ring-primary focus:ring-2"
+                                className="w-5 h-5 rounded-lg border-white/10 bg-black/60 text-cyan-400 focus:ring-cyan-400 transition-all"
                             />
-                            <span className="text-zinc-400 text-sm font-medium">Remember me</span>
+                            <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest group-hover:text-zinc-300 transition-colors">Persistent Link</span>
                         </label>
                     </div>
 
                     {error && (
-                        <div id="login-error" className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold text-center animate-shake" role="alert" aria-live="assertive">
+                        <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-500 text-xs font-bold text-center uppercase tracking-widest" role="alert">
                             {error}
                         </div>
                     )}
 
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-black font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 group"
+                    <Button 
+                        type="submit" 
+                        variant="primary" 
+                        size="lg"
+                        isLoading={isLoading}
+                        fullWidth
+                        className="rounded-2xl py-8 font-bold tracking-[0.3em] uppercase text-xs"
                     >
-                        {isLoading ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                            <>
-                                AUTHENTICATE
-                                <Zap className="h-4 w-4 fill-black group-hover:scale-125 transition-transform" />
-                            </>
-                        )}
-                    </button>
+                        {isLoading ? "Executing..." : "Initialize Session"}
+                    </Button>
                 </form>
 
-                <p className="text-center text-zinc-600 text-sm font-medium">
-                    New to Ettametta?{" "}
-                    <Link href="/register" className="text-white hover:text-primary transition-colors">
-                        Register Access
-                    </Link>
-                </p>
-            </div>
-        </div>
+                <div className="mt-12 pt-8 border-t border-white/5 text-center">
+                    <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">
+                        New Protocol?{" "}
+                        <Link href="/register" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                            Initialize Registry
+                        </Link>
+                    </p>
+                </div>
+            </Card>
+        </BaseLayout>
     );
 }
+

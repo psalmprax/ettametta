@@ -99,7 +99,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                             </div>
 
                             <div className="space-y-2">
-                                <h3 id="confirm-modal-title" className="text-3xl font-black text-white uppercase tracking-tighter">
+                                <h3 id="confirm-modal-title" className="text-3xl font-bold text-white uppercase tracking-tighter">
                                     {title}
                                 </h3>
                                 <p className="text-zinc-500 font-medium text-sm leading-relaxed max-w-xs mx-auto">
@@ -113,7 +113,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                                 data-modal-cancel
                                 onClick={onClose}
                                 disabled={isLoading}
-                                className="flex-1 py-4 rounded-2xl bg-zinc-900 border border-white/5 text-zinc-500 font-black uppercase text-[10px] tracking-widest hover:text-white hover:bg-zinc-800 transition-all disabled:opacity-50"
+                                className="flex-1 py-4 rounded-2xl bg-zinc-900 border border-white/5 text-zinc-500 font-bold uppercase text-[10px] tracking-widest hover:text-white hover:bg-zinc-800 transition-all disabled:opacity-50"
                             >
                                 {cancelText}
                             </button>
@@ -121,7 +121,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                                 onClick={onConfirm}
                                 disabled={isLoading}
                                 className={cn(
-                                    "flex-1 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50",
+                                    "flex-1 py-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50",
                                     variant === "danger" ? "bg-red-500 hover:bg-red-600 text-white shadow-red-500/20" :
                                     variant === "success" ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20" :
                                     "bg-primary hover:bg-primary/90 text-white shadow-primary/20"

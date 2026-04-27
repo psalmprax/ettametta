@@ -165,8 +165,8 @@ export default function AutonomousPage() {
                 <Icon className="h-6 w-6" />
             </div>
             <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">{label}</p>
-                <h4 className="text-sm font-black text-white uppercase tracking-tight">{value}</h4>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">{label}</p>
+                <h4 className="text-sm font-bold text-white uppercase tracking-tight">{value}</h4>
             </div>
         </div>
     );
@@ -179,9 +179,9 @@ export default function AutonomousPage() {
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Autonomous Director</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Autonomous Director</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">
+                        <h1 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-white leading-none">
                             Agent <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-400 to-emerald-600 text-hollow">Zero</span>
                         </h1>
                         <p className="text-zinc-500 font-medium max-w-xl">
@@ -219,7 +219,7 @@ export default function AutonomousPage() {
                             onClick={handleToggle}
                             disabled={isProcessing}
                             className={cn(
-                                "py-5 px-10 rounded-2xl flex items-center gap-3 shadow-2xl transition-all uppercase text-xs font-black tracking-widest",
+                                "py-5 px-10 rounded-2xl flex items-center gap-3 shadow-2xl transition-all uppercase text-xs font-bold tracking-widest",
                                 isRunning
                                     ? "bg-zinc-950 border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
                                     : "bg-emerald-500 text-black shadow-[0_0_50px_rgba(16,185,129,0.3)]"
@@ -276,7 +276,7 @@ export default function AutonomousPage() {
                             </div>
 
                             <div className="mt-16 text-center space-y-2 opacity-50">
-                                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500">Faceless Production Mesh</p>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-500">Faceless Production Mesh</p>
                                 <p className="text-[8px] font-bold text-zinc-600">Dynamic scaling enabled via high-velocity neural clusters</p>
                             </div>
                         </div>
@@ -285,7 +285,7 @@ export default function AutonomousPage() {
                         <div className="space-y-6 px-4">
                             <div className="flex items-center gap-3">
                                 <Activity className="h-4 w-4 text-primary neon-glow" />
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Autonomous Intelligence Oracle</h3>
+                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white">Autonomous Intelligence Oracle</h3>
                             </div>
                             <div className="glass-card p-8 border-primary/20 bg-primary/[0.02] relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-4">
@@ -294,17 +294,17 @@ export default function AutonomousPage() {
                                 {insights ? (
                                     <div className="space-y-6">
                                         <div className="space-y-2">
-                                            <p className="text-[8px] font-black text-primary uppercase tracking-[0.4em]">Current Strategy</p>
-                                            <h4 className="text-2xl font-black tracking-tighter text-white uppercase">{insights.title}</h4>
+                                            <p className="text-[8px] font-bold text-primary uppercase tracking-[0.4em]">Current Strategy</p>
+                                            <h4 className="text-2xl font-bold tracking-tighter text-white uppercase">{insights.title}</h4>
                                             {insights.subtitle && <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">{insights.subtitle}</p>}
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                             <div className="space-y-1">
-                                                <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Recommended Product</p>
+                                                <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Recommended Product</p>
                                                 <p className="text-xs font-bold text-emerald-400">{insights.recommended_product}</p>
                                             </div>
                                             <div className="space-y-1">
-                                                <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Viral Hook</p>
+                                                <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Viral Hook</p>
                                                 <p className="text-[10px] text-zinc-300 leading-relaxed">"{insights.hook}"</p>
                                             </div>
                                         </div>
@@ -312,7 +312,7 @@ export default function AutonomousPage() {
                                 ) : (
                                     <div className="py-10 flex flex-col items-center justify-center gap-4 text-center">
                                         <Search className="h-8 w-8 text-zinc-800 animate-pulse" />
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Listening for Market Pulses...</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-700">Listening for Market Pulses...</p>
                                     </div>
                                 )}
                             </div>
@@ -325,12 +325,12 @@ export default function AutonomousPage() {
                             <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
                                 <div className="flex items-center gap-3">
                                     <Terminal className="h-4 w-4 text-primary" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-white">System Console</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-white">System Console</span>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <button 
                                         onClick={handleExportLogs}
-                                        className="text-[8px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
+                                        className="text-[8px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
                                     >
                                         Export
                                     </button>
@@ -371,7 +371,7 @@ export default function AutonomousPage() {
                         <div className="glass-card p-8 rounded-[2rem] bg-emerald-500/5 border-emerald-500/10 space-y-4">
                             <div className="flex items-center gap-3">
                                 <Sparkles className="h-4 w-4 text-emerald-500" />
-                                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Autonomous Insight</span>
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500">Autonomous Insight</span>
                             </div>
                             <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
                                 {insights ? (
@@ -406,7 +406,7 @@ function LogicNode({ icon: Icon, label, active, pulse, delay = 0 }: any) {
                 )}
             </div>
             <span className={cn(
-                "text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-500",
+                "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-500",
                 active ? "text-emerald-500" : "text-zinc-800"
             )}>{label}</span>
         </motion.div>
