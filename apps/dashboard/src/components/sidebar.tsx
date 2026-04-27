@@ -64,45 +64,32 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
         <motion.div
             initial={{ x: -280, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-                "flex flex-col h-full surface-glass text-zinc-400 relative overflow-hidden z-40 transition-all duration-300 border-r border-white/5",
+                "flex flex-col h-full bg-white border-r border-slate-200 relative z-40 transition-all duration-300",
                 collapsed ? "w-20" : "w-72"
             )}
         >
-            <div className="noise-overlay" />
-            <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
-            <div className="absolute inset-0 opacity-[0.02] pointer-events-none" 
-                 style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 0)", backgroundSize: "40px 40px" }} />
-            
             {/* Logo Section */}
             <div className={cn(
-                "flex items-center py-12 transition-all",
-                collapsed ? "px-4 justify-center" : "px-10"
+                "flex items-center py-6 transition-all",
+                collapsed ? "px-4 justify-center" : "px-8"
             )}>
-                <Link href="/" className="flex items-center gap-5 group">
-                    <motion.div 
-                        whileHover={{ scale: 1.1, rotateY: 20, rotateX: -20 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                        className="h-14 w-14 bg-cyan-400 flex items-center justify-center shadow-[0_0_40px_rgba(0,251,251,0.5)] relative cyber-border"
-                    >
-                        <Zap className="h-7 w-7 text-black fill-black" />
-                        <div className="absolute inset-0 border-2 border-cyan-400 animate-ping opacity-20" />
-                    </motion.div>
+                <Link href="/" className="flex items-center gap-3 group">
+                    <div className="h-10 w-10 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                        <Zap className="h-5 w-5 text-white" />
+                    </div>
                     {!collapsed && (
                         <div className="flex flex-col">
-                            <span className="text-2xl font-bold text-white tracking-tighter uppercase leading-none neon-text-cyan ">Ettametta</span>
-                            <div className="flex items-center gap-2 mt-1">
-                                <div className="w-1 h-1 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_#00fbfb]" />
-                                <span className="font-data-mono text-[8px] text-zinc-500 tracking-[0.3em]">INTELLIGENCE OS_CORE</span>
-                            </div>
+                            <span className="text-lg font-bold text-slate-900 tracking-tight">Ettametta</span>
+                            <span className="text-[9px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">Intelligence Platform</span>
                         </div>
                     )}
                 </Link>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar pt-6">
+            <nav className="flex-1 px-3 space-y-1 overflow-y-auto pt-2">
                 {memoizedNavItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
@@ -110,68 +97,48 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-4 px-6 py-5 group transition-all relative overflow-hidden cyber-border",
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium",
                                 isActive 
-                                    ? "bg-cyan-400/5 text-cyan-400 rim-glow-cyan shadow-[0_0_20px_rgba(0,251,251,0.05)]" 
-                                    : "text-zinc-600 hover:text-zinc-200 hover:bg-white/5"
+                                    ? "bg-indigo-50 text-indigo-700" 
+                                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                             )}
                         >
-                            <item.icon className={cn("h-5 w-5 shrink-0 transition-all duration-500", isActive ? "text-cyan-400 scale-110" : "group-hover:text-cyan-400/50 group-hover:scale-110")} />
+                            <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-indigo-600" : "text-slate-400")} />
                             {!collapsed && (
-                                <span className={cn(
-                                    "font-label-caps text-[10px] whitespace-nowrap transition-all",
-                                    isActive ? "tracking-[0.4em] font-bold" : "tracking-widest"
-                                )}>
+                                <span className="truncate">
                                     {item.name}
                                 </span>
-                            )}
-                            {isActive && !collapsed && (
-                                <motion.div 
-                                    layoutId="active-pill"
-                                    className="absolute right-0 w-1 h-6 bg-cyan-400 shadow-[0_0_20px_#00fbfb]"
-                                />
                             )}
                         </Link>
                     );
                 })}
             </nav>
 
-            {/* Footer / User Profile */}
-            <div className="p-6 mt-auto border-t border-white/5">
+            {/* User Profile Section */}
+            <div className="p-3 mt-auto border-t border-slate-100">
                 {!collapsed ? (
-                    <motion.div 
-                        initial={false}
-                        whileHover={{ y: -5 }}
-                        className="p-5 bg-black/60 rim-light space-y-5 relative group/profile cursor-pointer overflow-hidden"
-                    >
-                        <div className="absolute inset-0 bg-cyan-400/0 group-hover/profile:bg-cyan-400/[0.02] transition-colors" />
-                        <div className="flex items-center gap-4 relative z-10">
-                            <div className="h-12 w-12 bg-zinc-900 border border-white/10 overflow-hidden relative group-hover/profile:border-cyan-400/50 transition-colors">
+                    <div className="p-3 bg-slate-50 rounded-xl space-y-3">
+                        <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-white border border-slate-200 overflow-hidden flex-shrink-0">
                                 <img src={"https://api.dicebear.com/7.x/avataaars/svg?seed=" + (user?.username || "Felix")} alt="User" className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-cyan-400/10 opacity-0 group-hover/profile:opacity-100 transition-opacity" />
                             </div>
                             <div className="flex flex-col min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-white truncate group-hover/profile:text-cyan-400 transition-colors">{user?.username || "Agent Null"}</span>
-                                    <Fingerprint className="h-3 w-3 text-cyan-400/40" />
-                                </div>
-                                <span className="font-data-mono text-[7px] text-zinc-600 truncate mt-1">ACCESS_LEVEL: ALPHA_X</span>
+                                <span className="text-sm font-bold text-slate-900 truncate">{user?.username || "Guest User"}</span>
+                                <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Pro Plan</span>
                             </div>
                         </div>
-                        <div className="pt-2 relative z-10">
-                            <button 
-                                onClick={(e) => { e.preventDefault(); logout(); }}
-                                className="w-full py-3 flex items-center justify-center gap-3 font-label-caps text-[8px] text-zinc-600 hover:text-red-400 transition-all border border-white/5 hover:border-red-400/30 hover:bg-red-400/5 group/logout"
-                            >
-                                <Lock className="h-3 w-3 group-hover/logout:rotate-12 transition-transform" />
-                                TERMINATE_UPLINK
-                            </button>
-                        </div>
-                    </motion.div>
+                        <button 
+                            onClick={(e) => { e.preventDefault(); logout(); }}
+                            className="w-full py-2 px-3 flex items-center justify-center gap-2 text-[11px] font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200 transition-all"
+                        >
+                            <LogOut className="h-3.5 w-3.5" />
+                            Sign Out
+                        </button>
+                    </div>
                 ) : (
                     <button 
                         onClick={() => logout()}
-                        className="w-12 h-12 flex items-center justify-center text-zinc-700 hover:text-red-400 transition-all hover:bg-red-400/5 border border-transparent hover:border-red-400/20"
+                        className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
                     >
                         <LogOut className="h-5 w-5" />
                     </button>
@@ -192,8 +159,7 @@ export function MobileNav() {
     ];
 
     return (
-        <nav className="bg-bg-base/95 backdrop-blur-3xl border-t border-white/5 fixed bottom-0 w-full z-50 h-24 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] flex justify-around items-center px-8 pb-safe md:hidden">
-            <div className="noise-overlay" />
+        <nav className="bg-white/95 backdrop-blur-xl border-t border-slate-200 fixed bottom-0 w-full z-50 h-16 flex justify-around items-center px-4 md:hidden">
             {mobileNavItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -202,18 +168,17 @@ export function MobileNav() {
                         href={item.href}
                         className={cn(
                             "flex flex-col items-center justify-center transition-all relative px-2",
-                            isActive ? "text-cyan-400 scale-110" : "text-zinc-700"
+                            isActive ? "text-indigo-600 scale-110" : "text-slate-500 hover:text-slate-700"
                         )}
                     >
                         <item.Icon className={cn(
-                            "h-7 w-7 mb-2 transition-all", 
-                            isActive && "drop-shadow-[0_0_10px_rgba(0,251,251,0.5)]"
+                            "h-6 w-6 mb-1 transition-all"
                         )} />
-                        <span className="font-label-caps text-[7px] tracking-widest">{item.name}</span>
+                        <span className="text-[10px] font-medium tracking-wide">{item.name}</span>
                         {isActive && (
                             <motion.div 
                                 layoutId="mobile-active"
-                                className="absolute -bottom-3 h-1 w-10 bg-cyan-400 shadow-[0_0_15px_#00fbfb]"
+                                className="absolute -bottom-2 h-0.5 w-8 bg-indigo-600 rounded-full"
                             />
                         )}
                     </Link>
@@ -225,25 +190,24 @@ export function MobileNav() {
 
 export function MobileHeader({ onMenuClick }: { onMenuClick?: () => void }) {
     return (
-        <header className="bg-bg-base/90 backdrop-blur-2xl border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] fixed top-0 z-50 flex justify-between items-center w-full px-6 h-20 md:hidden">
-            <div className="noise-overlay" />
-            <div className="flex items-center gap-5">
+        <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200 fixed top-0 z-50 flex justify-between items-center w-full px-4 h-16 md:hidden">
+            <div className="flex items-center gap-3">
                 <button 
                     onClick={onMenuClick} 
-                    className="h-12 w-12 flex items-center justify-center bg-white/5 border border-white/10 hover:border-cyan-400/50 transition-all"
+                    className="h-10 w-10 flex items-center justify-center bg-slate-50 border border-slate-200 hover:border-slate-300 transition-all rounded-xl"
                 >
-                    <Menu className="h-6 w-6 text-cyan-400" />
+                    <Menu className="h-5 w-5 text-slate-600" />
                 </button>
                 <div className="flex flex-col">
-                    <span className="text-lg font-bold text-white tracking-tighter uppercase ">Ettametta</span>
-                    <span className="font-data-mono text-[7px] text-cyan-400/40 mt-1">NEURAL_OS_CORE</span>
+                    <span className="text-base font-bold text-slate-900">Ettametta</span>
+                    <span className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">Intelligence Platform</span>
                 </div>
             </div>
-            <div className="flex items-center gap-4">
-                <div className="h-10 w-10 bg-white/5 border border-white/10 flex items-center justify-center hover:bg-cyan-400/5 transition-all">
-                    <Bell className="h-5 w-5 text-zinc-500" />
+            <div className="flex items-center gap-2">
+                <div className="h-9 w-9 bg-slate-50 border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-all rounded-lg">
+                    <Bell className="h-4 w-4 text-slate-500" />
                 </div>
-                <div className="h-10 w-10 border border-cyan-400/20 p-1 bg-black">
+                <div className="h-9 w-9 border border-slate-200 p-0.5 bg-white rounded-lg overflow-hidden">
                     <img alt="User" className="w-full h-full object-cover" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"/>
                 </div>
             </div>

@@ -68,11 +68,11 @@ export function NotificationCenter() {
         <div className="relative">
             <button
                 onClick={() => { setIsOpen(!isOpen); if (!isOpen) markAllRead(); }}
-                className="relative h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-800 hover:border-zinc-700 transition-all group"
+                className="relative h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm group"
             >
-                <Bell className={cn("h-4 w-4 transition-all", hasUnread ? "text-cyan-400" : "text-zinc-500 group-hover:text-zinc-300")} />
+                <Bell className={cn("h-5 w-5 transition-all", hasUnread ? "text-amber-500" : "text-slate-400 group-hover:text-slate-600")} />
                 {hasUnread && (
-                    <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse" />
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
                 )}
             </button>
 
@@ -84,18 +84,18 @@ export function NotificationCenter() {
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute right-0 mt-3 w-80 glass-card rounded-[2rem] overflow-hidden z-50 shadow-2xl border-white/10"
+                            className="absolute right-0 mt-3 w-80 rounded-2xl overflow-hidden z-50 shadow-xl border border-slate-200 bg-white"
                         >
-                            <div className="p-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-white">Neural Alerts</span>
-                                <button onClick={() => setNotifications([])} className="text-[8px] font-bold uppercase tracking-widest text-zinc-600 hover:text-zinc-400">Clear</button>
+                            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">Notifications</span>
+                                <button onClick={() => setNotifications([])} className="text-[10px] font-semibold text-slate-400 hover:text-slate-600">Clear All</button>
                             </div>
 
-                            <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                            <div className="max-h-80 overflow-y-auto">
                                 {notifications.length === 0 ? (
-                                    <div className="py-12 flex flex-col items-center gap-3 opacity-20">
-                                        <Zap className="h-8 w-8 text-zinc-500" />
-                                        <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">No active alerts</p>
+                                    <div className="py-12 flex flex-col items-center gap-3 opacity-40">
+                                        <Bell className="h-8 w-8 text-slate-400" />
+                                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">No new notifications</p>
                                     </div>
                                 ) : (
                                     notifications.map((note) => (
@@ -105,8 +105,8 @@ export function NotificationCenter() {
                             </div>
 
                             {notifications.length > 0 && (
-                                <div className="p-4 bg-zinc-950/50 text-center">
-                                    <button className="text-[8px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">View All Archive</button>
+                                <div className="p-4 border-t border-slate-100 bg-slate-50 text-center">
+                                    <button className="text-[10px] font-semibold text-slate-500 hover:text-slate-700">View All</button>
                                 </div>
                             )}
                         </motion.div>
@@ -125,24 +125,24 @@ function NotificationItem({ note }: { note: Notification }) {
         system: Zap
     };
     const colors = {
-        security: "text-rose-500 bg-rose-500/10",
-        job: "text-cyan-400 bg-cyan-400/10",
-        compliance: "text-emerald-500 bg-emerald-500/10",
-        system: "text-amber-500 bg-amber-500/10"
+        security: "text-rose-500 bg-rose-100",
+        job: "text-indigo-500 bg-indigo-100",
+        compliance: "text-emerald-500 bg-emerald-100",
+        system: "text-amber-500 bg-amber-100"
     };
     const Icon = icons[note.type] || Zap;
 
     return (
         <div className={cn(
-            "p-5 flex gap-4 hover:bg-white/[0.02] transition-colors border-b border-white/[0.02] cursor-pointer group",
-            !note.read && "bg-cyan-400/[0.01]"
+            "p-4 flex gap-3 hover:bg-slate-50 transition-colors border-b border-slate-50 cursor-pointer",
+            !note.read && "bg-indigo-50/30"
         )}>
             <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0", colors[note.type])}>
                 <Icon className="h-4 w-4" />
             </div>
-            <div className="space-y-1">
-                <p className="text-[11px] font-bold text-zinc-300 leading-tight group-hover:text-white transition-colors">{note.message}</p>
-                <p className="text-[8px] font-bold text-zinc-700 uppercase">{new Date(note.timestamp).toLocaleTimeString()}</p>
+            <div className="space-y-1 flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-800 leading-tight">{note.message}</p>
+                <p className="text-[10px] text-slate-400">{new Date(note.timestamp).toLocaleTimeString()}</p>
             </div>
         </div>
     );
