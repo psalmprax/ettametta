@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { BaseLayout } from "@/components/layout/BaseLayout";
+import { API_BASE } from "@/lib/config";
 
 export default function RegisterPage() {
     const [email, setEmail] = useState("");
@@ -39,6 +40,7 @@ export default function RegisterPage() {
         setError("");
 
         try {
+            // The register function in AuthContext already uses API_BASE correctly
             const result = await register(email, password);
             if (result.success) {
                 router.push("/login?registered=true");
