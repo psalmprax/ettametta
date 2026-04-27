@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { BaseLayout } from "@/components/layout/BaseLayout";
+import { API_BASE } from "@/lib/config";
 
 // Input validation utilities
 const validateUsername = (username: string): string | null => {
@@ -65,7 +66,7 @@ export default function LoginPage() {
             formData.append("username", username);
             formData.append("password", password);
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || '/api'}/auth/login`, {
+            const response = await fetch(`${API_BASE}/auth/login`, {
                 method: "POST",
                 body: formData,
             });
