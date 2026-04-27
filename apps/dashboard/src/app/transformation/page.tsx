@@ -624,7 +624,7 @@ function TransformationPageContent() {
                                         </a>
                                         )}
                                         <a
-                                            href={`http://149.104.110.122.sslip.io:7203?job_id=${selectedJob.id}`}
+                                            href={`https://149.104.110.122.sslip.io:7203?job_id=${selectedJob.id}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="glass-card border-violet-500/50 hover:bg-violet-500/10 text-violet-400 hover:text-white text-[10px] font-bold py-2 px-4 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.2)]"

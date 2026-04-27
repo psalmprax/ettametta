@@ -41,7 +41,7 @@ const navItems = [
     { name: "Nexus Flow", href: "/nexus", icon: Zap },
     { name: "Autonomous", href: "/autonomous", icon: Cpu },
     { name: "Transformation", href: "/transformation", icon: Video },
-    { name: "Studio", href: "http://149.104.110.122.sslip.io:7203", icon: Layers },
+    { name: "Studio", href: "https://149.104.110.122.sslip.io:7203", icon: Layers },
     { name: "Audits", href: "/admin/audits", icon: CheckCircle2 },
     { name: "Publishing", href: "/publishing", icon: Share2 },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
