@@ -1,58 +1,66 @@
+/** @jsxImportSource react */
 "use client";
 
-import React, { forwardRef } from 'react';
-import { cn } from '@/lib/utils';
-import { COLORS, RADIUS } from '@/lib/theme';
+import React from "react";
+import { cn } from "@/lib/utils";
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-    label?: string;
-    error?: string;
-    leftIcon?: React.ReactNode;
-    rightIcon?: React.ReactNode;
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  error?: string;
+  icon?: React.ReactNode;
+  variant?: "default" | "cyber" | "minimal";
+  fullWidth?: boolean;
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-    ({ label, error, leftIcon, rightIcon, className, ...props }, ref) => {
-        return (
-            <div className="w-full space-y-2">
-                {label && (
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">
-                        {label}
-                    </label>
-                )}
-                <div className="relative group">
-                    {leftIcon && (
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-primary transition-colors">
-                            {leftIcon}
-                        </div>
-                    )}
-                    <input
-                        ref={ref}
-                        className={cn(
-                            'w-full bg-zinc-950/50 border rounded-xl py-4 px-4 transition-all',
-                            'focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary',
-                            'placeholder:text-zinc-700 text-white font-medium',
-                            leftIcon && 'pl-12',
-                            rightIcon && 'pr-12',
-                            error
-                                ? 'border-red-500/20 focus:border-red-500 focus:ring-red-500/40'
-                                : 'border-white/10 hover:border-white/20',
-                            className
-                        )}
-                        {...props}
-                    />
-                    {rightIcon && (
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-primary transition-colors">
-                            {rightIcon}
-                        </div>
-                    )}
-                </div>
-                {error && (
-                    <p className="text-xs text-red-500 font-medium">{error}</p>
-                )}
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, label, error, icon, variant = "default", fullWidth = false, ...props }, ref) => {
+    const baseStyles = "w-full font-medium transition-all duration-300";
+    
+    const variants = {
+      default: `bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-zinc-600 
+        focus:border-cyan-400/50 focus:outline-none focus:ring-2 focus:ring-cyan-400/20`,
+      cyber: `bg-zinc-950 border border-white/5 rounded-xl px-4 py-3 text-white placeholder:text-zinc-700 
+        focus:border-cyan-400 focus:outline-none cyber-border`,
+      minimal: `bg-transparent border-b border-white/20 rounded-none px-0 py-2 text-white placeholder:text-zinc-600 
+        focus:border-cyan-400 focus:outline-none`,
+    };
+
+    const containerStyles = cn(
+      "relative",
+      fullWidth && "w-full",
+      className
+    );
+
+    return (
+      <div className={containerStyles}>
+        {label && (
+          <label className="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">
+            {label}
+          </label>
+        )}
+        <div className="relative">
+          <input
+            ref={ref}
+            className={cn(
+              baseStyles,
+              variants[variant],
+              icon && "pl-12",
+              error && "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
+            )}
+            {...props}
+          />
+          {icon && (
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600">
+              {icon}
             </div>
-        );
-    }
+          )}
+        </div>
+        {error && (
+          <p className="mt-2 text-xs font-bold text-red-500">{error}</p>
+        )}
+      </div>
+    );
+  }
 );
 
-Input.displayName = 'Input';
+Input.displayName = "Input";

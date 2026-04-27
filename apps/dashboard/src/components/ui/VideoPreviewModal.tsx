@@ -130,9 +130,9 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                         <div className="space-y-1">
                             <div className="flex items-center gap-3">
                                 <div className="h-1 w-6 bg-primary rounded-full" />
-                                <span className="text-[10px] font-black tracking-[0.3em] text-primary uppercase">Outcome Preview</span>
+                                <span className="text-[10px] font-bold tracking-[0.3em] text-primary uppercase">Outcome Preview</span>
                             </div>
-                            <h2 id="video-preview-title" className="text-2xl font-black text-white uppercase tracking-tighter truncate max-w-md">
+                            <h2 id="video-preview-title" className="text-2xl font-bold text-white uppercase tracking-tighter truncate max-w-md">
                                 {title || "Untitled Viral Fragment"}
                             </h2>
                         </div>
@@ -163,7 +163,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                         ) : (
                             <div className="flex flex-col items-center gap-4">
                                 <Zap className="h-12 w-12 text-primary animate-pulse" />
-                                <p className="text-xs font-black uppercase tracking-widest text-zinc-500">Reticulating Splines...</p>
+                                <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Reticulating Splines...</p>
                             </div>
                         )}
                     </div>
@@ -174,7 +174,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                             {originalUrl && (
                                 <button
                                     onClick={handlePlayOriginal}
-                                    className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all ${showOriginal ? "bg-zinc-700 text-white border border-white/20" : "bg-white text-black"}`}
+                                    className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-bold uppercase text-[10px] tracking-widest hover:scale-105 transition-all ${showOriginal ? "bg-zinc-700 text-white border border-white/20" : "bg-white text-black"}`}
                                 >
                                     <Play className="h-4 w-4 fill-current" />
                                     {showOriginal ? "Play Result" : "Play Original"}
@@ -183,7 +183,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                             <button
                                 onClick={handleExport}
                                 disabled={isExporting || !videoUrl}
-                                className="flex items-center gap-3 bg-zinc-900 text-white px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-white/5 hover:border-white/20 transition-all disabled:opacity-50"
+                                className="flex items-center gap-3 bg-zinc-900 text-white px-6 py-3 rounded-2xl font-bold uppercase text-[10px] tracking-widest border border-white/5 hover:border-white/20 transition-all disabled:opacity-50"
                             >
                                 <Download className="h-4 w-4" />
                                 {isExporting ? "Exporting..." : "Export"}
@@ -191,7 +191,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                             {onProceedToTransformation && (
                                 <button
                                     onClick={onProceedToTransformation}
-                                    className="flex items-center gap-3 bg-primary text-black px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-primary/20 hover:scale-105 transition-all"
+                                    className="flex items-center gap-3 bg-primary text-black px-6 py-3 rounded-2xl font-bold uppercase text-[10px] tracking-widest border border-primary/20 hover:scale-105 transition-all"
                                 >
                                     <Zap className="h-4 w-4" />
                                     Proceed to Transformation
@@ -201,8 +201,8 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
 
                         <div className="hidden md:flex items-center gap-10">
                             <div className="text-right">
-                                <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Status</p>
-                                <p className="text-xs font-black text-emerald-500 uppercase">{status || "Ready to Publish"}</p>
+                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Status</p>
+                                <p className="text-xs font-bold text-emerald-500 uppercase">{status || "Ready to Publish"}</p>
                             </div>
                             <button
                                 onClick={handleShare}
@@ -210,7 +210,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                             >
                                 <Share2 className="h-6 w-6" />
                                 {shareStatus && (
-                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-black uppercase tracking-widest text-emerald-400 bg-zinc-900 px-2 py-1 rounded">
+                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold uppercase tracking-widest text-emerald-400 bg-zinc-900 px-2 py-1 rounded">
                                         {shareStatus}
                                     </span>
                                 )}

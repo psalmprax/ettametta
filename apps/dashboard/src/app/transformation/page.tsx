@@ -382,9 +382,9 @@ function TransformationPageContent() {
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-3">
                                         <div className="h-1 w-8 bg-primary rounded-full" />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Engine Initialization</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Engine Initialization</span>
                                     </div>
-                                    <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Launch Transformation</h3>
+                                    <h3 className="text-3xl font-bold uppercase tracking-tighter text-white">Launch Transformation</h3>
                                     <p className="text-zinc-500 font-medium leading-relaxed">Input source telemetry (Video URL) to apply high-velocity <span className="text-primary font-bold">Neural pattern injection</span>.</p>
                                 </div>
                                 <form onSubmit={handleNewJob} className="space-y-8">
@@ -407,7 +407,7 @@ function TransformationPageContent() {
                                                 type="button"
                                                 onClick={() => setTargetPlatform(p)}
                                                 className={cn(
-                                                    "py-4 rounded-xl border font-black uppercase text-[10px] tracking-widest transition-all",
+                                                    "py-4 rounded-xl border font-bold uppercase text-[10px] tracking-widest transition-all",
                                                     targetPlatform === p
                                                         ? "bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]"
                                                         : "bg-zinc-950/30 border-white/10 text-zinc-600 hover:text-zinc-400"
@@ -428,7 +428,7 @@ function TransformationPageContent() {
                                                 <Sparkles className="h-5 w-5" />
                                             </div>
                                             <div className="space-y-0.5">
-                                                <span className="text-[11px] font-black uppercase tracking-tight text-white">Neural Thumbnail Generator</span>
+                                                <span className="text-[11px] font-bold uppercase tracking-tight text-white">Neural Thumbnail Generator</span>
                                                 <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">AI-Optimized Click-Through Vector</p>
                                             </div>
                                         </div>
@@ -445,7 +445,7 @@ function TransformationPageContent() {
 
                                     {/* Niche Selection */}
                                     <div className="space-y-3 pb-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Content Niche (Alpha)</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Content Niche (Alpha)</label>
                                         <select
                                             className="w-full bg-zinc-950/30 border border-white/10 rounded-xl p-5 text-xs font-bold text-white uppercase outline-none focus:ring-1 focus:ring-primary/40 transition-all hover:border-primary/30"
                                             value={currentNiche}
@@ -465,7 +465,7 @@ function TransformationPageContent() {
                                                 <Cpu className="h-5 w-5" />
                                             </div>
                                             <div className="space-y-0.5">
-                                                <span className="text-[11px] font-black uppercase tracking-tight text-white">Remotion Engine (Premium)</span>
+                                                <span className="text-[11px] font-bold uppercase tracking-tight text-white">Remotion Engine (Premium)</span>
                                                 <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">High-Fidelity Cinematic Rendering</p>
                                             </div>
                                         </div>
@@ -490,7 +490,7 @@ function TransformationPageContent() {
                                                 <Sparkles className="h-5 w-5" />
                                             </div>
                                             <div className="space-y-0.5">
-                                                <span className="text-[11px] font-black uppercase tracking-tight text-white">Sound Design</span>
+                                                <span className="text-[11px] font-bold uppercase tracking-tight text-white">Sound Design</span>
                                                 <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Auto Music & SFX by Niche Mood</p>
                                             </div>
                                         </div>
@@ -515,7 +515,7 @@ function TransformationPageContent() {
                                                 <Film className="h-5 w-5" />
                                             </div>
                                             <div className="space-y-0.5">
-                                                <span className="text-[11px] font-black uppercase tracking-tight text-white">Motion Graphics</span>
+                                                <span className="text-[11px] font-bold uppercase tracking-tight text-white">Motion Graphics</span>
                                                 <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Animated Titles & Text Overlays</p>
                                             </div>
                                         </div>
@@ -533,14 +533,14 @@ function TransformationPageContent() {
                                         <button
                                             type="button"
                                             onClick={() => setIsJobModalOpen(false)}
-                                            className="flex-1 bg-zinc-950/50 border border-white/10 hover:bg-white/5 text-zinc-400 font-black py-5 rounded-xl transition-all uppercase text-xs tracking-widest"
+                                            className="flex-1 bg-zinc-950/50 border border-white/10 hover:bg-white/5 text-zinc-400 font-bold py-5 rounded-xl transition-all uppercase text-xs tracking-widest"
                                         >
                                             Abort
                                         </button>
                                         <button
                                             type="submit"
                                             disabled={isSubmitting || !newJobUrl}
-                                            className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black py-5 rounded-xl transition-all shadow-[0_0_40px_rgba(var(--primary-rgb),0.3)] flex items-center justify-center gap-3 uppercase text-xs tracking-widest"
+                                            className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-bold py-5 rounded-xl transition-all shadow-[0_0_40px_rgba(var(--primary-rgb),0.3)] flex items-center justify-center gap-3 uppercase text-xs tracking-widest"
                                         >
                                             {isSubmitting ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Layers className="h-5 w-5" />}
                                             {isSubmitting ? "Locking..." : "Start Engine"}
@@ -561,9 +561,9 @@ function TransformationPageContent() {
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Production Hub</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Production Hub</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">Originality <span className="text-transparent bg-clip-text bg-linear-to-r from-pink-500 to-rose-500 text-hollow">Studio</span></h1>
+                        <h1 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-white leading-none">Originality <span className="text-transparent bg-clip-text bg-linear-to-r from-pink-500 to-rose-500 text-hollow">Studio</span></h1>
                         <p className="text-zinc-500 font-medium">Applying cinematic filters and managing <span className="text-zinc-300 font-bold">social compliance</span> workflows.</p>
                     </div>
                     <div className="flex gap-4">
@@ -575,7 +575,7 @@ function TransformationPageContent() {
                                     </div>
                                 ))}
                             </div>
-                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
                                 {activeFilterCount} Active Nodes
                             </span>
                         </div>
@@ -583,7 +583,7 @@ function TransformationPageContent() {
                             whileHover={{ scale: 1.05, y: -2 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setIsJobModalOpen(true)}
-                            className="bg-primary hover:bg-primary/90 text-white font-black py-4 px-8 rounded-xl transition-all flex items-center gap-3 shadow-[0_0_40px_rgba(var(--primary-rgb),0.2)] uppercase text-xs tracking-widest"
+                            className="bg-primary hover:bg-primary/90 text-white font-bold py-4 px-8 rounded-xl transition-all flex items-center gap-3 shadow-[0_0_40px_rgba(var(--primary-rgb),0.2)] uppercase text-xs tracking-widest"
                         >
                             <Film className="h-5 w-5" />
                             Launch Studio
@@ -603,13 +603,13 @@ function TransformationPageContent() {
                                         <Play className="h-5 w-5 text-emerald-500 neon-glow" />
                                     </div>
                                     <div className="space-y-0.5">
-                                        <h3 className="font-black uppercase tracking-tight text-white">Live Monitor</h3>
+                                        <h3 className="font-bold uppercase tracking-tight text-white">Live Monitor</h3>
                                         <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Real-time Node Rendering</p>
                                     </div>
                                 </div>
                                 {selectedJob && (
                                     <div className="flex items-center gap-6">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 font-mono">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 font-mono">
                                             JOB_ID: {selectedJob.id.slice(0, 8)}
                                         </span>
                                         {getStaticUrl(selectedJob.output_path) && (
@@ -617,7 +617,7 @@ function TransformationPageContent() {
                                             href={getStaticUrl(selectedJob.output_path) ?? undefined}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="glass-card hover:border-primary/50 text-zinc-400 hover:text-white text-[10px] font-black py-2 px-4 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest"
+                                            className="glass-card hover:border-primary/50 text-zinc-400 hover:text-white text-[10px] font-bold py-2 px-4 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest"
                                         >
                                             <ArrowUpRight className="h-3 w-3" />
                                             Raw Intel
@@ -627,7 +627,7 @@ function TransformationPageContent() {
                                             href={`http://149.104.110.122.sslip.io:7203?job_id=${selectedJob.id}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="glass-card border-violet-500/50 hover:bg-violet-500/10 text-violet-400 hover:text-white text-[10px] font-black py-2 px-4 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.2)]"
+                                            className="glass-card border-violet-500/50 hover:bg-violet-500/10 text-violet-400 hover:text-white text-[10px] font-bold py-2 px-4 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.2)]"
                                         >
                                             <Layers className="h-3 w-3" />
                                             Edit in Studio
@@ -646,7 +646,7 @@ function TransformationPageContent() {
                                 ) : (selectedJob?.status === "Completed") ? (
                                     <div className="flex flex-col items-center gap-6 opacity-30">
                                         <Layers className="h-24 w-24 text-zinc-800" />
-                                        <p className="text-xs font-black uppercase tracking-[0.3em] text-zinc-700">Intel Lost // Asset Not Found</p>
+                                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-zinc-700">Intel Lost // Asset Not Found</p>
                                     </div>
                                 ) : selectedJob ? (
                                     <>
@@ -658,11 +658,11 @@ function TransformationPageContent() {
                                                 </div>
                                             </div>
                                             <div className="space-y-3">
-                                                <h4 className="text-3xl font-black tracking-tighter text-white uppercase">Injecting Originality...</h4>
+                                                <h4 className="text-3xl font-bold tracking-tighter text-white uppercase">Injecting Originality...</h4>
                                                 <p className="text-zinc-500 font-medium max-w-sm mx-auto leading-relaxed">Applying high-velocity neural transforms to maximize reach and bypass platform signatures.</p>
                                             </div>
                                             <div className="w-80 space-y-3">
-                                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                                                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                                                     <span>Render Progress</span>
                                                     <span className="text-primary">{selectedJob.progress}%</span>
                                                 </div>
@@ -670,7 +670,7 @@ function TransformationPageContent() {
                                         </div>
                                         {selectedJob.status.toLowerCase() === 'failed' && selectedJob.error_message && (
                                             <div className="mt-8 p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 max-w-sm mx-auto">
-                                                <div className="flex items-center gap-3 mb-2 font-black uppercase text-xs tracking-widest justify-center">
+                                                <div className="flex items-center gap-3 mb-2 font-bold uppercase text-xs tracking-widest justify-center">
                                                     <X className="h-4 w-4" />
                                                     Engine Failure
                                                 </div>
@@ -681,7 +681,7 @@ function TransformationPageContent() {
                                 ) : (
                                     <div className="flex flex-col items-center gap-6 opacity-30">
                                         <Video className="h-24 w-24 text-zinc-800" />
-                                        <p className="text-xs font-black uppercase tracking-[0.3em] text-zinc-700">Offline // Select Pipeline Job</p>
+                                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-zinc-700">Offline // Select Pipeline Job</p>
                                     </div>
                                 )}
 
@@ -698,11 +698,11 @@ function TransformationPageContent() {
                                                     <CheckCircle2 className="h-7 w-7 text-black" />
                                                 </div>
                                                 <div className="space-y-0.5">
-                                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">Intel Validated</p>
-                                                    <h5 className="text-sm font-black text-white uppercase tracking-tighter">Ready for Global Distribution</h5>
+                                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">Intel Validated</p>
+                                                    <h5 className="text-sm font-bold text-white uppercase tracking-tighter">Ready for Global Distribution</h5>
                                                 </div>
                                             </div>
-                                            <Link href={`/publishing${selectedJob ? `?job_id=${selectedJob.id}` : ''}`} className="bg-primary text-white text-[11px] font-black px-6 py-3 rounded-2xl hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] transition-all uppercase tracking-widest">
+                                            <Link href={`/publishing${selectedJob ? `?job_id=${selectedJob.id}` : ''}`} className="bg-primary text-white text-[11px] font-bold px-6 py-3 rounded-2xl hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] transition-all uppercase tracking-widest">
                                                 Deploy Matrix
                                             </Link>
                                         </motion.div>
@@ -716,16 +716,16 @@ function TransformationPageContent() {
                             <div className="flex items-center justify-between px-4">
                                 <div className="flex items-center gap-3">
                                     <Clock className="h-5 w-5 text-zinc-500" />
-                                    <h3 className="text-xs font-black uppercase tracking-[0.25em] text-zinc-500">Active Pipeline Jobs</h3>
+                                    <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">Active Pipeline Jobs</h3>
                                 </div>
-                                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">{processingJobs.length} NODES</span>
+                                <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{processingJobs.length} NODES</span>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <AnimatePresence mode="popLayout">
                                     {!Array.isArray(processingJobs) || processingJobs.length === 0 ? (
                                         <div className="col-span-full py-16 glass-card border-dashed rounded-5xl flex flex-col items-center gap-4 opacity-40">
                                             <PlusCircle className="h-10 w-10 text-zinc-700" />
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Pipeline Offline</p>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Pipeline Offline</p>
                                         </div>
                                     ) : (
                                         processingJobs.map((job, idx) => (
@@ -762,7 +762,7 @@ function TransformationPageContent() {
                                                 </div>
                                                 <div className="flex-1 min-w-0 space-y-3">
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <h4 className="font-black text-sm tracking-tight truncate uppercase text-white">{job.title || "VIRAL_TRANSFORM_1"}</h4>
+                                                        <h4 className="font-bold text-sm tracking-tight truncate uppercase text-white">{job.title || "VIRAL_TRANSFORM_1"}</h4>
                                                         {job.status.toLowerCase() === 'failed' && (
                                                             <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
                                                         )}
@@ -772,14 +772,14 @@ function TransformationPageContent() {
                                                                     e.stopPropagation();
                                                                     handleAbort(job.id);
                                                                 }}
-                                                                className="text-[8px] font-black text-rose-500 hover:text-rose-400 uppercase tracking-widest px-2 py-1 rounded-md border border-rose-500/20 hover:border-rose-500/50 transition-all"
+                                                                className="text-[8px] font-bold text-rose-500 hover:text-rose-400 uppercase tracking-widest px-2 py-1 rounded-md border border-rose-500/20 hover:border-rose-500/50 transition-all"
                                                             >
                                                                 Abort
                                                             </button>
                                                         )}
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-zinc-500">
+                                                        <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-zinc-500">
                                                             <span>{String(job.status)}</span>
                                                             <span className={job.status === 'Completed' ? 'text-emerald-500' : 'text-primary'}>{String(job.progress)}%</span>
                                                         </div>
@@ -807,14 +807,14 @@ function TransformationPageContent() {
                     {/* Filter Configuration Sidebar */}
                     <div className="space-y-10">
                         <div className="flex items-center gap-4">
-                            <h3 className="text-xl font-black uppercase tracking-tighter text-white">Engine Nodes</h3>
+                            <h3 className="text-xl font-bold uppercase tracking-tighter text-white">Engine Nodes</h3>
                             <div className="h-[1px] flex-1 bg-white/5" />
                         </div>
 
                         <div className="glass-card rounded-5xl overflow-hidden shadow-2xl flex flex-col max-h-[700px]">
                             <div className="flex-1 overflow-y-auto divide-y divide-white/5 custom-scrollbar">
                                 {(!Array.isArray(activeFilters) || activeFilters.length === 0) && (
-                                    <div className="p-8 text-zinc-600 font-black uppercase tracking-[0.2em] text-[10px] text-center">Nodes Desynchronized</div>
+                                    <div className="p-8 text-zinc-600 font-bold uppercase tracking-[0.2em] text-[10px] text-center">Nodes Desynchronized</div>
                                 )}
                                 {Array.isArray(activeFilters) && activeFilters.map((filter: any, idx: number) => (
                                     <motion.div
@@ -834,7 +834,7 @@ function TransformationPageContent() {
                                                     <Sparkles className={cn("h-5 w-5", filter.enabled ? "text-primary neon-glow" : "text-zinc-700")} />
                                                 </div>
                                                 <div className="space-y-0.5">
-                                                    <span className="font-black text-xs tracking-[0.05em] uppercase text-white">{filter.name}</span>
+                                                    <span className="font-bold text-xs tracking-[0.05em] uppercase text-white">{filter.name}</span>
                                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{filter.enabled ? 'Active' : 'Standby'}</p>
                                                 </div>
                                             </div>
@@ -867,13 +867,13 @@ function TransformationPageContent() {
                                 <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
                                     <Cpu className="h-4 w-4 text-emerald-500 animate-pulse" />
                                 </div>
-                                <span className="text-emerald-500 text-[10px] font-black uppercase tracking-[0.2em]">Neural Recommendation</span>
+                                <span className="text-emerald-500 text-[10px] font-bold uppercase tracking-[0.2em]">Neural Recommendation</span>
                             </div>
                             <p className="text-zinc-400 text-xs leading-relaxed font-medium">
                                 {aiInsight ? `"${aiInsight.recommendation}"` : "Analyzing cluster trends for optimal node configuration..."}
                             </p>
                             <div className="flex items-center justify-between pt-2">
-                                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">
                                     Confidence: {aiInsight ? (aiInsight.confidence * 100).toFixed(1) : "88.2"}% {aiInsight?.alpha_status ? "Alpha" : ""}
                                 </span>
                                 {aiInsight?.target_regions && (
@@ -900,7 +900,7 @@ export default function TransformationPage() {
                     <div className="absolute inset-0 scanline opacity-20 pointer-events-none" />
                     <div className="flex flex-col items-center gap-6">
                         <RefreshCw className="h-16 w-16 animate-spin text-primary shadow-[0_0_30px_rgba(var(--primary-rgb),0.4)]" />
-                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary animate-pulse">Initializing Neural Core...</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-primary animate-pulse">Initializing Neural Core...</p>
                     </div>
                 </div>
             </DashboardLayout>

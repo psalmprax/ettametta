@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { Zap, Loader2, Mail, Lock } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-
-import { API_BASE } from "@/lib/config";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
+import { BaseLayout } from "@/components/layout/BaseLayout";
 
 export default function RegisterPage() {
     const [email, setEmail] = useState("");
@@ -51,81 +53,87 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen bg-black flex items-center justify-center p-6 selection:bg-primary selection:text-black">
-            <div className="w-full max-w-md space-y-8">
-                <div className="text-center space-y-4">
-                    <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 border border-primary/20 animate-pulse">
-                        <Zap className="h-10 w-10 text-primary fill-primary" />
+        <BaseLayout variant="auth">
+            <Card variant="solid" className="p-10 md:p-14 max-w-lg mx-auto rounded-[3rem] border border-white/5 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent" />
+                
+                <div className="text-center space-y-6 mb-12">
+                    <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-cyan-500/10 border border-cyan-400/20 shadow-[0_0_30px_rgba(34,211,238,0.1)]">
+                        <Zap className="h-10 w-10 text-cyan-400" />
                     </div>
-                    <h1 className="text-5xl font-black uppercase tracking-tighter text-white">JOIN THE <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-cyan-400 text-hollow">METTA</span></h1>
-                    <p className="text-zinc-500 font-medium">Scale your content with AI precision</p>
+                    <div className="space-y-2">
+                        <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-tight text-white">
+                            Initialize Registry
+                        </h1>
+                        <p className="text-zinc-600 font-bold uppercase tracking-[0.2em] text-[10px]">Secure Protocol Enrollment</p>
+                    </div>
                 </div>
 
-                <form onSubmit={handleRegister} className="space-y-4">
-                    <div className="space-y-2">
-                        <label htmlFor="email" className="text-xs font-black text-zinc-500 uppercase tracking-widest ml-1">Email</label>
-                        <div className="relative group">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-600 group-focus-within:text-primary transition-colors" />
-                            <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-white font-medium"
-                                placeholder="you@example.com"
-                            />
-                        </div>
+                <form onSubmit={handleRegister} className="space-y-8">
+                    <Input
+                        label="PROTOCOL_EMAIL"
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="ENTER_EMAIL"
+                        icon={<Mail className="h-5 w-5" />}
+                        variant="solid"
+                        className="rounded-2xl border-white/5 focus:border-cyan-400/50"
+                    />
+
+                    <Input
+                        label="ACCESS_KEY"
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        icon={<Lock className="h-5 w-5" />}
+                        variant="solid"
+                        className="rounded-2xl border-white/5 focus:border-cyan-400/50"
+                        error={error}
+                    />
+
+                    <div className="bg-white/5 rounded-2xl p-6 text-[10px] text-zinc-500 space-y-3 border border-white/5">
+                        <p className="font-bold text-zinc-400 uppercase tracking-widest">Key Requirements:</p>
+                        <ul className="space-y-2 ml-2 font-bold uppercase tracking-widest">
+                            <li className="flex items-center gap-2">
+                                <div className="w-1 h-1 bg-cyan-400 rounded-full" />
+                                8+ Characters
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <div className="w-1 h-1 bg-cyan-400 rounded-full" />
+                                Alpha-Numeric Mix
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <div className="w-1 h-1 bg-cyan-400 rounded-full" />
+                                Upper/Lower Case
+                            </li>
+                        </ul>
                     </div>
 
-                    <div className="space-y-2">
-                        <label htmlFor="password" className="text-xs font-black text-zinc-500 uppercase tracking-widest ml-1">Password</label>
-                        <div className="relative group">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-600 group-focus-within:text-primary transition-colors" />
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                aria-describedby={error ? "register-error" : undefined}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-white font-medium"
-                                placeholder="••••••••"
-                            />
-                        </div>
-                    </div>
-
-                    {error && (
-                        <div id="register-error" className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-bold text-center animate-shake" role="alert" aria-live="assertive">
-                            {error}
-                        </div>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-black font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 group"
+                    <Button 
+                        type="submit" 
+                        variant="primary" 
+                        size="lg"
+                        isLoading={isLoading}
+                        fullWidth
+                        className="rounded-2xl py-8 font-bold tracking-[0.3em] uppercase text-xs"
                     >
-                        {isLoading ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                            <>
-                                INITIALIZE ACCOUNT
-                                <Zap className="h-4 w-4 fill-black group-hover:scale-125 transition-transform" />
-                            </>
-                        )}
-                    </button>
+                        {isLoading ? "Enrolling..." : "Register Protocol"}
+                    </Button>
                 </form>
 
-                <p className="text-center text-zinc-600 text-sm font-medium">
-                    Already have access?{" "}
-                    <Link href="/login" className="text-white hover:text-primary transition-colors">
-                        Authenticated Login
-                    </Link>
-                </p>
-            </div>
-        </div>
+                <div className="mt-12 pt-8 border-t border-white/5 text-center">
+                    <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">
+                        Already Synchronized?{" "}
+                        <Link href="/login" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                            Initialize Session
+                        </Link>
+                    </p>
+                </div>
+            </Card>
+        </BaseLayout>
     );
 }

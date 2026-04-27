@@ -160,7 +160,7 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                             <Cpu className="h-8 w-8 text-neon-cyan" />
                         </div>
                         <div>
-                            <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Cluster Topology</h2>
+                            <h2 className="text-3xl font-bold text-white uppercase tracking-tighter">Cluster Topology</h2>
                             <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest leading-none">Neural Infrastructure Management</p>
                         </div>
                     </div>
@@ -178,13 +178,13 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                                 <ShieldCheck className="h-5 w-5 text-zinc-400" />
                             </div>
                             <div className="flex-1">
-                                <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest mb-1">Administrative Privileges</p>
+                                <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Administrative Privileges</p>
                                 <input 
                                     type="password"
                                     placeholder="ENTER MASTER ACCESS TOKEN"
                                     value={isAdminToken}
                                     onChange={(e) => setAdminToken(e.target.value)}
-                                    className="bg-transparent border-none outline-none text-[10px] font-black tracking-widest text-white w-full uppercase placeholder:text-zinc-800"
+                                    className="bg-transparent border-none outline-none text-[10px] font-bold tracking-widest text-white w-full uppercase placeholder:text-zinc-800"
                                 />
                             </div>
                         </div>
@@ -194,11 +194,11 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                             <div className="flex items-center justify-between border-b border-white/5 pb-4">
                                 <div className="flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-neon-cyan animate-pulse" />
-                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Active Neural Grid</h3>
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-widest">Active Neural Grid</h3>
                                 </div>
                                 <button 
                                     onClick={() => setIsAdding(true)}
-                                    className="flex items-center gap-2 px-6 py-2.5 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-neon-cyan transition-all transform hover:scale-105 active:scale-95"
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-full hover:bg-neon-cyan transition-all transform hover:scale-105 active:scale-95"
                                 >
                                     <Plus className="h-3 w-3" />
                                     Deploy Node
@@ -212,14 +212,14 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                                             <Loader2 className="h-12 w-12 text-zinc-800 animate-spin" />
                                             <Cpu className="h-6 w-6 text-neon-cyan absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                                         </div>
-                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 animate-pulse">Syncing Neural Fabric...</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-600 animate-pulse">Syncing Neural Fabric...</span>
                                     </div>
                                 ) : nodes.length === 0 ? (
                                     <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-[40px] bg-zinc-950/50">
                                         <div className="mb-4 flex justify-center text-zinc-800">
                                             <Server className="h-16 w-16" />
                                         </div>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-700 max-w-xs mx-auto">Grid is currently disconnected. Initiate deployment to stabilize infrastructure.</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-700 max-w-xs mx-auto">Grid is currently disconnected. Initiate deployment to stabilize infrastructure.</p>
                                     </div>
                                 ) : nodes.map((node) => (
                                     <div key={node.url} className="group relative p-6 bg-zinc-900/60 border border-white/5 rounded-[32px] hover:border-white/20 hover:bg-zinc-900 transition-all duration-500 overflow-hidden">
@@ -243,13 +243,13 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                                                     )} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs font-black text-white tracking-widest truncate max-w-[140px] uppercase">{node.url.replace('http://', '').replace(':8122', '')}</p>
+                                                    <p className="text-xs font-bold text-white tracking-widest truncate max-w-[140px] uppercase">{node.url.replace('http://', '').replace(':8122', '')}</p>
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <div className={cn("w-1.5 h-1.5 rounded-full scale-110", 
                                                             node.status === "READY" ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : 
                                                             node.status === "PROVISIONING" ? "bg-neon-cyan animate-ping" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"
                                                         )} />
-                                                        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">{node.status}</span>
+                                                        <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">{node.status}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -265,14 +265,14 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                                             {node.status === "UNCONFIGURED" || node.status === "OFFLINE" ? (
                                                 <button 
                                                     onClick={() => setProvisioningNode(node.url)}
-                                                    className="flex-1 py-3.5 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-neon-cyan hover:shadow-[0_0_20px_rgba(0,255,255,0.3)] transition-all transform active:scale-95"
+                                                    className="flex-1 py-3.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-2xl hover:bg-neon-cyan hover:shadow-[0_0_20px_rgba(0,255,255,0.3)] transition-all transform active:scale-95"
                                                 >
                                                     Configure Hardware
                                                 </button>
                                             ) : (
                                                 <div className="flex-1 py-3.5 bg-zinc-800/50 rounded-2xl flex items-center justify-center gap-3">
                                                     <CheckCircle2 className="h-3 w-3 text-green-500" />
-                                                    <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">Neural Link Active</span>
+                                                    <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Neural Link Active</span>
                                                 </div>
                                             )}
                                         </div>
@@ -302,30 +302,30 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                                     <div className="inline-block p-4 bg-white/5 rounded-3xl mb-6">
                                         <Plus className="h-10 w-10 text-white" />
                                     </div>
-                                    <h4 className="text-4xl font-black text-white uppercase tracking-tighter">New Node</h4>
+                                    <h4 className="text-4xl font-bold text-white uppercase tracking-tighter">New Node</h4>
                                     <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-2">Expansion Module Integration</p>
                                 </div>
                                 <div className="space-y-4">
-                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-1 text-center block w-full">Hardware Endpoint URL</label>
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest px-1 text-center block w-full">Hardware Endpoint URL</label>
                                     <input 
                                         autoFocus
                                         placeholder="HTTP://172.105.101.44:8122"
                                         value={newNodeUrl}
                                         onChange={(e) => setNewNodeUrl(e.target.value)}
-                                        className="w-full p-5 bg-zinc-900 border border-white/10 rounded-3xl text-center text-sm font-black text-white uppercase placeholder:text-zinc-800 tracking-widest focus:border-neon-cyan/40 transition-all outline-none"
+                                        className="w-full p-5 bg-zinc-900 border border-white/10 rounded-3xl text-center text-sm font-bold text-white uppercase placeholder:text-zinc-800 tracking-widest focus:border-neon-cyan/40 transition-all outline-none"
                                     />
                                 </div>
                                 <div className="flex gap-4">
                                     <button 
                                         type="button"
                                         onClick={() => setIsAdding(false)}
-                                        className="flex-1 py-5 bg-zinc-900 border border-white/5 text-white/50 text-[10px] font-black uppercase tracking-widest rounded-3xl hover:bg-red-500/10 hover:text-red-500 transition-all"
+                                        className="flex-1 py-5 bg-zinc-900 border border-white/5 text-white/50 text-[10px] font-bold uppercase tracking-widest rounded-3xl hover:bg-red-500/10 hover:text-red-500 transition-all"
                                     >
                                         Abort
                                     </button>
                                     <button 
                                         type="submit"
-                                        className="flex-1 py-5 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-3xl hover:bg-neon-cyan hover:shadow-2xl transition-all"
+                                        className="flex-1 py-5 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-3xl hover:bg-neon-cyan hover:shadow-2xl transition-all"
                                     >
                                         Integrate
                                     </button>
@@ -351,23 +351,23 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                                     <div className="inline-block p-5 bg-neon-cyan/10 rounded-[40px] mb-8 animate-pulse-slow">
                                         <Key className="h-12 w-12 text-neon-cyan" />
                                     </div>
-                                    <h4 className="text-5xl font-black text-white uppercase tracking-tighter leading-tight">Hardened Provisioning</h4>
+                                    <h4 className="text-5xl font-bold text-white uppercase tracking-tighter leading-tight">Hardened Provisioning</h4>
                                     <p className="text-xs font-bold text-zinc-500 uppercase tracking-[0.5em] mt-3">{provisioningNode.replace('http://', '')}</p>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-4">
-                                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] px-4">SSH Deployment Port</label>
+                                        <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] px-4">SSH Deployment Port</label>
                                         <input 
                                             placeholder="22"
                                             value={sshPort}
                                             onChange={(e) => setSshPort(e.target.value)}
-                                            className="w-full p-6 bg-zinc-900 border border-white/5 rounded-3xl text-sm font-black text-white placeholder:text-zinc-800 tracking-widest focus:border-neon-cyan/40 outline-none"
+                                            className="w-full p-6 bg-zinc-900 border border-white/5 rounded-3xl text-sm font-bold text-white placeholder:text-zinc-800 tracking-widest focus:border-neon-cyan/40 outline-none"
                                         />
                                     </div>
                                     <div className="space-y-4">
-                                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] px-4">Active User</label>
-                                        <div className="w-full p-6 bg-zinc-800/30 border border-white/5 rounded-3xl text-sm font-black text-white/30 tracking-widest cursor-not-allowed">
+                                        <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] px-4">Active User</label>
+                                        <div className="w-full p-6 bg-zinc-800/30 border border-white/5 rounded-3xl text-sm font-bold text-white/30 tracking-widest cursor-not-allowed">
                                             ROOT (DEFAULT)
                                         </div>
                                     </div>
@@ -380,7 +380,7 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                                             <AlertCircle className="h-8 w-8 text-red-500" />
                                         </div>
                                         <div>
-                                            <h5 className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em] mb-2">Zero-Storage Handshake Protocol</h5>
+                                            <h5 className="text-[10px] font-bold text-red-500 uppercase tracking-[0.2em] mb-2">Zero-Storage Handshake Protocol</h5>
                                             <p className="text-[9px] font-bold text-red-100/50 leading-relaxed uppercase tracking-widest">
                                                 This private key is held strictly in volatile RAM. It is never saved to disk 
                                                 and is purged immediately upon task resolution. Architecture confirms 
@@ -392,8 +392,8 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
 
                                 <div className="space-y-4">
                                     <div className="flex justify-between px-4">
-                                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em]">Neural Access Credentials (Ephemeral)</label>
-                                        <span className="text-[8px] font-black text-neon-cyan/50 uppercase tracking-[0.3em] font-mono">ONE-TIME DEPLOYMENT KEY</span>
+                                        <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em]">Neural Access Credentials (Ephemeral)</label>
+                                        <span className="text-[8px] font-bold text-neon-cyan/50 uppercase tracking-[0.3em] font-mono">ONE-TIME DEPLOYMENT KEY</span>
                                     </div>
                                     <textarea 
                                         autoFocus
@@ -412,13 +412,13 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                                     <button 
                                         type="button"
                                         onClick={() => { setProvisioningNode(null); setSshKey(""); }}
-                                        className="flex-1 py-6 bg-zinc-900/50 border border-white/5 text-white text-[12px] font-black uppercase tracking-widest rounded-3xl hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-500 transition-all transform hover:-translate-y-1"
+                                        className="flex-1 py-6 bg-zinc-900/50 border border-white/5 text-white text-[12px] font-bold uppercase tracking-widest rounded-3xl hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-500 transition-all transform hover:-translate-y-1"
                                     >
                                         Disengage
                                     </button>
                                     <button 
                                         type="submit"
-                                        className="flex-[2] py-6 bg-[#22d3ee] text-black text-[12px] font-black uppercase tracking-[0.2em] rounded-3xl hover:bg-white transition-all transform hover:-translate-y-1 shadow-[0_20px_50px_rgba(0,255,255,0.2)]"
+                                        className="flex-[2] py-6 bg-[#22d3ee] text-black text-[12px] font-bold uppercase tracking-[0.2em] rounded-3xl hover:bg-white transition-all transform hover:-translate-y-1 shadow-[0_20px_50px_rgba(0,255,255,0.2)]"
                                     >
                                         Confirm & Deploy
                                     </button>

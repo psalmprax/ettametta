@@ -418,36 +418,36 @@ export default function EmpirePage() {
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" style={{ width: "85%" }} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Empire Protocol</span>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Empire Protocol</span>
                         </div>
-                        <h1 className="text-5xl md:text-6xl font-black tracking-tighter uppercase text-white leading-none">Command <span className="text-transparent bg-clip-text bg-linear-to-r from-violet-500 to-cyan-400 text-hollow">Center</span></h1>
-                        <p className="text-zinc-500 font-medium tracking-tight">Managing multi-account <span className="text-cyan-400 font-black">global scaling</span> and algorithm synchronization.</p>
+                        <h1 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-white leading-none">Empire <span className="text-cyan-400">Registry</span></h1>
+                        <p className="text-zinc-600 font-bold uppercase tracking-[0.2em] text-[10px]">Neural Synchronization Active</p>
                     </div>
                     <button
                         onClick={fetchSentinel}
                         disabled={isRefreshing}
-                        className="glass-card px-6 py-4 rounded-xl flex items-center gap-3 group hover:border-neon-cyan/50 transition-all font-black uppercase tracking-widest text-[10px] shadow-glow-cyan/10"
+                        className="glass-card px-8 py-5 rounded-full flex items-center gap-4 group hover:border-cyan-400/50 transition-all font-bold uppercase tracking-[0.2em] text-[10px] shadow-glow-cyan/5"
                     >
-                        <RefreshCw className={cn("h-4 w-4 text-zinc-500 group-hover:text-neon-cyan transition-colors", isRefreshing && "animate-spin")} />
-                        <span className="text-zinc-500 group-hover:text-white">Sync Sentinel</span>
+                        <RefreshCw className={cn("h-4 w-4 text-zinc-600 group-hover:text-cyan-400 transition-colors", isRefreshing && "animate-spin")} />
+                        <span className="text-zinc-600 group-hover:text-white">Refresh_Sync</span>
                     </button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     {/* Algorithm Sentinel Monitor */}
                     <div className="space-y-8">
-                        <div className="glass-card space-y-8 relative overflow-hidden h-fit">
-                            <div className="absolute inset-0 pointer-events-none opacity-(--scanline-opacity) bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%]" />
+                        <div className="glass-card space-y-8 relative overflow-hidden h-fit rounded-[2.5rem] border-white/5">
+                            <div className="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(0,251,251,0.03),rgba(0,0,0,0),rgba(0,251,251,0.03))] bg-[length:100%_4px,3px_100%]" />
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
-                                    <h3 className="font-black uppercase tracking-tight text-white">Algorithm Sentinel</h3>
+                                    <h3 className="font-bold uppercase tracking-tight text-white">Algorithm Sentinel</h3>
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Platform Drift Analyzer</p>
                                 </div>
                                 <div className={cn(
-                                    "px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all shadow-glow-violet/20",
-                                    sentinelStatus?.status === "NOMINAL" ? "bg-neon-cyan/10 border-neon-cyan/30 text-neon-cyan shadow-glow-cyan/20" : "bg-neon-violet/10 border-neon-violet/30 text-neon-violet shadow-glow-violet/20"
+                                    "px-5 py-2 rounded-full border text-[9px] font-bold uppercase tracking-widest transition-all",
+                                    sentinelStatus?.status === "NOMINAL" ? "bg-cyan-500/10 border-cyan-400/20 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.1)]" : "bg-blue-500/10 border-blue-400/20 text-blue-400"
                                 )}>
-                                    {sentinelStatus?.status || "CONNECTING..."}
+                                    {sentinelStatus?.status || "INITIALIZING..."}
                                 </div>
                             </div>
 
@@ -470,14 +470,14 @@ export default function EmpirePage() {
                                         />
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center space-y-1">
-                                        <span className="text-4xl font-black text-white leading-none">{sentinelStatus?.score || "--"}%</span>
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Sync Score</span>
+                                        <span className="text-4xl font-bold text-white leading-none">{sentinelStatus?.score || "--"}%</span>
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Sync Score</span>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 border-b border-white/5 pb-3">Strategic Pivots Required:</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 border-b border-white/5 pb-3">Strategic Pivots Required:</p>
                                 {sentinelStatus?.recommendations?.map((rec: string, i: number) => (
                                     <div key={i} className="flex gap-4 group cursor-pointer hover:bg-white/[0.02] p-2 rounded-xl transition-all">
                                         <ChevronRight className="h-4 w-4 text-primary shrink-0 transition-transform group-hover:translate-x-1" />
@@ -493,8 +493,8 @@ export default function EmpirePage() {
                                 <Globe className="h-6 w-6 text-indigo-500" />
                             </div>
                             <div className="space-y-1">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Regional Footprint</h4>
-                                <p className="text-sm font-black text-white">Multi-Account: {empireMetrics?.account_count || 0}</p>
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Regional Footprint</h4>
+                                <p className="text-sm font-bold text-white">Multi-Account: {empireMetrics?.account_count || 0}</p>
                             </div>
                         </div>
                     </div>
@@ -502,19 +502,19 @@ export default function EmpirePage() {
                     {/* Empire Strategy Management */}
                     <div className="lg:col-span-2 space-y-10">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="glass-card space-y-4 flex flex-col justify-between">
+                            <div className="glass-card space-y-4 flex flex-col justify-between rounded-[2.5rem] border-white/5">
                                 <div className="space-y-4">
                                     <div className="h-10 w-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
                                         <Layers className="h-5 w-5 text-orange-500" />
                                     </div>
-                                    <h3 className="font-black uppercase text-white tracking-tight">Strategy Lab</h3>
+                                    <h3 className="font-bold uppercase text-white tracking-tight">Strategy Lab</h3>
                                     <p className="text-xs text-zinc-500 leading-relaxed font-medium">Select a winning blueprint and clone it to related niches with one click.</p>
                                 </div>
                                 <div className="space-y-3 pt-4">
                                     <select
                                         value={cloningNiche}
                                         onChange={(e) => setCloningNiche(e.target.value)}
-                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-[10px] font-black uppercase tracking-widest text-zinc-300 outline-none cursor-pointer hover:bg-zinc-900/50 transition-all"
+                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-300 outline-none cursor-pointer hover:bg-zinc-900/50 transition-all"
                                     >
                                         {availableNiches.map((niche) => (
                                             <option key={niche} value={niche}>{niche}</option>
@@ -525,23 +525,23 @@ export default function EmpirePage() {
                                     </select>
                                     <button
                                         onClick={() => setIsCloneModalOpen(true)}
-                                        className="w-full bg-primary hover:bg-primary/90 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[10px] shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)]"
+                                        className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-5 rounded-full transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-[10px] shadow-[0_0_30px_rgba(34,211,238,0.2)]"
                                     >
                                         <Copy className="h-4 w-4" />
-                                        Launch Empire Mode
+                                        Launch Empire Protocol
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="glass-card space-y-4">
+                            <div className="glass-card space-y-4 rounded-[2.5rem] border-white/5">
                                 <div className="h-10 w-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                                     <TrendingUp className="h-5 w-5 text-cyan-500" />
                                 </div>
-                                <h3 className="font-black uppercase text-white tracking-tight">Cross-Account Velocity</h3>
+                                <h3 className="font-bold uppercase text-white tracking-tight">Cross-Account Velocity</h3>
                                 <div className="space-y-6 pt-4">
                                     {empireMetrics?.velocity?.length > 0 ? empireMetrics.velocity.map((v: any, i: number) => (
                                         <div key={i} className="space-y-2">
-                                            <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-zinc-600">
+                                            <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-zinc-600">
                                                 <span>{v.name}</span>
                                                 <span className="text-emerald-500">{v.growth}</span>
                                             </div>
@@ -558,19 +558,19 @@ export default function EmpirePage() {
                                 </div>
                             </div>
 
-                            <div className="glass-card space-y-4 bg-emerald-500/5 border-emerald-500/10">
+                            <div className="glass-card space-y-4 bg-cyan-500/5 border-cyan-500/10 rounded-[2.5rem]">
                                 <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                                     <TrendingUp className="h-5 w-5 text-emerald-500" />
                                 </div>
-                                <h3 className="font-black uppercase text-white tracking-tight">Revenue Matrix</h3>
+                                <h3 className="font-bold uppercase text-white tracking-tight">Revenue Matrix</h3>
                                 <div className="space-y-4 pt-4">
                                     <div className="flex justify-between items-center">
                                         <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Total Revenue</span>
-                                        <span className="text-xl font-black text-neon-cyan neon-glow-cyan">${revenueReport?.total_revenue?.toFixed(2) || "0.00"}</span>
+                                        <span className="text-xl font-bold text-neon-cyan neon-glow-cyan">${revenueReport?.total_revenue?.toFixed(2) || "0.00"}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">EPM</span>
-                                        <span className="text-lg font-black text-white">${revenueReport?.epm?.toFixed(2) || "0.00"}</span>
+                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">EPM</span>
+                                        <span className="text-lg font-bold text-white">${revenueReport?.epm?.toFixed(2) || "0.00"}</span>
                                     </div>
                                     {revenueReport?.by_platform && Object.entries(revenueReport.by_platform).map(([platform, amount]: [string, any]) => (
                                         <div key={platform} className="flex justify-between items-center text-[10px]">
@@ -583,14 +583,14 @@ export default function EmpirePage() {
                         </div>
 
                         {/* Promo Generator Section */}
-                        <div className="glass-card bg-primary/5 border-primary/10 space-y-8 relative overflow-hidden">
+                        <div className="glass-card bg-cyan-500/5 border-white/5 space-y-8 relative overflow-hidden rounded-[2.5rem]">
                             <div className="absolute inset-0 scanline opacity-(--scanline-opacity)" />
                             <div className="flex items-center gap-4">
                                 <div className="h-12 w-12 rounded-2xl bg-primary/20 flex items-center justify-center border border-primary/30">
                                     <Zap className="h-6 w-6 text-primary neon-glow" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <h3 className="font-black uppercase tracking-tight text-white">Monetization Engine</h3>
+                                    <h3 className="font-bold uppercase tracking-tight text-white">Monetization Engine</h3>
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Digital Product Promo Generator</p>
                                 </div>
                             </div>
@@ -610,17 +610,17 @@ export default function EmpirePage() {
                                     <button
                                         onClick={handleGeneratePromo}
                                         disabled={isGeneratingPromo || !promoProduct}
-                                        className="w-full bg-primary hover:bg-primary/90 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
+                                        className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-5 rounded-full transition-all flex items-center justify-center gap-4 uppercase tracking-[0.2em] text-[10px] disabled:opacity-50 shadow-[0_0_30px_rgba(34,211,238,0.2)]"
                                     >
                                         {isGeneratingPromo ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-                                        Generate High-ROI Promo
+                                        Initialize Promo Synthesis
                                     </button>
                                 </div>
 
                                 <div className="bg-zinc-950/40 rounded-3xl border border-white/5 p-6 h-48 overflow-y-auto relative">
                                     {promoScript ? (
                                         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
-                                            <h4 className="text-primary font-black text-xs uppercase tracking-tighter">{promoScript.title}</h4>
+                                            <h4 className="text-primary font-bold text-xs uppercase tracking-tighter">{promoScript.title}</h4>
                                             {promoScript.segments?.map((s: any, i: number) => (
                                                 <div key={i} className="text-[10px] text-zinc-400 font-medium leading-relaxed border-l border-primary/30 pl-3">
                                                     {s.text}
@@ -630,7 +630,7 @@ export default function EmpirePage() {
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
                                             <Search className="h-8 w-8 text-zinc-700 mb-2" />
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Awaiting Product Intel</p>
+                                            <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-700">Awaiting Product Intel</p>
                                         </div>
                                     )}
                                 </div>
@@ -645,7 +645,7 @@ export default function EmpirePage() {
                                     <TrendingUp className="h-6 w-6 text-amber-500" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <h3 className="font-black uppercase tracking-tight text-white">Affiliate Network</h3>
+                                    <h3 className="font-bold uppercase tracking-tight text-white">Affiliate Network</h3>
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Link Management & Tracking</p>
                                 </div>
                             </div>
@@ -677,7 +677,7 @@ export default function EmpirePage() {
                                     <button
                                         onClick={handleAddAffiliateLink}
                                         disabled={isAddingLink || !newLink.product_name || !newLink.link}
-                                        className="w-full bg-amber-500 hover:bg-amber-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
+                                        className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
                                     >
                                         {isAddingLink ? <RefreshCw className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
                                         Add Affiliate Link
@@ -689,7 +689,7 @@ export default function EmpirePage() {
                                         <div className="space-y-3">
                                             {affiliateLinks.map((link: any, i: number) => (
                                                 <div key={link.id || link._id || i} className="group p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1 relative">
-                                                    <p className="text-[10px] font-black text-white uppercase tracking-wider">{link.product_name}</p>
+                                                    <p className="text-[10px] font-bold text-white uppercase tracking-wider">{link.product_name}</p>
                                                     <p className="text-[9px] text-zinc-500 truncate">{link.link}</p>
                                                     {link.cta_text && <p className="text-[9px] text-amber-500 font-bold">{link.cta_text}</p>}
                                                     <button 
@@ -704,7 +704,7 @@ export default function EmpirePage() {
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
                                             <Search className="h-8 w-8 text-zinc-700 mb-2" />
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">No Affiliate Links</p>
+                                            <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-700">No Affiliate Links</p>
                                         </div>
                                     )}
                                 </div>
@@ -719,7 +719,7 @@ export default function EmpirePage() {
                                     <ShoppingBag className="h-6 w-6 text-purple-500" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <h3 className="font-black uppercase tracking-tight text-white">Auto-Merch Engine</h3>
+                                    <h3 className="font-bold uppercase tracking-tight text-white">Auto-Merch Engine</h3>
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Trend-Driven Product Generation</p>
                                 </div>
                             </div>
@@ -735,7 +735,7 @@ export default function EmpirePage() {
                                 <button
                                     onClick={handleAutoMerch}
                                     disabled={isGeneratingMerch || !autoMerchTopic}
-                                    className="w-full bg-purple-500 hover:bg-purple-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
+                                    className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
                                 >
                                     {isGeneratingMerch ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ShoppingBag className="h-4 w-4" />}
                                     Generate Auto-Merch
@@ -751,14 +751,14 @@ export default function EmpirePage() {
                                     <Package className="h-6 w-6 text-green-500" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <h3 className="font-black uppercase tracking-tight text-white">Commerce Sync</h3>
+                                    <h3 className="font-bold uppercase tracking-tight text-white">Commerce Sync</h3>
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Shopify Integration</p>
                                 </div>
                             </div>
                                 <button
                                     onClick={() => setIsSyncModalOpen(true)}
                                     disabled={isSyncingShopify}
-                                    className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
+                                    className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
                                 >
                                     {isSyncingShopify ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                                     Sync Shopify
@@ -773,7 +773,7 @@ export default function EmpirePage() {
                                     <LinkIcon className="h-6 w-6 text-sky-500" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <h3 className="font-black uppercase tracking-tight text-white">AI Link Recommender</h3>
+                                    <h3 className="font-bold uppercase tracking-tight text-white">AI Link Recommender</h3>
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Smart Affiliate Suggestions</p>
                                 </div>
                             </div>
@@ -796,7 +796,7 @@ export default function EmpirePage() {
                                     <button
                                         onClick={handleRecommendLinks}
                                         disabled={isRecommending || !recommendNiche || !recommendScript}
-                                        className="w-full bg-sky-500 hover:bg-sky-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
+                                        className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
                                     >
                                         {isRecommending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
                                         Get Recommendations
@@ -807,7 +807,7 @@ export default function EmpirePage() {
                                         <div className="space-y-3">
                                             {recommendations.map((rec: any, i: number) => (
                                                 <div key={i} className="p-1 rounded-lg hover:bg-white/2 transition-colors">
-                                                    <p className="text-[10px] font-black text-white uppercase tracking-wider">{rec.product_name || rec.name || `Link ${i + 1}`}</p>
+                                                    <p className="text-[10px] font-bold text-white uppercase tracking-wider">{rec.product_name || rec.name || `Link ${i + 1}`}</p>
                                                     <p className="text-[9px] text-zinc-500 truncate">{rec.link || rec.url}</p>
                                                     {rec.reason && <p className="text-[9px] text-sky-500 font-bold">{rec.reason}</p>}
                                                     {rec.cta_text && <p className="text-[9px] text-sky-400 font-bold">{rec.cta_text}</p>}
@@ -817,7 +817,7 @@ export default function EmpirePage() {
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
                                             <LinkIcon className="h-8 w-8 text-zinc-700 mb-2" />
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-700">Awaiting Script Analysis</p>
+                                            <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-700">Awaiting Script Analysis</p>
                                         </div>
                                     )}
                                 </div>
@@ -831,7 +831,7 @@ export default function EmpirePage() {
                                     <MessageSquareQuote className="h-5 w-5 text-primary neon-glow" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <h3 className="font-black uppercase tracking-tight text-white">Neural Repositories</h3>
+                                    <h3 className="font-bold uppercase tracking-tight text-white">Neural Repositories</h3>
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Winning Blueprint History</p>
                                 </div>
                             </div>
@@ -851,14 +851,14 @@ export default function EmpirePage() {
                                                 selectedStrategy?.id === bp.id ? "bg-primary" : "bg-zinc-600"
                                             )} />
                                             <div>
-                                                <p className="text-[10px] font-black uppercase text-white tracking-widest leading-none mb-1">{bp.title}</p>
+                                                <p className="text-[10px] font-bold uppercase text-white tracking-widest leading-none mb-1">{bp.title}</p>
                                                 <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-tighter">{bp.niche || "Universal Pattern"}</p>
                                             </div>
                                         </div>
-                                        <div className="text-[10px] font-black text-emerald-500">{bp.performance}</div>
+                                        <div className="text-[10px] font-bold text-emerald-500">{bp.performance}</div>
                                     </div>
                                 )) : (
-                                    <div className="text-zinc-700 font-black uppercase text-[10px] text-center py-20 tracking-[0.3em] opacity-40 uppercase">
+                                    <div className="text-zinc-700 font-bold uppercase text-[10px] text-center py-20 tracking-[0.3em] opacity-40 uppercase">
                                         Waiting for Initial Conquests...
                                     </div>
                                 )}
@@ -880,7 +880,7 @@ export default function EmpirePage() {
                             {/* Strategic Timeline */}
                             <div className="glass-card p-10 space-y-8">
                                 <div className="space-y-1">
-                                    <h3 className="font-black uppercase tracking-tight text-white">Strategic <span className="text-cyan-400">Timeline</span></h3>
+                                    <h3 className="font-bold uppercase tracking-tight text-white">Strategic <span className="text-cyan-400">Timeline</span></h3>
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Sentinel Drift Events</p>
                                 </div>
                                 <div className="space-y-6">
@@ -892,8 +892,8 @@ export default function EmpirePage() {
                                                 <div className="w-px flex-1 bg-white/5 group-last:hidden" />
                                             </div>
                                             <div className="pb-6">
-                                                <p className="text-[10px] font-black text-primary mb-1 tracking-widest">{item.time_label || item.time}</p>
-                                                <p className="text-white font-black uppercase text-xs mb-1">{item.type || item.event}</p>
+                                                <p className="text-[10px] font-bold text-primary mb-1 tracking-widest">{item.time_label || item.time}</p>
+                                                <p className="text-white font-bold uppercase text-xs mb-1">{item.type || item.event}</p>
                                                 <p className="text-zinc-500 text-[10px] font-medium leading-relaxed">{item.message || item.desc}</p>
                                             </div>
                                         </div>
@@ -908,7 +908,7 @@ export default function EmpirePage() {
                                         <div className="absolute inset-0 rounded-full border border-primary animate-ping opacity-20" />
                                         <Layers className="h-10 w-10 text-primary" />
                                     </div>
-                                    <h4 className="text-2xl font-black text-white tracking-tighter uppercase">{sentinelStatus?.score || 0}% Autonomy</h4>
+                                    <h4 className="text-2xl font-bold text-white tracking-tighter uppercase">{sentinelStatus?.score || 0}% Autonomy</h4>
                                     <p className="text-zinc-500 text-xs font-medium">System is operating in <span className={`${sentinelStatus?.status === "NOMINAL" ? "text-emerald-500" : "text-amber-500"} font-bold`}>{sentinelStatus?.status || "CONNECTING"}</span> mode. {sentinelStatus?.status === "NOMINAL" ? "No manual overrides required." : "Review sentinel recommendations."}</p>
                                 </div>
                             </div>
@@ -938,10 +938,10 @@ export default function EmpirePage() {
                                     <Copy className="h-8 w-8 text-primary" />
                                 </div>
                                 <div className="space-y-1">
-                                    <h3 className="text-3xl font-black text-white uppercase tracking-tighter">
+                                    <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">
                                         Empire Expansion
                                     </h3>
-                                    <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-black opacity-60">
+                                    <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-bold opacity-60">
                                         Neural Strategy Replication
                                     </p>
                                 </div>
@@ -959,7 +959,7 @@ export default function EmpirePage() {
                                                 <Share2 className="h-4 w-4" />
                                             </div>
                                             <div className="space-y-0.5">
-                                                <p className="text-[10px] font-black uppercase tracking-tight text-white group-hover:text-emerald-400 transition-colors">Auto-Publish After Clone</p>
+                                                <p className="text-[10px] font-bold uppercase tracking-tight text-white group-hover:text-emerald-400 transition-colors">Auto-Publish After Clone</p>
                                                 <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Automatically publish content using the new strategy</p>
                                             </div>
                                         </div>
@@ -976,7 +976,7 @@ export default function EmpirePage() {
                             <div className="flex gap-4">
                                 <button
                                     onClick={() => setIsCloneModalOpen(false)}
-                                    className="flex-1 h-16 rounded-2xl border border-white/5 text-zinc-500 font-black uppercase text-[10px] tracking-widest hover:bg-white/5 transition-colors"
+                                    className="flex-1 h-16 rounded-2xl border border-white/5 text-zinc-500 font-bold uppercase text-[10px] tracking-widest hover:bg-white/5 transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -985,7 +985,7 @@ export default function EmpirePage() {
                                         handleClone();
                                         setIsCloneModalOpen(false);
                                     }}
-                                    className="flex-1 h-16 rounded-2xl bg-primary text-black font-black uppercase text-[10px] tracking-widest shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                    className="flex-1 h-16 rounded-2xl bg-primary text-black font-bold uppercase text-[10px] tracking-widest shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all"
                                 >
                                     Execute Expansion
                                 </button>

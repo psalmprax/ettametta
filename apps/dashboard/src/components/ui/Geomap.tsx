@@ -214,7 +214,7 @@ export default React.memo(function Geomap({ points = [] }: GeomapProps) {
             />
 
             <div className="absolute bottom-10 left-12 space-y-1">
-                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em]">Neural Propagation</p>
+                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em]">Neural Propagation</p>
                 <p className="text-sm font-bold text-white uppercase">Active Nodes: {points.length}</p>
             </div>
         </div>
