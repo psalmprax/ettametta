@@ -21,10 +21,13 @@ export function useNiches() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
-                const data = await res.json();
+                const json = await res.json();
+                const data = json.data;
                 if (Array.isArray(data)) {
+                    // Extract niche names if data contains objects, or use as is if strings
+                    const nicheNames = data.map(n => typeof n === 'object' ? n.niche : n);
                     // Filter out any empty strings or duplicates
-                    let validNiches = Array.from(new Set(data.filter(n => n && n.trim() !== "")));
+                    let validNiches = Array.from(new Set(nicheNames.filter(n => n && n.trim() !== "")));
                     setNiches(validNiches);
                 }
             }
