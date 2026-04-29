@@ -130,7 +130,7 @@ export default function AnalyticsPage() {
                     successRate: summary.success_rate,
                     engineLoad: summary.engine_load,
                     velocity: summary.velocity,
-                    retentionData: retentionData.length > 0 ? retentionData.map((v, i) => ({ time: i, value: v })) : []
+                    retentionData: retentionData.length > 0 ? retentionData.map((v: number, i: number) => ({ time: i, value: v })) : []
                 });
             }
 
