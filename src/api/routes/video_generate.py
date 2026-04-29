@@ -357,11 +357,11 @@ async def retry_failed_job(
             db=db,
         )
 
-        return {
+        return success_response(data={
             "message": "Job retry initiated",
             "original_job_id": job_id,
             "new_task_id": task.id,
-        }
+        })
 
     except HTTPException:
         raise
@@ -388,7 +388,7 @@ async def get_video_preview(
         if not job:
             raise HTTPException(status_code=404, detail="Video job not found")
 
-        return {
+        return success_response(data={
             "job_id": job.id,
             "status": job.status,
             "progress": job.progress,
@@ -396,7 +396,7 @@ async def get_video_preview(
             "title": job.title,
             "created_at": job.created_at,
             "updated_at": job.updated_at,
-        }
+        })
     except HTTPException:
         raise
     except Exception as e:
@@ -425,7 +425,7 @@ async def list_video_jobs(
             user_id=current_user.id, limit=limit, offset=offset
         )
 
-        return {
+        return success_response(data={
             "jobs": [
                 {
                     "job_id": job.id,
@@ -444,6 +444,6 @@ async def list_video_jobs(
                 "total": total_jobs,
                 "pages": (total_jobs + limit - 1) // limit,
             },
-        }
+        })
     except Exception as e:
         return handle_exception(e)

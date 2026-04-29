@@ -1,5 +1,7 @@
 import logging
 from fastapi import APIRouter, HTTPException, Depends
+
+logger = logging.getLogger(__name__)
 from pydantic import BaseModel
 from typing import Any
 from src.services.script_generator.service import base_script_generator
@@ -21,6 +23,8 @@ class ScriptRequest(BaseModel):
     niche: str = "AI Technology"
     duration_seconds: int = 60
     style: str = "story"
+    engine: str = "cloud"
+    script: list[dict] | None = None
 
 
 class HookRequest(BaseModel):
@@ -145,19 +149,29 @@ async def launch_automated_video(
     End-to-end automated video generation (Script -> Video).
     """
     try:
-        # 1. Generate Script
-        script = await base_script_generator.generate_script(
-            topic=request.topic,
-            niche=request.niche,
-            duration_sec=request.duration_seconds,
-            style=request.style,
-        )
+        from src.services.nexus_engine.auto_creator import base_auto_creator
+
+        # 1. Use existing script or generate new one
+        if request.script:
+            script = request.script
+            logger.info("Using provided script override for cinema launch")
+        else:
+            script = await base_script_generator.generate_script(
+                topic=request.topic,
+                niche=request.niche,
+                duration_sec=request.duration_seconds,
+                style=request.style,
+            )
         
         # 2. Trigger Auto-Creator (Standard 4.2: Automated Pipeline)
-        from src.services.nexus_engine.auto_creator import base_auto_creator
         job_id = await base_auto_creator.launch_automated_video(
-            script=script,
-            user_id=current_user.id
+            user_id=current_user.id,
+            topic=request.topic,
+            niche=request.niche,
+            style=request.style,
+            duration=request.duration_seconds,
+            engine=request.engine,
+            script=script
         )
         
         return success_response(data={
@@ -167,7 +181,7 @@ async def launch_automated_video(
         })
     except Exception as e:
         logging.error(f"Cinema launch failed: {e}")
-        raise HTTPException(status_code=503, detail="Cinema engine currently offline")
+        raise HTTPException(status_code=503, detail=f"Cinema engine currently offline: {str(e)}")
 
 
 class EmpireCloneRequest(BaseModel):

@@ -39,6 +39,8 @@ import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { Canvas } from "@react-three/fiber";
 import { Float, Sphere, MeshDistortMaterial } from "@react-three/drei";
+import { PlatformLinkModal } from "@/components/ui/PlatformLinkModal";
+import { ManualBroadcastModal } from "@/components/ui/ManualBroadcastModal";
 
 function PublishingBackground() {
     return (
@@ -83,6 +85,33 @@ export default function PublishingPage() {
     const [jobs, setJobs] = useState<any[]>([]);
     const [isDeploying, setIsDeploying] = useState(false);
     const [telemetry, setTelemetry] = useState<any>(null);
+    const [accountToUnlink, setAccountToUnlink] = useState<any | null>(null);
+
+    const handleUnlink = async (id: string) => {
+        setIsDeploying(true);
+        await withRealFallback(
+            async () => {
+                const token = getAuthToken();
+                if (!token) return;
+                return fetch(`${API_BASE}/publish/account/${id}`, {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setAccounts(prev => prev.filter(acc => acc.id !== id));
+                    toast.success("Node Unlinked", { description: "Account removed from distribution network." });
+                },
+                onFallback: (err: any) => {
+                    toast.error("Unlink Failed", { description: err.message });
+                }
+            }
+        );
+        setIsDeploying(false);
+        setAccountToUnlink(null);
+    };
 
     const fetchData = async () => {
         const token = getAuthToken();
@@ -109,6 +138,18 @@ export default function PublishingPage() {
     useEffect(() => {
         fetchData();
         const interval = setInterval(fetchData, 10000);
+
+        // Check for success redirect
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("success") === "true") {
+            toast.success("Node Connected", { 
+                description: `Successfully linked ${params.get("platform")} account.` 
+            });
+            // Clear params
+            window.history.replaceState({}, '', window.location.pathname);
+            fetchData();
+        }
+
         return () => clearInterval(interval);
     }, []);
 
@@ -194,7 +235,15 @@ export default function PublishingPage() {
                                     </div>
                                     <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                                         <span className="font-label-caps text-[8px] text-zinc-600">ID: {acc.id}</span>
-                                        <Activity className="h-3 w-3 text-blue-500 animate-pulse" />
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={() => setAccountToUnlink(acc)}
+                                                className="p-2 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                            <Activity className="h-3 w-3 text-blue-500 animate-pulse" />
+                                        </div>
                                     </div>
                                 </motion.div>
                             );
@@ -274,6 +323,30 @@ export default function PublishingPage() {
                     </div>
                 </div>
             </div>
+
+            {/* MODALS */}
+            <PlatformLinkModal 
+                isOpen={isPlatformModalOpen} 
+                onClose={() => setIsPlatformModalOpen(false)} 
+            />
+
+            <ManualBroadcastModal 
+                isOpen={isDeployModalOpen}
+                onClose={() => setIsDeployModalOpen(false)}
+                accounts={accounts}
+                onSuccess={fetchData}
+            />
+
+            <ConfirmModal 
+                isOpen={!!accountToUnlink}
+                onClose={() => setAccountToUnlink(null)}
+                onConfirm={() => accountToUnlink && handleUnlink(accountToUnlink.id)}
+                title="Unlink Node"
+                description={`Are you sure you want to decouple the @${accountToUnlink?.username} node from the distribution engine?`}
+                confirmText="Execute Decouple"
+                cancelText="Maintain Connection"
+                isLoading={isDeploying}
+            />
         </DashboardLayout>
     );
 }
