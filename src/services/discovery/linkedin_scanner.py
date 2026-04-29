@@ -52,8 +52,8 @@ class LinkedInScanner:
         seen = set()
         unique = []
         for c in candidates:
-            if c.source_url not in seen:
-                seen.add(c.source_url)
+            if c.source_uri not in seen:
+                seen.add(c.source_uri)
                 unique.append(c)
         
         logger.info(f"[LinkedInScanner] Found {len(unique)} posts")
@@ -254,7 +254,7 @@ class LinkedInScanner:
             return ContentCandidate(
                 id=f"li_{post_id}",
                 platform="LinkedIn",
-                source_url=url,
+                source_uri=url,
                 creator_name=author,
                 title=title[:100] if title else "LinkedIn Post",
                 view_count=views,
@@ -262,7 +262,7 @@ class LinkedInScanner:
                 comment_count=comments,
                 share_count=shares,
                 engagement_score=engagement_score,
-                thumbnail_url=thumbnail,
+                thumbnail_uri=thumbnail,
                 metadata={}
             )
             

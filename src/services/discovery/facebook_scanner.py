@@ -53,8 +53,8 @@ class FacebookScanner:
         seen = set()
         unique_candidates = []
         for c in candidates:
-            if c.source_url not in seen:
-                seen.add(c.source_url)
+            if c.source_uri not in seen:
+                seen.add(c.source_uri)
                 unique_candidates.append(c)
         
         logger.info(f"[FacebookScanner] Found {len(unique_candidates)} videos")
@@ -197,7 +197,7 @@ class FacebookScanner:
                         candidates.append(ContentCandidate(
                             id=f"fb_{hash(url) % 1000000}",
                             platform="Facebook Watch",
-                            source_url=url,
+                            source_uri=url,
                             creator_name=author,
                             title=title[:100],
                             view_count=views,
@@ -245,7 +245,7 @@ class FacebookScanner:
                         candidates.append(ContentCandidate(
                             id=f"fb_{hash(url) % 1000000}",
                             platform="Facebook Watch",
-                            source_url=url,
+                            source_uri=url,
                             creator_name=item.get("author", {}).get("name", "Unknown") if isinstance(item.get("author"), dict) else "Unknown",
                             title=title[:100] if title else description,
                             view_count=views,
@@ -253,7 +253,7 @@ class FacebookScanner:
                             comment_count=0,
                             share_count=0,
                             engagement_score=0.05,
-                            thumbnail_url=item.get("thumbnailUrl"),
+                            thumbnail_uri=item.get("thumbnailUrl"),
                             metadata={}
                         ))
                         

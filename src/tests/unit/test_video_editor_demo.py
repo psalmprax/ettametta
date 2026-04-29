@@ -40,7 +40,7 @@ async def demonstrate_video_editor_capabilities():
 
         print("✅ URL parsing capabilities:")
         for url in test_urls:
-            platform, video_id = scanner._parse_video_url(url)
+            platform, video_id = scanner._parse_video_uri(url)
             print(f"   • {url} → {platform}:{video_id}")
 
         # Demonstrate viral score calculation

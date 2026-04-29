@@ -62,8 +62,8 @@ class InstagramScanner:
         seen = set()
         unique_candidates = []
         for c in candidates:
-            if c.source_url not in seen:
-                seen.add(c.source_url)
+            if c.source_uri not in seen:
+                seen.add(c.source_uri)
                 unique_candidates.append(c)
         
         logger.info(f"[InstagramScanner] Found {len(unique_candidates)} unique Reels")
@@ -194,7 +194,7 @@ class InstagramScanner:
                 
                 # Get thumbnail
                 display_url = node.get("display_url", "")
-                thumbnail_url = node.get("thumbnail_src", display_url)
+                thumbnail_uri = node.get("thumbnail_src", display_url)
                 
                 # Get owner info
                 owner = node.get("owner", {})
@@ -213,7 +213,7 @@ class InstagramScanner:
                 candidate = ContentCandidate(
                     id=f"ig_{shortcode}",
                     platform="Instagram Reels",
-                    source_url=f"https://www.instagram.com/reel/{shortcode}/",
+                    source_uri=f"https://www.instagram.com/reel/{shortcode}/",
                     creator_name=username,
                     title=title,
                     view_count=views_estimate,
@@ -221,7 +221,7 @@ class InstagramScanner:
                     comment_count=comments,
                     share_count=0,
                     engagement_score=engagement_score,
-                    thumbnail_url=thumbnail_url,
+                    thumbnail_uri=thumbnail_uri,
                     metadata={
                         "is_portrait": is_portrait,
                         "dimensions": f"{width}x{height}"

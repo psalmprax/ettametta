@@ -54,8 +54,8 @@ class BilibiliScanner:
         seen = set()
         unique = []
         for c in candidates:
-            if c.source_url not in seen:
-                seen.add(c.source_url)
+            if c.source_uri not in seen:
+                seen.add(c.source_uri)
                 unique.append(c)
         
         logger.info(f"[BilibiliScanner] Found {len(unique)} videos")
@@ -185,7 +185,7 @@ class BilibiliScanner:
             return ContentCandidate(
                 id=f"bilibili_{bvid or aid}",
                 platform="Bilibili",
-                source_url=url,
+                source_uri=url,
                 creator_name=author,
                 title=title or "Bilibili Video",
                 view_count=views,
@@ -193,7 +193,7 @@ class BilibiliScanner:
                 comment_count=reply,
                 share_count=share,
                 engagement_score=engagement_score,
-                thumbnail_url=thumbnail,
+                thumbnail_uri=thumbnail,
                 duration_seconds=duration_seconds,
                 metadata={
                     "likes": like,
@@ -263,7 +263,7 @@ class BilibiliScanner:
             return ContentCandidate(
                 id=f"bilibili_{bvid or aid}",
                 platform="Bilibili",
-                source_url=url,
+                source_uri=url,
                 creator_name=author,
                 title=title or "Bilibili Video",
                 view_count=views,
@@ -271,7 +271,7 @@ class BilibiliScanner:
                 comment_count=0,
                 share_count=0,
                 engagement_score=engagement_score,
-                thumbnail_url=thumbnail,
+                thumbnail_uri=thumbnail,
                 duration_seconds=duration_seconds,
                 metadata={"description": description}
             )

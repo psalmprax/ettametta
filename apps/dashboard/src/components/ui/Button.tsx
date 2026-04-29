@@ -35,11 +35,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const variants = {
-      primary: `bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 shadow-md hover:shadow-lg border border-indigo-600/20 hover:border-indigo-400/30`,
-      secondary: "bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm hover:shadow-md",
-      outline: "bg-transparent text-slate-700 border border-slate-300 hover:bg-slate-50 hover:border-slate-400 shadow-sm",
-      ghost: "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent",
-      danger: "bg-gradient-to-r from-rose-500 to-rose-600 text-white hover:from-rose-600 hover:to-rose-700 shadow-md hover:shadow-lg border border-rose-500/20",
+      primary: `bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-900/20 border border-white/10`,
+      secondary: "bg-slate-900 text-white border border-white/10 hover:bg-slate-800 hover:border-white/20 shadow-sm",
+      outline: "bg-transparent text-white border border-white/20 hover:bg-white/5 shadow-sm",
+      ghost: "bg-transparent text-slate-400 hover:bg-white/5 hover:text-white border-transparent",
+      danger: "bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-900/20 border border-white/10",
     };
 
     const sizes = {
@@ -67,11 +67,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading ? (
           <div className="w-5 h-5 border-2 border-white/50 border-t-transparent rounded-full animate-spin" />
         ) : icon && iconPosition === "left" ? (
-          <span className="flex-shrink-0">{icon}</span>
+          <span className="shrink-0">{icon}</span>
         ) : null}
         <span className="whitespace-nowrap">{children}</span>
         {!isLoading && icon && iconPosition === "right" ? (
-          <span className="flex-shrink-0">{icon}</span>
+          <span className="shrink-0">{icon}</span>
         ) : null}
       </button>
     );

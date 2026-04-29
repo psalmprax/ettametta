@@ -44,8 +44,8 @@ class InstagramPublisher(SocialPublisher):
             logger.error(f"[InstagramPublisher] No authentication for user {user_id}")
             return None
 
-        video_url = await self._resolve_video_url(video_path)
-        if not video_url:
+        video_uri = await self._resolve_video_uri(video_path)
+        if not video_uri:
             return None
 
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -53,7 +53,7 @@ class InstagramPublisher(SocialPublisher):
             container_url = "https://graph.facebook.com/v18.0/me/media"
             container_data = {
                 "media_type": "VIDEO",
-                "video_url": video_url,
+                "video_uri": video_uri,
                 "caption": self._build_caption(metadata),
                 "access_token": access_token or headers.get("Cookie"),
             }
@@ -116,7 +116,7 @@ class InstagramPublisher(SocialPublisher):
             logger.error(f"[InstagramPublisher] Publish failed: {error_msg}")
             return None
 
-    async def _resolve_video_url(self, video_path: str) -> str | None:
+    async def _resolve_video_uri(self, video_path: str) -> str | None:
         """Resolve video path to URL - return if already URL, otherwise handle local file"""
         import os
 

@@ -37,11 +37,11 @@ class ViralLoopController:
                 # Top candidate is #1 after AI ranking
                 winner = candidates[0]
                 self.logger.info(
-                    f"[ViralLoop] Winner identified: {winner.title} ({winner.source_url})"
+                    f"[ViralLoop] Winner identified: {winner.title} ({winner.source_uri})"
                 )
 
                 # 2. Check if already processed
-                stmt = select(VideoJobDB).where(VideoJobDB.source_url == winner.source_url)
+                stmt = select(VideoJobDB).where(VideoJobDB.source_uri == winner.source_uri)
                 result = await db.execute(stmt)
                 existing_job = result.scalar_one_or_none()
 
@@ -52,7 +52,7 @@ class ViralLoopController:
                     return
 
                 # 3. Dispatch to Video Engine
-                task = download_and_process_task.delay(winner.source_url, niche, platform)
+                task = download_and_process_task.delay(winner.source_uri, niche, platform)
 
                 # 4. Record the job entry
                 from src.api.utils.user_models import UserDB, UserRole
@@ -65,7 +65,7 @@ class ViralLoopController:
                     title=f"AUTO: {winner.title[:40]}...",
                     status=SystemJobStatus.QUEUED,
                     progress=0,
-                    source_url=winner.source_url,
+                    source_uri=winner.source_uri,
                     user_id=admin.id if admin else 1,  # Fallback to user 1
                 )
                 db.add(new_job)

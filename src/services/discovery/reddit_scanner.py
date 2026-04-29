@@ -44,8 +44,8 @@ class RedditScanner:
                             candidate = ContentCandidate(
                                 id=f"reddit_{post_data.get('id')}",
                                 platform="Reddit",
-                                thumbnail_url=post_data.get('thumbnail') if post_data.get('thumbnail', '').startswith('http') else None,
-                                source_url=post_data.get("url"),
+                                thumbnail_uri=post_data.get('thumbnail') if post_data.get('thumbnail', '').startswith('http') else None,
+                                source_uri=post_data.get("url"),
                                 creator_name=post_data.get("author"),
                                 title=post_data.get("title"),
                                 view_count=post_data.get("ups", 0) * 10, # Upvotes as view proxy

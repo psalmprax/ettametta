@@ -34,7 +34,7 @@ test.describe('Discovery to Video Pipeline', () => {
 
         // 6. Should be redirected to /creation with the URL pre-filled
         await page.waitForURL(/\/creation/);
-        const urlInput = page.locator('input[name="source_url"]');
+        const urlInput = page.locator('input[name="source_uri"]');
         await expect(urlInput).not.toHaveValue('');
         
         // 7. Verify we can select a platform and submit

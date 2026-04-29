@@ -18,7 +18,7 @@ set -e
 
 # Configuration - Non-GPU server (dashboard)
 NON_GPU_HOST="root@149.104.110.122"
-NON_GPU_PORT="7202"
+NON_GPU_PORT="7200"
 
 # Configuration - GPU server (for video processing if needed)
 GPU_HOST="root@175.155.64.174"
@@ -26,16 +26,16 @@ GPU_PORT="19461"
 
 SSH_KEY="/home/psalmprax/Music/id_rsa"
 SSH_OPTS="-o StrictHostKeyChecking=no -o PasswordAuthentication=no -o UserKnownHostsFile=/dev/null"
-E2E_DIR="/home/psalmprax/ALL_PROJECTS/ettametta/e2e"
+E2E_DIR="/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e"
 REMOTE_E2E_DIR="/tmp/viral-forge-e2e"
-REMOTE_BASE_URL="${REMOTE_BASE_URL:-http://149.104.110.122:7202}"
+REMOTE_BASE_URL="${REMOTE_BASE_URL:-http://149.104.110.122:7200}"
 
 # Parse arguments
 SCENARIO="all"
 BROWSER="chromium"
 HEADED=false
 DEBUG=false
-PORT="7202"
+PORT="7200"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -79,18 +79,17 @@ echo "Scenario: $SCENARIO"
 echo "Browser: $BROWSER"
 echo "=========================================="
 
-# Map scenarios to test files
+# Map scenarios to test files (Updated for consolidated structure)
 declare -A SCENARIO_FILES=(
-    ["1"]="discovery/discovery.spec.ts"
-    ["2"]="creation/video_generation.spec.ts"
-    ["3"]="enhancement/video_enhancement.spec.ts"
-    ["4"]="nexus/nexus_composition.spec.ts"
-    ["5"]="publishing/publishing.spec.ts"
-    ["6"]="monetization/monetization.spec.ts"
-    ["7"]="analytics/analytics.spec.ts"
-    ["8"]="billing/billing.spec.ts"
-    ["9"]="user/user_management.spec.ts"
-    ["10"]="admin/admin_operations.spec.ts"
+    ["1"]="auth_flow.spec.ts"
+    ["2"]="discovery_flow.spec.ts"
+    ["3"]="payment_flow.spec.ts"
+    ["4"]="publishing_flow.spec.ts"
+    ["5"]="visual_regression.spec.ts"
+    ["6"]="accessibility.spec.ts"
+    ["7"]="stack_switching.spec.ts"
+    ["8"]="agent_skills_e2e.spec.ts"
+    ["9"]="real_first_hardening.spec.ts"
 )
 
 # Build test file list
@@ -118,7 +117,7 @@ rsync -az --delete -e "ssh $SSH_OPTS -i $SSH_KEY" \
 # Install dependencies on remote
 echo ""
 echo "Step 2: Installing dependencies on remote..."
-ssh_cmd "cd $REMOTE_E2E_DIR && npm install"
+ssh_cmd "cd $REMOTE_E2E_DIR && npm install && npx playwright install --with-deps"
 
 # Run tests
 echo ""

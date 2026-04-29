@@ -104,5 +104,5 @@ export interface Persona {
     id?: string;
     _id?: string;
     name: string;
-    reference_image_url: string;
+    reference_image_uri: string;
 }

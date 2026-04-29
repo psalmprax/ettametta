@@ -35,8 +35,8 @@ func getUserAgents() []string {
 type ScanResult struct {
 	Niche        string  `json:"niche"`
 	Velocity     float64 `json:"velocity"`
-	URL          string  `json:"source_url"`
-	ThumbnailURL string  `json:"thumbnail_url"`
+	URL          string  `json:"source_uri"`
+	ThumbnailURI string  `json:"thumbnail_uri"`
 	Title        string  `json:"title"`
 	ViewCount    int64   `json:"view_count"`
 	LikeCount    int64   `json:"like_count"`
@@ -127,7 +127,7 @@ func (s *Scanner) scanYouTube(niche string) []ScanResult {
 			Niche:        niche,
 			Velocity:     calculateVelocity(viewCount, likeCount, commentCount, publishedAt),
 			URL:          fmt.Sprintf("https://www.youtube.com/watch?v=%s", item.Id.VideoId),
-			ThumbnailURL: item.Snippet.Thumbnails.Default.Url,
+			ThumbnailURI: item.Snippet.Thumbnails.Default.Url,
 			Title:        item.Snippet.Title,
 			ViewCount:    viewCount,
 			LikeCount:    likeCount,

@@ -12,7 +12,7 @@ class RenderTool:
     def __init__(self):
         self.api_url = f"{settings.API_URL}/remotion/render"
 
-    def run(self, title: str, subtitle: str, video_url: str = "", audio_url: str = "") -> dict[str, Any]:
+    def run(self, title: str, subtitle: str, video_uri: str = "", audio_uri: str = "") -> dict[str, Any]:
         """
         Triggers a headless Remotion render with the specified props.
         """
@@ -20,8 +20,8 @@ class RenderTool:
             payload = {
                 "title": title,
                 "subtitle": subtitle,
-                "video_url": video_url,
-                "audio_url": audio_url
+                "video_uri": video_uri,
+                "audio_uri": audio_uri
             }
             response = requests.post(self.api_url, json=payload, timeout=30)
             

@@ -46,7 +46,7 @@ class RemotionService:
                 return val
 
             # Top level hardening
-            for key in ["video_url", "audio_url", "trademark_url"]:
+            for key in ["video_uri", "audio_uri", "trademark_url"]:
                 if key in hardened_props and hardened_props[key]:
                     hardened_props[key] = harden_path(hardened_props[key])
 

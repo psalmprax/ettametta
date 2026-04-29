@@ -22,7 +22,7 @@ class DigitalProductStrategy(BaseMonetizationStrategy):
                 return [{
                     "id": str(product.id),
                     "name": product.name,
-                    "url": product.purchase_url,
+                    "url": product.purchase_uri,
                     "cta_text": product.cta_text or "Download Now",
                     "price": str(product.price),
                     "source": "digital_product"

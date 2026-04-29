@@ -150,7 +150,7 @@ export default function NexusPage() {
                     }
                 ),
                 withRealFallback<
-                    Array<{ id?: string; _id?: string; name: string; reference_image_url: string }>
+                    Array<{ id?: string; _id?: string; name: string; reference_image_uri: string }>
                 >(
                     () => fetch(`${API_BASE}/persona/list`, { headers }),
                     {
@@ -335,7 +335,7 @@ export default function NexusPage() {
                 // Since our current UI only has text fields, we'll use query params
                 const params = new URLSearchParams();
                 params.append("name", personaName);
-                if (personaImageUrl) params.append("reference_image_url", personaImageUrl);
+                if (personaImageUrl) params.append("reference_image_uri", personaImageUrl);
 
                 return fetch(`${API_BASE}/persona/create?${params.toString()}`, {
                     method: "POST",
@@ -345,9 +345,9 @@ export default function NexusPage() {
                 });
             },
             {
-                fallback: { name: personaName, reference_image_url: personaImageUrl } as Persona,
+                fallback: { name: personaName, reference_image_uri: personaImageUrl } as Persona,
                 onSuccess: (data) => {
-                    const newPersona = { id: data.id || Date.now().toString(), name: personaName, reference_image_url: personaImageUrl };
+                    const newPersona = { id: data.id || Date.now().toString(), name: personaName, reference_image_uri: personaImageUrl };
                     setCreatedPersona(newPersona);
                     setPersonas(prev => [newPersona, ...prev]);
                     toast.success("Persona Created", {
@@ -427,7 +427,7 @@ export default function NexusPage() {
                 fallback: null,
                 onSuccess: (data: any) => {
                     toast.success("Video Generated", {
-                        description: data.video_url || "Persona video has been generated successfully."
+                        description: data.video_uri || "Persona video has been generated successfully."
                     });
                 },
                 onFallback: (err: any) => {
@@ -781,7 +781,7 @@ export default function NexusPage() {
                                                 <div className="h-8 w-8 rounded-lg bg-zinc-800 border border-white/5 overflow-hidden">
                                                     <div 
                                                         className="h-full w-full bg-cover bg-center" 
-                                                        style={{ backgroundImage: `url(${p.reference_image_url})` }}
+                                                        style={{ backgroundImage: `url(${p.reference_image_uri})` }}
                                                         role="img"
                                                         aria-label={p.name}
                                                     />

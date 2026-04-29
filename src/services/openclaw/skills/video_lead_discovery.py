@@ -92,20 +92,20 @@ class VideoLeadSkill(OpenClawBaseSkill):
 
     async def _analyze_video(self, params: dict[str, Any]) -> dict[str, Any]:
         """Analyze a specific video's performance"""
-        video_url = params.get("video_url", "")
+        video_uri = params.get("video_uri", "")
         niche = params.get("niche", "")
 
-        if not video_url:
-            return {"success": False, "error": "video_url parameter required"}
+        if not video_uri:
+            return {"success": False, "error": "video_uri parameter required"}
 
         analysis = await video_lead_scanner.evaluate_video_performance(
-            video_url=video_url, niche=niche
+            video_uri=video_uri, niche=niche
         )
 
         return {
             "success": True,
             "action": "analyze_video",
-            "video_url": video_url,
+            "video_uri": video_uri,
             "niche": niche,
             "analysis": analysis,
         }

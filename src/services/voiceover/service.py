@@ -44,12 +44,12 @@ class VoiceoverService:
                     payload = {"text": text, "voice": voice_id or "default"}
                     response = await client.post(f"{self.fish_endpoint}/generate", json=payload, timeout=60.0)
                     if response.status_code == 200:
-                        # Assuming the service returns the audio bytes or we need to fetch the audio_url
+                        # Assuming the service returns the audio bytes or we need to fetch the audio_uri
                         data = response.json()
-                        if "audio_url" in data:
+                        if "audio_uri" in data:
                             # If it returns a URL, we might need to download it or it might be served via volumes
                             # For simplicity in this iteration, let's assume it returns bytes or we fetch it
-                            audio_resp = await client.get(f"{self.fish_endpoint}{data['audio_url']}")
+                            audio_resp = await client.get(f"{self.fish_endpoint}{data['audio_uri']}")
                             if audio_resp.status_code == 200:
                                 with open(file_path, "wb") as f:
                                     f.write(audio_resp.content)

@@ -85,7 +85,7 @@ class MotionGraphicsService:
             props = {
                 "title": title,
                 "subtitle": subtitle or "",
-                "video_url": video_path,  # We use the existing video as background
+                "video_uri": video_path,  # We use the existing video as background
             }
 
             output_name = f"mg_{os.path.basename(video_path)}"

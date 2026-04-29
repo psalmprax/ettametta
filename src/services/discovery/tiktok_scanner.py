@@ -100,7 +100,7 @@ class TikTokScanner:
                         ContentCandidate(
                             id=f"tt_{video_id}",
                             platform="TikTok",
-                            source_url=f"https://www.tiktok.com/@{author_data.get('uniqueId', 'user')}/video/{video_id}",
+                            source_uri=f"https://www.tiktok.com/@{author_data.get('uniqueId', 'user')}/video/{video_id}",
                             creator_name=author_data.get("nickname", "Unknown Creator"),
                             title=item.get("desc", f"Viral {niche} Insight"),
                             description=item.get("desc", ""),
@@ -113,7 +113,7 @@ class TikTokScanner:
                             duration_seconds=duration_seconds,
                             discovery_date=datetime.now(),
                             tags=item.get("challenges", []),
-                            thumbnail_url=item.get("video", {}).get("cover"),
+                            thumbnail_uri=item.get("video", {}).get("cover"),
                             metadata={
                                 "cover": item.get("video", {}).get("cover"),
                                 "duration": duration_seconds,

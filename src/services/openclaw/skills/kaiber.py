@@ -37,7 +37,7 @@ class KaiberSkill(OpenClawBaseSkill):
             
         res = await self.generate(p, aspect_ratio or kwargs.get("aspect_ratio", "16:9"))
         if res.get("status") == "success":
-            return f"🎬 **Kaiber Video Generated!**\nURL: {res['video_url']}"
+            return f"🎬 **Kaiber Video Generated!**\nURL: {res['video_uri']}"
         return f"⚠️ Kaiber failed: {res.get('error')}"
 
     async def initialize(self):
@@ -67,7 +67,7 @@ class KaiberSkill(OpenClawBaseSkill):
     async def generate(self, prompt: str, aspect_ratio: str = "16:9") -> dict[str, Any]:
         """
         Generate video from prompt using Kaiber
-        Returns: { status: success/failed, video_url: str, error: str }
+        Returns: { status: success/failed, video_uri: str, error: str }
         """
         if not PLAYWRIGHT_AVAILABLE:
             return {
@@ -116,19 +116,19 @@ class KaiberSkill(OpenClawBaseSkill):
             if not video_element:
                 video_element = await self.page.query_selector("[class*='video']")
 
-            video_url = None
+            video_uri = None
             if video_element:
-                video_url = await video_element.get_attribute("src")
+                video_uri = await video_element.get_attribute("src")
 
             logger.info(
-                f"[Kaiber] Video generated: {video_url[:80] if video_url else 'N/A'}..."
+                f"[Kaiber] Video generated: {video_uri[:80] if video_uri else 'N/A'}..."
             )
 
             await self.cleanup()
 
             return {
-                "status": "success" if video_url else "processing",
-                "video_url": video_url or "",
+                "status": "success" if video_uri else "processing",
+                "video_uri": video_uri or "",
                 "engine": "kaiber",
                 "prompt": prompt,
             }

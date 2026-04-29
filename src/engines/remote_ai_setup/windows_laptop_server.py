@@ -135,7 +135,7 @@ async def generate_animation(request: VideoRequest):
         return {
             "job_id": f"laptop_{hash(request.prompt) % 10000}",
             "status": "completed",
-            "video_url": result.get("video_url"),
+            "video_uri": result.get("video_uri"),
             "model": "animatediff_laptop"
         }
     except Exception as e:
@@ -189,7 +189,7 @@ def generate_animatediff_laptop(prompt, num_frames=16, height=512, width=512):
 
     export_to_video(result.frames[0], output_path, fps=8)  # Lower FPS for smaller files
 
-    return {"video_url": f"http://localhost:8122/download/{os.path.basename(output_path)}"}
+    return {"video_uri": f"http://localhost:8122/download/{os.path.basename(output_path)}"}
 
 @app.get("/download/{filename}")
 async def download_file(filename: str):

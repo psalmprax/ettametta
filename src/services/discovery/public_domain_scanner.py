@@ -57,7 +57,7 @@ class PublicDomainScanner:
                                     ContentCandidate(
                                         id=f"pexels_{v['id']}",
                                         platform="Pexels",
-                                        source_url=v["url"],
+                                        source_uri=v["url"],
                                         creator_name=v["user"]["name"],
                                         title=f"Stock: {niche}",
                                         view_count=0,
@@ -93,7 +93,7 @@ class PublicDomainScanner:
                                 ContentCandidate(
                                     id=f"archive_{doc['identifier']}",
                                     platform="Archive.org",
-                                    source_url=f"https://archive.org/details/{doc['identifier']}",
+                                    source_uri=f"https://archive.org/details/{doc['identifier']}",
                                     creator_name=", ".join(doc.get("creator", ["Public Domain"])) 
                                            if isinstance(doc.get("creator"), list) 
                                            else doc.get("creator", "Public Domain"),

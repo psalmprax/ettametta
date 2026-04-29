@@ -89,8 +89,8 @@ class BrandingSkill(OpenClawBaseSkill):
         )
 
         logo_url = None
-        if result.get("status") == "success" and result.get("image_urls"):
-            logo_url = result["image_urls"][0]
+        if result.get("status") == "success" and result.get("image_uris"):
+            logo_url = result["image_uris"][0]
 
         return {
             "brand_name": brand_name,

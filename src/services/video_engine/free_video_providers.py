@@ -402,7 +402,7 @@ class FreeVideoProviderService:
         duration: int = 5,
         aspect_ratio: str = "9:16",
         style: str | None = None,
-        image_url: str | None = None,
+        image_uri: str | None = None,
     ) -> dict[str, Any] | None:
         """
         Generate video using available free provider.
@@ -426,7 +426,7 @@ class FreeVideoProviderService:
 
                 try:
                     result = await self._generate_with_provider(
-                        provider, prompt, duration, aspect_ratio, style, image_url, api_key
+                        provider, prompt, duration, aspect_ratio, style, image_uri, api_key
                     )
                     if result:
                         result["provider"] = provider
@@ -470,8 +470,8 @@ class FreeVideoProviderService:
             result = await skill.generate(prompt, aspect_ratio=aspect_ratio)
             await skill.cleanup()
 
-            if result and result.get("video_url"):
-                return {"video_url": result["video_url"], "provider": "pixverse-browser"}
+            if result and result.get("video_uri"):
+                return {"video_uri": result["video_uri"], "provider": "pixverse-browser"}
         except Exception as e:
             logger.warning(f"[FreeVideoProvider] Browser fallback failed: {e}")
 
@@ -484,7 +484,7 @@ class FreeVideoProviderService:
         duration: int,
         aspect_ratio: str,
         style: str | None,
-        image_url: str | None,
+        image_uri: str | None,
         api_key: str,
     ) -> dict[str, Any] | None:
         """Generate video with specific provider"""
@@ -498,15 +498,15 @@ class FreeVideoProviderService:
         # Route to provider-specific generator
         if provider == "zsky":
             return await self._generate_zsky(
-                enhanced_prompt, duration, aspect_ratio, image_url, api_key, config
+                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
             )
         elif provider == "kling":
             return await self._generate_kling(
-                enhanced_prompt, duration, aspect_ratio, image_url, api_key, config
+                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
             )
         elif provider == "pixverse":
             return await self._generate_pixverse(
-                enhanced_prompt, duration, aspect_ratio, image_url, api_key, config
+                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
             )
         elif provider in [
             "replicate",
@@ -519,13 +519,13 @@ class FreeVideoProviderService:
                 enhanced_prompt,
                 duration,
                 aspect_ratio,
-                image_url,
+                image_uri,
                 api_key,
                 config,
             )
         elif provider == "stability":
             return await self._generate_stability(
-                enhanced_prompt, duration, aspect_ratio, image_url, api_key, config
+                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
             )
         elif provider == "runway":
             return await self._generate_runway(
@@ -537,11 +537,11 @@ class FreeVideoProviderService:
             )
         elif provider == "haiper":
             return await self._generate_haiper(
-                enhanced_prompt, duration, aspect_ratio, image_url, api_key, config
+                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
             )
         elif provider == "luma":
             return await self._generate_luma(
-                enhanced_prompt, duration, aspect_ratio, image_url, api_key, config
+                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
             )
         elif provider == "kaiber":
             return await self._generate_browser_automation(
@@ -631,7 +631,7 @@ class FreeVideoProviderService:
         prompt: str,
         duration: int,
         aspect_ratio: str,
-        image_url: str | None,
+        image_uri: str | None,
         api_key: str,
         config: dict,
     ) -> dict[str, Any] | None:
@@ -653,8 +653,8 @@ class FreeVideoProviderService:
             "ratio": zsky_ratio,
         }
 
-        if image_url and config.get("supports_image2video"):
-            payload["image_url"] = image_url
+        if image_uri and config.get("supports_image2video"):
+            payload["image_uri"] = image_uri
 
         try:
             async with httpx.AsyncClient(timeout=60) as client:
@@ -673,9 +673,9 @@ class FreeVideoProviderService:
                 data = response.json()
 
                 # Check for immediate result or async job
-                if "video_url" in data:
+                if "video_uri" in data:
                     return {
-                        "video_url": data["video_url"],
+                        "video_uri": data["video_uri"],
                         "metadata": {"model": "zsky-wan"},
                     }
                 elif "task_id" in data:
@@ -717,7 +717,7 @@ class FreeVideoProviderService:
 
                     if status == "completed" or status == "succeeded":
                         return {
-                            "video_url": data.get("video_url"),
+                            "video_uri": data.get("video_uri"),
                             "metadata": {"model": "zsky-wan"},
                         }
                     elif status in ("failed", "cancelled"):
@@ -736,7 +736,7 @@ class FreeVideoProviderService:
         prompt: str,
         duration: int,
         aspect_ratio: str,
-        image_url: str | None,
+        image_uri: str | None,
         api_key: str,
         config: dict,
     ) -> dict[str, Any] | None:
@@ -754,8 +754,8 @@ class FreeVideoProviderService:
             "duration": min(duration, config["max_duration"]),
         }
 
-        if image_url and config.get("supports_image2video"):
-            payload["image_url"] = image_url
+        if image_uri and config.get("supports_image2video"):
+            payload["image_uri"] = image_uri
 
         try:
             async with httpx.AsyncClient(timeout=60) as client:
@@ -773,9 +773,9 @@ class FreeVideoProviderService:
 
                 data = response.json()
 
-                if "video_url" in data:
+                if "video_uri" in data:
                     return {
-                        "video_url": data["video_url"],
+                        "video_uri": data["video_uri"],
                         "metadata": {"model": "haiper"},
                     }
                 elif "task_id" in data:
@@ -804,7 +804,7 @@ class FreeVideoProviderService:
         prompt: str,
         duration: int,
         aspect_ratio: str,
-        image_url: str | None,
+        image_uri: str | None,
         api_key: str,
         config: dict,
     ) -> dict[str, Any] | None:
@@ -822,8 +822,8 @@ class FreeVideoProviderService:
             "duration": min(duration, config["max_duration"]),
         }
 
-        if image_url and config.get("supports_image2video"):
-            payload["image_url"] = image_url
+        if image_uri and config.get("supports_image2video"):
+            payload["image_uri"] = image_uri
 
         try:
             async with httpx.AsyncClient(timeout=60) as client:
@@ -841,9 +841,9 @@ class FreeVideoProviderService:
 
                 data = response.json()
 
-                if "video_url" in data:
+                if "video_uri" in data:
                     return {
-                        "video_url": data["video_url"],
+                        "video_uri": data["video_uri"],
                         "metadata": {"model": "luma"},
                     }
                 elif "id" in data:

@@ -109,7 +109,7 @@ function TransformationPageContent() {
                             Authorization: `Bearer ${token}`
                         },
                         body: JSON.stringify({
-                            source_url: url,
+                            source_uri: url,
                             platform: targetPlatform,
                             niche: currentNiche,
                             generate_thumbnail: generateThumbnail,

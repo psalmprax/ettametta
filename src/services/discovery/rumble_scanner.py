@@ -53,8 +53,8 @@ class RumbleScanner:
         seen = set()
         unique = []
         for c in candidates:
-            if c.source_url not in seen:
-                seen.add(c.source_url)
+            if c.source_uri not in seen:
+                seen.add(c.source_uri)
                 unique.append(c)
         
         logger.info(f"[RumbleScanner] Found {len(unique)} videos")
@@ -251,7 +251,7 @@ class RumbleScanner:
             return ContentCandidate(
                 id=f"rumble_{video_id}",
                 platform="Rumble",
-                source_url=url,
+                source_uri=url,
                 creator_name=author,
                 title=title[:100] if title else "Rumble Video",
                 view_count=views,
@@ -259,7 +259,7 @@ class RumbleScanner:
                 comment_count=0,
                 share_count=0,
                 engagement_score=engagement_score,
-                thumbnail_url=thumbnail,
+                thumbnail_uri=thumbnail,
                 duration_seconds=float(duration) if duration else 0.0,
                 published_at=published,
                 metadata={

@@ -36,7 +36,7 @@ class VideoLead:
     share_count: int
     duration_seconds: int  # seconds
     published_at: datetime
-    thumbnail_url: str
+    thumbnail_uri: str
     description: str
     tags: list[str]
     engagement_score: float
@@ -144,14 +144,14 @@ class VideoLeadScanner:
                             platform=c.platform.lower(),
                             title=c.title,
                             creator=c.creator_name or "Unknown",
-                            url=c.source_url,
+                            url=c.source_uri,
                             view_count=c.view_count,
                             like_count=0,
                             comment_count=0,
                             share_count=0,
                             duration_seconds=30,
                             published_at=c.discovery_date,
-                            thumbnail_url="",
+                            thumbnail_uri="",
                             description=c.description,
                             tags=c.tags,
                             engagement_score=c.engagement_score,
@@ -178,20 +178,20 @@ class VideoLeadScanner:
         return filtered_leads[:max_results]
 
     async def evaluate_video_performance(
-        self, video_url: str, niche: str
+        self, video_uri: str, niche: str
     ) -> dict[str, Any]:
         """
         Deep analysis of a specific video's performance and viral potential.
 
         Args:
-            video_url: URL of video to analyze
+            video_uri: URL of video to analyze
             niche: Content niche for context
 
         Returns:
             Detailed performance analysis
         """
         # Extract video ID and platform
-        platform, video_id = self._parse_video_url(video_url)
+        platform, video_id = self._parse_video_uri(video_uri)
 
         # Get basic video data
         video_data = await self._get_video_data(platform, video_id)
@@ -491,14 +491,14 @@ class VideoLeadScanner:
                             platform=c.platform.lower(),
                             title=c.title,
                             creator=c.creator_name or "Unknown",
-                            url=c.source_url,
+                            url=c.source_uri,
                             view_count=c.view_count,
                             like_count=0,
                             comment_count=0,
                             share_count=0,
                             duration_seconds=30,
                             published_at=c.discovery_date,
-                            thumbnail_url="",
+                            thumbnail_uri="",
                             description=c.description,
                             tags=c.tags,
                             engagement_score=c.engagement_score,
@@ -625,11 +625,11 @@ class VideoLeadScanner:
         for i, (scene_key, videos) in enumerate(scene_videos.items()):
             scene_data = scenes[i] if i < len(scenes) else {}
             
-            # Prioritize provided source_url or video_path
-            source_url = scene_data.get("source_url")
+            # Prioritize provided source_uri or video_path
+            source_uri = scene_data.get("source_uri")
             video_path = scene_data.get("video_path")
             
-            if video_path or source_url or videos:
+            if video_path or source_uri or videos:
                 best_video = videos[0] if videos else None
                 
                 segment_duration = scene_data.get("duration") or (
@@ -642,7 +642,7 @@ class VideoLeadScanner:
                         "type": scene_data.get("type", "content"),
                         "video_id": best_video.video_id if best_video else f"custom_{i}",
                         "platform": best_video.platform if best_video else "custom",
-                        "url": source_url or (best_video.url if best_video else None),
+                        "url": source_uri or (best_video.url if best_video else None),
                         "video_path": video_path,
                         "duration": segment_duration,
                         "start_time": total_duration,
@@ -878,7 +878,7 @@ class VideoLeadScanner:
                             share_count=int(views * 0.005),
                             duration_seconds=int(v_dur),
                             published_at=v_date,
-                            thumbnail_url="",
+                            thumbnail_uri="",
                             description=v_desc,
                             tags=[],
                             engagement_score=0.065,
@@ -945,7 +945,7 @@ class VideoLeadScanner:
                 share_count=0,  # YouTube API doesn't provide shares
                 duration_seconds=duration,
                 published_at=self._parse_youtube_date(snippet.get("publishedAt", "")),
-                thumbnail_url=snippet.get("thumbnails", {})
+                thumbnail_uri=snippet.get("thumbnails", {})
                 .get("high", {})
                 .get("url", ""),
                 description=snippet.get("description", ""),
@@ -1061,7 +1061,7 @@ class VideoLeadScanner:
             counts[lead.content_type] = counts.get(lead.content_type, 0) + 1
         return counts
 
-    def _parse_video_url(self, url: str) -> tuple[str, str]:
+    def _parse_video_uri(self, url: str) -> tuple[str, str]:
         """Parse video URL to extract platform and video ID"""
         if "youtube.com" in url or "youtu.be" in url:
             platform = "youtube"

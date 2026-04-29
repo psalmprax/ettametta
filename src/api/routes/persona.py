@@ -18,7 +18,7 @@ router = APIRouter(prefix="/persona", tags=["Persona Engine"])
 class PersonaResponse(BaseModel):
     id: str
     name: str
-    reference_image_url: str | None = None
+    reference_image_uri: str | None = None
     voice_clone_id: str | None = None
 
     class Config:
@@ -34,7 +34,7 @@ class PersonaGenerateRequest(BaseModel):
 @router.post("/create")
 async def create_persona(
     name: str,
-    reference_image_url: str | None = None,
+    reference_image_uri: str | None = None,
     image: UploadFile = File(None),
     audio: UploadFile = File(None),
     current_user=Depends(get_current_user),
@@ -43,12 +43,12 @@ async def create_persona(
     """
     Registers a new Persona for autonomous character generation.
     Files are uploaded to the configured S3-compatible storage.
-    If reference_image_url is provided, it is used directly.
+    If reference_image_uri is provided, it is used directly.
     """
     from src.api.utils.storage import storage_service
     import tempfile
     
-    persona = PersonaDB(name=name, user_id=current_user.id, reference_image_url=reference_image_url)
+    persona = PersonaDB(name=name, user_id=current_user.id, reference_image_uri=reference_image_uri)
 
     # Handle image upload to S3 storage
     if image:
@@ -61,10 +61,10 @@ async def create_persona(
         remote_name = f"personas/{current_user.id}/{uuid.uuid4()}.jpg"
         url = await storage_service.upload_asset(tmp_path, remote_name)
         if url:
-            persona.reference_image_url = url
+            persona.reference_image_uri = url
         else:
             # Fallback: return local path indicator
-            persona.reference_image_url = f"local://{remote_name}"
+            persona.reference_image_uri = f"local://{remote_name}"
 
         # Cleanup temp file
         os.unlink(tmp_path)
@@ -101,12 +101,12 @@ async def generate_persona_video(
 
     try:
         url = await base_persona_service.animate_persona(
-            persona.reference_image_url, 
+            persona.reference_image_uri, 
             request.topic, 
             request.script,
             voice_id=persona.voice_clone_id
         )
-        return success_response(data={"status": "success", "video_url": url})
+        return success_response(data={"status": "success", "video_uri": url})
     except HTTPException:
         raise
     except Exception as e:

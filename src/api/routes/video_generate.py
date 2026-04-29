@@ -16,6 +16,12 @@ from src.api.utils.subscription import (
 )
 from src.services.video_engine.job_service import get_video_job_service, VideoJobService
 from src.services.video_engine.tasks import generate_video_task, generate_story_task
+from src.services.script_generator.service import base_script_generator
+from src.services.decision_engine.hook_validator import base_hook_validator
+from src.services.voiceover.service import base_voiceover_service
+from src.services.stock_media.service import base_stock_media_service
+from src.services.multiplatform.translator import base_global_adapter
+from src.services.nexus_engine.auto_creator import base_auto_creator
 from src.api.utils.limiter import limiter
 from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response, handle_exception
@@ -33,7 +39,7 @@ class GenerationRequest(BaseModel):
     engine: str = "veo3"
     style: str = "Cinematic"
     aspect_ratio: str = "9:16"
-    custom_image_url: str | None = None
+    custom_image_uri: str | None = None
     num_variants: int = 1  # Standard 4.1: Growth Loop Scaling
     variant_strategy: str = "hook_variation"
 
@@ -108,7 +114,7 @@ async def generate_single_video(
                     style=variant.get("suggested_style", body.style),
                     aspect_ratio=body.aspect_ratio,
                     user_id=current_user.id,
-                    custom_image_url=body.custom_image_url,
+                    custom_image_uri=body.custom_image_uri,
                     parent_id=parent_job_id,
                     variant_index=i,
                     request_id=get_request_id(),
@@ -138,7 +144,7 @@ async def generate_single_video(
                     title=f"Variant {i}: {variant.get('variant_name', 'Default')}",
                     status=SystemJobStatus.QUEUED,
                     progress=0,
-                    source_url="Generation Prompt",
+                    source_uri="Generation Prompt",
                     job_metadata={
                         "prompt": variant.get("modified_prompt", body.prompt),
                         "engine": body.engine,
@@ -309,7 +315,7 @@ async def retry_failed_job(
                 style=params.get("style", "Cinematic"),
                 aspect_ratio=params.get("aspect_ratio", "9:16"),
                 user_id=current_user.id,
-                custom_image_url=params.get("custom_image_url"),
+                custom_image_uri=params.get("custom_image_uri"),
                 request_id=get_request_id(),
             )
         elif "Storytelling" in job.title:
@@ -328,7 +334,7 @@ async def retry_failed_job(
             from src.services.video_engine.tasks import download_and_process_task
 
             task = download_and_process_task.delay(
-                source_url=job.source_url,
+                source_uri=job.source_uri,
                 niche=params.get("niche", "general"),
                 platform="YouTube Shorts",
                 preview_only=False,

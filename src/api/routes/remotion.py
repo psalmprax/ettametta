@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class RenderRequest(BaseModel):
     title: str
     subtitle: str
-    video_url: str | None = None
+    video_uri: str | None = None
     composition_id: str = "ViralClip"
 
 
@@ -50,7 +50,7 @@ async def trigger_render(
     props = {
         "title": req.title,
         "subtitle": req.subtitle,
-        "video_url": req.video_url
+        "video_uri": req.video_uri
         or "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     }
 

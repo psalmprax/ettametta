@@ -213,16 +213,16 @@ class SceneBasedVideoOrchestrator:
             for i, segment in enumerate(segments):
                 # Try local first, then download
                 source_path = segment.get("video_path") or segment.get("source_video")
-                video_url = segment.get("url") or segment.get("source_url")
+                video_uri = segment.get("url") or segment.get("source_uri")
                 
                 if source_path and Path(source_path).exists():
                     video_files.append((source_path, segment))
-                elif video_url:
-                    print(f"DEBUG: Downloading asset for segment {i+1}: {video_url}")
-                    logger.info(f"Downloading asset for segment {i+1}: {video_url}")
+                elif video_uri:
+                    print(f"DEBUG: Downloading asset for segment {i+1}: {video_uri}")
+                    logger.info(f"Downloading asset for segment {i+1}: {video_uri}")
                     # In a production loop, we'd use await, but for hardening we'll ensure we have some assets
                     try:
-                        downloaded_path = await base_video_downloader.download_video(video_url)
+                        downloaded_path = await base_video_downloader.download_video(video_uri)
                         if downloaded_path and Path(downloaded_path).exists():
                             video_files.append((downloaded_path, segment))
                             print(f"DEBUG: Downloaded segment {i+1} to {downloaded_path}")

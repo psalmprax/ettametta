@@ -60,7 +60,7 @@ def cleanup_local_files(*paths):
 )
 def download_and_process_task(
     self,
-    source_url: str,
+    source_uri: str,
     niche: str,
     platform: str,
     preview_only: bool = False,
@@ -121,7 +121,7 @@ def download_and_process_task(
         nonlocal video_path, processed_path
         # 1. Download
         await update_job(status=SystemJobStatus.VALIDATING, progress=5)
-        is_valid = await base_video_downloader.verify_video_asset(source_url)
+        is_valid = await base_video_downloader.verify_video_asset(source_uri)
         if not is_valid:
             await update_job(
                 status=SystemJobStatus.FAILED_INVALID_INPUT,
@@ -136,7 +136,7 @@ def download_and_process_task(
             }
 
         await update_job(status=SystemJobStatus.DOWNLOADING, progress=10)
-        video_path = await base_video_downloader.download_video(source_url)
+        video_path = await base_video_downloader.download_video(source_uri)
         if not video_path:
             await update_job(
                 status=SystemJobStatus.FAILED_DOWNLOAD_ERROR,
@@ -247,7 +247,7 @@ def download_and_process_task(
         public_url = base_storage_service.get_file_url(storage_key)
 
         # 3.6 Neural Thumbnail Generation
-        thumbnail_url = None
+        thumbnail_uri = None
         if generate_thumbnail:
             logger.info(f"[Task] Generating neural thumbnail for {task_id}")
             from src.services.video_engine.ffmpeg_utils import base_ffmpeg_transformer
@@ -259,8 +259,8 @@ def download_and_process_task(
             thumbs = base_ffmpeg_transformer.generate_thumbnails(processed_path, thumb_dir, count=1)
             if thumbs:
                 thumb_key = base_storage_service.upload_file(thumbs[0])
-                thumbnail_url = base_storage_service.get_file_url(thumb_key)
-                logger.info(f"[Task] Neural thumbnail ready: {thumbnail_url}")
+                thumbnail_uri = base_storage_service.get_file_url(thumb_key)
+                logger.info(f"[Task] Neural thumbnail ready: {thumbnail_uri}")
                 # Cleanup local thumb
                 cleanup_local_files(thumbs[0])
                 try:
@@ -392,7 +392,7 @@ def generate_video_task(
     style: str,
     aspect_ratio: str,
     user_id: str,
-    custom_image_url: str = None,
+    custom_image_uri: str = None,
     parent_id: str = None,  # Standard 4.1: Variant Tracking
     variant_index: int = None,
     request_id: str | None = None,
@@ -428,12 +428,12 @@ def generate_video_task(
 
         # For E2E test: try real synthesis, fallback to mock for demo
         try:
-            video_url = run_async(
+            video_uri = run_async(
                 base_generative_service.synthesize_video(
                     prompt,
                     engine=engine,
                     aspect_ratio=aspect_ratio,
-                    custom_image_url=custom_image_url,
+                    custom_image_uri=custom_image_uri,
                 )
             )
         except Exception as e:
@@ -461,9 +461,9 @@ def generate_video_task(
                 logger.warning(
                     f"[GenerateVideo] Synthesis failed permanently: {e}, using demo fallback"
                 )
-                video_url = f"https://sample-videos.com/video123/mp4/720p/big_buck_bunny_720p_1mb.mp4"
+                video_uri = f"https://sample-videos.com/video123/mp4/720p/big_buck_bunny_720p_1mb.mp4"
 
-        if not video_url:
+        if not video_uri:
             update_job(
                 status=SystemJobStatus.FAILED_SYNTHESIS_ERROR,
                 progress=0,
@@ -473,12 +473,12 @@ def generate_video_task(
 
         # 2. Download generated asset (if it's a URL)
         update_job(status=SystemJobStatus.DOWNLOADING_ASSET, progress=40)
-        if video_url.startswith("http"):
+        if video_uri.startswith("http"):
             local_video_path = run_async(
-                base_video_downloader.download_video(video_url)
+                base_video_downloader.download_video(video_uri)
             )
         else:
-            local_video_path = video_url
+            local_video_path = video_uri
 
         # 3. Skip heavy post-processing for demo
         update_job(status=SystemJobStatus.COMPLETED, progress=90)
@@ -492,12 +492,12 @@ def generate_video_task(
         )
 
         # Cleanup
-        if local_video_path != video_url and settings.STORAGE_PROVIDER != "LOCAL":
+        if local_video_path != video_uri and settings.STORAGE_PROVIDER != "LOCAL":
             cleanup_local_files(local_video_path)
 
         return {
             "status": "success",
-            "video_url": public_url,
+            "video_uri": public_url,
             "engine": engine,
             "prompt_used": prompt,
         }
@@ -603,7 +603,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: str
 
             # Merge results
             for i, scene in enumerate(visual_scenes):
-                scene["audio_url"] = voice_results[i]
+                scene["audio_uri"] = voice_results[i]
 
             return visual_scenes
 
@@ -635,7 +635,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: str
         return {
             "status": "success",
             "title": story_script.title,
-            "video_url": public_url,
+            "video_uri": public_url,
             "scene_count": len(scenes),
         }
     except Exception as e:
@@ -760,7 +760,7 @@ def narrative_fusion_task(self, niche: str, duration_sec: int = 60, user_id: str
             )
             return {
                 "status": "success",
-                "video_url": public_url,
+                "video_uri": public_url,
                 "niche": niche,
                 "audit": result.get("audit"),
             }

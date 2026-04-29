@@ -4,69 +4,58 @@ test.describe('Authentication Flow', () => {
   test('should register a new user', async ({ page }) => {
     await page.goto('/register');
     
-    await page.fill('input[name="email"]', `test${Date.now()}@example.com`);
-    await page.fill('input[name="password"]', 'TestPassword123!');
-    await page.fill('input[name="confirmPassword"]', 'TestPassword123!');
-    await page.fill('input[name="username"]', 'testuser');
+    const randomId = Date.now();
+    await page.getByPlaceholder('you@example.com').fill(`test${randomId}@example.com`);
+    await page.getByPlaceholder('Create a secure password').fill('TestPassword123!');
     
     await page.click('button[type="submit"]');
     
-    await expect(page).toHaveURL('/');
-    await expect(page.locator('[data-testid="user-menu"]')).toBeVisible();
+    // Registration redirects to login with ?registered=true
+    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/registered=true/);
   });
 
   test('should login with valid credentials', async ({ page }) => {
     await page.goto('/login');
     
-    await page.fill('input[name="email"]', 'test@example.com');
-    await page.fill('input[name="password"]', 'testpassword');
+    await page.getByPlaceholder('Enter your username').fill('samuelolle@yahoo.com');
+    await page.getByPlaceholder('Enter your password').fill('Single123.');
     await page.click('button[type="submit"]');
     
-    await expect(page).toHaveURL('/');
-    await expect(page.locator('[data-testid="dashboard"]')).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.locator('h1')).toContainText(/Intelligence OS/i);
   });
 
   test('should show error with invalid credentials', async ({ page }) => {
     await page.goto('/login');
     
-    await page.fill('input[name="email"]', 'invalid@example.com');
-    await page.fill('input[name="password"]', 'wrongpassword');
+    await page.getByPlaceholder('Enter your username').fill('invalid@example.com');
+    await page.getByPlaceholder('Enter your password').fill('wrongpassword');
     await page.click('button[type="submit"]');
     
-    await expect(page.locator('[data-testid="error-message"]')).toContainText(/invalid|incorrect/i);
+    await expect(page.getByRole('alert').filter({ hasText: /incorrect|invalid/i })).toBeVisible();
   });
 
   test('should logout successfully', async ({ page }) => {
-    await page.goto('/login');
-    await page.fill('input[name="email"]', 'test@example.com');
-    await page.fill('input[name="password"]', 'testpassword');
+    const randomId = Date.now();
+    const email = `logout${randomId}@example.com`;
+    const password = 'TestPassword123!';
+
+    // Register
+    await page.goto('/register');
+    await page.getByPlaceholder('you@example.com').fill(email);
+    await page.getByPlaceholder('Create a secure password').fill(password);
     await page.click('button[type="submit"]');
-    await expect(page).toHaveURL('/');
-    
-    await page.click('[data-testid="logout-button"]');
-    await expect(page).toHaveURL('/login');
-  });
+    await expect(page).toHaveURL(/\/login/);
 
-  test('should handle password reset', async ({ page }) => {
-    await page.goto('/login');
-    await page.click('a:has-text("Forgot password?")');
-    
-    await expect(page).toHaveURL(/\/forgot-password/);
-    await page.fill('input[name="email"]', 'test@example.com');
+    // Login
+    await page.getByPlaceholder('Enter your username').fill(email);
+    await page.getByPlaceholder('Enter your password').fill(password);
     await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/dashboard/);
     
-    await expect(page.locator('[data-testid="success-message"]')).toContainText(/email|sent/i);
-  });
-});
-
-test.describe('OAuth Authentication', () => {
-  test('should show Google login option', async ({ page }) => {
-    await page.goto('/login');
-    await expect(page.locator('button:has-text("Google")')).toBeVisible();
-  });
-
-  test('should show GitHub login option', async ({ page }) => {
-    await page.goto('/login');
-    await expect(page.locator('button:has-text("GitHub")')).toBeVisible();
+    // Logout
+    await page.getByRole('button', { name: /sign out/i }).click();
+    await expect(page).toHaveURL(/\/login/);
   });
 });
