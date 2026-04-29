@@ -48,6 +48,10 @@ function NeuralWeb({ pulseIntensity = 1 }: { pulseIntensity?: number }) {
 
             // Auto rotation base
             groupRef.current.rotation.y += 0.001;
+            
+            // Pulse reaction: Scale slightly based on intensity
+            const scale = 1 + (pulseIntensity * 0.02);
+            groupRef.current.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.1);
         }
     });
 
@@ -71,12 +75,12 @@ function NeuralWeb({ pulseIntensity = 1 }: { pulseIntensity?: number }) {
 
             {/* Glowing Nodes */}
             {nodes.map((pos, i) => (
-                <mesh key={`node-${i}`} position={pos}>
+                <mesh key={`node-${i}`} position={pos} scale={1 + pulseIntensity * 0.5}>
                     <sphereGeometry args={[0.015, 8, 8]} />
                     <meshBasicMaterial
                         color={i % 3 === 0 ? "#00f2ff" : "#10b981"}
                         transparent
-                        opacity={0.8}
+                        opacity={0.3 + (pulseIntensity * 0.7)}
                     />
                 </mesh>
             ))}
@@ -84,12 +88,16 @@ function NeuralWeb({ pulseIntensity = 1 }: { pulseIntensity?: number }) {
             {/* Neural Connections (Unified LineSegments) */}
             <lineSegments>
                 <bufferGeometry ref={geoRef} />
-                <lineBasicMaterial color="#00f2ff" transparent opacity={0.15} />
+                <lineBasicMaterial 
+                    color="#00f2ff" 
+                    transparent 
+                    opacity={0.05 + (pulseIntensity * 0.4)} 
+                />
             </lineSegments>
 
-            <ambientLight intensity={0.2} />
-            <pointLight position={[10, 10, 10]} intensity={1.5} color="#00f2ff" />
-            <pointLight position={[-10, -10, -10]} intensity={1} color="#10b981" />
+            <ambientLight intensity={0.2 + (pulseIntensity * 0.3)} />
+            <pointLight position={[10, 10, 10]} intensity={1.5 + pulseIntensity} color="#00f2ff" />
+            <pointLight position={[-10, -10, -10]} intensity={1 + pulseIntensity} color="#10b981" />
         </group>
     );
 }

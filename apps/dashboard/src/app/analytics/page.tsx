@@ -76,39 +76,80 @@ function AnalyticsBackground() {
 }
 
 
+interface RetentionPoint {
+    time: number | string;
+    value: number;
+}
+
+interface AnalyticsMetrics {
+    views: number;
+    retention: number;
+    shares: number;
+    comments: number;
+    engagement: number;
+    activeTrends: number;
+    successRate: string;
+    engineLoad: string;
+    velocity: string;
+    optimizationInsight: string;
+    retentionData: RetentionPoint[];
+    pendingJobs: number;
+    engagementScore: number;
+}
+
+interface HistoryPoint {
+    time: string;
+    value: number;
+}
+
 export default function AnalyticsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isReoptimizing, setIsReoptimizing] = useState(false);
-    const [metrics, setMetrics] = useState({
+    const [pulseIntensity, setPulseIntensity] = useState(0);
+    const [metrics, setMetrics] = useState<AnalyticsMetrics>({
         views: 0,
         retention: 0,
         shares: 0,
+        comments: 0,
         engagement: 0,
         activeTrends: 0,
         successRate: "0%",
         engineLoad: "0%",
         velocity: "Nominal",
         optimizationInsight: "Analyzing signals...",
-        retentionData: [] as { time: number, value: number }[]
+        retentionData: [],
+        pendingJobs: 0,
+        engagementScore: 0
     });
-    const [historyData, setHistoryData] = useState<any[]>([]);
+    const [historyData, setHistoryData] = useState<HistoryPoint[]>([]);
 
     const fetchAnalytics = useCallback(async () => {
-        try {
-            const token = await getAuthToken();
-            const headers = { Authorization: `Bearer ${token}` };
+        const token = await getAuthToken();
+        if (!token) {
+            setIsLoading(false);
+            return;
+        }
+        const headers = { Authorization: `Bearer ${token}` };
 
-            const [summaryRes, reportRes, postsRes] = await Promise.all([
-                fetch(`${API_BASE}/analytics/stats/summary`, { headers }),
-                fetch(`${API_BASE}/analytics/report`, { headers }),
-                fetch(`${API_BASE}/analytics/posts?size=1`, { headers })
-            ]);
+        await withRealFallback<{ summary: any, report: any, retentionData: number[], optimizationInsight: string } | null>(
+            async () => {
+                const [summaryRes, reportRes, postsRes] = await Promise.all([
+                    fetch(`${API_BASE}/analytics/stats/summary`, { headers }),
+                    fetch(`${API_BASE}/analytics/report`, { headers }),
+                    fetch(`${API_BASE}/analytics/posts?size=1`, { headers })
+                ]);
 
-            if (summaryRes.ok && reportRes.ok && postsRes.ok) {
-                const summary = (await summaryRes.json()).data;
-                const report = (await reportRes.json()).data;
-                const postsData = (await postsRes.json()).data;
+                if (!summaryRes.ok || !reportRes.ok || !postsRes.ok) throw new Error("Baseline telemetry failure");
+
+                const summaryData = await summaryRes.json();
+                const reportData = await reportRes.json();
+                const postsWrapper = await postsRes.json();
+                
+                const summary = summaryData.data || summaryData;
+                const report = reportData.data || reportData;
+                const postsData = postsWrapper.data || postsWrapper;
                 const posts = postsData.items || [];
+                
                 let retentionData = [];
                 let optimizationInsight = "Optimal performance detected.";
                 
@@ -121,14 +162,16 @@ export default function AnalyticsPage() {
                     ]);
 
                     if (latestReportRes.ok) {
-                        const latestReport = (await latestReportRes.json()).data;
+                        const resJson = await latestReportRes.json();
+                        const latestReport = resJson.data || resJson;
                         retentionData = latestReport.retention_data || [];
                     }
 
                     if (historyRes.ok) {
-                        const history = (await historyRes.json()).data;
-                        if (history && history.length > 0) {
-                            setHistoryData(history.map((h: any) => ({
+                        const resJson = await historyRes.json();
+                        const history = resJson.data || resJson;
+                        if (history && Array.isArray(history) && history.length > 0) {
+                            setHistoryData(history.map((h: { timestamp: string, view_count: number }) => ({
                                 time: new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                                 value: h.view_count
                             })));
@@ -136,102 +179,122 @@ export default function AnalyticsPage() {
                     }
 
                     if (insightsRes.ok) {
-                        const insightData = (await insightsRes.json()).data;
+                        const resJson = await insightsRes.json();
+                        const insightData = resJson.data || resJson;
                         optimizationInsight = insightData.insight || optimizationInsight;
                     }
                 }
 
-                setMetrics({
-                    views: report.total_views || 0,
-                    retention: report.avg_retention || 0,
-                    shares: report.total_shares || 0,
-                    engagement: report.total_views > 0 ? (report.total_likes / report.total_views) : 0,
-                    activeTrends: summary.active_trends || 0,
-                    successRate: summary.success_rate || "0%",
-                    engineLoad: summary.engine_load || "0%",
-                    velocity: summary.velocity || "Nominal",
-                    optimizationInsight,
-                    retentionData: retentionData.length > 0 ? retentionData.map((v: number, i: number) => ({ time: i, value: v })) : []
-                });
+                return {
+                    summary,
+                    report,
+                    retentionData,
+                    optimizationInsight
+                };
+            },
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    if (!data) return;
+                    const { summary, report, retentionData, optimizationInsight } = data;
+                    setMetrics({
+                        views: summary.total_views || report.total_views || 0,
+                        retention: summary.avg_retention || report.avg_retention || 0,
+                        shares: summary.total_shares || report.total_shares || 0,
+                        comments: summary.total_comments || 0,
+                        engagement: summary.engagement_score || (report.total_views > 0 ? (report.total_likes / report.total_views) : 0),
+                        activeTrends: summary.active_trends || 0,
+                        successRate: summary.success_rate || "0%",
+                        engineLoad: summary.engine_load || "0%",
+                        velocity: summary.velocity || "Nominal",
+                        optimizationInsight,
+                        retentionData: retentionData.length > 0 ? retentionData.map((v: number, i: number) => ({ time: i, value: v })) : [],
+                        pendingJobs: summary.pending_jobs || 0,
+                        engagementScore: summary.engagement_score || 0
+                    });
+
+                    setPulseIntensity(1);
+                    setTimeout(() => setPulseIntensity(0), 1000);
+                }
             }
-        } catch (err) {
-            console.error("Analytics fetch failed:", err);
-        } finally {
-            setIsLoading(false);
-        }
+        );
+        setIsLoading(false);
     }, []);
 
     const handleReOptimize = async () => {
         setIsReoptimizing(true);
-        try {
-            const token = await getAuthToken();
-            const postsRes = await fetch(`${API_BASE}/analytics/posts?size=1`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const postsData = (await postsRes.json()).data;
-            const latestPost = postsData.items?.[0];
-
-            if (!latestPost) {
-                toast.error("No active content found for re-optimization");
-                return;
-            }
-
-            const res = await fetch(`${API_BASE}/analytics/inject-pattern/${latestPost.id}`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (res.ok) {
-                const result = await res.json();
-                toast.success(result.data?.message || "Neural pattern successfully injected");
-            } else {
-                toast.error("Optimization sequence failed");
-            }
-        } catch (err) {
-            toast.error("System connection error");
-        } finally {
+        const token = await getAuthToken();
+        if (!token) {
             setIsReoptimizing(false);
+            return;
         }
+
+        await withRealFallback<any>(
+            async () => {
+                const postsRes = await fetch(`${API_BASE}/analytics/posts?size=1`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!postsRes.ok) throw new Error("Signal acquisition failed");
+                const postsData = (await postsRes.json()).data;
+                const latestPost = postsData.items?.[0];
+
+                if (!latestPost) throw new Error("No active content found for re-optimization");
+
+                return fetch(`${API_BASE}/analytics/inject-pattern/${latestPost.id}`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    toast.success(data?.message || "Neural pattern successfully injected");
+                },
+                onFallback: (err) => {
+                    toast.error("Optimization sequence failed", { description: err.message });
+                }
+            }
+        );
+        setIsReoptimizing(false);
     };
 
     const handleExport = async () => {
-        try {
-            const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/analytics/export`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const blob = await res.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `ettametta_analytics_${new Date().toISOString().split('T')[0]}.csv`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-                toast.success("Export started");
-            } else {
-                toast.error("Export failed");
+        const token = await getAuthToken();
+        if (!token) return;
+
+        await withRealFallback<Blob>(
+            async () => {
+                const res = await fetch(`${API_BASE}/analytics/export`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error("Export stream failed");
+                return res.blob();
+            },
+            {
+                fallback: new Blob(),
+                onSuccess: (blob) => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `ettametta_analytics_${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    toast.success("Export started");
+                },
+                onFallback: (err) => {
+                    toast.error("Network error during export", { description: err.message });
+                }
             }
-        } catch (err) {
-            toast.error("Network error during export");
-        }
+        );
     };
 
     useEffect(() => {
         fetchAnalytics();
     }, [fetchAnalytics]);
 
-    const retentionData = [
-        { time: "0s", value: 100 },
-        { time: "5s", value: 85 },
-        { time: "10s", value: 72 },
-        { time: "15s", value: 68 },
-        { time: "20s", value: 62 },
-        { time: "25s", value: 58 },
-        { time: "30s", value: 55 },
-    ];
+    const [viewMode, setViewMode] = useState<"retention" | "growth">("retention");
 
     return (
         <DashboardLayout>
@@ -321,16 +384,25 @@ export default function AnalyticsPage() {
                                     <h3 className="text-2xl font-bold text-white uppercase tracking-tighter ">Retention Spectrum</h3>
                                     <p className="font-data-mono text-zinc-500 text-[9px]">DEEP_BEHAVIORAL_MAPPING // T+0_INITIAL_HOOK</p>
                                 </div>
-                                <div className="flex gap-2">
-                                    <div className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_10px_#00fbfb]" />
-                                    <div className="h-2 w-2 rounded-full bg-zinc-800" />
-                                    <div className="h-2 w-2 rounded-full bg-zinc-800" />
+                                <div className="flex gap-4">
+                                    <button 
+                                        onClick={() => setViewMode("retention")}
+                                        className={cn("px-4 py-1 rounded-full text-[8px] font-bold tracking-widest transition-all", viewMode === "retention" ? "bg-cyan-400 text-black" : "bg-white/5 text-zinc-500")}
+                                    >
+                                        RETENTION
+                                    </button>
+                                    <button 
+                                        onClick={() => setViewMode("growth")}
+                                        className={cn("px-4 py-1 rounded-full text-[8px] font-bold tracking-widest transition-all", viewMode === "growth" ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-500")}
+                                    >
+                                        GROWTH
+                                    </button>
                                 </div>
                             </div>
 
                             <div className="h-[400px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={historyData.length > 0 ? historyData : retentionData}>
+                                    <AreaChart data={viewMode === "growth" && historyData.length > 0 ? historyData : metrics.retentionData}>
                                         <defs>
                                             <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
                                                 <stop offset="5%" stopColor="#00fbfb" stopOpacity={0.3}/>
@@ -377,7 +449,7 @@ export default function AnalyticsPage() {
                         {/* INSIGHTS CLUSTER */}
                         <div className="xl:col-span-4 space-y-12">
                             <section className="surface-glass rim-light p-10 space-y-8 relative group overflow-hidden">
-                                <div className="absolute inset-0 bg-cyan-400/0 group-hover:bg-cyan-400/[0.02] transition-colors" />
+                                <div className="absolute inset-0 bg-cyan-400/0 group-hover:bg-cyan-400/2 transition-colors" />
                                 <h3 className="font-label-caps text-xs text-zinc-500 flex items-center gap-3">
                                     <Target className="h-4 w-4 text-cyan-400" />
                                     AI_OPTIMIZATION
@@ -433,15 +505,20 @@ export default function AnalyticsPage() {
                     <div className="mt-12 grid grid-cols-1 xl:grid-cols-2 gap-12">
                         <div className="surface-glass rim-light p-10 h-96 relative overflow-hidden group">
                             <div className="absolute inset-0 z-0">
-                                <GlobalPulseGlobe />
+                                <GlobalPulseGlobe pulseIntensity={pulseIntensity} />
                             </div>
                             <div className="relative z-10 space-y-2">
                                 <h3 className="text-xl font-bold text-white  tracking-tighter">Global Propagation</h3>
                                 <p className="font-data-mono text-zinc-500 text-[8px]">LIVE_GEOSPATIAL_STREAM</p>
                             </div>
                             <div className="absolute bottom-8 right-8 z-10 flex items-center gap-4">
-                                <div className="h-3 w-3 bg-cyan-400 animate-ping rounded-full" />
-                                <span className="font-data-mono text-[9px] text-cyan-400">ACTIVE_PULSE</span>
+                                <div className={cn(
+                                    "h-3 w-3 bg-cyan-400 rounded-full",
+                                    pulseIntensity > 0 ? "animate-ping" : "opacity-20"
+                                )} />
+                                <span className="font-data-mono text-[9px] text-cyan-400">
+                                    {pulseIntensity > 0 ? "ACTIVE_PULSE" : "IDLE_CORE"}
+                                </span>
                             </div>
                         </div>
 
@@ -452,25 +529,29 @@ export default function AnalyticsPage() {
                              </div>
                              <div className="space-y-4">
                                 {[
-                                    { name: "Retention Hook", score: 92, status: "PEAK" },
-                                    { name: "Share Velocity", score: 84, status: "STABLE" },
-                                    { name: "Comment Sentiment", score: 76, status: "RECOVERING" },
-                                    { name: "Thumbnail CTR", score: 95, status: "PEAK" },
+                                    { name: "Retention Hook", score: metrics.retention * 100, status: metrics.retention > 0.8 ? "PEAK" : "STABLE" },
+                                    { name: "Share Velocity", score: metrics.velocity === "High" ? 95 : 65, status: metrics.velocity === "High" ? "PEAK" : "STABLE" },
+                                    { name: "Engagement Score", score: metrics.engagementScore, status: metrics.engagementScore > 10 ? "PEAK" : "STABLE" },
+                                    { name: "Engine Load", score: parseInt(metrics.engineLoad), status: parseInt(metrics.engineLoad) > 80 ? "CRITICAL" : "STABLE" },
                                 ].map((item, i) => (
-                                    <div key={item.name} className="p-6 bg-white/2 border border-white/5 flex items-center justify-between group hover:bg-white/5 transition-colors">
+                                    <div key={item.name} className="p-6 bg-white/[0.02] border border-white/5 flex items-center justify-between group hover:bg-white/[0.05] transition-colors">
                                         <div className="space-y-1">
                                             <span className="font-label-caps text-[9px] text-zinc-500">{item.name}</span>
                                             <div className="h-1 w-48 bg-zinc-950 rounded-full overflow-hidden">
                                                 <motion.div 
                                                     initial={{ width: 0 }}
-                                                    animate={{ width: `${item.score}%` }}
-                                                    className="h-full bg-cyan-400"
+                                                    animate={{ width: `${Math.min(item.score, 100)}%` }}
+                                                    className={cn(
+                                                        "h-full",
+                                                        item.status === "CRITICAL" ? "bg-rose-500" : "bg-cyan-400"
+                                                    )}
                                                 />
                                             </div>
                                         </div>
                                         <span className={cn(
                                             "font-data-mono text-[8px]",
-                                            item.status === "PEAK" ? "text-cyan-400" : "text-zinc-600"
+                                            item.status === "PEAK" ? "text-cyan-400" : 
+                                            item.status === "CRITICAL" ? "text-rose-500" : "text-zinc-600"
                                         )}>{item.status}</span>
                                     </div>
                                 ))}

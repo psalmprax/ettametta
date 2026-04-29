@@ -81,18 +81,40 @@ class AutoCreator:
             ]
 
     async def _source_visual_assets(
-        self, segments: list[dict], job_id: int, niche: str
+        self, segments: list[dict], job_id: int, niche: str, engine: str = "cloud"
     ) -> list[str]:
-        """Source real stock video with keyword retry and local fallback."""
+        """Source real stock video or synthesize with engine."""
         visual_paths = []
-        try:
-            from src.services.video_engine.stock_service import base_stock_service
-        except ImportError:
-            logger.warning("[AutoCreator] Stock service not available")
-            return []
+        
+        # Mapping frontend 'os' stack to 'hunyuan'
+        actual_engine = "hunyuan" if engine == "os" else engine
 
         for i, seg in enumerate(segments):
             prompt = seg.get("visual_prompt", f"{niche} cinematic footage")
+            
+            # If engine is hunyuan, we synthesize instead of stock search
+            if actual_engine == "hunyuan":
+                logger.info(f"[AutoCreator] Synthesizing visual for segment {i} using {actual_engine}")
+                try:
+                    from src.services.video_engine.synthesis_service import base_generative_service
+                    path = await base_generative_service.synthesize_video(
+                        prompt=prompt,
+                        engine=actual_engine,
+                        style=seg.get("mood", "Cinematic")
+                    )
+                    if path:
+                        visual_paths.append(path)
+                        continue
+                except Exception as e:
+                    logger.error(f"[AutoCreator] Synthesis failed for segment {i}: {e}")
+
+            # Fallback to stock search if not hunyuan or if synthesis failed
+            try:
+                from src.services.video_engine.stock_service import base_stock_service
+            except ImportError:
+                logger.warning("[AutoCreator] Stock service not available")
+                continue
+
             # 1. Primary Attempt
             urls = await base_stock_service.fetch_b_roll(prompt, count=1)
 
@@ -109,7 +131,7 @@ class AutoCreator:
                     visual_paths.append(dl_path)
                     continue
 
-            # 3. Final "Real-First" Fallback: Use existing local high-quality test assets instead of dummy names
+            # 3. Final "Real-First" Fallback
             local_fallbacks = [
                 "test_wan21_480p.mp4",
                 "test_animatediff.mp4",
@@ -156,19 +178,26 @@ class AutoCreator:
                     voice_paths.append(actual_path)
             except Exception as e:
                 logger.error(f"[AutoCreator] Voiceover failed for segment {i}: {e}")
-                raise
+                # Optional: Add fallback TTS provider here if needed
+                continue
 
         return voice_paths
 
     async def create_cinema_video(
-        self, job_id: int, topic: str, niche: str, blueprint_id: str = "story-factory"
+        self, 
+        job_id: int, 
+        topic: str, 
+        niche: str, 
+        blueprint_id: str = "story-factory",
+        engine: str = "cloud",
+        script: list[dict] | None = None
     ) -> str:
         """
         Autonomous Script-to-Video Workflow with real-time node instrumentation.
         """
         from src.api.routes.ws import notify_nexus_job_update_sync
 
-        logger.info(f"[AutoCreator] Launching Cinema Mode: {topic} in {niche}")
+        logger.info(f"[AutoCreator] Launching Cinema Mode: {topic} in {niche} (Engine: {engine})")
 
         async def notify(node: str, status: str, progress: int):
             # 1. Update Database for persistence
@@ -204,9 +233,15 @@ class AutoCreator:
                 }
             )
 
-        # 1. Ingress: Script Generation
+        # 1. Ingress: Script Generation (or override)
         await notify("ingress", "ACTIVE", 10)
-        segments = await self.generate_viral_script(topic, niche)
+        
+        if script:
+            logger.info(f"[AutoCreator] Using provided script override for Job {job_id}")
+            segments = script
+        else:
+            segments = await self.generate_viral_script(topic, niche)
+            
         if not segments:
             await notify("ingress", "FAILED", 0)
             raise ValueError("Script generation produced no segments")
@@ -214,7 +249,7 @@ class AutoCreator:
 
         # 2. Cognition: Asset Sourcing
         await notify("cognition", "ACTIVE", 30)
-        visual_paths = await self._source_visual_assets(segments, job_id, niche)
+        visual_paths = await self._source_visual_assets(segments, job_id, niche, engine=engine)
         voice_paths = await self._generate_voiceovers(segments, job_id)
 
         if not visual_paths or not voice_paths:
@@ -243,6 +278,58 @@ class AutoCreator:
             await notify("synthesis", "FAILED", 0)
 
         return output_path
+
+    async def launch_automated_video(
+        self,
+        user_id: str,
+        topic: str,
+        niche: str,
+        style: str = "Cinematic",
+        duration: int = 60,
+        engine: str = "cloud",
+        script: list[dict] | None = None
+    ) -> str:
+        """
+        High-level entry point to create and launch an automated video generation job.
+        """
+        import uuid
+        from src.api.utils.database import async_session_factory
+        from src.api.utils.models import NexusJobDB
+        
+        job_id = str(uuid.uuid4())
+        
+        # 1. Create Job Entry
+        async with async_session_factory() as db:
+            new_job = NexusJobDB(
+                id=job_id,
+                user_id=user_id,
+                niche=niche,
+                current_node="ingress",
+                node_status={"ingress": "QUEUED"},
+                progress=0,
+                job_metadata={
+                    "topic": topic,
+                    "style": style,
+                    "duration": duration,
+                    "engine": engine
+                }
+            )
+            db.add(new_job)
+            await db.commit()
+            
+        # 2. Spawn Background Task (Non-blocking)
+        import asyncio
+        asyncio.create_task(
+            self.create_cinema_video(
+                job_id=job_id,
+                topic=topic,
+                niche=niche,
+                engine=engine,
+                script=script
+            )
+        )
+        
+        return job_id
 
 
 base_auto_creator = AutoCreator()
