@@ -78,8 +78,8 @@ export default function NexusPage() {
     const [agentCapabilities, setAgentCapabilities] = useState<string[]>([]);
     const [workforceReport, setWorkforceReport] = useState<WorkforceStatus | null>(null);
 
-    const { data: jobUpdate } = useWebSocket<{ type: string, data: any }>(`${WS_BASE}/jobs`);
-    const { data: logUpdate } = useWebSocket<{ type: string, data: any }>(`${WS_BASE}/logs`);
+    const { data: jobUpdate } = useWebSocket<{ type: string, data: NexusJob }>(`${WS_BASE}/jobs`);
+    const { data: logUpdate } = useWebSocket<{ type: string, module: string, level: string, message: string }>(`${WS_BASE}/logs`);
 
     // Persona Lab state
     const [personaName, setPersonaName] = useState("");
