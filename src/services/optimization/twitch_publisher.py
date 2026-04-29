@@ -124,7 +124,7 @@ class TwitchPublisher(SocialPublisher):
 
             return f"https://clips.twitch.tv/{clip_id}"
 
-    async def _resolve_video_url(self, video_path: str) -> str | None:
+    async def _resolve_video_uri(self, video_path: str) -> str | None:
         """Resolve video path to URL"""
         if video_path.startswith(("http://", "https://")):
             return video_path

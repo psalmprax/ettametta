@@ -259,14 +259,14 @@ class NexusOrchestrator:
                     ],  # Keep it short for overlay
                 }
 
-            audio_url = voiceover_paths[0] if voiceover_paths else music_path
+            audio_uri = voiceover_paths[0] if voiceover_paths else music_path
             props = {
                 "title": niche.title(),
                 "subtitle": vibe_data.get("explanation", "Analysis & Insights"),
                 "vibe": vibe_data.get("vibe", "Neutral"),
                 "filter_override": vibe_data.get("filter_override"),
                 "clips": remotion_clips,
-                "audio_url": audio_url,
+                "audio_uri": audio_uri,
                 "job_id": job_id,
                 **cta_props,
             }

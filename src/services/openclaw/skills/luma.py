@@ -36,7 +36,7 @@ class LumaSkill(OpenClawBaseSkill):
             
         res = await self.generate_video(p, aspect_ratio or kwargs.get("aspect_ratio", "9:16"))
         if res.get("status") == "success":
-            return f"🎬 **Luma Video Generated!**\nURL: {res['video_url']}"
+            return f"🎬 **Luma Video Generated!**\nURL: {res['video_uri']}"
         return f"⚠️ Luma failed: {res.get('error')}"
 
     async def generate_video(self, prompt: str, aspect_ratio: str = "9:16") -> dict[str, Any]:
@@ -104,7 +104,7 @@ class LumaSkill(OpenClawBaseSkill):
             await page.wait_for_selector("video[src]", timeout=120000)
 
             video_element = await page.query_selector("video[src]")
-            video_url = await video_element.get_attribute("src")
+            video_uri = await video_element.get_attribute("src")
 
             logger.info(f"[Luma] Video generated successfully")
 
@@ -113,7 +113,7 @@ class LumaSkill(OpenClawBaseSkill):
 
             return {
                 "status": "success",
-                "video_url": video_url,
+                "video_uri": video_uri,
                 "engine": "luma",
                 "prompt": prompt,
             }

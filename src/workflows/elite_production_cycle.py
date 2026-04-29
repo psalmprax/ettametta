@@ -219,7 +219,7 @@ async def run_elite_production_cycle(
         current_time += seg["duration"]
 
     remotion_props = {
-        "video_url": os.path.abspath(fused_video_path),
+        "video_uri": os.path.abspath(fused_video_path),
         "title": fusion_result.get("script", {}).get(
             "title", f"The {current_topic} Story"
         ),

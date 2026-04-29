@@ -29,11 +29,11 @@ class LeiaPixSkill(OpenClawBaseSkill):
             
         res = await self.generate(p, aspect_ratio or kwargs.get("aspect_ratio", "9:16"))
         if res.get("status") == "success":
-            return f"🎬 **{self.__class__.__name__} Video Generated!**\nURL: {res.get('video_url')}"
+            return f"🎬 **{self.__class__.__name__} Video Generated!**\nURL: {res.get('video_uri')}"
         return f"⚠️ {self.__class__.__name__} failed: {res.get('error')}"
 
     async def generate(
-        self, image_url: str, motion_intensity: int = 5
+        self, image_uri: str, motion_intensity: int = 5
     ) -> dict[str, Any]:
         """
         Convert image to motion video using LeiaPix
@@ -60,7 +60,7 @@ class LeiaPixSkill(OpenClawBaseSkill):
             page = await context.new_page()
             page.set_default_timeout(120000)
 
-            logger.info(f"[LeiaPix] Converting image to video: {image_url[:50]}...")
+            logger.info(f"[LeiaPix] Converting image to video: {image_uri[:50]}...")
 
             await page.goto(self.base_url)
             await page.wait_for_load_state("networkidle")
@@ -72,7 +72,7 @@ class LeiaPixSkill(OpenClawBaseSkill):
             await asyncio.sleep(0.8)
 
             file_input = await page.query_selector('input[type="file"]')
-            await file_input.set_input_files(image_url)
+            await file_input.set_input_files(image_uri)
 
             await asyncio.sleep(2 + (1 * os.urandom(1)[0] / 255))
 
@@ -89,7 +89,7 @@ class LeiaPixSkill(OpenClawBaseSkill):
             await page.wait_for_selector("video[src]", timeout=90000)
 
             video_element = await page.query_selector("video[src]")
-            video_url = await video_element.get_attribute("src")
+            video_uri = await video_element.get_attribute("src")
 
             logger.info(f"[LeiaPix] Video generated successfully")
 
@@ -98,9 +98,9 @@ class LeiaPixSkill(OpenClawBaseSkill):
 
             return {
                 "status": "success",
-                "video_url": video_url,
+                "video_uri": video_uri,
                 "engine": "leiapix",
-                "input_image": image_url,
+                "input_image": image_uri,
             }
 
         except Exception as e:

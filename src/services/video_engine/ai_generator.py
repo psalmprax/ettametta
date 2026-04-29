@@ -140,8 +140,8 @@ class AIVideoGeneratorService:
                 data = response.json()
 
                 # Check if immediate result or async job
-                if "video_url" in data:
-                    return data["video_url"]
+                if "video_uri" in data:
+                    return data["video_uri"]
                 elif "id" in data:
                     # Poll for completion
                     job_id = data["id"]
@@ -181,7 +181,7 @@ class AIVideoGeneratorService:
                     status = data.get("status", "").lower()
 
                     if status == "succeeded":
-                        return data.get("video_url")
+                        return data.get("video_uri")
                     elif status in ("failed", "cancelled"):
                         logger.error(f"[AIGenerator] Runway job {job_id} {status}")
                         return None
@@ -231,8 +231,8 @@ class AIVideoGeneratorService:
                 data = response.json()
 
                 # Check if immediate result or async job
-                if "video_url" in data:
-                    return data["video_url"]
+                if "video_uri" in data:
+                    return data["video_uri"]
                 elif "id" in data:
                     # Poll for completion
                     job_id = data["id"]
@@ -272,7 +272,7 @@ class AIVideoGeneratorService:
                     status = data.get("status", "").lower()
 
                     if status == "completed":
-                        return data.get("video_url")
+                        return data.get("video_uri")
                     elif status in ("failed", "cancelled"):
                         logger.error(f"[AIGenerator] Pika job {job_id} {status}")
                         return None

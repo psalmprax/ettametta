@@ -89,8 +89,8 @@ class ContentCandidateDB(Base):
     description = Column(String, nullable=True)
     creator_name = Column(String, nullable=True)  # Channel/author name
     creator_id = Column(String, nullable=True)  # Channel/author ID
-    source_url = Column(String)  # Primary canonical URL
-    thumbnail_url = Column(String, nullable=True)
+    source_uri = Column(String)  # Primary canonical URI
+    thumbnail_uri = Column(String, nullable=True)
 
     # Timing fields
     published_at = Column(DateTime, nullable=True)  # When content was published
@@ -195,7 +195,7 @@ class PublishedContentDB(Base):
         default=ContentPublishStatus.PENDING,
         nullable=False,
     )
-    source_url = Column(String, nullable=True)
+    source_uri = Column(String, nullable=True)
     published_at = Column(DateTime, default=lambda: datetime.utcnow())
     account_id = Column(String(36), ForeignKey("social_accounts.id"), index=True)
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
@@ -221,7 +221,7 @@ class VideoJobDB(Base):
     )
     progress = Column(Integer, default=0)
     time_remaining = Column(String, nullable=True)
-    source_url = Column(String)
+    source_uri = Column(String)
     output_path = Column(String, nullable=True)
     job_metadata = Column(
         JSON, default=dict
@@ -331,8 +331,8 @@ class PersonaDB(Base):
         String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
     )
     name = Column(String)
-    reference_image_url = Column(String, nullable=True)  # Used for face animation
-    reference_video_url = Column(String, nullable=True)
+    reference_image_uri = Column(String, nullable=True)  # Used for face animation
+    reference_video_uri = Column(String, nullable=True)
     voice_clone_id = Column(String, nullable=True)  # Reference to XTTS or ElevenLabs ID
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
@@ -575,7 +575,7 @@ class DigitalProductDB(Base):
     niche = Column(String, index=True)
     description = Column(String, nullable=True)
     price = Column(Float)
-    purchase_url = Column(String)
+    purchase_uri = Column(String)
     cta_text = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
@@ -591,7 +591,7 @@ class MembershipPlanDB(Base):
     niche = Column(String, index=True)
     description = Column(String, nullable=True)
     monthly_price = Column(Float)
-    sign_up_url = Column(String)
+    sign_up_uri = Column(String)
     cta_text = Column(String, nullable=True)
     benefits = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
@@ -606,7 +606,7 @@ class LeadGenDB(Base):
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
     name = Column(String)
     niche = Column(String, index=True)
-    form_url = Column(String)
+    form_uri = Column(String)
     cta_text = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
@@ -709,7 +709,7 @@ class IncidentWebhookDB(Base):
     id = Column(
         String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
     )
-    url = Column(String, nullable=False)
+    uri = Column(String, nullable=False)
     name = Column(String, nullable=True)  # e.g., "EU Market Surveillance Authority"
     secret = Column(String, nullable=True)  # HMAC secret for signing
     is_active = Column(Boolean, default=True)

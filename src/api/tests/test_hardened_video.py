@@ -65,8 +65,8 @@ class TestHardenedVideoProcessor:
         
         # scenes should be a list directly
         scenes = [
-            {"video_url": "http://example.com/scene1.mp4", "audio_url": "http://example.com/audio1.mp3"},
-            {"video_url": "http://example.com/scene2.mp4", "audio_url": "http://example.com/audio2.mp3"}
+            {"video_uri": "http://example.com/scene1.mp4", "audio_uri": "http://example.com/audio1.mp3"},
+            {"video_uri": "http://example.com/scene2.mp4", "audio_uri": "http://example.com/audio2.mp3"}
         ]
         
         with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:

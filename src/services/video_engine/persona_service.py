@@ -36,26 +36,26 @@ class PersonaService:
                 )
             if response.status_code == 200:
                 data = response.json()
-                audio_url = data.get("audio_url") or data.get("path")
-                if audio_url:
+                audio_uri = data.get("audio_uri") or data.get("path")
+                if audio_uri:
                     logger.info(
                         f"[PersonaService] TTS generated via voiceover microservice"
                     )
-                    return audio_url
+                    return audio_uri
         except Exception as e:
             logger.debug(f"[PersonaService] Voiceover microservice unavailable: {e}")
 
         return None
 
     async def animate_persona(
-        self, reference_image_url: str, niche: str, script: str | None = None, voice_id: str | None = None
+        self, reference_image_uri: str, niche: str, script: str | None = None, voice_id: str | None = None
     ) -> str:
         """
         Orchestrates the animation of a personalized persona video via external rendering services.
         1. Generates TTS audio via voiceover service.
         2. Sends image + audio to the Render Node for LivePortrait/SadTalker animation.
         """
-        logger.info(f"Animating Persona. Image: {reference_image_url} | Niche: {niche}")
+        logger.info(f"Animating Persona. Image: {reference_image_uri} | Niche: {niche}")
 
         if not self.render_node_url:
             logger.error("RENDER_NODE_URL missing. Cannot animate persona.")
@@ -70,14 +70,14 @@ class PersonaService:
 
         try:
             payload = {
-                "image_url": reference_image_url,
+                "image_uri": reference_image_uri,
                 "text": script_text,
                 "voice_id": voice_id or "default_xtts",
             }
 
             # If we have audio, send it to the render node
             if audio_path:
-                payload["audio_url"] = audio_path
+                payload["audio_uri"] = audio_path
 
             async with httpx.AsyncClient(timeout=300) as client:
                 response = await client.post(

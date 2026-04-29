@@ -46,7 +46,7 @@ export default defineConfig({
         },
     ],
     webServer: process.env.CI ? undefined : process.env.SKIP_WEB_SERVER ? undefined : {
-        command: process.env.WEB_SERVER_COMMAND || 'cd ../.. && npm run dev',
+        command: process.env.WEB_SERVER_COMMAND || 'cd ../../../apps/dashboard && npm run dev',
         url: process.env.BASE_URL || 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,

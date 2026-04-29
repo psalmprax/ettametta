@@ -29,7 +29,7 @@ class MembershipStrategy(BaseMonetizationStrategy):
                     return [{
                         "id": str(plan.id),
                         "name": plan.name,
-                        "url": plan.sign_up_url,
+                        "url": plan.sign_up_uri,
                         "cta_text": plan.cta_text or "Join Now",
                         "price": str(plan.monthly_price),
                         "source": "membership"
@@ -37,13 +37,13 @@ class MembershipStrategy(BaseMonetizationStrategy):
 
                 # Fallback to general platform URL setting
                 setting_stmt = select(SystemSettings).where(
-                    SystemSettings.key == "membership_platform_url"
+                    SystemSettings.key == "membership_platform_uri"
                 )
                 setting_result = await db.execute(setting_stmt)
                 setting = setting_result.scalar_one_or_none()
-                platform_url = setting.value if setting else None
+                platform_uri = setting.value if setting else None
                 
-                if not platform_url:
+                if not platform_uri:
                     logger.warning(f"[MembershipStrategy] No membership platform configured.")
                     return []
                 
@@ -51,7 +51,7 @@ class MembershipStrategy(BaseMonetizationStrategy):
                     {
                         "id": "gen_tier_1",
                         "name": "General Supporter",
-                        "url": platform_url,
+                        "url": platform_uri,
                         "price": "$5",
                         "source": "membership"
                     }
@@ -69,12 +69,12 @@ class MembershipStrategy(BaseMonetizationStrategy):
         if not assets:
             return ""
         
-        platform_url = assets[0].get("url", "")
+        platform_uri = assets[0].get("url", "")
         
         options = [
-            f"Support my work! Join the inner circle: \n🔗 {platform_url}",
-            f"Want exclusive content and early access? Become a supporter: \n🔗 {platform_url}",
-            f"Help me keep creating! Join my membership program: \n🔗 {platform_url}",
-            f"Support the channel! Get perks and exclusive content: \n🔗 {platform_url}"
+            f"Support my work! Join the inner circle: \n🔗 {platform_uri}",
+            f"Want exclusive content and early access? Become a supporter: \n🔗 {platform_uri}",
+            f"Help me keep creating! Join my membership program: \n🔗 {platform_uri}",
+            f"Support the channel! Get perks and exclusive content: \n🔗 {platform_uri}"
         ]
         return random.choice(options)

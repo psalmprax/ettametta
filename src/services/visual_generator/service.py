@@ -33,9 +33,9 @@ class VisualGenerator:
                 async with httpx.AsyncClient() as client:
                     response = await client.post(self.base_url, headers=headers, json=data, timeout=60.0)
                     if response.status_code == 200:
-                        image_url = response.json().get("data", [{}])[0].get("url")
-                        if image_url:
-                            img_res = await client.get(image_url)
+                        image_uri = response.json().get("data", [{}])[0].get("url")
+                        if image_uri:
+                            img_res = await client.get(image_uri)
                             if img_res.status_code == 200:
                                 with open(file_path, "wb") as f:
                                     f.write(img_res.content)

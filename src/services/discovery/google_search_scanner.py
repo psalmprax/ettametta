@@ -86,7 +86,7 @@ class GoogleSearchScanner:
                             ContentCandidate(
                                 id=f"gs_{hash(item.get('link', '')) % 100000}",
                                 platform=self.platform,
-                                source_url=item.get("link", ""),
+                                source_uri=item.get("link", ""),
                                 creator_name=item.get("displayLink", ""),
                                 title=item.get("title", ""),
                                 view_count=10000,  # Estimate
@@ -94,7 +94,7 @@ class GoogleSearchScanner:
                                 comment_count=0,
                                 share_count=0,
                                 engagement_score=0.05,
-                                thumbnail_url=None,
+                                thumbnail_uri=None,
                                 tags=[niche, "search", "monetization"],
                                 metadata={
                                     "source": "google_search",
@@ -193,7 +193,7 @@ class GoogleSearchScanner:
                         ContentCandidate(
                             id=f"gs_scrape_{hash(res['url']) % 100000}",
                             platform=self.platform,
-                            source_url=res["url"],
+                            source_uri=res["url"],
                             creator_name="Google Shopping",
                             title=res["title"],
                             view_count=5000,

@@ -103,14 +103,14 @@ export default function Home() {
 
     await Promise.all([
       withRealFallback<any>(
-        () => fetch(`${API_BASE}/v1/analytics/stats/summary`, { headers }),
+        () => fetch(`${API_BASE}/analytics/stats/summary`, { headers }),
         {
           fallback: null,
           onSuccess: (data) => data && setStats(prev => ({ ...prev, ...data }))
         }
       ),
       withRealFallback<any[]>(
-        () => fetch(`${API_BASE}/v1/publish/history`, { headers }),
+        () => fetch(`${API_BASE}/publish/history`, { headers }),
         {
           fallback: [],
           onSuccess: (data) => data && setActivityFeed(data.slice(0, 6))
@@ -143,8 +143,8 @@ export default function Home() {
                     className="h-1 bg-cyan-400"
                 />
                 <div className="space-y-2">
-                    <h1 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tight leading-none" data-text="INTELLIGENCE_OS">
-                        Intelligence OS
+                    <h1 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tight leading-none" data-text="ETTAMETTA_OS">
+                        Ettametta OS
                     </h1>
                     <p className="font-data-mono text-zinc-500 text-[10px] flex items-center gap-3">
                         <Terminal className="h-3 w-3 text-cyan-400" />

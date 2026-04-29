@@ -150,7 +150,7 @@ def test_niche_data():
 def test_video_job_data():
     """Test video job data."""
     return {
-        "source_url": "https://example.com/video.mp4",
+        "source_uri": "https://example.com/video.mp4",
         "niche": "Technology",
         "transformation": {
             "face_blur": True,

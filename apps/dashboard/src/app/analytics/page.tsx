@@ -79,17 +79,72 @@ function AnalyticsBackground() {
 export default function AnalyticsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [metrics, setMetrics] = useState({
-        views: 142000,
-        retention: 0.78,
-        shares: 4200,
-        engagement: 0.12
+        views: 0,
+        retention: 0,
+        shares: 0,
+        engagement: 0,
+        activeTrends: 0,
+        successRate: "0%",
+        engineLoad: "0%",
+        velocity: "Nominal"
     });
+    const [historyData, setHistoryData] = useState<any[]>([]);
+
+    const fetchAnalytics = useCallback(async () => {
+        try {
+            const token = await getAuthToken();
+            const headers = { Authorization: `Bearer ${token}` };
+
+            const [summaryRes, reportRes, postsRes] = await Promise.all([
+                fetch(`${API_BASE}/analytics/stats/summary`, { headers }),
+                fetch(`${API_BASE}/analytics/report`, { headers }),
+                fetch(`${API_BASE}/analytics/posts?size=1`, { headers })
+            ]);
+
+            if (summaryRes.ok && reportRes.ok) {
+                const summary = (await summaryRes.json()).data;
+                const report = (await reportRes.json()).data;
+
+                setMetrics({
+                    views: report.total_views,
+                    retention: 0.78, 
+                    shares: 4200,    
+                    engagement: report.total_views > 0 ? (report.total_likes / report.total_views) : 0,
+                    activeTrends: summary.active_trends,
+                    successRate: summary.success_rate,
+                    engineLoad: summary.engine_load,
+                    velocity: summary.velocity
+                });
+            }
+
+            if (postsRes.ok) {
+                const postsData = (await postsRes.json()).data;
+                const latestPost = postsData.items?.[0];
+                if (latestPost) {
+                    const historyRes = await fetch(`${API_BASE}/analytics/report/${latestPost.id}/history`, { headers });
+                    if (historyRes.ok) {
+                        const history = (await historyRes.json()).data;
+                        if (history && history.length > 0) {
+                            setHistoryData(history.map((h: any) => ({
+                                time: new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                value: h.view_count
+                            })));
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("Analytics fetch failed:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     const { data: telemetry } = useWebSocket<any>(`${WS_BASE}/telemetry`);
 
     useEffect(() => {
-        setTimeout(() => setIsLoading(false), 1500);
-    }, []);
+        fetchAnalytics();
+    }, [fetchAnalytics]);
 
     const retentionData = [
         { time: "0s", value: 100 },
@@ -148,10 +203,10 @@ export default function AnalyticsPage() {
                     {/* TOP STATS GRID */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
                         {[
-                            { label: "NET_REACH", val: "1.42M", icon: Globe, color: "text-cyan-400" },
-                            { label: "ATTENTION_DECAY", val: "78%", icon: Activity, color: "text-emerald-400" },
-                            { label: "VIRAL_VELOCITY", val: "14.2X", icon: Zap, color: "text-purple-400" },
-                            { label: "NEURAL_CONVERSION", val: "12.4%", icon: Cpu, color: "text-amber-400" },
+                            { label: "NET_REACH", val: metrics.views >= 1000000 ? `${(metrics.views / 1000000).toFixed(1)}M` : metrics.views >= 1000 ? `${(metrics.views / 1000).toFixed(1)}K` : metrics.views, icon: Globe, color: "text-cyan-400" },
+                            { label: "ATTENTION_DECAY", val: `${(metrics.retention * 100).toFixed(0)}%`, icon: Activity, color: "text-emerald-400" },
+                            { label: "VIRAL_VELOCITY", val: metrics.velocity, icon: Zap, color: "text-purple-400" },
+                            { label: "NEURAL_CONVERSION", val: `${(metrics.engagement * 100).toFixed(1)}%`, icon: Cpu, color: "text-amber-400" },
                         ].map((stat, i) => (
                             <motion.div 
                                 key={stat.label}
@@ -195,24 +250,22 @@ export default function AnalyticsPage() {
 
                             <div className="h-[400px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={retentionData}>
+                                    <AreaChart data={historyData.length > 0 ? historyData : retentionData}>
                                         <defs>
                                             <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#00fbfb" stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor="#00fbfb" stopOpacity={0} />
+                                                <stop offset="5%" stopColor="#00fbfb" stopOpacity={0.3}/>
+                                                <stop offset="95%" stopColor="#00fbfb" stopOpacity={0}/>
                                             </linearGradient>
                                         </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
                                         <XAxis 
                                             dataKey="time" 
                                             axisLine={false} 
                                             tickLine={false} 
-                                            tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontFamily: 'JetBrains Mono' }} 
+                                            tick={{ fill: '#4b5563', fontSize: 8, fontWeight: 'bold' }} 
                                         />
                                         <YAxis 
-                                            axisLine={false} 
-                                            tickLine={false} 
-                                            tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontFamily: 'JetBrains Mono' }} 
+                                            hide 
                                         />
                                         <RechartsTooltip 
                                             content={({ active, payload }) => {
@@ -220,7 +273,7 @@ export default function AnalyticsPage() {
                                                     return (
                                                         <div className="surface-glass rim-light p-6 backdrop-blur-3xl shadow-2xl space-y-2">
                                                             <p className="font-data-mono text-[10px] text-cyan-400">{payload[0].payload.time} NODE</p>
-                                                            <p className="text-3xl font-bold text-white  tracking-tighter">{payload[0].value}%</p>
+                                                            <p className="text-3xl font-bold text-white tracking-tighter">{payload[0].value}%</p>
                                                             <p className="font-data-mono text-[8px] text-zinc-600 uppercase">STABILITY_LOCKED</p>
                                                         </div>
                                                     );

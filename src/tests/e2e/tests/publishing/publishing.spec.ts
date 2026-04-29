@@ -22,7 +22,7 @@ test.describe('Publishing - YouTube Upload', () => {
     test('should upload video to YouTube', async ({ page }) => {
         await page.goto('/publish/youtube');
         // Assume OAuth is connected
-        await page.fill('input[name="video_url"]', 'https://example.com/video.mp4');
+        await page.fill('input[name="video_uri"]', 'https://example.com/video.mp4');
         await page.fill('input[name="title"]', 'My Test Video');
         await page.fill('textarea[name="description"]', 'Test description');
         await page.click('button:has-text("Upload to YouTube")');
@@ -31,7 +31,7 @@ test.describe('Publishing - YouTube Upload', () => {
 
     test('should set video privacy', async ({ page }) => {
         await page.goto('/publish/youtube');
-        await page.fill('input[name="video_url"]', 'https://example.com/video.mp4');
+        await page.fill('input[name="video_uri"]', 'https://example.com/video.mp4');
         await page.selectOption('select[name="privacy"]', 'private');
         await page.click('button:has-text("Upload to YouTube")');
         await expect(page.locator('[data-testid="upload-started"]')).toBeVisible({ timeout: 30000 });
@@ -39,7 +39,7 @@ test.describe('Publishing - YouTube Upload', () => {
 
     test('should add tags to video', async ({ page }) => {
         await page.goto('/publish/youtube');
-        await page.fill('input[name="video_url"]', 'https://example.com/video.mp4');
+        await page.fill('input[name="video_uri"]', 'https://example.com/video.mp4');
         await page.fill('input[name="tags"]', 'viral,trending,ai');
         await page.click('button:has-text("Upload to YouTube")');
         await expect(page.locator('[data-testid="upload-started"]')).toBeVisible({ timeout: 30000 });
@@ -47,7 +47,7 @@ test.describe('Publishing - YouTube Upload', () => {
 
     test('should schedule video publication', async ({ page }) => {
         await page.goto('/publish/youtube');
-        await page.fill('input[name="video_url"]', 'https://example.com/video.mp4');
+        await page.fill('input[name="video_uri"]', 'https://example.com/video.mp4');
         await page.fill('input[name="scheduled_time"]', '2026-04-15T10:00');
         await page.click('button:has-text("Schedule")');
         await expect(page.locator('[data-testid="scheduled"]')).toBeVisible();
@@ -76,7 +76,7 @@ test.describe('Publishing - TikTok Upload', () => {
     test('should upload video to TikTok', async ({ page }) => {
         await page.goto('/publish/tiktok');
         // Assume OAuth is connected
-        await page.fill('input[name="video_url"]', 'https://example.com/video.mp4');
+        await page.fill('input[name="video_uri"]', 'https://example.com/video.mp4');
         await page.fill('input[name="caption"]', 'Check this out! #viral #fyp');
         await page.click('button:has-text("Upload to TikTok")');
         await expect(page.locator('[data-testid="upload-started"]')).toBeVisible({ timeout: 30000 });
@@ -84,7 +84,7 @@ test.describe('Publishing - TikTok Upload', () => {
 
     test('should add hashtags', async ({ page }) => {
         await page.goto('/publish/tiktok');
-        await page.fill('input[name="video_url"]', 'https://example.com/video.mp4');
+        await page.fill('input[name="video_uri"]', 'https://example.com/video.mp4');
         await page.fill('input[name="hashtags"]', '#viral #trending #fyp');
         await page.click('button:has-text("Upload to TikTok")');
         await expect(page.locator('[data-testid="upload-started"]')).toBeVisible({ timeout: 30000 });
@@ -92,7 +92,7 @@ test.describe('Publishing - TikTok Upload', () => {
 
     test('should set cover image', async ({ page }) => {
         await page.goto('/publish/tiktok');
-        await page.fill('input[name="video_url"]', 'https://example.com/video.mp4');
+        await page.fill('input[name="video_uri"]', 'https://example.com/video.mp4');
         await page.fill('input[name="cover_url"]', 'https://example.com/cover.jpg');
         await page.click('button:has-text("Upload to TikTok")');
         await expect(page.locator('[data-testid="upload-started"]')).toBeVisible({ timeout: 30000 });
@@ -115,7 +115,7 @@ test.describe('Publishing - Schedule Posts', () => {
 
     test('should schedule a post', async ({ page }) => {
         await page.goto('/publish/schedule');
-        await page.fill('input[name="video_url"]', 'https://example.com/video.mp4');
+        await page.fill('input[name="video_uri"]', 'https://example.com/video.mp4');
         await page.selectOption('select[name="platform"]', 'youtube');
         await page.fill('input[name="scheduled_date"]', '2026-04-15');
         await page.fill('input[name="scheduled_time"]', '10:00');
@@ -162,7 +162,7 @@ test.describe('Publishing - A/B Testing', () => {
     test('should create A/B test', async ({ page }) => {
         await page.goto('/publish/ab-testing');
         await page.click('button:has-text("Create Test")');
-        await page.fill('input[name="video_url"]', 'https://example.com/video.mp4');
+        await page.fill('input[name="video_uri"]', 'https://example.com/video.mp4');
         await page.fill('input[name="title_a"]', 'Title A');
         await page.fill('input[name="title_b"]', 'Title B');
         await page.fill('input[name="traffic_split"]', '50');

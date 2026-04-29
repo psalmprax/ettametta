@@ -29,7 +29,7 @@ class HaiperSkill(OpenClawBaseSkill):
             
         res = await self.generate(p, aspect_ratio or kwargs.get("aspect_ratio", "9:16"))
         if res.get("status") == "success":
-            return f"🎬 **{self.__class__.__name__} Video Generated!**\nURL: {res.get('video_url')}"
+            return f"🎬 **{self.__class__.__name__} Video Generated!**\nURL: {res.get('video_uri')}"
         return f"⚠️ {self.__class__.__name__} failed: {res.get('error')}"
 
     async def generate(self, prompt: str, aspect_ratio: str = "9:16") -> dict[str, Any]:
@@ -91,7 +91,7 @@ class HaiperSkill(OpenClawBaseSkill):
             await page.wait_for_selector("video[src]", timeout=120000)
 
             video_element = await page.query_selector("video[src]")
-            video_url = await video_element.get_attribute("src")
+            video_uri = await video_element.get_attribute("src")
 
             logger.info(f"[Haiper] Video generated successfully")
 
@@ -100,7 +100,7 @@ class HaiperSkill(OpenClawBaseSkill):
 
             return {
                 "status": "success",
-                "video_url": video_url,
+                "video_uri": video_uri,
                 "engine": "haiper",
                 "prompt": prompt,
             }

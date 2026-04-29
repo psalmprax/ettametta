@@ -131,8 +131,24 @@ sudo systemctl restart openclaw-gateway
 openclaw pairing approve telegram <PAIRING_CODE>
 ```
 
-## 📝 Git Safety
+## 🧪 Testing (Playwright)
 
+We use Playwright for end-to-end system verification. All tests are consolidated in `src/tests/e2e`.
+
+### Run E2E Tests
+```bash
+cd src/tests/e2e
+npm install
+BASE_URL=http://localhost:3000 npx playwright test
+```
+
+### View Test Report
+```bash
+cd src/tests/e2e
+npx playwright show-report
+```
+
+## 📝 Git Safety
 - `.env` — **gitignored** (use `.env.example` as template)
 - `terraform.tfvars` — **gitignored** (use `terraform.tfvars.example`)
 - `terraform.tfstate` — **gitignored** (never commit state files)

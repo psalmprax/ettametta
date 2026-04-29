@@ -53,8 +53,8 @@ class TwitchScanner:
         seen = set()
         unique = []
         for c in candidates:
-            if c.source_url not in seen:
-                seen.add(c.source_url)
+            if c.source_uri not in seen:
+                seen.add(c.source_uri)
                 unique.append(c)
         
         logger.info(f"[TwitchScanner] Found {len(unique)} clips")
@@ -193,7 +193,7 @@ class TwitchScanner:
                     candidates.append(ContentCandidate(
                         id=f"twitch_{clip_id}",
                         platform="Twitch Clips",
-                        source_url=url,
+                        source_uri=url,
                         creator_name=streamer,
                         title=title[:100],
                         view_count=views,
@@ -201,7 +201,7 @@ class TwitchScanner:
                         comment_count=0,
                         share_count=0,
                         engagement_score=engagement_score,
-                        thumbnail_url=thumbnail,
+                        thumbnail_uri=thumbnail,
                         metadata={"game": game, "niche": niche}
                     ))
                     

@@ -71,7 +71,7 @@ class YouTubeLongScanner(DiscoveryScannerBase):
                     ContentCandidate(
                         id=f"yt_long_{video_id}",
                         platform="YouTube (Pillar)",
-                        source_url=f"https://youtube.com/watch?v={video_id}",
+                        source_uri=f"https://youtube.com/watch?v={video_id}",
                         creator_name=snippet.get("channelTitle", "Unknown"),
                         title=snippet.get("title", "No Title"),
                         view_count=views,

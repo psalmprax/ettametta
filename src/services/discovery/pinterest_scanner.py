@@ -52,8 +52,8 @@ class PinterestScanner:
         seen = set()
         unique = []
         for c in candidates:
-            if c.source_url not in seen:
-                seen.add(c.source_url)
+            if c.source_uri not in seen:
+                seen.add(c.source_uri)
                 unique.append(c)
         
         logger.info(f"[PinterestScanner] Found {len(unique)} pins")
@@ -247,7 +247,7 @@ class PinterestScanner:
             return ContentCandidate(
                 id=f"pin_{pin_id}",
                 platform="Pinterest",
-                source_url=link,
+                source_uri=link,
                 creator_name=author,
                 title=title[:100],
                 view_count=views,
@@ -255,7 +255,7 @@ class PinterestScanner:
                 comment_count=comments,
                 share_count=repins,
                 engagement_score=engagement_score,
-                thumbnail_url=thumbnail,
+                thumbnail_uri=thumbnail,
                 metadata={}
             )
             

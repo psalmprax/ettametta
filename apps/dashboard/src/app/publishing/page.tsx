@@ -91,15 +91,15 @@ export default function PublishingPage() {
         
         await Promise.all([
             withRealFallback<any>(
-                () => fetch(`${API_BASE}/v1/publish/accounts`, { headers }),
+                () => fetch(`${API_BASE}/publish/accounts`, { headers }),
                 { fallback: [], onSuccess: (data) => setAccounts(data) }
             ),
             withRealFallback<any>(
-                () => fetch(`${API_BASE}/v1/publish/history`, { headers }),
+                () => fetch(`${API_BASE}/publish/history`, { headers }),
                 { fallback: [], onSuccess: (data) => setHistory(data) }
             ),
             withRealFallback<any>(
-                () => fetch(`${API_BASE}/v1/video/jobs`, { headers }),
+                () => fetch(`${API_BASE}/video/jobs`, { headers }),
                 { fallback: [], onSuccess: (data) => setJobs(data) }
             )
         ]);

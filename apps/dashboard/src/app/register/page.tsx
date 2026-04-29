@@ -2,14 +2,13 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Zap, Loader2, Mail, Lock } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { BaseLayout } from "@/components/layout/BaseLayout";
-import { API_BASE } from "@/lib/config";
 
 export default function RegisterPage() {
     const [email, setEmail] = useState("");
@@ -40,7 +39,6 @@ export default function RegisterPage() {
         setError("");
 
         try {
-            // The register function in AuthContext already uses API_BASE correctly
             const result = await register(email, password);
             if (result.success) {
                 router.push("/login?registered=true");
@@ -61,7 +59,7 @@ export default function RegisterPage() {
                 
                 <div className="text-center space-y-6 mb-12">
                     <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 border border-indigo-100 shadow-lg">
-                        <Zap className="h-8 w-8 text-indigo-600" />
+                        <Mail className="h-8 w-8 text-indigo-600" />
                     </div>
                     <div className="space-y-2">
                         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">
@@ -93,7 +91,7 @@ export default function RegisterPage() {
                         placeholder="Create a secure password"
                         icon={<Lock className="h-5 w-5" />}
                         variant="default"
-                        error={error}
+                        error={error && !error.includes("Password must") ? error : undefined}
                     />
 
                     <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-600 space-y-2">

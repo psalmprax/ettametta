@@ -12,13 +12,13 @@ interface ContentCandidate {
     platform: string;
     category: string;
     description: string;
-    thumbnail_url: string;
+    thumbnail_uri: string;
     view_count: number;
     engagement_score: number;
     viral_score: number;
     published_at: string;
     creator_name: string;
-    source_url: string;
+    source_uri: string;
     duration_seconds: number;
     title: string;
 }
@@ -118,7 +118,7 @@ export const CandidateList = memo<CandidateListProps>(function CandidateList({
                                     <div className="relative">
                                         <div 
                                             className="w-24 h-16 bg-cover bg-center rounded-lg group-hover:scale-105 transition-transform"
-                                            style={{ backgroundImage: `url(${candidate.thumbnail_url})` }}
+                                            style={{ backgroundImage: `url(${candidate.thumbnail_uri})` }}
                                             role="img"
                                             aria-label={candidate.title}
                                         />
@@ -205,7 +205,7 @@ export const CandidateList = memo<CandidateListProps>(function CandidateList({
             <VideoPreviewModal
                 isOpen={showPreview}
                 onClose={() => setShowPreview(false)}
-                videoUrl={selectedCandidate?.source_url || ""}
+                videoUrl={selectedCandidate?.source_uri || ""}
                 title={selectedCandidate?.title || ""}
             />
         </>

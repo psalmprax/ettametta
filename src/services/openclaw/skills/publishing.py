@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class PublishingSkill(OpenClawBaseSkill):
     def __init__(self):
         super().__init__()
-        self.video_url = f"{settings.API_URL}/video"
+        self.video_uri = f"{settings.API_URL}/video"
         self.publish_url = f"{settings.API_URL}/publish"
 
     def execute(
@@ -40,7 +40,7 @@ class PublishingSkill(OpenClawBaseSkill):
             # 1. Find the job details to get output path/url
             # Listing all jobs and filtering (since we don't have a direct GET /jobs/{id} yet)
             jobs_response = requests.get(
-                f"{self.video_url}/jobs", headers=self._get_headers(), timeout=10
+                f"{self.video_uri}/jobs", headers=self._get_headers(), timeout=10
             )
 
             if jobs_response.status_code != 200:

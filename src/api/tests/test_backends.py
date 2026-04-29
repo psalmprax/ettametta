@@ -638,7 +638,7 @@ class TestAnalyticsService:
             shares=0,
             duration=300,
             upload_date=datetime.now(),
-            thumbnail_url="https://example.com/thumb.jpg",
+            thumbnail_uri="https://example.com/thumb.jpg",
             description="Test description",
             tags=["test", "video"],
             engagement_score=6.0,
@@ -685,25 +685,25 @@ class TestAnalyticsService:
         assert scanner._classify_content_type("Top 10 smartphones 2024") == "list"
         assert scanner._classify_content_type("Regular video content") == "general"
 
-    def test_video_url_parsing(self):
+    def test_video_uri_parsing(self):
         """Test video URL parsing for different platforms"""
         from src.services.discovery.video_lead_scanner import VideoLeadScanner
 
         scanner = VideoLeadScanner()
 
         # YouTube URLs
-        platform, video_id = scanner._parse_video_url(
+        platform, video_id = scanner._parse_video_uri(
             "https://youtube.com/watch?v=dQw4w9WgXcQ"
         )
         assert platform == "youtube"
         assert video_id == "dQw4w9WgXcQ"
 
-        platform, video_id = scanner._parse_video_url("https://youtu.be/dQw4w9WgXcQ")
+        platform, video_id = scanner._parse_video_uri("https://youtu.be/dQw4w9WgXcQ")
         assert platform == "youtube"
         assert video_id == "dQw4w9WgXcQ"
 
         # Unknown platform
-        platform, video_id = scanner._parse_video_url("https://unknown.com/video/123")
+        platform, video_id = scanner._parse_video_uri("https://unknown.com/video/123")
         assert platform == "unknown"
 
     def test_monetization_potential_assessment(self):

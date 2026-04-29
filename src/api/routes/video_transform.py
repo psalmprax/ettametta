@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class TransformationRequest(BaseModel):
-    source_url: str
+    source_uri: str
     niche: str = "Motivation"
     platform: str = "YouTube Shorts"
     style: str | None = "Default"
@@ -51,7 +51,7 @@ async def start_transformation(
         # 1. Dispatch Task first (Task Validation)
         try:
             task = download_and_process_task.delay(
-                source_url=body.source_url,
+                source_uri=body.source_uri,
                 niche=body.niche,
                 platform=body.platform,
                 style=body.style,
@@ -97,7 +97,7 @@ async def start_transformation(
             title=f"Viral Transform - {body.niche}",
             status=SystemJobStatus.QUEUED,
             progress=0,
-            source_url=body.source_url,
+            source_uri=body.source_uri,
             user_id=current_user.id,
             job_metadata={
                 "niche": body.niche,
@@ -118,7 +118,7 @@ async def start_transformation(
             user_id=current_user.id,
             resource_type="VIDEO",
             resource_id=task.id,
-            details={"source_url": body.source_url, "cost": credits_cost},
+            details={"source_uri": body.source_uri, "cost": credits_cost},
             db=db,
         )
 
@@ -154,7 +154,7 @@ async def test_drive(
             select(ContentCandidateDB)
             .where(
                 ContentCandidateDB.niche == request.niche,
-                ContentCandidateDB.thumbnail_url.isnot(None),
+                ContentCandidateDB.thumbnail_uri.isnot(None),
             )
             .order_by(ContentCandidateDB.viral_score.desc())
         )
@@ -166,7 +166,7 @@ async def test_drive(
             raise HTTPException(status_code=404, detail="No viral candidates found")
 
         task = download_and_process_task.delay(
-            source_url=candidate.source_url,
+            source_uri=candidate.source_uri,
             niche=request.niche,
             platform="YouTube Shorts",
             preview_only=True,
@@ -178,7 +178,7 @@ async def test_drive(
             id=task.id,
             title=f"Test Drive - {request.niche}",
             status=SystemJobStatus.QUEUED,
-            source_url=candidate.source_url,
+            source_uri=candidate.source_uri,
             user_id=current_user.id,
             job_metadata={
                 "niche": request.niche,

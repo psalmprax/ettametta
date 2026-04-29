@@ -110,8 +110,8 @@ async def test_step4_vlm_analysis(video_path: str):
                                     "text": "Analyze this video frame. Describe: 1) What's happening 2) The visual mood 3) Key content type (talking head, demo, music video, etc)",
                                 },
                                 {
-                                    "type": "image_url",
-                                    "image_url": {
+                                    "type": "image_uri",
+                                    "image_uri": {
                                         "url": f"data:image/jpeg;base64,{img_b64}"
                                     },
                                 },

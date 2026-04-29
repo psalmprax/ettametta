@@ -109,8 +109,8 @@ def step4_vlm(video_path):
                                 "text": "Analyze this video frame. What's happening? What's the content type?",
                             },
                             {
-                                "type": "image_url",
-                                "image_url": {
+                                "type": "image_uri",
+                                "image_uri": {
                                     "url": f"data:image/jpeg;base64,{img_b64}"
                                 },
                             },

@@ -122,7 +122,7 @@ test.describe('Video Model - API Server Integration', () => {
     test('should check video transform endpoint', async ({ request }) => {
         const response = await request.post(`${API_SERVER_URL}/api/v1/video/transform`, {
             data: {
-                source_url: 'https://example.com/test.mp4',
+                source_uri: 'https://example.com/test.mp4',
                 niche: 'Technology',
                 platform: 'YouTube Shorts'
             }

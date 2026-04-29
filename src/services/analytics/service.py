@@ -519,7 +519,7 @@ class AnalyticsService:
                             "type": "Digital Product",
                             "product": p.name,
                             "price": p.price,
-                            "link": p.purchase_url
+                            "link": p.purchase_uri
                         })
 
                 # 3. Memberships for high retention
@@ -535,7 +535,7 @@ class AnalyticsService:
                             "type": "Membership",
                             "product": m.name,
                             "price": m.monthly_price,
-                            "link": m.sign_up_url
+                            "link": m.sign_up_uri
                         })
 
         except Exception as e:

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  server: {
+  experimental: {
     allowedHosts: ["149.104.110.122.sslip.io"],
   },
   async rewrites() {

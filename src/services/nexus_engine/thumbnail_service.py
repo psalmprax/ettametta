@@ -23,12 +23,12 @@ class ThumbnailGenerator:
         encoded_prompt = prompt.replace(" ", "%20")
         
         # Pollinations.ai simple GET endpoint
-        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&nologo=true&seed=42"
+        image_uri = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&nologo=true&seed=42"
         
         try:
             # 1. Download the generated asset
             async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(image_url)
+                response = await client.get(image_uri)
                 if response.status_code != 200:
                     raise RuntimeError(f"Pollinations returned status {response.status_code}")
                 
@@ -50,6 +50,6 @@ class ThumbnailGenerator:
         except Exception as e:
             logging.error(f"[Thumbnail] Generation Failed: {e}")
             # Return original Pollinations URL as a non-breaking fallback
-            return image_url
+            return image_uri
 
 base_thumbnail_generator = ThumbnailGenerator()

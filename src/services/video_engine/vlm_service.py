@@ -104,7 +104,7 @@ class VLMService:
                         "role": "user",
                         "content": [
                             {"type": "text", "text": "Analyze this video frame. Output JSON with: visual_mood, detected_subjects, lighting_quality, dominant_colors, aesthetic_rating (1-10)."},
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                            {"type": "image_uri", "image_uri": {"url": f"data:image/jpeg;base64,{base64_image}"}}
                         ]
                     }
                 ],
