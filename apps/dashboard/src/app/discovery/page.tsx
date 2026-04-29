@@ -20,6 +20,7 @@ import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { withRealFallback } from "@/lib/real_first_utils";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -67,6 +68,14 @@ interface ContentCandidate {
     title: string;
 }
 
+interface DiscoveryAlert {
+    id: string;
+    niche: string;
+    message: string;
+    severity: string;
+    threshold?: number | string;
+}
+
 function DiscoveryContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -78,7 +87,7 @@ function DiscoveryContent() {
     const [niches, setNiches] = useState<string[]>(["Motivation", "AI", "Gaming", "Tech", "Finance"]);
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearching, setIsSearching] = useState(false);
-    const [alerts, setAlerts] = useState<any[]>([]);
+    const [alerts, setAlerts] = useState<DiscoveryAlert[]>([]);
     const [monitoredNiches, setMonitoredNiches] = useState<string[]>([]);
     
     const [selectedCandidate, setSelectedCandidate] = useState<ContentCandidate | null>(null);
@@ -104,9 +113,9 @@ function DiscoveryContent() {
             const alertsRes = await fetch(`${API_BASE}/discovery/alerts`, { headers });
             if (alertsRes.ok) {
                 const alertData = await alertsRes.json();
-                const alertList = alertData.data?.alerts || alertData.alerts || [];
+                const alertList = (alertData.data?.alerts || alertData.alerts || []) as DiscoveryAlert[];
                 setAlerts(alertList);
-                const watchedNiches = alertList.map((a: any) => a.niche);
+                const watchedNiches = alertList.map((a) => a.niche);
                 setMonitoredNiches(watchedNiches);
                 // Sync niches list with monitored ones if that's the primary source
                 if (watchedNiches.length > 0) {
@@ -124,21 +133,30 @@ function DiscoveryContent() {
 
     const fetchTrends = useCallback(async () => {
         setIsLoading(true);
-        try {
-            const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/discovery/trends?niche=${activeNiche}&horizon=${timeHorizon}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setCandidates(data.trends || []);
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error("Discovery module unstable");
-        } finally {
+        const token = await getAuthToken();
+        if (!token) {
             setIsLoading(false);
+            return;
         }
+
+        await withRealFallback<{ trends: ContentCandidate[] } | ContentCandidate[]>(
+            () => fetch(`${API_BASE}/discovery/trends?niche=${activeNiche}&horizon=${timeHorizon}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: [],
+                onSuccess: (data) => {
+                    const trends = Array.isArray(data) ? data : (data?.trends || []);
+                    setCandidates(trends);
+                },
+                onFallback: (err: any) => {
+                    toast.error("Discovery module unstable", {
+                        description: err.message
+                    });
+                }
+            }
+        );
+        setIsLoading(false);
     }, [activeNiche, timeHorizon]);
 
     useEffect(() => {
@@ -148,27 +166,43 @@ function DiscoveryContent() {
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!searchQuery.trim()) return;
+
         setIsSearching(true);
-        try {
-            const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(searchQuery)}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setCandidates(data.results || []);
-                setActiveNiche(searchQuery);
-            }
-        } finally {
+        const token = await getAuthToken();
+        if (!token) {
             setIsSearching(false);
+            return;
         }
+
+        await withRealFallback<{ results: ContentCandidate[] } | ContentCandidate[]>(
+            () => fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(searchQuery)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: [],
+                onSuccess: (data) => {
+                    const results = Array.isArray(data) ? data : (data?.results || []);
+                    setCandidates(results);
+                    setActiveNiche(searchQuery);
+                },
+                onFallback: (err: any) => {
+                    toast.error("Search failed", { description: err.message });
+                }
+            }
+        );
+        setIsSearching(false);
     };
 
     const handleDefineCluster = async () => {
         setIsClusterScanning(true);
-        try {
-            const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/discovery/scan`, {
+        const token = await getAuthToken();
+        if (!token) {
+            setIsClusterScanning(false);
+            return;
+        }
+
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/discovery/scan`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -178,49 +212,57 @@ function DiscoveryContent() {
                     niches: [activeNiche],
                     deep: true 
                 })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                toast.success(data.data?.message || "Autonomous cluster scan initiated");
-            } else {
-                toast.error("Cluster protocol failed");
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    toast.success(data?.message || "Autonomous cluster scan initiated");
+                },
+                onFallback: (err) => {
+                    toast.error("Cluster protocol failed", { description: err.message });
+                }
             }
-        } catch (err) {
-            toast.error("Connection sequence interrupted");
-        } finally {
-            setIsClusterScanning(false);
-        }
+        );
+        setIsClusterScanning(false);
     };
 
     const handleWatchNiche = async (niche: string) => {
         const isWatching = monitoredNiches.includes(niche);
         const token = await getAuthToken();
-        try {
-            if (isWatching) {
-                // Find alert ID and delete
-                const alert = alerts.find(a => a.niche === niche);
-                if (alert) {
-                    await fetch(`${API_BASE}/discovery/alerts/${alert.id}`, {
-                        method: "DELETE",
-                        headers: { Authorization: `Bearer ${token}` }
+        if (!token) return;
+
+        await withRealFallback<any>(
+            async () => {
+                if (isWatching) {
+                    const alert = alerts.find(a => a.niche === niche);
+                    if (alert) {
+                        return fetch(`${API_BASE}/discovery/alerts/${alert.id}`, {
+                            method: "DELETE",
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                    }
+                } else {
+                    return fetch(`${API_BASE}/discovery/niche/watch`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ niche })
                     });
-                    toast.success(`Stopped watching ${niche}`);
                 }
-            } else {
-                await fetch(`${API_BASE}/discovery/niche/watch`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ niche })
-                });
-                toast.success(`Watching ${niche} for viral breakouts`);
+            },
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success(isWatching ? `Stopped watching ${niche}` : `Watching ${niche} for viral breakouts`);
+                    loadInitialData();
+                },
+                onFallback: (err) => {
+                    toast.error("Failed to update watch status", { description: err.message });
+                }
             }
-            loadInitialData();
-        } catch (err) {
-            toast.error("Failed to update watch status");
-        }
+        );
     };
 
     const handleOpenAnalysis = async (candidate: ContentCandidate) => {
@@ -229,10 +271,13 @@ function DiscoveryContent() {
         setIsAnalyzing(true);
 
         const token = await getAuthToken();
-        if (!token) return;
+        if (!token) {
+            setIsAnalyzing(false);
+            return;
+        }
 
-        try {
-            const res = await fetch(`${API_BASE}/discovery/analyze`, {
+        await withRealFallback<{ task_id: string }>(
+            () => fetch(`${API_BASE}/discovery/analyze`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -242,42 +287,43 @@ function DiscoveryContent() {
                     url: candidate.source_uri || candidate.id,
                     niche: activeNiche 
                 })
-            });
-            
-            if (res.ok) {
-                const data = await res.json();
-                const taskId = data.task_id;
-                setAnalysisTask(taskId);
+            }),
+            {
+                fallback: { task_id: "" },
+                onSuccess: (data) => {
+                    const taskId = data.task_id;
+                    setAnalysisTask(taskId);
 
-                if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-                
-                pollIntervalRef.current = setInterval(async () => {
-                    try {
-                        const statusRes = await fetch(`${API_BASE}/discovery/analyze/${taskId}`, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        });
-                        if (statusRes.ok) {
-                            const statusData = await statusRes.json();
-                            if (statusData.status === "SUCCESS" || statusData.status === "COMPLETED") {
-                                setAnalysisResult(statusData.result);
-                                setIsAnalyzing(false);
-                                if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-                            } else if (statusData.status === "FAILURE" || statusData.status === "REVOKED") {
-                                toast.error("Deep analysis failed");
-                                setIsAnalyzing(false);
-                                if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+                    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+                    
+                    pollIntervalRef.current = setInterval(async () => {
+                        await withRealFallback<any>(
+                            () => fetch(`${API_BASE}/discovery/analyze/${taskId}`, {
+                                headers: { Authorization: `Bearer ${token}` }
+                            }),
+                            {
+                                fallback: null,
+                                onSuccess: (statusData) => {
+                                    if (statusData.status === "completed") {
+                                        setAnalysisResult(statusData.result);
+                                        setIsAnalyzing(false);
+                                        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+                                    } else if (statusData.status === "failed") {
+                                        setIsAnalyzing(false);
+                                        toast.error("Analysis sequence failed");
+                                        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+                                    }
+                                }
                             }
-                        }
-                    } catch (e) {
-                        console.error("Polling error:", e);
-                        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-                    }
-                }, 3000);
+                        );
+                    }, 3000);
+                },
+                onFallback: (err) => {
+                    setIsAnalyzing(false);
+                    toast.error("Analysis initialization failed", { description: err.message });
+                }
             }
-        } catch (err) {
-            console.error("Analysis initiation failed:", err);
-            setIsAnalyzing(false);
-        }
+        );
     };
 
     const handleCloseAnalysis = () => {

@@ -139,26 +139,33 @@ export default function CreationPage() {
             return;
         }
         setIsGenerating(true);
-        try {
-            const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/video/script`, {
+        const token = await getAuthToken();
+        if (!token) {
+            setIsGenerating(false);
+            return;
+        }
+
+        await withRealFallback<ScriptOutput>(
+            () => fetch(`${API_BASE}/video/script`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ topic, niche, style, duration_seconds: duration })
-            });
-            if (!res.ok) throw new Error("Synthesis failure");
-            const data = await res.json();
-            setScript(data);
-            toast.success("Script Protocol Synthesized");
-        } catch (err) {
-            console.error(err);
-            toast.error("Neural Link Failed");
-        } finally {
-            setIsGenerating(false);
-        }
+                body: JSON.stringify({ topic, niche, style, duration_seconds: duration, engine: activeStack })
+            }),
+            {
+                fallback: {} as ScriptOutput,
+                onSuccess: (data) => {
+                    setScript(data);
+                    toast.success("Script Protocol Synthesized");
+                },
+                onFallback: (err) => {
+                    toast.error("Neural Link Failed", { description: err.message });
+                }
+            }
+        );
+        setIsGenerating(false);
     };
 
     const handleLaunchCinema = async () => {
@@ -167,127 +174,161 @@ export default function CreationPage() {
             return;
         }
         setIsCinemaLaunching(true);
-        try {
-            const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/video/launch-cinema`, {
+        const token = await getAuthToken();
+        if (!token) {
+            setIsCinemaLaunching(false);
+            return;
+        }
+
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/video/launch-cinema`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ topic, niche, style, duration_seconds: duration })
-            });
-            if (!res.ok) throw new Error("Cinema launch failure");
-            toast.success("Cinema Sequence Initiated");
-        } catch (err) {
-            console.error(err);
-            toast.error("System Override Required");
-        } finally {
-            setIsCinemaLaunching(false);
-        }
+                body: JSON.stringify({ topic, niche, style, duration_seconds: duration, engine: activeStack })
+            }),
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("Cinema Sequence Initiated");
+                },
+                onFallback: (err) => {
+                    toast.error("System Override Required", { description: err.message });
+                }
+            }
+        );
+        setIsCinemaLaunching(false);
     };
 
     const handleValidateHook = async () => {
         if (!script?.segments?.[0]?.text) return;
         setIsValidating(true);
-        try {
-            const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/video/validate-hook`, {
+        const token = await getAuthToken();
+        if (!token) {
+            setIsValidating(false);
+            return;
+        }
+
+        await withRealFallback<HookAnalysis>(
+            () => fetch(`${API_BASE}/video/validate-hook`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({ hook: script.segments[0].text })
-            });
-            if (!res.ok) throw new Error("Validation failed");
-            const data = await res.json();
-            setHookAnalysis(data);
-        } catch (err) {
-            console.error(err);
-            toast.error("Retention analysis offline");
-        } finally {
-            setIsValidating(false);
-        }
+            }),
+            {
+                fallback: { status: "VALID", score: 0, analysis: "", alternatives: [] } as HookAnalysis,
+                onSuccess: (data) => setHookAnalysis(data),
+                onFallback: (err) => {
+                    toast.error("Retention analysis offline", { description: err.message });
+                }
+            }
+        );
+        setIsValidating(false);
     };
 
     const handleGlobalize = async (targetLang: string) => {
         if (!script) return;
         setIsGenerating(true);
-        try {
-            const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/video/translate-script`, {
+        const token = await getAuthToken();
+        if (!token) {
+            setIsGenerating(false);
+            return;
+        }
+
+        await withRealFallback<ScriptOutput>(
+            () => fetch(`${API_BASE}/video/translate-script`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({ script, target_language: targetLang })
-            });
-            if (!res.ok) throw new Error("Translation failed");
-            const data = await res.json();
-            setScript(data);
-            toast.success(`Localized to ${targetLang}`);
-        } catch (err) {
-            console.error(err);
-            toast.error("Linguistic module error");
-        } finally {
-            setIsGenerating(false);
-        }
+            }),
+            {
+                fallback: script,
+                onSuccess: (data) => {
+                    setScript(data);
+                    toast.success(`Localized to ${targetLang}`);
+                },
+                onFallback: (err) => {
+                    toast.error("Linguistic module error", { description: err.message });
+                }
+            }
+        );
+        setIsGenerating(false);
     };
 
     const handleSynthesizeAudio = async (index: number, text: string) => {
         setLoadingSegment(`audio-${index}`);
-        try {
-            const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/video/synthesize-audio`, {
+        const token = await getAuthToken();
+        if (!token) {
+            setLoadingSegment(null);
+            return;
+        }
+
+        await withRealFallback<{ audio_uri: string }>(
+            () => fetch(`${API_BASE}/video/synthesize-audio`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({ text, segment_index: index })
-            });
-            if (!res.ok) throw new Error("Audio synthesis failed");
-            const data = await res.json();
-            setSegmentAssets(prev => ({
-                ...prev,
-                [index]: { ...prev[index], audio: data.audio_uri }
-            }));
-            toast.success("Vocal Pattern Captured");
-        } catch (err) {
-            console.error(err);
-            toast.error("Audio Engine Stalled");
-        } finally {
-            setLoadingSegment(null);
-        }
+            }),
+            {
+                fallback: { audio_uri: "" },
+                onSuccess: (data) => {
+                    setSegmentAssets(prev => ({
+                        ...prev,
+                        [index]: { ...prev[index], audio: data.audio_uri }
+                    }));
+                    toast.success("Vocal Pattern Captured");
+                },
+                onFallback: (err) => {
+                    toast.error("Audio Engine Stalled", { description: err.message });
+                }
+            }
+        );
+        setLoadingSegment(null);
     };
 
     const handleSearchStock = async (index: number, query: string) => {
         setLoadingSegment(`stock-${index}`);
-        try {
-            const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/video/search-stock`, {
+        const token = await getAuthToken();
+        if (!token) {
+            setLoadingSegment(null);
+            return;
+        }
+
+        await withRealFallback<{ videos: any[] }>(
+            () => fetch(`${API_BASE}/video/search-stock`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({ query, segment_index: index })
-            });
-            if (!res.ok) throw new Error("Stock search failed");
-            const data = await res.json();
-            setSegmentAssets(prev => ({
-                ...prev,
-                [index]: { ...prev[index], videos: data.videos }
-            }));
-            toast.success("Visual Assets Retained");
-        } catch (err) {
-            console.error(err);
-            toast.error("Visual Link Terminated");
-        } finally {
-            setLoadingSegment(null);
-        }
+            }),
+            {
+                fallback: { videos: [] },
+                onSuccess: (data) => {
+                    setSegmentAssets(prev => ({
+                        ...prev,
+                        [index]: { ...prev[index], videos: data.videos }
+                    }));
+                    toast.success("Visual Assets Retained");
+                },
+                onFallback: (err) => {
+                    toast.error("Visual Link Terminated", { description: err.message });
+                }
+            }
+        );
+        setLoadingSegment(null);
     };
 
     return (
@@ -416,7 +457,7 @@ export default function CreationPage() {
                                     </div>
 
                                     {/* Selectors */}
-                                    <div className="grid grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                         <div className="space-y-3">
                                             <label className="font-bold text-zinc-500 uppercase tracking-widest text-[10px]">Niche</label>
                                             <div className="relative">
@@ -455,28 +496,28 @@ export default function CreationPage() {
                                                     onClick={() => setActiveStack(s.id as any)}
                                                     data-testid={s.testId}
                                                     className={cn(
-                                                        "p-6 rounded-3xl border transition-all cursor-pointer group/stack relative overflow-hidden",
+                                                        "p-5 sm:p-6 rounded-3xl border transition-all cursor-pointer group/stack relative overflow-hidden",
                                                         activeStack === s.id 
                                                             ? "bg-cyan-400/5 border-cyan-400/30 shadow-glow-primary/5" 
                                                             : "bg-black/40 border-white/5 hover:border-white/10"
                                                     )}
                                                 >
-                                                    <div className="flex items-center gap-6 relative z-10">
+                                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 relative z-10">
                                                         <div className={cn(
-                                                            "h-12 w-12 rounded-2xl flex items-center justify-center transition-all",
+                                                            "h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center transition-all shrink-0",
                                                             activeStack === s.id ? "bg-cyan-400 text-black" : "bg-white/5 text-zinc-600"
                                                         )}>
-                                                            <s.icon className="h-6 w-6" />
+                                                            <s.icon className="h-5 w-5 sm:h-6 sm:w-6" />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center justify-between mb-1">
-                                                                <h4 className="font-bold text-sm text-white uppercase">{s.name}</h4>
+                                                                <h4 className="font-bold text-sm text-white uppercase truncate">{s.name}</h4>
                                                                 <span className={cn(
-                                                                    "text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest",
+                                                                    "text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest shrink-0 ml-2",
                                                                     activeStack === s.id ? "bg-cyan-400/20 text-cyan-400" : "bg-zinc-900 text-zinc-700"
                                                                 )}>{s.status}</span>
                                                             </div>
-                                                            <p className="text-[10px] text-zinc-600 font-medium truncate">{s.desc}</p>
+                                                            <p className="text-[10px] text-zinc-600 font-medium line-clamp-2">{s.desc}</p>
                                                         </div>
                                                     </div>
                                                 </div>
