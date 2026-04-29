@@ -78,6 +78,7 @@ export interface NexusJob {
     job_metadata?: Record<string, any>;
     node_status?: Record<string, string>;
     blueprint_id?: string;
+    current_node?: string;
 }
 
 export interface CreditBalance {
