@@ -162,7 +162,7 @@ class TestVideoGeneration:
         video_data = {
             "prompt": "Animate this custom image",
             "engine": "custom_image",
-            "custom_image_url": "https://example.com/image.jpg",
+            "custom_image_uri": "https://example.com/image.jpg",
             "style": "Cinematic",
             "aspect_ratio": "9:16",
         }

@@ -83,7 +83,7 @@ class OpenCLIScanner:
                     candidate = ContentCandidate(
                         id=f"oc_{hash(item.get('url', '')) % 100000}",
                         platform=item.get("platform", "unknown"),
-                        source_url=item.get("url", ""),
+                        source_uri=item.get("url", ""),
                         creator_name=item.get("author", ""),
                         title=item.get("title", ""),
                         view_count=item.get("views", 0),
@@ -93,7 +93,7 @@ class OpenCLIScanner:
                         engagement_score=item.get("engagement_score", 0.0),
                         viral_score=item.get("viral_score", 0),
                         duration_seconds=item.get("duration_seconds", 0.0),
-                        thumbnail_url=item.get("thumbnail_url", ""),
+                        thumbnail_uri=item.get("thumbnail_uri", ""),
                         tags=item.get("tags", []),
                     )
                     candidates.append(candidate)
@@ -125,7 +125,7 @@ class OpenCLIScanner:
                 candidate = ContentCandidate(
                     id=f"oc_feed_{hash(item.get('url', '')) % 100000}",
                     platform=item.get("platform", platform),
-                    source_url=item.get("url", ""),
+                    source_uri=item.get("url", ""),
                     creator_name=item.get("author", ""),
                     title=item.get("title", ""),
                     view_count=item.get("views", 0),
@@ -135,7 +135,7 @@ class OpenCLIScanner:
                     engagement_score=item.get("engagement_score", 0.0),
                     viral_score=item.get("viral_score", 0),
                     duration_seconds=item.get("duration_seconds", 0.0),
-                    thumbnail_url=item.get("thumbnail_url", ""),
+                    thumbnail_uri=item.get("thumbnail_uri", ""),
                     tags=item.get("tags", []),
                 )
                 candidates.append(candidate)

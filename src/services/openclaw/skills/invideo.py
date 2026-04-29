@@ -30,7 +30,7 @@ class InVideoAISkill(OpenClawBaseSkill):
             
         res = await self.generate(p, aspect_ratio or kwargs.get("aspect_ratio", "9:16"))
         if res.get("status") == "success":
-            return f"🎬 **{self.__class__.__name__} Video Generated!**\nURL: {res.get('video_url')}"
+            return f"🎬 **{self.__class__.__name__} Video Generated!**\nURL: {res.get('video_uri')}"
         return f"⚠️ {self.__class__.__name__} failed: {res.get('error')}"
 
     async def initialize(self):
@@ -60,7 +60,7 @@ class InVideoAISkill(OpenClawBaseSkill):
     async def generate(self, prompt: str, aspect_ratio: str = "16:9") -> dict[str, Any]:
         """
         Generate video from prompt using InVideo AI
-        Returns: { status: success/failed, video_url: str, error: str }
+        Returns: { status: success/failed, video_uri: str, error: str }
         """
 
         try:
@@ -101,19 +101,19 @@ class InVideoAISkill(OpenClawBaseSkill):
             if not video_element:
                 video_element = await self.page.query_selector("[class*='video'] video")
 
-            video_url = None
+            video_uri = None
             if video_element:
-                video_url = await video_element.get_attribute("src")
+                video_uri = await video_element.get_attribute("src")
 
             logger.info(
-                f"[InVideo AI] Video generated: {video_url[:80] if video_url else 'N/A'}..."
+                f"[InVideo AI] Video generated: {video_uri[:80] if video_uri else 'N/A'}..."
             )
 
             await self.cleanup()
 
             return {
-                "status": "success" if video_url else "processing",
-                "video_url": video_url or "",
+                "status": "success" if video_uri else "processing",
+                "video_uri": video_uri or "",
                 "engine": "invideo",
                 "prompt": prompt,
             }

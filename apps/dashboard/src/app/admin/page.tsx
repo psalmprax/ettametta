@@ -98,8 +98,8 @@ export default function AdminSettingsPage() {
         monetization_aggression: "80",
         monetization_mode: "selective",
         // System Defaults
-        membership_platform_url: "",
-        course_platform_url: "",
+        membership_platform_uri: "",
+        course_platform_uri: "",
         // Engine Parameters
         scan_frequency: "Every 1 hour",
         auto_pilot: "false",
@@ -611,8 +611,8 @@ export default function AdminSettingsPage() {
                                                 <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Default Membership URL</label>
                                                 <input
                                                     type="text"
-                                                    value={settings.membership_platform_url}
-                                                    onChange={(e) => updateSetting("membership_platform_url", e.target.value)}
+                                                    value={settings.membership_platform_uri}
+                                                    onChange={(e) => updateSetting("membership_platform_uri", e.target.value)}
                                                     className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
                                                     placeholder="https://patreon.com/default"
                                                 />
@@ -621,8 +621,8 @@ export default function AdminSettingsPage() {
                                                 <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Default Course URL</label>
                                                 <input
                                                     type="text"
-                                                    value={settings.course_platform_url}
-                                                    onChange={(e) => updateSetting("course_platform_url", e.target.value)}
+                                                    value={settings.course_platform_uri}
+                                                    onChange={(e) => updateSetting("course_platform_uri", e.target.value)}
                                                     className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
                                                     placeholder="https://gumroad.com/default"
                                                 />

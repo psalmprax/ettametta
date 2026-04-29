@@ -115,9 +115,9 @@ class ScannerService:
                                 title=candidate.title,
                                 description=candidate.description,
                                 creator_name=candidate.creator_name,
-                                source_url=candidate.source_url,
-                                url=candidate.source_url,  # Legacy field maintenance
-                                thumbnail_url=candidate.thumbnail_url,
+                                source_uri=candidate.source_uri,
+                                url=candidate.source_uri,  # Legacy field maintenance
+                                thumbnail_uri=candidate.thumbnail_uri,
                                 duration_seconds=candidate.duration_seconds,
                                 view_count=candidate.view_count,
                                 like_count=candidate.like_count,

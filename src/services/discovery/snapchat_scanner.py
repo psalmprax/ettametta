@@ -53,8 +53,8 @@ class SnapchatScanner:
         seen = set()
         unique = []
         for c in candidates:
-            if c.source_url not in seen:
-                seen.add(c.source_url)
+            if c.source_uri not in seen:
+                seen.add(c.source_uri)
                 unique.append(c)
         
         logger.info(f"[SnapchatScanner] Found {len(unique)} snaps")
@@ -224,7 +224,7 @@ class SnapchatScanner:
                 thumbnail = thumbnail.get("url", "")
             
             # Get video URL
-            video_url = item.get("videoUrl", "") or item.get("url", "")
+            video_uri = item.get("videoUrl", "") or item.get("url", "")
             
             # Get metrics
             views = item.get("viewCount", 0) or item.get("views", 0)
@@ -242,7 +242,7 @@ class SnapchatScanner:
             engagement_score = engagement / max(views, 1) if views else 0.06
             
             # Get URL
-            url = video_url
+            url = video_uri
             if not url:
                 snap_id_str = str(snap_id)
                 url = f"{self.base_url}/spotlight/{snap_id_str}"
@@ -255,7 +255,7 @@ class SnapchatScanner:
             return ContentCandidate(
                 id=f"snap_{snap_id}",
                 platform=platform_type,
-                source_url=url,
+                source_uri=url,
                 creator_name=author,
                 title=title[:100] if title else "Snapchat Video",
                 view_count=views,
@@ -263,7 +263,7 @@ class SnapchatScanner:
                 comment_count=comments,
                 share_count=shares,
                 engagement_score=engagement_score,
-                thumbnail_url=thumbnail,
+                thumbnail_uri=thumbnail,
                 metadata={"niche": niche}
             )
             

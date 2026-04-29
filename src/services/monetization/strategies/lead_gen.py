@@ -25,7 +25,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
                     return [{
                         "id": str(config.id),
                         "name": config.name,
-                        "url": config.form_url,
+                        "url": config.form_uri,
                         "cta_text": config.cta_text or "Sign Up",
                         "source": "lead_gen"
                     } for config in configs]

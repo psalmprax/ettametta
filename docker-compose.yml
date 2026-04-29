@@ -130,7 +130,7 @@ services:
       context: ./apps/dashboard
       dockerfile: Dockerfile
     environment:
-      - NEXT_PUBLIC_API_URL=http://149.104.110.122.sslip.io:7200/api/v1
+      - NEXT_PUBLIC_API_URL=http://${API_HOST:-149.104.110.122}.sslip.io:7200/api/v1
     restart: always
     networks:
       - ettametta
@@ -155,6 +155,8 @@ services:
     deploy:
       resources:
         limits:
+          memory: 4G
+        reservations:
           memory: 2G
     healthcheck:
       test: [ "CMD", "python", "-c", "import psutil; exit(0 if any('celery' in p.name().lower() for p in psutil.process_iter()) else 1)" ]

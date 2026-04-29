@@ -33,7 +33,7 @@ class PixVerseSkill(OpenClawBaseSkill):
             
         res = await self.generate(p, aspect_ratio or kwargs.get("aspect_ratio", "9:16"))
         if res.get("status") == "success":
-            return f"🎬 **PixVerse Video Generated!**\nURL: {res['video_url']}"
+            return f"🎬 **PixVerse Video Generated!**\nURL: {res['video_uri']}"
         return f"⚠️ PixVerse failed: {res.get('error')}"
 
     async def initialize(self):
@@ -89,7 +89,7 @@ class PixVerseSkill(OpenClawBaseSkill):
     async def generate(self, prompt: str, aspect_ratio: str = "9:16") -> dict[str, Any]:
         """
         Generate video from prompt using PixVerse
-        Returns: { status: success/failed, video_url: str, error: str }
+        Returns: { status: success/failed, video_uri: str, error: str }
         """
 
         try:
@@ -130,15 +130,15 @@ class PixVerseSkill(OpenClawBaseSkill):
 
             # Get video source
             video_element = await self.page.query_selector("video[src]")
-            video_url = await video_element.get_attribute("src")
+            video_uri = await video_element.get_attribute("src")
 
-            logger.info(f"[PixVerse] Video generated successfully: {video_url[:80]}...")
+            logger.info(f"[PixVerse] Video generated successfully: {video_uri[:80]}...")
 
             await self.cleanup()
 
             return {
                 "status": "success",
-                "video_url": video_url,
+                "video_uri": video_uri,
                 "engine": "pixverse",
                 "prompt": prompt,
             }

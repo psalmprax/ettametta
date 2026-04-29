@@ -433,7 +433,7 @@ class OpenCLIService:
                     100, int(float(item.get("score") or item.get("upvotes", 0)) / 10)
                 ),
                 "duration_seconds": float(item.get("duration") or 0),
-                "thumbnail_url": item.get("thumbnail") or item.get("image", ""),
+                "thumbnail_uri": item.get("thumbnail") or item.get("image", ""),
                 "tags": item.get("tags") or [],
                 "discovery_method": "opencli-rs",
                 "metadata_json": {
@@ -489,7 +489,7 @@ class OpenCLIService:
                 "viral_score": min(
                     100, int(float(item.get("score") or item.get("upvotes", 0)) / 10)
                 ),
-                "thumbnail_url": item.get("thumbnail") or item.get("image", ""),
+                "thumbnail_uri": item.get("thumbnail") or item.get("image", ""),
                 "tags": item.get("tags") or [],
                 "discovery_method": "opencli-rs",
                 "metadata_json": {

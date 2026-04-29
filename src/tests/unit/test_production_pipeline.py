@@ -99,7 +99,7 @@ async def test_production_pipeline():
 
         parsed_urls = []
         for url in test_urls:
-            platform, video_id = scanner._parse_video_url(url)
+            platform, video_id = scanner._parse_video_uri(url)
             parsed_urls.append((platform, video_id))
 
         # Verify parsing worked

@@ -62,8 +62,8 @@ class DuckDuckGoScanner:
         seen = set()
         unique_candidates = []
         for c in all_candidates:
-            if c.source_url not in seen:
-                seen.add(c.source_url)
+            if c.source_uri not in seen:
+                seen.add(c.source_uri)
                 unique_candidates.append(c)
 
         logger.info(f"[DuckDuckGo] Found {len(unique_candidates)} unique results")
@@ -147,7 +147,7 @@ class DuckDuckGoScanner:
                             id=f"ddg_{hash(url) % 100000}",
                             platform=platform,
                             category=category,
-                            source_url=url,
+                            source_uri=url,
                             creator_name="",
                             title=title,
                             description=description,

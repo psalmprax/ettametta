@@ -777,7 +777,7 @@ class VideoProcessor:
 
     async def apply_pro_workflow(
         self,
-        image_url: str,
+        image_uri: str,
         output_name: str,
         aspect_ratio: str = "9:16",
         duration: float = 5.0,
@@ -791,7 +791,7 @@ class VideoProcessor:
 
         # 2. Animate with low motion
         video_path = await self.apply_cinematic_motion(
-            image_url, output_name, aspect_ratio, duration
+            image_uri, output_name, aspect_ratio, duration
         )
 
         # 3. Upscale video
@@ -807,7 +807,7 @@ class VideoProcessor:
 
     async def apply_cinematic_motion(
         self,
-        image_url: str,
+        image_uri: str,
         output_name: str,
         aspect_ratio: str = "9:16",
         duration: float = 5.0,
@@ -820,14 +820,14 @@ class VideoProcessor:
         from moviepy import ImageClip
 
         logging.info(
-            f"[VideoProcessor] Applying cinematic motion to 4K asset: {image_url[:50]}..."
+            f"[VideoProcessor] Applying cinematic motion to 4K asset: {image_uri[:50]}..."
         )
 
         # 1. Download base image
         temp_image = os.path.join("temp", f"lite4k_base_{uuid.uuid4()}.jpg")
         os.makedirs("temp", exist_ok=True)
         async with httpx.AsyncClient() as client:
-            resp = await client.get(image_url, follow_redirects=True)
+            resp = await client.get(image_uri, follow_redirects=True)
             with open(temp_image, "wb") as f:
                 f.write(resp.content)
 
@@ -897,24 +897,24 @@ class VideoProcessor:
 
         try:
             for i, scene in enumerate(scenes):
-                video_url = scene.get("video_url")
-                audio_url = scene.get("audio_url")
+                video_uri = scene.get("video_uri")
+                audio_uri = scene.get("audio_uri")
                 duration_hint = scene.get("duration_hint", 5.0)
 
-                if not video_url:
+                if not video_uri:
                     continue
 
                 # 1. Download Video Clip if it's a URL
-                local_vid = await _download_media(video_url, ".mp4")
+                local_vid = await _download_media(video_uri, ".mp4")
                 from moviepy import VideoFileClip
 
                 clip = VideoFileClip(local_vid)
 
                 # 2. Add Narration Audio if exists
-                if audio_url:
+                if audio_uri:
                     from moviepy import AudioFileClip
 
-                    local_aud = await _download_media(audio_url, ".mp3")
+                    local_aud = await _download_media(audio_uri, ".mp3")
                     narration = AudioFileClip(local_aud)
 
                     # PRECISISION ALIGNMENT: Stretch/Compress video to match audio duration
@@ -993,12 +993,12 @@ class VideoProcessor:
                 "subtitle": strategy.get("visual_mood", "Created by OpenClaw")
                 if strategy
                 else "Cinematic Studio",
-                "video_url": input_path,
+                "video_uri": input_path,
             }
 
             # We'll also pass any voiceover from the strategy if available
             if strategy and strategy.get("voiceover_url"):
-                props["audio_url"] = strategy["voiceover_url"]
+                props["audio_uri"] = strategy["voiceover_url"]
 
             rendered_path = await base_remotion_service.render_video(
                 composition_id="ViralClip", props=props, output_name=output_name

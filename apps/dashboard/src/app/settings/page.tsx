@@ -99,8 +99,8 @@ const SettingsSchema = z.object({
     active_monetization_strategy: z.string(),
     monetization_mode: z.string(),
     monetization_aggression: z.string(),
-    membership_platform_url: z.string().url().optional().or(z.string().length(0)),
-    course_platform_url: z.string().url().optional().or(z.string().length(0)),
+    membership_platform_uri: z.string().url().optional().or(z.string().length(0)),
+    course_platform_uri: z.string().url().optional().or(z.string().length(0)),
     lead_gen_url: z.string().url().optional().or(z.string().length(0)),
     digital_product_url: z.string().url().optional().or(z.string().length(0)),
     sponsorship_contact: z.string().optional(),
@@ -151,8 +151,8 @@ export default function SettingsPage() {
             active_monetization_strategy: "commerce",
             monetization_mode: "selective",
             monetization_aggression: "80",
-            membership_platform_url: "",
-            course_platform_url: "",
+            membership_platform_uri: "",
+            course_platform_uri: "",
             lead_gen_url: "",
             digital_product_url: "",
             sponsorship_contact: "",
@@ -202,7 +202,7 @@ export default function SettingsPage() {
                 const token = getAuthToken();
                 if (!token) return;
                 const headers = { Authorization: `Bearer ${token}` };
-                return fetch(`${API_BASE}/v1/settings/`, { headers });
+                return fetch(`${API_BASE}/settings/`, { headers });
             },
             {
                 fallback: null,
@@ -221,7 +221,7 @@ export default function SettingsPage() {
             async () => {
                 const token = getAuthToken();
                 if (!token) return;
-                return fetch(`${API_BASE}/v1/auth/me`, {
+                return fetch(`${API_BASE}/auth/me`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             },
@@ -260,7 +260,7 @@ export default function SettingsPage() {
         }));
 
         await withRealFallback(
-            () => fetch(`${API_BASE}/v1/settings/bulk`, {
+            () => fetch(`${API_BASE}/settings/bulk`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

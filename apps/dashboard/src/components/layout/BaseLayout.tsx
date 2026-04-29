@@ -22,9 +22,9 @@ export const BaseLayout = React.forwardRef<HTMLDivElement, BaseLayoutProps>(
   }, ref) => {
     
     const variantStyles = {
-      landing: "min-h-screen bg-slate-50 text-slate-900",
-      auth: "min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6",
-      dashboard: "min-h-screen bg-slate-50 text-slate-900 relative overflow-hidden",
+      landing: "min-h-screen bg-black text-white",
+      auth: "min-h-screen bg-black text-white flex items-center justify-center p-6",
+      dashboard: "min-h-screen bg-black text-white relative overflow-hidden",
     };
 
     const backgroundStyles = withBackground ? "relative" : "";
@@ -38,11 +38,11 @@ export const BaseLayout = React.forwardRef<HTMLDivElement, BaseLayoutProps>(
           className
         )}
       >
-        {/* Background Effects - Clean & Subtle */}
+        {/* Background Effects - Dark & Subtle */}
         {withBackground && variant !== "auth" && (
           <>
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-slate-50 to-amber-50/50 pointer-events-none z-0" />
-            <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.08) 0%, transparent 50%)', pointerEvents: 'none', zIndex: 0 }} />
+            <div className="absolute inset-0 bg-black pointer-events-none z-0" />
+            <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(37, 99, 235, 0.05) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(37, 99, 235, 0.03) 0%, transparent 50%)', pointerEvents: 'none', zIndex: 0 }} />
           </>
         )}
 

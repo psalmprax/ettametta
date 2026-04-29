@@ -86,7 +86,7 @@ class YouTubeShortsScanner(DiscoveryScannerBase):
                     ContentCandidate(
                         id=f"yt_{video_id}",
                         platform="YouTube Shorts",
-                        source_url=f"https://youtube.com/shorts/{video_id}",
+                        source_uri=f"https://youtube.com/shorts/{video_id}",
                         creator_name=snippet.get("channelTitle", "Unknown"),
                         title=snippet.get("title", "No Title"),
                         view_count=views,
@@ -97,7 +97,7 @@ class YouTubeShortsScanner(DiscoveryScannerBase):
                         viral_score=viral_score,
                         duration_seconds=float(duration_seconds),
                         tags=[niche, "Shorts", "Trending"],
-                        thumbnail_url=snippet.get("thumbnails", {})
+                        thumbnail_uri=snippet.get("thumbnails", {})
                         .get("high", {})
                         .get("url")
                         or snippet.get("thumbnails", {}).get("default", {}).get("url"),

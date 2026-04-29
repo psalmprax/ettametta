@@ -13,7 +13,7 @@ class ContentCandidate(BaseModel):
 
     id: str
     platform: str
-    source_url: str
+    source_uri: str
 
     # Creator fields
     creator_name: str | None = None
@@ -21,7 +21,7 @@ class ContentCandidate(BaseModel):
 
     title: str | None = None
     description: str | None = None
-    thumbnail_url: str | None = None
+    thumbnail_uri: str | None = None
     # Timestamps
     published_at: datetime | None = None
     scanned_at: datetime | None = None

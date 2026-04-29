@@ -141,7 +141,7 @@ async def test_video_editor_quality():
         assert hasattr(scanner, "discover_video_leads")
 
         # Test URL parsing
-        platform, video_id = scanner._parse_video_url(
+        platform, video_id = scanner._parse_video_uri(
             "https://youtube.com/watch?v=dQw4w9WgXcQ"
         )
         assert platform == "youtube"

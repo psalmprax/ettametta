@@ -191,14 +191,14 @@ class DiscoveryService:
                     ContentCandidate(
                         id=res.get("id"),
                         platform=res.get("platform", "unknown"),
-                        source_url=res.get("url") or res.get("source_url"),
+                        source_uri=res.get("url") or res.get("source_uri"),
                         creator_name=res.get("channel")
                         or res.get("author")
                         or res.get("creator_name")
                         or "Unknown",
                         title=res.get("title", "No Title"),
                         description=res.get("description", ""),
-                        thumbnail_url=res.get("thumbnail_url")
+                        thumbnail_uri=res.get("thumbnail_uri")
                         or res.get("thumbnail")
                         or f"https://picsum.photos/seed/{res.get('id')}/1280/720",
                         view_count=vc,
@@ -287,12 +287,12 @@ class DiscoveryService:
                         ContentCandidate(
                             id=r.id,
                             platform=r.platform,
-                            source_url=r.source_url,
+                            source_uri=r.source_uri,
                             creator_name=r.creator_name,
                             creator_id=r.creator_id,
                             title=r.title,
                             description=r.description,
-                            thumbnail_url=r.thumbnail_url,
+                            thumbnail_uri=r.thumbnail_uri,
                             view_count=r.view_count or 0,
                             like_count=r.like_count or 0,
                             comment_count=r.comment_count or 0,
@@ -327,11 +327,11 @@ class DiscoveryService:
                     ContentCandidate(
                         id=l.video_id,
                         platform=l.platform,
-                        source_url=l.url,
+                        source_uri=l.url,
                         creator_name=l.creator,
                         title=l.title,
                         description=l.description,
-                        thumbnail_url=l.thumbnail_url or f"https://picsum.photos/seed/{l.video_id}/1280/720",
+                        thumbnail_uri=l.thumbnail_uri or f"https://picsum.photos/seed/{l.video_id}/1280/720",
                         view_count=l.view_count or 0,
                         like_count=l.like_count or 0,
                         comment_count=l.comment_count or 0,
@@ -423,8 +423,8 @@ class DiscoveryService:
                         description=c.description,
                         creator_name=c.creator_name,
                         creator_id=c.creator_id,
-                        source_url=c.source_url,
-                        thumbnail_url=c.thumbnail_url,
+                        source_uri=c.source_uri,
+                        thumbnail_uri=c.thumbnail_uri,
                         published_at=c.published_at,
                         scanned_at=c.scanned_at,
                         duration_seconds=c.duration_seconds,
@@ -653,12 +653,12 @@ class DiscoveryService:
         self, candidate: ContentCandidate
     ) -> ViralPattern:
         """Analyzes a candidate for viral patterns with real transcript extraction."""
-        transcript = await self._get_video_transcript(candidate.source_url)
+        transcript = await self._get_video_transcript(candidate.source_uri)
         return await pattern_deconstructor.analyze_video_structure(
             transcript, candidate.metadata_json or {}
         )
 
-    async def _get_video_transcript(self, video_url: str) -> str:
+    async def _get_video_transcript(self, video_uri: str) -> str:
         """Extracts transcript from video via yt-dlp."""
         import yt_dlp
         import os
@@ -674,7 +674,7 @@ class DiscoveryService:
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(video_url, download=False)
+                info = ydl.extract_info(video_uri, download=False)
                 # Check for subtitles or automatic captions
                 if "subtitles" in info and info["subtitles"]:
                     # Use first available subtitle
@@ -840,12 +840,12 @@ class DiscoveryService:
                         ContentCandidate(
                             id=r.id,
                             platform=r.platform,
-                            source_url=r.source_url,
+                            source_uri=r.source_uri,
                             creator_name=r.creator_name,
                             creator_id=r.creator_id,
                             title=r.title,
                             description=r.description,
-                            thumbnail_url=r.thumbnail_url,
+                            thumbnail_uri=r.thumbnail_uri,
                             view_count=r.view_count or 0,
                             like_count=r.like_count or 0,
                             comment_count=r.comment_count or 0,
@@ -873,11 +873,11 @@ class DiscoveryService:
                         min_viral_score=int(min_viral_score or 0),
                     )
                     # Deduplicate and merge
-                    seen_urls = {c.source_url for c in candidates}
+                    seen_urls = {c.source_uri for c in candidates}
                     for lc in live_results:
-                        if lc.source_url not in seen_urls:
+                        if lc.source_uri not in seen_urls:
                             candidates.append(lc)
-                            seen_urls.add(lc.source_url)
+                            seen_urls.add(lc.source_uri)
 
                 return candidates[:limit]
             except Exception as e:
@@ -903,12 +903,12 @@ class DiscoveryService:
                 ContentCandidate(
                     id=r.id,
                     platform=r.platform,
-                    source_url=r.source_url,
+                    source_uri=r.source_uri,
                     creator_name=r.creator_name,
                     creator_id=r.creator_id,
                     title=r.title,
                     description=r.description,
-                    thumbnail_url=r.thumbnail_url,
+                    thumbnail_uri=r.thumbnail_uri,
                     view_count=r.view_count or 0,
                     like_count=r.like_count or 0,
                     comment_count=r.comment_count or 0,
@@ -985,11 +985,11 @@ class DiscoveryService:
                         ContentCandidate(
                             id=r.id,
                             platform=r.platform,
-                            source_url=r.source_url,
+                            source_uri=r.source_uri,
                             creator_name=r.creator_name,
                             title=r.title,
                             description=r.description,
-                            thumbnail_url=r.thumbnail_url,
+                            thumbnail_uri=r.thumbnail_uri,
                             view_count=r.view_count or 0,
                             engagement_score=r.engagement_score or 0.0,
                             viral_score=r.viral_score or 0,
@@ -1059,19 +1059,19 @@ class DiscoveryService:
             max_results=max_results,
         )
 
-    async def analyze_video_performance(self, video_url: str, niche: str):
+    async def analyze_video_performance(self, video_uri: str, niche: str):
         """
         Deep analysis of a specific video's performance and viral potential.
 
         Args:
-            video_url: URL of video to analyze
+            video_uri: URL of video to analyze
             niche: Content niche for context
 
         Returns:
             Detailed performance analysis with repurposing suggestions
         """
         return await self.video_lead_scanner.evaluate_video_performance(
-            video_url=video_url, niche=niche
+            video_uri=video_uri, niche=niche
         )
 
     async def find_video_templates(

@@ -132,8 +132,8 @@ async def get_job_details(
             "progress": job["progress"],
             "created_at": job["created_at"].isoformat(),
             "updated_at": job["updated_at"].isoformat(),
-            "input_prompt": job["source_url"]
-            if job["source_url"] not in ["Generation Prompt", "Narrative Prompt", "Cinema Mode / Studio"]
+            "input_prompt": job["source_uri"]
+            if job["source_uri"] not in ["Generation Prompt", "Narrative Prompt", "Cinema Mode / Studio"]
             else None,
             "output_path": job["output_path"],
             "generation_details": {},
@@ -221,9 +221,9 @@ async def retry_job(
 
         # Retry logic based on job type
         task = None
-        if job.source_url not in ["Generation Prompt", "Narrative Prompt"]:
+        if job.source_uri not in ["Generation Prompt", "Narrative Prompt"]:
             task = download_and_process_task.delay(
-                source_url=job.source_url,
+                source_uri=job.source_uri,
                 niche=job.title.split(" - ")[-1]
                 if " - " in job.title
                 else "Motivation",
@@ -233,7 +233,7 @@ async def retry_job(
                 user_id=current_user.id,
                 request_id=get_request_id(),
             )
-        elif job.source_url == "Generation Prompt":
+        elif job.source_uri == "Generation Prompt":
             stmt_audit = select(AuditLogDB).where(
                 AuditLogDB.resource_id == job_id,
                 AuditLogDB.action == "VIDEO_GENERATE_START",

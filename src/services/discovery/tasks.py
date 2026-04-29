@@ -84,14 +84,14 @@ def analyze_viral_pattern_task(candidate_data: dict):
 
     candidate = ContentCandidate(**candidate_data)
 
-    print(f"[Discovery Task] Async analysis for: {candidate.source_url}")
+    print(f"[Discovery Task] Async analysis for: {candidate.source_uri}")
     pattern = asyncio.run(base_discovery_service.deep_analyze_viral_patterns(candidate))
 
     # Use model_dump(mode='json') for safe JSON serialization with datetime handling
     return {
         "status": "success",
         "candidate_id": candidate.id,
-        "source_url": candidate.source_url,
+        "source_uri": candidate.source_uri,
         "pattern": pattern.model_dump(mode="json")
         if hasattr(pattern, "model_dump")
         else pattern.dict(),

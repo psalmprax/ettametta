@@ -60,7 +60,7 @@ class TestAutomationE2E:
             response = await client.post(
                 f"{base_url}/video/transform",
                 json={
-                    "source_url": sample_url,
+                    "source_uri": sample_url,
                     "niche": "Security",
                     "platform": "YouTube Shorts",
                     "quality_tier": "standard"

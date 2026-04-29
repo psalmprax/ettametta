@@ -31,14 +31,14 @@ class AutoMerchService:
             return None
             
         # 2. Design Prompt -> Image
-        image_url = await self._generate_image(design_prompt)
-        if not image_url:
+        image_uri = await self._generate_image(design_prompt)
+        if not image_uri:
             logger.error("[AutoMerch] Failed to generate image.")
             return None
             
         # 3. Publish to Store
         product_title = f"{niche.title()} Official Merch"
-        product_data = await self._publish_to_pod(product_title, image_url)
+        product_data = await self._publish_to_pod(product_title, image_uri)
         
         if product_data:
             logger.info(f"[AutoMerch] Successfully published product: {product_data.get('url')}")
@@ -71,13 +71,13 @@ class AutoMerchService:
         width, height = 1024, 1024
         
         # Pollinations allows direct GET request for image generation
-        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true"
+        image_uri = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true"
         
-        logger.info(f"[AutoMerch] Requesting design generation: {image_url}")
+        logger.info(f"[AutoMerch] Requesting design generation: {image_uri}")
         
-        return image_url
+        return image_uri
 
-    async def _publish_to_pod(self, title: str, image_url: str) -> dict[str, Any] | None:
+    async def _publish_to_pod(self, title: str, image_uri: str) -> dict[str, Any] | None:
         """
         Publishes the design to Print-on-Demand (POD) via Printful API.
         Enforces "Real-First" policy: No mock products allowed.
@@ -99,7 +99,7 @@ class AutoMerchService:
         sync_product_data = {
             "sync_product": {
                 "name": title,
-                "thumbnail": image_url
+                "thumbnail": image_uri
             },
             "sync_variants": [
                 {
@@ -107,7 +107,7 @@ class AutoMerchService:
                     "variant_id": 4011, # Men's Premium Tee (Black/L)
                     "files": [
                         {
-                            "url": image_url,
+                            "url": image_uri,
                             "position": "front"
                         }
                     ]
@@ -131,7 +131,7 @@ class AutoMerchService:
                         "title": data.get("name"),
                         "url": f"https://dashboard.printful.com/products/{data.get('id')}",
                         "status": "published",
-                        "preview_url": image_url
+                        "preview_url": image_uri
                     }
                 else:
                     error_detail = response.json().get("error", {}).get("message", response.text)
