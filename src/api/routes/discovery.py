@@ -120,6 +120,12 @@ class NicheWatchRequest(BaseModel):
     niche: str
 
 
+class NicheAlertRequest(BaseModel):
+    niche: str
+    threshold: int = 7  # viral_score threshold
+    enabled: bool = True
+
+
 @router.post("/scan")
 async def trigger_scan(
     request: ScanRequest, current_user: UserDB = Depends(get_current_user)
@@ -1328,10 +1334,6 @@ async def export_discovery(
 # ─── Niche Alert Endpoints ────────────────���──────────────────────────────────────
 
 
-class NicheAlertRequest(BaseModel):
-    niche: str
-    threshold: int = 7  # viral_score threshold
-    enabled: bool = True
 
 
 @router.get("/alerts")
