@@ -92,13 +92,31 @@ async def get_analytics_report(
     )
     total_likes = likes_result.scalar() or 0
 
+    # Total shares
+    shares_result = await db.execute(
+        select(func.sum(PublishedContentDB.share_count)).where(
+            PublishedContentDB.user_id == current_user.id
+        )
+    )
+    total_shares = shares_result.scalar() or 0
+
+    # Avg retention
+    retention_result = await db.execute(
+        select(func.avg(PublishedContentDB.retention_rate)).where(
+            PublishedContentDB.user_id == current_user.id
+        )
+    )
+    avg_retention = retention_result.scalar() or 0.0
+
     return success_response(
         data={
             "total_posts": total_posts,
             "total_views": int(total_views or 0),
             "total_likes": int(total_likes or 0),
+            "total_shares": int(total_shares or 0),
             "avg_views": int(total_views / total_posts) if total_posts > 0 else 0,
             "avg_likes": int(total_likes / total_posts) if total_posts > 0 else 0,
+            "avg_retention": float(avg_retention),
         }
     )
 

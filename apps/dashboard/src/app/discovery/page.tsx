@@ -100,17 +100,20 @@ function DiscoveryContent() {
             const token = await getAuthToken();
             const headers = { Authorization: `Bearer ${token}` };
             
-            const [nicheRes, monitoredRes, alertsRes] = await Promise.all([
+            const [nicheRes, alertsRes] = await Promise.all([
                 fetch(`${API_BASE}/discovery/niches`, { headers }),
-                fetch(`${API_BASE}/discovery/niches`, { headers }), // This is just listing, I need to check which ones are watched
                 fetch(`${API_BASE}/discovery/alerts`, { headers })
             ]);
 
-            if (nicheRes.ok) setNiches(await nicheRes.json());
+            if (nicheRes.ok) {
+                const nicheData = await nicheRes.json();
+                setNiches(nicheData.data || []);
+            }
             if (alertsRes.ok) {
                 const alertData = await alertsRes.json();
-                setAlerts(alertData.alerts || []);
-                setMonitoredNiches(alertData.alerts?.map((a: any) => a.niche) || []);
+                const alertList = alertData.data?.alerts || alertData.alerts || [];
+                setAlerts(alertList);
+                setMonitoredNiches(alertList.map((a: any) => a.niche));
             }
         } catch (err) {
             console.error("Failed to load discovery data:", err);
@@ -158,6 +161,34 @@ function DiscoveryContent() {
                 setCandidates(data.results || []);
                 setActiveNiche(searchQuery);
             }
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleDefineCluster = async () => {
+        setIsSearching(true);
+        try {
+            const token = await getAuthToken();
+            const res = await fetch(`${API_BASE}/discovery/scan`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    niches: [activeNiche],
+                    deep: true 
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                toast.success(data.data?.message || "Autonomous cluster scan initiated");
+            } else {
+                toast.error("Cluster protocol failed");
+            }
+        } catch (err) {
+            toast.error("Connection sequence interrupted");
         } finally {
             setIsSearching(false);
         }
@@ -396,9 +427,12 @@ function DiscoveryContent() {
                                     </div>
                                 ))}
                             </div>
-                            <Button variant="outline" size="sm" className="w-full py-6 border-dashed opacity-50 hover:opacity-100 rounded-2xl text-[10px] tracking-widest uppercase">
+                            <button 
+                                onClick={handleDefineCluster}
+                                className="action-secondary w-full py-6 border-dashed opacity-50 hover:opacity-100 rounded-2xl text-[10px] tracking-widest uppercase transition-all"
+                            >
                                 + Define Cluster
-                            </Button>
+                            </button>
                         </Card>
 
                         {/* ALERTS SECTION */}
