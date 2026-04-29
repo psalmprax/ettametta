@@ -124,6 +124,31 @@ export default function Home() {
     fetchStats();
   }, []);
 
+  useEffect(() => {
+    if (wsData && wsData.type === "telemetry_pulse") {
+      const { real_stats, metrics } = wsData;
+      setStats(prev => {
+        const total_views = real_stats.total_views || 0;
+        let reach_formatted = "0";
+        if (total_views >= 1000000) reach_formatted = `${(total_views / 1000000).toFixed(1)}M`;
+        else if (total_views >= 1000) reach_formatted = `${(total_views / 1000).toFixed(1)}K`;
+        else reach_formatted = total_views.toString();
+
+        const success_rate_val = total_views > 0 ? (real_stats.total_likes / total_views * 100) : 0;
+        
+        return {
+          ...prev,
+          active_trends: real_stats.total_discovered || prev.active_trends,
+          videos_processed: real_stats.completed_jobs || prev.videos_processed,
+          total_reach: reach_formatted,
+          success_rate: `${success_rate_val.toFixed(1)}%`,
+          velocity: metrics.global_velocity > 3 ? "Critical" : metrics.global_velocity > 1.5 ? "High" : "Nominal",
+          engine_load: `${Math.min(100, Math.round((real_stats.active_jobs / 10) * 100))}%`
+        };
+      });
+    }
+  }, [wsData]);
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-bg-base relative flex flex-col font-sans overflow-hidden">
