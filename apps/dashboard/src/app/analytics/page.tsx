@@ -86,7 +86,8 @@ export default function AnalyticsPage() {
         activeTrends: 0,
         successRate: "0%",
         engineLoad: "0%",
-        velocity: "Nominal"
+        velocity: "Nominal",
+        retentionData: [] as any[]
     });
     const [historyData, setHistoryData] = useState<any[]>([]);
 
@@ -127,7 +128,7 @@ export default function AnalyticsPage() {
                     engagement: report.total_views > 0 ? (report.total_likes / report.total_views) : 0,
                     activeTrends: summary.active_trends,
                     successRate: summary.success_rate,
-                    engine_load: summary.engine_load,
+                    engineLoad: summary.engine_load,
                     velocity: summary.velocity,
                     retentionData: retentionData.length > 0 ? retentionData.map((v, i) => ({ time: i, value: v })) : []
                 });
@@ -264,7 +265,7 @@ export default function AnalyticsPage() {
                                 </span>
                             </div>
                             <button 
-                                onClick={handleExportData}
+                                onClick={handleExport}
                                 className="action-primary h-20 px-12  text-xs tracking-tighter"
                             >
                                 EXPORT_DATA_PACK
