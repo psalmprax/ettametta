@@ -44,6 +44,17 @@ import { BlueprintBuilder } from "@/components/ui/BlueprintBuilder";
 
 import { Blueprint, NexusJob, Persona } from "@/lib/types";
 
+interface WorkforceStatus {
+    status: string;
+    circuit_breaker: string;
+}
+
+interface CapabilityStatus {
+    available: boolean;
+    description: string;
+    workforce?: WorkforceStatus;
+}
+
 export default function NexusPage() {
     const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
     const [activeBlueprint, setActiveBlueprint] = useState<Blueprint | null>(null);
@@ -65,10 +76,10 @@ export default function NexusPage() {
     const [isChatting, setIsChatting] = useState(false);
     const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
     const [agentCapabilities, setAgentCapabilities] = useState<string[]>([]);
-    const [workforceReport, setWorkforceReport] = useState<any>(null);
+    const [workforceReport, setWorkforceReport] = useState<WorkforceStatus | null>(null);
 
-    const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/jobs`);
-    const { data: logUpdate } = useWebSocket<any>(`${WS_BASE}/logs`);
+    const { data: jobUpdate } = useWebSocket<{ type: string, data: any }>(`${WS_BASE}/jobs`);
+    const { data: logUpdate } = useWebSocket<{ type: string, data: any }>(`${WS_BASE}/logs`);
 
     // Persona Lab state
     const [personaName, setPersonaName] = useState("");
@@ -89,7 +100,7 @@ export default function NexusPage() {
             const headers = { Authorization: `Bearer ${token}` };
 
             await Promise.all([
-                withRealFallback<any>(
+                withRealFallback<{ subscription?: string }>(
                     () => fetch(`${API_BASE}/auth/me`, { headers }),
                     {
                         fallback: { subscription: "free" },
@@ -123,35 +134,31 @@ export default function NexusPage() {
                         onSuccess: (data) => setNexusJobs(data)
                     }
                 ),
-                withRealFallback<any>(
+                withRealFallback<Record<string, CapabilityStatus>>(
                     () => fetch(`${API_BASE}/agent/capabilities`, { headers }),
                     {
-                        fallback: [],
-                        onSuccess: (capData) => {
-                            const capabilities = capData.capabilities || capData || {};
-                            
+                        fallback: {},
+                        onSuccess: (capabilities) => {
                             // Extract workforce report if available (Phase 4 Hardening)
-                            if (capabilities.workforce) {
-                                setWorkforceReport(capabilities.workforce);
+                            if (capabilities.workforce && capabilities.workforce.workforce) {
+                                setWorkforceReport(capabilities.workforce.workforce);
                             }
 
-                            const flattenedCaps = Object.entries(capabilities).map(([key, value]: [string, any]) => {
-                                if (key === 'workforce') return `🏛️ Workforce: ${value.status.toUpperCase()} (${value.circuit_breaker})`;
+                            const flattenedCaps = Object.entries(capabilities).map(([key, value]) => {
+                                if (key === 'workforce' && value.workforce) {
+                                    return `🏛️ Workforce: ${value.workforce.status.toUpperCase()} (${value.workforce.circuit_breaker})`;
+                                }
                                 if (key === 'discovery') return `🔍 Advanced Discovery: Trend analysis, competitor research, content ideation`;
                                 if (key === 'competitor') return `🎯 Competitor Analysis: Strategy breakdown and market intelligence`;
-                                if (typeof value === 'object' && value.description) {
-                                    const statusIcon = value.available ? '✅' : '⚠️';
-                                    return `${statusIcon} ${key}: ${value.description}`;
-                                }
-                                return `${key}: ${String(value)}`;
+                                
+                                const statusIcon = value.available ? '✅' : '⚠️';
+                                return `${statusIcon} ${key}: ${value.description || 'Service active'}`;
                             });
                             setAgentCapabilities(flattenedCaps);
                         }
                     }
                 ),
-                withRealFallback<
-                    Array<{ id?: string; _id?: string; name: string; reference_image_uri: string }>
-                >(
+                withRealFallback<Persona[]>(
                     () => fetch(`${API_BASE}/persona/list`, { headers }),
                     {
                         fallback: [],

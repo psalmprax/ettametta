@@ -270,19 +270,30 @@ async def get_stats_summary(
         # Calculate success rate
         success_rate = (total_posts / total_jobs * 100) if total_jobs > 0 else 0
 
-        # Get total views from DB
-        stmt_views = select(func.sum(PublishedContentDB.view_count))
+        # Get total metrics from DB
+        stmt_metrics = select(
+            func.sum(PublishedContentDB.view_count).label("total_views"),
+            func.sum(PublishedContentDB.like_count).label("total_likes"),
+            func.sum(PublishedContentDB.share_count).label("total_shares"),
+            func.sum(PublishedContentDB.comment_count).label("total_comments"),
+            func.avg(PublishedContentDB.retention_rate).label("avg_retention")
+        )
         if current_user.role != UserRole.ADMIN:
-            stmt_views = stmt_views.where(PublishedContentDB.user_id == current_user.id)
-        result = await db.execute(stmt_views)
-        total_views = result.scalar() or 0
+            stmt_metrics = stmt_metrics.where(PublishedContentDB.user_id == current_user.id)
+        
+        result = await db.execute(stmt_metrics)
+        row = result.fetchone()
+        
+        total_views = row.total_views or 0
+        total_likes = row.total_likes or 0
+        total_shares = row.total_shares or 0
+        total_comments = row.total_comments or 0
+        avg_retention = row.avg_retention or 0.0
 
-        # Get total engagement
-        stmt_likes = select(func.sum(PublishedContentDB.like_count))
-        if current_user.role != UserRole.ADMIN:
-            stmt_likes = stmt_likes.where(PublishedContentDB.user_id == current_user.id)
-        result = await db.execute(stmt_likes)
-        total_likes = result.scalar() or 0
+        # Calculate Engagement Score
+        engagement_score = 0.0
+        if total_views > 0:
+            engagement_score = ((total_likes + total_comments + total_shares) / total_views) * 100
 
         # Format reach
         if total_views >= 1000000:
@@ -330,6 +341,13 @@ async def get_stats_summary(
                 "recent_discovery_count": recent_count,
                 "engine_load": f"{engine_load}%",
                 "velocity": "High" if recent_count > 5 else "Nominal",
+                "total_views": total_views,
+                "total_likes": total_likes,
+                "total_shares": total_shares,
+                "total_comments": total_comments,
+                "avg_retention": round(avg_retention, 2),
+                "engagement_score": round(engagement_score, 2),
+                "pending_jobs": pending_jobs,
             }
         )
     except Exception as e:
