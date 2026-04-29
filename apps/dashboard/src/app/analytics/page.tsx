@@ -88,7 +88,8 @@ export default function AnalyticsPage() {
         successRate: "0%",
         engineLoad: "0%",
         velocity: "Nominal",
-        retentionData: [] as any[]
+        optimizationInsight: "Analyzing signals...",
+        retentionData: [] as { time: number, value: number }[]
     });
     const [historyData, setHistoryData] = useState<any[]>([]);
 
@@ -103,43 +104,27 @@ export default function AnalyticsPage() {
                 fetch(`${API_BASE}/analytics/posts?size=1`, { headers })
             ]);
 
-            if (summaryRes.ok && reportRes.ok) {
+            if (summaryRes.ok && reportRes.ok && postsRes.ok) {
                 const summary = (await summaryRes.json()).data;
                 const report = (await reportRes.json()).data;
-
-                // Get latest post for detailed chart/matrix
-                const postsRes = await fetch(`${API_BASE}/analytics/posts?size=1`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const posts = (await postsRes.json()).data.items || [];
-                let retentionData = [];
-                
-                if (posts.length > 0) {
-                    const latestReportRes = await fetch(`${API_BASE}/analytics/report/${posts[0].id}`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    const latestReport = (await latestReportRes.json()).data;
-                    retentionData = latestReport.retention_data || [];
-                }
-
-                setMetrics({
-                    views: report.total_views,
-                    retention: report.avg_retention,
-                    shares: report.total_shares,
-                    engagement: report.total_views > 0 ? (report.total_likes / report.total_views) : 0,
-                    activeTrends: summary.active_trends,
-                    successRate: summary.success_rate,
-                    engineLoad: summary.engine_load,
-                    velocity: summary.velocity,
-                    retentionData: retentionData.length > 0 ? retentionData.map((v: number, i: number) => ({ time: i, value: v })) : []
-                });
-            }
-
-            if (postsRes.ok) {
                 const postsData = (await postsRes.json()).data;
-                const latestPost = postsData.items?.[0];
+                const posts = postsData.items || [];
+                let retentionData = [];
+                let optimizationInsight = "Optimal performance detected.";
+                
+                const latestPost = posts[0];
                 if (latestPost) {
-                    const historyRes = await fetch(`${API_BASE}/analytics/report/${latestPost.id}/history`, { headers });
+                    const [latestReportRes, historyRes, insightsRes] = await Promise.all([
+                        fetch(`${API_BASE}/analytics/report/${latestPost.id}`, { headers }),
+                        fetch(`${API_BASE}/analytics/report/${latestPost.id}/history`, { headers }),
+                        fetch(`${API_BASE}/analytics/insights/${latestPost.id}`, { headers })
+                    ]);
+
+                    if (latestReportRes.ok) {
+                        const latestReport = (await latestReportRes.json()).data;
+                        retentionData = latestReport.retention_data || [];
+                    }
+
                     if (historyRes.ok) {
                         const history = (await historyRes.json()).data;
                         if (history && history.length > 0) {
@@ -149,7 +134,25 @@ export default function AnalyticsPage() {
                             })));
                         }
                     }
+
+                    if (insightsRes.ok) {
+                        const insightData = (await insightsRes.json()).data;
+                        optimizationInsight = insightData.insight || optimizationInsight;
+                    }
                 }
+
+                setMetrics({
+                    views: report.total_views || 0,
+                    retention: report.avg_retention || 0,
+                    shares: report.total_shares || 0,
+                    engagement: report.total_views > 0 ? (report.total_likes / report.total_views) : 0,
+                    activeTrends: summary.active_trends || 0,
+                    successRate: summary.success_rate || "0%",
+                    engineLoad: summary.engine_load || "0%",
+                    velocity: summary.velocity || "Nominal",
+                    optimizationInsight,
+                    retentionData: retentionData.length > 0 ? retentionData.map((v: number, i: number) => ({ time: i, value: v })) : []
+                });
             }
         } catch (err) {
             console.error("Analytics fetch failed:", err);
@@ -382,7 +385,7 @@ export default function AnalyticsPage() {
                                 <div className="space-y-6">
                                     <div className="p-6 bg-white/2 border border-white/5 space-y-3">
                                         <p className="text-sm font-bold text-white leading-relaxed">
-                                            "The signal drops by 14% at the 5s mark. Recommend injecting a high-velocity visual hook at this node."
+                                            "{metrics.optimizationInsight}"
                                         </p>
                                         <p className="font-data-mono text-[8px] text-zinc-600">CONFIDENCE: 99.2%</p>
                                     </div>

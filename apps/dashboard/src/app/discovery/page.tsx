@@ -31,7 +31,7 @@ const Geomap = dynamic(() => import("@/components/ui/Geomap"), { ssr: false });
 function DiscoveryBackground() {
     return (
         <div className="absolute inset-0 z-0 pointer-events-none">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-white to-amber-50/50" />
+            <div className="absolute inset-0 bg-linear-to-br from-indigo-50/50 via-white to-amber-50/50" />
             <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.05) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.05) 0%, transparent 50%)' }} />
             <Canvas camera={{ position: [0, 0, 5] }} className="opacity-40">
                 <Float speed={2} rotationIntensity={0.3} floatIntensity={0.5}>
@@ -75,7 +75,7 @@ function DiscoveryContent() {
     const [activeNiche, setActiveNiche] = useState(searchParams.get("q") || "Motivation");
     const [filter, setFilter] = useState("all");
     const [timeHorizon, setTimeHorizon] = useState("30d");
-    const [niches, setNiches] = useState<string[]>([]);
+    const [niches, setNiches] = useState<string[]>(["Motivation", "AI", "Gaming", "Tech", "Finance"]);
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearching, setIsSearching] = useState(false);
     const [alerts, setAlerts] = useState<any[]>([]);
@@ -101,20 +101,17 @@ function DiscoveryContent() {
             const token = await getAuthToken();
             const headers = { Authorization: `Bearer ${token}` };
             
-            const [nicheRes, alertsRes] = await Promise.all([
-                fetch(`${API_BASE}/discovery/niches`, { headers }),
-                fetch(`${API_BASE}/discovery/alerts`, { headers })
-            ]);
-
-            if (nicheRes.ok) {
-                const nicheData = await nicheRes.json();
-                setNiches(nicheData.data || []);
-            }
+            const alertsRes = await fetch(`${API_BASE}/discovery/alerts`, { headers });
             if (alertsRes.ok) {
                 const alertData = await alertsRes.json();
                 const alertList = alertData.data?.alerts || alertData.alerts || [];
                 setAlerts(alertList);
-                setMonitoredNiches(alertList.map((a: any) => a.niche));
+                const watchedNiches = alertList.map((a: any) => a.niche);
+                setMonitoredNiches(watchedNiches);
+                // Sync niches list with monitored ones if that's the primary source
+                if (watchedNiches.length > 0) {
+                    setNiches(prev => Array.from(new Set([...prev, ...watchedNiches])));
+                }
             }
         } catch (err) {
             console.error("Failed to load discovery data:", err);
@@ -210,13 +207,13 @@ function DiscoveryContent() {
                     toast.success(`Stopped watching ${niche}`);
                 }
             } else {
-                await fetch(`${API_BASE}/discovery/alerts`, {
+                await fetch(`${API_BASE}/discovery/niche/watch`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`
                     },
-                    body: JSON.stringify({ niche, threshold: 7, enabled: true })
+                    body: JSON.stringify({ niche })
                 });
                 toast.success(`Watching ${niche} for viral breakouts`);
             }
@@ -468,7 +465,7 @@ function DiscoveryContent() {
                         </Card>
 
                         <div className="surface-glass rounded-4xl border border-white/5 h-80 overflow-hidden relative group">
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10 flex flex-col justify-end p-8">
+                            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent z-10 flex flex-col justify-end p-8">
                                 <span className="text-white text-[10px] font-bold uppercase tracking-widest mb-1">Global Hotspots</span>
                                 <p className="text-zinc-500 text-[8px] uppercase tracking-widest">Live Geographic Feed</p>
                             </div>
@@ -502,7 +499,7 @@ function DiscoveryContent() {
                                                     alt={c.title}
                                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
                                                 />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
+                                                <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent opacity-60" />
                                                 
                                                 <div className="absolute top-4 left-4 flex gap-2">
                                                     <div className="px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-full text-[8px] font-bold text-white uppercase tracking-widest">
