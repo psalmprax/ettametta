@@ -32,9 +32,13 @@ interface SimNode extends d3.SimulationNodeDatum {
 }
 
 interface SimLink extends d3.SimulationLinkDatum<SimNode> {
-    source: SimNode | string;
-    target: SimNode | string;
+    source: SimNode | string | number;
+    target: SimNode | string | number;
     value: number;
+}
+
+function getNodeId(node: SimNode | Node | string | number): string | number {
+    return typeof node === "object" ? node.id : node;
 }
 
 export default React.memo(function NetworkMesh({ nodes, links }: NetworkProps) {
@@ -79,8 +83,8 @@ export default React.memo(function NetworkMesh({ nodes, links }: NetworkProps) {
         }));
         
         const simLinks: SimLink[] = links.map(l => {
-            const sourceId = typeof l.source === "string" ? l.source : l.source.id;
-            const targetId = typeof l.target === "string" ? l.target : l.target.id;
+            const sourceId = getNodeId(l.source);
+            const targetId = getNodeId(l.target);
 
             return {
                 source: simNodes.find(n => n.id === sourceId) ?? sourceId,
@@ -144,10 +148,10 @@ export default React.memo(function NetworkMesh({ nodes, links }: NetworkProps) {
         // Tick function
         sim.on("tick", () => {
             link
-                .attr("x1", d => typeof d.source === "string" ? 0 : d.source.x ?? 0)
-                .attr("y1", d => typeof d.source === "string" ? 0 : d.source.y ?? 0)
-                .attr("x2", d => typeof d.target === "string" ? 0 : d.target.x ?? 0)
-                .attr("y2", d => typeof d.target === "string" ? 0 : d.target.y ?? 0);
+                .attr("x1", d => typeof d.source === "object" ? d.source.x ?? 0 : 0)
+                .attr("y1", d => typeof d.source === "object" ? d.source.y ?? 0 : 0)
+                .attr("x2", d => typeof d.target === "object" ? d.target.x ?? 0 : 0)
+                .attr("y2", d => typeof d.target === "object" ? d.target.y ?? 0 : 0);
 
             node.attr("transform", d => `translate(${d.x ?? 0},${d.y ?? 0})`);
         });
