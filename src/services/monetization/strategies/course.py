@@ -17,16 +17,16 @@ class CourseStrategy(BaseMonetizationStrategy):
         from src.api.utils.database import async_session_factory
         
         async with async_session_factory() as db:
-            stmt = select(SystemSettings).filter(SystemSettings.key == "course_platform_url")
+            stmt = select(SystemSettings).filter(SystemSettings.key == "course_platform_uri")
             result = await db.execute(stmt)
             setting = result.scalar_one_or_none()
-            platform_url = setting.value if setting else "https://ettametta.ai/academy"
+            platform_uri = setting.value if setting else "https://ettametta.ai/academy"
 
             return [
                 {
                     "id": "course_1",
                     "name": f"Complete {niche.title()} Masterclass",
-                    "url": platform_url,
+                    "url": platform_uri,
                     "cta_text": "Enroll Now",
                     "price": "$97",
                     "description": f"Learn everything about {niche} from scratch to advanced",
@@ -35,7 +35,7 @@ class CourseStrategy(BaseMonetizationStrategy):
                 {
                     "id": "course_2",
                     "name": f"{niche.title()} Crash Course",
-                    "url": platform_url,
+                    "url": platform_uri,
                     "cta_text": "Get Started",
                     "price": "$47",
                     "description": f"Quickstart guide to {niche}",
@@ -44,7 +44,7 @@ class CourseStrategy(BaseMonetizationStrategy):
                 {
                     "id": "course_3",
                     "name": f"Advanced {niche.title()} Strategies",
-                    "url": platform_url,
+                    "url": platform_uri,
                     "cta_text": "Learn More",
                     "price": "$197",
                     "description": f"Master advanced {niche} techniques",
@@ -59,16 +59,16 @@ class CourseStrategy(BaseMonetizationStrategy):
         assets = await self.get_assets(niche)
         
         if not assets:
-            logging.warning(f"[CourseStrategy] No course platform configured. Set 'course_platform_url' in settings.")
+            logging.warning(f"[CourseStrategy] No course platform configured. Set 'course_platform_uri' in settings.")
             return ""
         
-        platform_url = assets[0].get("url", "")
+        platform_uri = assets[0].get("url", "")
         course_name = assets[0].get("name", f"{niche} course")
         
         options = [
-            f"Want to master {niche}? Check out my comprehensive course: \n🔗 {platform_url}",
-            f"Learn {niche} the right way! Full course available: \n🔗 {platform_url}",
-            f"Take your {niche} skills to the next level! Enroll now: \n🔗 {platform_url}",
-            f"Ready to become an expert in {niche}? Join my course: \n🔗 {platform_url}"
+            f"Want to master {niche}? Check out my comprehensive course: \n🔗 {platform_uri}",
+            f"Learn {niche} the right way! Full course available: \n🔗 {platform_uri}",
+            f"Take your {niche} skills to the next level! Enroll now: \n🔗 {platform_uri}",
+            f"Ready to become an expert in {niche}? Join my course: \n🔗 {platform_uri}"
         ]
         return random.choice(options)

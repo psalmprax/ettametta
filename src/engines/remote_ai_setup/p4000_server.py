@@ -120,7 +120,7 @@ async def generate_animation(request: VideoRequest):
         return {
             "job_id": f"p4000_{hash(request.prompt) % 10000}",
             "status": "completed",
-            "video_url": result.get("video_url"),
+            "video_uri": result.get("video_uri"),
             "model": "animatediff_p4000",
             "gpu_optimized": "p4000_8gb",
             "generation_time": result.get("generation_time", "4-6_min"),

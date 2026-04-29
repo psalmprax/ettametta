@@ -510,7 +510,7 @@ class GenerativeService:
         engine: str = "veo3",
         aspect_ratio: str = "9:16",
         style: str = "Cinematic",
-        custom_image_url: str = None,
+        custom_image_uri: str = None,
         enhance_quality: bool = False,  # Enable Real-ESRGAN post-processing
     ) -> str | None:
         """
@@ -559,12 +559,12 @@ class GenerativeService:
             if engine in local_gpu_engines:
                 async with self.gpu_queue.acquire_slot():
                     video_path = await self._dispatch_synthesis(
-                        optimized_prompt, engine, aspect_ratio, params, custom_image_url
+                        optimized_prompt, engine, aspect_ratio, params, custom_image_uri
                     )
             else:
                 # Cloud engines don't need the local GPU queue
                 video_path = await self._dispatch_synthesis(
-                    optimized_prompt, engine, aspect_ratio, params, custom_image_url
+                    optimized_prompt, engine, aspect_ratio, params, custom_image_uri
                 )
 
             # Apply quality enhancement if requested and video was generated
@@ -594,7 +594,7 @@ class GenerativeService:
         engine: str,
         aspect_ratio: str,
         params: dict = None,
-        custom_image_url: str = None,
+        custom_image_uri: str = None,
     ) -> str | None:
         """Internal dispatcher for actual synthesis calls with comprehensive error handling."""
         try:
@@ -695,7 +695,7 @@ class GenerativeService:
                 return await self._synthesize_animatediff(prompt, aspect_ratio, params)
             elif engine == "lite4k":
                 return await self._synthesize_lite_4k(
-                    prompt, aspect_ratio, custom_image_url
+                    prompt, aspect_ratio, custom_image_uri
                 )
             # Free daily providers (external APIs)
             elif engine in [
@@ -872,7 +872,7 @@ class GenerativeService:
             await self.model_manager.release_model(model_name)
 
     async def _synthesize_lite_4k(
-        self, prompt: str, aspect_ratio: str, custom_image_url: str = None
+        self, prompt: str, aspect_ratio: str, custom_image_uri: str = None
     ) -> str | None:
         # ... (rest of the code stays same)
         """
@@ -889,17 +889,17 @@ class GenerativeService:
         )
 
         # 1. Generate or use custom 4K Static Image
-        if custom_image_url:
+        if custom_image_uri:
             # Use provided custom image
-            image_url = custom_image_url
-            logging.info(f"[GenerativeService] Using custom image: {image_url}")
+            image_uri = custom_image_uri
+            logging.info(f"[GenerativeService] Using custom image: {image_uri}")
         else:
             # Generate high-quality image (Pollinations.ai with FLUX model)
             encoded_prompt = urllib.parse.quote(prompt)
             # We request a large resolution (which translates to high quality for upscale later)
             width, height = (3840, 2160) if aspect_ratio == "16:9" else (2160, 3840)
-            image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&model=flux&seed={uuid.uuid4().int}"
-            logging.info(f"[GenerativeService] Generated FLUX image: {image_url}")
+            image_uri = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&model=flux&seed={uuid.uuid4().int}"
+            logging.info(f"[GenerativeService] Generated FLUX image: {image_uri}")
 
         # 2. Process into 4K Cinematic Video
         processor = VideoProcessor()
@@ -907,7 +907,7 @@ class GenerativeService:
 
         # We'll call a new processor method specifically for image-to-parallax
         video_path = await processor.apply_cinematic_motion(
-            image_url, output_name, aspect_ratio=aspect_ratio
+            image_uri, output_name, aspect_ratio=aspect_ratio
         )
 
         return video_path
@@ -960,7 +960,7 @@ class GenerativeService:
 
         synthesized_scenes = []
         for i, url in enumerate(results):
-            synthesized_scenes.append({**scenes[i], "video_url": url})
+            synthesized_scenes.append({**scenes[i], "video_uri": url})
 
         return synthesized_scenes
 
@@ -1215,11 +1215,11 @@ class GenerativeService:
                 style=None,
             )
 
-            if result and result.get("video_url"):
+            if result and result.get("video_uri"):
                 logging.info(
-                    f"[GenerativeService] {provider} generated video: {result['video_url'][:50]}..."
+                    f"[GenerativeService] {provider} generated video: {result['video_uri'][:50]}..."
                 )
-                return result["video_url"]
+                return result["video_uri"]
             else:
                 logging.warning(f"[GenerativeService] {provider} returned no result")
                 return None

@@ -247,7 +247,7 @@ class AffiliateService:
                 )
                 price_amount = price_info.get("Amount", 0)
                 image_info = item.get("Images", {}).get("Primary", {}).get("Medium", {})
-                image_url = image_info.get("URL", "")
+                image_uri = image_info.get("URL", "")
                 detail_url = f"https://www.amazon.com/dp/{asin}?tag={api_tag}"
 
                 products.append(
@@ -255,7 +255,7 @@ class AffiliateService:
                         "asin": asin,
                         "title": title,
                         "price": {"amount": price_amount, "currency": "USD"},
-                        "image_url": image_url,
+                        "image_uri": image_uri,
                         "detail_url": detail_url,
                         "commission_rate": None,  # Not provided by API
                         "category": category,

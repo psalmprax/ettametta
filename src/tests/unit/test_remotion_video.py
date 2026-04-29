@@ -22,16 +22,16 @@ def test_video_overlay():
     """Test remotion with video via HTTP URL"""
 
     # Use HTTP URL to serve video
-    video_url = "http://172.16.1.37:3001/test_video.mp4"
+    video_uri = "http://172.16.1.37:3001/test_video.mp4"
 
     print("=== REMOTION VIDEO OVERLAY TEST ===")
-    print(f"Video URL: {video_url}")
+    print(f"Video URL: {video_uri}")
 
-    # Test ViralClip with video_url via HTTP
+    # Test ViralClip with video_uri via HTTP
     props = {
         "title": "AI Tools That Will Change Everything",
         "subtitle": "2026 Viral Trends",
-        "video_url": video_url,
+        "video_uri": video_uri,
     }
     composition_id = "ViralClip"
 

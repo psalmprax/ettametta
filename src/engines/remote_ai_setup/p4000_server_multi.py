@@ -99,7 +99,7 @@ async def generate_ltx_p4000(prompt: str, num_frames: int = 6, height: int = 320
         cleanup_p4000_memory(pipe)
 
         return {
-            "video_url": f"/download/{os.path.basename(output_path)}",
+            "video_uri": f"/download/{os.path.basename(output_path)}",
             "model": "ltx_video_p4000",
             "resolution": f"{width}x{height}",
             "frames": min(num_frames, 6)
@@ -135,7 +135,7 @@ async def generate_zeroscope_p4000(prompt: str, num_frames: int = 6, height: int
         cleanup_p4000_memory(pipe)
 
         return {
-            "video_url": f"/download/{os.path.basename(output_path)}",
+            "video_uri": f"/download/{os.path.basename(output_path)}",
             "model": "zeroscope_p4000",
             "resolution": f"{width}x{height}",
             "frames": min(num_frames, 6)
@@ -169,7 +169,7 @@ async def generate_lite4k_p4000(prompt: str, num_frames: int = 4, height: int = 
         cleanup_p4000_memory(pipe)
 
         return {
-            "video_url": f"/download/{os.path.basename(output_path)}",
+            "video_uri": f"/download/{os.path.basename(output_path)}",
             "model": "lite4k_p4000",
             "resolution": f"{width}x{height}",
             "frames": min(num_frames, 4)

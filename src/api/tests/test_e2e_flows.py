@@ -119,7 +119,7 @@ class TestContentCreationFlow:
         response = requests.post(
             f"{BASE_URL}/api/v1/video/transform",
             headers={"Authorization": f"Bearer {token}"},
-            json={"source_url": "https://example.com/test.mp4", "niche": "Motivation"},
+            json={"source_uri": "https://example.com/test.mp4", "niche": "Motivation"},
         )
         assert response.status_code in [200, 201]
         assert "task_id" in response.json() or "message" in response.json()

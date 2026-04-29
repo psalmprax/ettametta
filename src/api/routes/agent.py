@@ -76,27 +76,22 @@ async def chat_with_agent(
     Unified agent chat endpoint with video generation intent detection.
     """
     try:
-        hub = IntelligenceHub()
-
-        # Restore video generation intent detection
-        message_lower = body.message.lower()
-        if any(kw in message_lower for kw in ["generate video", "create video", "make video"]):
-            logger.info(f"[Agent] Video generation intent detected: {body.message}")
-            pass
-
-        system_prompt = "You are a helpful AI assistant for a viral content creation platform. Be concise and actionable."
-        if body.context:
-            system_prompt += f"\n\nContext: {body.context}"
-
-        ai_data = await hub.chat(
-            prompt=body.message, system_prompt=system_prompt, session_id=correlation_id
+        from src.services.openclaw.agent import openclaw_agent
+        
+        # Determine user identifier (prefer username/id for skill tracking)
+        identifier = current_user.username or str(current_user.id)
+        
+        # Use OpenClawAgent for full skill integration (PAPERCLIP, SCIENTIFIC, etc.)
+        response_text = await openclaw_agent.process_message(
+            identifier=identifier,
+            message=body.message
         )
 
         return success_response(
             data={
-                "response": ai_data.get("response", ai_data.get("content", "")),
+                "response": response_text,
                 "status": "success",
-                "agent": ai_data.get("provider", "intelligence-hub"),
+                "agent": "openclaw-master",
                 "correlation_id": correlation_id,
             }
         )
@@ -104,7 +99,7 @@ async def chat_with_agent(
         raise e
     except Exception as e:
         logger.error(f"[Agent] Chat failed: {type(e).__name__}: {e}")
-        raise HTTPException(status_code=503, detail="AI service unavailable")
+        raise HTTPException(status_code=503, detail="AI agent service unavailable")
 
 
 @router.post("/analyze-code")

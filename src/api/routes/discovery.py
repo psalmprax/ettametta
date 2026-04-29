@@ -226,11 +226,11 @@ async def trigger_scan(
                                     ContentCandidate(
                                         id=r.video_id,
                                         platform=r.platform,
-                                        source_url=r.url,
+                                        source_uri=r.url,
                                         creator_name=r.creator,
                                         title=r.title,
                                         description=r.description,
-                                        thumbnail_url=r.thumbnail_url,
+                                        thumbnail_uri=r.thumbnail_uri,
                                         view_count=r.view_count,
                                         engagement_score=r.engagement_score,
                                         viral_score=int(r.viral_score),
@@ -370,20 +370,47 @@ async def get_discovery_summary(
 
 @router.get("/niches")
 async def list_monitored_niches(
-    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    from src.api.utils.models import MonitoredNiche
+    from src.api.utils.models import MonitoredNiche, DiscoveryAlertDB
+    from sqlalchemy import outerjoin
 
     try:
-        stmt = select(MonitoredNiche.niche).filter(MonitoredNiche.is_active == True)
-        # Anyly filter by current_user if specific watch is desired,
-        # but for now we list all global active niches for inspiration
-        stmt = stmt.distinct()
+        # Join MonitoredNiche with DiscoveryAlertDB to get alert status
+        stmt = (
+            select(
+                MonitoredNiche.niche,
+                MonitoredNiche.is_active,
+                DiscoveryAlertDB.threshold,
+                DiscoveryAlertDB.is_active.label("alert_enabled"),
+            )
+            .outerjoin(
+                DiscoveryAlertDB,
+                and_(
+                    DiscoveryAlertDB.niche == MonitoredNiche.niche,
+                    DiscoveryAlertDB.user_id == MonitoredNiche.user_id,
+                ),
+            )
+            .filter(MonitoredNiche.user_id == current_user.id)
+            .order_by(MonitoredNiche.niche)
+        )
 
         result = await db.execute(stmt)
-        niches = result.all()
-        return success_response(data=[n[0] for n in niches])
+        rows = result.all()
+        
+        return success_response(
+            data=[
+                {
+                    "niche": r[0],
+                    "is_active": r[1],
+                    "threshold": r[2] or 7,
+                    "alert_enabled": r[3] if r[3] is not None else False,
+                }
+                for r in rows
+            ]
+        )
     except Exception as e:
+        logger.error(f"List monitored niches failed: {e}")
         return handle_exception(e)
 
 
@@ -391,16 +418,17 @@ async def list_monitored_niches(
 async def watch_niche(
     request: NicheWatchRequest,
     current_user: UserDB = Depends(get_current_user),
-    db=Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Persistently watch/monitor a niche for this current_user.
+    Also creates a default alert for the niche.
     """
-    from src.api.utils.models import MonitoredNiche
+    from src.api.utils.models import MonitoredNiche, DiscoveryAlertDB
     from sqlalchemy import and_
 
     try:
-        # Check if already watching
+        # 1. Handle MonitoredNiche
         stmt = select(MonitoredNiche).filter(
             and_(
                 MonitoredNiche.user_id == current_user.id,
@@ -408,21 +436,37 @@ async def watch_niche(
             )
         )
         result = await db.execute(stmt)
-        existing = result.scalar_one_or_none()
+        existing_monitor = result.scalar_one_or_none()
 
-        if existing:
-            if not existing.is_active:
-                existing.is_active = True
-                await db.commit()
-            return success_response(
-                data={"status": "Already Watching", "niche": request.niche}
+        if not existing_monitor:
+            new_monitor = MonitoredNiche(
+                user_id=current_user.id, niche=request.niche, is_active=True
             )
+            db.add(new_monitor)
+        else:
+            existing_monitor.is_active = True
 
-        # Create new monitor
-        new_monitor = MonitoredNiche(
-            user_id=current_user.id, niche=request.niche, is_active=True
+        # 2. Handle DiscoveryAlert
+        stmt_alert = select(DiscoveryAlertDB).filter(
+            and_(
+                DiscoveryAlertDB.user_id == current_user.id,
+                DiscoveryAlertDB.niche == request.niche,
+            )
         )
-        db.add(new_monitor)
+        alert_result = await db.execute(stmt_alert)
+        existing_alert = alert_result.scalar_one_or_none()
+
+        if not existing_alert:
+            new_alert = DiscoveryAlertDB(
+                user_id=current_user.id,
+                niche=request.niche,
+                threshold=7,
+                is_active=True,
+            )
+            db.add(new_alert)
+        else:
+            existing_alert.is_active = True
+
         await db.commit()
         return success_response(
             data={"status": "Niche Watch Established", "niche": request.niche}
@@ -430,6 +474,7 @@ async def watch_niche(
 
     except Exception as e:
         await db.rollback()
+        logger.error(f"Watch niche failed: {e}")
         return handle_exception(e)
 
 
@@ -515,7 +560,7 @@ async def create_video_from_analysis(
 
         # Get analysis result
         analysis = result.result
-        candidate_url = analysis.get("source_url") or analysis.get("candidate_id", "")
+        candidate_url = analysis.get("source_uri") or analysis.get("candidate_id", "")
 
         if not candidate_url:
             raise HTTPException(
@@ -525,7 +570,7 @@ async def create_video_from_analysis(
         # Dispatch Task
         try:
             task = download_and_process_task.delay(
-                source_url=candidate_url,
+                source_uri=candidate_url,
                 niche=request.niche,
                 platform=request.platform,
                 style=request.style,
@@ -560,7 +605,7 @@ async def create_video_from_analysis(
             title=f"From Analysis - {request.niche}",
             status=SystemJobStatus.QUEUED,
             progress=0,
-            source_url=candidate_url,
+            source_uri=candidate_url,
             user_id=current_user.id,
             job_metadata={
                 "niche": request.niche,
@@ -638,9 +683,9 @@ async def auto_transform(
 
         # Select the top candidate
         best = candidates[0]
-        source_url = best.source_url or ""
+        source_uri = best.source_uri or ""
 
-        if not source_url:
+        if not source_uri:
             raise HTTPException(
                 status_code=400, detail="Selected content has no source URL"
             )
@@ -650,7 +695,7 @@ async def auto_transform(
         await logger.info(f"[Auto-Transform] Creating video from: {best.title}")
 
         task = download_and_process_task.delay(
-            source_url=source_url,
+            source_uri=source_uri,
             niche=request.niche,
             platform=request.platform,
             style=request.style,
@@ -665,7 +710,7 @@ async def auto_transform(
             title=f"Auto-Transform: {best.title[:50]}",
             status=SystemJobStatus.QUEUED,
             progress=0,
-            source_url=source_url,
+            source_uri=source_uri,
             user_id=current_user.id,
             job_metadata={
                 "niche": request.niche,
@@ -870,8 +915,8 @@ async def record_interaction(
 
     candidate_id = request.candidate_id
     if not candidate_id and request.content_url:
-        # Try to find candidate by source_url
-        stmt = select(ContentCandidateDB).filter(ContentCandidateDB.source_url == request.content_url)
+        # Try to find candidate by source_uri
+        stmt = select(ContentCandidateDB).filter(ContentCandidateDB.source_uri == request.content_url)
         result = await db.execute(stmt)
         candidate = result.scalar_one_or_none()
         if candidate:
@@ -1006,11 +1051,11 @@ async def get_content_velocity(
         candidate = ContentCandidate(
             id=content.id,
             platform=content.platform,
-            source_url=content.source_url or "",
+            source_uri=content.source_uri or "",
             creator_name=content.creator_name or "Unknown",
             title=content.title or "",
             description=content.description or "",
-            thumbnail_url=content.thumbnail_url or "",
+            thumbnail_uri=content.thumbnail_uri or "",
             view_count=content.view_count or 0,
             engagement_score=content.engagement_score or 0.0,
             viral_score=content.viral_score or 0,
@@ -1093,7 +1138,7 @@ async def get_content_reuploads(
                         "id": r.id,
                         "platform": r.platform,
                         "title": r.title,
-                        "source_url": r.source_url,
+                        "source_uri": r.source_uri,
                         "view_count": r.view_count,
                         "viral_score": r.viral_score,
                         "similarity_score": r.metadata.get("similarity_score", 0),
@@ -1235,7 +1280,7 @@ async def export_discovery(
                         c.view_count,
                         c.viral_score,
                         c.engagement_score,
-                        c.source_url,
+                        c.source_uri,
                     ]
                 )
 
@@ -1262,7 +1307,7 @@ async def export_discovery(
                             "views": c.view_count,
                             "viral_score": c.viral_score,
                             "engagement": c.engagement_score,
-                            "url": c.source_url,
+                            "url": c.source_uri,
                         }
                         for c in candidates
                     ],
@@ -1321,25 +1366,54 @@ async def get_niche_alerts(
 async def create_niche_alert(
     request: NicheAlertRequest,
     current_user: UserDB = Depends(get_current_user),
-    db=Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """Create an alert for when new trending content is found in a niche."""
-    from src.api.utils.models import DiscoveryAlertDB
+    from src.api.utils.models import DiscoveryAlertDB, MonitoredNiche
 
     try:
-        alert = DiscoveryAlertDB(
-            user_id=current_user.id,
-            niche=request.niche,
-            threshold=request.threshold,
-            is_active=request.enabled,
+        # 1. Ensure MonitoredNiche exists
+        stmt_monitor = select(MonitoredNiche).filter(
+            and_(
+                MonitoredNiche.user_id == current_user.id,
+                MonitoredNiche.niche == request.niche,
+            )
         )
-        db.add(alert)
-        await db.commit()
-        await db.refresh(alert)
+        monitor_result = await db.execute(stmt_monitor)
+        monitor = monitor_result.scalar_one_or_none()
+        
+        if not monitor:
+            monitor = MonitoredNiche(user_id=current_user.id, niche=request.niche, is_active=True)
+            db.add(monitor)
+        else:
+            monitor.is_active = True
 
+        # 2. Handle Alert
+        stmt = select(DiscoveryAlertDB).filter(
+            and_(
+                DiscoveryAlertDB.user_id == current_user.id,
+                DiscoveryAlertDB.niche == request.niche,
+            )
+        )
+        result = await db.execute(stmt)
+        alert = result.scalar_one_or_none()
+
+        if alert:
+            alert.threshold = request.threshold
+            alert.is_active = request.enabled
+        else:
+            alert = DiscoveryAlertDB(
+                user_id=current_user.id,
+                niche=request.niche,
+                threshold=request.threshold,
+                is_active=request.enabled,
+            )
+            db.add(alert)
+        
+        await db.commit()
         return success_response(
             data={
-                "status": "alert_created",
+                "status": "alert_established",
                 "alert_id": alert.id,
                 "niche": request.niche,
                 "threshold": request.threshold,
@@ -1457,7 +1531,7 @@ async def get_favorites(
                         "title": f.title,
                         "platform": f.platform,
                         "viral_score": f.viral_score,
-                        "source_url": f.source_url,
+                        "source_uri": f.source_uri,
                     }
                     for f in favorites
                 ],

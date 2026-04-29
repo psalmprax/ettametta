@@ -99,7 +99,7 @@ async def demonstrate_video_editor_quality():
             shares=0,
             duration=300,
             upload_date=None,
-            thumbnail_url="https://example.com/thumb.jpg",
+            thumbnail_uri="https://example.com/thumb.jpg",
             description="Test description",
             tags=["test", "video"],
             engagement_score=6.0,

@@ -42,8 +42,8 @@ class PersonaSkill(OpenClawBaseSkill):
                 data = (
                     raw_data.get("data", {}) if isinstance(raw_data, dict) else raw_data
                 )
-                video_url = data.get("video_url", "No URL returned")
-                return f"👤 **Persona Animated!**\nVideo generated successfully.\nLink: {video_url}"
+                video_uri = data.get("video_uri", "No URL returned")
+                return f"👤 **Persona Animated!**\nVideo generated successfully.\nLink: {video_uri}"
             else:
                 return f"⚠️ Persona generation failed. Ensure your Persona is registered in the Dashboard."
         except Exception as e:

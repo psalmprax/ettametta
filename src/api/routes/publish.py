@@ -421,7 +421,7 @@ async def retry_publish(
         content.status = (
             ContentPublishStatus.PUBLISHED if url else ContentPublishStatus.FAILED
         )
-        content.source_url = url
+        content.source_uri = url
         content.published_at = datetime.datetime.utcnow() if url else None
 
         # Clear retention metadata
@@ -435,7 +435,7 @@ async def retry_publish(
         return success_response(
             data={
                 "status": "success" if url else "failed",
-                "source_url": url,
+                "source_uri": url,
                 "message": "Video published successfully"
                 if url
                 else "Failed to publish video",
@@ -905,7 +905,7 @@ async def get_content_comments(
         if not content:
             raise HTTPException(status_code=404, detail="Post not found")
 
-        if not content.source_url:
+        if not content.source_uri:
             raise HTTPException(
                 status_code=400, detail="Post has no URL (not published yet)"
             )
@@ -915,12 +915,12 @@ async def get_content_comments(
         platform_key = content.platform.lower()
 
         # YouTube Extraction
-        if "youtube.com" in content.source_url or "youtu.be" in content.source_url:
-            if "youtu.be" in content.source_url:
-                platform_id = content.source_url.split("/")[-1].split("?")[0]
+        if "youtube.com" in content.source_uri or "youtu.be" in content.source_uri:
+            if "youtu.be" in content.source_uri:
+                platform_id = content.source_uri.split("/")[-1].split("?")[0]
             else:
                 # Handle various YouTube URL formats
-                url_parts = content.source_url.split("/")
+                url_parts = content.source_uri.split("/")
                 for i, part in enumerate(url_parts):
                     if part == "watch" and i + 1 < len(url_parts):
                         platform_id = url_parts[i + 1].split("&")[0].split("?")[0]
@@ -933,8 +933,8 @@ async def get_content_comments(
             platform_key = "youtube"
 
         # TikTok Extraction - handle multiple URL formats
-        elif "tiktok.com" in content.source_url:
-            url_clean = content.source_url.split("?")[0]  # Remove query params
+        elif "tiktok.com" in content.source_uri:
+            url_clean = content.source_uri.split("?")[0]  # Remove query params
             url_parts = url_clean.split("/")
 
             # Handle different TikTok URL patterns:
@@ -1002,7 +1002,7 @@ async def sync_content_metrics(
         if not content:
             raise HTTPException(status_code=404, detail="Post not found")
 
-        if not content.source_url:
+        if not content.source_uri:
             raise HTTPException(
                 status_code=400, detail="Post has no URL (not published yet)"
             )
@@ -1012,12 +1012,12 @@ async def sync_content_metrics(
         platform_key = content.platform.lower()
 
         # YouTube Extraction
-        if "youtube.com" in content.source_url or "youtu.be" in content.source_url:
-            if "youtu.be" in content.source_url:
-                platform_id = content.source_url.split("/")[-1].split("?")[0]
+        if "youtube.com" in content.source_uri or "youtu.be" in content.source_uri:
+            if "youtu.be" in content.source_uri:
+                platform_id = content.source_uri.split("/")[-1].split("?")[0]
             else:
                 # Handle various YouTube URL formats
-                url_parts = content.source_url.split("/")
+                url_parts = content.source_uri.split("/")
                 for i, part in enumerate(url_parts):
                     if part == "watch" and i + 1 < len(url_parts):
                         platform_id = url_parts[i + 1].split("&")[0].split("?")[0]
@@ -1030,8 +1030,8 @@ async def sync_content_metrics(
             platform_key = "youtube"
 
         # TikTok Extraction - handle multiple URL formats
-        elif "tiktok.com" in content.source_url:
-            url_clean = content.source_url.split("?")[0]  # Remove query params
+        elif "tiktok.com" in content.source_uri:
+            url_clean = content.source_uri.split("?")[0]  # Remove query params
             url_parts = url_clean.split("/")
 
             # Handle different TikTok URL patterns:

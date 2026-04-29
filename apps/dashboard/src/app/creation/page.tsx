@@ -126,6 +126,12 @@ export default function CreationPage() {
     const [isValidating, setIsValidating] = useState(false);
     const [isCinemaLaunching, setIsCinemaLaunching] = useState(false);
     const [hookAnalysis, setHookAnalysis] = useState<HookAnalysis | null>(null);
+    const [activeStack, setActiveStack] = useState<"cloud" | "os">("cloud");
+
+    const stacks = [
+        { id: "cloud", name: "Premium Cloud", desc: "High-Speed GPUs & Enterprise Models", icon: Globe, status: "Active" },
+        { id: "os", name: "Open-Source Infrastructure", desc: "Sovereign AI Stack (HunyuanVideo)", icon: Database, status: "Secure", testId: "os-stack-card" }
+    ];
 
     const handleGenerateScript = async () => {
         if (!topic) {
@@ -135,7 +141,7 @@ export default function CreationPage() {
         setIsGenerating(true);
         try {
             const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/v1/video/script`, {
+            const res = await fetch(`${API_BASE}/video/script`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -163,7 +169,7 @@ export default function CreationPage() {
         setIsCinemaLaunching(true);
         try {
             const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/v1/video/launch-cinema`, {
+            const res = await fetch(`${API_BASE}/video/launch-cinema`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -186,7 +192,7 @@ export default function CreationPage() {
         setIsValidating(true);
         try {
             const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/v1/video/validate-hook`, {
+            const res = await fetch(`${API_BASE}/video/validate-hook`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -210,7 +216,7 @@ export default function CreationPage() {
         setIsGenerating(true);
         try {
             const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/v1/video/translate-script`, {
+            const res = await fetch(`${API_BASE}/video/translate-script`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -234,7 +240,7 @@ export default function CreationPage() {
         setLoadingSegment(`audio-${index}`);
         try {
             const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/v1/video/synthesize-audio`, {
+            const res = await fetch(`${API_BASE}/video/synthesize-audio`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -246,7 +252,7 @@ export default function CreationPage() {
             const data = await res.json();
             setSegmentAssets(prev => ({
                 ...prev,
-                [index]: { ...prev[index], audio: data.audio_url }
+                [index]: { ...prev[index], audio: data.audio_uri }
             }));
             toast.success("Vocal Pattern Captured");
         } catch (err) {
@@ -261,7 +267,7 @@ export default function CreationPage() {
         setLoadingSegment(`stock-${index}`);
         try {
             const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/v1/video/search-stock`, {
+            const res = await fetch(`${API_BASE}/video/search-stock`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -338,7 +344,7 @@ export default function CreationPage() {
                             animate={{ opacity: 1, x: 0 }}
                             className="flex items-center gap-4"
                         >
-                            <div className="surface-glass rounded-[2rem] border border-white/5 p-6 flex items-center gap-10">
+                            <div className="surface-glass rounded-4xl border border-white/5 p-6 flex items-center gap-10">
                                 <div className="space-y-1">
                                     <p className="font-bold text-[8px] text-zinc-600 uppercase tracking-widest">Sync Status</p>
                                     <div className="flex items-center gap-2">
@@ -439,6 +445,45 @@ export default function CreationPage() {
                                         </div>
                                     </div>
 
+                                    {/* Infrastructure Stack */}
+                                    <div className="space-y-6 pt-4">
+                                        <label className="font-bold text-zinc-500 uppercase tracking-widest text-[10px]">Infrastructure Stack</label>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {stacks.map(s => (
+                                                <div 
+                                                    key={s.id}
+                                                    onClick={() => setActiveStack(s.id as any)}
+                                                    data-testid={s.testId}
+                                                    className={cn(
+                                                        "p-6 rounded-3xl border transition-all cursor-pointer group/stack relative overflow-hidden",
+                                                        activeStack === s.id 
+                                                            ? "bg-cyan-400/5 border-cyan-400/30 shadow-glow-primary/5" 
+                                                            : "bg-black/40 border-white/5 hover:border-white/10"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-6 relative z-10">
+                                                        <div className={cn(
+                                                            "h-12 w-12 rounded-2xl flex items-center justify-center transition-all",
+                                                            activeStack === s.id ? "bg-cyan-400 text-black" : "bg-white/5 text-zinc-600"
+                                                        )}>
+                                                            <s.icon className="h-6 w-6" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <h4 className="font-bold text-sm text-white uppercase">{s.name}</h4>
+                                                                <span className={cn(
+                                                                    "text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest",
+                                                                    activeStack === s.id ? "bg-cyan-400/20 text-cyan-400" : "bg-zinc-900 text-zinc-700"
+                                                                )}>{s.status}</span>
+                                                            </div>
+                                                            <p className="text-[10px] text-zinc-600 font-medium truncate">{s.desc}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
                                     {/* Slider */}
                                     <div className="space-y-6 pt-4">
                                         <div className="flex justify-between items-center">
@@ -482,7 +527,7 @@ export default function CreationPage() {
                             </Card>
 
                             {/* LOGS HUD */}
-                            <div className="surface-glass rounded-[2rem] border border-white/5 p-8 font-data-mono text-[9px] space-y-3 border-l-4 border-cyan-400/30 uppercase tracking-widest">
+                            <div className="surface-glass rounded-4xl border border-white/5 p-8 font-data-mono text-[9px] space-y-3 border-l-4 border-l-cyan-400/30 uppercase tracking-widest">
                                 <div className="flex items-center justify-between text-zinc-600">
                                     <span>System_Log</span>
                                     <span>v3.0.4-REV</span>
@@ -506,8 +551,8 @@ export default function CreationPage() {
 
                         {/* RIGHT: WORKSPACE CONSOLE */}
                         <div className="xl:col-span-8">
-                            <Card variant="solid" className="min-h-[850px] flex flex-col relative group rounded-[3rem] border border-white/5 overflow-hidden">
-                                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent" />
+                            <Card variant="solid" className="min-h-[850px] flex flex-col relative group rounded-4xl border border-white/5 overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-cyan-400/20 to-transparent" />
                                 
                                 {/* EMPTY STATE */}
                                 {!script && (
@@ -534,7 +579,7 @@ export default function CreationPage() {
                                     <div className="flex-1 flex flex-col">
                                         {/* Workspace Header */}
                                         <div className="p-10 border-b border-white/5 bg-black/40 flex items-center justify-between relative overflow-hidden">
-                                            <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-cyan-400/40 to-transparent" />
+                                            <div className="absolute bottom-0 left-0 w-full h-px bg-linear-to-r from-cyan-400/40 to-transparent" />
                                             
                                             <div className="flex items-center gap-6">
                                                 <div className="h-16 w-16 bg-cyan-400/5 flex items-center justify-center border border-cyan-400/10 rounded-2xl shadow-[0_0_20px_rgba(0,251,251,0.05)]">
@@ -578,7 +623,7 @@ export default function CreationPage() {
                                                 <motion.div 
                                                     initial={{ opacity: 0, height: 0 }}
                                                     animate={{ opacity: 1, height: "auto" }}
-                                                    className="p-10 bg-cyan-400/5 border border-cyan-400/20 rounded-[2rem] space-y-6"
+                                                    className="p-10 bg-cyan-400/5 border border-cyan-400/20 rounded-4xl space-y-6"
                                                 >
                                                     <div className="flex justify-between items-center">
                                                         <span className="font-bold text-cyan-400 text-xs uppercase tracking-widest">Retention Audit</span>
@@ -600,9 +645,9 @@ export default function CreationPage() {
                                                         initial={{ opacity: 0, x: -20 }}
                                                         whileInView={{ opacity: 1, x: 0 }}
                                                         viewport={{ once: true }}
-                                                        className="group/segment relative p-10 bg-black/40 border border-white/5 rounded-[2rem] hover:border-cyan-400/30 transition-all duration-500"
+                                                        className="group/segment relative p-10 bg-black/40 border border-white/5 rounded-4xl hover:border-l-cyan-400/30 transition-all duration-500"
                                                     >
-                                                        <div className="absolute -left-[1px] top-10 bottom-10 w-1 bg-white/5 group-hover/segment:bg-cyan-400 transition-colors rounded-full" />
+                                                        <div className="absolute -left-px top-10 bottom-10 w-1 bg-white/5 group-hover/segment:bg-cyan-400 transition-colors rounded-full" />
                                                         
                                                         <div className="flex flex-col lg:flex-row gap-12">
                                                             <div className="flex-1 space-y-8">
@@ -671,7 +716,7 @@ export default function CreationPage() {
                         <motion.div 
                             initial={{ opacity: 0, x: 50 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className="fixed right-10 top-1/2 -translate-y-1/2 flex flex-col gap-6 z-40 hidden 2xl:flex"
+                            className="fixed right-10 top-1/2 -translate-y-1/2 hidden 2xl:flex flex-col gap-6 z-40"
                         >
                             <div className="surface-glass rim-light p-3 flex flex-col gap-4 border-r-4 border-cyan-400/20">
                                 {[

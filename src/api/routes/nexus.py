@@ -138,10 +138,10 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                     script_text = " ".join(
                         [s.get("text", "") for s in request.script_segments]
                     )
-                    thumbnail_url = await base_thumbnail_generator.generate_thumbnail(
+                    thumbnail_uri = await base_thumbnail_generator.generate_thumbnail(
                         script_text
                     )
-                    logging.info(f"[Nexus] Generated Thumbnail: {thumbnail_url}")
+                    logging.info(f"[Nexus] Generated Thumbnail: {thumbnail_uri}")
 
                 output_path = await base_nexus_orchestrator.assemble_video(
                     job_id=job_id,

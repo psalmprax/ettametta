@@ -13,13 +13,13 @@ from src.services.sentinel.algorithm_tracker import base_algorithm_sentinel
 from src.api.routes.auth import get_current_user
 from src.api.utils.api_responses import success_response
 
-router = APIRouter(prefix="/no-face", tags=["No-Face Monetization"])
+router = APIRouter(prefix="/video", tags=["Video Generation"])
 
 
 class ScriptRequest(BaseModel):
     topic: str
     niche: str = "AI Technology"
-    duration: int = 60
+    duration_seconds: int = 60
     style: str = "story"
 
 
@@ -27,7 +27,7 @@ class HookRequest(BaseModel):
     hook: str
 
 
-@router.post("/generate-script")
+@router.post("/script")
 async def generate_script(
     request: ScriptRequest, current_user=Depends(get_current_user)
 ):
@@ -38,12 +38,13 @@ async def generate_script(
         script = await base_script_generator.generate_script(
             topic=request.topic,
             niche=request.niche,
-            duration_sec=request.duration,
+            duration_sec=request.duration_seconds,
             style=request.style,
         )
         return success_response(data=script)
     except HTTPException:
         raise
+    except Exception as e:
         logging.error(f"Script generation failed: {e}")
         raise HTTPException(status_code=503, detail="Script generation service unavailable")
 
@@ -68,8 +69,8 @@ class VoiceoverRequest(BaseModel):
     voice_id: str | None = None
 
 
-@router.post("/generate-voiceover")
-async def generate_voiceover(
+@router.post("/synthesize-audio")
+async def synthesize_audio(
     request: VoiceoverRequest, current_user=Depends(get_current_user)
 ):
     """
@@ -80,15 +81,19 @@ async def generate_voiceover(
     )
     if not path:
         raise HTTPException(status_code=503, detail="Failed to generate voiceover")
-    return success_response(data={"audio_url": path})
+    return success_response(data={"audio_uri": path})
 
 
-@router.get("/search-stock")
-async def search_stock(query: str, current_user=Depends(get_current_user)):
+class StockSearchRequest(BaseModel):
+    query: str
+
+
+@router.post("/search-stock")
+async def search_stock(request: StockSearchRequest, current_user=Depends(get_current_user)):
     """
     Searches for Pexels stock video assets.
     """
-    results = await base_stock_media_service.search_videos(query)
+    results = await base_stock_media_service.search_videos(request.query)
     return success_response(data=results)
 
 
@@ -106,30 +111,69 @@ async def generate_image(
     path = await base_visual_generator.generate_image(request.prompt)
     if not path:
         raise HTTPException(status_code=503, detail="Failed to generate image")
-    return success_response(data={"image_url": path})
+    return success_response(data={"image_uri": path})
 
 
-class LocalizeRequest(BaseModel):
-    segments: list[dict[str, Any]]
-    target_lang: str
+class TranslateRequest(BaseModel):
+    script: dict[str, Any]
+    target_language: str
 
 
-@router.post("/localize")
-async def localize_script(
-    request: LocalizeRequest, current_user=Depends(get_current_user)
+@router.post("/translate-script")
+async def translate_script(
+    request: TranslateRequest, current_user=Depends(get_current_user)
 ):
     """
     Translates script segments for global reach.
     """
-    translated = await base_global_adapter.translate_script_segments(
-        request.segments, request.target_lang
+    # Map 'script' to 'segments' for the translator service
+    segments = request.script.get("segments", [])
+    translated_segments = await base_global_adapter.translate_script_segments(
+        segments, request.target_language
     )
-    return success_response(data=translated)
+    
+    # Return updated script
+    translated_script = {**request.script, "segments": translated_segments}
+    return success_response(data=translated_script)
+
+
+@router.post("/launch-cinema")
+async def launch_automated_video(
+    request: ScriptRequest, current_user=Depends(get_current_user)
+):
+    """
+    End-to-end automated video generation (Script -> Video).
+    """
+    try:
+        # 1. Generate Script
+        script = await base_script_generator.generate_script(
+            topic=request.topic,
+            niche=request.niche,
+            duration_sec=request.duration_seconds,
+            style=request.style,
+        )
+        
+        # 2. Trigger Auto-Creator (Standard 4.2: Automated Pipeline)
+        from src.services.nexus_engine.auto_creator import base_auto_creator
+        job_id = await base_auto_creator.launch_automated_video(
+            script=script,
+            user_id=current_user.id
+        )
+        
+        return success_response(data={
+            "message": "Cinema sequence initiated",
+            "job_id": job_id,
+            "script": script
+        })
+    except Exception as e:
+        logging.error(f"Cinema launch failed: {e}")
+        raise HTTPException(status_code=503, detail="Cinema engine currently offline")
 
 
 class EmpireCloneRequest(BaseModel):
-    base_script: dict[str, Any]
+    source_niche: str
     target_niche: str
+    auto_publish: bool = False
 
 
 @router.post("/empire/clone")
@@ -140,7 +184,7 @@ async def empire_clone(
     Clones a script strategy for a new niche.
     """
     cloned = await base_empire_scheduler.clone_strategy(
-        request.base_script, request.target_niche
+        request.source_niche, request.target_niche
     )
     return success_response(data=cloned)
 
@@ -152,3 +196,4 @@ async def get_sentinel_status(current_user=Depends(get_current_user)):
     """
     status = await base_algorithm_sentinel.get_sync_status()
     return success_response(data=status)
+

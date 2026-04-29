@@ -59,7 +59,7 @@ class TestHardenedVoiceover:
             mock_secret.side_effect = lambda key, default=None: "fish_speech" if key == "voice_engine" else default
             
             with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
-                mock_post.return_value = MagicMock(status_code=200, json=lambda: {"audio_url": "/test.mp3"})
+                mock_post.return_value = MagicMock(status_code=200, json=lambda: {"audio_uri": "/test.mp3"})
                 with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
                     mock_get.return_value = MagicMock(status_code=200, content=b"fake audio")
                     

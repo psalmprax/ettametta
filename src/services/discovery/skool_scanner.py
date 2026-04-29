@@ -95,7 +95,7 @@ class SkoolScanner:
                                 ContentCandidate(
                                     id=f"skool_{idx}",
                                     platform=self.platform,
-                                    source_url="https://skool.com/",
+                                    source_uri="https://skool.com/",
                                     creator_name="Skool Community",
                                     title=title.text.strip(),
                                     view_count=0,
@@ -166,7 +166,7 @@ class SkoolScanner:
                             ContentCandidate(
                                 id=f"skool_{idx}_{slug or 'clip'}",
                                 platform=self.platform,
-                                source_url=f"https://www.skool.com/{slug if slug else ''}",
+                                source_uri=f"https://www.skool.com/{slug if slug else ''}",
                                 creator_name=g.get("author", "Skool Expert"),
                                 title=name,
                                 view_count=g.get("memberCount", 0),

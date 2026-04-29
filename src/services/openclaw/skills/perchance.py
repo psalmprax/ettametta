@@ -31,8 +31,8 @@ class PerchanceSkill(OpenClawBaseSkill):
             resolution=resolution or kwargs.get("resolution", "hd"), 
             aspect_ratio=aspect_ratio or kwargs.get("aspect_ratio", "9:16")
         )
-        if res.get("status") == "success" and res.get("image_urls"):
-            return f"🖼️ **Perchance Image Generated!**\nURL: {res['image_urls'][0]}"
+        if res.get("status") == "success" and res.get("image_uris"):
+            return f"🖼️ **Perchance Image Generated!**\nURL: {res['image_uris'][0]}"
         return f"⚠️ Perchance failed: {res.get('error')}"
 
     GENERATORS = {
@@ -126,7 +126,7 @@ class PerchanceSkill(OpenClawBaseSkill):
             batch_size: Number of variations to generate
 
         Returns:
-            dict with status, image_urls, error
+            dict with status, image_uris, error
         """
         generator = generator or self.generator
         resolution = resolution or self.resolution
@@ -170,15 +170,15 @@ class PerchanceSkill(OpenClawBaseSkill):
 
             await self.page.wait_for_timeout(60000)
 
-            image_urls = await self._extract_images()
+            image_uris = await self._extract_images()
 
-            logger.info(f"[Perchance] Generated {len(image_urls)} image(s)")
+            logger.info(f"[Perchance] Generated {len(image_uris)} image(s)")
 
             await self.cleanup()
 
             return {
-                "status": "success" if image_urls else "processing",
-                "image_urls": image_urls,
+                "status": "success" if image_uris else "processing",
+                "image_uris": image_uris,
                 "generator": generator,
                 "prompt": prompt,
                 "settings": {
@@ -256,27 +256,27 @@ class PerchanceSkill(OpenClawBaseSkill):
 
     async def _extract_images(self) -> list[str]:
         """Extract generated image URLs"""
-        image_urls = []
+        image_uris = []
 
         img_elements = await self.page.query_selector_all("img")
         for img in img_elements:
             src = await img.get_attribute("src")
             if src and src.startswith("http"):
-                image_urls.append(src)
+                image_uris.append(src)
 
         anchor_elements = await self.page.query_selector_all("a[href*='image']")
         for anchor in anchor_elements:
             href = await anchor.get_attribute("href")
             if href and href.startswith("http"):
-                image_urls.append(href)
+                image_uris.append(href)
 
         figure_elements = await self.page.query_selector_all("figure img")
         for fig in figure_elements:
             src = await fig.get_attribute("src")
             if src and src.startswith("http"):
-                image_urls.append(src)
+                image_uris.append(src)
 
-        return list(set(image_urls))
+        return list(set(image_uris))
 
     async def generate_simple(self, prompt: str) -> dict[str, Any]:
         """Simple generation with defaults"""

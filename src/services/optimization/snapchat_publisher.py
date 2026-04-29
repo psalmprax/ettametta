@@ -45,8 +45,8 @@ class SnapchatPublisher(SocialPublisher):
             logger.error(f"[SnapchatPublisher] No authentication for user {user_id}")
             return None
 
-        video_url = await self._resolve_video_url(video_path)
-        if not video_url:
+        video_uri = await self._resolve_video_uri(video_path)
+        if not video_uri:
             return None
 
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -66,7 +66,7 @@ class SnapchatPublisher(SocialPublisher):
                 "type": "VIDEO",
                 "headline": metadata.title[:35],  # Spotlight headline limit
                 "call_to_action": "VIEW_MORE",
-                "video_url": video_url,
+                "video_uri": video_uri,
                 "brand_name": "ettametta",
             }
 
@@ -122,7 +122,7 @@ class SnapchatPublisher(SocialPublisher):
             logger.error(f"[SnapchatPublisher] Spotlight creation failed: {error_msg}")
             return None
 
-    async def _resolve_video_url(self, video_path: str) -> str | None:
+    async def _resolve_video_uri(self, video_path: str) -> str | None:
         """Resolve video path to URL - upload to Snapchat's media endpoint"""
         if video_path.startswith(("http://", "https://")):
             return video_path

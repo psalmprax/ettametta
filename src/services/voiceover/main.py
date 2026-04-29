@@ -23,7 +23,7 @@ async def generate_speech(request: TTSRequest):
         "message": "Speech generation started",
         "text": request.text,
         "voice": request.voice,
-        "audio_url": "/cache/sample_output.wav"
+        "audio_uri": "/cache/sample_output.wav"
     }
 
 if __name__ == "__main__":

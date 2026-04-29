@@ -66,8 +66,8 @@ async def test():
         print("Video element:", video_element)
 
         if video_element:
-            video_url = await video_element.get_attribute("src")
-            print("Video URL:", video_url[:80] if video_url else "N/A")
+            video_uri = await video_element.get_attribute("src")
+            print("Video URL:", video_uri[:80] if video_uri else "N/A")
 
         await browser.close()
         await playwright.stop()

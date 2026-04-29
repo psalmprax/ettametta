@@ -12,27 +12,27 @@ class RepurposeSkill(OpenClawBaseSkill):
         super().__init__()
         self.api_url = f"{settings.API_URL}"
 
-    def execute(self, action: str = "analyze", source_url: str = None, **kwargs) -> str:
+    def execute(self, action: str = "analyze", source_uri: str = None, **kwargs) -> str:
         """
         Polymorphic entry point for OpenClaw agent.
         """
-        if not source_url:
-            return "⚠️ source_url is required for Repurpose skill."
+        if not source_uri:
+            return "⚠️ source_uri is required for Repurpose skill."
 
         if action == "analyze":
-            return self.analyze_repurpose_potential(source_url)
+            return self.analyze_repurpose_potential(source_uri)
         elif action == "transform":
             return self.trigger_repurpose_job(
-                source_url, kwargs.get("target_platform", "TikTok")
+                source_uri, kwargs.get("target_platform", "TikTok")
             )
 
-    def analyze_repurpose_potential(self, source_url: str) -> str:
+    def analyze_repurpose_potential(self, source_uri: str) -> str:
         """Analyzes a URL to see if it's worth repurposing."""
-        return f"🔍 **Analysis for {source_url}**: High potential for TikTok/Reels due to fast pacing and visual hooks."
+        return f"🔍 **Analysis for {source_uri}**: High potential for TikTok/Reels due to fast pacing and visual hooks."
 
-    def trigger_repurpose_job(self, source_url: str, target_platform: str) -> str:
+    def trigger_repurpose_job(self, source_uri: str, target_platform: str) -> str:
         """Triggers a new repurpose job for a raw URL."""
-        return f"🚀 **Repurpose Job Triggered**: {source_url} -> {target_platform}. Rendering in background..."
+        return f"🚀 **Repurpose Job Triggered**: {source_uri} -> {target_platform}. Rendering in background..."
 
     def repurpose_content(
         self,
@@ -60,13 +60,13 @@ class RepurposeSkill(OpenClawBaseSkill):
             if not source_job:
                 return f"⚠️ Job `{source_job_id}` not found."
 
-            source_url = source_job.get("output_url") or source_job.get("video_url", "")
+            source_uri = source_job.get("output_url") or source_job.get("video_uri", "")
             source_title = source_job.get("title", "Untitled")
             source_script = source_job.get("script", "") or source_job.get(
                 "metadata", {}
             ).get("script", "")
 
-            if not source_url and not source_script:
+            if not source_uri and not source_script:
                 return (
                     f"⚠️ Job `{source_job_id}` has no output URL or script to repurpose."
                 )
@@ -121,7 +121,7 @@ class RepurposeSkill(OpenClawBaseSkill):
 
                 payload = {
                     "action": "transform",
-                    "source_url": source_url,
+                    "source_uri": source_uri,
                     "prompt": f"Repurpose '{source_title}' for {platform}. "
                     f"Format: {adapt['aspect']}, max {adapt['max_duration']}s, style: {adapt['style']}. "
                     f"Adapt hook and pacing for {platform} audience.",

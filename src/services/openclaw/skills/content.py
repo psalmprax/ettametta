@@ -14,7 +14,7 @@ class ContentSkill(OpenClawBaseSkill):
     def execute(
         self,
         action: str = "transform",
-        source_url: str = "",
+        source_uri: str = "",
         prompt: str = "",
         engine: str = "veo3",
         niche: str = "Motivation",
@@ -26,7 +26,7 @@ class ContentSkill(OpenClawBaseSkill):
         """
         return self.create_content(
             action=action,
-            source_url=source_url or kwargs.get("input_url", ""),
+            source_uri=source_uri or kwargs.get("input_url", ""),
             prompt=prompt,
             engine=engine,
             niche=niche,
@@ -37,7 +37,7 @@ class ContentSkill(OpenClawBaseSkill):
     def create_content(
         self,
         action: str = "transform",
-        source_url: str = "",
+        source_uri: str = "",
         prompt: str = "",
         engine: str = "veo3",
         niche: str = "Motivation",
@@ -67,7 +67,7 @@ class ContentSkill(OpenClawBaseSkill):
             else:  # default to transform
                 endpoint = f"{self.api_url}/transform"
                 payload = {
-                    "source_url": source_url,
+                    "source_uri": source_uri,
                     "niche": niche,
                     "platform": platform,
                 }

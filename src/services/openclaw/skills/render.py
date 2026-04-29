@@ -15,15 +15,15 @@ class RenderSkill(OpenClawBaseSkill):
         self,
         title: str = "Viral Video",
         subtitle: str = "",
-        video_url: str = None,
+        video_uri: str = None,
         **kwargs,
     ) -> str:
         """
         Polymorphic entry point for OpenClaw agent.
         """
-        return self.render_clip(title=title, subtitle=subtitle, video_url=video_url)
+        return self.render_clip(title=title, subtitle=subtitle, video_uri=video_uri)
 
-    def render_clip(self, title: str, subtitle: str, video_url: str = None) -> str:
+    def render_clip(self, title: str, subtitle: str, video_uri: str = None) -> str:
         """
         Triggers a programmatic video render using Remotion.
         """
@@ -31,7 +31,7 @@ class RenderSkill(OpenClawBaseSkill):
             payload = {
                 "title": title,
                 "subtitle": subtitle,
-                "video_url": video_url
+                "video_uri": video_uri
                 or "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
             }
 

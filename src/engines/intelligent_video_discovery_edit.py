@@ -41,7 +41,7 @@ class VideoContentAnalyzer:
         self.model = "gpt-4o-mini"  # Elite Vision model
 
     async def analyze_video_content(
-        self, video_path: str = "", video_url: str = ""
+        self, video_path: str = "", video_uri: str = ""
     ) -> dict[str, Any]:
         """
         Analyze video to determine content type.
@@ -60,7 +60,7 @@ class VideoContentAnalyzer:
         """
 
         # Extract key frames for analysis
-        frames = await self._extract_key_frames(video_path or video_url)
+        frames = await self._extract_key_frames(video_path or video_uri)
 
         if not frames:
             # No analysis possible - be conservative, assume usable
@@ -193,8 +193,8 @@ CRITICAL:
                                     "content": [
                                         {"type": "text", "text": prompt},
                                         {
-                                            "type": "image_url",
-                                            "image_url": {
+                                            "type": "image_uri",
+                                            "image_uri": {
                                                 "url": f"data:image/jpeg;base64,{img_data}"
                                             },
                                         },

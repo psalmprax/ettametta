@@ -53,7 +53,7 @@ class GoogleTrendsScanner:
                             candidates.append(ContentCandidate(
                                 id=f"gt_{trend.get('id', {}).get('value', '')}",
                                 platform=self.platform,
-                                source_url=f"https://www.google.com/search?q={title.replace(' ', '+')}",
+                                source_uri=f"https://www.google.com/search?q={title.replace(' ', '+')}",
                                 creator_name=niche,
                                 title=f"TRENDING: {title}",
                                 view_count=1_000_000,  # Estimate

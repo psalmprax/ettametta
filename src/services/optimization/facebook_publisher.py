@@ -43,8 +43,8 @@ class FacebookPublisher(SocialPublisher):
             logger.error(f"[FacebookPublisher] No authentication for user {user_id}")
             return None
 
-        video_url = await self._resolve_video_url(video_path)
-        if not video_url:
+        video_uri = await self._resolve_video_uri(video_path)
+        if not video_uri:
             return None
 
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -77,7 +77,7 @@ class FacebookPublisher(SocialPublisher):
             upload_data = {
                 "upload_phase": "transfer",
                 "access_token": access_token or headers.get("Cookie"),
-                "file_url": video_url,
+                "file_url": video_uri,
             }
 
             upload_response = await client.post(upload_url, data=upload_data)
@@ -143,7 +143,7 @@ class FacebookPublisher(SocialPublisher):
             logger.info(f"[FacebookPublisher] Published successfully: {video_id}")
             return f"https://www.facebook.com/watch/?v={video_id}"
 
-    async def _resolve_video_url(self, video_path: str) -> str | None:
+    async def _resolve_video_uri(self, video_path: str) -> str | None:
         """Resolve video path to URL"""
         import os
 

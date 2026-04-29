@@ -84,7 +84,7 @@ async def generate_animatediff_laptop(prompt: str, num_frames: int = 16, height:
         print(f"✅ P4000 animation complete: {output_path}")
 
         return {
-            "video_url": f"/download/{video_filename}",
+            "video_uri": f"/download/{video_filename}",
             "local_path": str(output_path),
             "frames": min(num_frames, 12),
             "resolution": f"{width}x{height}",

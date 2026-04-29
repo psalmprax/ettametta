@@ -67,7 +67,7 @@ class YouTubeWebhookPayload(BaseModel):
     status: str  # processing, ready, failed
     title: str | None = None
     description: str | None = None
-    thumbnail_url: str | None = None
+    thumbnail_uri: str | None = None
     duration: int | None = None
     error_message: str | None = None
 
@@ -132,8 +132,8 @@ async def youtube_upload_status(
             elif payload.status == "failed":
                 content.status = ContentPublishStatus.FAILED
 
-            if payload.thumbnail_url:
-                content.thumbnail_url = payload.thumbnail_url
+            if payload.thumbnail_uri:
+                content.thumbnail_uri = payload.thumbnail_uri
 
             # Use metadata_json for SQLAlchemy model consistency
             metadata = content.metadata_json or {}
