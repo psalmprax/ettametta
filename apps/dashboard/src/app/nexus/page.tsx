@@ -47,6 +47,10 @@ import { Blueprint, NexusJob, Persona } from "@/lib/types";
 interface WorkforceStatus {
     status: string;
     circuit_breaker: string;
+    report: {
+        status: Record<string, boolean>;
+        impact: Record<string, string>;
+    };
 }
 
 interface CapabilityStatus {
