@@ -85,6 +85,7 @@ function DiscoveryContent() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<any>(null);
     const [analysisTask, setAnalysisTask] = useState<string | null>(null);
+    const [isClusterScanning, setIsClusterScanning] = useState(false);
 
     const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -167,7 +168,7 @@ function DiscoveryContent() {
     };
 
     const handleDefineCluster = async () => {
-        setIsSearching(true);
+        setIsClusterScanning(true);
         try {
             const token = await getAuthToken();
             const res = await fetch(`${API_BASE}/discovery/scan`, {
@@ -190,7 +191,7 @@ function DiscoveryContent() {
         } catch (err) {
             toast.error("Connection sequence interrupted");
         } finally {
-            setIsSearching(false);
+            setIsClusterScanning(false);
         }
     };
 
@@ -429,9 +430,20 @@ function DiscoveryContent() {
                             </div>
                             <button 
                                 onClick={handleDefineCluster}
-                                className="action-secondary w-full py-6 border-dashed opacity-50 hover:opacity-100 rounded-2xl text-[10px] tracking-widest uppercase transition-all"
+                                disabled={isClusterScanning}
+                                className={cn(
+                                    "action-secondary w-full py-6 border-dashed opacity-50 hover:opacity-100 rounded-2xl text-[10px] tracking-widest uppercase transition-all disabled:cursor-wait",
+                                    isClusterScanning && "opacity-100 bg-primary/10 border-primary/20"
+                                )}
                             >
-                                + Define Cluster
+                                {isClusterScanning ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                        Scanning...
+                                    </span>
+                                ) : (
+                                    "+ Define Cluster"
+                                )}
                             </button>
                         </Card>
 
