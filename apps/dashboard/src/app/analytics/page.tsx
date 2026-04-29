@@ -105,15 +105,31 @@ export default function AnalyticsPage() {
                 const summary = (await summaryRes.json()).data;
                 const report = (await reportRes.json()).data;
 
+                // Get latest post for detailed chart/matrix
+                const postsRes = await fetch(`${API_BASE}/analytics/posts?size=1`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const posts = (await postsRes.json()).data.items || [];
+                let retentionData = [];
+                
+                if (posts.length > 0) {
+                    const latestReportRes = await fetch(`${API_BASE}/analytics/report/${posts[0].id}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    const latestReport = (await latestReportRes.json()).data;
+                    retentionData = latestReport.retention_data || [];
+                }
+
                 setMetrics({
                     views: report.total_views,
-                    retention: 0.78, 
-                    shares: 4200,    
+                    retention: report.avg_retention,
+                    shares: report.total_shares,
                     engagement: report.total_views > 0 ? (report.total_likes / report.total_views) : 0,
                     activeTrends: summary.active_trends,
                     successRate: summary.success_rate,
-                    engineLoad: summary.engine_load,
-                    velocity: summary.velocity
+                    engine_load: summary.engine_load,
+                    velocity: summary.velocity,
+                    retentionData: retentionData.length > 0 ? retentionData.map((v, i) => ({ time: i, value: v })) : []
                 });
             }
 
@@ -140,7 +156,60 @@ export default function AnalyticsPage() {
         }
     }, []);
 
-    const { data: telemetry } = useWebSocket<any>(`${WS_BASE}/telemetry`);
+    const handleReOptimize = async () => {
+        try {
+            const token = await getAuthToken();
+            const postsRes = await fetch(`${API_BASE}/analytics/posts?size=1`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const postsData = (await postsRes.json()).data;
+            const latestPost = postsData.items?.[0];
+
+            if (!latestPost) {
+                toast.error("No active content found for re-optimization");
+                return;
+            }
+
+            const res = await fetch(`${API_BASE}/analytics/inject-pattern/${latestPost.id}`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const result = await res.json();
+                toast.success(result.data?.message || "Neural pattern successfully injected");
+            } else {
+                toast.error("Optimization sequence failed");
+            }
+        } catch (err) {
+            toast.error("System connection error");
+        }
+    };
+
+    const handleExport = async () => {
+        try {
+            const token = await getAuthToken();
+            const res = await fetch(`${API_BASE}/analytics/export`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ettametta_analytics_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                toast.success("Export started");
+            } else {
+                toast.error("Export failed");
+            }
+        } catch (err) {
+            toast.error("Network error during export");
+        }
+    };
 
     useEffect(() => {
         fetchAnalytics();
@@ -194,7 +263,10 @@ export default function AnalyticsPage() {
                                     {new Date().toLocaleTimeString()}
                                 </span>
                             </div>
-                            <button className="action-primary h-20 px-12  text-xs tracking-tighter">
+                            <button 
+                                onClick={handleExportData}
+                                className="action-primary h-20 px-12  text-xs tracking-tighter"
+                            >
                                 EXPORT_DATA_PACK
                             </button>
                         </div>
@@ -309,7 +381,10 @@ export default function AnalyticsPage() {
                                         </p>
                                         <p className="font-data-mono text-[8px] text-zinc-600">CONFIDENCE: 99.2%</p>
                                     </div>
-                                    <button className="w-full action-primary py-5  text-[10px] tracking-tighter">
+                                    <button 
+                                        onClick={handleReOptimize}
+                                        className="w-full action-primary py-5  text-[10px] tracking-tighter"
+                                    >
                                         RE-OPTIMIZE_SEGMENT
                                     </button>
                                 </div>
