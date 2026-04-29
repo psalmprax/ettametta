@@ -416,13 +416,13 @@ async def list_monitored_niches(
 
 @router.post("/niche/watch")
 async def watch_niche(
-    request: NicheWatchRequest,
+    request: NicheAlertRequest,
     current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Persistently watch/monitor a niche for this current_user.
-    Also creates a default alert for the niche.
+    Also creates or updates an alert for the niche.
     """
     from src.api.utils.models import MonitoredNiche, DiscoveryAlertDB
     from sqlalchemy import and_
@@ -460,16 +460,22 @@ async def watch_niche(
             new_alert = DiscoveryAlertDB(
                 user_id=current_user.id,
                 niche=request.niche,
-                threshold=7,
-                is_active=True,
+                threshold=request.threshold,
+                is_active=request.enabled,
             )
             db.add(new_alert)
         else:
-            existing_alert.is_active = True
+            existing_alert.is_active = request.enabled
+            existing_alert.threshold = request.threshold
 
         await db.commit()
         return success_response(
-            data={"status": "Niche Watch Established", "niche": request.niche}
+            data={
+                "status": "Niche Watch Established",
+                "niche": request.niche,
+                "threshold": request.threshold,
+                "enabled": request.enabled
+            }
         )
 
     except Exception as e:
@@ -1368,7 +1374,7 @@ async def create_niche_alert(
     current_user: UserDB = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create an alert for when new trending content is found in a niche."""
+    """Alias for watch_niche."""
     from src.api.utils.models import DiscoveryAlertDB, MonitoredNiche
 
     try:
