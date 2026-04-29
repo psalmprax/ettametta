@@ -78,6 +78,7 @@ function AnalyticsBackground() {
 
 export default function AnalyticsPage() {
     const [isLoading, setIsLoading] = useState(true);
+    const [isReoptimizing, setIsReoptimizing] = useState(false);
     const [metrics, setMetrics] = useState({
         views: 0,
         retention: 0,
@@ -158,6 +159,7 @@ export default function AnalyticsPage() {
     }, []);
 
     const handleReOptimize = async () => {
+        setIsReoptimizing(true);
         try {
             const token = await getAuthToken();
             const postsRes = await fetch(`${API_BASE}/analytics/posts?size=1`, {
@@ -184,6 +186,8 @@ export default function AnalyticsPage() {
             }
         } catch (err) {
             toast.error("System connection error");
+        } finally {
+            setIsReoptimizing(false);
         }
     };
 
@@ -384,9 +388,17 @@ export default function AnalyticsPage() {
                                     </div>
                                     <button 
                                         onClick={handleReOptimize}
-                                        className="w-full action-primary py-5  text-[10px] tracking-tighter"
+                                        disabled={isReoptimizing}
+                                        className="w-full action-primary py-5 text-[10px] tracking-tighter disabled:cursor-wait disabled:opacity-75"
                                     >
-                                        RE-OPTIMIZE_SEGMENT
+                                        {isReoptimizing ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                Optimizing...
+                                            </span>
+                                        ) : (
+                                            "RE-OPTIMIZE_SEGMENT"
+                                        )}
                                     </button>
                                 </div>
                             </section>

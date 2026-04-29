@@ -94,7 +94,7 @@ export default React.memo(function Geomap({ points = [] }: GeomapProps) {
             }
 
             // Parse TopoJSON
-            const countries = topojson.feature(worldData, worldData.objects.countries) as any;
+            const countries = topojson.feature(worldData, worldData.objects.countries) as GeoJSON.FeatureCollection;
 
             // Graticule
             const graticule = d3.geoGraticule();
