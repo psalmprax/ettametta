@@ -8,7 +8,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   fullWidth?: boolean;
   icon?: React.ReactNode;
   iconPosition?: "left" | "right";
-  rounded?: "md" | "lg" | "xl" | "full";
+  rounded?: "md" | "lg" | "xl" | "2xl" | "full";
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -31,15 +31,16 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       md: "rounded-lg",
       lg: "rounded-xl",
       xl: "rounded-2xl",
+      "2xl": "rounded-3xl",
       full: "rounded-full",
     };
 
     const variants = {
-      primary: `bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-900/20 border border-white/10`,
+      primary: `bg-primary text-white hover:bg-primary-hover shadow-lg shadow-blue-900/20 border border-white/10`,
       secondary: "bg-slate-900 text-white border border-white/10 hover:bg-slate-800 hover:border-white/20 shadow-sm",
       outline: "bg-transparent text-white border border-white/20 hover:bg-white/5 shadow-sm",
       ghost: "bg-transparent text-slate-400 hover:bg-white/5 hover:text-white border-transparent",
-      danger: "bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-900/20 border border-white/10",
+      danger: `bg-error text-white hover:bg-rose-700 shadow-lg shadow-rose-900/20 border border-white/10`,
     };
 
     const sizes = {

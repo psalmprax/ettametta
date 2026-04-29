@@ -66,17 +66,31 @@ export default React.memo(function NetworkMesh({ nodes, links }: NetworkProps) {
         const svg = d3.select(svgRef.current);
         const { width, height } = dimensions;
 
+        // Clear only if needed or just update
         svg.selectAll("*").remove();
 
         // Create simulation with current dimensions
-        // Using type assertions to work around D3 typing issues
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const simNodes: any[] = nodes.map(n => ({ id: n.id, group: n.group, label: n.label }));
-        const simLinks: any[] = links.map(l => ({ source: l.source, target: l.target, value: l.value }));
+        const simNodes: SimNode[] = nodes.map(n => ({ 
+            id: n.id, 
+            group: n.group, 
+            label: n.label,
+            x: width / 2,
+            y: height / 2
+        }));
+        
+        const simLinks: SimLink[] = links.map(l => {
+            const sourceId = typeof l.source === "string" ? l.source : l.source.id;
+            const targetId = typeof l.target === "string" ? l.target : l.target.id;
+
+            return {
+                source: simNodes.find(n => n.id === sourceId) ?? sourceId,
+                target: simNodes.find(n => n.id === targetId) ?? targetId,
+                value: l.value
+            };
+        });
 
         const sim = d3.forceSimulation(simNodes)
-            // @ts-expect-error - D3 typing issue with link source/target
-            .force("link", d3.forceLink(simLinks).id(d => d.id).distance(100))
+            .force("link", d3.forceLink<SimNode, SimLink>(simLinks).id(d => d.id).distance(100))
             .force("charge", d3.forceManyBody().strength(-200))
             .force("center", d3.forceCenter(width / 2, height / 2));
 
@@ -85,13 +99,13 @@ export default React.memo(function NetworkMesh({ nodes, links }: NetworkProps) {
             .attr("stroke", "rgba(255,255,255,0.05)")
             .attr("stroke-width", 1.5)
             .selectAll("line")
-            .data(links)
+            .data(simLinks)
             .enter().append("line");
 
         // Nodes group
         const node = svg.append("g")
             .selectAll<SVGGElement, SimNode>("g")
-            .data(nodes)
+            .data(simNodes)
             .enter().append("g")
             .call(d3.drag<SVGGElement, SimNode>()
                 .on("start", (event, d) => {
@@ -130,18 +144,12 @@ export default React.memo(function NetworkMesh({ nodes, links }: NetworkProps) {
         // Tick function
         sim.on("tick", () => {
             link
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                .attr("x1", (d: any) => d.source.x || 0)
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                .attr("y1", (d: any) => d.source.y || 0)
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                .attr("x2", (d: any) => d.target.x || 0)
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                .attr("y2", (d: any) => d.target.y || 0);
+                .attr("x1", d => typeof d.source === "string" ? 0 : d.source.x ?? 0)
+                .attr("y1", d => typeof d.source === "string" ? 0 : d.source.y ?? 0)
+                .attr("x2", d => typeof d.target === "string" ? 0 : d.target.x ?? 0)
+                .attr("y2", d => typeof d.target === "string" ? 0 : d.target.y ?? 0);
 
-            node
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                .attr("transform", (d: any) => `translate(${d.x || 0},${d.y || 0})`);
+            node.attr("transform", d => `translate(${d.x ?? 0},${d.y ?? 0})`);
         });
 
         return () => {
