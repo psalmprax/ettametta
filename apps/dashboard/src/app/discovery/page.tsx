@@ -24,6 +24,7 @@ import { withRealFallback } from "@/lib/real_first_utils";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
 
 const Geomap = dynamic(() => import("@/components/ui/Geomap"), { ssr: false });
 
@@ -32,22 +33,10 @@ const Geomap = dynamic(() => import("@/components/ui/Geomap"), { ssr: false });
 function DiscoveryBackground() {
     return (
         <div className="absolute inset-0 z-0 pointer-events-none">
-            <div className="absolute inset-0 bg-linear-to-br from-indigo-50/50 via-white to-amber-50/50" />
-            <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.05) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.05) 0%, transparent 50%)' }} />
-            <Canvas camera={{ position: [0, 0, 5] }} className="opacity-40">
-                <Float speed={2} rotationIntensity={0.3} floatIntensity={0.5}>
-                    <Sphere args={[1, 64, 64]} scale={1.5}>
-                        <MeshDistortMaterial
-                            color="#c7d2fe"
-                            speed={2}
-                            distort={0.2}
-                            radius={1}
-                            transparent
-                            opacity={0.3}
-                        />
-                    </Sphere>
-                </Float>
-            </Canvas>
+            <div className="absolute inset-0 bg-zinc-950" />
+            <div className="absolute inset-0 cyber-grid opacity-10" />
+            <div className="absolute inset-0 scanline opacity-5" />
+            <div className="absolute top-0 left-0 w-full h-96 bg-linear-to-b from-primary/5 to-transparent" />
         </div>
     );
 }
@@ -95,6 +84,7 @@ function DiscoveryContent() {
     const [analysisResult, setAnalysisResult] = useState<any>(null);
     const [analysisTask, setAnalysisTask] = useState<string | null>(null);
     const [isClusterScanning, setIsClusterScanning] = useState(false);
+    const [summary, setSummary] = useState({ total_candidates: 0, high_viral_count: 0 });
 
     const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -121,6 +111,14 @@ function DiscoveryContent() {
                 if (watchedNiches.length > 0) {
                     setNiches(prev => Array.from(new Set([...prev, ...watchedNiches])));
                 }
+            }
+            const summaryRes = await fetch(`${API_BASE}/discovery/summary`, { headers });
+            if (summaryRes.ok) {
+                const summaryData = await summaryRes.json();
+                setSummary({
+                    total_candidates: summaryData.data?.total_candidates || 0,
+                    high_viral_count: summaryData.data?.high_viral_count || 0
+                });
             }
         } catch (err) {
             console.error("Failed to load discovery data:", err);
@@ -339,6 +337,7 @@ function DiscoveryContent() {
             <DiscoveryBackground />
 
             <div className="flex-1 section-container relative py-12 px-6 lg:px-16 max-w-screen-2xl mx-auto w-full z-10">
+                <HighVelocityTicker />
                 
                 {/* DISCOVERY HEADER */}
                 <header className="mb-16 flex flex-col xl:flex-row xl:items-end justify-between gap-12">
@@ -358,7 +357,7 @@ function DiscoveryContent() {
                                     Network_Online
                                 </span>
                                 <span className="text-zinc-800">•</span>
-                                <span>Scanning 14.2K Global Trends</span>
+                                <span>Scanning {(summary.total_candidates / 1000).toFixed(1)}K Global Trends</span>
                             </p>
                         </div>
                     </div>
@@ -436,12 +435,13 @@ function DiscoveryContent() {
                     
                     {/* SIDEBAR: NICHE CLUSTERS */}
                     <div className="xl:col-span-3 space-y-8">
-                        <Card variant="solid" className="p-8 space-y-8 rounded-4xl border-white/5">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-[10px] font-bold text-zinc-500 flex items-center gap-3 uppercase tracking-[0.2em]">
+                        <Card variant="solid" className="p-10 space-y-8 rounded-4xl border-white/5 bg-black/40 backdrop-blur-xl">
+                            <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                                <h2 className="text-[10px] font-bold text-white flex items-center gap-3 uppercase tracking-[0.3em]">
                                     <Activity className="h-4 w-4 text-primary" />
-                                    Trend Clusters
+                                    Market Intel Pods
                                 </h2>
+                                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
                             </div>
                             <div className="space-y-2">
                                 {niches.slice(0, 10).map(n => (
@@ -449,24 +449,30 @@ function DiscoveryContent() {
                                         <button 
                                             onClick={() => setActiveNiche(n)}
                                             className={cn(
-                                                "w-full text-left px-5 py-4 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all flex items-center justify-between group",
+                                                "w-full text-left px-6 py-5 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-between group relative overflow-hidden",
                                                 activeNiche === n 
-                                                    ? "bg-primary/10 text-primary border border-primary/20" 
-                                                    : "text-zinc-500 hover:text-white hover:bg-white/5 border border-transparent"
+                                                    ? "bg-primary/5 text-primary border border-primary/20" 
+                                                    : "text-zinc-500 hover:text-white hover:bg-white/2 border border-transparent"
                                             )}
                                         >
-                                            {n}
+                                            <div className="flex items-center gap-4">
+                                                <div className={cn(
+                                                    "h-2 w-2 rounded-full",
+                                                    activeNiche === n ? "bg-primary shadow-[0_0_8px_#00fbfb]" : "bg-zinc-800"
+                                                )} />
+                                                {n}
+                                            </div>
                                             <ArrowRight className={cn("h-4 w-4 opacity-0 transition-all -translate-x-2", activeNiche === n && "opacity-100 translate-x-0")} />
                                         </button>
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); handleWatchNiche(n); }}
                                             className={cn(
-                                                "absolute right-12 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all",
-                                                monitoredNiches.includes(n) ? "text-emerald-500" : "text-zinc-700 opacity-0 group-hover:opacity-100"
+                                                "absolute right-12 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all z-20",
+                                                monitoredNiches.includes(n) ? "text-emerald-500" : "text-zinc-800 opacity-0 group-hover:opacity-100"
                                             )}
                                             title={monitoredNiches.includes(n) ? "Watching" : "Watch Niche"}
                                         >
-                                            <Activity className="h-3 w-3" />
+                                            <Zap className={cn("h-3 w-3", monitoredNiches.includes(n) && "fill-current")} />
                                         </button>
                                     </div>
                                 ))}

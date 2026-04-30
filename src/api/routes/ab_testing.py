@@ -564,3 +564,23 @@ async def trigger_flywheel_evolution(
         "winner_metrics": winner["metrics"],
         "evolution_strategy": "Killed bottom 70%, Scaling top variant."
     })
+
+
+@router.post("/evolution/global")
+async def trigger_global_evolution(
+    current_user=Depends(get_current_user),
+    db=Depends(get_db)
+):
+    """
+    Triggers a platform-wide Flywheel Evolution.
+    Prunes underperforming strategies across all active niches.
+    """
+    from src.services.optimization.flywheel import base_flywheel_service
+    
+    summary = await base_flywheel_service.trigger_global_evolution()
+    
+    return success_response(data={
+        "status": "global_evolution_initiated",
+        "summary": summary,
+        "timestamp": datetime.utcnow().isoformat()
+    })

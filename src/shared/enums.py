@@ -1,3 +1,6 @@
+# Databricks notebook source
+
+# COMMAND ----------
 from enum import Enum
 
 
@@ -5,51 +8,51 @@ class SystemJobStatus(str, Enum):
     """Unified job status enum for all ettametta services."""
 
     # Discovery & Ingestion
-    QUEUED = "Queued"
-    SCANNING = "Scanning"
-    ANALYZING = "Analyzing"
-    VALIDATING = "Validating"
-    DOWNLOADING = "Downloading"
-    DOWNLOADING_ASSET = "Downloading Asset"
-    INTELLIGENT_DISCOVERY = "Intelligent Discovery"
+    QUEUED = "QUEUED"
+    SCANNING = "SCANNING"
+    ANALYZING = "ANALYZING"
+    VALIDATING = "VALIDATING"
+    DOWNLOADING = "DOWNLOADING"
+    DOWNLOADING_ASSET = "DOWNLOADING_ASSET"
+    INTELLIGENT_DISCOVERY = "INTELLIGENT_DISCOVERY"
 
     # Analysis & Strategy
-    ANALYZING_VISUALS = "Analyzing Visuals"
-    STRATEGIZING = "Strategizing"
-    SCRIPTING = "Scripting"
-    NARRATIVE_ANALYSIS = "Narrative Analysis"
+    ANALYZING_VISUALS = "ANALYZING_VISUALS"
+    STRATEGIZING = "STRATEGIZING"
+    SCRIPTING = "SCRIPTING"
+    NARRATIVE_ANALYSIS = "NARRATIVE_ANALYSIS"
 
     # Transformation & Synthesis
-    TRANSFORMING = "Transforming"
-    SYNTHESIZING = "Synthesizing"
-    SYNTHESIZING_STORY = "Synthesizing Story"
-    RENDERING = "Rendering"
-    COMPOSING = "Composing"
-    CINEMATIC_FUSION = "Cinematic Fusion"
+    TRANSFORMING = "TRANSFORMING"
+    SYNTHESIZING = "SYNTHESIZING"
+    SYNTHESIZING_STORY = "SYNTHESIZING_STORY"
+    RENDERING = "RENDERING"
+    COMPOSING = "COMPOSING"
+    CINEMATIC_FUSION = "CINEMATIC_FUSION"
 
     # Enhancements
-    ADDING_SOUND_DESIGN = "Adding Sound Design"
-    ADDING_MOTION_GRAPHICS = "Adding Motion Graphics"
+    ADDING_SOUND_DESIGN = "ADDING_SOUND_DESIGN"
+    ADDING_MOTION_GRAPHICS = "ADDING_MOTION_GRAPHICS"
 
     # Assembly & Finalization
-    ASSEMBLING = "Assembling"
-    OPTIMIZING = "Optimizing"
-    UPLOADING = "Uploading"
-    TIKTOK_UPLOAD = "TikTok Upload"
+    ASSEMBLING = "ASSEMBLING"
+    OPTIMIZING = "OPTIMIZING"
+    UPLOADING = "UPLOADING"
+    TIKTOK_UPLOAD = "TIKTOK_UPLOAD"
 
     # Terminal States
-    COMPLETED = "Completed"
-    FAILED = "Failed"
-    ABORTED = "Aborted"
-    RETRYING = "Retrying"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    ABORTED = "ABORTED"
+    RETRYING = "RETRYING"
 
     # Error States
-    FAILED_INVALID_INPUT = "Failed: Invalid Input"
-    FAILED_DOWNLOAD_ERROR = "Failed: Download Error"
-    FAILED_SYNTHESIS_ERROR = "Failed: Synthesis Error"
+    FAILED_INVALID_INPUT = "FAILED_INVALID_INPUT"
+    FAILED_DOWNLOAD_ERROR = "FAILED_DOWNLOAD_ERROR"
+    FAILED_SYNTHESIS_ERROR = "FAILED_SYNTHESIS_ERROR"
 
     # Intermediate / Legacy Fallbacks
-    PROCESSING = "Processing"
+    PROCESSING = "PROCESSING"
 
 
 class ContentPublishStatus(str, Enum):
@@ -105,16 +108,16 @@ class StrategyStatus(str, Enum):
 class CreditAction(str, Enum):
     """Credit action types for type-safe credit consumption."""
 
-    VIDEO_GENERATION = "video_generation"
-    VIDEO_TRANSFORMATION = "video_transformation"
-    VIDEO_RETRY = "video_retry"
-    STORYTELLING = "storytelling"
-    STORY_GENERATION = "story_generation"
-    VIRAL_ANALYSIS = "viral_analysis"
-    SOCIAL_PUBLISH = "social_publish"
-    ADMIN_ENV_UPLOAD = "admin_env_upload"
-    ADMIN_SYSTEM_RESTART = "admin_system_restart"
-    AUTO_MERCH = "auto_merch"
+    VIDEO_GENERATION = "VIDEO_GENERATION"
+    VIDEO_TRANSFORMATION = "VIDEO_TRANSFORMATION"
+    VIDEO_RETRY = "VIDEO_RETRY"
+    STORYTELLING = "STORYTELLING"
+    STORY_GENERATION = "STORY_GENERATION"
+    VIRAL_ANALYSIS = "VIRAL_ANALYSIS"
+    SOCIAL_PUBLISH = "SOCIAL_PUBLISH"
+    ADMIN_ENV_UPLOAD = "ADMIN_ENV_UPLOAD"
+    ADMIN_SYSTEM_RESTART = "ADMIN_SYSTEM_RESTART"
+    AUTO_MERCH = "AUTO_MERCH"
     VIDEO_GENERATE_VARIANTS_START = "VIDEO_GENERATE_VARIANTS_START"
     STORY_GENERATE_START = "STORY_GENERATE_START"
     VIDEO_JOB_RETRY = "VIDEO_JOB_RETRY"

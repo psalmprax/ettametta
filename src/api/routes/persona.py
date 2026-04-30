@@ -142,3 +142,25 @@ async def list_active_personas(
     return success_response(
         data=[PersonaResponse.model_validate(p).model_dump() for p in personas]
     )
+
+
+@router.delete("/{persona_id}")
+async def delete_persona(
+    persona_id: str,
+    current_user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """
+    Purges a digital identity from the Persona Lab.
+    """
+    from sqlalchemy import delete
+    stmt = delete(PersonaDB).where(
+        PersonaDB.id == persona_id, PersonaDB.user_id == current_user.id
+    )
+    result = await db.execute(stmt)
+    await db.commit()
+    
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Persona not found or unauthorized")
+        
+    return success_response(data={"status": "purged", "id": persona_id})

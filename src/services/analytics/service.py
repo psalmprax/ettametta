@@ -1,3 +1,6 @@
+# Databricks notebook source
+
+# COMMAND ----------
 from .models import ContentPerformance
 from typing import Any
 import logging
@@ -720,6 +723,268 @@ class AnalyticsService:
                 "post_id": post_id,
                 "timestamp": datetime.datetime.utcnow().isoformat(),
             }
+
+    async def list_published_posts(self, db, user_id: str, page: int = 1, size: int = 20, include_all: bool = False):
+        """
+        List published content posts for a user with pagination.
+        Extracted from analytics route: GET /analytics/posts
+        """
+        from sqlalchemy import select, func
+        from src.api.utils.models import PublishedContentDB
+        from src.shared.enums import ContentPublishStatus
+        from src.api.utils.api_responses import Paginator
+
+        stmt = select(PublishedContentDB).where(
+            PublishedContentDB.status == ContentPublishStatus.PUBLISHED
+        )
+        
+        if not include_all:
+            stmt = stmt.where(PublishedContentDB.user_id == user_id)
+
+        stmt = stmt.order_by(PublishedContentDB.published_at.desc())
+
+        # Get total count
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_result = await db.execute(count_stmt)
+        total_items = total_result.scalar() or 0
+
+        # Apply pagination
+        paginator = Paginator(page=page, page_size=size)
+        stmt = stmt.offset(paginator.offset).limit(paginator.limit)
+
+        result = await db.execute(stmt)
+        posts = result.scalars().all()
+
+        return posts, paginator, total_items
+
+    async def get_report_summary(self, db, user_id: str, include_all: bool = False):
+        """
+        Get overall analytics report summary for user.
+        Extracted from analytics route: GET /analytics/report
+        """
+        from sqlalchemy import select, func
+        from src.api.utils.models import PublishedContentDB
+
+        # Total posts
+        posts_result = await db.execute(
+            select(func.count(PublishedContentDB.id)).where(
+                PublishedContentDB.user_id == user_id if not include_all else True
+            )
+        )
+        total_posts = posts_result.scalar() or 0
+
+        # Aggregate metrics
+        stmt_metrics = select(
+            func.sum(PublishedContentDB.view_count).label("total_views"),
+            func.sum(PublishedContentDB.like_count).label("total_likes"),
+            func.sum(PublishedContentDB.share_count).label("total_shares"),
+            func.sum(PublishedContentDB.comment_count).label("total_comments"),
+            func.avg(PublishedContentDB.retention_rate).label("avg_retention")
+        )
+        if not include_all:
+            stmt_metrics = stmt_metrics.where(PublishedContentDB.user_id == user_id)
+
+        result = await db.execute(stmt_metrics)
+        row = result.fetchone()
+
+        total_views = row.total_views or 0
+        total_likes = row.total_likes or 0
+        total_shares = row.total_shares or 0
+        total_comments = row.total_comments or 0
+        avg_retention = row.avg_retention or 0.0
+
+        return {
+            "total_posts": total_posts,
+            "total_views": int(total_views),
+            "total_likes": int(total_likes),
+            "total_shares": int(total_shares),
+            "total_comments": int(total_comments),
+            "avg_views": int(total_views / total_posts) if total_posts > 0 else 0,
+            "avg_likes": int(total_likes / total_posts) if total_posts > 0 else 0,
+            "avg_retention": float(avg_retention),
+        }
+
+    async def verify_content_ownership(self, db, post_id: str, user_id: str, role):
+        """
+        Verify user owns a content post (or is admin).
+        Extracted from analytics routes for auth checks.
+        """
+        from sqlalchemy import select
+        from src.api.utils.models import PublishedContentDB
+        from src.api.utils.user_models import UserRole
+
+        stmt = select(PublishedContentDB).where(PublishedContentDB.id == post_id)
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
+
+        if not content:
+            return False
+        
+        if role == UserRole.ADMIN or content.user_id == user_id:
+            return True
+        
+        return False
+
+    async def get_ab_test_results(self, db, content_id: str):
+        """
+        Get A/B test results for a content post.
+        Extracted from analytics route: GET /analytics/ab/results/{content_id}
+        """
+        from sqlalchemy import select
+        from src.api.utils.models import ABTestDB
+
+        stmt = select(ABTestDB).where(ABTestDB.content_id == content_id)
+        result = await db.execute(stmt)
+        test = result.scalar_one_or_none()
+
+        if not test:
+            return None
+
+        winner = "A" if test.variant_a_view_count > test.variant_b_view_count else "B"
+        return {
+            "test_id": test.id,
+            "variant_a_title": test.variant_a_title,
+            "variant_b_title": test.variant_b_title,
+            "variant_a_view_count": test.variant_a_view_count,
+            "variant_b_view_count": test.variant_b_view_count,
+            "winner": winner,
+            "created_at": test.created_at,
+        }
+
+
+    async def list_published_posts(self, db, user_id: str, page: int = 1, size: int = 20, include_all: bool = False):
+        """
+        List published content posts for a user with pagination.
+        Extracted from analytics route: GET /analytics/posts
+        """
+        from sqlalchemy import select, func
+        from src.api.utils.models import PublishedContentDB
+        from src.shared.enums import ContentPublishStatus
+        from src.api.utils.api_responses import Paginator
+        from src.api.utils.user_models import UserRole
+
+        stmt = select(PublishedContentDB).where(
+            PublishedContentDB.status == ContentPublishStatus.PUBLISHED
+        )
+        
+        if not include_all:
+            stmt = stmt.where(PublishedContentDB.user_id == user_id)
+
+        stmt = stmt.order_by(PublishedContentDB.published_at.desc())
+
+        # Get total count
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_result = await db.execute(count_stmt)
+        total_items = total_result.scalar() or 0
+
+        # Apply pagination
+        paginator = Paginator(page=page, page_size=size)
+        stmt = stmt.offset(paginator.offset).limit(paginator.limit)
+
+        result = await db.execute(stmt)
+        posts = result.scalars().all()
+
+        return posts, paginator, total_items
+
+    async def get_report_summary(self, db, user_id: str, include_all: bool = False):
+        """
+        Get overall analytics report summary for user.
+        Extracted from analytics route: GET /analytics/report
+        """
+        from sqlalchemy import select, func
+        from src.api.utils.models import PublishedContentDB
+        from src.api.utils.user_models import UserRole
+
+        # Build base statement with user filter
+        stmt = select(PublishedContentDB)
+        if not include_all:
+            stmt = stmt.where(PublishedContentDB.user_id == user_id)
+
+        # Total posts
+        posts_result = await db.execute(
+            select(func.count(PublishedContentDB.id)).where(
+                PublishedContentDB.user_id == user_id if not include_all else True
+            )
+        )
+        total_posts = posts_result.scalar() or 0
+
+        # Aggregate metrics
+        stmt_metrics = select(
+            func.sum(PublishedContentDB.view_count).label("total_views"),
+            func.sum(PublishedContentDB.like_count).label("total_likes"),
+            func.sum(PublishedContentDB.share_count).label("total_shares"),
+            func.sum(PublishedContentDB.comment_count).label("total_comments"),
+            func.avg(PublishedContentDB.retention_rate).label("avg_retention")
+        )
+        if not include_all:
+            stmt_metrics = stmt_metrics.where(PublishedContentDB.user_id == user_id)
+
+        result = await db.execute(stmt_metrics)
+        row = result.fetchone()
+
+        total_views = row.total_views or 0
+        total_likes = row.total_likes or 0
+        total_shares = row.total_shares or 0
+        total_comments = row.total_comments or 0
+        avg_retention = row.avg_retention or 0.0
+
+        return {
+            "total_posts": total_posts,
+            "total_views": int(total_views),
+            "total_likes": int(total_likes),
+            "total_shares": int(total_shares),
+            "total_comments": int(total_comments),
+            "avg_views": int(total_views / total_posts) if total_posts > 0 else 0,
+            "avg_likes": int(total_likes / total_posts) if total_posts > 0 else 0,
+            "avg_retention": float(avg_retention),
+        }
+
+    async def verify_content_ownership(self, db, post_id: str, user_id: str, role) -> bool:
+        """
+        Verify user owns a content post (or is admin).
+        Extracted from analytics routes for auth checks.
+        """
+        from sqlalchemy import select
+        from src.api.utils.models import PublishedContentDB
+        from src.api.utils.user_models import UserRole
+
+        stmt = select(PublishedContentDB).where(PublishedContentDB.id == post_id)
+        result = await db.execute(stmt)
+        content = result.scalar_one_or_none()
+
+        if not content:
+            return False
+        
+        if role == UserRole.ADMIN or content.user_id == user_id:
+            return True
+        
+        return False
+
+    async def get_ab_test_results(self, db, content_id: str):
+        """
+        Get A/B test results for a content post.
+        Extracted from analytics route: GET /analytics/ab/results/{content_id}
+        """
+        from sqlalchemy import select
+        from src.api.utils.models import ABTestDB
+
+        stmt = select(ABTestDB).where(ABTestDB.content_id == content_id)
+        result = await db.execute(stmt)
+        test = result.scalar_one_or_none()
+
+        if not test:
+            return None
+
+        winner = "A" if test.variant_a_view_count > test.variant_b_view_count else "B"
+        return {
+            "test_id": test.id,
+            "variant_a_title": test.variant_a_title,
+            "variant_b_title": test.variant_b_title,
+            "variant_a_view_count": test.variant_a_view_count,
+            "variant_b_view_count": test.variant_b_view_count,
+            "winner": winner,
+            "created_at": test.created_at,
+        }
 
 
 base_analytics_service = AnalyticsService()

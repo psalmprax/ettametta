@@ -294,6 +294,20 @@ async def list_nexus_jobs(
     return success_response(data=result.scalars().all())
 
 
+@router.delete("/jobs")
+async def clear_nexus_jobs(
+    current_user=Depends(get_current_user), db=Depends(get_db)
+):
+    """
+    Clears the production job history for the current user.
+    """
+    from sqlalchemy import delete
+    stmt = delete(NexusJobDB).where(NexusJobDB.user_id == current_user.id)
+    await db.execute(stmt)
+    await db.commit()
+    return success_response(data={"status": "cleared", "message": "Nexus job history purged."})
+
+
 @router.get("/stats")
 async def get_nexus_stats(
     current_user=Depends(get_current_user), db=Depends(get_db)

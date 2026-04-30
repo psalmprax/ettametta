@@ -1,3 +1,6 @@
+# Databricks notebook source
+
+# COMMAND ----------
 import json
 import redis
 import asyncio
@@ -1110,11 +1113,11 @@ class DiscoveryService:
 
         async def _download_asset(c):
             url = c.get("url")
-            vid_id = c.get("id", "unknown")
-            output_path = raw_dir / f"{vid_id}.mp4"
+            video_id = c.get("id", "unknown")
+            output_path = raw_dir / f"{video_id}.mp4"
 
             if output_path.exists():
-                logger.info(f"   ✓ Asset {vid_id} already in visual memory.")
+                logger.info(f"   ✓ Asset {video_id} already in visual memory.")
                 return {**c, "file_path": str(output_path)}
 
             try:
@@ -1151,19 +1154,19 @@ class DiscoveryService:
                 stdout, stderr = await process.communicate()
 
                 if process.returncode == 0 and output_path.exists():
-                    logger.info(f"   ✓ Procured asset: {vid_id}")
+                    logger.info(f"   ✓ Procured asset: {video_id}")
                     return {**c, "file_path": str(output_path)}
                 else:
                     error_msg = stderr.decode()
                     logger.warning(
-                        f"   ⚠️ yt-dlp failed for {vid_id}: {error_msg[:100]}"
+                        f"   ⚠️ yt-dlp failed for {video_id}: {error_msg[:100]}"
                     )
 
                     # TIER 10 RESILIENCE: Semantic Stock Fallback
                     import aiohttp
 
                     logger.info(
-                        f"   🛡️ [Resilience] Triggering Stock Fallback for {vid_id}..."
+                        f"   🛡️ [Resilience] Triggering Stock Fallback for {video_id}..."
                     )
 
                     # Use title or niche for fallback search
@@ -1215,7 +1218,7 @@ class DiscoveryService:
                                                 with open(output_path, "wb") as f:
                                                     f.write(await resp.read())
                                                 logger.info(
-                                                    f"   ✓ Procured Stock Fallback for {vid_id} ({sc.platform})"
+                                                    f"   ✓ Procured Stock Fallback for {video_id} ({sc.platform})"
                                                 )
                                                 return {
                                                     **c,
@@ -1251,7 +1254,7 @@ class DiscoveryService:
                         import shutil
 
                         shutil.copy(safety_path, output_path)
-                        logger.warning(f"   🚨 [Panic] Using Safety Asset for {vid_id}")
+                        logger.warning(f"   🚨 [Panic] Using Safety Asset for {video_id}")
                         return {
                             **c,
                             "file_path": str(output_path),
@@ -1259,7 +1262,7 @@ class DiscoveryService:
                             "is_safety": True,
                         }
 
-                    logger.error(f"   ❌ All procurement tiers failed for {vid_id}.")
+                    logger.error(f"   ❌ All procurement tiers failed for {video_id}.")
                     return None
             except Exception as e:
                 logger.error(f"   ⚠️ Procurement exception: {str(e)}")

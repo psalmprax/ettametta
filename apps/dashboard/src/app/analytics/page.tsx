@@ -20,7 +20,8 @@ import {
     Lock,
     Radio,
     Infinity as InfinityIcon,
-    Database
+    Database,
+    Layers
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -48,29 +49,15 @@ import {
 const GlobalPulseGlobe = dynamic(() => import("@/components/ui/GlobalPulseGlobe"), { ssr: false });
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
 
 function AnalyticsBackground() {
     return (
-        <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
-            <Canvas camera={{ position: [0, 0, 5] }}>
-                <Suspense fallback={null}>
-                    <ambientLight intensity={0.4} />
-                    <pointLight position={[10, 10, 10]} intensity={1} color="#d05bff" />
-                    <Float speed={2} rotationIntensity={1} floatIntensity={1}>
-                        <Sphere args={[1, 64, 64]} scale={2.5}>
-                            <MeshDistortMaterial
-                                color="#d05bff"
-                                speed={4}
-                                distort={0.4}
-                                radius={1}
-                                wireframe
-                                transparent
-                                opacity={0.1}
-                            />
-                        </Sphere>
-                    </Float>
-                </Suspense>
-            </Canvas>
+        <div className="absolute inset-0 z-0 pointer-events-none">
+            <div className="absolute inset-0 bg-zinc-950" />
+            <div className="absolute inset-0 cyber-grid opacity-10" />
+            <div className="absolute inset-0 scanline opacity-5" />
+            <div className="absolute top-0 right-0 w-full h-96 bg-linear-to-b from-purple-500/5 to-transparent" />
         </div>
     );
 }
@@ -301,10 +288,9 @@ export default function AnalyticsPage() {
             <div className="min-h-screen bg-bg-base relative flex flex-col font-sans overflow-hidden">
                 <div className="noise-overlay" />
                 <AnalyticsBackground />
-                <div className="absolute inset-0 cyber-grid opacity-10 pointer-events-none" />
-                <div className="absolute inset-0 scanline opacity-10 pointer-events-none z-50" />
 
                 <div className="flex-1 section-container relative py-16 px-8 lg:px-24 max-w-screen-2xl mx-auto w-full z-10">
+                    <HighVelocityTicker />
                     
                     {/* ANALYTICS HEADER HUD */}
                     <header className="mb-20 flex flex-col xl:flex-row xl:items-end justify-between gap-12">
@@ -340,6 +326,12 @@ export default function AnalyticsPage() {
                             >
                                 EXPORT_DATA_PACK
                             </button>
+                            <a 
+                                href="/analytics/ab-testing"
+                                className="surface-glass rim-light h-20 px-12 flex items-center justify-center text-xs tracking-tighter hover:bg-cyan-400/10 transition-all border border-white/5"
+                            >
+                                AB_TESTING_STUDIO
+                            </a>
                         </div>
                     </header>
 
@@ -448,6 +440,37 @@ export default function AnalyticsPage() {
 
                         {/* INSIGHTS CLUSTER */}
                         <div className="xl:col-span-4 space-y-12">
+                            {/* Neural Performance Heatmap (Elite Visuals) */}
+                            <section className="surface-glass rim-light p-10 space-y-8 relative overflow-hidden">
+                                <div className="absolute inset-0 scanline opacity-5" />
+                                <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                                    <h3 className="font-label-caps text-[10px] text-white flex items-center gap-3">
+                                        <Layers className="h-4 w-4 text-purple-400" />
+                                        Neural Performance Heatmap
+                                    </h3>
+                                    <div className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-ping" />
+                                </div>
+                                <div className="grid grid-cols-7 gap-2">
+                                    {[...Array(49)].map((_, i) => {
+                                        const intensity = Math.sin(i * 0.3) * 0.5 + 0.5;
+                                        return (
+                                            <div 
+                                                key={i} 
+                                                className="aspect-square rounded-sm transition-all duration-700 hover:scale-125 hover:z-10 cursor-crosshair"
+                                                style={{ 
+                                                    backgroundColor: intensity > 0.8 ? '#d05bff' : intensity > 0.5 ? '#d05bff80' : intensity > 0.2 ? '#d05bff30' : '#ffffff05'
+                                                }}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                                <div className="flex items-center justify-between text-[8px] font-bold text-zinc-600 uppercase tracking-widest pt-4">
+                                    <span>T-48H</span>
+                                    <span>Active Matrix</span>
+                                    <span>T-0</span>
+                                </div>
+                            </section>
+
                             <section className="surface-glass rim-light p-10 space-y-8 relative group overflow-hidden">
                                 <div className="absolute inset-0 bg-cyan-400/0 group-hover:bg-cyan-400/2 transition-colors" />
                                 <h3 className="font-label-caps text-xs text-zinc-500 flex items-center gap-3">

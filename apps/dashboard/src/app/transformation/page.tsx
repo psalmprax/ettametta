@@ -33,6 +33,7 @@ import { useNiches } from "@/hooks/useNiches";
 
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
+import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
 
 interface VideoJob {
     id: string;
@@ -362,7 +363,8 @@ function TransformationPageContent() {
 
     return (
         <DashboardLayout>
-            <div className="section-container relative pb-20">
+            <HighVelocityTicker />
+            <div className="section-container relative pb-20 mt-10">
                 {/* Custom Modal for New Job */}
                 <AnimatePresence>
                     {isJobModalOpen && (
@@ -715,10 +717,13 @@ function TransformationPageContent() {
                         <div className="space-y-6">
                             <div className="flex items-center justify-between px-4">
                                 <div className="flex items-center gap-3">
-                                    <Clock className="h-5 w-5 text-zinc-500" />
-                                    <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-zinc-500">Active Pipeline Jobs</h3>
+                                    <Layers className="h-5 w-5 text-primary" />
+                                    <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-white">Mass Deployment Cluster</h3>
                                 </div>
-                                <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{processingJobs.length} NODES</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+                                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">{processingJobs.length} NODES ACTIVE</span>
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <AnimatePresence mode="popLayout">

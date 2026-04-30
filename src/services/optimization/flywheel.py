@@ -124,4 +124,41 @@ class FlywheelService:
             logger.error(f"Error fetching metrics for {job_id}: {e}")
             return {"ctr": 0, "retention": 0, "watch_time_sec": 0, "error": str(e)}
 
+    async def trigger_global_evolution(self) -> dict[str, Any]:
+        """
+        Runs an evolution cycle across all active niches in the platform.
+        """
+        logger.info("🌍 [Flywheel] Initiating Global Evolution Cycle")
+        
+        async with async_session_factory() as db:
+            # 1. Identify all parent jobs from the last 7 days
+            seven_days_ago = datetime.utcnow() - timedelta(days=7)
+            stmt = select(VideoJobDB.job_metadata["parent_id"].astext).where(
+                VideoJobDB.created_at >= seven_days_ago,
+                VideoJobDB.job_metadata["parent_id"].astext != None
+            ).distinct()
+            
+            result = await db.execute(stmt)
+            parent_ids = result.scalars().all()
+            
+            summary = {
+                "cycles_run": 0,
+                "variants_scanned": 0,
+                "losers_pruned": 0,
+                "winners_promoted": []
+            }
+            
+            for pid in parent_ids:
+                winner = await self.run_evolution_cycle(pid)
+                if winner:
+                    summary["cycles_run"] += 1
+                    summary["winners_promoted"].append({
+                        "parent_id": pid,
+                        "winner_id": winner["job_id"],
+                        "score": winner["score"]
+                    })
+            
+            logger.info(f"✅ [Flywheel] Global Evolution Complete. Cycles: {summary['cycles_run']}")
+            return summary
+
 base_flywheel_service = FlywheelService()

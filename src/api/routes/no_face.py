@@ -15,7 +15,7 @@ from src.services.sentinel.algorithm_tracker import base_algorithm_sentinel
 from src.api.routes.auth import get_current_user
 from src.api.utils.api_responses import success_response
 
-router = APIRouter(prefix="/video", tags=["Video Generation"])
+router = APIRouter(prefix="/no-face", tags=["Automation"])
 
 
 class ScriptRequest(BaseModel):
@@ -25,6 +25,8 @@ class ScriptRequest(BaseModel):
     style: str = "story"
     engine: str = "cloud"
     script: list[dict] | None = None
+    use_gpu: bool = False
+    batch_count: int = 1
 
 
 class HookRequest(BaseModel):
@@ -171,7 +173,9 @@ async def launch_automated_video(
             style=request.style,
             duration=request.duration_seconds,
             engine=request.engine,
-            script=script
+            script=script,
+            use_gpu=request.use_gpu,
+            batch_count=request.batch_count
         )
         
         return success_response(data={
@@ -182,25 +186,6 @@ async def launch_automated_video(
     except Exception as e:
         logging.error(f"Cinema launch failed: {e}")
         raise HTTPException(status_code=503, detail=f"Cinema engine currently offline: {str(e)}")
-
-
-class EmpireCloneRequest(BaseModel):
-    source_niche: str
-    target_niche: str
-    auto_publish: bool = False
-
-
-@router.post("/empire/clone")
-async def empire_clone(
-    request: EmpireCloneRequest, current_user=Depends(get_current_user)
-):
-    """
-    Clones a script strategy for a new niche.
-    """
-    cloned = await base_empire_scheduler.clone_strategy(
-        request.source_niche, request.target_niche
-    )
-    return success_response(data=cloned)
 
 
 @router.get("/sentinel/status")

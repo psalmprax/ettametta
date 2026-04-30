@@ -26,6 +26,8 @@ import {
     Activity,
     Bell,
     User,
+    Users,
+    ShieldCheck,
     ChevronRight,
     Terminal,
     Fingerprint,
@@ -41,22 +43,31 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
     { name: "Explore", href: "/dashboard", icon: Search },
+    { name: "Empire Registry", href: "/empire", icon: Crown },
     { name: "Discovery", href: "/discovery", icon: TrendingUp },
-    { name: "Experiments", href: "/dashboard/experiments", icon: Activity },
-    { name: "Intelligence", href: "/dashboard/intelligence", icon: Brain },
-    { name: "My Assets", href: "/transformation", icon: Layers },
+    { name: "Global Publish", href: "/publishing", icon: Share2 },
+    { name: "Autonomous OS", href: "/autonomous", icon: Activity },
+];
+
+const workforceItems = [
+    { name: "Nexus Engine", href: "/nexus", icon: Cpu },
+    { name: "Nexus Workforce", href: "/nexus/workforce", icon: Users },
+    { name: "Intelligence Hub", href: "/dashboard/intelligence", icon: Brain },
+];
+
+const intelligenceItems = [
+    { name: "Analytics Core", href: "/analytics", icon: BarChart3 },
+    { name: "Flywheel Evolution", href: "/analytics/ab-testing", icon: Sparkles },
+    { name: "Security Sentinel", href: "/admin/audits", icon: ShieldCheck },
+    { name: "System Admin", href: "/admin", icon: Terminal },
 ];
 
 const creationTools = [
-    { name: "AI Video Generator", href: "/creation", icon: PlaySquare, badge: "New" },
-    { name: "AI Video Editor", href: "/dashboard/video-editor", icon: Video },
-    { name: "Image to Video", href: "/image-to-video", icon: Video },
-    { name: "Text to Video", href: "/text-to-video", icon: PlusSquare },
-    { name: "AI Image", href: "/ai-image", icon: Sparkles, badge: "Nano Banana" },
-    { name: "AI Image Editor", href: "/ai-image-editor", icon: Activity },
-    { name: "AI Avatar", href: "/ai-avatar", icon: User },
-    { name: "AI Music", href: "/ai-music", icon: Music },
-    { name: "Text To Speech", href: "/tts", icon: Volume2 },
+    { name: "AI Cinema", href: "/creation", icon: PlaySquare, badge: "Elite" },
+    { name: "Video Studio", href: "/dashboard/video-editor", icon: Video },
+    { name: "Asset Transformation", href: "/transformation", icon: Layers },
+    { name: "Credits & Billing", href: "/credits", icon: Coins },
+    { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 interface SidebarProps {
@@ -125,6 +136,52 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                 })}
 
                 <div className="pt-6 pb-2 px-3">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nexus Hub</span>
+                </div>
+
+                {workforceItems.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-[13px] font-medium",
+                                isActive 
+                                    ? "bg-white/5 text-white" 
+                                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                            )}
+                        >
+                            <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-purple-500" : "text-slate-500")} />
+                            {!collapsed && <span className="truncate">{item.name}</span>}
+                        </Link>
+                    );
+                })}
+
+                <div className="pt-6 pb-2 px-3">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Intelligence & Security</span>
+                </div>
+
+                {intelligenceItems.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-[13px] font-medium",
+                                isActive 
+                                    ? "bg-white/5 text-white" 
+                                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                            )}
+                        >
+                            <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-cyan-500" : "text-slate-500")} />
+                            {!collapsed && <span className="truncate">{item.name}</span>}
+                        </Link>
+                    );
+                })}
+
+                <div className="pt-6 pb-2 px-3">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Creation Tools</span>
                 </div>
 
@@ -165,7 +222,7 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                 {!collapsed ? (
                     <div className="p-3 bg-white/5 rounded-xl space-y-3">
                         <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-slate-800 border border-white/10 overflow-hidden flex-shrink-0">
+                            <div className="h-9 w-9 rounded-full bg-slate-800 border border-white/10 overflow-hidden shrink-0">
                                 <img src={"https://api.dicebear.com/7.x/avataaars/svg?seed=" + (user?.username || "Felix")} alt="User" className="w-full h-full object-cover" />
                             </div>
                             <div className="flex flex-col min-w-0">
