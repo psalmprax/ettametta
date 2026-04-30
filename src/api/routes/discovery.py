@@ -126,6 +126,12 @@ class NicheAlertRequest(BaseModel):
     enabled: bool = True
 
 
+class AnalyzeRequest(BaseModel):
+    url: str | None = None
+    niche: str | None = "AI Technology"
+    candidate: ContentCandidate | None = None
+
+
 @router.post("/scan")
 async def trigger_scan(
     request: ScanRequest, current_user: UserDB = Depends(get_current_user)
@@ -271,7 +277,7 @@ async def trigger_scan(
 
 @router.post("/analyze")
 async def analyze_candidate(
-    candidate: ContentCandidate,
+    request: AnalyzeRequest,
     current_user: UserDB = Depends(get_current_user),
     credits_cost: int = Depends(credits_required("viral_analysis")),
     db=Depends(get_db),
@@ -279,8 +285,25 @@ async def analyze_candidate(
     """
     Asynchronous deconstruction: Dispatches deep AI analysis to Celery
     and returns a task ID for UI polling.
+    Accepts either a full ContentCandidate or just a URL and Niche.
     """
     from src.services.discovery.tasks import analyze_viral_pattern_task
+
+    # 1. Resolve candidate from request
+    if request.candidate:
+        candidate = request.candidate
+    elif request.url:
+        candidate = ContentCandidate(
+            id=f"ext_{int(datetime.utcnow().timestamp())}",
+            platform="youtube",  # Default to youtube if unknown
+            source_uri=request.url,
+            niche=request.niche or "General",
+            title="Manual Analysis",
+            engagement_score=0.5,
+            viral_score=50
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Missing URL or candidate data")
 
     # Consume credits
     await credit_service.consume_credits(
@@ -1360,6 +1383,8 @@ async def get_niche_alerts(
                         "niche": a.niche,
                         "threshold": a.threshold,
                         "enabled": a.is_active,
+                        "message": f"High viral velocity detected in {a.niche}",
+                        "severity": "high" if (a.threshold or 7) > 8 else "medium"
                     }
                     for a in alerts
                 ]

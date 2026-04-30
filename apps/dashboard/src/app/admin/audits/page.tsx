@@ -101,7 +101,9 @@ export default function AuditsPage() {
                         platform,
                         status: "Success",
                         timestamp: new Date().toISOString(),
-                        result: data.result
+                        score: data.score,
+                        recommendations: data.recommendations,
+                        sprint_plan: data.sprint_plan
                     }, ...prev]);
                 },
                 onFallback: () => toast.error("Audit Failed")
@@ -253,7 +255,32 @@ function AccountAuditSection({ onAudit, onDownload, reports }: any) {
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-bold text-white uppercase">{report.platform} Growth Audit</h4>
-                                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{new Date(report.timestamp).toLocaleString()}</p>
+                                        <div className="flex items-center gap-4 mt-1">
+                                            <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{new Date(report.timestamp).toLocaleString()}</p>
+                                            {report.score && (
+                                                <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest px-2 py-0.5 rounded-full bg-cyan-400/10 border border-cyan-400/20">
+                                                    Score: {report.score}%
+                                                </span>
+                                            )}
+                                        </div>
+                                        {report.recommendations && (
+                                            <div className="mt-4 space-y-2">
+                                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Strategic Recommendations:</p>
+                                                <ul className="space-y-1">
+                                                    {report.recommendations.map((rec: string, i: number) => (
+                                                        <li key={i} className="flex items-start gap-2 text-[10px] text-zinc-400 font-medium leading-relaxed">
+                                                            <div className="h-1 w-1 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+                                                            {rec}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        {report.sprint_plan && (
+                                            <p className="mt-3 text-[10px] font-bold text-emerald-400 uppercase tracking-tight">
+                                                Sprint: {report.sprint_plan}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                                 <button 

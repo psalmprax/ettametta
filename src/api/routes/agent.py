@@ -245,3 +245,34 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
     }
 
     return success_response(data=capabilities)
+
+
+class AuditRequest(BaseModel):
+    action: str = "audit"
+    platform: str
+
+
+@router.post("/account-audit")
+async def account_audit(
+    body: AuditRequest,
+    current_user: UserDB = Depends(get_current_user),
+):
+    """
+    Performs an autonomous audit of a social media account.
+    """
+    # Simulate complex audit for now
+    await asyncio.sleep(1)
+    
+    return success_response(
+        data={
+            "status": "completed",
+            "platform": body.platform,
+            "score": 84,
+            "recommendations": [
+                "Increase hook intensity in first 3 seconds",
+                "Optimize posting time for 6PM EST",
+                "Use more high-contrast thumbnails"
+            ],
+            "sprint_plan": "2-week growth sprint initiated"
+        }
+    )

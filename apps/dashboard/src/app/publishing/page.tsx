@@ -267,7 +267,7 @@ export default function PublishingPage() {
 
                         {history.length === 0 ? (
                             <div className="surface-glass rim-light py-24 flex flex-col items-center justify-center text-center space-y-8">
-                                <div className="h-20 w-20 bg-white/2 border border-white/5 flex items-center justify-center rounded-[2rem] opacity-20">
+                                <div className="h-20 w-20 bg-white/2 border border-white/5 flex items-center justify-center rounded-4xl opacity-20">
                                     <Globe className="h-10 w-10 text-white" />
                                 </div>
                                 <div className="space-y-2">

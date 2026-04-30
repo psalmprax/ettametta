@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
     Video, 
     Upload, 
@@ -10,218 +10,377 @@ import {
     Plus,
     ChevronLeft,
     ChevronRight,
-    Image as ImageIcon
+    Image as ImageIcon,
+    FileText,
+    Zap,
+    Mic2,
+    Globe,
+    Settings,
+    Layers,
+    Save,
+    Cpu,
+    CheckCircle2,
+    Loader2
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-
-const thumbnails = [
-    { id: 1, src: "https://api.dicebear.com/7.x/avataaars/svg?seed=1" },
-    { id: 2, src: "https://api.dicebear.com/7.x/avataaars/svg?seed=2" },
-    { id: 3, src: "https://api.dicebear.com/7.x/avataaars/svg?seed=3", active: true },
-    { id: 4, src: "https://api.dicebear.com/7.x/avataaars/svg?seed=4" },
-    { id: 5, src: "https://api.dicebear.com/7.x/avataaars/svg?seed=5" },
-];
-
+import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
+import DashboardLayout from "@/components/layout";
 import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { withRealFallback } from "@/lib/real_first_utils";
+
+const STYLES = ["story", "motivation", "educational", "breaking_news", "cinematic_top10"];
+const DURATIONS = [15, 30, 60, 90, 120];
 
 export default function VideoEditorPage() {
     const router = useRouter();
-    const [model, setModel] = useState("V2.0");
-    const [resolution, setResolution] = useState("720P");
+    const [step, setStep] = useState(1); // 1: Topic, 2: Script Edit, 3: Rendering
     const [prompt, setPrompt] = useState("");
+    const [niche, setNiche] = useState("Motivation");
+    const [style, setStyle] = useState("story");
+    const [duration, setDuration] = useState(60);
+    const [engine, setEngine] = useState("cloud");
+    
     const [isGenerating, setIsGenerating] = useState(false);
+    const [script, setScript] = useState<any>(null);
+    const [activeSegment, setActiveSegment] = useState(0);
 
-    const handleCreate = async () => {
+    const handleGenerateScript = async () => {
         if (!prompt) {
-            toast.error("Please enter a prompt first");
+            toast.error("Please enter a topic first");
             return;
         }
         setIsGenerating(true);
-        try {
-            const token = await getAuthToken();
-            const res = await fetch(`${API_BASE}/video/launch-cinema`, {
+        const token = await getAuthToken();
+        
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/no-face/script`, {
                 method: "POST",
-                headers: {
+                headers: { 
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
+                    Authorization: `Bearer ${token}` 
                 },
                 body: JSON.stringify({ 
-                    topic: prompt,
-                    style: "story", // Default for now
-                    duration_seconds: 60,
-                    niche: "Motivation"
+                    topic: prompt, 
+                    niche, 
+                    duration_seconds: duration, 
+                    style 
                 })
-            });
-            
-            if (!res.ok) throw new Error("Synthesis failure");
-            
-            toast.success("Cinema Sequence Initiated");
-            router.push("/transformation"); // Redirect to jobs view
-        } catch (err) {
-            console.error(err);
-            toast.error("Neural Link Failed");
-        } finally {
-            setIsGenerating(false);
-        }
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    setScript(data);
+                    setStep(2);
+                    toast.success("Neural Script Synthesized");
+                },
+                onFallback: (err) => toast.error("Script Generation Failed", { description: err.message })
+            }
+        );
+        setIsGenerating(false);
+    };
+
+    const handleCommitRender = async () => {
+        if (!script) return;
+        setIsGenerating(true);
+        const token = await getAuthToken();
+        
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/no-face/launch-cinema`, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}` 
+                },
+                body: JSON.stringify({ 
+                    topic: prompt, 
+                    niche, 
+                    duration_seconds: duration, 
+                    style,
+                    engine,
+                    script 
+                })
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    toast.success("Cinema Sequence Initiated", { description: `Job ID: ${data.job_id}` });
+                    router.push("/transformation");
+                },
+                onFallback: (err) => toast.error("Neural Render Failed", { description: err.message })
+            }
+        );
+        setIsGenerating(false);
     };
 
     return (
-        <div className="flex flex-col lg:flex-row gap-8 h-full animate-fade-in">
-            {/* Editor Column */}
-            <div className="flex-1 flex flex-col gap-6">
-                <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-white">Ettametta Video Editor</h1>
-                </div>
+        <DashboardLayout>
+            <div className="min-h-screen bg-bg-base relative flex flex-col font-sans overflow-hidden">
+                <div className="noise-overlay" />
+                <div className="absolute inset-0 cyber-grid opacity-10 pointer-events-none" />
+                
+                <div className="flex-1 section-container relative py-12 px-6 lg:px-16 max-w-screen-2xl mx-auto w-full z-10">
+                    <HighVelocityTicker />
 
-                <div className="flex-1 flex flex-col gap-4 bg-slate-900/40 border border-white/5 rounded-3xl p-6">
-                    {/* Upload Area */}
-                    <div className="relative group cursor-pointer h-72 border-2 border-dashed border-white/10 hover:border-blue-500/50 rounded-2xl flex flex-col items-center justify-center gap-4 transition-all bg-black/20">
-                        <div className="h-12 w-12 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Video className="h-6 w-6 text-slate-400 group-hover:text-blue-500" />
-                        </div>
-                        <div className="text-center">
-                            <p className="text-sm font-semibold text-white">Upload a video you want to edit</p>
-                            <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider">(&lt;30M, 18s duration, &le;10s)</p>
-                        </div>
-                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-
-                    {/* Description Area */}
-                    <div className="flex-1 flex flex-col gap-2">
-                        <textarea 
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            className="flex-1 bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-all resize-none"
-                            placeholder="Describe your edits (add, remove, replace). Use the brush to mark areas or upload a reference image to specify changes."
-                        />
-                    </div>
-
-                    {/* Settings & Create */}
-                    <div className="flex flex-col gap-4">
-                        <div className="flex gap-4">
-                            <div className="flex-1 relative group">
-                                <select 
-                                    value={model} 
-                                    onChange={(e) => setModel(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white appearance-none focus:outline-none focus:border-blue-500/50"
-                                >
-                                    <option>V2.0</option>
-                                    <option>V1.5</option>
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                            </div>
-                            <div className="flex-1 relative group">
-                                <select 
-                                    value={resolution} 
-                                    onChange={(e) => setResolution(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white appearance-none focus:outline-none focus:border-blue-500/50"
-                                >
-                                    <option>720P</option>
-                                    <option>1080P</option>
-                                    <option>4K</option>
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                            </div>
-                        </div>
-
-                        <Button 
-                            onClick={handleCreate}
-                            disabled={isGenerating || !prompt}
-                            className={cn(
-                                "w-full py-4 font-bold rounded-xl flex items-center justify-center gap-2 border border-white/5 transition-all",
-                                isGenerating || !prompt ? "bg-slate-800 text-slate-500" : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20"
-                            )}
-                        >
-                            {isGenerating ? "Processing..." : "Create"}
-                            {!isGenerating && (
-                                <div className="flex items-center gap-1.5 ml-2">
-                                    <Sparkles className="h-3.5 w-3.5 fill-current" />
-                                    <span>0</span>
-                                </div>
-                            )}
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Preview Column */}
-            <div className="flex-1 flex flex-col gap-6">
-                <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Sample Video</span>
-                </div>
-
-                <div className="flex-1 flex flex-col bg-slate-900/40 border border-white/5 rounded-3xl overflow-hidden p-2">
-                    {/* Video Player */}
-                    <div className="relative flex-1 bg-black rounded-2xl overflow-hidden flex items-center justify-center group">
-                        <img 
-                            src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop" 
-                            alt="Preview" 
-                            className="w-full h-full object-cover opacity-80"
-                        />
-                        
-                        {/* Caption Overlay */}
-                        <div className="absolute bottom-12 left-0 w-full text-center px-8">
-                            <p className="text-lg font-medium text-white drop-shadow-lg">
-                                Let the man in the picture walk to the left of this woman
-                            </p>
-                        </div>
-
-                        {/* Floating Image Overlay */}
-                        <div className="absolute right-8 top-1/2 -translate-y-1/2 w-24 h-32 rounded-lg border-2 border-rose-500/50 overflow-hidden rotate-12 shadow-2xl shadow-black/50">
-                             <img 
-                                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop" 
-                                alt="Ref" 
-                                className="w-full h-full object-cover"
+                    <header className="mb-12 flex flex-col xl:flex-row xl:items-end justify-between gap-8">
+                        <div className="space-y-4">
+                            <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: 120 }}
+                                className="h-1 bg-primary shadow-[0_0_20px_#00fbfb]"
                             />
-                        </div>
-
-                        {/* Play Overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                            <div className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-                                <Play className="h-8 w-8 text-white fill-current" />
+                            <h1 className="text-4xl font-bold text-white uppercase tracking-tighter leading-none">
+                                Elite <span className="text-hollow">Production</span> Workflow
+                            </h1>
+                            <div className="flex items-center gap-6">
+                                <div className={cn("text-[9px] font-bold uppercase tracking-widest flex items-center gap-2", step >= 1 ? "text-primary" : "text-zinc-600")}>
+                                    <span className="h-4 w-4 rounded-full border border-current flex items-center justify-center">1</span>
+                                    Concept
+                                </div>
+                                <div className="h-px w-8 bg-zinc-900" />
+                                <div className={cn("text-[9px] font-bold uppercase tracking-widest flex items-center gap-2", step >= 2 ? "text-primary" : "text-zinc-600")}>
+                                    <span className="h-4 w-4 rounded-full border border-current flex items-center justify-center">2</span>
+                                    Script_Logic
+                                </div>
+                                <div className="h-px w-8 bg-zinc-900" />
+                                <div className={cn("text-[9px] font-bold uppercase tracking-widest flex items-center gap-2", step >= 3 ? "text-primary" : "text-zinc-600")}>
+                                    <span className="h-4 w-4 rounded-full border border-current flex items-center justify-center">3</span>
+                                    Neural_Render
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Thumbnails Section */}
-                    <div className="p-4 flex items-center gap-4">
-                        <button className="text-slate-500 hover:text-white transition-colors">
-                            <ChevronLeft className="h-6 w-6" />
-                        </button>
-                        
-                        <div className="flex-1 flex gap-3 overflow-x-hidden">
-                            {thumbnails.map((thumb) => (
-                                <div 
-                                    key={thumb.id}
-                                    className={cn(
-                                        "relative shrink-0 w-24 h-24 rounded-xl overflow-hidden border-2 transition-all cursor-pointer",
-                                        thumb.active ? "border-blue-500 scale-105 shadow-lg shadow-blue-500/20" : "border-transparent opacity-60 hover:opacity-100"
-                                    )}
-                                >
-                                    <img src={thumb.src} alt="thumb" className="w-full h-full object-cover" />
-                                    {thumb.active && (
-                                        <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
-                                            <div className="bg-blue-600 px-3 py-1 rounded-full flex items-center gap-2">
-                                                <Play className="h-3 w-3 text-white fill-current" />
-                                                <span className="text-[10px] font-bold text-white uppercase">Create</span>
+                        <div className="flex items-center gap-4">
+                            <div className="surface-glass p-5 border border-white/5 text-right">
+                                <span className="text-[8px] font-bold text-zinc-600 uppercase block mb-1">Compute Cluster</span>
+                                <span className="text-sm font-bold text-white uppercase">{engine.toUpperCase()}_ENGINE</span>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start h-full">
+                        {/* Editor Controls */}
+                        <div className="xl:col-span-4 space-y-8">
+                            <AnimatePresence mode="wait">
+                                {step === 1 ? (
+                                    <motion.section 
+                                        key="step1"
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 20 }}
+                                        className="surface-glass rim-light p-8 space-y-8"
+                                    >
+                                        <div className="space-y-6">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Viral Topic</label>
+                                                <textarea 
+                                                    value={prompt}
+                                                    onChange={(e) => setPrompt(e.target.value)}
+                                                    placeholder="Describe the core message..."
+                                                    className="w-full h-32 bg-black/40 border border-white/5 p-6 text-sm text-white focus:outline-none focus:border-primary/30 transition-all resize-none"
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Niche</label>
+                                                    <select 
+                                                        value={niche}
+                                                        onChange={(e) => setNiche(e.target.value)}
+                                                        className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest focus:outline-none"
+                                                    >
+                                                        <option>Motivation</option>
+                                                        <option>AI Technology</option>
+                                                        <option>Stoicism</option>
+                                                        <option>Finance</option>
+                                                    </select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Visual Style</label>
+                                                    <select 
+                                                        value={style}
+                                                        onChange={(e) => setStyle(e.target.value)}
+                                                        className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest focus:outline-none"
+                                                    >
+                                                        {STYLES.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Duration (Seconds)</label>
+                                                <div className="grid grid-cols-5 gap-2">
+                                                    {DURATIONS.map(d => (
+                                                        <button 
+                                                            key={d}
+                                                            onClick={() => setDuration(d)}
+                                                            className={cn(
+                                                                "h-10 text-[9px] font-bold rounded-lg border transition-all",
+                                                                duration === d ? "bg-primary text-black border-primary" : "bg-white/2 text-zinc-500 border-white/5"
+                                                            )}
+                                                        >
+                                                            {d}S
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                            ))}
+
+                                        <button 
+                                            onClick={handleGenerateScript}
+                                            disabled={isGenerating || !prompt}
+                                            className="action-primary w-full py-5 text-[10px] tracking-widest flex items-center justify-center gap-3 font-bold"
+                                        >
+                                            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cpu className="h-4 w-4" />}
+                                            SYNTHESIZE_SCRIPT
+                                        </button>
+                                    </motion.section>
+                                ) : (
+                                    <motion.section 
+                                        key="step2"
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 20 }}
+                                        className="surface-glass rim-light p-8 space-y-8"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-sm font-bold text-white uppercase tracking-tighter">Script_Structure</h3>
+                                            <button onClick={() => setStep(1)} className="text-[9px] font-bold text-zinc-600 hover:text-white uppercase">Back_to_Concept</button>
+                                        </div>
+
+                                        <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                                            {script?.segments?.map((seg: any, i: number) => (
+                                                <div 
+                                                    key={i}
+                                                    onClick={() => setActiveSegment(i)}
+                                                    className={cn(
+                                                        "p-5 border cursor-pointer transition-all relative overflow-hidden group",
+                                                        activeSegment === i ? "bg-primary/5 border-primary/30" : "bg-white/2 border-white/5"
+                                                    )}
+                                                >
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">SEGMENT_{i+1}</span>
+                                                        <span className="text-[8px] font-bold text-primary">{seg.duration}S</span>
+                                                    </div>
+                                                    <p className="text-[10px] text-zinc-400 leading-relaxed italic line-clamp-2">"{seg.text}"</p>
+                                                    {activeSegment === i && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />}
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex gap-4">
+                                                <button className="flex-1 h-12 bg-white/2 border border-white/5 flex items-center justify-center gap-2 text-[9px] font-bold text-zinc-400 hover:text-white transition-colors">
+                                                    <Mic2 className="h-3 w-3" /> Voice_Clone
+                                                </button>
+                                                <button className="flex-1 h-12 bg-white/2 border border-white/5 flex items-center justify-center gap-2 text-[9px] font-bold text-zinc-400 hover:text-white transition-colors">
+                                                    <Globe className="h-3 w-3" /> Localize
+                                                </button>
+                                            </div>
+                                            <button 
+                                                onClick={handleCommitRender}
+                                                disabled={isGenerating}
+                                                className="action-primary w-full py-6 text-[10px] tracking-[0.2em] font-bold flex items-center justify-center gap-3"
+                                            >
+                                                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-current" />}
+                                                COMMIT_NEURAL_RENDER
+                                            </button>
+                                        </div>
+                                    </motion.section>
+                                )}
+                            </AnimatePresence>
                         </div>
 
-                        <button className="text-slate-500 hover:text-white transition-colors">
-                            <ChevronRight className="h-6 w-6" />
-                        </button>
+                        {/* Real-Time Preview Area */}
+                        <div className="xl:col-span-8 space-y-8">
+                            <section className="surface-glass p-6 rounded-[2.5rem] bg-black/40 border border-white/5 h-full min-h-[600px] flex flex-col">
+                                <div className="flex items-center justify-between mb-6 px-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                                            <Play className="h-5 w-5 fill-current" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white uppercase tracking-tight">Production_Monitor</h3>
+                                            <p className="text-[9px] font-medium text-zinc-600 uppercase tracking-widest">Neural_Layer: {step === 1 ? "CONCEPTUAL" : "LOGICAL"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <div className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[8px] font-bold uppercase">Ready</div>
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 relative bg-zinc-950 rounded-[2rem] overflow-hidden group">
+                                    <div className="absolute inset-0 scanline opacity-10 pointer-events-none" />
+                                    <img 
+                                        src={step === 1 ? "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop" : "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop"} 
+                                        className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-[10s] ease-linear"
+                                        alt="Neural Frame"
+                                    />
+                                    
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-12">
+                                        {step === 2 && script?.segments?.[activeSegment] && (
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="space-y-6"
+                                            >
+                                                <p className="text-3xl md:text-5xl font-black text-white italic leading-tight tracking-tighter drop-shadow-2xl">
+                                                    "{script.segments[activeSegment].text}"
+                                                </p>
+                                                <div className="flex items-center justify-center gap-4">
+                                                    <span className="text-[10px] font-bold text-primary uppercase tracking-[0.3em]">Segment_{activeSegment + 1}</span>
+                                                    <div className="h-px w-12 bg-primary/30" />
+                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em]">{script.segments[activeSegment].visual_prompt}</span>
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {step === 1 && (
+                                            <div className="text-center opacity-30">
+                                                <Cpu className="h-16 w-16 text-zinc-700 mx-auto mb-6 animate-pulse" />
+                                                <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-[0.3em]">Awaiting Production Logic</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Overlay HUD */}
+                                    <div className="absolute top-8 left-8 space-y-2">
+                                        <div className="bg-black/60 backdrop-blur-md px-4 py-2 border border-white/10 rounded-lg">
+                                            <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-1">FPS</p>
+                                            <p className="text-xs font-bold text-white">60.00</p>
+                                        </div>
+                                        <div className="bg-black/60 backdrop-blur-md px-4 py-2 border border-white/10 rounded-lg">
+                                            <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Bitrate</p>
+                                            <p className="text-xs font-bold text-white">12.4 Mbps</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 flex items-center justify-between px-4">
+                                    <div className="flex gap-4">
+                                        <button className="h-12 w-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
+                                            <ChevronLeft className="h-5 w-5 text-zinc-600" />
+                                        </button>
+                                        <button className="h-12 w-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all text-primary">
+                                            <Play className="h-5 w-5 fill-current" />
+                                        </button>
+                                        <button className="h-12 w-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
+                                            <ChevronRight className="h-5 w-5 text-zinc-600" />
+                                        </button>
+                                    </div>
+                                    <div className="font-data-mono text-[10px] text-zinc-600 uppercase tracking-widest">
+                                        PRD_READY // SYNC_LOCK: TRUE
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </DashboardLayout>
     );
 }

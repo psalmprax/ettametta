@@ -1,7 +1,10 @@
 import httpx
 import logging
 import os
+import asyncio
 from src.api.config import settings
+
+logger = logging.getLogger(__name__)
 
 class VisualGenerator:
     def __init__(self):
@@ -60,5 +63,14 @@ class VisualGenerator:
         except Exception as e:
             logging.error(f"[VisualGenerator] Pollinations Fallback Failed: {e}")
             return None
+
+    async def generate_batch(self, prompt: str, count: int = 4) -> list[str]:
+        """
+        Generates multiple variants of a visual in parallel.
+        """
+        logger.info(f"🎨 [VisualGenerator] Generating batch of {count} variants for: {prompt}")
+        tasks = [self.generate_image(f"{prompt} | variation {i}") for i in range(count)]
+        results = await asyncio.gather(*tasks)
+        return [r for r in results if r]
 
 base_visual_generator = VisualGenerator()

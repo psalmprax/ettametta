@@ -6,6 +6,7 @@ import { Float, MeshDistortMaterial, Sphere, Points, PointMaterial } from "@reac
 import * as THREE from "three";
 import { withRealFallback } from "@/lib/real_first_utils";
 import DashboardLayout from "@/components/layout";
+import { NeuralCanvas } from "@/components/ui/NeuralCanvas";
 import { BlueprintBuilder } from "@/components/ui/BlueprintBuilder";
 import { Blueprint, ScriptOutput, HookAnalysis, ScriptSegment } from "@/lib/types";
 import {
@@ -127,6 +128,11 @@ export default function CreationPage() {
     const [isCinemaLaunching, setIsCinemaLaunching] = useState(false);
     const [hookAnalysis, setHookAnalysis] = useState<HookAnalysis | null>(null);
     const [activeStack, setActiveStack] = useState<"cloud" | "os">("cloud");
+    const [isBlueprintBuilderOpen, setIsBlueprintBuilderOpen] = useState(false);
+    const [selectedBlueprint, setSelectedBlueprint] = useState<Blueprint | null>(null);
+
+    const [useGpu, setUseGpu] = useState(false);
+    const [batchCount, setBatchCount] = useState(1);
 
     const stacks = [
         { id: "cloud", name: "Premium Cloud", desc: "High-Speed GPUs & Enterprise Models", icon: Globe, status: "Active" },
@@ -146,13 +152,13 @@ export default function CreationPage() {
         }
 
         await withRealFallback<ScriptOutput>(
-            () => fetch(`${API_BASE}/video/script`, {
+            () => fetch(`${API_BASE}/no-face/script`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ topic, niche, style, duration_seconds: duration, engine: activeStack })
+                body: JSON.stringify({ topic, niche, style, duration_seconds: duration, engine: activeStack, use_gpu: useGpu, batch_count: batchCount })
             }),
             {
                 fallback: {} as ScriptOutput,
@@ -181,13 +187,13 @@ export default function CreationPage() {
         }
 
         await withRealFallback<any>(
-            () => fetch(`${API_BASE}/video/launch-cinema`, {
+            () => fetch(`${API_BASE}/no-face/launch-cinema`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ topic, niche, style, duration_seconds: duration, engine: activeStack })
+                body: JSON.stringify({ topic, niche, style, duration_seconds: duration, engine: activeStack, use_gpu: useGpu, batch_count: batchCount })
             }),
             {
                 fallback: null,
@@ -212,7 +218,7 @@ export default function CreationPage() {
         }
 
         await withRealFallback<HookAnalysis>(
-            () => fetch(`${API_BASE}/video/validate-hook`, {
+            () => fetch(`${API_BASE}/no-face/validate-hook`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -241,7 +247,7 @@ export default function CreationPage() {
         }
 
         await withRealFallback<ScriptOutput>(
-            () => fetch(`${API_BASE}/video/translate-script`, {
+            () => fetch(`${API_BASE}/no-face/translate-script`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -272,7 +278,7 @@ export default function CreationPage() {
         }
 
         await withRealFallback<{ audio_uri: string }>(
-            () => fetch(`${API_BASE}/video/synthesize-audio`, {
+            () => fetch(`${API_BASE}/no-face/synthesize-audio`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -306,7 +312,7 @@ export default function CreationPage() {
         }
 
         await withRealFallback<{ videos: any[] }>(
-            () => fetch(`${API_BASE}/video/search-stock`, {
+            () => fetch(`${API_BASE}/no-face/search-stock`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -415,6 +421,14 @@ export default function CreationPage() {
                                         />
                                     </button>
                                 </div>
+                                <div className="w-px h-10 bg-white/5" />
+                                <button 
+                                    onClick={() => setIsBlueprintBuilderOpen(true)}
+                                    className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20 transition-all group"
+                                >
+                                    <Cpu className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+                                    <span className="font-bold text-[10px] uppercase tracking-widest">Neural Architect</span>
+                                </button>
                             </div>
                         </motion.div>
                     </header>
@@ -522,6 +536,48 @@ export default function CreationPage() {
                                                     </div>
                                                 </div>
                                             ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Neural Synthesis Controls */}
+                                    <div className="space-y-6 pt-4 border-t border-white/5">
+                                        <label className="font-bold text-cyan-400 uppercase tracking-widest text-[10px] flex items-center gap-2">
+                                            <Zap className="h-3 w-3" />
+                                            Neural Synthesis Parameters
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">GPU Accel</span>
+                                                    <button 
+                                                        onClick={() => setUseGpu(!useGpu)}
+                                                        className={cn(
+                                                            "w-8 h-4 rounded-full transition-all relative p-0.5 border",
+                                                            useGpu ? "border-cyan-400 bg-cyan-400/10" : "border-zinc-800 bg-zinc-900"
+                                                        )}
+                                                    >
+                                                        <motion.div 
+                                                            animate={{ x: useGpu ? 16 : 0 }}
+                                                            className={cn(
+                                                                "w-2.5 h-2.5 rounded-full",
+                                                                useGpu ? "bg-cyan-400" : "bg-zinc-700"
+                                                            )}
+                                                        />
+                                                    </button>
+                                                </div>
+                                                <p className="text-[7px] text-zinc-500 uppercase tracking-tighter">Hardware_Acceleration_Active</p>
+                                            </div>
+                                            <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Variants</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <button onClick={() => setBatchCount(Math.max(1, batchCount - 1))} className="text-zinc-600 hover:text-white">-</button>
+                                                        <span className="text-[10px] font-data-mono text-white">{batchCount}</span>
+                                                        <button onClick={() => setBatchCount(Math.min(10, batchCount + 1))} className="text-zinc-600 hover:text-white">+</button>
+                                                    </div>
+                                                </div>
+                                                <p className="text-[7px] text-zinc-500 uppercase tracking-tighter">Batch_Production_Cycle</p>
+                                            </div>
                                         </div>
                                     </div>
 

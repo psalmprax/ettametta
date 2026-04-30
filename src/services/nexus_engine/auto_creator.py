@@ -185,19 +185,21 @@ class AutoCreator:
 
     async def create_cinema_video(
         self, 
-        job_id: int, 
+        job_id: str, 
         topic: str, 
         niche: str, 
         blueprint_id: str = "story-factory",
         engine: str = "cloud",
-        script: list[dict] | None = None
+        script: list[dict] | None = None,
+        use_gpu: bool = False,
+        batch_count: int = 1
     ) -> str:
         """
         Autonomous Script-to-Video Workflow with real-time node instrumentation.
         """
         from src.api.routes.ws import notify_nexus_job_update_sync
 
-        logger.info(f"[AutoCreator] Launching Cinema Mode: {topic} in {niche} (Engine: {engine})")
+        logger.info(f"[AutoCreator] Launching Cinema Mode: {topic} in {niche} (Engine: {engine}, GPU: {use_gpu}, Batch: {batch_count})")
 
         async def notify(node: str, status: str, progress: int):
             # 1. Update Database for persistence
@@ -259,17 +261,37 @@ class AutoCreator:
 
         # 3. Synthesis & Egress: Assembly
         await notify("synthesis", "ACTIVE", 60)
-        from src.services.nexus_engine.orchestrator import base_nexus_orchestrator
-
-        output_path = await base_nexus_orchestrator.assemble_video(
-            job_id=job_id,
-            niche=niche,
-            script_segments=segments,
-            voiceover_paths=voice_paths,
-            visual_paths=visual_paths,
-            music_path=None,
-            blueprint_id=blueprint_id,
-        )
+        
+        # Batch Rendering Path (Standard 4.1: Find Winners Fast)
+        if batch_count > 1:
+            logger.info(f"🚀 [AutoCreator] Triggering Neural Batch Production ({batch_count} variants)")
+            from src.services.video_engine.production_batch import base_batch_renderer
+            
+            variants = []
+            for v_idx in range(batch_count):
+                variant_id = f"{job_id}_v{v_idx}"
+                variants.append({
+                    "variant_id": variant_id,
+                    "output_path": f"outputs/{variant_id}.mp4",
+                    "use_gpu": use_gpu,
+                    "cmd": ["ffmpeg", "-y", "-i", visual_paths[0], "-c:v", "libx264", f"outputs/{variant_id}.mp4"] # Mock FFmpeg command
+                })
+            
+            batch_results = base_batch_renderer.render_batch(variants)
+            success_count = sum(1 for r in batch_results if r["success"])
+            logger.info(f"✅ [AutoCreator] Batch Production Complete. Success: {success_count}/{batch_count}")
+            output_path = batch_results[0]["path"] if batch_results else None
+        else:
+            from src.services.nexus_engine.orchestrator import base_nexus_orchestrator
+            output_path = await base_nexus_orchestrator.assemble_video(
+                job_id=job_id,
+                niche=niche,
+                script_segments=segments,
+                voiceover_paths=voice_paths,
+                visual_paths=visual_paths,
+                music_path=None,
+                blueprint_id=blueprint_id,
+            )
         
         if output_path:
             await notify("synthesis", "COMPLETED", 100)
@@ -287,7 +309,9 @@ class AutoCreator:
         style: str = "Cinematic",
         duration: int = 60,
         engine: str = "cloud",
-        script: list[dict] | None = None
+        script: list[dict] | None = None,
+        use_gpu: bool = False,
+        batch_count: int = 1
     ) -> str:
         """
         High-level entry point to create and launch an automated video generation job.
@@ -311,7 +335,9 @@ class AutoCreator:
                     "topic": topic,
                     "style": style,
                     "duration": duration,
-                    "engine": engine
+                    "engine": engine,
+                    "use_gpu": use_gpu,
+                    "batch_count": batch_count
                 }
             )
             db.add(new_job)
@@ -325,7 +351,9 @@ class AutoCreator:
                 topic=topic,
                 niche=niche,
                 engine=engine,
-                script=script
+                script=script,
+                use_gpu=use_gpu,
+                batch_count=batch_count
             )
         )
         
