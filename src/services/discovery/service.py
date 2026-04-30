@@ -22,20 +22,20 @@ except ImportError:
 from .youtube_scanner import YouTubeShortsScanner
 from .youtube_long_scanner import YouTubeLongScanner
 from .tiktok_scanner import TikTokScanner
-from .reddit_scanner import base_reddit_scanner
-from .x_scanner import base_x_scanner
-from .public_domain_scanner import base_public_domain_scanner
-from .metasearch_scanner import base_metasearch_scanner
-from .rumble_scanner import base_rumble_scanner
-from .instagram_scanner import base_instagram_scanner
-from .facebook_scanner import base_facebook_scanner
-from .twitch_scanner import base_twitch_scanner
-from .snapchat_scanner import base_snapchat_scanner
-from .pinterest_scanner import base_pinterest_scanner
-from .linkedin_scanner import base_linkedin_scanner
-from .bilibili_scanner import base_bilibili_scanner
-from .skool_scanner import base_skool_scanner
-from .duckduckgo_scanner import base_duckduckgo_scanner
+from .reddit_scanner import base_reddit_service
+from .x_scanner import base_x_service
+from .public_domain_scanner import base_public_domain_service
+from .metasearch_scanner import base_metasearch_service
+from .rumble_scanner import base_rumble_service
+from .instagram_scanner import base_instagram_service
+from .facebook_scanner import base_facebook_service
+from .twitch_scanner import base_twitch_service
+from .snapchat_scanner import base_snapchat_service
+from .pinterest_scanner import base_pinterest_service
+from .linkedin_scanner import base_linkedin_service
+from .bilibili_scanner import base_bilibili_service
+from .skool_scanner import base_skool_service
+from .duckduckgo_scanner import base_duckduckgo_service
 from .video_lead_scanner import video_lead_scanner
 from .deconstructor import pattern_deconstructor
 from src.api.utils.database import async_session_factory
@@ -67,24 +67,24 @@ class DiscoveryService:
             YouTubeShortsScanner(),  # Real API ✓
             YouTubeLongScanner(),  # Real API ✓
             TikTokScanner(),  # Web scrape ✓
-            base_duckduckgo_scanner,  # Free fallback ✓
+            base_duckduckgo_service,  # Free fallback ✓
         ]
         # Secondary scanners (supplementary, web scraping)
         # Now all implemented with web scraping (no API keys needed)
         self.global_scanners = [
-            base_reddit_scanner,  # Real API (JSON) ✓
-            base_x_scanner,  # Web scrape
-            base_instagram_scanner,  # Web scrape
-            base_facebook_scanner,  # Web scrape
-            base_twitch_scanner,  # Web scrape (NEW)
-            base_pinterest_scanner,  # Web scrape (NEW)
-            base_linkedin_scanner,  # Web scrape (NEW)
-            base_snapchat_scanner,  # Web scrape (NEW)
-            base_bilibili_scanner,  # Web scrape (NEW)
-            base_rumble_scanner,  # Web scrape (NEW)
-            base_public_domain_scanner,  # Partial (Pexels)
-            base_metasearch_scanner,  # Partial
-            base_skool_scanner,  # Partial
+            base_reddit_service,  # Real API (JSON) ✓
+            base_x_service,  # Web scrape
+            base_instagram_service,  # Web scrape
+            base_facebook_service,  # Web scrape
+            base_twitch_service,  # Web scrape (NEW)
+            base_pinterest_service,  # Web scrape (NEW)
+            base_linkedin_service,  # Web scrape (NEW)
+            base_snapchat_service,  # Web scrape (NEW)
+            base_bilibili_service,  # Web scrape (NEW)
+            base_rumble_service,  # Web scrape (NEW)
+            base_public_domain_service,  # Partial (Pexels)
+            base_metasearch_service,  # Partial
+            base_skool_service,  # Partial
         ]
 
         # Video lead discovery capabilities
@@ -238,12 +238,12 @@ class DiscoveryService:
             self.global_scanners
             if deep_scan or tier != "free"
             else [
-                base_x_scanner,
-                base_instagram_scanner,
-                base_facebook_scanner,
-                base_twitch_scanner,
-                base_bilibili_scanner,
-                base_rumble_scanner,
+                base_x_service,
+                base_instagram_service,
+                base_facebook_service,
+                base_twitch_service,
+                base_bilibili_service,
+                base_rumble_service,
             ]
         )
         
@@ -1186,7 +1186,7 @@ class DiscoveryService:
                     if len(clean_query) < 4:  # If too short, use the niche
                         clean_query = c.get("niche") or "Space Exploration"
 
-                    stock_candidates = await base_public_domain_scanner.scan_trends(
+                    stock_candidates = await base_public_domain_service.scan_trends(
                         clean_query[:50]
                     )
 

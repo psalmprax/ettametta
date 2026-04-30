@@ -52,4 +52,4 @@ class ThumbnailGenerator:
             # Return original Pollinations URL as a non-breaking fallback
             return image_uri
 
-base_thumbnail_generator = ThumbnailGenerator()
+base_thumbnail_service = ThumbnailGenerator()

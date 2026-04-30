@@ -15,7 +15,7 @@ from typing import Any
 from sqlalchemy import select
 from src.api.utils.database import AsyncSessionLocal
 from src.api.utils.models import ExperimentCohortDB
-from src.services.distribution.experiment_batcher import base_experiment_batcher
+from src.services.distribution.experiment_batcher import base_experiment_service
 from src.services.infrastructure.resilience_metrics import (
     state_drift_detected,
     state_repairs_triggered,
@@ -107,7 +107,7 @@ class ConsistencySentinel:
                 # 2. Get stats from Cache (Hot State)
                 cache_counts = {
                     b["batch_id"]: len(b["participants"])
-                    for b in base_experiment_batcher.active_batches
+                    for b in base_experiment_service.active_batches
                 }
 
                 report.cohorts_checked = len(db_counts)

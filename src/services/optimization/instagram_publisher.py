@@ -188,4 +188,4 @@ class InstagramPublisher(SocialPublisher):
         return await token_manager.get_token("instagram", user_id=user_id) is not None
 
 
-base_instagram_publisher = InstagramPublisher()
+base_instagram_service = InstagramPublisher()

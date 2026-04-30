@@ -334,4 +334,4 @@ class ChaosUtility:
 
 
 # Singleton Instance
-base_chaos_utility = ChaosUtility()
+base_chaos_service = ChaosUtility()

@@ -10,7 +10,7 @@ from typing import Any
 import logging
 import asyncio
 
-from src.services.video_engine.scene_orchestrator import base_scene_based_orchestrator
+from src.services.video_engine.scene_orchestrator import base_scene_orchestrator_service
 
 from .base_skill import OpenClawBaseSkill
 
@@ -68,7 +68,7 @@ class SceneBasedVideoSkill(OpenClawBaseSkill):
         )
 
         # Produce the video
-        result = await base_scene_based_orchestrator.produce_scene_based_video(
+        result = await base_scene_orchestrator_service.produce_scene_based_video(
             scenes=scenes,
             niche=niche,
             target_duration=target_duration,
@@ -118,7 +118,7 @@ class SceneBasedVideoSkill(OpenClawBaseSkill):
 
         # Find videos for scenes
         scene_videos = (
-            await base_scene_based_orchestrator.video_scanner.find_videos_for_scenes(
+            await base_scene_orchestrator_service.video_scanner.find_videos_for_scenes(
                 scenes=scenes,
                 niche=niche,
                 platforms=platforms,
@@ -159,7 +159,7 @@ class SceneBasedVideoSkill(OpenClawBaseSkill):
 
         # Create production plan
         production_plan = (
-            await base_scene_based_orchestrator.video_scanner.create_scene_based_video(
+            await base_scene_orchestrator_service.video_scanner.create_scene_based_video(
                 scenes=scenes,
                 niche=niche,
                 target_duration=target_duration,

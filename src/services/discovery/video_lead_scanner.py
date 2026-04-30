@@ -132,9 +132,9 @@ class VideoLeadScanner:
                 "NO LEADS FOUND. Failing back to DuckDuckGo search (Quota/Network issue)"
             )
             try:
-                from .duckduckgo_scanner import base_duckduckgo_scanner
+                from .duckduckgo_scanner import base_duckduckgo_service
 
-                ddg_candidates = await base_duckduckgo_scanner.scan_trends(niche)
+                ddg_candidates = await base_duckduckgo_service.scan_trends(niche)
                 self.logger.info(f"DuckDuckGo found {len(ddg_candidates)} candidates")
 
                 for c in ddg_candidates:
@@ -477,9 +477,9 @@ class VideoLeadScanner:
             print(
                 f"DEBUG: Falling back to DuckDuckGo search for keywords: {search_query}"
             )
-            from .duckduckgo_scanner import base_duckduckgo_scanner
+            from .duckduckgo_scanner import base_duckduckgo_service
 
-            ddg_candidates = await base_duckduckgo_scanner.scan_trends(search_query)
+            ddg_candidates = await base_duckduckgo_service.scan_trends(search_query)
             print(f"DEBUG: DuckDuckGo found {len(ddg_candidates)} candidates")
 
             for c in ddg_candidates:

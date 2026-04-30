@@ -42,9 +42,9 @@ import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
-    { name: "Explore", href: "/dashboard", icon: Search },
+    { name: "Intelligence Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Empire Registry", href: "/empire", icon: Crown },
-    { name: "Discovery", href: "/discovery", icon: TrendingUp },
+    { name: "Trend Discovery", href: "/discovery", icon: TrendingUp },
     { name: "Global Publish", href: "/publishing", icon: Share2 },
     { name: "Autonomous OS", href: "/autonomous", icon: Activity },
 ];
@@ -57,7 +57,7 @@ const workforceItems = [
 
 const intelligenceItems = [
     { name: "Analytics Core", href: "/analytics", icon: BarChart3 },
-    { name: "Flywheel Evolution", href: "/analytics/ab-testing", icon: Sparkles },
+    { name: "Neural A/B Lab", href: "/analytics/ab-testing", icon: Sparkles },
     { name: "Security Sentinel", href: "/admin/audits", icon: ShieldCheck },
     { name: "System Admin", href: "/admin", icon: Terminal },
 ];

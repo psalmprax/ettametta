@@ -4,7 +4,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.database import async_session_factory
 from src.api.utils.models import VideoJobDB, PerformanceSnapshotDB, PublishedContentDB
-from src.services.optimization.youtube_publisher import base_youtube_publisher
+from src.services.optimization.youtube_publisher import base_youtube_service
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ class FlywheelService:
 
             for variant in variants:
                 # 2. Fetch latest metrics (Mocked for now until Analytics API integrated)
-                # In production, this would call base_youtube_publisher.get_advanced_metrics
+                # In production, this would call base_youtube_service.get_advanced_metrics
                 metrics = await self._fetch_variant_metrics(variant.id)
                 
                 score = await self.calculate_engagement_score(
@@ -96,7 +96,7 @@ class FlywheelService:
         try:
             # 1. Attempt to get real stats from the database/publisher
             # Note: In a full implementation, we'd query the 'PublishedContentDB' for the platform_id
-            # and then call base_youtube_publisher.get_metrics(platform_id)
+            # and then call base_youtube_service.get_metrics(platform_id)
             
             # For now, we simulate a 'Real-First' transition:
             # We try to find the video_id in the job metadata
@@ -107,7 +107,7 @@ class FlywheelService:
                 
                 if job and job.job_metadata.get("youtube_video_id"):
                     # Real call would go here:
-                    # stats = await base_youtube_publisher.get_metrics(job.job_metadata["youtube_video_id"])
+                    # stats = await base_youtube_service.get_metrics(job.job_metadata["youtube_video_id"])
                     # return stats
                     pass
 

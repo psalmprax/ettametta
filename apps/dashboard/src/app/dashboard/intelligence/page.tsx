@@ -173,7 +173,7 @@ export default function IntelligencePage() {
                                     </div>
                                 </Card>
 
-                                <div className="glass-card p-8 rounded-4xl bg-purple-500/5 border-purple-500/10 space-y-4">
+                                <div className="glass-card p-8 rounded-2xl bg-purple-500/5 border-purple-500/10 space-y-4">
                                     <div className="flex items-center gap-3 text-purple-400">
                                         <Shield className="h-4 w-4" />
                                         <span className="text-[9px] font-bold uppercase tracking-widest">Logic Tier 10</span>
@@ -221,7 +221,7 @@ export default function IntelligencePage() {
                                                     <CheckCircle2 className="h-4 w-4" />
                                                     Neural Answer
                                                 </h3>
-                                                <div className="p-8 rounded-4xl bg-emerald-500/5 border border-emerald-500/10 text-slate-200 leading-relaxed text-lg font-medium italic">
+                                                <div className="p-8 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-slate-200 leading-relaxed text-lg font-medium italic">
                                                     "{reasoningResult.answer}"
                                                 </div>
                                             </div>

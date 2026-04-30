@@ -72,4 +72,4 @@ class DriftDetector:
             return True
         return False
 
-base_drift_detector = DriftDetector()
+base_drift_service = DriftDetector()

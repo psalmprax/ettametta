@@ -10,7 +10,7 @@ import logging
 import json
 import asyncio
 from typing import Any
-from src.services.script_generator.service import base_script_generator
+from src.services.script_generator.service import base_script_service
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class DeploymentGateway:
         metadata = {}
         for platform in self.platforms:
             prompt = f"Create a high-CTR {platform} caption and 10 hashtags for a video about: {title}. Focus on curiosity and virality."
-            content = await base_script_generator.complete(prompt, system_prompt="You are a Viral Marketing Expert.")
+            content = await base_script_service.complete(prompt, system_prompt="You are a Viral Marketing Expert.")
             
             metadata[platform] = {
                 "variant_id": production_data.get("variant_id", "gen_target"),
@@ -58,4 +58,4 @@ class DeploymentGateway:
         return {"status": "deployed", "platforms_reached": self.platforms}
 
 # Singleton Instance
-base_deployment_gateway = DeploymentGateway()
+base_gateway_service = DeploymentGateway()

@@ -263,4 +263,4 @@ class InstagramScanner:
 
 
 # Base instance for the service
-base_instagram_scanner = InstagramScanner()
+base_instagram_service = InstagramScanner()

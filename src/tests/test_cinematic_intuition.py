@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 from src.engines.real_video_fusion_engine import RealVideoFusionEngine
-from src.services.audio.rhythm_engine import base_rhythm_engine
+from src.services.audio.rhythm_engine import base_rhythm_service
 
 async def verify_cinematic_intuition():
     print("🎬 STARTING CINEMATIC INTUITION VERIFICATION")
@@ -35,7 +35,7 @@ async def verify_cinematic_intuition():
     
     print("\n🥁 STEP 1: RHYTHM ANALYSIS")
     bg_music = "src/templates/audio/background/cinematic_energetic.mp3"
-    rhythm = base_rhythm_engine.get_beat_markers(bg_music)
+    rhythm = base_rhythm_service.get_beat_markers(bg_music)
     print(f"BPM: {rhythm['bpm']}, Beats Detected: {len(rhythm['beats'])}")
     
     print("\n🧪 STEP 2: NEURAL PLANNING (CINEMATIC MODE)")
@@ -46,7 +46,7 @@ async def verify_cinematic_intuition():
         print(f"Segment {i}: {seg['role']} | Emotion: {seg['emotion']} | Dur: {round(seg['duration'], 3)}s")
         # Verification Logic: Check if duration lands on a beat
         # total_time = sum(s['duration'] for s in plan['segments'][:i+1])
-        # nearest_beat = base_rhythm_engine.find_nearest_beat(total_time, rhythm['beats'])
+        # nearest_beat = base_rhythm_service.find_nearest_beat(total_time, rhythm['beats'])
         # if abs(total_time - nearest_beat) < 0.1:
         #     print(f"  ✅ Beat-Synced!")
 

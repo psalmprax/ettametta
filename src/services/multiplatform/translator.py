@@ -1,7 +1,7 @@
 import logging
 import json
 from typing import Any
-from src.services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_service
 from src.services.voiceover.service import base_voiceover_service
 
 class GlobalReachAdapter:
@@ -29,7 +29,7 @@ class GlobalReachAdapter:
         """
         
         try:
-            result = await base_intelligence_hub.chat(
+            result = await base_intelligence_service.chat(
                 prompt=prompt,
                 system_prompt=f"You are a native {target_lang} viral marketing expert. Output JSON.",
                 json_mode=True,
@@ -69,7 +69,7 @@ class GlobalReachAdapter:
         """
         
         try:
-            result = await base_intelligence_hub.chat(
+            result = await base_intelligence_service.chat(
                 prompt=prompt,
                 system_prompt=f"You are a native {target_lang} scriptwriter. You translate video scripts while preserving all metadata. Output JSON.",
                 json_mode=True,
@@ -90,4 +90,4 @@ class GlobalReachAdapter:
             self.logger.error(f"[GlobalReachAdapter] Script Translation Error: {e}")
             return segments
 
-base_global_adapter = GlobalReachAdapter()
+base_multiplatform_service = GlobalReachAdapter()

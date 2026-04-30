@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any
 import os
-from src.services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_service
 
 logger = logging.getLogger("NarrativePlanner")
 
@@ -62,7 +62,7 @@ class NarrativePlanner:
         """
         
         try:
-            result = await base_intelligence_hub.chat(
+            result = await base_intelligence_service.chat(
                 prompt=prompt,
                 system_prompt="You are a Story-Driven Attention Optimization Engine. Return ONLY valid JSON. Focus on maximizing Curiosity Gaps.",
                 session_id=session_id,
@@ -89,4 +89,4 @@ class NarrativePlanner:
             "visual_direction": "Professional Cinematic"
         }
 
-base_narrative_planner = NarrativePlanner()
+base_narrative_planner_service = NarrativePlanner()

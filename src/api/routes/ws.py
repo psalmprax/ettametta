@@ -9,7 +9,7 @@ import redis.asyncio as redis
 import redis as redis_sync
 from src.api.config import settings
 from src.services.analytics.signal_bus import base_signal_bus
-from src.services.analytics.drift_monitor import base_drift_monitor
+from src.services.analytics.drift_monitor import base_monitor_service
 
 router = APIRouter(prefix="/ws", tags=["websockets"])
 
@@ -133,7 +133,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
     )
     from sqlalchemy import select, func
     from src.api.utils.database import async_session_factory
-    from src.services.analytics.drift_monitor import base_drift_monitor
+    from src.services.analytics.drift_monitor import base_monitor_service
     from src.services.analytics.signal_bus import base_signal_bus
     import psutil
 
@@ -204,7 +204,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                 cpu_usage = psutil.cpu_percent(interval=None)
 
                 # 10/10 INTELLIGENCE BRIDGE: Pull real metrics from the Signal Bus
-                drift_report = base_drift_monitor.audit_system_honesty()
+                drift_report = base_monitor_service.audit_system_honesty()
 
                 # Use current topic if available, else global aggregate
                 features = base_signal_bus.get_feature_vector("global_trend") or [

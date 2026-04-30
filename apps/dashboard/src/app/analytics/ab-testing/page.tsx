@@ -26,6 +26,9 @@ import { withRealFallback } from "@/lib/real_first_utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 interface ABTest {
     id: string;
@@ -38,7 +41,7 @@ interface ABTest {
     target_metric: string;
     total_events: number;
     created_at: string;
-    winner_variant?: string;
+    winner_variant?: string | null;
     confidence_level?: number;
 }
 
@@ -198,24 +201,25 @@ export default function ABTestingStudio() {
                         </div>
 
                         <div className="flex items-center gap-6">
-                            <div className="surface-glass p-6 text-right">
+                            <Card variant="solid" className="p-6 text-right rounded-2xl border-white/5 bg-slate-900/40 backdrop-blur-md">
                                 <span className="font-data-mono text-[8px] text-zinc-600 uppercase block mb-1">Active Clusters</span>
                                 <span className="text-xl font-bold text-white tabular-nums tracking-tighter">{activeTests.length}</span>
-                            </div>
-                            <button 
+                            </Card>
+                            <Button 
                                 onClick={fetchData}
-                                className="action-primary h-20 px-12 text-[10px] tracking-widest uppercase font-bold"
+                                variant="primary"
+                                className="h-20 px-12 text-[10px] tracking-widest uppercase font-bold rounded-2xl"
                             >
                                 <RefreshCw className={cn("h-4 w-4 mr-3", isLoading && "animate-spin")} />
                                 Resync_Experiments
-                            </button>
+                            </Button>
                         </div>
                     </header>
 
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start">
                         {/* EXPERIMENT LIST */}
                         <div className="xl:col-span-4 space-y-8">
-                            <section className="surface-glass rim-light p-8 space-y-6">
+                            <Card variant="solid" className="p-8 space-y-6 rounded-2xl border-white/5 bg-slate-900/40 backdrop-blur-md">
                                 <h3 className="font-label-caps text-[10px] text-zinc-500 flex items-center gap-3 uppercase tracking-[0.2em]">
                                     <Terminal className="h-4 w-4 text-cyan-400" />
                                     Active Experiments
@@ -233,7 +237,7 @@ export default function ABTestingStudio() {
                                             key={test.id}
                                             onClick={() => setSelectedTestId(test.id)}
                                             className={cn(
-                                                "w-full p-6 text-left border transition-all group relative overflow-hidden",
+                                                "w-full p-6 text-left border transition-all group relative overflow-hidden rounded-xl",
                                                 selectedTestId === test.id 
                                                     ? "bg-cyan-400/5 border-cyan-400/30" 
                                                     : "bg-white/2 border-white/5 hover:border-white/10"
@@ -251,9 +255,9 @@ export default function ABTestingStudio() {
                                         </button>
                                     ))}
                                 </div>
-                            </section>
+                            </Card>
 
-                            <section className="surface-glass rim-light p-8 space-y-6 bg-zinc-950/40">
+                            <Card variant="solid" className="p-8 space-y-6 bg-slate-900/40 rounded-2xl border-white/5 backdrop-blur-md">
                                 <h3 className="font-label-caps text-[10px] text-zinc-500 uppercase tracking-[0.2em]">History_Log</h3>
                                 <div className="space-y-4">
                                     {completedTests.slice(0, 3).map(test => (
@@ -266,7 +270,7 @@ export default function ABTestingStudio() {
                                         </div>
                                     ))}
                                 </div>
-                            </section>
+                            </Card>
                         </div>
 
                         {/* DETAIL WORKSPACE */}
@@ -280,7 +284,7 @@ export default function ABTestingStudio() {
                                         exit={{ opacity: 0, x: -20 }}
                                         className="space-y-10"
                                     >
-                                        <section className="surface-glass rim-light p-12 space-y-12 relative overflow-hidden">
+                                        <Card variant="solid" className="p-12 space-y-12 relative overflow-hidden rounded-2xl border-white/5 bg-slate-900/40 backdrop-blur-md">
                                             <div className="absolute top-0 right-0 p-8">
                                                 <div className={cn(
                                                     "px-6 py-2 rounded-full text-[10px] font-bold tracking-widest border uppercase",
@@ -301,7 +305,7 @@ export default function ABTestingStudio() {
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                                                 {/* Variant A Card */}
-                                                <div className="p-8 bg-white/2 border border-white/5 space-y-8 relative overflow-hidden group">
+                                                <div className="p-8 bg-black/40 border border-white/5 space-y-8 relative overflow-hidden group rounded-2xl">
                                                     {testDetail.winner_variant === "A" && <div className="absolute top-0 right-0 h-1 w-24 bg-emerald-500" />}
                                                     <div className="flex justify-between items-start">
                                                         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Variant A (Control)</span>
@@ -324,7 +328,7 @@ export default function ABTestingStudio() {
                                                 </div>
 
                                                 {/* Variant B Card */}
-                                                <div className="p-8 bg-white/2 border border-white/5 space-y-8 relative overflow-hidden group">
+                                                <div className="p-8 bg-black/40 border border-white/5 space-y-8 relative overflow-hidden group rounded-2xl">
                                                     {testDetail.winner_variant === "B" && <div className="absolute top-0 right-0 h-1 w-24 bg-emerald-500" />}
                                                     <div className="flex justify-between items-start">
                                                         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Variant B (Challenger)</span>
@@ -351,7 +355,7 @@ export default function ABTestingStudio() {
                                             </div>
 
                                             {/* STATS HUD */}
-                                            <div className="p-10 bg-cyan-400/5 border-y border-cyan-400/20 flex flex-col md:flex-row items-center justify-between gap-10">
+                                            <div className="p-10 bg-cyan-400/5 border-y border-cyan-400/20 flex flex-col md:flex-row items-center justify-between gap-10 rounded-xl">
                                                 <div className="flex items-center gap-8">
                                                     <div className="h-24 w-24 rounded-full border-4 border-white/5 flex items-center justify-center relative">
                                                         <div className="absolute inset-2 border-2 border-cyan-400/30 rounded-full animate-pulse" />
@@ -365,27 +369,29 @@ export default function ABTestingStudio() {
                                                 </div>
 
                                                 <div className="flex gap-4">
-                                                    <button 
+                                                    <Button 
                                                         onClick={() => handleDetermineWinner(testDetail.id)}
                                                         disabled={isProcessing || testDetail.status === "COMPLETED"}
-                                                        className="px-10 py-5 bg-white text-black font-bold text-[10px] uppercase tracking-widest hover:bg-cyan-400 transition-all disabled:opacity-50"
+                                                        variant="primary"
+                                                        className="px-10 py-5 font-bold text-[10px] uppercase tracking-widest rounded-xl"
                                                     >
                                                         Determine Winner
-                                                    </button>
-                                                    <button 
+                                                    </Button>
+                                                    <Button 
                                                         onClick={() => handleTriggerEvolution(testDetail.content_id)}
                                                         disabled={isProcessing}
-                                                        className="px-10 py-5 bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 font-bold text-[10px] uppercase tracking-widest hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-3"
+                                                        variant="outline"
+                                                        className="px-10 py-5 border-cyan-400/30 text-cyan-400 font-bold text-[10px] uppercase tracking-widest hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-3 rounded-xl"
                                                     >
                                                         <Zap className="h-4 w-4" />
                                                         Trigger Flywheel
-                                                    </button>
+                                                    </Button>
                                                 </div>
                                             </div>
-                                        </section>
+                                        </Card>
 
                                         {/* ADVISORY HUD */}
-                                        <div className="surface-glass p-8 flex items-start gap-6 bg-purple-500/5 border-purple-500/10">
+                                        <Card variant="solid" className="p-8 flex items-start gap-6 bg-purple-500/5 border-purple-500/10 rounded-2xl">
                                             <Info className="h-5 w-5 text-purple-400 shrink-0 mt-1" />
                                             <div className="space-y-2">
                                                 <h6 className="text-[10px] font-bold text-white uppercase tracking-widest">Flywheel Advisory</h6>
@@ -393,7 +399,7 @@ export default function ABTestingStudio() {
                                                     Running an evolution cycle will automatically prune the bottom 70% of variants for this parent job and prepare the winner for immediate iteration across the propagation mesh.
                                                 </p>
                                             </div>
-                                        </div>
+                                        </Card>
                                     </motion.div>
                                 ) : (
                                     <div className="h-[800px] flex flex-col items-center justify-center space-y-10 opacity-40">

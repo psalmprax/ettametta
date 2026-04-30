@@ -64,4 +64,4 @@ class ResourceGovernor:
         return max(1, cores // 2)
 
 
-base_resource_governor = ResourceGovernor()
+base_governor_service = ResourceGovernor()

@@ -281,4 +281,4 @@ class XScanner:
         return []
 
 
-base_x_scanner = XScanner()
+base_x_service = XScanner()

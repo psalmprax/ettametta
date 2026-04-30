@@ -185,7 +185,7 @@ export default function PublishingPage() {
                         </div>
 
                         <div className="flex items-center gap-6">
-                            <div className="surface-glass rim-light p-6 flex flex-col items-end">
+                            <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 p-6 flex flex-col items-end rounded-2xl">
                                 <span className="font-data-mono text-[8px] text-zinc-600 mb-1">TOTAL_EGRESS</span>
                                 <span className="text-xl font-bold text-white tabular-nums tracking-tighter">
                                     {history.length} ASSETS
@@ -193,7 +193,7 @@ export default function PublishingPage() {
                             </div>
                             <button 
                                 onClick={() => setIsDeployModalOpen(true)}
-                                className="action-primary h-20 px-12  text-xs tracking-tighter flex items-center gap-4"
+                                className="action-primary h-20 px-12 text-xs tracking-tighter flex items-center gap-4 rounded-2xl"
                             >
                                 <ArrowUpRight className="h-4 w-4" />
                                 MANUAL_BROADCAST
@@ -205,7 +205,7 @@ export default function PublishingPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
                         <motion.button 
                             onClick={() => setIsPlatformModalOpen(true)}
-                            className="surface-glass rim-light p-8 flex flex-col items-center justify-center gap-4 group hover:rim-glow-blue transition-all border-dashed border-white/10"
+                            className="bg-slate-900/40 backdrop-blur-md rounded-2xl border border-dashed border-white/10 p-8 flex flex-col items-center justify-center gap-4 group hover:border-blue-400/30 transition-all"
                         >
                             <div className="h-14 w-14 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <Plus className="h-8 w-8 text-zinc-700 group-hover:text-blue-400" />
@@ -221,7 +221,7 @@ export default function PublishingPage() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.1 }}
-                                    className="surface-glass rim-light p-8 space-y-6 hover:rim-glow-blue transition-all group"
+                                    className="bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/5 p-8 space-y-6 hover:border-blue-400/30 transition-all group"
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="h-10 w-10 bg-blue-500/10 border border-blue-500/20 flex items-center justify-center rounded-xl group-hover:bg-blue-500 group-hover:text-black transition-all">
@@ -258,7 +258,7 @@ export default function PublishingPage() {
                                 <p className="font-data-mono text-zinc-500 text-[9px]">LIVE_GLOBAL_DISTRIBUTION_LOG</p>
                             </div>
                             <div className="flex gap-4">
-                                <div className="surface-glass px-6 py-3 flex items-center gap-3">
+                                <div className="bg-slate-900/40 backdrop-blur-md px-6 py-3 flex items-center gap-3 rounded-2xl border border-white/5">
                                     <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]" />
                                     <span className="font-label-caps text-[8px] text-emerald-500 uppercase tracking-widest">99.4% DELIVERY</span>
                                 </div>
@@ -283,10 +283,10 @@ export default function PublishingPage() {
                                         initial={{ opacity: 0, x: -20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: idx * 0.05 }}
-                                        className="surface-glass rim-light p-10 flex items-start gap-8 group hover:rim-glow-blue transition-all relative overflow-hidden"
+                                        className="bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/5 p-10 flex items-start gap-8 group hover:border-blue-400/30 transition-all relative overflow-hidden"
                                     >
                                         <div className="absolute inset-0 scanline opacity-5" />
-                                        <div className="h-20 w-20 bg-blue-500/5 border border-blue-500/10 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-black transition-all shrink-0">
+                                        <div className="h-20 w-20 bg-blue-500/5 border border-blue-500/10 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-black transition-all shrink-0 rounded-2xl">
                                             <Play className="h-8 w-8 text-blue-400 group-hover:text-black fill-current" />
                                         </div>
                                         <div className="flex-1 space-y-4 min-w-0">
@@ -308,10 +308,10 @@ export default function PublishingPage() {
                                                 </div>
                                             </div>
                                             <div className="pt-6 flex gap-4">
-                                                <button className="bg-white/2 border border-white/5 hover:border-blue-500/30 text-zinc-600 hover:text-white px-6 py-3 font-label-caps text-[8px] uppercase tracking-widest transition-all">
+                                                <button className="bg-white/2 border border-white/5 hover:border-blue-500/30 text-zinc-600 hover:text-white px-6 py-3 font-label-caps text-[8px] uppercase tracking-widest transition-all rounded-xl">
                                                     SYNC_TELEMETRY
                                                 </button>
-                                                <a href={post.url} target="_blank" className="bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-black px-6 py-3 font-label-caps text-[8px] uppercase tracking-widest transition-all">
+                                                <a href={post.url} target="_blank" className="bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-black px-6 py-3 font-label-caps text-[8px] uppercase tracking-widest transition-all rounded-xl">
                                                     OPEN_LINK
                                                 </a>
                                             </div>
