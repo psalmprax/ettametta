@@ -32,7 +32,14 @@ import {
     CheckCircle,
     XCircle,
     RefreshCw,
-    Terminal
+    Terminal,
+    FileText,
+    AlertCircle,
+    Monitor,
+    Cpu,
+    HardDrive,
+    Search,
+    ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
@@ -125,6 +132,11 @@ export default function AdminSettingsPage() {
     }>>([]);
     const [isScanning, setIsScanning] = useState(false);
     const [securityLoading, setSecurityLoading] = useState(false);
+    
+    // Admin Telemetry & Audits state
+    const [systemStatus, setSystemStatus] = useState<any>(null);
+    const [adminAudits, setAdminAudits] = useState<any[]>([]);
+    const [adminLoading, setAdminLoading] = useState(false);
 
     // Redirect if not admin
     useEffect(() => {
@@ -270,6 +282,38 @@ export default function AdminSettingsPage() {
         setIsScanning(false);
     };
 
+    const fetchSystemStatus = async () => {
+        await withRealFallback(
+            async () => {
+                const token = getAuthToken();
+                if (!token) return;
+                return fetch(`${API_BASE}/admin/system/status`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: null,
+                onSuccess: (data: any) => setSystemStatus(data)
+            }
+        );
+    };
+
+    const fetchAdminAudits = async () => {
+        await withRealFallback(
+            async () => {
+                const token = getAuthToken();
+                if (!token) return;
+                return fetch(`${API_BASE}/admin/audits`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+            },
+            {
+                fallback: [],
+                onSuccess: (data: any) => setAdminAudits(data)
+            }
+        );
+    };
+
     useEffect(() => {
         if (user && user.role === "admin") {
             fetchSettings();
@@ -280,6 +324,13 @@ export default function AdminSettingsPage() {
         if (activeTab === "Security" && (user?.role === "admin" || user?.role === "super_admin")) {
             setSecurityLoading(true);
             Promise.all([fetchSecurityStatus(), fetchSecurityEvents()]).finally(() => setSecurityLoading(false));
+        }
+        if (activeTab === "Infrastructure" && (user?.role === "admin" || user?.role === "super_admin")) {
+            fetchSystemStatus();
+        }
+        if (activeTab === "Audits" && (user?.role === "admin" || user?.role === "super_admin")) {
+            setAdminLoading(true);
+            fetchAdminAudits().finally(() => setAdminLoading(false));
         }
     }, [activeTab, user]);
 
@@ -307,6 +358,7 @@ export default function AdminSettingsPage() {
         { id: "Infrastructure", label: "Infrastructure", icon: Server },
         { id: "WhatsApp", label: "WhatsApp", icon: Bot },
         { id: "Security", label: "Security", icon: Shield },
+        { id: "Audits", label: "Admin Audits", icon: FileText },
         { id: "Environment", label: "Protocol", icon: Terminal },
     ];
 
@@ -716,6 +768,21 @@ export default function AdminSettingsPage() {
                                         />
                                     </div>
                                 </div>
+
+                                {systemStatus && (
+                                    <div className="pt-10 border-t border-white/5 space-y-6">
+                                        <div className="flex items-center gap-3">
+                                            <Activity className="h-4 w-4 text-emerald-500" />
+                                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Live Node Telemetry</h4>
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                            <StatusCard icon={Cpu} label="CPU Load" value={systemStatus.cpu_load} color="text-cyan-400" />
+                                            <StatusCard icon={HardDrive} label="Memory" value={systemStatus.memory_usage} color="text-violet-400" />
+                                            <StatusCard icon={Activity} label="Latency" value={systemStatus.latency} color="text-emerald-400" />
+                                            <StatusCard icon={Monitor} label="Uptime" value={systemStatus.uptime} color="text-amber-400" />
+                                        </div>
+                                    </div>
+                                )}
                             </section>
                         )}
 
@@ -1030,6 +1097,72 @@ export default function AdminSettingsPage() {
                             </div>
                         )}
 
+                        {activeTab === "Audits" && (
+                            <div className="space-y-8">
+                                <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-6">
+                                            <div className="h-16 w-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
+                                                <FileText className="h-8 w-8 text-cyan-400" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">Admin <span className="text-hollow">Audits</span></h3>
+                                                <p className="text-zinc-500 text-sm">System-wide event logs and administrative actions.</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setAdminLoading(true);
+                                                fetchAdminAudits().finally(() => setAdminLoading(false));
+                                            }}
+                                            className="text-zinc-500 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5"
+                                        >
+                                            <RefreshCw className={cn("h-4 w-4", adminLoading && "animate-spin")} />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4 pt-6 border-t border-white/5">
+                                        {adminLoading ? (
+                                            <div className="py-20 flex items-center justify-center">
+                                                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                                            </div>
+                                        ) : adminAudits.length === 0 ? (
+                                            <div className="py-20 text-center text-zinc-600">
+                                                <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                                                <p className="font-bold uppercase tracking-widest text-xs">No administrative audits found</p>
+                                            </div>
+                                        ) : (
+                                            <div className="glass-card divide-y divide-white/5 rounded-2xl overflow-hidden border border-white/5">
+                                                {adminAudits.map((audit, idx) => (
+                                                    <div key={audit.id ?? idx} className="p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors group">
+                                                        <div className="flex items-center gap-6">
+                                                            <div className={cn(
+                                                                "h-10 w-10 rounded-xl flex items-center justify-center",
+                                                                audit.status === "SUCCESS" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+                                                            )}>
+                                                                {audit.status === "SUCCESS" ? <CheckCircle className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-sm font-bold text-white uppercase">{audit.action || "System Action"}</h4>
+                                                                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">{audit.performer || "SYSTEM"}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right flex items-center gap-6">
+                                                            <div className="hidden md:block">
+                                                                <p className="text-[10px] text-zinc-400 font-mono">{audit.timestamp || new Date().toISOString()}</p>
+                                                                <p className="text-[9px] text-zinc-600 uppercase tracking-tight">{audit.ip_address || "Internal"}</p>
+                                                            </div>
+                                                            <ChevronRight className="h-4 w-4 text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+                            </div>
+                        )}
+
                         {activeTab === "Environment" && (
                             <EnvManager />
                         )}
@@ -1104,5 +1237,19 @@ function ToggleSwitch({ label, description, checked, onChange }: {
                 </div>
             </div>
         </button>
+    );
+}
+
+function StatusCard({ icon: Icon, label, value, color }: any) {
+    return (
+        <div className="p-6 rounded-2xl bg-zinc-950/50 border border-white/5 space-y-3">
+            <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+                <Icon className="h-3 w-3" />
+                {label}
+            </div>
+            <div className={cn("text-xl font-bold tabular-nums", color)}>
+                {value || "---"}
+            </div>
+        </div>
     );
 }

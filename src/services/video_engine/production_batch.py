@@ -26,7 +26,20 @@ class ProductionBatchRenderer:
         """Worker function for parallel variant rendering"""
         video_path = variant_data["output_path"]
         cmd = variant_data["cmd"]
+        use_gpu = variant_data.get("use_gpu", False)
         
+        # Standard: Hardening - HW Acceleration (NVENC)
+        if use_gpu:
+            # Insert -hwaccel cuda before -i and change encoder to h264_nvenc
+            # This is a simplified transformation for the example
+            if "-i" in cmd:
+                i_idx = cmd.index("-i")
+                cmd = cmd[:i_idx] + ["-hwaccel", "cuda"] + cmd[i_idx:]
+            
+            # Replace libx264 with h264_nvenc
+            cmd = [c.replace("libx264", "h264_nvenc") for c in cmd]
+            logger.info(f"⚡ [ProductionBatch] Using GPU Acceleration for: {video_path}")
+
         try:
             logger.info(f"🏗️  [ProductionBatch] Starting render: {video_path}")
             # Run FFmpeg command
