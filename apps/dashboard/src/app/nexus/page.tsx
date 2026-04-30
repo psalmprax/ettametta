@@ -40,7 +40,8 @@ import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ClusterManager } from "@/components/ui/ClusterManager";
-import { BlueprintBuilder } from "@/components/ui/BlueprintBuilder";
+import { NeuralCanvas } from "@/components/ui/NeuralCanvas";
+import { CommandPod } from "@/components/ui/CommandPod";
 
 import { Blueprint, NexusJob, Persona } from "@/lib/types";
 
@@ -232,12 +233,33 @@ export default function NexusPage() {
         setShowBlueprintBuilder(true);
     };
 
-    const handleBlueprintCreated = (newBlueprint: Blueprint) => {
-        setBlueprints(prev => [...prev, newBlueprint]);
-        setActiveBlueprint(newBlueprint);
-        toast.success("Recipe Created", {
-            description: `"${newBlueprint.name}" is now available in the neural cluster.`
-        });
+    const handleBlueprintCreated = async (newBlueprint: Blueprint) => {
+        const token = getAuthToken();
+        if (!token) return;
+
+        await withRealFallback<Blueprint>(
+            () => fetch(`${API_BASE}/nexus/blueprints`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(newBlueprint)
+            }),
+            {
+                fallback: newBlueprint,
+                onSuccess: (savedBlueprint) => {
+                    setBlueprints(prev => [...prev, savedBlueprint]);
+                    setActiveBlueprint(savedBlueprint);
+                    toast.success("Architecture Committed", {
+                        description: `"${savedBlueprint.name}" is now persistently indexed.`
+                    });
+                },
+                onFallback: (err) => {
+                    toast.error("Cluster Desync", { description: err.message });
+                }
+            }
+        );
     };
 
     const handleInspectResult = (job: NexusJob) => {
@@ -485,6 +507,12 @@ export default function NexusPage() {
                             <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Tier Access</p>
                             <p className="text-white font-bold uppercase tracking-tight">{userTier} CLUSTER</p>
                         </div>
+                        <a 
+                            href="/nexus/workforce"
+                            className="surface-glass rim-light h-16 px-10 flex items-center justify-center text-[10px] font-bold tracking-widest hover:bg-purple-500/10 transition-all border border-white/5 uppercase"
+                        >
+                            WORKFORCE_HUB
+                        </a>
                     </div>
                 </div>
 
@@ -1032,60 +1060,39 @@ export default function NexusPage() {
                         {/* Capabilities Display */}
                         <div className="space-y-6">
                             {/* Workforce Cluster Health Module (Phase 4) */}
-                            {workforceReport && (
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="glass-card p-8 space-y-6 bg-linear-to-br from-black to-zinc-950 border border-white/5 rounded-4xl relative overflow-hidden"
-                                >
-                                    <div className="absolute top-0 right-0 p-4">
-                                        <div className={cn(
-                                            "h-2 w-2 rounded-full animate-pulse shadow-[0_0_10px_rgba(0,0,0,0.5)]",
-                                            workforceReport.status === 'healthy' ? "bg-emerald-500 shadow-emerald-500/50" : "bg-amber-500 shadow-amber-500/50"
-                                        )} />
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-4">
-                                        <div className={cn(
-                                            "h-12 w-12 rounded-2xl flex items-center justify-center border",
-                                            workforceReport.status === 'healthy' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : "bg-amber-500/10 border-amber-500/20 text-amber-500"
-                                        )}>
-                                            <Activity className="h-6 w-6" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold text-white tracking-tight uppercase">Workforce Cluster</h3>
-                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                                                Health: <span className={workforceReport.status === 'healthy' ? "text-emerald-500" : "text-amber-500"}>{workforceReport.status}</span>
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4 pt-2">
-                                        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
-                                            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Dependency Inventory</p>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {Object.entries(workforceReport.report.status || {}).map(([pkg, installed]: [any, any]) => (
-                                                    <div key={pkg} className="flex items-center gap-2">
-                                                        <div className={cn("h-1.5 w-1.5 rounded-full", installed ? "bg-emerald-500" : "bg-rose-500")} />
-                                                        <span className={cn("text-[10px] uppercase font-bold", installed ? "text-zinc-400" : "text-rose-500")}>{pkg}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {workforceReport.report.impact && Object.keys(workforceReport.report.impact).length > 0 && (
-                                            <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/10 space-y-2">
-                                                <div className="flex items-center gap-2 text-rose-500">
-                                                    <AlertCircle className="h-3 w-3" />
-                                                    <p className="text-[9px] font-bold uppercase tracking-widest">Degraded Capabilities</p>
-                                                </div>
-                                                {Object.values(workforceReport.report.impact || {}).map((msg: any, idx) => (
-                                                    <p key={idx} className="text-[10px] text-zinc-500 leading-tight">• {msg}</p>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </motion.div>
+                            {/* Workforce Cluster Health Module (Elite Visuals) */}
+                            {(telemetry?.signals || workforceReport) && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {telemetry?.signals ? (
+                                        telemetry.signals.map((sig: any) => (
+                                            <CommandPod 
+                                                key={sig.id}
+                                                name={sig.id.replace(/_/g, ' ')}
+                                                status={sig.status === 'HEALTHY' || sig.status === 'CLOSED' || sig.status === 'OPERATIONAL' ? "nominal" : "degraded"}
+                                                load={Math.min(Math.round((telemetry.load_avg || 0.4) * 100), 100)}
+                                                circuitBreaker={sig.id === 'GPU_Cluster' ? (sig.status.toLowerCase() === 'open' ? 'open' : 'closed') : "closed"}
+                                                description={`Live telemetry signal from the ${sig.id} cluster node.`}
+                                            />
+                                        ))
+                                    ) : (
+                                        <>
+                                            <CommandPod 
+                                                name="Neural Gateway"
+                                                status={workforceReport?.status === 'healthy' ? "nominal" : "degraded"}
+                                                load={workforceReport?.status === 'healthy' ? 42 : 89}
+                                                circuitBreaker={workforceReport?.circuit_breaker as any || "closed"}
+                                                description="Handles ingestion and API protocol stabilization."
+                                            />
+                                            <CommandPod 
+                                                name="Synthesis Cluster"
+                                                status={workforceReport?.status === 'healthy' ? "nominal" : "critical"}
+                                                load={workforceReport?.status === 'healthy' ? 24 : 95}
+                                                circuitBreaker={workforceReport?.circuit_breaker as any || "closed"}
+                                                description="Video rendering and AI pattern synthesis engine."
+                                            />
+                                        </>
+                                    )}
+                                </div>
                             )}
 
                             <div className="glass-card p-8 space-y-6 bg-black border border-white/5 rounded-4xl">
@@ -1126,12 +1133,16 @@ export default function NexusPage() {
                 </div>
             </div>
 
-            {/* Blueprint Builder Modal */}
+            {/* Neural Canvas Studio Mode */}
             {showBlueprintBuilder && (
-                <BlueprintBuilder
+                <NeuralCanvas
                     isOpen={showBlueprintBuilder}
                     onClose={() => setShowBlueprintBuilder(false)}
-                    onSuccess={handleBlueprintCreated}
+                    onSave={(newBlueprint) => {
+                        handleBlueprintCreated(newBlueprint);
+                        setShowBlueprintBuilder(false);
+                    }}
+                    initialBlueprint={activeBlueprint || undefined}
                 />
             )}
 

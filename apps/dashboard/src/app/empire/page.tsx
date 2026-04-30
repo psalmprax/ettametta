@@ -423,21 +423,42 @@ export default function EmpirePage() {
                         <h1 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-white leading-none">Empire <span className="text-cyan-400">Registry</span></h1>
                         <p className="text-zinc-600 font-bold uppercase tracking-[0.2em] text-[10px]">Neural Synchronization Active</p>
                     </div>
-                    <button
-                        onClick={fetchSentinel}
-                        disabled={isRefreshing}
-                        className="glass-card px-8 py-5 rounded-full flex items-center gap-4 group hover:border-cyan-400/50 transition-all font-bold uppercase tracking-[0.2em] text-[10px] shadow-glow-cyan/5"
-                    >
-                        <RefreshCw className={cn("h-4 w-4 text-zinc-600 group-hover:text-cyan-400 transition-colors", isRefreshing && "animate-spin")} />
-                        <span className="text-zinc-600 group-hover:text-white">Refresh_Sync</span>
-                    </button>
+                    <div className="flex items-center gap-6">
+                        <button
+                            onClick={fetchSentinel}
+                            disabled={isRefreshing}
+                            className="glass-card px-8 py-5 rounded-full flex items-center gap-4 group hover:border-cyan-400/50 transition-all font-bold uppercase tracking-[0.2em] text-[10px] shadow-glow-cyan/5"
+                        >
+                            <RefreshCw className={cn("h-4 w-4 text-zinc-600 group-hover:text-cyan-400 transition-colors", isRefreshing && "animate-spin")} />
+                            <span className="text-zinc-600 group-hover:text-white">Refresh_Sync</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                toast.promise(
+                                    fetch(`${API_BASE}/ab-testing/evolution/global`, {
+                                        method: "POST",
+                                        headers: { Authorization: `Bearer ${getAuthToken()}` }
+                                    }),
+                                    {
+                                        loading: "Triggering Global Flywheel...",
+                                        success: "Global Evolution Sequence Active",
+                                        error: "Evolution Sync Error"
+                                    }
+                                );
+                            }}
+                            className="action-primary h-20 px-12 text-[10px] tracking-widest uppercase font-bold"
+                        >
+                            <Zap className="h-4 w-4 mr-3" />
+                            Trigger_Flywheel_Evolution
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     {/* Algorithm Sentinel Monitor */}
                     <div className="space-y-8">
                         <div className="glass-card space-y-8 relative overflow-hidden h-fit rounded-[2.5rem] border-white/5">
-                            <div className="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(0,251,251,0.03),rgba(0,0,0,0),rgba(0,251,251,0.03))] bg-[length:100%_4px,3px_100%]" />
+                            <div className="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(0,251,251,0.03),rgba(0,0,0,0),rgba(0,251,251,0.03))] bg-size-[100%_4px,3px_100%]" />
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
                                     <h3 className="font-bold uppercase tracking-tight text-white">Algorithm Sentinel</h3>
@@ -688,7 +709,7 @@ export default function EmpirePage() {
                                     {affiliateLinks.length > 0 ? (
                                         <div className="space-y-3">
                                             {affiliateLinks.map((link: any, i: number) => (
-                                                <div key={link.id || link._id || i} className="group p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1 relative">
+                                                <div key={link.id || link._id || i} className="group p-3 rounded-xl bg-white/2 border border-white/5 space-y-1 relative">
                                                     <p className="text-[10px] font-bold text-white uppercase tracking-wider">{link.product_name}</p>
                                                     <p className="text-[9px] text-zinc-500 truncate">{link.link}</p>
                                                     {link.cta_text && <p className="text-[9px] text-amber-500 font-bold">{link.cta_text}</p>}

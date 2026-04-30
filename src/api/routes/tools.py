@@ -257,3 +257,21 @@ async def generate_seo_content(request: dict):
     return success_response(data=result)
 
 
+@router.get("/nexus/workforce/status")
+async def nexus_workforce_status():
+    """Unified status check for Workforce Hub services"""
+    return success_response(
+        data={
+            "crewai": {
+                "enabled": crewai_service.enabled,
+                "status": "ONLINE" if crewai_service.enabled else "OFFLINE",
+                "message": "CrewAI integration active" if crewai_service.enabled else "Set ENABLE_CREWAI=true to enable",
+            },
+            "interpreter": {
+                "enabled": interpreter_service.enabled,
+                "status": "SECURE" if interpreter_service.enabled else "OFFLINE",
+                "message": "Open Interpreter active" if interpreter_service.enabled else "Set ENABLE_INTERPRETER=true to enable",
+            },
+            "timestamp": os.getloadavg()[0] # Example health metric
+        }
+    )

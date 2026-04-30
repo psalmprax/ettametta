@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { getAuthToken } from "@/lib/auth_utils";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
 
 export default function AutonomousPage() {
     const [isRunning, setIsRunning] = useState(false);
@@ -160,7 +161,7 @@ export default function AutonomousPage() {
     };
 
     const StatusCard = ({ icon: Icon, label, value, color }: any) => (
-        <div className="glass-card p-6 flex items-center gap-5 transition-all hover:bg-white/[0.02]">
+        <div className="glass-card p-6 flex items-center gap-5 transition-all hover:bg-white/2">
             <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center border", color)}>
                 <Icon className="h-6 w-6" />
             </div>
@@ -173,7 +174,8 @@ export default function AutonomousPage() {
 
     return (
         <DashboardLayout>
-            <div className="space-y-12 pb-24">
+            <HighVelocityTicker />
+            <div className="space-y-12 pb-24 mt-10 section-container">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                     <div className="space-y-3">
@@ -262,7 +264,7 @@ export default function AutonomousPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     {/* Visual Logic Flow */}
                     <div className="lg:col-span-2 space-y-8">
-                        <div className="glass-card aspect-[16/10] rounded-[3rem] p-12 flex flex-col items-center justify-center relative overflow-hidden bg-white/[0.01]">
+                        <div className="glass-card aspect-16/10 rounded-4xl p-12 flex flex-col items-center justify-center relative overflow-hidden bg-white/1">
                             <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
 
                             <div className="flex items-center gap-12 relative">
@@ -287,7 +289,7 @@ export default function AutonomousPage() {
                                 <Activity className="h-4 w-4 text-primary neon-glow" />
                                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-white">Autonomous Intelligence Oracle</h3>
                             </div>
-                            <div className="glass-card p-8 border-primary/20 bg-primary/[0.02] relative overflow-hidden">
+                            <div className="glass-card p-8 border-primary/20 bg-primary/2 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-4">
                                      <div className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
                                 </div>
@@ -322,7 +324,7 @@ export default function AutonomousPage() {
                     {/* Live Console Hub */}
                     <div className="lg:col-span-1 flex flex-col gap-8">
                         <div className="glass-card rounded-[2.5rem] flex-1 flex flex-col overflow-hidden bg-black/40 border-white/5">
-                            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/2">
                                 <div className="flex items-center gap-3">
                                     <Terminal className="h-4 w-4 text-primary" />
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-white">System Console</span>
@@ -368,7 +370,7 @@ export default function AutonomousPage() {
                         </div>
 
                         {/* Optimization Card */}
-                        <div className="glass-card p-8 rounded-[2rem] bg-emerald-500/5 border-emerald-500/10 space-y-4">
+                        <div className="glass-card p-8 rounded-4xl bg-emerald-500/5 border-emerald-500/10 space-y-4">
                             <div className="flex items-center gap-3">
                                 <Sparkles className="h-4 w-4 text-emerald-500" />
                                 <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500">Autonomous Insight</span>
@@ -397,12 +399,12 @@ function LogicNode({ icon: Icon, label, active, pulse, delay = 0 }: any) {
             className="flex flex-col items-center gap-4"
         >
             <div className={cn(
-                "h-20 w-20 rounded-[1.5rem] flex items-center justify-center transition-all duration-700 relative",
+                "h-20 w-20 rounded-3xl flex items-center justify-center transition-all duration-700 relative",
                 active ? "bg-emerald-500 text-black shadow-[0_0_40px_rgba(16,185,129,0.4)]" : "bg-zinc-950 text-zinc-800 border border-white/5"
             )}>
                 <Icon className="h-8 w-8" />
                 {active && pulse && (
-                    <div className="absolute inset-0 rounded-[1.5rem] border-2 border-emerald-500 animate-ping opacity-20" />
+                    <div className="absolute inset-0 rounded-3xl border-2 border-emerald-500 animate-ping opacity-20" />
                 )}
             </div>
             <span className={cn(
