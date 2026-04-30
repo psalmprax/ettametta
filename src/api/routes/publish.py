@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Request, Depends, status, Query
 from fastapi.responses import RedirectResponse
 from src.services.optimization.service import base_optimization_service
-from src.services.optimization.youtube_publisher import base_youtube_publisher
-from src.services.optimization.tiktok_publisher import base_tiktok_publisher
+from src.services.optimization.youtube_publisher import base_youtube_service
+from src.services.optimization.tiktok_publisher import base_tiktok_service
 from src.services.optimization.models import PostMetadata
 from src.services.optimization.auth import token_manager
 from src.services.optimization.scheduler import smart_scheduler
@@ -377,43 +377,43 @@ async def retry_publish(
         # Upload based on platform
         url = None
         if platform_key == "youtube":
-            url = await base_youtube_publisher.upload_video(
+            url = await base_youtube_service.upload_video(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "tiktok":
-            from src.services.optimization.tiktok_publisher import base_tiktok_publisher
+            from src.services.optimization.tiktok_publisher import base_tiktok_service
 
-            url = await base_tiktok_publisher.upload_video(
+            url = await base_tiktok_service.upload_video(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "instagram":
             from src.services.optimization.instagram_publisher import (
-                base_instagram_publisher,
+                base_instagram_service,
             )
 
-            url = await base_instagram_publisher.upload_video(
+            url = await base_instagram_service.upload_video(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "facebook":
             from src.services.optimization.facebook_publisher import (
-                base_facebook_publisher,
+                base_facebook_service,
             )
 
-            url = await base_facebook_publisher.upload_video(
+            url = await base_facebook_service.upload_video(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "x":
-            from src.services.optimization.x_publisher import base_x_publisher
+            from src.services.optimization.x_publisher import base_x_service
 
-            url = await base_x_publisher.upload_video(
+            url = await base_x_service.upload_video(
                 video_path, metadata, user_id=current_user.id
             )
         elif platform_key == "linkedin":
             from src.services.optimization.linkedin_publisher import (
-                base_linkedin_publisher,
+                base_linkedin_service,
             )
 
-            url = await base_linkedin_publisher.upload_video(
+            url = await base_linkedin_service.upload_video(
                 video_path, metadata, user_id=current_user.id
             )
 
@@ -962,7 +962,7 @@ async def get_content_comments(
         comments = []
 
         if platform_key == "tiktok":
-            comments = await base_tiktok_publisher.get_comments(
+            comments = await base_tiktok_service.get_comments(
                 platform_id, user_id=current_user.id, limit=limit
             )
         elif platform_key == "youtube":
@@ -1059,11 +1059,11 @@ async def sync_content_metrics(
         metrics = {"views": 0, "likes": 0, "comments": 0, "shares": 0}
 
         if platform_key == "youtube":
-            metrics = await base_youtube_publisher.get_metrics(
+            metrics = await base_youtube_service.get_metrics(
                 platform_id, user_id=current_user.id
             )
         elif platform_key == "tiktok":
-            metrics = await base_tiktok_publisher.get_metrics(
+            metrics = await base_tiktok_service.get_metrics(
                 platform_id, user_id=current_user.id
             )
 
@@ -1285,12 +1285,12 @@ async def publish_video(
         # 2. Affiliate Injection
         if request.inject_monetization:
             from src.api.utils.models import AffiliateLinkDB
-            from src.services.monetization.service import base_monetization_engine
+            from src.services.monetization.service import base_monetization_service
 
             # First, try AI-powered recommendations
             try:
                 script_text = metadata.description or ""
-                recommendations = await base_monetization_engine.recommend_products(
+                recommendations = await base_monetization_service.recommend_products(
                     request.niche, script_text
                 )
 
@@ -1444,16 +1444,16 @@ async def publish_video(
 
         # === AUTHENTICATED - PROCEED WITH UPLOAD ===
         if platform_key == "youtube":
-            url = await base_youtube_publisher.upload_video(
+            url = await base_youtube_service.upload_video(
                 request.video_path,
                 metadata,
                 user_id=current_user.id,
                 account_id=request.account_id,
             )
         elif platform_key == "tiktok":
-            from src.services.optimization.tiktok_publisher import base_tiktok_publisher
+            from src.services.optimization.tiktok_publisher import base_tiktok_service
 
-            url = await base_tiktok_publisher.upload_video(
+            url = await base_tiktok_service.upload_video(
                 request.video_path,
                 metadata,
                 user_id=current_user.id,
@@ -1461,10 +1461,10 @@ async def publish_video(
             )
         elif platform_key == "instagram":
             from src.services.optimization.instagram_publisher import (
-                base_instagram_publisher,
+                base_instagram_service,
             )
 
-            url = await base_instagram_publisher.upload_video(
+            url = await base_instagram_service.upload_video(
                 request.video_path,
                 metadata,
                 user_id=current_user.id,
@@ -1472,19 +1472,19 @@ async def publish_video(
             )
         elif platform_key == "facebook":
             from src.services.optimization.facebook_publisher import (
-                base_facebook_publisher,
+                base_facebook_service,
             )
 
-            url = await base_facebook_publisher.upload_video(
+            url = await base_facebook_service.upload_video(
                 request.video_path,
                 metadata,
                 user_id=current_user.id,
                 account_id=request.account_id,
             )
         elif platform_key == "x":
-            from src.services.optimization.x_publisher import base_x_publisher
+            from src.services.optimization.x_publisher import base_x_service
 
-            url = await base_x_publisher.upload_video(
+            url = await base_x_service.upload_video(
                 request.video_path,
                 metadata,
                 user_id=current_user.id,
@@ -1492,10 +1492,10 @@ async def publish_video(
             )
         elif platform_key == "linkedin":
             from src.services.optimization.linkedin_publisher import (
-                base_linkedin_publisher,
+                base_linkedin_service,
             )
 
-            url = await base_linkedin_publisher.upload_video(
+            url = await base_linkedin_service.upload_video(
                 request.video_path,
                 metadata,
                 user_id=current_user.id,
@@ -1630,47 +1630,47 @@ async def publish_multi_platform(
                     url = None
                     try:
                         if platform_key == "youtube":
-                            url = await base_youtube_publisher.upload_video(
+                            url = await base_youtube_service.upload_video(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "tiktok":
                             from src.services.optimization.tiktok_publisher import (
-                                base_tiktok_publisher,
+                                base_tiktok_service,
                             )
 
-                            url = await base_tiktok_publisher.upload_video(
+                            url = await base_tiktok_service.upload_video(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "instagram":
                             from src.services.optimization.instagram_publisher import (
-                                base_instagram_publisher,
+                                base_instagram_service,
                             )
 
-                            url = await base_instagram_publisher.upload_video(
+                            url = await base_instagram_service.upload_video(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "facebook":
                             from src.services.optimization.facebook_publisher import (
-                                base_facebook_publisher,
+                                base_facebook_service,
                             )
 
-                            url = await base_facebook_publisher.upload_video(
+                            url = await base_facebook_service.upload_video(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "x":
                             from src.services.optimization.x_publisher import (
-                                base_x_publisher,
+                                base_x_service,
                             )
 
-                            url = await base_x_publisher.upload_video(
+                            url = await base_x_service.upload_video(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                         elif platform_key == "linkedin":
                             from src.services.optimization.linkedin_publisher import (
-                                base_linkedin_publisher,
+                                base_linkedin_service,
                             )
 
-                            url = await base_linkedin_publisher.upload_video(
+                            url = await base_linkedin_service.upload_video(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                     except Exception as e:

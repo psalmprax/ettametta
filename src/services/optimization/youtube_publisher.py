@@ -122,4 +122,4 @@ class YouTubePublisher(SocialPublisher):
         return await token_manager.get_token("youtube", user_id=user_id) is not None
 
 
-base_youtube_publisher = YouTubePublisher()
+base_youtube_service = YouTubePublisher()

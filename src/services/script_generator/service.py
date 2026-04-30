@@ -3,7 +3,7 @@ import json
 import logging
 import time
 from typing import Any
-from src.services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_service
 from src.api.config import settings
 from tenacity import (
     retry,
@@ -32,7 +32,7 @@ class ScriptGenerator:
     async def _call_ai(self, prompt: str, session_id: str | None = None) -> str:
         """Centralized AI call through IntelligenceHub"""
         try:
-            result = await base_intelligence_hub.chat(
+            result = await base_intelligence_service.chat(
                 prompt=prompt,
                 system_prompt="You are a Viral Content Narrator. You bridge and narrate relationships between videos for high-retention content. Output JSON ONLY.",
                 session_id=session_id,
@@ -139,7 +139,7 @@ class ScriptGenerator:
             return ""
 
         try:
-            result = await base_intelligence_hub.chat(
+            result = await base_intelligence_service.chat(
                 prompt=prompt,
                 system_prompt=system_prompt
             )
@@ -187,4 +187,4 @@ class ScriptGenerator:
             "hashtags": [f"#{niche.replace(' ', '')}", f"#{topic.replace(' ', '')}", "#viral"]
         }
 
-base_script_generator = ScriptGenerator()
+base_script_service = ScriptGenerator()

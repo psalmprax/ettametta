@@ -87,4 +87,4 @@ class PromoGenerator:
             logging.error(f"Promo Generation Error: {e}")
             return {"error": str(e), "segments": []}
 
-base_promo_generator = PromoGenerator()
+base_promo_service = PromoGenerator()

@@ -11,7 +11,7 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from .orchestrator import base_monetization_orchestrator
+from .orchestrator import base_monetization_orchestrator_service
 
 
 class CircuitBreaker:
@@ -43,17 +43,17 @@ class CircuitBreaker:
             self.state = "OPEN"
 
 
-from src.services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_service
 
 class MonetizationEngine:
     def __init__(self):
         self.logger = logging.getLogger("MonetizationEngine")
-        self.orchestrator = base_monetization_orchestrator
+        self.orchestrator = base_monetization_orchestrator_service
 
     async def _call_hub(self, prompt: str, session_id: str | None = None) -> str | None:
         """Call IntelligenceHub with resilient fallback"""
         try:
-            result = await base_intelligence_hub.chat(
+            result = await base_intelligence_service.chat(
                 prompt=prompt,
                 system_prompt="You are a professional Monetization Strategist. Output JSON ONLY.",
                 session_id=session_id,
@@ -228,7 +228,7 @@ class MonetizationEngine:
         Actually processes the video file to add affiliate link insertions.
         Uses FFmpegTransformer for robust processing.
         """
-        from src.services.video_engine.ffmpeg_utils import base_ffmpeg_transformer
+        from src.services.video_engine.ffmpeg_utils import base_ffmpeg_service
         import os
         import uuid
 
@@ -254,7 +254,7 @@ class MonetizationEngine:
                     else:
                         start_time = 55.0 # Fallback for end of a 60s video
                     
-                    success = base_ffmpeg_transformer.draw_text_overlay(
+                    success = base_ffmpeg_service.draw_text_overlay(
                         current_path,
                         output_path,
                         insertion["script_addition"],
@@ -281,4 +281,4 @@ class MonetizationEngine:
         return (revenue / views) * 1000
 
 
-base_monetization_engine = MonetizationEngine()
+base_monetization_service = MonetizationEngine()

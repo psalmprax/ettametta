@@ -14,13 +14,13 @@ from sqlalchemy import select, func
 
 # Tables should be managed via Alembic in production.
 
-from src.services.security.service import base_security_sentinel
+from src.services.security.service import base_security_service
 from src.api.config import settings
 import os
 import time
 import logging
 import asyncio
-from src.services.infrastructure.chaos_utility import base_chaos_utility
+from src.services.infrastructure.chaos_utility import base_chaos_service
 import asyncio
 from src.services.infrastructure.recovery_service import base_recovery_service
 from src.services.analytics.consistency_sentinel import base_consistency_sentinel
@@ -357,8 +357,8 @@ async def startup_event():
     logger.info("🛡️ [Startup] ConsistencySentinel enforcement loop activated.")
 
     # Agent Zero Auto-Resume
-    from src.services.agent_zero.agent import base_agent_zero
-    asyncio.create_task(base_agent_zero.load_and_resume())
+    from src.services.agent_zero.agent import base_agent_zero_service
+    asyncio.create_task(base_agent_zero_service.load_and_resume())
     logger.info("🤖 [Startup] Agent Zero state recovery initiated.")
 
 
@@ -441,35 +441,35 @@ chaos_router = APIRouter(prefix="/v1/chaos", tags=["Chaos"])
 @chaos_router.post("/latency")
 async def inject_latency(service: str, delay_ms: int):
     """Adds artificial delay to a service."""
-    await base_chaos_utility.inject_latency(service, delay_ms)
+    await base_chaos_service.inject_latency(service, delay_ms)
     return {"status": "injected", "service": service, "delay": f"{delay_ms}ms"}
 
 
 @chaos_router.post("/crash")
 async def simulate_crash():
     """Simulates a worker crash notification."""
-    await base_chaos_utility.simulate_worker_crash()
+    await base_chaos_service.simulate_worker_crash()
     return {"status": "crash_simulated"}
 
 
 @chaos_router.post("/exhaustion")
 async def induce_exhaustion(platform: str):
     """Fakes a 429/403 for a specific platform API."""
-    await base_chaos_utility.induce_api_exhaustion(platform)
+    await base_chaos_service.induce_api_exhaustion(platform)
     return {"status": "exhaustion_active", "platform": platform}
 
 
 @chaos_router.post("/scenario")
 async def run_chaos_scenario(name: str):
     """Executes an orchestrated Killer Combo scenario (blackout/cascade/storm)."""
-    report = await base_chaos_utility.run_scenario(name)
+    report = await base_chaos_service.run_scenario(name)
     return report
 
 
 @chaos_router.post("/continuous/start")
 async def start_continuous_chaos(intensity: str = "medium", duration_minutes: int = 30):
     """Starts a background continuous chaos injection loop."""
-    result = await base_chaos_utility.start_continuous_chaos(
+    result = await base_chaos_service.start_continuous_chaos(
         intensity, duration_minutes
     )
     return result
@@ -478,14 +478,14 @@ async def start_continuous_chaos(intensity: str = "medium", duration_minutes: in
 @chaos_router.post("/continuous/stop")
 async def stop_continuous_chaos():
     """Stops continuous chaos and clears all active faults."""
-    result = await base_chaos_utility.stop_continuous_chaos()
+    result = await base_chaos_service.stop_continuous_chaos()
     return result
 
 
 @chaos_router.post("/clear")
 async def clear_all_faults():
     """Emergency: removes all active chaos faults from the system."""
-    await base_chaos_utility.clear_all_faults()
+    await base_chaos_service.clear_all_faults()
     return {"status": "all_faults_cleared"}
 
 
@@ -495,7 +495,7 @@ async def get_chaos_report():
     from src.services.infrastructure.recovery_service import base_recovery_service
 
     return {
-        "chaos": base_chaos_utility.get_chaos_report(),
+        "chaos": base_chaos_service.get_chaos_report(),
         "sentinel": base_consistency_sentinel.get_status(),
         "recovery": base_recovery_service.get_status(),
     }

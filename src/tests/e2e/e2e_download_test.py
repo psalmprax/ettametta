@@ -21,7 +21,7 @@ load_dotenv()
 # Ensure DEBUG is explicitly set to boolean
 os.environ["DEBUG"] = "true"
 
-from src.services.video_engine.downloader import base_video_downloader
+from src.services.video_engine.downloader import base_downloader_service
 
 
 async def test_download():
@@ -39,7 +39,7 @@ async def test_download():
     print("\n[1/5] DOWNLOADING video...")
     print(f"  URL: {test_url}")
 
-    video_path = await base_video_downloader.download_video(test_url)
+    video_path = await base_downloader_service.download_video(test_url)
 
     if not video_path:
         print("  ❌ Download failed!")

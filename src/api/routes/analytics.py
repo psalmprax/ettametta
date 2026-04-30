@@ -1,6 +1,10 @@
 import logging
+import csv
+import io
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 from src.services.analytics.service import base_analytics_service
+from src.services.analytics.service_extended import AnalyticsServiceExtended
 from src.services.analytics.models import ContentPerformance
 from src.api.routes.auth import get_current_user
 from src.api.utils.user_models import UserDB, UserRole
@@ -30,28 +34,29 @@ async def list_analytics_posts(
     current_user: UserDB = Depends(get_current_user),
     db=Depends(get_db),
 ):
+    """
+    List all published posts with pagination.
+    """
     try:
-        stmt = select(PublishedContentDB).where(
-            PublishedContentDB.status == ContentPublishStatus.PUBLISHED
+        analytics_service = AnalyticsServiceExtended(db)
+        posts, total_items = await analytics_service.list_published_posts(
+            user_id=current_user.id,
+            user_role=current_user.role,
+            page=page,
+            size=size,
         )
-        if current_user.role != UserRole.ADMIN:
-            stmt = stmt.where(PublishedContentDB.user_id == current_user.id)
-
-        stmt = stmt.order_by(PublishedContentDB.published_at.desc())
-
-        # Execute query first to get total count
-        count_stmt = select(func.count()).select_from(stmt.subquery())
-        total_result = await db.execute(count_stmt)
-        total_items = total_result.scalar() or 0
-
-        # Apply pagination using Paginator values
-        paginator = Paginator(page=page, page_size=size)
-        stmt = stmt.offset(paginator.offset).limit(paginator.limit)
-
-        result = await db.execute(stmt)
-        posts = result.scalars().all()
-
-        return success_response(data=paginator.paginate_response(posts, total_items))
+        
+        return success_response(
+            data={
+                "posts": posts,
+                "pagination": {
+                    "page": page,
+                    "size": size,
+                    "total": total_items,
+                    "pages": (total_items + size - 1) // size,
+                },
+            }
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -66,59 +71,18 @@ async def get_analytics_report(
     """
     Get overall analytics report summary.
     """
-    from sqlalchemy import func
-
-    # Total posts
-    posts_result = await db.execute(
-        select(func.count(PublishedContentDB.id)).where(
-            PublishedContentDB.user_id == current_user.id
+    try:
+        analytics_service = AnalyticsServiceExtended(db)
+        report = await analytics_service.get_report_summary(
+            user_id=current_user.id,
+            user_role=current_user.role,
         )
-    )
-    total_posts = posts_result.scalar() or 0
-
-    # Total views
-    views_result = await db.execute(
-        select(func.sum(PublishedContentDB.view_count)).where(
-            PublishedContentDB.user_id == current_user.id
-        )
-    )
-    total_views = views_result.scalar() or 0
-
-    # Total likes
-    likes_result = await db.execute(
-        select(func.sum(PublishedContentDB.like_count)).where(
-            PublishedContentDB.user_id == current_user.id
-        )
-    )
-    total_likes = likes_result.scalar() or 0
-
-    # Total shares
-    shares_result = await db.execute(
-        select(func.sum(PublishedContentDB.share_count)).where(
-            PublishedContentDB.user_id == current_user.id
-        )
-    )
-    total_shares = shares_result.scalar() or 0
-
-    # Avg retention
-    retention_result = await db.execute(
-        select(func.avg(PublishedContentDB.retention_rate)).where(
-            PublishedContentDB.user_id == current_user.id
-        )
-    )
-    avg_retention = retention_result.scalar() or 0.0
-
-    return success_response(
-        data={
-            "total_posts": total_posts,
-            "total_views": int(total_views or 0),
-            "total_likes": int(total_likes or 0),
-            "total_shares": int(total_shares or 0),
-            "avg_views": int(total_views / total_posts) if total_posts > 0 else 0,
-            "avg_likes": int(total_likes / total_posts) if total_posts > 0 else 0,
-            "avg_retention": float(avg_retention),
-        }
-    )
+        return success_response(data=report)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Analytics report failed: {e}")
+        raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
 @router.get("/report/{post_id}")
@@ -130,15 +94,14 @@ async def get_report(
     db=Depends(get_db),
 ):
     try:
+        analytics_service = AnalyticsServiceExtended(db)
+        
         # Verify user owns this content
-        stmt = select(PublishedContentDB).where(PublishedContentDB.id == post_id)
-        result = await db.execute(stmt)
-        content = result.scalar_one_or_none()
-
-        if not content:
-            raise HTTPException(status_code=404, detail="Content not found")
-        if content.user_id != current_user.id and current_user.role != UserRole.ADMIN:
-            raise HTTPException(status_code=403, detail="Access denied")
+        await analytics_service.verify_content_access(
+            post_id=post_id,
+            user_id=current_user.id,
+            user_role=current_user.role,
+        )
 
         report = await base_analytics_service.get_performance_report(
             post_id, current_user.id, platform
@@ -158,17 +121,12 @@ async def get_report(
                 getattr(report, "avg_duration", 0.0),
             )
         )
-
-
-
         return success_response(data=report)
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Trend analysis failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
-    finally:
-        pass
 
 
 @router.get("/insights/{post_id}")
@@ -178,15 +136,14 @@ async def get_insights(
     db=Depends(get_db),
 ):
     try:
+        analytics_service = AnalyticsServiceExtended(db)
+        
         # Verify user owns this content
-        stmt = select(PublishedContentDB).where(PublishedContentDB.id == post_id)
-        result = await db.execute(stmt)
-        content = result.scalar_one_or_none()
-
-        if not content:
-            raise HTTPException(status_code=404, detail="Content not found")
-        if content.user_id != current_user.id and current_user.role != UserRole.ADMIN:
-            raise HTTPException(status_code=403, detail="Access denied")
+        await analytics_service.verify_content_access(
+            post_id=post_id,
+            user_id=current_user.id,
+            user_role=current_user.role,
+        )
 
         report = await base_analytics_service.get_performance_report(
             post_id,
@@ -199,8 +156,6 @@ async def get_insights(
     except Exception as e:
         logger.error(f"Performance analysis failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
-    finally:
-        pass
 
 
 @router.get("/monetization/{post_id}")
@@ -211,15 +166,14 @@ async def get_monetization_suggestions(
     db=Depends(get_db),
 ):
     try:
+        analytics_service = AnalyticsServiceExtended(db)
+        
         # Verify user owns this content
-        stmt = select(PublishedContentDB).where(PublishedContentDB.id == post_id)
-        result = await db.execute(stmt)
-        content = result.scalar_one_or_none()
-
-        if not content:
-            raise HTTPException(status_code=404, detail="Content not found")
-        if content.user_id != current_user.id and current_user.role != UserRole.ADMIN:
-            raise HTTPException(status_code=403, detail="Access denied")
+        await analytics_service.verify_content_access(
+            post_id=post_id,
+            user_id=current_user.id,
+            user_role=current_user.role,
+        )
 
         report = await base_analytics_service.get_performance_report(
             post_id,
@@ -235,8 +189,6 @@ async def get_monetization_suggestions(
     except Exception as e:
         logger.error(f"Comparative analysis failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
-    finally:
-        pass
 
 
 @router.get("/stats/summary")
@@ -246,110 +198,12 @@ async def get_stats_summary(
 ):
     """Get dashboard summary stats for the home page."""
     try:
-        # Base queries
-        post_stmt = select(PublishedContentDB).where(
-            PublishedContentDB.status == ContentPublishStatus.PUBLISHED
+        analytics_service = AnalyticsServiceExtended(db)
+        stats = await analytics_service.get_stats_summary(
+            user_id=current_user.id,
+            user_role=current_user.role,
         )
-        job_stmt = select(VideoJobDB)
-
-        # User isolation
-        if current_user.role != UserRole.ADMIN:
-            post_stmt = post_stmt.where(PublishedContentDB.user_id == current_user.id)
-            job_stmt = job_stmt.where(VideoJobDB.user_id == current_user.id)
-
-        # Count published posts
-        result = await db.execute(
-            select(func.count()).select_from(post_stmt.subquery())
-        )
-        total_posts = result.scalar() or 0
-
-        # Count total video jobs
-        result = await db.execute(select(func.count()).select_from(job_stmt.subquery()))
-        total_jobs = result.scalar() or 0
-
-        # Calculate success rate
-        success_rate = (total_posts / total_jobs * 100) if total_jobs > 0 else 0
-
-        # Get total metrics from DB
-        stmt_metrics = select(
-            func.sum(PublishedContentDB.view_count).label("total_views"),
-            func.sum(PublishedContentDB.like_count).label("total_likes"),
-            func.sum(PublishedContentDB.share_count).label("total_shares"),
-            func.sum(PublishedContentDB.comment_count).label("total_comments"),
-            func.avg(PublishedContentDB.retention_rate).label("avg_retention")
-        )
-        if current_user.role != UserRole.ADMIN:
-            stmt_metrics = stmt_metrics.where(PublishedContentDB.user_id == current_user.id)
-        
-        result = await db.execute(stmt_metrics)
-        row = result.fetchone()
-        
-        total_views = row.total_views or 0
-        total_likes = row.total_likes or 0
-        total_shares = row.total_shares or 0
-        total_comments = row.total_comments or 0
-        avg_retention = row.avg_retention or 0.0
-
-        # Calculate Engagement Score
-        engagement_score = 0.0
-        if total_views > 0:
-            engagement_score = ((total_likes + total_comments + total_shares) / total_views) * 100
-
-        # Format reach
-        if total_views >= 1000000:
-            reach_formatted = f"{total_views / 1000000:.1f}M"
-        elif total_views >= 1000:
-            reach_formatted = f"{total_views / 1000:.1f}K"
-        else:
-            reach_formatted = str(total_views)
-
-        # Count active trends
-        result = await db.execute(select(func.count(NicheTrendDB.niche.distinct())))
-        active_trends_count = result.scalar() or 0
-
-        # Calculate velocity
-        yesterday = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
-        stmt_recent = select(func.count(NicheTrendDB.id)).where(
-            NicheTrendDB.last_updated >= yesterday
-        )
-        result = await db.execute(stmt_recent)
-        recent_count = result.scalar() or 0
-
-        stmt_pending = select(func.count(VideoJobDB.id)).where(
-            VideoJobDB.status.in_(
-                [
-                    SystemJobStatus.QUEUED,
-                    SystemJobStatus.PROCESSING,
-                    SystemJobStatus.RENDERING,
-                ]
-            )
-        )
-        result = await db.execute(stmt_pending)
-        pending_jobs = result.scalar() or 0
-
-        MAX_CAPACITY = 10
-        engine_load = (
-            int((pending_jobs / MAX_CAPACITY) * 100) if MAX_CAPACITY > 0 else 0
-        )
-
-        return success_response(
-            data={
-                "active_trends": active_trends_count,
-                "videos_processed": total_jobs,
-                "total_reach": reach_formatted,
-                "success_rate": f"{success_rate:.1f}%",
-                "recent_discovery_count": recent_count,
-                "engine_load": f"{engine_load}%",
-                "velocity": "High" if recent_count > 5 else "Nominal",
-                "total_views": total_views,
-                "total_likes": total_likes,
-                "total_shares": total_shares,
-                "total_comments": total_comments,
-                "avg_retention": round(avg_retention, 2),
-                "engagement_score": round(engagement_score, 2),
-                "pending_jobs": pending_jobs,
-            }
-        )
+        return success_response(data=stats)
     except Exception as e:
         logger.error(f"Stats summary failed: {e}")
         return success_response(
@@ -363,36 +217,16 @@ async def get_stats_summary(
                 "velocity": "Nominal",
             }
         )
-    finally:
-        pass
 
 
 @router.get("/stats/storage")
 @cache(expire=3600)
 async def get_storage_stats(current_user: UserDB = Depends(get_current_user)):
     """Get storage usage statistics for the outputs directory."""
-    from src.services.storage.manager import storage_manager
-    from src.api.config import settings
-
     try:
-        current_size = storage_manager.get_output_dir_size()
-        threshold_bytes = storage_manager.threshold_bytes
-
-        return success_response(
-            data={
-                "current_size_gb": round(current_size / (1024**3), 2),
-                "threshold_gb": storage_manager.threshold_gb,
-                "usage_percent": round((current_size / threshold_bytes) * 100, 1)
-                if threshold_bytes > 0
-                else 0,
-                "status": "Healthy"
-                if current_size < threshold_bytes * 0.9
-                else "Warning"
-                if current_size < threshold_bytes
-                else "Critical",
-                "provider": settings.STORAGE_PROVIDER,
-            }
-        )
+        analytics_service = AnalyticsServiceExtended(None)  # DB not needed for storage stats
+        stats = await analytics_service.get_storage_stats()
+        return success_response(data=stats)
     except HTTPException:
         raise
     except Exception as e:
@@ -407,28 +241,16 @@ async def get_ab_results(
     db=Depends(get_db),
 ):
     try:
-        stmt = select(ABTestDB).where(ABTestDB.content_id == content_id)
-        result = await db.execute(stmt)
-        test = result.scalar_one_or_none()
-        if not test:
-            raise HTTPException(
-                status_code=404, detail="A/B test not found for this content"
-            )
-
-        winner = "A" if test.variant_a_view_count > test.variant_b_view_count else "B"
-        return success_response(
-            data={
-                "test_id": test.id,
-                "variant_a_title": test.variant_a_title,
-                "variant_b_title": test.variant_b_title,
-                "variant_a_view_count": test.variant_a_view_count,
-                "variant_b_view_count": test.variant_b_view_count,
-                "winner": winner,
-                "created_at": test.created_at,
-            }
-        )
-    finally:
-        pass
+        analytics_service = AnalyticsServiceExtended(db)
+        results = await analytics_service.get_ab_test_results(content_id)
+        return success_response(data=results)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"AB test results failed: {e}")
+        raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
 @router.get("/report/{post_id}/history")
@@ -439,8 +261,6 @@ async def get_report_history(
     Returns time-series history for a specific post.
     In a real-first system, this replaces simulated growth curves.
     """
-    # This would normally query a time-series table.
-    # In a real-first system, this queries PerformanceSnapshotDB.
     try:
         history = await base_analytics_service.get_historical_performance(post_id)
         return success_response(data=history)
@@ -458,15 +278,14 @@ async def inject_pattern(
     db=Depends(get_db),
 ):
     try:
+        analytics_service = AnalyticsServiceExtended(db)
+        
         # Verify user owns this content
-        stmt = select(PublishedContentDB).where(PublishedContentDB.id == post_id)
-        result = await db.execute(stmt)
-        content = result.scalar_one_or_none()
-
-        if not content:
-            raise HTTPException(status_code=404, detail="Content not found")
-        if content.user_id != current_user.id and current_user.role != UserRole.ADMIN:
-            raise HTTPException(status_code=403, detail="Access denied")
+        await analytics_service.verify_content_access(
+            post_id=post_id,
+            user_id=current_user.id,
+            user_role=current_user.role,
+        )
 
         # Delegate to service
         result = await base_analytics_service.inject_pattern(post_id, current_user.id)
@@ -476,28 +295,21 @@ async def inject_pattern(
     except Exception as e:
         logger.error(f"ROI analysis failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
-    finally:
-        pass
 
 
 @router.get("/export")
 async def export_analytics(
     current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
-    import csv
     import io
     from fastapi.responses import StreamingResponse
 
     try:
-        stmt = select(PublishedContentDB).where(
-            PublishedContentDB.status == ContentPublishStatus.PUBLISHED
+        analytics_service = AnalyticsServiceExtended(db)
+        posts_data = await analytics_service.export_posts(
+            user_id=current_user.id,
+            user_role=current_user.role,
         )
-        if current_user.role != UserRole.ADMIN:
-            stmt = stmt.where(PublishedContentDB.user_id == current_user.id)
-
-        stmt = stmt.order_by(PublishedContentDB.published_at.desc())
-        result = await db.execute(stmt)
-        posts = result.scalars().all()
 
         output = io.StringIO()
         writer = csv.writer(output)
@@ -505,16 +317,16 @@ async def export_analytics(
             ["Post ID", "Platform", "Title", "Views", "Likes", "Shares", "Published At"]
         )
 
-        for post in posts:
+        for post_data in posts_data:
             writer.writerow(
                 [
-                    post.id,
-                    post.platform,
-                    post.title,
-                    post.view_count,
-                    post.like_count,
-                    post.share_count,
-                    post.published_at.isoformat() if post.published_at else "",
+                    post_data[0],
+                    post_data[1],
+                    post_data[2],
+                    post_data[3],
+                    post_data[4],
+                    post_data[5],
+                    post_data[6].isoformat() if post_data[6] else "",
                 ]
             )
 
@@ -527,5 +339,8 @@ async def export_analytics(
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment; filename={filename}"},
         )
-    finally:
-        pass
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Export failed: {e}")
+        raise HTTPException(status_code=503, detail="Export service unavailable")

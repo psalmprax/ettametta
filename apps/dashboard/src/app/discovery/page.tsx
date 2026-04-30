@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Canvas } from "@react-three/fiber";
 import { Float, Sphere, MeshDistortMaterial } from "@react-three/drei";
@@ -137,8 +137,10 @@ function DiscoveryContent() {
             return;
         }
 
+        // Logic: The backend trends endpoint expects niche and horizon.
+        // We handle platform filtering on the client side for higher agility.
         await withRealFallback<{ trends: ContentCandidate[] } | ContentCandidate[]>(
-            () => fetch(`${API_BASE}/discovery/trends?niche=${activeNiche}&horizon=${timeHorizon}`, {
+            () => fetch(`${API_BASE}/discovery/trends?niche=${encodeURIComponent(activeNiche)}&horizon=${timeHorizon}`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
@@ -160,6 +162,12 @@ function DiscoveryContent() {
     useEffect(() => {
         fetchTrends();
     }, [fetchTrends]);
+
+    // Client-side filtering logic
+    const filteredCandidates = useMemo(() => {
+        if (filter === "all") return candidates;
+        return candidates.filter(c => c.platform?.toLowerCase() === filter.toLowerCase());
+    }, [candidates, filter]);
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -389,7 +397,7 @@ function DiscoveryContent() {
                 {/* CONTROL PANEL */}
                 <div className="flex flex-wrap items-center gap-6 mb-12">
                     <div className="flex gap-2 p-1.5 bg-white/5 rounded-2xl border border-white/5 shadow-inner">
-                        {["YouTube", "TikTok", "Instagram", "X"].map(plat => (
+                        {["All", "YouTube", "TikTok", "Instagram", "X"].map(plat => (
                             <button 
                                 key={plat}
                                 onClick={() => setFilter(plat.toLowerCase())}
@@ -435,7 +443,7 @@ function DiscoveryContent() {
                     
                     {/* SIDEBAR: NICHE CLUSTERS */}
                     <div className="xl:col-span-3 space-y-8">
-                        <Card variant="solid" className="p-10 space-y-8 rounded-4xl border-white/5 bg-black/40 backdrop-blur-xl">
+                        <Card variant="solid" className="p-10 space-y-8 rounded-2xl border-white/5 bg-slate-900/40 backdrop-blur-xl">
                             <div className="flex items-center justify-between border-b border-white/5 pb-6">
                                 <h2 className="text-[10px] font-bold text-white flex items-center gap-3 uppercase tracking-[0.3em]">
                                     <Activity className="h-4 w-4 text-primary" />
@@ -497,7 +505,7 @@ function DiscoveryContent() {
                         </Card>
 
                         {/* ALERTS SECTION */}
-                        <Card variant="solid" className="p-8 space-y-6 rounded-4xl border-white/5 bg-slate-900/40">
+                        <Card variant="solid" className="p-8 space-y-6 rounded-2xl border-white/5 bg-slate-900/40">
                             <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-3">
                                 <Zap className="h-4 w-4 text-amber-500" />
                                 Neural Alerts
@@ -516,7 +524,7 @@ function DiscoveryContent() {
                             </div>
                         </Card>
 
-                        <div className="surface-glass rounded-4xl border border-white/5 h-80 overflow-hidden relative group">
+                        <div className="surface-glass rounded-2xl border border-white/5 h-80 overflow-hidden relative group bg-black/40 backdrop-blur-md">
                             <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent z-10 flex flex-col justify-end p-8">
                                 <span className="text-white text-[10px] font-bold uppercase tracking-widest mb-1">Global Hotspots</span>
                                 <p className="text-zinc-500 text-[8px] uppercase tracking-widest">Live Geographic Feed</p>
@@ -534,7 +542,7 @@ function DiscoveryContent() {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {candidates.map((c, i) => (
+                                {filteredCandidates.map((c, i) => (
                                     <motion.div 
                                         key={c.id}
                                         initial={{ opacity: 0, y: 30 }}
@@ -543,7 +551,7 @@ function DiscoveryContent() {
                                         className="group relative"
                                         data-testid="candidate-card"
                                     >
-                                        <Card variant="solid" className="h-full overflow-hidden flex flex-col border-white/5 hover:border-primary/30 transition-all duration-500 rounded-4xl">
+                                        <Card variant="solid" className="h-full overflow-hidden flex flex-col border-white/5 hover:border-primary/30 transition-all duration-500 rounded-2xl">
                                             {/* Thumbnail */}
                                             <div className="relative aspect-video overflow-hidden bg-zinc-900">
                                                 <img 

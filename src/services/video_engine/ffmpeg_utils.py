@@ -12,17 +12,17 @@ import logging
 import asyncio
 from pathlib import Path
 from src.api.config import settings
-from src.services.infrastructure.resource_governor import base_resource_governor
+from src.services.infrastructure.resource_governor import base_governor_service
 
 class FFmpegTransformer:
     def __init__(self, threads: int | None = None, preset: str | None = None):
         # 10/10 Production: Adaptive Core Management
-        self.threads = threads or base_resource_governor.get_ffmpeg_threads()
-        self.preset = preset or ("ultrafast" if base_resource_governor.get_degradation_mode() != "STANDARD" else "superfast")
+        self.threads = threads or base_governor_service.get_ffmpeg_threads()
+        self.preset = preset or ("ultrafast" if base_governor_service.get_degradation_mode() != "STANDARD" else "superfast")
         self._hw_accel = self._detect_hardware_acceleration()
         
         logger_name = "FFmpegTransformer"
-        logging.getLogger(logger_name).info(f"🎞️ [FFmpeg] Initialized: {self.threads} threads (Mode: {base_resource_governor.get_degradation_mode()})")
+        logging.getLogger(logger_name).info(f"🎞️ [FFmpeg] Initialized: {self.threads} threads (Mode: {base_governor_service.get_degradation_mode()})")
 
     def _detect_hardware_acceleration(self) -> str:
         """Detects the best available hardware encoder."""
@@ -443,4 +443,4 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             logging.info(f"[FFmpegTransformer] Cinematic filters applied successfully to {output_path}")
 
 # Singleton Instance
-base_ffmpeg_transformer = FFmpegTransformer()
+base_ffmpeg_service = FFmpegTransformer()

@@ -21,7 +21,7 @@ from src.engines.intelligent_video_workflow import (
 from src.engines.real_video_fusion_engine import RealVideoFusionEngine
 from src.services.video_engine.remotion_service import base_remotion_service
 from src.services.optimization.viral_critic import base_viral_critic
-from src.services.monetization.service import base_monetization_engine
+from src.services.monetization.service import base_monetization_service
 from src.services.video_engine.video_production_assistant import production_assistant
 
 # Configure logging
@@ -177,7 +177,7 @@ async def run_elite_production_cycle(
         f"[Step 4/6] MONETIZATION: Planning and injecting strategy for {session_id}..."
     )
     # Generate monetization strategy and inject into the fused video
-    monetization_plan = await base_monetization_engine.plan_monetization_strategy(
+    monetization_plan = await base_monetization_service.plan_monetization_strategy(
         current_topic,
         str(mock_script),
         video_path=fused_video_path,

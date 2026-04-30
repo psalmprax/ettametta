@@ -4,14 +4,14 @@ from fastapi import APIRouter, HTTPException, Depends
 logger = logging.getLogger(__name__)
 from pydantic import BaseModel
 from typing import Any
-from src.services.script_generator.service import base_script_generator
-from src.services.decision_engine.hook_validator import base_hook_validator
+from src.services.script_generator.service import base_script_service
+from src.services.decision_engine.hook_validator import base_validator_service
 from src.services.voiceover.service import base_voiceover_service
 from src.services.stock_media.service import base_stock_media_service
-from src.services.visual_generator.service import base_visual_generator
-from src.services.multiplatform.translator import base_global_adapter
-from src.services.scheduler.empire_mode import base_empire_scheduler
-from src.services.sentinel.algorithm_tracker import base_algorithm_sentinel
+from src.services.visual_generator.service import base_visual_generator_service
+from src.services.multiplatform.translator import base_multiplatform_service
+from src.services.scheduler.empire_mode import base_scheduler_service
+from src.services.sentinel.algorithm_tracker import base_algorithm_service
 from src.api.routes.auth import get_current_user
 from src.api.utils.api_responses import success_response
 
@@ -41,7 +41,7 @@ async def generate_script(
     Generates a viral-optimized script for a faceless video.
     """
     try:
-        script = await base_script_generator.generate_script(
+        script = await base_script_service.generate_script(
             topic=request.topic,
             niche=request.niche,
             duration_sec=request.duration_seconds,
@@ -61,7 +61,7 @@ async def validate_hook(request: HookRequest, current_user=Depends(get_current_u
     Analyzes a hook and provides a viral score and alternatives.
     """
     try:
-        analysis = await base_hook_validator.validate_hook(request.hook)
+        analysis = await base_validator_service.validate_hook(request.hook)
         return success_response(data=analysis)
     except HTTPException:
         raise
@@ -114,7 +114,7 @@ async def generate_image(
     """
     Generates an AI image for a segment.
     """
-    path = await base_visual_generator.generate_image(request.prompt)
+    path = await base_visual_generator_service.generate_image(request.prompt)
     if not path:
         raise HTTPException(status_code=503, detail="Failed to generate image")
     return success_response(data={"image_uri": path})
@@ -134,7 +134,7 @@ async def translate_script(
     """
     # Map 'script' to 'segments' for the translator service
     segments = request.script.get("segments", [])
-    translated_segments = await base_global_adapter.translate_script_segments(
+    translated_segments = await base_multiplatform_service.translate_script_segments(
         segments, request.target_language
     )
     
@@ -151,14 +151,14 @@ async def launch_automated_video(
     End-to-end automated video generation (Script -> Video).
     """
     try:
-        from src.services.nexus_engine.auto_creator import base_auto_creator
+        from src.services.nexus_engine.auto_creator import base_creator_service
 
         # 1. Use existing script or generate new one
         if request.script:
             script = request.script
             logger.info("Using provided script override for cinema launch")
         else:
-            script = await base_script_generator.generate_script(
+            script = await base_script_service.generate_script(
                 topic=request.topic,
                 niche=request.niche,
                 duration_sec=request.duration_seconds,
@@ -166,7 +166,7 @@ async def launch_automated_video(
             )
         
         # 2. Trigger Auto-Creator (Standard 4.2: Automated Pipeline)
-        job_id = await base_auto_creator.launch_automated_video(
+        job_id = await base_creator_service.launch_automated_video(
             user_id=current_user.id,
             topic=request.topic,
             niche=request.niche,
@@ -193,6 +193,6 @@ async def get_sentinel_status(current_user=Depends(get_current_user)):
     """
     Returns the algorithm sync status.
     """
-    status = await base_algorithm_sentinel.get_sync_status()
+    status = await base_algorithm_service.get_sync_status()
     return success_response(data=status)
 

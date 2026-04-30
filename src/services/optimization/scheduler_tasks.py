@@ -20,13 +20,13 @@ logger = logging.getLogger(__name__)
 
 
 PLATFORM_PUBLISHERS = {
-    "youtube": "services.optimization.youtube_publisher.base_youtube_publisher",
-    "youtube_shorts": "services.optimization.youtube_publisher.base_youtube_publisher",
-    "tiktok": "services.optimization.tiktok_publisher.base_tiktok_publisher",
-    "instagram": "services.optimization.instagram_publisher.base_instagram_publisher",
-    "facebook": "services.optimization.facebook_publisher.base_facebook_publisher",
-    "linkedin": "services.optimization.linkedin_publisher.base_linkedin_publisher",
-    "x": "services.optimization.x_publisher.base_x_publisher",
+    "youtube": "services.optimization.youtube_publisher.base_youtube_service",
+    "youtube_shorts": "services.optimization.youtube_publisher.base_youtube_service",
+    "tiktok": "services.optimization.tiktok_publisher.base_tiktok_service",
+    "instagram": "services.optimization.instagram_publisher.base_instagram_service",
+    "facebook": "services.optimization.facebook_publisher.base_facebook_service",
+    "linkedin": "services.optimization.linkedin_publisher.base_linkedin_service",
+    "x": "services.optimization.x_publisher.base_x_service",
 }
 
 

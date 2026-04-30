@@ -211,11 +211,11 @@ async def auto_insert_affiliate_links(
     """
     Automatically inserts affiliate links into video content.
     """
-    from src.services.monetization.service import base_monetization_engine
+    from src.services.monetization.service import base_monetization_service
 
     try:
         return success_response(
-            data=await base_monetization_engine.plan_monetization_strategy(
+            data=await base_monetization_service.plan_monetization_strategy(
                 niche, script_content, video_path=video_path
             )
         )

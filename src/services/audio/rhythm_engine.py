@@ -91,4 +91,4 @@ class RhythmEngine:
         return timestamp
 
 # Singleton instance
-base_rhythm_engine = RhythmEngine()
+base_rhythm_service = RhythmEngine()

@@ -1,8 +1,8 @@
 from src.api.utils.celery import celery_app
 
 from .processor import VideoProcessor
-from .downloader import base_video_downloader
-from src.services.optimization.youtube_publisher import base_youtube_publisher
+from .downloader import base_downloader_service
+from src.services.optimization.youtube_publisher import base_youtube_service
 from src.services.optimization.service import base_optimization_service
 from src.shared.enums import SystemJobStatus
 import asyncio
@@ -121,7 +121,7 @@ def download_and_process_task(
         nonlocal video_path, processed_path
         # 1. Download
         await update_job(status=SystemJobStatus.VALIDATING, progress=5)
-        is_valid = await base_video_downloader.verify_video_asset(source_uri)
+        is_valid = await base_downloader_service.verify_video_asset(source_uri)
         if not is_valid:
             await update_job(
                 status=SystemJobStatus.FAILED_INVALID_INPUT,
@@ -136,7 +136,7 @@ def download_and_process_task(
             }
 
         await update_job(status=SystemJobStatus.DOWNLOADING, progress=10)
-        video_path = await base_video_downloader.download_video(source_uri)
+        video_path = await base_downloader_service.download_video(source_uri)
         if not video_path:
             await update_job(
                 status=SystemJobStatus.FAILED_DOWNLOAD_ERROR,
@@ -250,13 +250,13 @@ def download_and_process_task(
         thumbnail_uri = None
         if generate_thumbnail:
             logger.info(f"[Task] Generating neural thumbnail for {task_id}")
-            from src.services.video_engine.ffmpeg_utils import base_ffmpeg_transformer
+            from src.services.video_engine.ffmpeg_utils import base_ffmpeg_service
             
             # Ensure temp dir exists
             thumb_dir = f"temp/thumbnails/{task_id}"
             os.makedirs(thumb_dir, exist_ok=True)
             
-            thumbs = base_ffmpeg_transformer.generate_thumbnails(processed_path, thumb_dir, count=1)
+            thumbs = base_ffmpeg_service.generate_thumbnails(processed_path, thumb_dir, count=1)
             if thumbs:
                 thumb_key = base_storage_service.upload_file(thumbs[0])
                 thumbnail_uri = base_storage_service.get_file_url(thumb_key)
@@ -289,11 +289,11 @@ def download_and_process_task(
         url = ""
         current_user_id = user_id 
         if platform == "YouTube Shorts":
-            url = await base_youtube_publisher.upload_video(processed_path, metadata, user_id=current_user_id)
+            url = await base_youtube_service.upload_video(processed_path, metadata, user_id=current_user_id)
         elif platform == "TikTok":
-            from src.services.optimization.tiktok_publisher import base_tiktok_publisher
+            from src.services.optimization.tiktok_publisher import base_tiktok_service
             await update_job(status=SystemJobStatus.TIKTOK_UPLOAD, progress=90)
-            url = await base_tiktok_publisher.upload_video(processed_path, metadata)
+            url = await base_tiktok_service.upload_video(processed_path, metadata)
             if not url:
                 url = "tiktok_upload_failed_check_logs"
         else:
@@ -475,7 +475,7 @@ def generate_video_task(
         update_job(status=SystemJobStatus.DOWNLOADING_ASSET, progress=40)
         if video_uri.startswith("http"):
             local_video_path = run_async(
-                base_video_downloader.download_video(video_uri)
+                base_downloader_service.download_video(video_uri)
             )
         else:
             local_video_path = video_uri

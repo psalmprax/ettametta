@@ -73,4 +73,4 @@ class VisualGenerator:
         results = await asyncio.gather(*tasks)
         return [r for r in results if r]
 
-base_visual_generator = VisualGenerator()
+base_visual_generator_service = VisualGenerator()

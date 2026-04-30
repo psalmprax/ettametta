@@ -1,6 +1,6 @@
 import logging
 import json
-from src.services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_service
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ class VariantGenerator:
         """
 
         try:
-            result = await base_intelligence_hub.chat(
+            result = await base_intelligence_service.chat(
                 prompt=prompt,
                 system_prompt="You are a professional Content Growth Engineer. Output JSON ONLY.",
                 session_id=session_id,
@@ -76,4 +76,4 @@ class VariantGenerator:
             logger.error(f"Variant generation failed: {e}")
             return [{"modified_prompt": original_prompt, "variant_name": "Original", "logic": "Fallback"}]
 
-base_variant_generator = VariantGenerator()
+base_variant_service = VariantGenerator()

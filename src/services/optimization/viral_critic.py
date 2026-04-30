@@ -1,6 +1,6 @@
 import logging
 import json
-from src.services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_service
 from typing import Any
 
 class ViralCritic:
@@ -56,7 +56,7 @@ class ViralCritic:
         """
 
         try:
-            result = await base_intelligence_hub.chat(
+            result = await base_intelligence_service.chat(
                 prompt=prompt,
                 system_prompt="You are a professional Viral Content Critic. Output JSON ONLY.",
                 session_id=session_id,

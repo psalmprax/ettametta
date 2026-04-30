@@ -201,4 +201,4 @@ class LinkedInPublisher(SocialPublisher):
         return await token_manager.get_token("linkedin", user_id=user_id) is not None
 
 
-base_linkedin_publisher = LinkedInPublisher()
+base_linkedin_service = LinkedInPublisher()

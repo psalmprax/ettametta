@@ -10,7 +10,7 @@ import json
 import os
 import logging
 from typing import Any
-from src.services.optimization.oracle_predictor import base_neural_oracle
+from src.services.optimization.oracle_predictor import base_oracle_service
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class TrainingPipeline:
 
     def record_sample(self, fusion_plan: dict, metrics: dict[str, Any]):
         """Records a new training sample: [Features -> Metric]"""
-        features = base_neural_oracle.extract_features(fusion_plan)
+        features = base_oracle_service.extract_features(fusion_plan)
         # Use retention_p50 as the gold-standard metric for content quality
         metric = metrics.get("retention_p50", metrics.get("views", 0) / 10000) # Fallback to normalized views
         
@@ -48,7 +48,7 @@ class TrainingPipeline:
             if len(lines) >= self.batch_threshold:
                 logger.info(f"🔄 [Pipeline] Batch threshold ({self.batch_threshold}) met. Triggering Oracle Retraining...")
                 samples = [json.loads(line) for line in lines]
-                base_neural_oracle.train_on_batch(samples)
+                base_oracle_service.train_on_batch(samples)
                 
                 # Move samples to archive or clear (for simple loop)
                 # os.remove(self.data_path) 

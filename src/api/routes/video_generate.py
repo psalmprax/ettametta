@@ -16,12 +16,12 @@ from src.api.utils.subscription import (
 )
 from src.services.video_engine.job_service import get_video_job_service, VideoJobService
 from src.services.video_engine.tasks import generate_video_task, generate_story_task
-from src.services.script_generator.service import base_script_generator
-from src.services.decision_engine.hook_validator import base_hook_validator
+from src.services.script_generator.service import base_script_service
+from src.services.decision_engine.hook_validator import base_validator_service
 from src.services.voiceover.service import base_voiceover_service
 from src.services.stock_media.service import base_stock_media_service
-from src.services.multiplatform.translator import base_global_adapter
-from src.services.nexus_engine.auto_creator import base_auto_creator
+from src.services.multiplatform.translator import base_multiplatform_service
+from src.services.nexus_engine.auto_creator import base_creator_service
 from src.api.utils.limiter import limiter
 from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response, handle_exception
@@ -89,10 +89,10 @@ async def generate_single_video(
         variant_prompts = [{"modified_prompt": body.prompt, "variant_name": "Original"}]
         if num_variants > 1:
             from src.services.optimization.variant_generator import (
-                base_variant_generator,
+                base_variant_service,
             )
 
-            variant_prompts = await base_variant_generator.generate_variant_prompts(
+            variant_prompts = await base_variant_service.generate_variant_prompts(
                 original_prompt=body.prompt,
                 count=num_variants,
                 strategy=variant_strategy,

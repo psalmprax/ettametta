@@ -12,8 +12,8 @@ import json
 import os
 import random
 from typing import Any
-from src.services.analytics.bridge import base_analytics_bridge
-from src.services.analytics.causal_analyst import base_causal_analyst
+from src.services.analytics.bridge import base_bridge_service
+from src.services.analytics.causal_analyst import base_analyst_service
 
 logger = logging.getLogger(__name__)
 
@@ -72,10 +72,10 @@ class AnalyticsHarvester:
             mock_actual = [{"time": t, "retention": metrics["retention_p50"] - random.uniform(0, 0.2)} for t in range(0, 61, 5)]
             mock_blueprint = production_data.get("blueprint", {})
             
-            regret_report = await base_causal_analyst.analyze_regret(mock_predicted, mock_actual, mock_blueprint)
+            regret_report = await base_analyst_service.analyze_regret(mock_predicted, mock_actual, mock_blueprint)
             metrics["causal_insight"] = regret_report
             
-            await base_analytics_bridge.ingest_performance(video_id, metrics, production_data)
+            await base_bridge_service.ingest_performance(video_id, metrics, production_data)
 
 # Singleton Instance
-base_analytics_harvester = AnalyticsHarvester()
+base_harvester_service = AnalyticsHarvester()

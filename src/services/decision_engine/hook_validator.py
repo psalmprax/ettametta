@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import Any
-from src.services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_service
 
 class HookValidator:
     def __init__(self):
@@ -35,7 +35,7 @@ class HookValidator:
         """
         
         try:
-            result = await base_intelligence_hub.chat(
+            result = await base_intelligence_service.chat(
                 prompt=prompt,
                 system_prompt="You are a viral retention specialist. Output JSON.",
                 json_mode=True,
@@ -53,4 +53,4 @@ class HookValidator:
                 "alternatives": []
             }
 
-base_hook_validator = HookValidator()
+base_validator_service = HookValidator()

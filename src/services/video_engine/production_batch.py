@@ -69,4 +69,4 @@ class ProductionBatchRenderer:
         return results
 
 # Singleton Instance
-base_production_batch = ProductionBatchRenderer()
+base_batch_service = ProductionBatchRenderer()

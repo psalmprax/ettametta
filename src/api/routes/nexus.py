@@ -11,7 +11,7 @@ from src.shared.enums import SystemJobStatus
 from src.api.utils.models import NexusJobDB, BlueprintDB, VideoJobDB
 from src.api.routes.auth import get_current_user
 from src.api.utils.user_models import UserDB
-from src.services.nexus_engine.orchestrator import base_nexus_orchestrator
+from src.services.nexus_engine.orchestrator import base_nexus_service
 from pydantic import BaseModel, Field
 from src.api.utils.api_responses import success_response
 from datetime import datetime, timedelta
@@ -33,8 +33,8 @@ class NexusComposeRequest(BaseModel):
 
 
 async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
-    from src.services.nexus_engine.thumbnail_service import base_thumbnail_generator
-    from src.services.nexus_engine.auto_creator import base_auto_creator
+    from src.services.nexus_engine.thumbnail_service import base_thumbnail_service
+    from src.services.nexus_engine.auto_creator import base_creator_service
     from src.services.nexus_engine.blueprints import (
         execute_blueprint,
         get_blueprint_by_id,
@@ -123,13 +123,13 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
             if request.cinema_mode:
                 # 1. Autonomous Cinema Mode
                 target_topic = request.topic or f"Viral trends in {request.niche}"
-                output_path = await base_auto_creator.create_cinema_video(
+                output_path = await base_creator_service.create_cinema_video(
                     job_id=job_id, topic=target_topic, niche=request.niche
                 )
             elif request.blueprint_id == "story-factory":
                 # 2. Strategy for Storytelling Blueprint
                 target_topic = request.topic or f"Viral trends in {request.niche}"
-                output_path = await base_auto_creator.create_cinema_video(
+                output_path = await base_creator_service.create_cinema_video(
                     job_id=job_id, topic=target_topic, niche=request.niche
                 )
             else:
@@ -138,12 +138,12 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                     script_text = " ".join(
                         [s.get("text", "") for s in request.script_segments]
                     )
-                    thumbnail_uri = await base_thumbnail_generator.generate_thumbnail(
+                    thumbnail_uri = await base_thumbnail_service.generate_thumbnail(
                         script_text
                     )
                     logging.info(f"[Nexus] Generated Thumbnail: {thumbnail_uri}")
 
-                output_path = await base_nexus_orchestrator.assemble_video(
+                output_path = await base_nexus_service.assemble_video(
                     job_id=job_id,
                     niche=request.niche,
                     script_segments=request.script_segments,

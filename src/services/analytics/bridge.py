@@ -11,8 +11,8 @@ import logging
 from typing import Any
 from src.services.hermes.service import base_hermes_service
 from src.services.analytics.training_pipeline import base_training_pipeline
-from src.services.optimization.oracle_predictor import base_neural_oracle
-from src.services.analytics.ledger import base_performance_ledger
+from src.services.optimization.oracle_predictor import base_oracle_service
+from src.services.analytics.ledger import base_ledger_service
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +54,11 @@ class AnalyticsBridge:
             predicted = production_data.get("predicted_retention", 0.5)
             actual = metrics.get("retention_p50", metrics.get("views", 0) / 10000)
             
-            base_performance_ledger.log_entry(
+            base_ledger_service.log_entry(
                 video_id=video_id,
                 predicted=predicted,
                 actual=actual,
-                model_mae=base_neural_oracle.accuracy_log[-1] if base_neural_oracle.accuracy_log else 1.0
+                model_mae=base_oracle_service.accuracy_log[-1] if base_oracle_service.accuracy_log else 1.0
             )
 
         if skill:
@@ -68,4 +68,4 @@ class AnalyticsBridge:
         return {"status": "recorded"}
 
 # Singleton Instance
-base_analytics_bridge = AnalyticsBridge()
+base_bridge_service = AnalyticsBridge()

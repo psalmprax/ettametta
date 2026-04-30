@@ -185,6 +185,68 @@ class VideoJobService:
             return True
         return False
 
+    async def abort_job(self, job_id: str, user_id: str, user_role: UserRole) -> bool:
+        """
+        Abort a running video job.
+        
+        Args:
+            job_id: ID of the job to abort
+            user_id: ID of the user requesting abort
+            user_role: Role of the user (for admin check)
+            
+        Returns:
+            True if job was aborted, False otherwise
+        """
+        from src.api.utils.celery import celery_app
+        from src.api.routes.ws import notify_job_update_sync
+        from src.api.utils.models import NexusJobDB
+        
+        try:
+            # Try Video jobs first
+            stmt = select(VideoJobDB).where(VideoJobDB.id == job_id)
+            result = await self.db.execute(stmt)
+            job = result.scalar_one_or_none()
+            
+            # Try Nexus jobs if not found
+            if not job:
+                stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
+                result = await self.db.execute(stmt)
+                job = result.scalar_one_or_none()
+            
+            if not job:
+                logger.warning(f"[JobService] Job {job_id} not found for abort")
+                return False
+            
+            # Check authorization
+            if user_role != UserRole.ADMIN and job.user_id != user_id:
+                logger.warning(f"[JobService] User {user_id} not authorized to abort job {job_id}")
+                return False
+            
+            # Revoke Celery task
+            celery_app.control.revoke(job_id, terminate=True)
+            
+            # Update job status
+            job.status = SystemJobStatus.ABORTED
+            await self.db.commit()
+            
+            # Notify WebSocket clients
+            notify_job_update_sync(
+                {
+                    "id": job_id,
+                    "status": SystemJobStatus.ABORTED.value,
+                    "progress": job.progress,
+                    "output_path": job.output_path,
+                }
+            )
+            
+            logger.info(f"[JobService] Job {job_id} aborted successfully")
+            return True
+            
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"[JobService] Failed to abort job {job_id}: {e}")
+            return False
+
     async def count_user_jobs(self, user_id: str) -> int:
         """Count total jobs for user"""
         from sqlalchemy import func

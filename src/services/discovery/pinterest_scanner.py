@@ -265,4 +265,4 @@ class PinterestScanner:
         return None
 
 
-base_pinterest_scanner = PinterestScanner()
+base_pinterest_service = PinterestScanner()

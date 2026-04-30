@@ -11,14 +11,14 @@ import json
 import logging
 import time
 from datetime import datetime
-from src.services.analytics.ledger import base_performance_ledger
-from src.services.analytics.drift_monitor import base_drift_monitor
-from src.services.infrastructure.inference_gateway import base_inference_gateway
-from src.services.infrastructure.event_bus import base_event_bus
-from src.services.infrastructure.resource_governor import base_resource_governor
-from src.services.infrastructure.economic_controller import base_economic_controller
-from src.services.analytics.drift_detector import base_drift_detector
-from src.services.distribution.experiment_batcher import base_experiment_batcher
+from src.services.analytics.ledger import base_ledger_service
+from src.services.analytics.drift_monitor import base_monitor_service
+from src.services.infrastructure.inference_gateway import base_inference_service
+from src.services.infrastructure.event_bus import base_event_service
+from src.services.infrastructure.resource_governor import base_governor_service
+from src.services.infrastructure.economic_controller import base_economic_service
+from src.services.analytics.drift_detector import base_drift_service
+from src.services.distribution.experiment_batcher import base_experiment_service
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +36,11 @@ class CommandCenter:
         print("=" * 75)
         
         # 2. RUNTIME VITALS (PRODUCTION SWARM)
-        vitals = base_inference_gateway.get_system_vitals()
-        drift_val = base_drift_detector.get_current_drift()
-        budget = base_economic_controller.get_vitals()
-        cpu_mode = base_resource_governor.get_degradation_mode()
-        cohorts = base_experiment_batcher.get_batch_vitals()
+        vitals = base_inference_service.get_system_vitals()
+        drift_val = base_drift_service.get_current_drift()
+        budget = base_economic_service.get_vitals()
+        cpu_mode = base_governor_service.get_degradation_mode()
+        cohorts = base_experiment_service.get_batch_vitals()
         
         print(f"🌍 Cluster:      PRODUCTION      🐝 CPU Tension: {cpu_mode}")
         print(f"💰 Fleet Budget:  ${budget['remaining']:.2f} left  🔄 Sync Latency: 12ms")
@@ -56,8 +56,8 @@ class CommandCenter:
         print("-" * 75)
         
         # 3. PERFORMANCE & EFFICIENCY (THE 10/10 CORE)
-        drift_report = base_drift_monitor.audit_system_honesty()
-        report = base_performance_ledger.get_accuracy_report()
+        drift_report = base_monitor_service.audit_system_honesty()
+        report = base_ledger_service.get_accuracy_report()
         early_exits = 142 # This would be pulled from a real counter in production
         savings = early_exits * 0.45 # Average hours saved per early exit
         
@@ -96,4 +96,4 @@ class CommandCenter:
              return 425100 # Simulated base
 
 # Singleton Instance
-base_command_center = CommandCenter()
+base_ui_service = CommandCenter()

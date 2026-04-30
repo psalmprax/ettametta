@@ -72,6 +72,12 @@ ettametta is an autonomous multi-platform viral content discovery, transformatio
 - Class-based organization
 - Async test methods with @pytest.mark.asyncio
 - Descriptive docstrings for classes and methods
+
+## Architectural Conventions
+- **Service Singletons**: All business logic services MUST expose a singleton instance named `base_[service_name]_service`.
+  - Example: `base_intelligence_service`, `base_script_service`, `base_vision_service`.
+  - This pattern ensures uniform access and easy dependency tracking across the codebase.
+- **Import Consistency**: Services should be imported from their respective module's singleton instance whenever possible.
 ## Mocking
 - External API calls
 - Database operations

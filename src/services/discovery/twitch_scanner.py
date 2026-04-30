@@ -211,4 +211,4 @@ class TwitchScanner:
         return candidates
 
 
-base_twitch_scanner = TwitchScanner()
+base_twitch_service = TwitchScanner()
