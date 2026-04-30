@@ -53,4 +53,4 @@ class EconomicController:
             "efficiency": 1.0 - (self.state["credits_spent"] / self.daily_budget) if self.daily_budget > 0 else 0
         }
 
-base_economic_controller = EconomicController()
+base_economic_service = EconomicController()

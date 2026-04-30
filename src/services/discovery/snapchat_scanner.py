@@ -273,4 +273,4 @@ class SnapchatScanner:
         return None
 
 
-base_snapchat_scanner = SnapchatScanner()
+base_snapchat_service = SnapchatScanner()

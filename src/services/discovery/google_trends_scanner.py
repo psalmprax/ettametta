@@ -79,4 +79,4 @@ class GoogleTrendsScanner:
         return []
 
 
-base_google_trends_scanner = GoogleTrendsScanner()
+base_google_trends_service = GoogleTrendsScanner()

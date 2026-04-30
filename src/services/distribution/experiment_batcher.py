@@ -137,4 +137,4 @@ class ExperimentBatcher:
             for b in self.active_batches[-3:]
         ]
 
-base_experiment_batcher = ExperimentBatcher()
+base_experiment_service = ExperimentBatcher()

@@ -1134,7 +1134,7 @@ export default function AdminSettingsPage() {
                                         ) : (
                                             <div className="glass-card divide-y divide-white/5 rounded-2xl overflow-hidden border border-white/5">
                                                 {adminAudits.map((audit, idx) => (
-                                                    <div key={audit.id ?? idx} className="p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors group">
+                                                    <div key={audit.id ?? idx} className="p-6 flex items-center justify-between hover:bg-white/2 transition-colors group">
                                                         <div className="flex items-center gap-6">
                                                             <div className={cn(
                                                                 "h-10 w-10 rounded-xl flex items-center justify-center",

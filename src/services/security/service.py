@@ -350,4 +350,4 @@ class SecuritySentinel:
         return vulnerabilities
 
 
-base_security_sentinel = SecuritySentinel()
+base_security_service = SecuritySentinel()

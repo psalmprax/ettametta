@@ -1,7 +1,7 @@
 import os
 import asyncio
 from src.api.utils.os_worker import ai_worker
-from .ffmpeg_utils import base_ffmpeg_transformer
+from .ffmpeg_utils import base_ffmpeg_service
 
 
 class TranscriptionService:
@@ -21,7 +21,7 @@ class TranscriptionService:
         try:
             # 1. Explicit Audio Extraction (Hardening)
             success = await asyncio.to_thread(
-                base_ffmpeg_transformer.extract_audio, video_path, audio_path
+                base_ffmpeg_service.extract_audio, video_path, audio_path
             )
             if not success:
                 print(f"[OS-Transcription] Audio extraction failed for {video_path}")

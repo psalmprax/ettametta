@@ -230,4 +230,4 @@ class NeuralVisionAnalyzer:
         return results[0] if results else None
 
 # Singleton instance
-base_neural_vision = NeuralVisionAnalyzer()
+base_vision_service = NeuralVisionAnalyzer()

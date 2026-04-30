@@ -225,4 +225,4 @@ class TikTokPublisher(SocialPublisher):
         return await token_manager.get_token("tiktok", user_id=user_id) is not None
 
 
-base_tiktok_publisher = TikTokPublisher()
+base_tiktok_service = TikTokPublisher()

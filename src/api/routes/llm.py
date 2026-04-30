@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import Any
 from src.api.routes.auth import get_current_user
 from src.api.routes.auth import get_current_user
-from src.services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_service
 from src.api.utils.user_models import UserDB
 
 router = APIRouter(prefix="/llm", tags=["LLM Services"])
@@ -161,17 +161,17 @@ async def reset_circuits(
     """
     if request.providers:
         for provider in request.providers:
-            base_intelligence_hub.reset_circuit(provider)
+            base_intelligence_service.reset_circuit(provider)
         return {
             "success": True,
             "reset_providers": request.providers,
             "msg": f"Circuit breakers reset for {len(request.providers)} provider(s)",
         }
     else:
-        base_intelligence_hub.reset_all_circuits()
+        base_intelligence_service.reset_all_circuits()
         return {
             "success": True,
-            "reset_providers": list(base_intelligence_hub.breakers.keys()),
+            "reset_providers": list(base_intelligence_service.breakers.keys()),
             "msg": "All circuit breakers reset",
         }
 

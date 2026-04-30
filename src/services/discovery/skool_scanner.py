@@ -191,4 +191,4 @@ class SkoolScanner:
         return candidates
 
 
-base_skool_scanner = SkoolScanner()
+base_skool_service = SkoolScanner()

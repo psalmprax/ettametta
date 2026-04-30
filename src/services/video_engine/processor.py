@@ -28,7 +28,7 @@ from src.api.config import settings
 # Backward compatibility aliases
 base_transcription_service = TranscriptionService()
 base_stock_service = StockService()
-base_ffmpeg_transformer = FFmpegTransformer()
+base_ffmpeg_service = FFmpegTransformer()
 
 logger = logging.getLogger(__name__)
 
@@ -448,7 +448,7 @@ class VideoProcessor:
             f"[VideoProcessor] Applying FFmpeg Originality Transformation: {input_path} -> {output_path}"
         )
 
-        success = base_ffmpeg_transformer.apply_originality(
+        success = base_ffmpeg_service.apply_originality(
             input_path=input_path,
             output_path=output_path,
             mirror=True,
@@ -490,7 +490,7 @@ class VideoProcessor:
             f"[VideoProcessor] Concatenating {len(clip_paths)} clips to {output_path}"
         )
 
-        success = base_ffmpeg_transformer.fast_concat(clip_paths, output_path)
+        success = base_ffmpeg_service.fast_concat(clip_paths, output_path)
         if success:
             return output_path
 
@@ -1030,9 +1030,9 @@ class VideoProcessor:
                 # - Vignette (cinematic feel)
                 # - Drawtext (Top/Bottom titles)
                 # - Color balance (vibrant)
-                from .ffmpeg_utils import base_ffmpeg_transformer
+                from .ffmpeg_utils import base_ffmpeg_service
                 
-                await base_ffmpeg_transformer.apply_cinematic_filters(
+                await base_ffmpeg_service.apply_cinematic_filters(
                     input_path,
                     fallback_path,
                     title=caption,

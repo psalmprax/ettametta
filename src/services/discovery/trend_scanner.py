@@ -58,4 +58,4 @@ class TrendScanner:
         return opportunities
 
 # Singleton Instance
-base_trend_scanner = TrendScanner()
+base_trend_service = TrendScanner()

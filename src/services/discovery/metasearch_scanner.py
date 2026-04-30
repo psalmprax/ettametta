@@ -1,8 +1,8 @@
 import aiohttp
 import logging
 from .models import ContentCandidate
-from .google_trends_scanner import base_google_trends_scanner
-from .google_search_scanner import base_google_search_scanner
+from .google_trends_scanner import base_google_trends_service
+from .google_search_scanner import base_google_search_service
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -28,14 +28,14 @@ class MetasearchScanner:
         
         # Get Google Trends
         try:
-            trends = await base_google_trends_scanner.scan_trends(niche, published_after)
+            trends = await base_google_trends_service.scan_trends(niche, published_after)
             all_candidates.extend(trends)
         except Exception as e:
             logger.warning(f"[Metasearch] Google Trends failed: {e}")
         
         # Get Google Search for monetization opportunities
         try:
-            search_results = await base_google_search_scanner.scan_trends(niche, published_after)
+            search_results = await base_google_search_service.scan_trends(niche, published_after)
             all_candidates.extend(search_results)
         except Exception as e:
             logger.warning(f"[Metasearch] Google Search failed: {e}")
@@ -49,4 +49,4 @@ class MetasearchScanner:
         return []
 
 
-base_metasearch_scanner = MetasearchScanner()
+base_metasearch_service = MetasearchScanner()

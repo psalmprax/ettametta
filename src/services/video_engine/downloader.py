@@ -144,4 +144,4 @@ class VideoDownloader:
             print(f"[VideoDownloader] Validation Error for {url}: {e}")
             return False
 
-base_video_downloader = VideoDownloader()
+base_downloader_service = VideoDownloader()

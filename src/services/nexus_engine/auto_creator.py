@@ -265,7 +265,7 @@ class AutoCreator:
         # Batch Rendering Path (Standard 4.1: Find Winners Fast)
         if batch_count > 1:
             logger.info(f"🚀 [AutoCreator] Triggering Neural Batch Production ({batch_count} variants)")
-            from src.services.video_engine.production_batch import base_batch_renderer
+            from src.services.video_engine.production_batch import base_batch_service
             
             variants = []
             for v_idx in range(batch_count):
@@ -277,13 +277,13 @@ class AutoCreator:
                     "cmd": ["ffmpeg", "-y", "-i", visual_paths[0], "-c:v", "libx264", f"outputs/{variant_id}.mp4"] # Mock FFmpeg command
                 })
             
-            batch_results = base_batch_renderer.render_batch(variants)
+            batch_results = base_batch_service.render_batch(variants)
             success_count = sum(1 for r in batch_results if r["success"])
             logger.info(f"✅ [AutoCreator] Batch Production Complete. Success: {success_count}/{batch_count}")
             output_path = batch_results[0]["path"] if batch_results else None
         else:
-            from src.services.nexus_engine.orchestrator import base_nexus_orchestrator
-            output_path = await base_nexus_orchestrator.assemble_video(
+            from src.services.nexus_engine.orchestrator import base_nexus_service
+            output_path = await base_nexus_service.assemble_video(
                 job_id=job_id,
                 niche=niche,
                 script_segments=segments,
@@ -360,4 +360,4 @@ class AutoCreator:
         return job_id
 
 
-base_auto_creator = AutoCreator()
+base_creator_service = AutoCreator()

@@ -112,4 +112,4 @@ class PublicDomainScanner:
         return candidates
 
 
-base_public_domain_scanner = PublicDomainScanner()
+base_public_domain_service = PublicDomainScanner()

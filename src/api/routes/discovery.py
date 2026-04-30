@@ -25,6 +25,7 @@ from src.services.payment.credit_service import credit_service
 from src.api.routes.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.database import get_db
+from src.services.discovery.service_extended import DiscoveryServiceExtended, get_discovery_service_extended
 from src.api.utils.subscription import credits_required, get_subscription_tier_value
 from src.api.config import settings
 from src.shared.enums import SystemJobStatus, CreditAction
@@ -359,158 +360,40 @@ async def get_all_niche_trends(current_user: UserDB = Depends(get_current_user))
 
 @router.get("/summary")
 async def get_discovery_summary(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    service: DiscoveryServiceExtended = Depends(get_discovery_service_extended),
 ):
     """Get discovery module summary statistics."""
-    try:
-        # Total candidates discovered
-        stmt_total = select(func.count()).select_from(ContentCandidateDB)
-        total_candidates = await db.execute(stmt_total)
-        total_count = total_candidates.scalar() or 0
-
-        # High viral score candidates (> 80)
-        stmt_high = (
-            select(func.count())
-            .select_from(ContentCandidateDB)
-            .where(ContentCandidateDB.viral_score >= 80)
-        )
-        high_count_res = await db.execute(stmt_high)
-        high_count = high_count_res.scalar() or 0
-
-        # Platform distribution
-        stmt_platforms = select(
-            ContentCandidateDB.platform, func.count()
-        ).group_by(ContentCandidateDB.platform)
-        platforms_res = await db.execute(stmt_platforms)
-        platform_dist = {row[0]: row[1] for row in platforms_res.all()}
-
-        return success_response(
-            data={
-                "total_candidates": total_count,
-                "high_velocity_candidates": high_count,
-                "platform_distribution": platform_dist,
-                "last_scan": datetime.datetime.utcnow().isoformat(),
-            }
-        )
-    except Exception as e:
-        logger.error(f"Discovery summary failed: {e}")
-        return success_response(data={"total_candidates": 0, "status": "partial_offline"})
+    stats = await service.get_summary_stats()
+    return success_response(data=stats)
 
 
 @router.get("/niches")
 async def list_monitored_niches(
-    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: UserDB = Depends(get_current_user),
+    service: DiscoveryServiceExtended = Depends(get_discovery_service_extended),
 ):
-    from src.api.utils.models import MonitoredNiche, DiscoveryAlertDB
-    from sqlalchemy import outerjoin
-
-    try:
-        # Join MonitoredNiche with DiscoveryAlertDB to get alert status
-        stmt = (
-            select(
-                MonitoredNiche.niche,
-                MonitoredNiche.is_active,
-                DiscoveryAlertDB.threshold,
-                DiscoveryAlertDB.is_active.label("alert_enabled"),
-            )
-            .outerjoin(
-                DiscoveryAlertDB,
-                and_(
-                    DiscoveryAlertDB.niche == MonitoredNiche.niche,
-                    DiscoveryAlertDB.user_id == MonitoredNiche.user_id,
-                ),
-            )
-            .filter(MonitoredNiche.user_id == current_user.id)
-            .order_by(MonitoredNiche.niche)
-        )
-
-        result = await db.execute(stmt)
-        rows = result.all()
-        
-        return success_response(
-            data=[
-                {
-                    "niche": r[0],
-                    "is_active": r[1],
-                    "threshold": r[2] or 7,
-                    "alert_enabled": r[3] if r[3] is not None else False,
-                }
-                for r in rows
-            ]
-        )
-    except Exception as e:
-        logger.error(f"List monitored niches failed: {e}")
-        return handle_exception(e)
+    """List all monitored niches for the current user."""
+    niches = await service.list_monitored_niches(current_user.id)
+    return success_response(data=niches)
 
 
 @router.post("/niche/watch")
 async def watch_niche(
     request: NicheAlertRequest,
     current_user: UserDB = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    service: DiscoveryServiceExtended = Depends(get_discovery_service_extended),
 ):
     """
     Persistently watch/monitor a niche for this current_user.
     Also creates or updates an alert for the niche.
     """
-    from src.api.utils.models import MonitoredNiche, DiscoveryAlertDB
-    from sqlalchemy import and_
-
-    try:
-        # 1. Handle MonitoredNiche
-        stmt = select(MonitoredNiche).filter(
-            and_(
-                MonitoredNiche.user_id == current_user.id,
-                MonitoredNiche.niche == request.niche,
-            )
-        )
-        result = await db.execute(stmt)
-        existing_monitor = result.scalar_one_or_none()
-
-        if not existing_monitor:
-            new_monitor = MonitoredNiche(
-                user_id=current_user.id, niche=request.niche, is_active=True
-            )
-            db.add(new_monitor)
-        else:
-            existing_monitor.is_active = True
-
-        # 2. Handle DiscoveryAlert
-        stmt_alert = select(DiscoveryAlertDB).filter(
-            and_(
-                DiscoveryAlertDB.user_id == current_user.id,
-                DiscoveryAlertDB.niche == request.niche,
-            )
-        )
-        alert_result = await db.execute(stmt_alert)
-        existing_alert = alert_result.scalar_one_or_none()
-
-        if not existing_alert:
-            new_alert = DiscoveryAlertDB(
-                user_id=current_user.id,
-                niche=request.niche,
-                threshold=request.threshold,
-                is_active=request.enabled,
-            )
-            db.add(new_alert)
-        else:
-            existing_alert.is_active = request.enabled
-            existing_alert.threshold = request.threshold
-
-        await db.commit()
-        return success_response(
-            data={
-                "status": "Niche Watch Established",
-                "niche": request.niche,
-                "threshold": request.threshold,
-                "enabled": request.enabled
-            }
-        )
-
-    except Exception as e:
-        await db.rollback()
-        logger.error(f"Watch niche failed: {e}")
-        return handle_exception(e)
+    result = await service.watch_niche(
+        user_id=current_user.id,
+        niche=request.niche,
+        threshold=request.threshold,
+        enabled=request.enabled,
+    )
+    return success_response(data=result)
 
 
 @router.get("/analyze/{task_id}")

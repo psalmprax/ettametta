@@ -19,7 +19,7 @@ load_dotenv()
 import httpx
 
 
-from src.services.llm.intelligence_hub import base_intelligence_hub
+from src.services.llm.intelligence_hub import base_intelligence_service
 
 async def expand_query_intelligently(query: str, session_id: str | None = None) -> list[str]:
     """Use LLM to expand a base query into high-converting viral variations with resilient fallback."""
@@ -30,7 +30,7 @@ Generate 3 viral, high-intent search variations that people use to find trending
 Avoid generic terms. Return ONLY a JSON list of strings."""
 
     try:
-        result = await base_intelligence_hub.chat(
+        result = await base_intelligence_service.chat(
             prompt=prompt,
             system_prompt="You are a professional viral content strategist. Generate high-intent search queries. Return ONLY a JSON list of strings.",
             session_id=session_id,
@@ -798,7 +798,7 @@ Evaluate for:
 Reply with JSON ONLY: {{"hook_strength": N, "category": "string", "pattern": "string", "sentiment": "string", "reason": "string", "usable": true|false}}"""
 
     try:
-        result = await base_intelligence_hub.chat(
+        result = await base_intelligence_service.chat(
             prompt=prompt,
             system_prompt="You are a Viral Narrative Analyst. Your job is to classify content and filter out low-quality/off-topic videos. Return ONLY valid JSON.",
             session_id=session_id,

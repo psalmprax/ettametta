@@ -10,8 +10,8 @@ import logging
 import json
 import numpy as np
 from typing import Any
-from src.services.analytics.ledger import base_performance_ledger
-from src.services.optimization.forecaster_pipeline import base_forecaster_pipeline
+from src.services.analytics.ledger import base_ledger_service
+from src.services.optimization.forecaster_pipeline import base_forecaster_service
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class DriftMonitor:
 
     def audit_system_honesty(self) -> dict[str, Any]:
         """Calculates Mean Absolute Error for the last N productions"""
-        report = base_performance_ledger.get_accuracy_report()
+        report = base_ledger_service.get_accuracy_report()
         error = report.get("avg_prediction_error", 0.0)
         
         needs_correction = error > self.drift_threshold
@@ -43,4 +43,4 @@ class DriftMonitor:
         return status
 
 # Singleton Instance
-base_drift_monitor = DriftMonitor()
+base_monitor_service = DriftMonitor()

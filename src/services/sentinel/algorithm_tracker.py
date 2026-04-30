@@ -54,4 +54,4 @@ class AlgorithmSentinel(BaseEttamettaAgent):
         }
 
 
-base_algorithm_sentinel = AlgorithmSentinel()
+base_algorithm_service = AlgorithmSentinel()

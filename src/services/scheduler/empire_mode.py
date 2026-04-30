@@ -45,4 +45,4 @@ class EmpireModeScheduler:
             logging.error(f"[EmpireModeScheduler] Cloning Error: {e}")
             return base_script
 
-base_empire_scheduler = EmpireModeScheduler()
+base_scheduler_service = EmpireModeScheduler()

@@ -42,6 +42,7 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ClusterManager } from "@/components/ui/ClusterManager";
 import { NeuralCanvas } from "@/components/ui/NeuralCanvas";
 import { CommandPod } from "@/components/ui/CommandPod";
+import { Card } from "@/components/ui/Card";
 
 import { Blueprint, NexusJob, Persona } from "@/lib/types";
 
@@ -517,8 +518,8 @@ export default function NexusPage() {
                 </div>
 
                 {/* Configuration Bar */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-5xl bg-zinc-950/40 border border-white/5 backdrop-blur-3xl shadow-2xl shadow-neon-cyan/5">
-                    <div className="flex flex-col gap-2 p-4 rounded-3xl bg-white/2 border border-white/5 group hover:border-cyan-400/20 transition-all">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-2xl bg-slate-900/40 border border-white/5 backdrop-blur-3xl shadow-2xl shadow-neon-cyan/5">
+                    <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/2 border border-white/5 group hover:border-cyan-400/20 transition-all">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 flex items-center gap-2">
                             <Layers className="h-3 w-3" /> NEURAL_TARGET
                         </label>
@@ -531,7 +532,7 @@ export default function NexusPage() {
                         </select>
                     </div>
 
-                    <div className="flex flex-col gap-2 p-4 rounded-3xl bg-white/3 border border-white/5 group hover:border-cyan-400/20 transition-all">
+                    <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/3 border border-white/5 group hover:border-cyan-400/20 transition-all">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 flex items-center gap-2">
                            <Cpu className="h-3 w-3" /> SYSTEM_PROTOCOL
                         </label>
@@ -546,7 +547,7 @@ export default function NexusPage() {
                         </select>
                     </div>
 
-                    <div className="flex flex-col gap-2 p-4 rounded-3xl bg-white/3 border border-white/5 group hover:border-cyan-400/20 transition-all">
+                    <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/3 border border-white/5 group hover:border-cyan-400/20 transition-all">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 flex items-center gap-2">
                            <Database className="h-3 w-3" /> Storage Node
                         </label>
@@ -557,7 +558,7 @@ export default function NexusPage() {
                         onClick={handleLaunchPipeline}
                         disabled={isLaunching || !selectedNiche}
                         className={cn(
-                        "h-full rounded-3xl bg-gradient-to-r from-cyan-600 to-cyan-400 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 group relative overflow-hidden shadow-[0_0_20px_rgba(34,211,238,0.2)]",
+                        "h-full rounded-2xl bg-gradient-to-r from-cyan-600 to-cyan-400 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 group relative overflow-hidden shadow-[0_0_20px_rgba(34,211,238,0.2)]",
                         (isLaunching || !selectedNiche) && "opacity-50 cursor-not-allowed"
                     )}>
                         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
@@ -569,7 +570,7 @@ export default function NexusPage() {
                 {/* Pipeline Mesh Visualization */}
                 <div className="grid grid-cols-1 xl:grid-cols-4 gap-12">
                     <div className="xl:col-span-3 space-y-12">
-                        <div className="relative aspect-21/9 rounded-6xl bg-zinc-950 border border-white/5 overflow-hidden shadow-inner group">
+                        <div className="relative aspect-21/9 rounded-2xl bg-zinc-950 border border-white/5 overflow-hidden shadow-inner group">
                             {/* Animated Background Mesh */}
                             <div className="absolute inset-0 opacity-20 pointer-events-none">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--neon-violet)_0%,transparent_100%)] opacity-10 animate-pulse" />
@@ -624,7 +625,7 @@ export default function NexusPage() {
                                     </p>
                                 </div>
                             </div>
-                            <div className="absolute top-6 right-8 p-4 rounded-3xl bg-black/60 border border-white/10 backdrop-blur-xl group-hover:border-cyan-400/30 transition-all pointer-events-none">
+                            <div className="absolute top-6 right-8 p-4 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl group-hover:border-cyan-400/30 transition-all pointer-events-none">
                                  <div className="flex items-center gap-4">
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Status:</p>
                                     <p className="text-cyan-400 font-bold uppercase tracking-tight shadow-[0_0_15px_rgba(34,211,238,0.2)]">
@@ -636,7 +637,7 @@ export default function NexusPage() {
 
                         {/* Node Detail Section */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="glass-card p-10 space-y-6">
+                            <Card variant="solid" className="p-10 space-y-6 rounded-2xl bg-slate-900/40 backdrop-blur-md">
                                 <div className="flex items-center gap-4">
                                     <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                                         <Settings2 className="h-6 w-6" />
@@ -656,9 +657,9 @@ export default function NexusPage() {
                                         <span className="text-xs font-bold text-white uppercase">{telemetry?.cluster_node || "Local-Edge-1"}</span>
                                     </div>
                                 </div>
-                            </div>
+                            </Card>
 
-                            <div className="glass-card p-10 bg-white/2 border-white/10 flex flex-col justify-center items-center text-center space-y-6 group cursor-pointer" onClick={handleCustomRecipe}>
+                            <Card variant="solid" className="p-10 bg-slate-900/40 border-white/10 flex flex-col justify-center items-center text-center space-y-6 group cursor-pointer rounded-2xl backdrop-blur-md" onClick={handleCustomRecipe}>
                                 <div className="h-16 w-16 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <Plus className="h-8 w-8 text-zinc-700" />
                                 </div>
@@ -666,7 +667,7 @@ export default function NexusPage() {
                                     <h3 className="text-lg font-bold text-zinc-500 group-hover:text-white transition-colors uppercase tracking-tight">INITIALIZE_CUSTOM_PROTOCOL</h3>
                                     <p className="text-[10px] font-medium text-zinc-700 uppercase tracking-widest leading-relaxed">Design your own neural pipeline for custom workflows.</p>
                                 </div>
-                            </div>
+                            </Card>
                         </div>
                     </div>
 
@@ -716,7 +717,7 @@ export default function NexusPage() {
                         </div>
 
                          {/* Global Pulse Indicator */}
-                        <div className="p-8 rounded-5xl bg-linear-to-br from-zinc-900 to-black border border-white/5 space-y-4">
+                        <div className="p-8 rounded-2xl bg-slate-900/40 backdrop-blur-md border border-white/5 space-y-4">
                             <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Network Health</h4>
                             <div className="flex gap-1 h-8 items-end">
                                 {[...Array(24)].map((_, i) => {

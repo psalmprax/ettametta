@@ -83,4 +83,4 @@ class CausalAnalyst:
                 return arc["emotion"]
         return "Unknown"
 
-base_causal_analyst = CausalAnalyst()
+base_analyst_service = CausalAnalyst()

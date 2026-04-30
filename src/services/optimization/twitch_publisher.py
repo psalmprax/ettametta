@@ -188,4 +188,4 @@ class TwitchPublisher(SocialPublisher):
         return await token_manager.get_token("twitch", user_id=user_id) is not None
 
 
-base_twitch_publisher = TwitchPublisher()
+base_twitch_service = TwitchPublisher()

@@ -28,7 +28,7 @@ class AgentZeroSkill(OpenClawBaseSkill):
         try:
             if action == "start":
                 try:
-                    from src.services.agent_zero.agent import base_agent_zero
+                    from src.services.agent_zero.agent import base_agent_zero_service_service
                     import threading
 
                     def _start_async():
@@ -36,7 +36,7 @@ class AgentZeroSkill(OpenClawBaseSkill):
 
                         loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(loop)
-                        loop.run_until_complete(base_agent_zero.start())
+                        loop.run_until_complete(base_agent_zero_service_service.start())
 
                     thread = threading.Thread(target=_start_async, daemon=True)
                     thread.start()
@@ -45,25 +45,25 @@ class AgentZeroSkill(OpenClawBaseSkill):
                     return f"⚠️ Failed to start Agent Zero: {e}"
             elif action == "stop":
                 try:
-                    from src.services.agent_zero.agent import base_agent_zero
+                    from src.services.agent_zero.agent import base_agent_zero_service_service
 
-                    base_agent_zero.stop()
+                    base_agent_zero_service_service.stop()
                     return "🛑 **Agent Zero Loop Stopped.** Autonomy suspended."
                 except Exception as e:
                     return f"⚠️ Failed to stop Agent Zero: {e}"
             elif action == "status":
                 try:
-                    from src.services.agent_zero.agent import base_agent_zero
+                    from src.services.agent_zero.agent import base_agent_zero_service_service
 
-                    status = "RUNNING" if base_agent_zero.is_running else "STOPPED"
+                    status = "RUNNING" if base_agent_zero_service_service.is_running else "STOPPED"
                     step = (
-                        base_agent_zero.current_step
-                        if base_agent_zero.is_running
+                        base_agent_zero_service_service.current_step
+                        if base_agent_zero_service_service.is_running
                         else "N/A"
                     )
                     last_run = (
-                        str(base_agent_zero.last_run_at)
-                        if base_agent_zero.last_run_at
+                        str(base_agent_zero_service_service.last_run_at)
+                        if base_agent_zero_service_service.last_run_at
                         else "Never"
                     )
                     return (

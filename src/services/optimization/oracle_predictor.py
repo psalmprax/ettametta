@@ -15,7 +15,7 @@ import logging
 import json
 from typing import Any
 from pathlib import Path
-from src.services.optimization.model_registry import base_model_registry
+from src.services.optimization.model_registry import base_registry_service
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class NeuralOracle:
             self.model_path = Path(model_path)
         else:
             # 10/10: Pull champion from registry
-            self.model_path = Path(base_model_registry.get_champion_path())
+            self.model_path = Path(base_registry_service.get_champion_path())
             
         self.model_path.parent.mkdir(parents=True, exist_ok=True)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -77,7 +77,7 @@ class NeuralOracle:
 
     def reload_champion(self):
         """Zero-downtime hot-swap for production models."""
-        self.model_path = Path(base_model_registry.get_champion_path())
+        self.model_path = Path(base_registry_service.get_champion_path())
         self._load_model()
         logger.info(f"⚡ [Neural] Oracle hot-swapped to new Champion: {self.model_path.name}")
 
@@ -120,4 +120,4 @@ class NeuralOracle:
         self.model.eval()
 
 # Singleton Instance
-base_neural_oracle = NeuralOracle()
+base_oracle_service = NeuralOracle()

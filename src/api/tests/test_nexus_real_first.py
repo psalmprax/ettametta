@@ -54,7 +54,7 @@ async def test_discovery_deep_scan_route():
 
 @pytest.mark.asyncio
 async def test_autocreator_fallback_logic():
-    from src.services.nexus_engine.auto_creator import base_auto_creator
+    from src.services.nexus_engine.auto_creator import base_creator_service
     from src.services.monetization.auto_merch import base_auto_merch_service
     
     # Hardened Reality: Should raise ValueError if no keys are set

@@ -206,7 +206,7 @@ class SceneBasedVideoOrchestrator:
 
             # 1. Acquire Source Videos (Real Downloads for Tier 10)
             video_files = []
-            from .downloader import base_video_downloader
+            from .downloader import base_downloader_service
             
             logger.info(f"Acquiring {len(segments)} segments for video fusion...")
             
@@ -222,7 +222,7 @@ class SceneBasedVideoOrchestrator:
                     logger.info(f"Downloading asset for segment {i+1}: {video_uri}")
                     # In a production loop, we'd use await, but for hardening we'll ensure we have some assets
                     try:
-                        downloaded_path = await base_video_downloader.download_video(video_uri)
+                        downloaded_path = await base_downloader_service.download_video(video_uri)
                         if downloaded_path and Path(downloaded_path).exists():
                             video_files.append((downloaded_path, segment))
                             print(f"DEBUG: Downloaded segment {i+1} to {downloaded_path}")
@@ -480,4 +480,4 @@ class SceneBasedVideoOrchestrator:
 
 
 # Global instance
-base_scene_based_orchestrator = SceneBasedVideoOrchestrator()
+base_scene_orchestrator_service = SceneBasedVideoOrchestrator()

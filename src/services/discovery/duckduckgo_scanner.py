@@ -272,4 +272,4 @@ class DuckDuckGoScanner:
             return "Web"
 
 
-base_duckduckgo_scanner = DuckDuckGoScanner()
+base_duckduckgo_service = DuckDuckGoScanner()
