@@ -89,4 +89,4 @@ class StreamProcessor:
             await asyncio.sleep(1) # Frequency management
 
 # Singleton Instance
-base_stream_processor = StreamProcessor()
+base_stream_service = StreamProcessor()

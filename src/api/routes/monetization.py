@@ -6,8 +6,8 @@ from src.api.utils.database import get_db
 from src.api.utils.models import AffiliateLinkDB, RevenueLogDB
 from src.api.routes.auth import get_current_user
 from src.api.utils.api_responses import success_response
-from src.services.monetization.service import base_monetization_engine
-from src.services.monetization.promo_generator import base_promo_generator
+from src.services.monetization.service import base_monetization_service
+from src.services.monetization.promo_generator import base_promo_service
 from src.api.utils.subscription import credits_required
 from src.services.payment.credit_service import credit_service
 from pydantic import BaseModel
@@ -35,7 +35,7 @@ async def recommend_links(
     """
     Recommends products/links based on script content.
     """
-    recommendations = await base_monetization_engine.recommend_products(
+    recommendations = await base_monetization_service.recommend_products(
         request.niche, request.script_text
     )
 
@@ -102,7 +102,7 @@ async def get_monetization_report(
 
     total_rev = sum(log.amount for log in logs)
     total_views = sum(log.view_count for log in logs)
-    epm = base_monetization_engine.calculate_epm(total_rev, total_views)
+    epm = base_monetization_service.calculate_epm(total_rev, total_views)
 
     # Group by platform
     by_platform = {}
@@ -336,7 +336,7 @@ async def clone_strategy(
     db=Depends(get_db),
 ):
     from src.services.monetization.empire_service import base_empire_service
-    from src.services.nexus_engine.auto_creator import base_auto_creator
+    from src.services.nexus_engine.auto_creator import base_creator_service
 
     # 1. Clone settings and affiliate links
     success = await base_empire_service.clone_strategy(
@@ -356,7 +356,7 @@ async def clone_strategy(
     job_id = None
     if request.auto_publish:
         try:
-            job_id = await base_auto_creator.launch_automated_video(
+            job_id = await base_creator_service.launch_automated_video(
                 user_id=current_user.id,
                 topic=f"Expansion into {request.target_niche}",
                 niche=request.target_niche,
@@ -423,7 +423,7 @@ async def generate_promo(request: PromoRequest, current_user=Depends(get_current
     """
     Generates a conversion-optimized promo script.
     """
-    script = await base_promo_generator.generate_promo_script(
+    script = await base_promo_service.generate_promo_script(
         request.product_name, request.niche, request.duration
     )
     return success_response(data=script)

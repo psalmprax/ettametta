@@ -9,8 +9,8 @@ when drift is detected. Records recovery timing via Prometheus.
 import asyncio
 import logging
 import time
-from src.services.analytics.drift_detector import base_drift_detector
-from src.services.distribution.experiment_batcher import base_experiment_batcher
+from src.services.analytics.drift_detector import base_drift_service
+from src.services.distribution.experiment_batcher import base_experiment_service
 from src.api.utils.redis import get_redis
 from src.services.infrastructure.resilience_metrics import recovery_duration
 
@@ -34,10 +34,10 @@ class RecoveryService:
         start = time.time()
 
         # 1. Sync Algorithm Drift History
-        await base_drift_detector.sync_from_db()
+        await base_drift_service.sync_from_db()
 
         # 2. Sync Active Experiment Cohorts
-        await base_experiment_batcher.sync_from_db()
+        await base_experiment_service.sync_from_db()
 
         # 3. Rebuild Redis Hot State for Active Batches
         await self._rebuild_redis_hot_state()
@@ -58,7 +58,7 @@ class RecoveryService:
         """Ensures Redis 'active_batch' pointers are correct for each strategy."""
         try:
             redis = await get_redis()
-            for batch in base_experiment_batcher.active_batches:
+            for batch in base_experiment_service.active_batches:
                 # Refresh the hot pointer in Redis
                 await redis.set(
                     f"active_batch:{batch['strategy']}",
@@ -67,7 +67,7 @@ class RecoveryService:
                 )
             logger.info(
                 f"🧠 [Recovery] Redis Hot State reconstructed for "
-                f"{len(base_experiment_batcher.active_batches)} cohorts."
+                f"{len(base_experiment_service.active_batches)} cohorts."
             )
         except Exception as e:
             logger.error(f"Failed to rebuild Redis hot state: {e}")

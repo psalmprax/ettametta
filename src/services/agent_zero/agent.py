@@ -364,4 +364,4 @@ class AgentZero(BaseEttamettaAgent):
         return json.loads(response)
 
 
-base_agent_zero = AgentZero()
+base_agent_zero_service = AgentZero()

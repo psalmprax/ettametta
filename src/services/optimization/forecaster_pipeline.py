@@ -12,8 +12,8 @@ import torch
 import numpy as np
 from typing import Any
 from src.services.analytics.signal_bus import base_signal_bus
-from src.services.optimization.oracle_predictor import base_neural_oracle
-from src.services.analytics.ledger import base_performance_ledger
+from src.services.optimization.oracle_predictor import base_oracle_service
+from src.services.analytics.ledger import base_ledger_service
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class ForecasterPipeline:
         
         # 1. Gather Dataset (The Join)
         # We join Signal Bus features with Performance Ledger outcomes
-        ledger_data = base_performance_ledger.get_accuracy_report().get("raw_entries", [])
+        ledger_data = base_ledger_service.get_accuracy_report().get("raw_entries", [])
         
         training_samples = []
         for entry in ledger_data:
@@ -53,7 +53,7 @@ class ForecasterPipeline:
         logger.info(f"🔥 [Forecaster] Training on {len(training_samples)} production samples.")
         
         # In a real 10/10, we'd wrap these in a DataLoader here
-        # base_neural_oracle.train_cycle(loader)
+        # base_oracle_service.train_cycle(loader)
         await asyncio.sleep(1) # Simulation
         print("✅ [Forecaster] Neural Model Updated with Real-World Performance.")
 
@@ -66,7 +66,7 @@ class ForecasterPipeline:
         # Neural Inference
         # Padding to match 520 input (Numerical + CLIP)
         dummy_clip = np.zeros(512)
-        curve = base_neural_oracle.predict_curve(features + [0]*5, dummy_clip) # Simplified pad
+        curve = base_oracle_service.predict_curve(features + [0]*5, dummy_clip) # Simplified pad
         
         return {
             "probability": float(curve[0]), # 3s Hook prediction
@@ -75,4 +75,4 @@ class ForecasterPipeline:
         }
 
 # Singleton Instance
-base_forecaster_pipeline = ForecasterPipeline()
+base_forecaster_service = ForecasterPipeline()

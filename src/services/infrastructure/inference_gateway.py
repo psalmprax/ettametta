@@ -2,9 +2,9 @@ import logging
 import asyncio
 import numpy as np
 from typing import Any
-from src.services.optimization.oracle_predictor import base_neural_oracle
-from src.services.infrastructure.event_bus import base_event_bus
-from src.services.optimization.model_registry import base_model_registry
+from src.services.optimization.oracle_predictor import base_oracle_service
+from src.services.infrastructure.event_bus import base_event_service
+from src.services.optimization.model_registry import base_registry_service
 
 logger = logging.getLogger("InferenceGateway")
 
@@ -14,9 +14,9 @@ class InferenceGateway:
     Decouples the 'Brain' (Inference) from the 'Body' (API/Jobs).
     """
     def __init__(self):
-        self.oracle = base_neural_oracle
-        self.bus = base_event_bus
-        self.registry = base_model_registry
+        self.oracle = base_oracle_service
+        self.bus = base_event_service
+        self.registry = base_registry_service
 
     async def predict_retention(self, numerical_features: list[float], clip_embedding: np.ndarray | None = None) -> np.ndarray:
         """
@@ -63,4 +63,4 @@ class InferenceGateway:
             "uptime_seconds": time.time() - champion_data["created_at"]
         }
 
-base_inference_gateway = InferenceGateway()
+base_inference_service = InferenceGateway()

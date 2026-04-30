@@ -136,4 +136,4 @@ class DistributedEventBus:
         except Exception as e:
             logger.error(f"[Bus] Fail-over check failed: {e}")
 
-base_event_bus = DistributedEventBus()
+base_event_service = DistributedEventBus()

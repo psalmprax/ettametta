@@ -42,46 +42,21 @@ async def list_jobs(
 async def abort_job(
     job_id: str,
     current_user: UserDB = Depends(get_current_user),
-    db=Depends(get_db),
+    job_service: VideoJobService = Depends(get_video_job_service),
 ):
     """
     Abort a running video processing job.
     """
-    from src.api.utils.celery import celery_app
-    from src.api.routes.ws import notify_job_update_sync
-
     try:
-        # Try Video jobs
-        stmt = select(VideoJobDB).where(VideoJobDB.id == job_id)
-        result = await db.execute(stmt)
-        job = result.scalar_one_or_none()
-
-        if not job:
-            # Try Nexus jobs
-            from src.api.utils.models import NexusJobDB
-            stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
-            result = await db.execute(stmt)
-            job = result.scalar_one_or_none()
-
-        if not job:
-            raise HTTPException(status_code=404, detail="Job not found")
-
-        if current_user.role != UserRole.ADMIN and job.user_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Not authorized")
-
-        celery_app.control.revoke(job_id, terminate=True)
-        job.status = SystemJobStatus.ABORTED
-        await db.commit()
-
-        notify_job_update_sync(
-            {
-                "id": job_id,
-                "status": SystemJobStatus.ABORTED.value,
-                "progress": job.progress,
-                "output_path": job.output_path,
-            }
+        success = await job_service.abort_job(
+            job_id=job_id,
+            user_id=current_user.id,
+            user_role=current_user.role,
         )
-
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Job not found or unauthorized")
+        
         return success_response(
             data={
                 "status": SystemJobStatus.ABORTED.value,

@@ -414,4 +414,4 @@ class IntelligenceHub:
 
 
 # Singleton accessor
-base_intelligence_hub = IntelligenceHub()
+base_intelligence_service = IntelligenceHub()

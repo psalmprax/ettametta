@@ -21,7 +21,7 @@ load_dotenv()
 # Ensure DEBUG is explicitly set to boolean
 os.environ["DEBUG"] = "true"
 
-from src.services.video_engine.downloader import base_video_downloader
+from src.services.video_engine.downloader import base_downloader_service
 from src.services.video_engine.transcription import base_transcription_service
 
 
@@ -35,7 +35,7 @@ async def test_full_pipeline():
         print("\n[1/5] DOWNLOADING video...")
         test_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         print(f"  URL: {test_url}")
-        test_video = await base_video_downloader.download_video(test_url)
+        test_video = await base_downloader_service.download_video(test_url)
         if not test_video:
             print("  ❌ Download failed!")
             return None

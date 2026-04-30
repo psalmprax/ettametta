@@ -315,4 +315,4 @@ class BilibiliScanner:
         return 0.0
 
 
-base_bilibili_scanner = BilibiliScanner()
+base_bilibili_service = BilibiliScanner()

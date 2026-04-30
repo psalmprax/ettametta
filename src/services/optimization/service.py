@@ -3,7 +3,7 @@ from src.api.config import settings
 from src.api.utils.os_worker import ai_worker
 from src.api.utils.database import async_session_factory
 from src.api.utils.models import AffiliateLinkDB, SystemSettings
-from src.services.monetization.service import base_monetization_engine
+from src.services.monetization.service import base_monetization_service
 import json
 import logging
 import random
@@ -156,7 +156,7 @@ class OptimizationService:
                 if should_harvest:
                     # 2. Source Monetization based on Strategy
                     if active_strategy == "commerce":
-                        product = await base_monetization_engine.match_viral_to_product(
+                        product = await base_monetization_service.match_viral_to_product(
                             niche, content_id
                         )
                         if product:

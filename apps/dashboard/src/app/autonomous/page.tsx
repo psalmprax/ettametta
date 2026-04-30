@@ -264,7 +264,7 @@ export default function AutonomousPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     {/* Visual Logic Flow */}
                     <div className="lg:col-span-2 space-y-8">
-                        <div className="glass-card aspect-16/10 rounded-4xl p-12 flex flex-col items-center justify-center relative overflow-hidden bg-white/1">
+                        <div className="glass-card aspect-16/10 rounded-2xl p-12 flex flex-col items-center justify-center relative overflow-hidden bg-white/1">
                             <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
 
                             <div className="flex items-center gap-12 relative">
@@ -370,7 +370,7 @@ export default function AutonomousPage() {
                         </div>
 
                         {/* Optimization Card */}
-                        <div className="glass-card p-8 rounded-4xl bg-emerald-500/5 border-emerald-500/10 space-y-4">
+                        <div className="glass-card p-8 rounded-2xl bg-emerald-500/5 border-emerald-500/10 space-y-4">
                             <div className="flex items-center gap-3">
                                 <Sparkles className="h-4 w-4 text-emerald-500" />
                                 <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500">Autonomous Insight</span>

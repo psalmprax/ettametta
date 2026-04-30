@@ -65,4 +65,4 @@ class RedditScanner:
                     
         return candidates
 
-base_reddit_scanner = RedditScanner()
+base_reddit_service = RedditScanner()

@@ -16,8 +16,8 @@ from tenacity import (
 from googleapiclient.errors import HttpError as GoogleHttpError
 from src.api.config import settings
 from src.services.optimization.auth import token_manager
-from src.services.optimization.oracle_predictor import base_neural_oracle
-from src.services.analytics.ledger import base_performance_ledger
+from src.services.optimization.oracle_predictor import base_oracle_service
+from src.services.analytics.ledger import base_ledger_service
 import numpy as np
 
 
@@ -210,7 +210,7 @@ class AnalyticsService:
                 # data is stored in the vault/ledger.
                 dummy_clip = np.zeros(512)
                 features = [raw_retention_rate, data["views"]/1000000, data["likes"]/data["views"] if data["views"]>0 else 0, 0, 0]
-                retention_data = base_neural_oracle.predict_curve(features, dummy_clip).tolist()
+                retention_data = base_oracle_service.predict_curve(features, dummy_clip).tolist()
 
                 insight = await self._generate_ai_insight(
                     data["views"], data["likes"], data["shares"], data["comments"]
@@ -274,7 +274,7 @@ class AnalyticsService:
             share_count=db_shares,
             comment_count=0,
             follows_gained=0,
-            retention_data=base_neural_oracle.predict_curve([0.1, 0, 0, 0, 0], np.zeros(512)).tolist(),
+            retention_data=base_oracle_service.predict_curve([0.1, 0, 0, 0, 0], np.zeros(512)).tolist(),
             optimization_insight=fallback_insight
             if db_views > 0
             else "No remote analytics data available. Initializing tracking.",
@@ -332,10 +332,10 @@ class AnalyticsService:
 
     async def _get_instagram_metrics(self, post_id: str, user_id: str) -> dict:
         """Get Instagram post metrics"""
-        from src.services.optimization.instagram_publisher import base_instagram_publisher
+        from src.services.optimization.instagram_publisher import base_instagram_service
 
         try:
-            metrics = await base_instagram_publisher.get_metrics(post_id, user_id)
+            metrics = await base_instagram_service.get_metrics(post_id, user_id)
             return {
                 "views": metrics.get("views", 0),
                 "likes": metrics.get("likes", 0),
@@ -362,10 +362,10 @@ class AnalyticsService:
 
     async def _get_x_metrics(self, post_id: str, user_id: str) -> dict:
         """Get X/Twitter metrics"""
-        from src.services.optimization.x_publisher import base_x_publisher
+        from src.services.optimization.x_publisher import base_x_service
 
         try:
-            metrics = await base_x_publisher.get_metrics(post_id, user_id)
+            metrics = await base_x_service.get_metrics(post_id, user_id)
             return {
                 "views": metrics.get("views", 0),
                 "likes": metrics.get("likes", 0),
@@ -684,7 +684,7 @@ class AnalyticsService:
         """
         import redis
         import datetime
-        from src.services.optimization.youtube_publisher import base_youtube_publisher
+        from src.services.optimization.youtube_publisher import base_youtube_service
         from src.api.config import settings
 
         self.logger.info(
@@ -699,7 +699,7 @@ class AnalyticsService:
             "#highvelocity",
         ]
 
-        success = await base_youtube_publisher.update_metadata(
+        success = await base_youtube_service.update_metadata(
             post_id, viral_tags, user_id
         )
 

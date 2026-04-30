@@ -391,7 +391,7 @@ export default function CreationPage() {
                             animate={{ opacity: 1, x: 0 }}
                             className="flex items-center gap-4"
                         >
-                            <div className="surface-glass rounded-4xl border border-white/5 p-6 flex items-center gap-10">
+                            <div className="bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/5 p-6 flex items-center gap-10">
                                 <div className="space-y-1">
                                     <p className="font-bold text-[8px] text-zinc-600 uppercase tracking-widest">Sync Status</p>
                                     <div className="flex items-center gap-2">
@@ -436,7 +436,7 @@ export default function CreationPage() {
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start">
                         {/* LEFT: COMMAND CONSOLE */}
                         <div className="xl:col-span-4 space-y-10">
-                            <Card variant="solid" className="rounded-[2.5rem] border border-white/5 p-10 space-y-10">
+                            <Card variant="solid" className="rounded-2xl border border-white/5 p-10 space-y-10 bg-slate-900/40 backdrop-blur-md">
                                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(0,251,251,0.05),transparent_40%)]" />
                                 
                                 <div className="flex items-center justify-between">
@@ -510,7 +510,7 @@ export default function CreationPage() {
                                                     onClick={() => setActiveStack(s.id as any)}
                                                     data-testid={s.testId}
                                                     className={cn(
-                                                        "p-5 sm:p-6 rounded-3xl border transition-all cursor-pointer group/stack relative overflow-hidden",
+                                                        "p-5 sm:p-6 rounded-2xl border transition-all cursor-pointer group/stack relative overflow-hidden",
                                                         activeStack === s.id 
                                                             ? "bg-cyan-400/5 border-cyan-400/30 shadow-glow-primary/5" 
                                                             : "bg-black/40 border-white/5 hover:border-white/10"
@@ -608,7 +608,7 @@ export default function CreationPage() {
                                     onClick={cinemaMode ? handleLaunchCinema : handleGenerateScript}
                                     disabled={isGenerating || isCinemaLaunching || !topic}
                                     variant="primary"
-                                    className="w-full py-10 mt-4 flex items-center justify-center gap-6 group overflow-hidden rounded-3xl"
+                                    className="w-full py-10 mt-4 flex items-center justify-center gap-6 group overflow-hidden rounded-2xl"
                                 >
                                     <span className="relative z-10 font-bold tracking-[0.2em] uppercase text-lg">
                                         {isGenerating || isCinemaLaunching ? "Processing..." : cinemaMode ? "Initialize Cinema" : "Synthesize Script"}
@@ -624,7 +624,7 @@ export default function CreationPage() {
                             </Card>
 
                             {/* LOGS HUD */}
-                            <div className="surface-glass rounded-4xl border border-white/5 p-8 font-data-mono text-[9px] space-y-3 border-l-4 border-l-cyan-400/30 uppercase tracking-widest">
+                            <div className="bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/5 p-8 font-data-mono text-[9px] space-y-3 border-l-4 border-l-cyan-400/30 uppercase tracking-widest">
                                 <div className="flex items-center justify-between text-zinc-600">
                                     <span>System_Log</span>
                                     <span>v3.0.4-REV</span>
@@ -648,7 +648,7 @@ export default function CreationPage() {
 
                         {/* RIGHT: WORKSPACE CONSOLE */}
                         <div className="xl:col-span-8">
-                            <Card variant="solid" className="min-h-[850px] flex flex-col relative group rounded-4xl border border-white/5 overflow-hidden">
+                            <Card variant="solid" className="min-h-[850px] flex flex-col relative group rounded-2xl border border-white/5 overflow-hidden bg-slate-900/40 backdrop-blur-md">
                                 <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-cyan-400/20 to-transparent" />
                                 
                                 {/* EMPTY STATE */}

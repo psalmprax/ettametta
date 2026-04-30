@@ -89,4 +89,4 @@ class ModelRegistry:
         version = data["versions"][data["champion"]]
         return os.path.join(self.registry_dir, version["path"])
 
-base_model_registry = ModelRegistry()
+base_registry_service = ModelRegistry()

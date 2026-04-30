@@ -865,7 +865,7 @@ function TransformationPageContent() {
                         <motion.div
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="glass-card p-8 rounded-4xl space-y-5 relative overflow-hidden"
+                            className="glass-card p-8 rounded-2xl space-y-5 relative overflow-hidden"
                         >
                             <div className="absolute inset-0 scanline opacity-5" />
                             <div className="flex items-center gap-3">

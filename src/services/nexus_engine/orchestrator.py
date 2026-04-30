@@ -343,4 +343,4 @@ class NexusOrchestrator:
             raise e
 
 
-base_nexus_orchestrator = NexusOrchestrator()
+base_nexus_service = NexusOrchestrator()

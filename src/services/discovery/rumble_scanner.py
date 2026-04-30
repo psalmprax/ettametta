@@ -311,4 +311,4 @@ class RumbleScanner:
             return 0
 
 
-base_rumble_scanner = RumbleScanner()
+base_rumble_service = RumbleScanner()

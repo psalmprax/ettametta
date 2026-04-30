@@ -192,4 +192,4 @@ class SnapchatPublisher(SocialPublisher):
         return await token_manager.get_token("snapchat", user_id=user_id) is not None
 
 
-base_snapchat_publisher = SnapchatPublisher()
+base_snapchat_service = SnapchatPublisher()

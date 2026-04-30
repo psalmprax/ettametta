@@ -2,27 +2,27 @@ import pytest
 import asyncio
 from src.api.utils.database import AsyncSessionLocal
 from src.api.utils.models import StrategyRegistryDB, ExperimentCohortDB
-from src.services.distribution.experiment_batcher import base_experiment_batcher
+from src.services.distribution.experiment_batcher import base_experiment_service
 from sqlalchemy import insert
 
 @pytest.mark.asyncio
 async def test_experiment_isolation_duplicates():
     """Verify that a video cannot be assigned to two experiments simultaneously."""
     # 1. Create two batches
-    await base_experiment_batcher.create_cohort_batch("strat_a", size=10)
-    await base_experiment_batcher.create_cohort_batch("strat_b", size=10)
+    await base_experiment_service.create_cohort_batch("strat_a", size=10)
+    await base_experiment_service.create_cohort_batch("strat_b", size=10)
     
     # 2. Assign to first
     vid = "dual_video_test_id"
-    await base_experiment_batcher.assign_to_batch(vid)
+    await base_experiment_service.assign_to_batch(vid)
     
     # 3. Attempt assign to second (should be blocked by isolation check)
     # The logic in ExperimentBatcher now checks all active_batches
-    await base_experiment_batcher.assign_to_batch(vid)
+    await base_experiment_service.assign_to_batch(vid)
     
     # 4. Verify isolation in memory
     match_count = 0
-    for batch in base_experiment_batcher.active_batches:
+    for batch in base_experiment_service.active_batches:
         if vid in batch["participants"]:
             match_count += 1
     
@@ -40,7 +40,7 @@ async def test_killed_strategy_rejection():
         await db.commit()
     
     # 2. Try to create cohort
-    batch = await base_experiment_batcher.create_cohort_batch(strat_name)
+    batch = await base_experiment_service.create_cohort_batch(strat_name)
     
     # 3. Verify rejection
     assert batch == {}, "Security Breach! KILLED strategy allowed to create cohort."

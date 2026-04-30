@@ -49,4 +49,4 @@ class AttentionSimulator:
         logger.info(f"📊 [NRM] Simulation Verdict: {prediction['verdict']} (Score: {score})")
         return prediction
 
-base_attention_simulator = AttentionSimulator()
+base_attention_simulator_service = AttentionSimulator()

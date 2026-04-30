@@ -212,4 +212,4 @@ class GoogleSearchScanner:
         return []
 
 
-base_google_search_scanner = GoogleSearchScanner()
+base_google_search_service = GoogleSearchScanner()

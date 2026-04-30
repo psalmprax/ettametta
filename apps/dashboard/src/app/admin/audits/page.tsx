@@ -160,7 +160,7 @@ export default function AuditsPage() {
 
                     {/* Sidebar Stats */}
                     <div className="space-y-8">
-                        <div className="glass-card p-8 rounded-4xl space-y-6">
+                        <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 p-8 rounded-2xl space-y-6">
                             <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500">Compliance Health</h3>
                             <div className="space-y-4">
                                 <HealthMetric label="Global Integrity" value={`${securityStatus?.health_score || 98.2}%`} color="text-cyan-400" />
@@ -174,7 +174,7 @@ export default function AuditsPage() {
                             </div>
                         </div>
 
-                        <div className="glass-card p-8 rounded-4xl bg-violet-500/5 border-violet-500/10 space-y-4">
+                        <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 p-8 rounded-2xl space-y-4">
                             <div className="flex items-center gap-3">
                                 <Terminal className="h-4 w-4 text-violet-400" />
                                 <span className="text-[9px] font-bold uppercase tracking-widest text-violet-400">Node Advisory</span>
@@ -301,7 +301,7 @@ function AccountAuditSection({ onAudit, onDownload, reports }: any) {
 function SecurityAuditSection({ status, events, onScan, isLoading }: any) {
     return (
         <div className="space-y-8">
-            <div className="glass-card p-10 rounded-[3rem] bg-white/[0.01] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
+            <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 p-10 rounded-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10">
                 <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
                 <div className="space-y-4 text-center md:text-left">
                     <h3 className="text-3xl font-bold uppercase tracking-tighter text-white">Red Team <span className="text-cyan-400">Integrity</span> Audit</h3>
@@ -326,7 +326,7 @@ function SecurityAuditSection({ status, events, onScan, isLoading }: any) {
 
             <div className="space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500 px-2">Live Threat Stream</h3>
-                <div className="glass-card divide-y divide-white/5 rounded-[2rem] overflow-hidden">
+                <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 divide-y divide-white/5 rounded-2xl overflow-hidden">
                     {events?.length === 0 && <div className="p-10 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-700">No security events detected</div>}
                     {events?.map((e: any, i: number) => (
                         <div key={i} className="p-5 flex items-center justify-between group hover:bg-white/2 transition-colors">
@@ -345,7 +345,7 @@ function SecurityAuditSection({ status, events, onScan, isLoading }: any) {
 
 function BiasScanSection() {
     return (
-        <div className="glass-card py-32 flex flex-col items-center justify-center text-center gap-8 rounded-[3rem] border-dashed">
+        <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 py-32 flex flex-col items-center justify-center text-center gap-8 rounded-2xl border-dashed">
             <div className="relative">
                 <Fingerprint className="h-24 w-24 text-zinc-800" />
                 <div className="absolute inset-0 flex items-center justify-center">

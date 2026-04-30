@@ -263,4 +263,4 @@ class FacebookScanner:
         return candidates
 
 
-base_facebook_scanner = FacebookScanner()
+base_facebook_service = FacebookScanner()
