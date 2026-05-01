@@ -105,7 +105,7 @@ export default function WorkforceHub() {
     const handleResearch = async () => {
         if (!researchQuery || isExecuting) return;
         setIsExecuting(true);
-        setLogs(prev => [`[RESEARCH] Initiating deep search: ${researchQuery}`, ...prev]);
+        setLogs((prev: string[]) => [`[RESEARCH] Initiating deep search: ${researchQuery}`, ...prev]);
         
         const token = await getAuthToken();
         if (!token) return;
@@ -123,7 +123,7 @@ export default function WorkforceHub() {
                 fallback: null,
                 onSuccess: (data) => {
                     setResearchResult(data.result);
-                    setLogs(prev => [`[SUCCESS] Research complete. ${data.result.length} nodes indexed.`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] Research complete. ${data.result.length} nodes indexed.`, ...prev]);
                     toast.success("Deep Research Complete");
                 }
             }
@@ -134,7 +134,7 @@ export default function WorkforceHub() {
     const handleIngestion = async () => {
         if (isExecuting) return;
         setIsExecuting(true);
-        setLogs(prev => [`[INGESTION] Triggering ${ingestionAction} sink...`, ...prev]);
+        setLogs((prev: string[]) => [`[INGESTION] Triggering ${ingestionAction} sink...`, ...prev]);
         
         const token = await getAuthToken();
         if (!token) return;
@@ -151,7 +151,7 @@ export default function WorkforceHub() {
             {
                 fallback: null,
                 onSuccess: (data) => {
-                    setLogs(prev => [`[SUCCESS] Ingestion complete. Data cached in Nexus.`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] Ingestion complete. Data cached in Nexus.`, ...prev]);
                     toast.success("Data Ingestion Successful");
                 }
             }

@@ -45,9 +45,19 @@ import {
 
 const GlobalPulseGlobe = dynamic(() => import("@/components/ui/GlobalPulseGlobe"), { ssr: false });
 
+interface AnalyticsMetrics {
+    views: number;
+    retention: number;
+    shares: number;
+    engagement: number;
+    velocity: string;
+    engineLoad: string;
+    retentionData: { time: number; value: number }[];
+}
+
 export default function AnalyticsPage() {
     const [activeEngine, setActiveEngine] = useState("overview");
-    const [metrics, setMetrics] = useState<any>({
+    const [metrics, setMetrics] = useState<AnalyticsMetrics>({
         views: 0,
         retention: 0.82,
         shares: 0,
@@ -70,14 +80,14 @@ export default function AnalyticsPage() {
                 fallback: null,
                 onSuccess: (data) => {
                     const stats = data.data || data;
-                    setMetrics(prev => ({
+                    setMetrics((prev: AnalyticsMetrics) => ({
                         ...prev,
                         views: stats.total_views || 0,
                         engagement: stats.engagement_score || 0,
                         velocity: stats.velocity || "Nominal",
                         engineLoad: stats.engine_load || "5%"
                     }));
-                    setLogs(prev => [`[DATA] Metrics synchronized. Total Reach: ${stats.total_views}`, ...prev]);
+                    setLogs((prev: string[]) => [`[DATA] Metrics synchronized. Total Reach: ${stats.total_views}`, ...prev]);
                 }
             }
         );

@@ -159,7 +159,7 @@ export default function CreationPage() {
             return;
         }
         setIsGenerating(true);
-        setLogs(prev => [`[SIGNAL] Initializing Generation: ${prompt.slice(0, 30)}...`, ...prev]);
+        setLogs((prev: string[]) => [`[SIGNAL] Initializing Generation: ${prompt.slice(0, 30)}...`, ...prev]);
         
         const token = await getAuthToken();
         if (!token) return;
@@ -177,11 +177,11 @@ export default function CreationPage() {
                 fallback: {} as ScriptOutput,
                 onSuccess: (data) => {
                     setScript(data);
-                    setLogs(prev => [`[SUCCESS] Neural Script Synthesized: ${data.title}`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] Neural Script Synthesized: ${data.title}`, ...prev]);
                     toast.success("Script Protocol Synthesized");
                 },
                 onFallback: (err) => {
-                    setLogs(prev => [`[ERROR] ${err.message}`, ...prev]);
+                    setLogs((prev: string[]) => [`[ERROR] ${err.message}`, ...prev]);
                 }
             }
         );
@@ -206,7 +206,7 @@ export default function CreationPage() {
             {
                 fallback: null,
                 onSuccess: (data) => {
-                    setLogs(prev => [`[CINEMA] Sequence Initiated. JobID: ${data.job_id}`, ...prev]);
+                    setLogs((prev: string[]) => [`[CINEMA] Sequence Initiated. JobID: ${data.job_id}`, ...prev]);
                     toast.success("Cinema Sequence Initiated");
                 }
             }

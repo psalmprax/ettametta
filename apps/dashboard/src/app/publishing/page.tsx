@@ -79,7 +79,7 @@ export default function PublishingPage() {
                 onSuccess: () => {
                     setAccounts(prev => prev.filter(acc => acc.id !== id));
                     toast.success("Node Unlinked");
-                    setLogs(prev => [`[DECOUPLE] Decoupled node: ${id}`, ...prev]);
+                    setLogs((prev: string[]) => [`[DECOUPLE] Decoupled node: ${id}`, ...prev]);
                 }
             }
         );
@@ -117,7 +117,7 @@ export default function PublishingPage() {
     const handleAutoBroadcast = async () => {
         const token = await getAuthToken();
         if (!token) return;
-        setLogs(prev => [`[ACTION] Triggering Autonomous Broadcast Pattern...`, ...prev]);
+        setLogs((prev: string[]) => [`[ACTION] Triggering Autonomous Broadcast Pattern...`, ...prev]);
         
         await withRealFallback(
             () => fetch(`${API_BASE}/publish/auto-broadcast`, {
@@ -128,7 +128,7 @@ export default function PublishingPage() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("Autonomous Broadcast Initiated");
-                    setLogs(prev => [`[SUCCESS] Neural Pattern Propagated.`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] Neural Pattern Propagated.`, ...prev]);
                 }
             }
         );

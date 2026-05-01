@@ -93,7 +93,7 @@ export default function SettingsPage() {
 
     const handleSave = handleSubmit(async (data) => {
         setIsSaving(true);
-        setLogs(prev => [`[PROTOCOL] Committing personal identity updates...`, ...prev]);
+        setLogs((prev: string[]) => [`[PROTOCOL] Committing personal identity updates...`, ...prev]);
         const token = await getAuthToken();
         if (!token) return;
         
@@ -113,7 +113,7 @@ export default function SettingsPage() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("Protocol Updated");
-                    setLogs(prev => [`[SUCCESS] Identity synchronized with neural vault.`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] Identity synchronized with neural vault.`, ...prev]);
                     reset(data);
                 }
             }
