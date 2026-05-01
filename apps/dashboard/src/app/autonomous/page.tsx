@@ -41,6 +41,7 @@ export default function AutonomousPage() {
     const [insights, setInsights] = useState<any>(null);
     const [lastRun, setLastRun] = useState<number | null>(null);
     const [nextRun, setNextRun] = useState<number | null>(null);
+    const [activeEngine, setActiveEngine] = useState("launch");
 
     const fetchData = useCallback(async () => {
         const token = await getAuthToken();
