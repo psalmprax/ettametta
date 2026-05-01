@@ -27,7 +27,6 @@ import {
     Database,
     ArrowRight,
     Unlink,
-    Broadcast,
     Radar,
     Cpu,
     Target
@@ -242,7 +241,7 @@ export default function PublishingPage() {
                                         <div key={job.id} className="p-8 rounded-[32px] bg-[#0F0F11] border border-white/5 flex items-center justify-between group hover:border-blue-500/20 transition-all">
                                             <div className="flex items-center gap-8">
                                                 <div className="h-16 w-16 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-                                                    <Broadcast className="h-8 w-8 text-blue-500" />
+                                                    <Radio className="h-8 w-8 text-blue-500" />
                                                 </div>
                                                 <div className="flex flex-col gap-1">
                                                     <span className="text-lg font-bold text-white uppercase tracking-tight">{job.id}</span>
@@ -273,7 +272,7 @@ export default function PublishingPage() {
                                             onClick={() => setIsDeployModalOpen(true)}
                                             className="w-full bg-blue-500 hover:bg-blue-400 text-black font-bold h-16 rounded-2xl gap-3 text-lg"
                                         >
-                                            <Broadcast className="h-6 w-6" />
+                                            <Radio className="h-6 w-6" />
                                             Manual Broadcast
                                         </Button>
                                         <Button 
