@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 interface Tab {
   id: string;
   label: string;
-  icon?: React.ElementType;
+  icon?: any;
 }
 
 interface DashboardPageLayoutProps {
