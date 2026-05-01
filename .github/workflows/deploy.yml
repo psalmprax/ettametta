@@ -11,9 +11,9 @@ jobs:
     - name: Deploy to OCI ARM Server
       uses: appleboy/ssh-action@master
       with:
-        host: \${{ secrets.OCI_HOST }}
+        host: ${{ secrets.OCI_HOST }}
         username: ubuntu
-        key: \${{ secrets.OCI_PRIVATE_KEY }}
+        key: ${{ secrets.OCI_PRIVATE_KEY }}
         script: |
           cd ~/ettametta
           git pull origin master

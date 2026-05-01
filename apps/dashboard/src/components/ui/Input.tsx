@@ -14,13 +14,13 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, icon, variant = "default", fullWidth = false, ...props }, ref) => {
-    const baseStyles = "w-full font-medium transition-all duration-200 rounded-xl";
+    const baseStyles = "w-full font-medium transition-all duration-200 rounded-2xl";
     
     const variants = {
       default: `bg-white border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 
-        focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-400/15 shadow-sm`,
-      minimal: `bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder:text-slate-400 
-        focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-400/15`,
+        focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-400/15 shadow-sm`,
+      minimal: `bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-slate-900 placeholder:text-slate-400 
+        focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-400/15`,
     };
 
     const containerStyles = cn(

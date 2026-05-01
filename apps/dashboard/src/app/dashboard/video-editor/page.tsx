@@ -20,25 +20,34 @@ import {
     Save,
     Cpu,
     CheckCircle2,
-    Loader2
+    Loader2,
+    Clapperboard,
+    PenTool,
+    Film
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
-import DashboardLayout from "@/components/layout";
+import DashboardPageLayout from "@/components/DashboardPageLayout";
+import { DesignCard } from "@/components/ui/DesignCard";
 import { API_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { withRealFallback } from "@/lib/real_first_utils";
 
+const EDITOR_TABS = [
+  { id: "concept", label: "Concept", icon: PenTool },
+  { id: "logic", label: "Neural Logic", icon: Cpu },
+  { id: "studio", label: "Final Studio", icon: Clapperboard },
+];
+
 const STYLES = ["story", "motivation", "educational", "breaking_news", "cinematic_top10"];
 const DURATIONS = [15, 30, 60, 90, 120];
 
 export default function VideoEditorPage() {
     const router = useRouter();
-    const [step, setStep] = useState(1); // 1: Topic, 2: Script Edit, 3: Rendering
+    const [activeTab, setActiveTab] = useState("concept");
     const [prompt, setPrompt] = useState("");
     const [niche, setNiche] = useState("Motivation");
     const [style, setStyle] = useState("story");
@@ -75,10 +84,9 @@ export default function VideoEditorPage() {
                 fallback: null,
                 onSuccess: (data) => {
                     setScript(data);
-                    setStep(2);
+                    setActiveTab("logic");
                     toast.success("Neural Script Synthesized");
-                },
-                onFallback: (err) => toast.error("Script Generation Failed", { description: err.message })
+                }
             }
         );
         setIsGenerating(false);
@@ -108,279 +116,173 @@ export default function VideoEditorPage() {
             {
                 fallback: null,
                 onSuccess: (data) => {
-                    toast.success("Cinema Sequence Initiated", { description: `Job ID: ${data.job_id}` });
+                    toast.success("Cinema Sequence Initiated");
                     router.push("/transformation");
-                },
-                onFallback: (err) => toast.error("Neural Render Failed", { description: err.message })
+                }
             }
         );
         setIsGenerating(false);
     };
 
     return (
-        <DashboardLayout>
-            <div className="min-h-screen bg-bg-base relative flex flex-col font-sans overflow-hidden">
-                <div className="noise-overlay" />
-                <div className="absolute inset-0 cyber-grid opacity-10 pointer-events-none" />
-                
-                <div className="flex-1 section-container relative py-12 px-6 lg:px-16 max-w-screen-2xl mx-auto w-full z-10">
-                    <HighVelocityTicker />
-
-                    <header className="mb-12 flex flex-col xl:flex-row xl:items-end justify-between gap-8">
-                        <div className="space-y-4">
-                            <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: 120 }}
-                                className="h-1 bg-primary shadow-[0_0_20px_#00fbfb]"
-                            />
-                            <h1 className="text-4xl font-bold text-white uppercase tracking-tighter leading-none">
-                                Elite <span className="text-hollow">Production</span> Workflow
-                            </h1>
-                            <div className="flex items-center gap-6">
-                                <div className={cn("text-[9px] font-bold uppercase tracking-widest flex items-center gap-2", step >= 1 ? "text-primary" : "text-zinc-600")}>
-                                    <span className="h-4 w-4 rounded-full border border-current flex items-center justify-center">1</span>
-                                    Concept
-                                </div>
-                                <div className="h-px w-8 bg-zinc-900" />
-                                <div className={cn("text-[9px] font-bold uppercase tracking-widest flex items-center gap-2", step >= 2 ? "text-primary" : "text-zinc-600")}>
-                                    <span className="h-4 w-4 rounded-full border border-current flex items-center justify-center">2</span>
-                                    Script_Logic
-                                </div>
-                                <div className="h-px w-8 bg-zinc-900" />
-                                <div className={cn("text-[9px] font-bold uppercase tracking-widest flex items-center gap-2", step >= 3 ? "text-primary" : "text-zinc-600")}>
-                                    <span className="h-4 w-4 rounded-full border border-current flex items-center justify-center">3</span>
-                                    Neural_Render
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <div className="surface-glass p-5 border border-white/5 text-right">
-                                <span className="text-[8px] font-bold text-zinc-600 uppercase block mb-1">Compute Cluster</span>
-                                <span className="text-sm font-bold text-white uppercase">{engine.toUpperCase()}_ENGINE</span>
-                            </div>
-                        </div>
-                    </header>
-
-                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start h-full">
-                        {/* Editor Controls */}
-                        <div className="xl:col-span-4 space-y-8">
-                            <AnimatePresence mode="wait">
-                                {step === 1 ? (
-                                    <motion.section 
-                                        key="step1"
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: 20 }}
-                                        className="surface-glass rim-light p-8 space-y-8"
-                                    >
-                                        <div className="space-y-6">
-                                            <div className="space-y-3">
-                                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Viral Topic</label>
-                                                <textarea 
-                                                    value={prompt}
-                                                    onChange={(e) => setPrompt(e.target.value)}
-                                                    placeholder="Describe the core message..."
-                                                    className="w-full h-32 bg-black/40 border border-white/5 p-6 text-sm text-white focus:outline-none focus:border-primary/30 transition-all resize-none"
-                                                />
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Niche</label>
-                                                    <select 
-                                                        value={niche}
-                                                        onChange={(e) => setNiche(e.target.value)}
-                                                        className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest focus:outline-none"
-                                                    >
-                                                        <option>Motivation</option>
-                                                        <option>AI Technology</option>
-                                                        <option>Stoicism</option>
-                                                        <option>Finance</option>
-                                                    </select>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Visual Style</label>
-                                                    <select 
-                                                        value={style}
-                                                        onChange={(e) => setStyle(e.target.value)}
-                                                        className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest focus:outline-none"
-                                                    >
-                                                        {STYLES.map(s => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Duration (Seconds)</label>
-                                                <div className="grid grid-cols-5 gap-2">
-                                                    {DURATIONS.map(d => (
-                                                        <button 
-                                                            key={d}
-                                                            onClick={() => setDuration(d)}
-                                                            className={cn(
-                                                                "h-10 text-[9px] font-bold rounded-lg border transition-all",
-                                                                duration === d ? "bg-primary text-black border-primary" : "bg-white/2 text-zinc-500 border-white/5"
-                                                            )}
-                                                        >
-                                                            {d}S
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <button 
-                                            onClick={handleGenerateScript}
-                                            disabled={isGenerating || !prompt}
-                                            className="action-primary w-full py-5 text-[10px] tracking-widest flex items-center justify-center gap-3 font-bold"
-                                        >
-                                            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cpu className="h-4 w-4" />}
-                                            SYNTHESIZE_SCRIPT
-                                        </button>
-                                    </motion.section>
-                                ) : (
-                                    <motion.section 
-                                        key="step2"
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: 20 }}
-                                        className="surface-glass rim-light p-8 space-y-8"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-bold text-white uppercase tracking-tighter">Script_Structure</h3>
-                                            <button onClick={() => setStep(1)} className="text-[9px] font-bold text-zinc-600 hover:text-white uppercase">Back_to_Concept</button>
-                                        </div>
-
-                                        <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                                            {script?.segments?.map((seg: any, i: number) => (
-                                                <div 
-                                                    key={i}
-                                                    onClick={() => setActiveSegment(i)}
-                                                    className={cn(
-                                                        "p-5 border cursor-pointer transition-all relative overflow-hidden group",
-                                                        activeSegment === i ? "bg-primary/5 border-primary/30" : "bg-white/2 border-white/5"
-                                                    )}
-                                                >
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">SEGMENT_{i+1}</span>
-                                                        <span className="text-[8px] font-bold text-primary">{seg.duration}S</span>
-                                                    </div>
-                                                    <p className="text-[10px] text-zinc-400 leading-relaxed italic line-clamp-2">"{seg.text}"</p>
-                                                    {activeSegment === i && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />}
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <div className="flex gap-4">
-                                                <button className="flex-1 h-12 bg-white/2 border border-white/5 flex items-center justify-center gap-2 text-[9px] font-bold text-zinc-400 hover:text-white transition-colors">
-                                                    <Mic2 className="h-3 w-3" /> Voice_Clone
-                                                </button>
-                                                <button className="flex-1 h-12 bg-white/2 border border-white/5 flex items-center justify-center gap-2 text-[9px] font-bold text-zinc-400 hover:text-white transition-colors">
-                                                    <Globe className="h-3 w-3" /> Localize
-                                                </button>
-                                            </div>
-                                            <button 
-                                                onClick={handleCommitRender}
-                                                disabled={isGenerating}
-                                                className="action-primary w-full py-6 text-[10px] tracking-[0.2em] font-bold flex items-center justify-center gap-3"
-                                            >
-                                                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 fill-current" />}
-                                                COMMIT_NEURAL_RENDER
-                                            </button>
-                                        </div>
-                                    </motion.section>
-                                )}
-                            </AnimatePresence>
-                        </div>
-
-                        {/* Real-Time Preview Area */}
-                        <div className="xl:col-span-8 space-y-8">
-                            <section className="surface-glass p-6 rounded-[2.5rem] bg-black/40 border border-white/5 h-full min-h-[600px] flex flex-col">
-                                <div className="flex items-center justify-between mb-6 px-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                                            <Play className="h-5 w-5 fill-current" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold text-white uppercase tracking-tight">Production_Monitor</h3>
-                                            <p className="text-[9px] font-medium text-zinc-600 uppercase tracking-widest">Neural_Layer: {step === 1 ? "CONCEPTUAL" : "LOGICAL"}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <div className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[8px] font-bold uppercase">Ready</div>
-                                    </div>
-                                </div>
-
-                                <div className="flex-1 relative bg-zinc-950 rounded-[2rem] overflow-hidden group">
-                                    <div className="absolute inset-0 scanline opacity-10 pointer-events-none" />
-                                    <img 
-                                        src={step === 1 ? "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop" : "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop"} 
-                                        className="w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-[10s] ease-linear"
-                                        alt="Neural Frame"
-                                    />
-                                    
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-12">
-                                        {step === 2 && script?.segments?.[activeSegment] && (
-                                            <motion.div 
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="space-y-6"
-                                            >
-                                                <p className="text-3xl md:text-5xl font-black text-white italic leading-tight tracking-tighter drop-shadow-2xl">
-                                                    "{script.segments[activeSegment].text}"
-                                                </p>
-                                                <div className="flex items-center justify-center gap-4">
-                                                    <span className="text-[10px] font-bold text-primary uppercase tracking-[0.3em]">Segment_{activeSegment + 1}</span>
-                                                    <div className="h-px w-12 bg-primary/30" />
-                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em]">{script.segments[activeSegment].visual_prompt}</span>
-                                                </div>
-                                            </motion.div>
-                                        )}
-
-                                        {step === 1 && (
-                                            <div className="text-center opacity-30">
-                                                <Cpu className="h-16 w-16 text-zinc-700 mx-auto mb-6 animate-pulse" />
-                                                <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-[0.3em]">Awaiting Production Logic</p>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Overlay HUD */}
-                                    <div className="absolute top-8 left-8 space-y-2">
-                                        <div className="bg-black/60 backdrop-blur-md px-4 py-2 border border-white/10 rounded-lg">
-                                            <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-1">FPS</p>
-                                            <p className="text-xs font-bold text-white">60.00</p>
-                                        </div>
-                                        <div className="bg-black/60 backdrop-blur-md px-4 py-2 border border-white/10 rounded-lg">
-                                            <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Bitrate</p>
-                                            <p className="text-xs font-bold text-white">12.4 Mbps</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="mt-8 flex items-center justify-between px-4">
-                                    <div className="flex gap-4">
-                                        <button className="h-12 w-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
-                                            <ChevronLeft className="h-5 w-5 text-zinc-600" />
-                                        </button>
-                                        <button className="h-12 w-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all text-primary">
-                                            <Play className="h-5 w-5 fill-current" />
-                                        </button>
-                                        <button className="h-12 w-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
-                                            <ChevronRight className="h-5 w-5 text-zinc-600" />
-                                        </button>
-                                    </div>
-                                    <div className="font-data-mono text-[10px] text-zinc-600 uppercase tracking-widest">
-                                        PRD_READY // SYNC_LOCK: TRUE
-                                    </div>
-                                </div>
-                            </section>
-                        </div>
-                    </div>
+        <DashboardPageLayout
+            title="Video Studio"
+            subtitle="Autonomous Short-Form Generation & Neural Scripting Engine"
+            tabs={EDITOR_TABS}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            actions={
+                <div className="flex items-center gap-4">
+                    <Button variant="outline" className="border-white/10 text-zinc-400 hover:text-white gap-2">
+                        <Save className="h-4 w-4" />
+                        Save Draft
+                    </Button>
                 </div>
-            </div>
-        </DashboardLayout>
+            }
+        >
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-12"
+                >
+                    {activeTab === "concept" && (
+                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                            <div className="xl:col-span-1 p-10 rounded-[32px] bg-[#0F0F11] border border-white/5 space-y-8">
+                                <h3 className="text-xl font-bold text-white uppercase tracking-tight">Viral Concept</h3>
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Core Message</label>
+                                        <textarea 
+                                            value={prompt}
+                                            onChange={(e) => setPrompt(e.target.value)}
+                                            placeholder="Describe the neural footprint..."
+                                            className="w-full h-40 bg-white/5 border border-white/5 rounded-2xl p-6 text-white font-bold focus:outline-none resize-none"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Niche</label>
+                                            <select 
+                                                value={niche}
+                                                onChange={(e) => setNiche(e.target.value)}
+                                                className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-4 text-zinc-400 font-bold uppercase focus:outline-none"
+                                            >
+                                                <option>Motivation</option>
+                                                <option>AI Technology</option>
+                                                <option>Stoicism</option>
+                                                <option>Finance</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Duration</label>
+                                            <select 
+                                                value={duration}
+                                                onChange={(e) => setDuration(Number(e.target.value))}
+                                                className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-4 text-zinc-400 font-bold uppercase focus:outline-none"
+                                            >
+                                                {DURATIONS.map(d => <option key={d} value={d}>{d} Seconds</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <Button 
+                                        onClick={handleGenerateScript}
+                                        disabled={isGenerating || !prompt}
+                                        className="w-full bg-violet-500 hover:bg-violet-400 text-white font-bold h-16 rounded-2xl gap-3 text-lg"
+                                    >
+                                        {isGenerating ? <Loader2 className="h-6 w-6 animate-spin" /> : <Cpu className="h-6 w-6" />}
+                                        Synthesize Script
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <DesignCard 
+                                    title="Aesthetic Style"
+                                    status="Story"
+                                    metrics={[
+                                        { label: "Style Profile", value: style.toUpperCase(), color: "text-violet-400" },
+                                        { label: "Engine", value: engine.toUpperCase(), color: "text-zinc-500" }
+                                    ]}
+                                    footerInfo="Neural style mapping is ready."
+                                    toolsStatus="Optimal"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === "logic" && (
+                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                            <div className="xl:col-span-1 p-10 rounded-[32px] bg-[#0F0F11] border border-white/5 space-y-8">
+                                <h3 className="text-xl font-bold text-white uppercase tracking-tight">Script Segments</h3>
+                                <div className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-4">
+                                    {script?.segments?.map((seg: any, i: number) => (
+                                        <button 
+                                            key={i}
+                                            onClick={() => setActiveSegment(i)}
+                                            className={cn(
+                                                "w-full p-6 rounded-2xl border text-left transition-all",
+                                                activeSegment === i ? "bg-violet-500/10 border-violet-500/30" : "bg-white/2 border-white/5"
+                                            )}
+                                        >
+                                            <div className="flex justify-between items-center mb-3">
+                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">#{i+1}</span>
+                                                <span className="text-[10px] font-bold text-violet-400">{seg.duration}S</span>
+                                            </div>
+                                            <p className="text-xs text-white font-medium line-clamp-2 leading-relaxed italic">"{seg.text}"</p>
+                                        </button>
+                                    ))}
+                                </div>
+                                <Button 
+                                    onClick={handleCommitRender}
+                                    disabled={isGenerating}
+                                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold h-16 rounded-2xl gap-3 text-lg"
+                                >
+                                    {isGenerating ? <Loader2 className="h-6 w-6 animate-spin" /> : <Zap className="h-6 w-6 fill-current" />}
+                                    Launch Production
+                                </Button>
+                            </div>
+                            <div className="xl:col-span-2 p-10 rounded-[40px] bg-black border border-white/5 relative overflow-hidden flex flex-col justify-center items-center text-center space-y-10">
+                                <div className="absolute inset-0 opacity-20 grayscale pointer-events-none">
+                                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop" className="w-full h-full object-cover" alt="Preview" />
+                                </div>
+                                {script?.segments?.[activeSegment] ? (
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="relative z-10 space-y-8 max-w-2xl"
+                                    >
+                                        <p className="text-4xl font-black text-white italic leading-tight tracking-tighter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+                                            "{script.segments[activeSegment].text}"
+                                        </p>
+                                        <div className="flex items-center justify-center gap-6">
+                                            <div className="h-px w-12 bg-white/20" />
+                                            <span className="text-[10px] font-bold text-violet-400 uppercase tracking-[0.3em]">{script.segments[activeSegment].visual_prompt}</span>
+                                            <div className="h-px w-12 bg-white/20" />
+                                        </div>
+                                    </motion.div>
+                                ) : (
+                                    <div className="relative z-10 opacity-30 flex flex-col items-center space-y-6">
+                                        <Film className="h-16 w-16" />
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.5em]">Awaiting Neural Logic Synthesis</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === "studio" && (
+                        <div className="h-[600px] flex flex-col items-center justify-center space-y-8 opacity-30 grayscale">
+                            <Clapperboard className="h-20 w-20" />
+                            <div className="text-center space-y-4">
+                                <h3 className="text-xl font-bold text-white uppercase tracking-[0.3em]">Studio_Standby</h3>
+                                <p className="text-sm font-medium text-zinc-500 uppercase tracking-widest">Initialize script generation to unlock final studio controls</p>
+                            </div>
+                        </div>
+                    )}
+                </motion.div>
+            </AnimatePresence>
+        </DashboardPageLayout>
     );
 }

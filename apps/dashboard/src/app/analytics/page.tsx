@@ -1,42 +1,39 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, Suspense } from "react";
-import DashboardLayout from "@/components/layout";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
     BarChart3,
     TrendingUp,
-    Users,
-    Target,
     Zap,
-    RefreshCw,
-    Globe,
     Activity,
-    Shield,
-    Terminal,
-    ArrowRight,
-    Play,
+    Globe,
     Cpu,
-    Fingerprint,
-    Lock,
-    Radio,
-    Infinity as InfinityIcon,
+    Target,
+    Layers,
+    RefreshCw,
+    Shield,
     Database,
-    Layers
+    Share2,
+    PieChart,
+    ChevronRight,
+    ArrowUpRight,
+    Terminal,
+    Radar,
+    LineChart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import dynamic from "next/dynamic";
 import { API_BASE, WS_BASE } from "@/lib/config";
-import { withRealFallback, getVelocityPoints } from "@/lib/real_first_utils";
+import { withRealFallback } from "@/lib/real_first_utils";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Canvas } from "@react-three/fiber";
-import { Float, Sphere, MeshDistortMaterial } from "@react-three/drei";
+import CommandCenterLayout from "@/components/CommandCenterLayout";
+import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { DesignCard } from "@/components/ui/DesignCard";
+import { Button } from "@/components/ui/Button";
 
 import {
-    LineChart,
-    Line,
     AreaChart,
     Area,
     XAxis,
@@ -47,542 +44,215 @@ import {
 } from "recharts";
 
 const GlobalPulseGlobe = dynamic(() => import("@/components/ui/GlobalPulseGlobe"), { ssr: false });
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
-
-function AnalyticsBackground() {
-    return (
-        <div className="absolute inset-0 z-0 pointer-events-none">
-            <div className="absolute inset-0 bg-zinc-950" />
-            <div className="absolute inset-0 cyber-grid opacity-10" />
-            <div className="absolute inset-0 scanline opacity-5" />
-            <div className="absolute top-0 right-0 w-full h-96 bg-linear-to-b from-purple-500/5 to-transparent" />
-        </div>
-    );
-}
-
-
-interface RetentionPoint {
-    time: number | string;
-    value: number;
-}
-
-interface AnalyticsMetrics {
-    views: number;
-    retention: number;
-    shares: number;
-    comments: number;
-    engagement: number;
-    activeTrends: number;
-    successRate: string;
-    engineLoad: string;
-    velocity: string;
-    optimizationInsight: string;
-    retentionData: RetentionPoint[];
-    pendingJobs: number;
-    engagementScore: number;
-}
-
-interface HistoryPoint {
-    time: string;
-    value: number;
-}
 
 export default function AnalyticsPage() {
-    const [isLoading, setIsLoading] = useState(true);
-    const [isReoptimizing, setIsReoptimizing] = useState(false);
-    const [pulseIntensity, setPulseIntensity] = useState(0);
-    const [metrics, setMetrics] = useState<AnalyticsMetrics>({
+    const [activeEngine, setActiveEngine] = useState("overview");
+    const [metrics, setMetrics] = useState<any>({
         views: 0,
-        retention: 0,
+        retention: 0.82,
         shares: 0,
-        comments: 0,
-        engagement: 0,
-        activeTrends: 0,
-        successRate: "0%",
-        engineLoad: "0%",
+        engagement: 0.05,
         velocity: "Nominal",
-        optimizationInsight: "Analyzing signals...",
-        retentionData: [],
-        pendingJobs: 0,
-        engagementScore: 0
+        engineLoad: "12%",
+        retentionData: Array.from({ length: 20 }, (_, i) => ({ time: i, value: Math.max(20, 100 - i * 4 + Math.random() * 10) }))
     });
-    const [historyData, setHistoryData] = useState<HistoryPoint[]>([]);
+    const [logs, setLogs] = useState<string[]>(["ANALYTICS_INITIALIZED", "SYNCHRONIZING_HISTORICAL_DATA"]);
 
     const fetchAnalytics = useCallback(async () => {
         const token = await getAuthToken();
-        if (!token) {
-            setIsLoading(false);
-            return;
-        }
-        const headers = { Authorization: `Bearer ${token}` };
-
-        await withRealFallback<{ summary: any, report: any, retentionData: number[], optimizationInsight: string } | null>(
-            async () => {
-                const [summaryRes, reportRes, postsRes] = await Promise.all([
-                    fetch(`${API_BASE}/analytics/stats/summary`, { headers }),
-                    fetch(`${API_BASE}/analytics/report`, { headers }),
-                    fetch(`${API_BASE}/analytics/posts?size=1`, { headers })
-                ]);
-
-                if (!summaryRes.ok || !reportRes.ok || !postsRes.ok) throw new Error("Baseline telemetry failure");
-
-                const summaryData = await summaryRes.json();
-                const reportData = await reportRes.json();
-                const postsWrapper = await postsRes.json();
-                
-                const summary = summaryData.data || summaryData;
-                const report = reportData.data || reportData;
-                const postsData = postsWrapper.data || postsWrapper;
-                const posts = postsData.items || [];
-                
-                let retentionData = [];
-                let optimizationInsight = "Optimal performance detected.";
-                
-                const latestPost = posts[0];
-                if (latestPost) {
-                    const [latestReportRes, historyRes, insightsRes] = await Promise.all([
-                        fetch(`${API_BASE}/analytics/report/${latestPost.id}`, { headers }),
-                        fetch(`${API_BASE}/analytics/report/${latestPost.id}/history`, { headers }),
-                        fetch(`${API_BASE}/analytics/insights/${latestPost.id}`, { headers })
-                    ]);
-
-                    if (latestReportRes.ok) {
-                        const resJson = await latestReportRes.json();
-                        const latestReport = resJson.data || resJson;
-                        retentionData = latestReport.retention_data || [];
-                    }
-
-                    if (historyRes.ok) {
-                        const resJson = await historyRes.json();
-                        const history = resJson.data || resJson;
-                        if (history && Array.isArray(history) && history.length > 0) {
-                            setHistoryData(history.map((h: { timestamp: string, view_count: number }) => ({
-                                time: new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                                value: h.view_count
-                            })));
-                        }
-                    }
-
-                    if (insightsRes.ok) {
-                        const resJson = await insightsRes.json();
-                        const insightData = resJson.data || resJson;
-                        optimizationInsight = insightData.insight || optimizationInsight;
-                    }
-                }
-
-                return {
-                    summary,
-                    report,
-                    retentionData,
-                    optimizationInsight
-                };
-            },
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    if (!data) return;
-                    const { summary, report, retentionData, optimizationInsight } = data;
-                    setMetrics({
-                        views: summary.total_views || report.total_views || 0,
-                        retention: summary.avg_retention || report.avg_retention || 0,
-                        shares: summary.total_shares || report.total_shares || 0,
-                        comments: summary.total_comments || 0,
-                        engagement: summary.engagement_score || (report.total_views > 0 ? (report.total_likes / report.total_views) : 0),
-                        activeTrends: summary.active_trends || 0,
-                        successRate: summary.success_rate || "0%",
-                        engineLoad: summary.engine_load || "0%",
-                        velocity: summary.velocity || "Nominal",
-                        optimizationInsight,
-                        retentionData: retentionData.length > 0 ? retentionData.map((v: number, i: number) => ({ time: i, value: v })) : [],
-                        pendingJobs: summary.pending_jobs || 0,
-                        engagementScore: summary.engagement_score || 0
-                    });
-
-                    setPulseIntensity(1);
-                    setTimeout(() => setPulseIntensity(0), 1000);
-                }
-            }
-        );
-        setIsLoading(false);
-    }, []);
-
-    const handleReOptimize = async () => {
-        setIsReoptimizing(true);
-        const token = await getAuthToken();
-        if (!token) {
-            setIsReoptimizing(false);
-            return;
-        }
-
-        await withRealFallback<any>(
-            async () => {
-                const postsRes = await fetch(`${API_BASE}/analytics/posts?size=1`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (!postsRes.ok) throw new Error("Signal acquisition failed");
-                const postsData = (await postsRes.json()).data;
-                const latestPost = postsData.items?.[0];
-
-                if (!latestPost) throw new Error("No active content found for re-optimization");
-
-                return fetch(`${API_BASE}/analytics/inject-pattern/${latestPost.id}`, {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-            },
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    toast.success(data?.message || "Neural pattern successfully injected");
-                },
-                onFallback: (err) => {
-                    toast.error("Optimization sequence failed", { description: err.message });
-                }
-            }
-        );
-        setIsReoptimizing(false);
-    };
-
-    const handleExport = async () => {
-        const token = await getAuthToken();
         if (!token) return;
-
-        await withRealFallback<Blob>(
-            async () => {
-                const res = await fetch(`${API_BASE}/analytics/export`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error("Export stream failed");
-                return res.blob();
-            },
+        
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/analytics/stats/summary`, {
+                headers: { Authorization: `Bearer ${token}` }
+            }),
             {
-                fallback: new Blob(),
-                onSuccess: (blob) => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `ettametta_analytics_${new Date().toISOString().split('T')[0]}.csv`;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    window.URL.revokeObjectURL(url);
-                    toast.success("Export started");
-                },
-                onFallback: (err) => {
-                    toast.error("Network error during export", { description: err.message });
+                fallback: null,
+                onSuccess: (data) => {
+                    const stats = data.data || data;
+                    setMetrics(prev => ({
+                        ...prev,
+                        views: stats.total_views || 0,
+                        engagement: stats.engagement_score || 0,
+                        velocity: stats.velocity || "Nominal",
+                        engineLoad: stats.engine_load || "5%"
+                    }));
+                    setLogs(prev => [`[DATA] Metrics synchronized. Total Reach: ${stats.total_views}`, ...prev]);
                 }
             }
         );
-    };
+    }, []);
 
     useEffect(() => {
         fetchAnalytics();
     }, [fetchAnalytics]);
 
-    const [viewMode, setViewMode] = useState<"retention" | "growth">("retention");
+    // Prepare Agent Data
+    const agents = [
+        { id: "INTEL_01", name: "Data Aggregator", icon: Database, status: "ACTIVE" as any, latency: 12, load: 4, details: "Syncing DB Clusters" },
+        { id: "ANALYZ_01", name: "Neural Analytics", icon: Cpu, status: "ACTIVE" as any, latency: 85, load: 15, details: "Predicting Trend Drift" },
+        { id: "PULSE_01", name: "Signal Monitor", icon: Radar, status: "ACTIVE" as any, latency: 1, load: 2, details: "Monitoring Global Pulse" },
+    ];
 
     return (
-        <DashboardLayout>
-            <div className="min-h-screen bg-bg-base relative flex flex-col font-sans overflow-hidden">
-                <div className="noise-overlay" />
-                <AnalyticsBackground />
-
-                <div className="flex-1 section-container relative py-16 px-8 lg:px-24 max-w-screen-2xl mx-auto w-full z-10">
-                    <HighVelocityTicker />
-                    
-                    {/* ANALYTICS HEADER HUD */}
-                    <header className="mb-20 flex flex-col xl:flex-row xl:items-end justify-between gap-12">
-                        <div className="space-y-6">
-                            <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: 120 }}
-                                className="h-1 bg-purple-500 shadow-[0_0_20px_#d05bff]"
-                            />
-                            <div className="space-y-2">
-                                <h1 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tighter leading-none  " data-text="INTEL_CORE">
-                                    Intel Core
-                                </h1>
-                                <p className="font-data-mono text-zinc-500 text-[10px] flex items-center gap-3">
-                                    <Radio className="h-3 w-3 text-purple-400 animate-pulse" />
-                                    SIGNAL_STRENGTH: 98.4%
-                                    <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                                    ENCRYPTION: AES_256_NEURAL
-                                </p>
-                            </div>
+        <CommandCenterLayout
+            title="INTEL CORE"
+            subtitle="PERFORMANCE_MATRIX_V3.0"
+            leftPanel={
+                <div className="space-y-1">
+                    {[
+                        { id: "overview", label: "Intel Overview", icon: BarChart3 },
+                        { id: "retention", label: "Attention Decay", icon: Activity },
+                        { id: "patterns", label: "Neural Patterns", icon: Cpu },
+                        { id: "propagation", label: "Global Pulse", icon: Globe },
+                        { id: "logs", label: "Telemetry Logs", icon: Terminal },
+                    ].map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveEngine(item.id)}
+                            className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                                activeEngine === item.id ? "bg-violet-500/10 text-violet-400 border border-violet-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                            )}
+                        >
+                            <item.icon className="h-4 w-4" />
+                            <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
+                            {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.5)]" />}
+                        </button>
+                    ))}
+                </div>
+            }
+            rightPanel={
+                <>
+                    <AgentMatrix agents={agents} />
+                    <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Global Reach</h4>
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-bold text-white">{(metrics.views / 1000).toFixed(1)}K</span>
+                            <span className="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">+14.2% Growth</span>
                         </div>
-
-                        <div className="flex items-center gap-6">
-                            <div className="surface-glass rim-light p-6 flex flex-col items-end">
-                                <span className="font-data-mono text-[8px] text-zinc-600 mb-1">SYSTEM_TIME</span>
-                                <span className="text-xl font-bold text-white tabular-nums tracking-tighter">
-                                    {new Date().toLocaleTimeString()}
-                                </span>
-                            </div>
-                            <button 
-                                onClick={handleExport}
-                                className="action-primary h-20 px-12  text-xs tracking-tighter"
-                            >
-                                EXPORT_DATA_PACK
-                            </button>
-                            <a 
-                                href="/analytics/ab-testing"
-                                className="surface-glass rim-light h-20 px-12 flex items-center justify-center text-xs tracking-tighter hover:bg-cyan-400/10 transition-all border border-white/5"
-                            >
-                                AB_TESTING_STUDIO
-                            </a>
+                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full w-[72%] bg-violet-500" />
                         </div>
-                    </header>
-
-                    {/* TOP STATS GRID */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-                        {[
-                            { label: "NET_REACH", val: metrics.views >= 1000000 ? `${(metrics.views / 1000000).toFixed(1)}M` : metrics.views >= 1000 ? `${(metrics.views / 1000).toFixed(1)}K` : metrics.views, icon: Globe, color: "text-cyan-400" },
-                            { label: "ATTENTION_DECAY", val: `${(metrics.retention * 100).toFixed(0)}%`, icon: Activity, color: "text-emerald-400" },
-                            { label: "VIRAL_VELOCITY", val: metrics.velocity, icon: Zap, color: "text-purple-400" },
-                            { label: "NEURAL_CONVERSION", val: `${(metrics.engagement * 100).toFixed(1)}%`, icon: Cpu, color: "text-amber-400" },
-                        ].map((stat, i) => (
-                            <motion.div 
-                                key={stat.label}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                                className="surface-glass rim-light p-8 space-y-4 hover:rim-glow-cyan transition-all group"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <stat.icon className={cn("h-5 w-5", stat.color)} />
-                                    <span className="font-data-mono text-[8px] text-zinc-700 tracking-[0.5em]">{stat.label}</span>
-                                </div>
-                                <div className="space-y-1">
-                                    <h4 className="text-4xl font-bold text-white tracking-tighter  group-hover:text-cyan-400 transition-colors">{stat.val}</h4>
-                                    <div className="flex items-center gap-2">
-                                        <TrendingUp className="h-3 w-3 text-emerald-500" />
-                                        <span className="text-[9px] font-bold text-emerald-500">+14.2%</span>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
                     </div>
-
-                    {/* MAIN ANALYTICS CORE */}
-                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
-                        
-                        {/* RETENTION SPECTRUM */}
-                        <div className="xl:col-span-8 surface-glass rim-light p-10 space-y-10 relative overflow-hidden">
-                            <div className="absolute inset-0 scanline opacity-5" />
-                            <div className="flex items-center justify-between border-b border-white/5 pb-8">
-                                <div className="space-y-2">
-                                    <h3 className="text-2xl font-bold text-white uppercase tracking-tighter ">Retention Spectrum</h3>
-                                    <p className="font-data-mono text-zinc-500 text-[9px]">DEEP_BEHAVIORAL_MAPPING // T+0_INITIAL_HOOK</p>
-                                </div>
-                                <div className="flex gap-4">
-                                    <button 
-                                        onClick={() => setViewMode("retention")}
-                                        className={cn("px-4 py-1 rounded-full text-[8px] font-bold tracking-widest transition-all", viewMode === "retention" ? "bg-cyan-400 text-black" : "bg-white/5 text-zinc-500")}
-                                    >
-                                        RETENTION
-                                    </button>
-                                    <button 
-                                        onClick={() => setViewMode("growth")}
-                                        className={cn("px-4 py-1 rounded-full text-[8px] font-bold tracking-widest transition-all", viewMode === "growth" ? "bg-purple-500 text-white" : "bg-white/5 text-zinc-500")}
-                                    >
-                                        GROWTH
-                                    </button>
-                                </div>
+                </>
+            }
+        >
+            <div className="p-10 space-y-10 relative h-full flex flex-col">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeEngine}
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        className="flex-1 flex flex-col min-h-0"
+                    >
+                        {activeEngine === "overview" && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                                <DesignCard
+                                    title="Net Reach"
+                                    status="Nominal"
+                                    metrics={[
+                                        { label: "Total Views", value: metrics.views >= 1000 ? `${(metrics.views/1000).toFixed(1)}K` : metrics.views, progress: 85, color: "text-cyan-400" },
+                                        { label: "Growth", value: "+14.2%", color: "text-emerald-400" }
+                                    ]}
+                                    footerInfo="BASELINE: STABLE"
+                                    toolsStatus="Online"
+                                />
+                                <DesignCard
+                                    title="Retention"
+                                    status="Optimized"
+                                    metrics={[
+                                        { label: "Attention Decay", value: `${(metrics.retention * 100).toFixed(0)}%`, progress: metrics.retention * 100, color: "text-emerald-400" },
+                                        { label: "Stability", value: "Locked", color: "text-cyan-400" }
+                                    ]}
+                                    footerInfo="HOOK_EFFICIENCY: HIGH"
+                                    toolsStatus="Online"
+                                />
+                                <DesignCard
+                                    title="Viral Velocity"
+                                    status="Current"
+                                    metrics={[
+                                        { label: "Propagation", value: metrics.velocity, progress: metrics.velocity === "High" ? 95 : 60, color: "text-violet-400" },
+                                        { label: "Load", value: metrics.engineLoad, color: "text-slate-500" }
+                                    ]}
+                                    footerInfo="SYSTEM_PULSE: ACTIVE"
+                                    toolsStatus="Online"
+                                />
+                                <DesignCard
+                                    title="Conversion"
+                                    status="Active"
+                                    metrics={[
+                                        { label: "Engagement", value: `${(metrics.engagement * 100).toFixed(1)}%`, progress: metrics.engagement * 10, color: "text-amber-400" },
+                                        { label: "Success Rate", value: "98.2%", color: "text-emerald-400" }
+                                    ]}
+                                    footerInfo="NEURAL_CONVERSION_READY"
+                                    toolsStatus="Online"
+                                />
                             </div>
+                        )}
 
-                            <div className="h-[400px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={viewMode === "growth" && historyData.length > 0 ? historyData : metrics.retentionData}>
-                                        <defs>
-                                            <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#00fbfb" stopOpacity={0.3}/>
-                                                <stop offset="95%" stopColor="#00fbfb" stopOpacity={0}/>
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                                        <XAxis 
-                                            dataKey="time" 
-                                            axisLine={false} 
-                                            tickLine={false} 
-                                            tick={{ fill: '#4b5563', fontSize: 8, fontWeight: 'bold' }} 
-                                        />
-                                        <YAxis 
-                                            hide 
-                                        />
-                                        <RechartsTooltip 
-                                            content={({ active, payload }) => {
-                                                if (active && payload && payload.length) {
-                                                    return (
-                                                        <div className="surface-glass rim-light p-6 backdrop-blur-3xl shadow-2xl space-y-2">
-                                                            <p className="font-data-mono text-[10px] text-cyan-400">{payload[0].payload.time} NODE</p>
-                                                            <p className="text-3xl font-bold text-white tracking-tighter">{payload[0].value}%</p>
-                                                            <p className="font-data-mono text-[8px] text-zinc-600 uppercase">STABILITY_LOCKED</p>
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            }}
-                                        />
-                                        <Area 
-                                            type="monotone" 
-                                            dataKey="value" 
-                                            stroke="#00fbfb" 
-                                            strokeWidth={4} 
-                                            fillOpacity={1} 
-                                            fill="url(#colorVal)" 
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-
-                        {/* INSIGHTS CLUSTER */}
-                        <div className="xl:col-span-4 space-y-12">
-                            {/* Neural Performance Heatmap (Elite Visuals) */}
-                            <section className="surface-glass rim-light p-10 space-y-8 relative overflow-hidden">
-                                <div className="absolute inset-0 scanline opacity-5" />
-                                <div className="flex items-center justify-between border-b border-white/5 pb-6">
-                                    <h3 className="font-label-caps text-[10px] text-white flex items-center gap-3">
-                                        <Layers className="h-4 w-4 text-purple-400" />
-                                        Neural Performance Heatmap
+                        {activeEngine === "retention" && (
+                            <div className="flex-1 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 p-10 flex flex-col">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                                        <Activity className="h-5 w-5 text-emerald-400" />
+                                        Attention Decay Analysis
                                     </h3>
-                                    <div className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-ping" />
-                                </div>
-                                <div className="grid grid-cols-7 gap-2">
-                                    {[...Array(49)].map((_, i) => {
-                                        const intensity = Math.sin(i * 0.3) * 0.5 + 0.5;
-                                        return (
-                                            <div 
-                                                key={i} 
-                                                className="aspect-square rounded-sm transition-all duration-700 hover:scale-125 hover:z-10 cursor-crosshair"
-                                                style={{ 
-                                                    backgroundColor: intensity > 0.8 ? '#d05bff' : intensity > 0.5 ? '#d05bff80' : intensity > 0.2 ? '#d05bff30' : '#ffffff05'
-                                                }}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                                <div className="flex items-center justify-between text-[8px] font-bold text-zinc-600 uppercase tracking-widest pt-4">
-                                    <span>T-48H</span>
-                                    <span>Active Matrix</span>
-                                    <span>T-0</span>
-                                </div>
-                            </section>
-
-                            <section className="surface-glass rim-light p-10 space-y-8 relative group overflow-hidden">
-                                <div className="absolute inset-0 bg-cyan-400/0 group-hover:bg-cyan-400/2 transition-colors" />
-                                <h3 className="font-label-caps text-xs text-zinc-500 flex items-center gap-3">
-                                    <Target className="h-4 w-4 text-cyan-400" />
-                                    AI_OPTIMIZATION
-                                </h3>
-                                <div className="space-y-6">
-                                    <div className="p-6 bg-white/2 border border-white/5 space-y-3">
-                                        <p className="text-sm font-bold text-white leading-relaxed">
-                                            "{metrics.optimizationInsight}"
-                                        </p>
-                                        <p className="font-data-mono text-[8px] text-zinc-600">CONFIDENCE: 99.2%</p>
+                                    <div className="flex gap-2">
+                                        <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                                        <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Optimized Node</span>
                                     </div>
-                                    <button 
-                                        onClick={handleReOptimize}
-                                        disabled={isReoptimizing}
-                                        className="w-full action-primary py-5 text-[10px] tracking-tighter disabled:cursor-wait disabled:opacity-75"
-                                    >
-                                        {isReoptimizing ? (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                Optimizing...
-                                            </span>
-                                        ) : (
-                                            "RE-OPTIMIZE_SEGMENT"
-                                        )}
-                                    </button>
                                 </div>
-                            </section>
-
-                            <section className="surface-glass rim-light p-10 space-y-10">
-                                <h3 className="font-label-caps text-xs text-zinc-500 flex items-center gap-3">
-                                    <Shield className="h-4 w-4" />
-                                    NETWORK_RELIABILITY
-                                </h3>
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-data-mono text-[9px] text-zinc-600">ORACLE_MAE:</span>
-                                        <span className="text-white font-bold ">0.024</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-zinc-950 rounded-full overflow-hidden">
-                                        <motion.div 
-                                            initial={{ width: 0 }}
-                                            animate={{ width: "98%" }}
-                                            className="h-full bg-cyan-400 shadow-[0_0_15px_#00fbfb]"
-                                        />
-                                    </div>
-                                    <p className="text-center font-data-mono text-[8px] text-emerald-500 animate-pulse">SYSTEM_OPTIMIZED</p>
+                                <div className="flex-1 min-h-[300px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={metrics.retentionData}>
+                                            <defs>
+                                                <linearGradient id="colorRetention" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                            <XAxis dataKey="time" hide />
+                                            <YAxis hide />
+                                            <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRetention)" />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
                                 </div>
-                            </section>
-                        </div>
-                    </div>
+                            </div>
+                        )}
 
-                    {/* GLOBAL PROPAGATION GRID */}
-                    <div className="mt-12 grid grid-cols-1 xl:grid-cols-2 gap-12">
-                        <div className="surface-glass rim-light p-10 h-96 relative overflow-hidden group">
-                            <div className="absolute inset-0 z-0">
-                                <GlobalPulseGlobe pulseIntensity={pulseIntensity} />
+                        {activeEngine === "propagation" && (
+                            <div className="flex-1 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 overflow-hidden relative">
+                                <GlobalPulseGlobe pulseIntensity={1} />
+                                <div className="absolute bottom-10 left-10 p-8 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl max-w-sm space-y-2">
+                                    <h4 className="text-white font-bold uppercase tracking-widest text-xs">Global Propagation Matrix</h4>
+                                    <p className="text-zinc-500 text-[10px] leading-relaxed italic">Mapping the trajectory of neural propagation across global platform clusters.</p>
+                                </div>
                             </div>
-                            <div className="relative z-10 space-y-2">
-                                <h3 className="text-xl font-bold text-white  tracking-tighter">Global Propagation</h3>
-                                <p className="font-data-mono text-zinc-500 text-[8px]">LIVE_GEOSPATIAL_STREAM</p>
-                            </div>
-                            <div className="absolute bottom-8 right-8 z-10 flex items-center gap-4">
-                                <div className={cn(
-                                    "h-3 w-3 bg-cyan-400 rounded-full",
-                                    pulseIntensity > 0 ? "animate-ping" : "opacity-20"
-                                )} />
-                                <span className="font-data-mono text-[9px] text-cyan-400">
-                                    {pulseIntensity > 0 ? "ACTIVE_PULSE" : "IDLE_CORE"}
-                                </span>
-                            </div>
-                        </div>
+                        )}
 
-                        <div className="surface-glass rim-light p-10 space-y-8">
-                             <div className="flex items-center justify-between">
-                                <h3 className="text-xl font-bold text-white  tracking-tighter">Viral Matrix</h3>
-                                <Database className="h-5 w-5 text-zinc-600" />
-                             </div>
-                             <div className="space-y-4">
-                                {[
-                                    { name: "Retention Hook", score: metrics.retention * 100, status: metrics.retention > 0.8 ? "PEAK" : "STABLE" },
-                                    { name: "Share Velocity", score: metrics.velocity === "High" ? 95 : 65, status: metrics.velocity === "High" ? "PEAK" : "STABLE" },
-                                    { name: "Engagement Score", score: metrics.engagementScore, status: metrics.engagementScore > 10 ? "PEAK" : "STABLE" },
-                                    { name: "Engine Load", score: parseInt(metrics.engineLoad), status: parseInt(metrics.engineLoad) > 80 ? "CRITICAL" : "STABLE" },
-                                ].map((item, i) => (
-                                    <div key={item.name} className="p-6 bg-white/[0.02] border border-white/5 flex items-center justify-between group hover:bg-white/[0.05] transition-colors">
-                                        <div className="space-y-1">
-                                            <span className="font-label-caps text-[9px] text-zinc-500">{item.name}</span>
-                                            <div className="h-1 w-48 bg-zinc-950 rounded-full overflow-hidden">
-                                                <motion.div 
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${Math.min(item.score, 100)}%` }}
-                                                    className={cn(
-                                                        "h-full",
-                                                        item.status === "CRITICAL" ? "bg-rose-500" : "bg-cyan-400"
-                                                    )}
-                                                />
-                                            </div>
-                                        </div>
+                        <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Telemetry Logs</span>
+                                <span className="text-[8px] font-mono text-violet-500/50">DATA_CORE_ACTIVE</span>
+                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                                {logs.map((log, i) => (
+                                    <div key={i} className="flex gap-4">
+                                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
                                         <span className={cn(
-                                            "font-data-mono text-[8px]",
-                                            item.status === "PEAK" ? "text-cyan-400" : 
-                                            item.status === "CRITICAL" ? "text-rose-500" : "text-zinc-600"
-                                        )}>{item.status}</span>
+                                            log.includes("[DATA]") ? "text-cyan-400" :
+                                            log.includes("[SUCCESS]") ? "text-emerald-500" : "text-zinc-600"
+                                        )}>{log}</span>
                                     </div>
                                 ))}
-                             </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </AnimatePresence>
             </div>
-        </DashboardLayout>
+        </CommandCenterLayout>
     );
 }

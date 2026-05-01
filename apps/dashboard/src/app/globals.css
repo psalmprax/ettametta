@@ -31,12 +31,17 @@
   --color-emerald-500: #10b981;
   --color-amber-500: #f59e0b;
 
+  --color-cyan-400: #22d3ee;
+  --color-cyan-500: #06b6d4;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+
   /* Semantic Tokens - Dark Theme */
-  --color-primary: var(--color-blue-600);
-  --color-primary-hover: var(--color-blue-700);
-  --color-primary-subtle: rgba(37, 99, 235, 0.1);
+  --color-primary: var(--color-cyan-400);
+  --color-primary-hover: var(--color-cyan-500);
+  --color-primary-subtle: rgba(34, 211, 238, 0.1);
   --color-secondary: var(--color-slate-800);
-  --color-accent: var(--color-blue-500);
+  --color-accent: var(--color-violet-400);
   --color-muted: var(--color-slate-500);
 
   --color-success: var(--color-emerald-500);
@@ -112,13 +117,14 @@
     border: var(--border-subtle);
   }
 
-  /* Glassmorphism - Clean */
+  /* Glassmorphism - Dark optimized */
   .surface-glass {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: var(--border-base);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-2xl);
   }
 
   .surface-glass-solid {
@@ -169,8 +175,37 @@
   /* Focus States */
   .focus-ring:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
-    border-color: var(--color-indigo-400);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
+    border-color: var(--color-violet-400);
+  }
+
+  /* Elite Action Button */
+  .action-primary {
+    background: var(--color-cyan-400);
+    color: black;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-radius: var(--radius-2xl);
+    transition: all var(--transition-base);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+  }
+  .action-primary:hover {
+    background: var(--color-cyan-500);
+    box-shadow: 0 0 30px rgba(34, 211, 238, 0.4);
+    transform: translateY(-2px);
+  }
+  .action-primary:active {
+    transform: translateY(0);
+  }
+  .action-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
   }
 
   /* Scrollbar */
@@ -202,8 +237,8 @@
 
   /* Selection */
   ::selection {
-    background: var(--color-indigo-200);
-    color: var(--color-indigo-800);
+    background: var(--color-violet-200);
+    color: var(--color-violet-900);
   }
 
   /* Animations */

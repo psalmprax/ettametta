@@ -1,10 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import DashboardLayout from "@/components/layout";
 import {
     Youtube,
     Share2,
@@ -28,7 +25,12 @@ import {
     Terminal,
     Activity,
     Database,
-    ArrowRight
+    ArrowRight,
+    Unlink,
+    Broadcast,
+    Radar,
+    Cpu,
+    Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
@@ -37,36 +39,12 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
-import { Canvas } from "@react-three/fiber";
-import { Float, Sphere, MeshDistortMaterial } from "@react-three/drei";
+import CommandCenterLayout from "@/components/CommandCenterLayout";
+import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { DesignCard } from "@/components/ui/DesignCard";
+import { Button } from "@/components/ui/Button";
 import { PlatformLinkModal } from "@/components/ui/PlatformLinkModal";
 import { ManualBroadcastModal } from "@/components/ui/ManualBroadcastModal";
-
-function PublishingBackground() {
-    return (
-        <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
-            <Canvas camera={{ position: [0, 0, 5] }}>
-                <Suspense fallback={null}>
-                    <ambientLight intensity={0.4} />
-                    <pointLight position={[10, 10, 10]} intensity={1} color="#3b82f6" />
-                    <Float speed={1.5} rotationIntensity={0.8} floatIntensity={0.8}>
-                        <Sphere args={[1.3, 64, 64]} scale={2.4}>
-                            <MeshDistortMaterial
-                                color="#3b82f6"
-                                speed={3}
-                                distort={0.25}
-                                radius={1}
-                                wireframe
-                                transparent
-                                opacity={0.1}
-                            />
-                        </Sphere>
-                    </Float>
-                </Suspense>
-            </Canvas>
-        </div>
-    );
-}
 
 const getPlatformIcon = (platform: string) => {
     if (platform?.toLowerCase().includes("youtube")) return Youtube;
@@ -76,22 +54,21 @@ const getPlatformIcon = (platform: string) => {
 };
 
 export default function PublishingPage() {
+    const [activeEngine, setActiveEngine] = useState("nodes");
     const [accounts, setAccounts] = useState<any[]>([]);
     const [history, setHistory] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [jobs, setJobs] = useState<any[]>([]);
     const [isPlatformModalOpen, setIsPlatformModalOpen] = useState(false);
     const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
-    const [selectedJobForDeploy, setSelectedJobForDeploy] = useState<any>(null);
-    const [jobs, setJobs] = useState<any[]>([]);
     const [isDeploying, setIsDeploying] = useState(false);
-    const [telemetry, setTelemetry] = useState<any>(null);
     const [accountToUnlink, setAccountToUnlink] = useState<any | null>(null);
+    const [logs, setLogs] = useState<string[]>(["EGRESS_INITIALIZED", "SYNCHRONIZING_DISTRIBUTION_NODES"]);
 
     const handleUnlink = async (id: string) => {
         setIsDeploying(true);
         await withRealFallback(
             async () => {
-                const token = getAuthToken();
+                const token = await getAuthToken();
                 if (!token) return;
                 return fetch(`${API_BASE}/publish/account/${id}`, {
                     method: "DELETE",
@@ -102,10 +79,8 @@ export default function PublishingPage() {
                 fallback: null,
                 onSuccess: () => {
                     setAccounts(prev => prev.filter(acc => acc.id !== id));
-                    toast.success("Node Unlinked", { description: "Account removed from distribution network." });
-                },
-                onFallback: (err: any) => {
-                    toast.error("Unlink Failed", { description: err.message });
+                    toast.success("Node Unlinked");
+                    setLogs(prev => [`[DECOUPLE] Decoupled node: ${id}`, ...prev]);
                 }
             }
         );
@@ -113,8 +88,8 @@ export default function PublishingPage() {
         setAccountToUnlink(null);
     };
 
-    const fetchData = async () => {
-        const token = getAuthToken();
+    const fetchData = useCallback(async () => {
+        const token = await getAuthToken();
         if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
         
@@ -128,203 +103,266 @@ export default function PublishingPage() {
                 { fallback: [], onSuccess: (data) => setHistory(data) }
             ),
             withRealFallback<any>(
-                () => fetch(`${API_BASE}/video/jobs`, { headers }),
+                () => fetch(`${API_BASE}/publish/jobs`, { headers }),
                 { fallback: [], onSuccess: (data) => setJobs(data) }
             )
         ]);
-        setIsLoading(false);
-    };
+    }, []);
 
     useEffect(() => {
         fetchData();
         const interval = setInterval(fetchData, 10000);
-
-        // Check for success redirect
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("success") === "true") {
-            toast.success("Node Connected", { 
-                description: `Successfully linked ${params.get("platform")} account.` 
-            });
-            // Clear params
-            window.history.replaceState({}, '', window.location.pathname);
-            fetchData();
-        }
-
         return () => clearInterval(interval);
-    }, []);
+    }, [fetchData]);
+
+    const handleAutoBroadcast = async () => {
+        const token = await getAuthToken();
+        if (!token) return;
+        setLogs(prev => [`[ACTION] Triggering Autonomous Broadcast Pattern...`, ...prev]);
+        
+        await withRealFallback(
+            () => fetch(`${API_BASE}/publish/auto-broadcast`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("Autonomous Broadcast Initiated");
+                    setLogs(prev => [`[SUCCESS] Neural Pattern Propagated.`, ...prev]);
+                }
+            }
+        );
+    };
+
+    // Prepare Agent Data
+    const agents = [
+        { id: "EGRESS_01", name: "Node Synchronizer", icon: Share2, status: "ACTIVE" as any, latency: 42, load: 8, details: "Syncing YT/Insta" },
+        { id: "PROP_01", name: "Viral Injector", icon: Target, status: "ACTIVE" as any, latency: 120, load: 22, details: "Injecting Metadata" },
+        { id: "AUTH_01", name: "Security Gate", icon: ShieldCheck, status: "IDLE" as any, latency: 1, load: 0, details: "Verified" },
+    ];
 
     return (
-        <DashboardLayout>
-            <div className="min-h-screen bg-bg-base relative flex flex-col font-sans overflow-hidden">
-                <div className="noise-overlay" />
-                <PublishingBackground />
-                <div className="absolute inset-0 cyber-grid opacity-10 pointer-events-none" />
-                <div className="absolute inset-0 scanline opacity-10 pointer-events-none z-50" />
-
-                <div className="flex-1 section-container relative py-16 px-8 lg:px-24 max-w-screen-2xl mx-auto w-full z-10">
-                    
-                    {/* PUBLISHING HEADER */}
-                    <header className="mb-20 flex flex-col xl:flex-row xl:items-end justify-between gap-12">
-                        <div className="space-y-6">
-                            <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: 150 }}
-                                className="h-1 bg-blue-500 shadow-[0_0_20px_#3b82f6]"
-                            />
-                            <div className="space-y-2">
-                                <h1 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tighter leading-none  " data-text="EGRESS_HUB">
-                                    Egress Hub
-                                </h1>
-                                <p className="font-data-mono text-zinc-500 text-[10px] flex items-center gap-3">
-                                    <Radio className="h-3 w-3 text-blue-400 animate-pulse" />
-                                    BROADCAST_STATUS: BROADCASTING
-                                    <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                                    TARGET_NODES: {accounts.length}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-6">
-                            <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 p-6 flex flex-col items-end rounded-2xl">
-                                <span className="font-data-mono text-[8px] text-zinc-600 mb-1">TOTAL_EGRESS</span>
-                                <span className="text-xl font-bold text-white tabular-nums tracking-tighter">
-                                    {history.length} ASSETS
-                                </span>
-                            </div>
-                            <button 
-                                onClick={() => setIsDeployModalOpen(true)}
-                                className="action-primary h-20 px-12 text-xs tracking-tighter flex items-center gap-4 rounded-2xl"
-                            >
-                                <ArrowUpRight className="h-4 w-4" />
-                                MANUAL_BROADCAST
-                            </button>
-                        </div>
-                    </header>
-
-                    {/* ACCOUNTS CLUSTER */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
-                        <motion.button 
-                            onClick={() => setIsPlatformModalOpen(true)}
-                            className="bg-slate-900/40 backdrop-blur-md rounded-2xl border border-dashed border-white/10 p-8 flex flex-col items-center justify-center gap-4 group hover:border-blue-400/30 transition-all"
+        <CommandCenterLayout
+            title="EGRESS HUB"
+            subtitle="GLOBAL_DISTRIBUTION_MATRIX_V3.0"
+            leftPanel={
+                <div className="space-y-1">
+                    {[
+                        { id: "nodes", label: "Egress Nodes", icon: Share2 },
+                        { id: "jobs", label: "Egress Jobs", icon: Database },
+                        { id: "matrix", label: "Global Matrix", icon: Globe },
+                        { id: "broadcast", label: "Manual Egress", icon: Radio },
+                        { id: "logs", label: "Engine Logs", icon: Terminal },
+                    ].map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveEngine(item.id)}
+                            className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                                activeEngine === item.id ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                            )}
                         >
-                            <div className="h-14 w-14 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Plus className="h-8 w-8 text-zinc-700 group-hover:text-blue-400" />
+                            <item.icon className="h-4 w-4" />
+                            <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
+                            {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />}
+                        </button>
+                    ))}
+                </div>
+            }
+            rightPanel={
+                <>
+                    <AgentMatrix agents={agents} />
+                    <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Egress Stats</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col">
+                                <span className="text-[8px] text-zinc-600 font-bold uppercase">Nodes</span>
+                                <span className="text-xl font-bold text-white">{accounts.length}</span>
                             </div>
-                            <span className="font-label-caps text-[9px] text-zinc-600 uppercase tracking-[0.4em] group-hover:text-white transition-colors">LINK_NEW_NODE</span>
-                        </motion.button>
-
-                        {accounts.map((acc, i) => {
-                            const Icon = getPlatformIcon(acc.platform);
-                            return (
-                                <motion.div 
-                                    key={acc.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    className="bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/5 p-8 space-y-6 hover:border-blue-400/30 transition-all group"
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="h-10 w-10 bg-blue-500/10 border border-blue-500/20 flex items-center justify-center rounded-xl group-hover:bg-blue-500 group-hover:text-black transition-all">
-                                            <Icon className="h-5 w-5" />
-                                        </div>
-                                        <span className="font-data-mono text-[8px] text-zinc-700 tracking-widest">STABLE_LINK</span>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h3 className="text-xl font-bold text-white  tracking-tighter uppercase group-hover:text-blue-400 transition-colors">{acc.username}</h3>
-                                        <p className="font-data-mono text-[7px] text-zinc-600 uppercase">{acc.platform}</p>
-                                    </div>
-                                    <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                                        <span className="font-label-caps text-[8px] text-zinc-600">ID: {acc.id}</span>
-                                        <div className="flex items-center gap-2">
-                                            <button 
-                                                onClick={() => setAccountToUnlink(acc)}
-                                                className="p-2 text-zinc-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                                            >
-                                                <X className="h-3 w-3" />
-                                            </button>
-                                            <Activity className="h-3 w-3 text-blue-500 animate-pulse" />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-
-                    {/* LIVE TRANSMISSION GRID */}
-                    <div className="space-y-10">
-                        <div className="flex items-center justify-between border-b border-white/5 pb-8">
-                            <div className="space-y-2">
-                                <h2 className="text-3xl font-bold text-white uppercase  tracking-tighter">Transmission Matrix</h2>
-                                <p className="font-data-mono text-zinc-500 text-[9px]">LIVE_GLOBAL_DISTRIBUTION_LOG</p>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="bg-slate-900/40 backdrop-blur-md px-6 py-3 flex items-center gap-3 rounded-2xl border border-white/5">
-                                    <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]" />
-                                    <span className="font-label-caps text-[8px] text-emerald-500 uppercase tracking-widest">99.4% DELIVERY</span>
-                                </div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] text-zinc-600 font-bold uppercase">Active Jobs</span>
+                                <span className="text-xl font-bold text-cyan-500">{jobs.length}</span>
                             </div>
                         </div>
+                    </div>
+                </>
+            }
+        >
+            <div className="p-10 space-y-10 relative h-full flex flex-col">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeEngine}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="flex-1 flex flex-col min-h-0"
+                    >
+                        {activeEngine === "nodes" && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                                <button 
+                                    onClick={() => setIsPlatformModalOpen(true)}
+                                    className="h-full min-h-[220px] rounded-[32px] border border-dashed border-white/10 p-10 flex flex-col items-center justify-center gap-6 group hover:border-blue-400/30 transition-all bg-[#0F0F11]/50"
+                                >
+                                    <div className="h-16 w-16 rounded-full bg-white/5 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Plus className="h-8 w-8 text-zinc-700 group-hover:text-blue-400" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.4em] group-hover:text-white transition-colors">Link Distribution Node</span>
+                                </button>
 
-                        {history.length === 0 ? (
-                            <div className="surface-glass rim-light py-24 flex flex-col items-center justify-center text-center space-y-8">
-                                <div className="h-20 w-20 bg-white/2 border border-white/5 flex items-center justify-center rounded-4xl opacity-20">
-                                    <Globe className="h-10 w-10 text-white" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-2xl font-bold text-white uppercase  tracking-tighter">No Active Egress</h3>
-                                    <p className="text-zinc-500 font-medium text-sm max-w-sm">Initiate a manual broadcast or check the autonomous pipeline.</p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                                {history.map((post, idx) => (
-                                    <motion.div
-                                        key={post.id}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        className="bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/5 p-10 flex items-start gap-8 group hover:border-blue-400/30 transition-all relative overflow-hidden"
-                                    >
-                                        <div className="absolute inset-0 scanline opacity-5" />
-                                        <div className="h-20 w-20 bg-blue-500/5 border border-blue-500/10 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-black transition-all shrink-0 rounded-2xl">
-                                            <Play className="h-8 w-8 text-blue-400 group-hover:text-black fill-current" />
-                                        </div>
-                                        <div className="flex-1 space-y-4 min-w-0">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-data-mono text-[9px] text-blue-400 uppercase tracking-widest font-bold">{post.platform}</span>
-                                                <span className="font-data-mono text-[8px] text-zinc-600 uppercase tabular-nums">{new Date(post.published_at).toLocaleDateString()}</span>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <h4 className="text-xl font-bold text-white uppercase  tracking-tight truncate group-hover:text-blue-400 transition-colors">{post.title}</h4>
-                                                <div className="flex gap-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <Activity className="h-3 w-3 text-emerald-500" />
-                                                        <span className="font-data-mono text-[10px] text-zinc-500">{post.view_count || "---"} VIEWS</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Share2 className="h-3 w-3 text-blue-500" />
-                                                        <span className="font-data-mono text-[10px] text-zinc-500">{post.shares || "---"} SHARES</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="pt-6 flex gap-4">
-                                                <button className="bg-white/2 border border-white/5 hover:border-blue-500/30 text-zinc-600 hover:text-white px-6 py-3 font-label-caps text-[8px] uppercase tracking-widest transition-all rounded-xl">
-                                                    SYNC_TELEMETRY
-                                                </button>
-                                                <a href={post.url} target="_blank" className="bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-black px-6 py-3 font-label-caps text-[8px] uppercase tracking-widest transition-all rounded-xl">
-                                                    OPEN_LINK
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
+                                {accounts.map((acc) => {
+                                    const Icon = getPlatformIcon(acc.platform);
+                                    return (
+                                        <DesignCard 
+                                            key={acc.id}
+                                            title={acc.username}
+                                            status="Connected"
+                                            metrics={[
+                                                { label: "Platform", value: acc.platform, color: "text-blue-400" },
+                                                { label: "Stability", value: "Verified", color: "text-zinc-500" }
+                                            ]}
+                                            footerInfo={`Node ID: ${acc.id}`}
+                                            toolsStatus="Stable Link"
+                                            onClick={() => setAccountToUnlink(acc)}
+                                        />
+                                    );
+                                })}
                             </div>
                         )}
-                    </div>
-                </div>
+
+                        {activeEngine === "jobs" && (
+                            <div className="space-y-6 overflow-y-auto custom-scrollbar flex-1 p-1">
+                                {jobs.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center opacity-30 grayscale space-y-4 py-40">
+                                        <Database className="h-16 w-16" />
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.5em]">No active egress jobs</span>
+                                    </div>
+                                ) : (
+                                    jobs.map((job) => (
+                                        <div key={job.id} className="p-8 rounded-[32px] bg-[#0F0F11] border border-white/5 flex items-center justify-between group hover:border-blue-500/20 transition-all">
+                                            <div className="flex items-center gap-8">
+                                                <div className="h-16 w-16 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+                                                    <Broadcast className="h-8 w-8 text-blue-500" />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-lg font-bold text-white uppercase tracking-tight">{job.id}</span>
+                                                    <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{job.status} • {new Date(job.created_at).toLocaleTimeString()}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-6">
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">Progress</span>
+                                                    <span className="text-xl font-bold text-white">{job.progress || 0}%</span>
+                                                </div>
+                                                <Button variant="outline" className="border-white/5 hover:bg-rose-500/10 hover:text-rose-500">
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+
+                        {activeEngine === "broadcast" && (
+                            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                                <div className="xl:col-span-1 p-10 rounded-[32px] bg-[#0F0F11] border border-white/5 space-y-8">
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-tight">Egress Control</h3>
+                                    <div className="space-y-4">
+                                        <Button 
+                                            onClick={() => setIsDeployModalOpen(true)}
+                                            className="w-full bg-blue-500 hover:bg-blue-400 text-black font-bold h-16 rounded-2xl gap-3 text-lg"
+                                        >
+                                            <Broadcast className="h-6 w-6" />
+                                            Manual Broadcast
+                                        </Button>
+                                        <Button 
+                                            onClick={handleAutoBroadcast}
+                                            variant="outline"
+                                            className="w-full border-blue-500/20 text-blue-400 hover:bg-blue-500/10 font-bold h-16 rounded-2xl gap-3 text-lg"
+                                        >
+                                            <Zap className="h-6 w-6" />
+                                            Auto-Inject Pattern
+                                        </Button>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-600 leading-relaxed font-bold uppercase tracking-widest italic">
+                                        Warning: Direct neural broadcast bypasses standard moderation filters.
+                                    </p>
+                                </div>
+                                <div className="xl:col-span-2 space-y-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <DesignCard 
+                                            title="Propagation Health"
+                                            status="Nominal"
+                                            metrics={[
+                                                { label: "Success Rate", value: "99.4%", color: "text-emerald-400" },
+                                                { label: "Latency", value: "85ms", color: "text-zinc-500" }
+                                            ]}
+                                            footerInfo="Global egress nodes are operational."
+                                            toolsStatus="Optimal"
+                                        />
+                                        <DesignCard 
+                                            title="Egress Load"
+                                            status="Peak"
+                                            metrics={[
+                                                { label: "Throughput", value: "1.2 GB/s", color: "text-cyan-400" },
+                                                { label: "Buffer", value: "24%", color: "text-zinc-500" }
+                                            ]}
+                                            footerInfo="Cluster 04 showing high velocity."
+                                            toolsStatus="Live"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeEngine === "matrix" && (
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 overflow-y-auto custom-scrollbar flex-1 p-1">
+                                {history.length === 0 ? (
+                                    <div className="col-span-full py-40 flex flex-col items-center justify-center space-y-6 opacity-30 grayscale">
+                                        <Globe className="h-16 w-16" />
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.5em]">Global Matrix Standby</p>
+                                    </div>
+                                ) : (
+                                    history.map((post) => (
+                                        <DesignCard 
+                                            key={post.id}
+                                            title={post.title}
+                                            status={post.platform}
+                                            metrics={[
+                                                { label: "Views", value: post.view_count || 0, progress: 85, color: "text-emerald-400" },
+                                                { label: "Shares", value: post.shares || 0, progress: 60, color: "text-blue-400" }
+                                            ]}
+                                            footerInfo={`Published: ${new Date(post.published_at).toLocaleDateString()}`}
+                                            toolsStatus="Live Feed"
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        )}
+
+                        <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Engine Logs</span>
+                                <span className="text-[8px] font-mono text-blue-500/50">SYSTEM_EGRESS_ACTIVE</span>
+                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                                {logs.map((log, i) => (
+                                    <div key={i} className="flex gap-4">
+                                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                                        <span className={cn(
+                                            log.includes("[ACTION]") ? "text-cyan-400" :
+                                            log.includes("[SUCCESS]") ? "text-emerald-500" :
+                                            log.includes("[DECOUPLE]") ? "text-rose-500" : "text-zinc-600"
+                                        )}>{log}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </motion.div>
+                </AnimatePresence>
             </div>
 
-            {/* MODALS */}
             <PlatformLinkModal 
                 isOpen={isPlatformModalOpen} 
                 onClose={() => setIsPlatformModalOpen(false)} 
@@ -342,11 +380,11 @@ export default function PublishingPage() {
                 onClose={() => setAccountToUnlink(null)}
                 onConfirm={() => accountToUnlink && handleUnlink(accountToUnlink.id)}
                 title="Unlink Node"
-                description={`Are you sure you want to decouple the @${accountToUnlink?.username} node from the distribution engine?`}
+                description={`Are you sure you want to decouple the @${accountToUnlink?.username} node?`}
                 confirmText="Execute Decouple"
                 cancelText="Maintain Connection"
                 isLoading={isDeploying}
             />
-        </DashboardLayout>
+        </CommandCenterLayout>
     );
 }
