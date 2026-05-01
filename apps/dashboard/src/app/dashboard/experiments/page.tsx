@@ -126,8 +126,8 @@ export default function ExperimentsPage() {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                            <div className="h-1 w-8 bg-blue-600 rounded-full" />
-                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-blue-500">Laboratory Alpha</span>
+                            <div className="h-1 w-8 bg-violet-500 rounded-full" />
+                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-violet-400">Laboratory Alpha</span>
                         </div>
                         <h1 className="text-4xl md:text-5xl font-bold tracking-tight uppercase text-white leading-none">
                             Experimental <span className="text-cyan-400">Protocol</span>
@@ -145,7 +145,7 @@ export default function ExperimentsPage() {
                         <Button 
                             variant="primary" 
                             size="lg" 
-                            className="rounded-full px-8 shadow-lg shadow-blue-900/20"
+                            className="rounded-full px-8 shadow-lg shadow-violet-900/20 bg-violet-500 hover:bg-violet-400"
                             onClick={() => document.getElementById('new-experiment')?.scrollIntoView({ behavior: 'smooth' })}
                         >
                             <Plus className="h-4 w-4 mr-2" />
@@ -157,12 +157,12 @@ export default function ExperimentsPage() {
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
                     {/* NEW EXPERIMENT FORM */}
                     <div className="xl:col-span-1 space-y-8">
-                        <Card id="new-experiment" variant="solid" className="p-8 space-y-8 rounded-[2.5rem] border-white/5 bg-slate-900/40 relative overflow-hidden">
-                            <div className="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(0,251,251,0.03),rgba(0,0,0,0),rgba(0,251,251,0.03))] bg-[length:100%_4px,3px_100%]" />
+                        <Card id="new-experiment" variant="solid" className="p-8 space-y-8 rounded-2xl border-white/5 bg-slate-900/40 relative overflow-hidden">
+                            <div className="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(0,251,251,0.03),rgba(0,0,0,0),rgba(0,251,251,0.03))] bg-size-[100%_4px,3px_100%]" />
                             
                             <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-xl bg-blue-600/10 border border-blue-600/20 flex items-center justify-center">
-                                    <FlaskConical className="h-5 w-5 text-blue-500" />
+                                <div className="h-10 w-10 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                                    <FlaskConical className="h-5 w-5 text-violet-400" />
                                 </div>
                                 <h3 className="font-bold uppercase tracking-tight text-white">Initialize Lab</h3>
                             </div>
@@ -191,7 +191,7 @@ export default function ExperimentsPage() {
                                     <select 
                                         value={newTest.target_metric}
                                         onChange={(e) => setNewTest({...newTest, target_metric: e.target.value})}
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs font-bold uppercase tracking-widest text-slate-300 outline-none focus:border-blue-500/50 transition-all"
+                                        className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-xs font-bold uppercase tracking-widest text-slate-300 outline-none focus:border-violet-400/50 transition-all"
                                     >
                                         <option value="views">Views (Retention)</option>
                                         <option value="clicks">Clicks (CTR)</option>
@@ -203,7 +203,7 @@ export default function ExperimentsPage() {
                                     onClick={handleCreateTest}
                                     disabled={isCreating}
                                     variant="primary" 
-                                    className="w-full py-6 rounded-2xl shadow-glow-blue/10"
+                                    className="w-full py-6 rounded-2xl bg-violet-500 hover:bg-violet-400 shadow-glow-purple/10"
                                 >
                                     {isCreating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
                                     INJECT_EXPERIMENT
@@ -212,7 +212,7 @@ export default function ExperimentsPage() {
                         </Card>
 
                         {/* STATS PREVIEW */}
-                        <div className="glass-card p-8 rounded-[2rem] bg-cyan-500/5 border-cyan-500/10 space-y-6">
+                        <div className="glass-card p-8 rounded-2xl bg-cyan-500/5 border-cyan-500/10 space-y-6">
                             <div className="flex items-center gap-3">
                                 <Target className="h-4 w-4 text-cyan-500" />
                                 <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-500">Neural Accuracy</span>
@@ -246,10 +246,10 @@ export default function ExperimentsPage() {
 
                         {isLoading ? (
                             <div className="h-64 flex items-center justify-center">
-                                <RefreshCw className="h-8 w-8 text-blue-600 animate-spin" />
+                                <RefreshCw className="h-8 w-8 text-cyan-400 animate-spin" />
                             </div>
                         ) : activeTests.length === 0 ? (
-                            <div className="h-64 surface-glass rounded-[2.5rem] flex flex-col items-center justify-center text-center p-12 border-dashed border-white/5">
+                            <div className="h-64 surface-glass rounded-2xl flex flex-col items-center justify-center text-center p-12 border-dashed border-white/5">
                                 <FlaskConical className="h-12 w-12 text-slate-800 mb-4" />
                                 <h3 className="text-white font-bold uppercase tracking-tight">No Active Protocols</h3>
                                 <p className="text-slate-500 text-xs mt-1">Initialize a new experiment to begin neural testing.</p>
@@ -262,24 +262,24 @@ export default function ExperimentsPage() {
                                         layout
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        className="surface-glass p-8 rounded-[2.5rem] border border-white/5 hover:border-blue-500/30 transition-all group"
+                                        className="surface-glass p-8 rounded-2xl border border-white/5 hover:border-violet-500/30 transition-all group"
                                     >
                                         <div className="flex flex-col md:flex-row gap-8">
                                             <div className="flex-1 space-y-6">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[9px] font-bold text-blue-500 uppercase tracking-[0.2em]">Experiment #{test.id.slice(-4)}</span>
+                                                    <span className="text-[9px] font-bold text-violet-400 uppercase tracking-[0.2em]">Experiment #{test.id.slice(-4)}</span>
                                                     <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{test.target_metric} focus</span>
                                                 </div>
                                                 
                                                 <div className="grid grid-cols-2 gap-8">
                                                     <div className="space-y-4">
                                                         <div className="flex items-center gap-2">
-                                                            <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                                                            <div className="h-2 w-2 bg-violet-400 rounded-full" />
                                                             <span className="text-xs font-bold text-slate-300 uppercase truncate">{test.variant_a_title}</span>
                                                         </div>
                                                         <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
                                                             <div 
-                                                                className="h-full bg-blue-500" 
+                                                                className="h-full bg-violet-400" 
                                                                 style={{ width: `${(test.variant_a_view_count / (test.total_events || 1)) * 100}%` }} 
                                                             />
                                                         </div>
@@ -310,7 +310,7 @@ export default function ExperimentsPage() {
                                                     onClick={() => handleDetermineWinner(test.id)}
                                                     variant="outline" 
                                                     size="sm" 
-                                                    className="w-full py-4 rounded-xl border-white/10 hover:border-blue-500/50 hover:bg-blue-500/5 text-[10px] font-bold uppercase tracking-widest"
+                                                    className="w-full py-4 rounded-2xl border-white/10 hover:border-violet-500/50 hover:bg-violet-500/5 text-[10px] font-bold uppercase tracking-widest"
                                                 >
                                                     ANALYZE_WINNER
                                                 </Button>

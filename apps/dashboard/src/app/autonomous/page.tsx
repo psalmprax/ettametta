@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
-import DashboardLayout from "@/components/layout";
 import {
     Cpu,
     Play,
@@ -14,62 +13,67 @@ import {
     Share2,
     RefreshCw,
     AlertCircle,
-    CheckCircle2
+    CheckCircle2,
+    AlertOctagon,
+    Zap,
+    Target,
+    ShieldCheck,
+    Dna,
+    Radar,
+    Clock,
+    Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { getAuthToken } from "@/lib/auth_utils";
-import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
+import CommandCenterLayout from "@/components/CommandCenterLayout";
+import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { Button } from "@/components/ui/Button";
 
 export default function AutonomousPage() {
     const [isRunning, setIsRunning] = useState(false);
     const [status, setStatus] = useState("Idle");
-    const [logs, setLogs] = useState<string[]>([]);
+    const [logs, setLogs] = useState<string[]>(["AGENT_ZERO_INITIALIZED", "AWAITING_LAUNCH_SIGNAL"]);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [isConfirmStopOpen, setIsConfirmStopOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState("IDLE");
     const [insights, setInsights] = useState<any>(null);
     const [lastRun, setLastRun] = useState<number | null>(null);
     const [nextRun, setNextRun] = useState<number | null>(null);
 
-    // --- DATA FETCHING ---
-    const fetchStatus = useCallback(async () => {
-        const token = getAuthToken();
+    const fetchData = useCallback(async () => {
+        const token = await getAuthToken();
         if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
 
-        // Zero Status
-        withRealFallback<any>(
-            () => fetch(`${API_BASE}/zero/status`, { headers }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    if (!data) return;
-                    setIsRunning(data.is_running);
-                    setCurrentStep(data.current_step);
-                    setLastRun(data.last_run);
-                    setNextRun(data.next_run);
-                    setStatus(data.is_running ? `Autonomous Active: ${data.current_step}` : "Idle");
+        await Promise.all([
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/zero/status`, { headers }),
+                {
+                    fallback: null,
+                    onSuccess: (data) => {
+                        if (!data) return;
+                        setIsRunning(data.is_running);
+                        setCurrentStep(data.current_step);
+                        setLastRun(data.last_run);
+                        setNextRun(data.next_run);
+                    }
                 }
-            }
-        );
-
-        // Insights
-        withRealFallback<any>(
-            () => fetch(`${API_BASE}/zero/insights`, { headers }),
-            {
-                fallback: null,
-                onSuccess: (data) => data && setInsights(data.insights || data)
-            }
-        );
-    }, [isRunning, currentStep, lastRun, nextRun, insights]);
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/zero/insights`, { headers }),
+                {
+                    fallback: null,
+                    onSuccess: (data) => data && setInsights(data.insights || data)
+                }
+            )
+        ]);
+    }, []);
 
     useEffect(() => {
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 30000);
+        fetchData();
+        const interval = setInterval(fetchData, 10000);
 
         const wsUrl = `${WS_BASE}/logs`;
         const ws = new WebSocket(wsUrl);
@@ -87,22 +91,18 @@ export default function AutonomousPage() {
             clearInterval(interval);
             ws.close();
         };
-    }, [fetchStatus]);
+    }, [fetchData]);
 
     const handleToggle = async () => {
-        if (isRunning && !isConfirmStopOpen) {
-            setIsConfirmStopOpen(true);
-            return;
-        }
-
         setIsProcessing(true);
         const action = isRunning ? "stop" : "start";
-        const token = getAuthToken();
+        const token = await getAuthToken();
         if (!token) {
             setIsProcessing(false);
             return;
         }
 
+        setLogs(prev => [`[PROTOCOL] Sending ${action.toUpperCase()} signal to Agent Zero...`, ...prev]);
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/zero/${action}`, {
                 method: "POST",
@@ -112,343 +112,181 @@ export default function AutonomousPage() {
                 fallback: null,
                 onSuccess: (data) => {
                     setIsRunning(!isRunning);
-                    setStatus(!isRunning ? "Initializing Engine..." : "Halt Signal Sent");
-                    setLogs(prev => [`[SYSTEM] ${data?.message || `Agent Zero ${action}ed`}`, ...prev]);
+                    setLogs(prev => [`[SUCCESS] ${data?.message || `Agent Zero ${action}ed`}`, ...prev]);
                     toast.success(`Agent Zero ${action === 'start' ? 'Activated' : 'Halted'}`);
-                },
-                onFallback: () => {
-                    toast.error(`Failed to ${action} Agent Zero`);
+                    fetchData();
                 }
             }
         );
         setIsProcessing(false);
     };
 
-    const handleForceKill = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-
-        toast.promise(
-            fetch(`${API_BASE}/zero/kill`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                loading: 'Sending Force Kill signal...',
-                success: () => {
-                    setIsRunning(false);
-                    setStatus("Engine Terminated");
-                    setLogs(prev => [`[CRITICAL] SIGKILL sent to Agent Zero. Cleanup initiated.`, ...prev]);
-                    return 'Engine Terminated via Force Kill';
-                },
-                error: 'Failed to send Kill signal'
-            }
-        );
-    };
-
-    const handleExportLogs = () => {
-        const logContent = logs.join("\n");
-        const blob = new Blob([logContent], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `agent_zero_logs_${new Date().toISOString()}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.success("Logs exported successfully");
-    };
-
-    const StatusCard = ({ icon: Icon, label, value, color }: any) => (
-        <div className="glass-card p-6 flex items-center gap-5 transition-all hover:bg-white/2">
-            <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center border", color)}>
-                <Icon className="h-6 w-6" />
-            </div>
-            <div className="space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">{label}</p>
-                <h4 className="text-sm font-bold text-white uppercase tracking-tight">{value}</h4>
-            </div>
-        </div>
-    );
+    // Prepare Agent Data
+    const agents = [
+        { id: "ZERO_01", name: "Agent Zero", icon: Target, status: isRunning ? "ACTIVE" : "IDLE" as any, latency: 4, load: isRunning ? 45 : 0, details: isRunning ? `Step: ${currentStep}` : "Standby" },
+        { id: "SCOUT_01", name: "Trend Scout", icon: Search, status: isRunning && currentStep === "SCOUTING" ? "ACTIVE" : "IDLE" as any, latency: 12, load: isRunning && currentStep === "SCOUTING" ? 80 : 0, details: "Scrutinizing Feed" },
+        { id: "SYNTH_01", name: "Neural Synth", icon: Dna, status: isRunning && currentStep === "RENDERING" ? "ACTIVE" : "IDLE" as any, latency: 2, load: isRunning && currentStep === "RENDERING" ? 95 : 0, details: "Crystallizing Media" },
+    ];
 
     return (
-        <DashboardLayout>
-            <HighVelocityTicker />
-            <div className="space-y-12 pb-24 mt-10 section-container">
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" />
-                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Autonomous Director</span>
-                        </div>
-                        <h1 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-white leading-none">
-                            Agent <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-400 to-emerald-600 text-hollow">Zero</span>
-                        </h1>
-                        <p className="text-zinc-500 font-medium max-w-xl">
-                            Orchestrating the full faceless cycle: <span className="text-zinc-300 font-bold">Trend scouting, Analysis, Synthesis, and Publishing</span>.
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <ConfirmModal 
-                            isOpen={isConfirmStopOpen}
-                            onClose={() => setIsConfirmStopOpen(false)}
-                            onConfirm={() => {
-                                setIsConfirmStopOpen(false);
-                                handleToggle();
-                            }}
-                            title="Halt Autonomous Operations?"
-                            description="Stopping Agent Zero will terminate all active social scans and video pattern injections. Progress in current threads may be lost."
-                            variant="danger"
-                            confirmText="Halt Engine"
-                        />
-                        {isRunning && (
-                            <motion.button
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                onClick={handleForceKill}
-                                className="h-14 w-14 rounded-2xl flex items-center justify-center border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 transition-all shadow-xl group"
-                                title="Emergency Force Kill"
-                            >
-                                <AlertCircle className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                            </motion.button>
-                        )}
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleToggle}
-                            disabled={isProcessing}
-                            className={cn(
-                                "py-5 px-10 rounded-2xl flex items-center gap-3 shadow-2xl transition-all uppercase text-xs font-bold tracking-widest",
-                                isRunning
-                                    ? "bg-zinc-950 border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
-                                    : "bg-emerald-500 text-black shadow-[0_0_50px_rgba(16,185,129,0.3)]"
-                            )}
-                        >
-                            {isProcessing ? <RefreshCw className="h-5 w-5 animate-spin" /> : (isRunning ? <Pause className="h-5 w-5 fill-emerald-500" /> : <Play className="h-5 w-5 fill-black" />)}
-                            {isRunning ? "Stop Director" : "Launch Director"}
-                        </motion.button>
-                    </div>
-                </div>
-
-                {/* Status Matrix */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatusCard
-                        icon={Activity}
-                        label="Engine State"
-                        value={isRunning ? `${currentStep}` : "Deactivated"}
-                        color={isRunning ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-zinc-900 text-zinc-600 border-white/5"}
-                    />
-                    <StatusCard
-                        icon={RefreshCw}
-                        label="Next Iteration"
-                        value={nextRun ? new Date(nextRun * 1000).toLocaleTimeString() : "Pending"}
-                        color="bg-primary/10 text-primary border-primary/20"
-                    />
-                    <StatusCard
-                        icon={CheckCircle2}
-                        label="Loop Integrity"
-                        value={currentStep === "ERROR" ? "Degraded" : "Nominal"}
-                        color={currentStep === "ERROR" ? "bg-rose-500/10 text-rose-500 border-rose-500/20" : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"}
-                    />
-                    <StatusCard
-                        icon={AlertCircle}
-                        label="Policy"
-                        value={isRunning ? "Self-Correcting" : "Static"}
-                        color="bg-amber-500/10 text-amber-500 border-amber-500/20"
-                    />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                    {/* Visual Logic Flow */}
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="glass-card aspect-16/10 rounded-2xl p-12 flex flex-col items-center justify-center relative overflow-hidden bg-white/1">
-                            <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
-
-                            <div className="flex items-center gap-12 relative">
-                                <LogicNode icon={Search} label="Scout" active={isRunning && currentStep === "SCOUTING"} pulse={currentStep === "SCOUTING"} />
-                                <Connector active={isRunning && ["SCREENING", "BRAINSTORMING", "RENDERING", "PUBLISHING", "WAITING"].includes(currentStep)} />
-                                <LogicNode icon={Cpu} label="Brain" active={isRunning && ["SCREENING", "BRAINSTORMING"].includes(currentStep)} pulse={currentStep === "BRAINSTORMING"} />
-                                <Connector active={isRunning && ["RENDERING", "PUBLISHING", "WAITING"].includes(currentStep)} />
-                                <LogicNode icon={Layers} label="Render" active={isRunning && currentStep === "RENDERING"} pulse={currentStep === "RENDERING"} />
-                                <Connector active={isRunning && ["PUBLISHING", "WAITING"].includes(currentStep)} />
-                                <LogicNode icon={Share2} label="Post" active={isRunning && currentStep === "PUBLISHING"} pulse={currentStep === "PUBLISHING"} />
-                            </div>
-
-                            <div className="mt-16 text-center space-y-2 opacity-50">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-500">Faceless Production Mesh</p>
-                                <p className="text-[8px] font-bold text-zinc-600">Dynamic scaling enabled via high-velocity neural clusters</p>
-                            </div>
-                        </div>
-
-                        {/* Autonomous Insight Oracle */}
-                        <div className="space-y-6 px-4">
-                            <div className="flex items-center gap-3">
-                                <Activity className="h-4 w-4 text-primary neon-glow" />
-                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white">Autonomous Intelligence Oracle</h3>
-                            </div>
-                            <div className="glass-card p-8 border-primary/20 bg-primary/2 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4">
-                                     <div className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
-                                </div>
-                                {insights ? (
-                                    <div className="space-y-6">
-                                        <div className="space-y-2">
-                                            <p className="text-[8px] font-bold text-primary uppercase tracking-[0.4em]">Current Strategy</p>
-                                            <h4 className="text-2xl font-bold tracking-tighter text-white uppercase">{insights.title}</h4>
-                                            {insights.subtitle && <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">{insights.subtitle}</p>}
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="space-y-1">
-                                                <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Recommended Product</p>
-                                                <p className="text-xs font-bold text-emerald-400">{insights.recommended_product}</p>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Viral Hook</p>
-                                                <p className="text-[10px] text-zinc-300 leading-relaxed">"{insights.hook}"</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="py-10 flex flex-col items-center justify-center gap-4 text-center">
-                                        <Search className="h-8 w-8 text-zinc-800 animate-pulse" />
-                                        <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-700">Listening for Market Pulses...</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Live Console Hub */}
-                    <div className="lg:col-span-1 flex flex-col gap-8">
-                        <div className="glass-card rounded-[2.5rem] flex-1 flex flex-col overflow-hidden bg-black/40 border-white/5">
-                            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/2">
-                                <div className="flex items-center gap-3">
-                                    <Terminal className="h-4 w-4 text-primary" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-white">System Console</span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <button 
-                                        onClick={handleExportLogs}
-                                        className="text-[8px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
-                                    >
-                                        Export
-                                    </button>
-                                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                                </div>
-                            </div>
-                            <div className="p-6 font-mono text-[10px] space-y-3 overflow-y-auto h-[400px] custom-scrollbar">
-                                {logs.length === 0 && (
-                                    <p className="text-zinc-700">Initializing secure console link...</p>
-                                )}
-                                {logs.map((log, i) => (
-                                    <motion.p
-                                        initial={{ opacity: 0, x: -5 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        key={i}
-                                        className={cn(
-                                            "leading-relaxed",
-                                            log.includes("[SYSTEM]") ? "text-primary" : "text-zinc-500"
-                                        )}
-                                    >
-                                        <span className="text-zinc-800 mr-2">[{new Date().toLocaleTimeString()}]</span>
-                                        {log}
-                                    </motion.p>
-                                ))}
-                                {isRunning && (
-                                    <motion.p
-                                        animate={{ opacity: [1, 0.4, 1] }}
-                                        transition={{ repeat: Infinity, duration: 2 }}
-                                        className="text-emerald-500/50"
-                                    >
-                                        &gt; Director monitoring clusters...
-                                    </motion.p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Optimization Card */}
-                        <div className="glass-card p-8 rounded-2xl bg-emerald-500/5 border-emerald-500/10 space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Sparkles className="h-4 w-4 text-emerald-500" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500">Autonomous Insight</span>
-                            </div>
-                            <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
-                                {insights ? (
-                                    <>"{insights.title || `Agent Zero monitoring ${insights.recommended_product || 'market pulses'} for high-velocity opportunities.`}"</>
-                                ) : (
-                                    <>"Awaiting market intelligence. Launch Director to activate autonomous scouting."</>
-                                )}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+        <CommandCenterLayout
+          title="AUTONOMOUS DIRECTOR"
+          subtitle="AGENT_ZERO_V4.2"
+          leftPanel={
+            <div className="space-y-1">
+              {[
+                { id: "launch", label: "Launch Control", icon: Play },
+                { id: "logic", label: "Logic Flow", icon: Layers },
+                { id: "oracle", label: "Insight Oracle", icon: Sparkles },
+                { id: "market", label: "Market Pulse", icon: Radar },
+                { id: "console", label: "System Console", icon: Terminal },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveEngine(item.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                    activeEngine === item.id || (item.id === "launch" && !["logic", "oracle", "market", "console"].includes(activeEngine)) ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
+                  {(activeEngine === item.id || (item.id === "launch" && !["logic", "oracle", "market", "console"].includes(activeEngine))) && (
+                    <div className="ml-auto h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                  )}
+                </button>
+              ))}
             </div>
-        </DashboardLayout>
+          }
+          rightPanel={
+            <>
+              <AgentMatrix agents={agents} />
+              <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
+                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Loop Status</h4>
+                <div className="flex flex-col">
+                  <span className={cn("text-2xl font-bold uppercase tracking-tighter", isRunning ? "text-emerald-500" : "text-white")}>
+                    {isRunning ? "Running" : "Standby"}
+                  </span>
+                  <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">Iteration: {nextRun ? new Date(nextRun * 1000).toLocaleTimeString() : "PENDING"}</span>
+                </div>
+              </div>
+              <Button 
+                onClick={handleToggle} 
+                disabled={isProcessing} 
+                className={cn(
+                  "w-full font-bold h-14 rounded-2xl transition-all",
+                  isRunning ? "bg-zinc-950 border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10" : "bg-emerald-500 text-black hover:bg-emerald-400"
+                )}
+              >
+                {isProcessing ? "Transmitting..." : (isRunning ? "Halt Director" : "Launch Director")}
+              </Button>
+            </>
+          }
+        >
+          <div className="p-10 space-y-10 relative h-full flex flex-col">
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 space-y-10">
+              {/* Logic Flow Visualization */}
+              <div className="glass-card aspect-21/9 rounded-[40px] flex items-center justify-center relative overflow-hidden bg-[#0F0F11]/60 border border-white/5">
+                <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
+                <div className="flex items-center gap-12 relative z-10">
+                  <LogicNode icon={Search} label="Scout" active={isRunning && currentStep === "SCOUTING"} pulse={currentStep === "SCOUTING"} />
+                  <Connector active={isRunning && ["SCREENING", "BRAINSTORMING", "RENDERING", "PUBLISHING", "WAITING"].includes(currentStep)} />
+                  <LogicNode icon={Cpu} label="Brain" active={isRunning && ["SCREENING", "BRAINSTORMING"].includes(currentStep)} pulse={currentStep === "BRAINSTORMING"} />
+                  <Connector active={isRunning && ["RENDERING", "PUBLISHING", "WAITING"].includes(currentStep)} />
+                  <LogicNode icon={Layers} label="Render" active={isRunning && currentStep === "RENDERING"} pulse={currentStep === "RENDERING"} />
+                  <Connector active={isRunning && ["PUBLISHING", "WAITING"].includes(currentStep)} />
+                  <LogicNode icon={Share2} label="Post" active={isRunning && currentStep === "PUBLISHING"} pulse={currentStep === "PUBLISHING"} />
+                </div>
+              </div>
+
+              {/* Insight Oracle */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-6">
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="h-4 w-4 text-emerald-500" />
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Autonomous Insight Oracle</h3>
+                  </div>
+                  {insights ? (
+                    <div className="space-y-4">
+                      <h4 className="text-3xl font-bold text-white uppercase tracking-tighter">{insights.title}</h4>
+                      <p className="text-zinc-500 text-sm leading-relaxed">{insights.hook}</p>
+                    </div>
+                  ) : (
+                    <div className="h-32 flex flex-col items-center justify-center opacity-20">
+                      <Radar className="h-10 w-10 animate-pulse" />
+                      <span className="text-[8px] font-bold mt-2">LISTENING_FOR_PULSES</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-10 rounded-[32px] bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-8">
+                  <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                    <Activity className="h-8 w-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-emerald-500/60 uppercase tracking-widest">Self-Correction Mode</span>
+                    <p className="text-white font-bold uppercase">Dynamic Optimization Active</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Console Log Area */}
+            <div className="mt-8 h-64 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+              <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Terminal className="h-3 w-3 text-emerald-500" />
+                  <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">System Console</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] font-mono text-emerald-500/50">LINK_ESTABLISHED</span>
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                {logs.map((log, i) => (
+                  <div key={i} className="flex gap-4">
+                    <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                    <span className={cn(
+                      log.includes("[ERROR]") ? "text-red-500" :
+                      log.includes("[SUCCESS]") ? "text-emerald-500" : 
+                      log.includes("[PROTOCOL]") ? "text-cyan-400" : "text-zinc-600"
+                    )}>{log}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CommandCenterLayout>
     );
 }
 
-function LogicNode({ icon: Icon, label, active, pulse, delay = 0 }: any) {
+function LogicNode({ icon: Icon, label, active, pulse }: any) {
     return (
-        <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay }}
-            className="flex flex-col items-center gap-4"
-        >
+        <div className="flex flex-col items-center gap-4">
             <div className={cn(
-                "h-20 w-20 rounded-3xl flex items-center justify-center transition-all duration-700 relative",
-                active ? "bg-emerald-500 text-black shadow-[0_0_40px_rgba(16,185,129,0.4)]" : "bg-zinc-950 text-zinc-800 border border-white/5"
+                "h-20 w-20 rounded-[32px] flex items-center justify-center transition-all duration-700 relative",
+                active ? "bg-emerald-500 text-black shadow-[0_0_40px_rgba(16,185,129,0.4)]" : "bg-black/40 text-zinc-800 border border-white/5"
             )}>
                 <Icon className="h-8 w-8" />
                 {active && pulse && (
-                    <div className="absolute inset-0 rounded-3xl border-2 border-emerald-500 animate-ping opacity-20" />
+                    <div className="absolute inset-0 rounded-[32px] border-2 border-emerald-500 animate-ping opacity-20" />
                 )}
             </div>
             <span className={cn(
-                "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-500",
+                "text-[10px] font-bold uppercase tracking-widest transition-colors duration-500",
                 active ? "text-emerald-500" : "text-zinc-800"
             )}>{label}</span>
-        </motion.div>
-    );
-}
-
-function Connector({ active, delay = 0 }: any) {
-    return (
-        <div className="h-[2px] w-12 bg-zinc-900 relative">
-            {active && (
-                <motion.div
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ delay, duration: 1 }}
-                    className="absolute inset-0 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] origin-left"
-                />
-            )}
         </div>
     );
 }
 
-function Sparkles(props: any) {
+function Connector({ active }: any) {
     return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-            <path d="M5 3v4" />
-            <path d="M19 17v4" />
-            <path d="M3 5h4" />
-            <path d="M17 19h4" />
-        </svg>
+        <div className="h-[1px] w-12 bg-white/5 relative">
+            {active && (
+                <div className="absolute inset-0 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+            )}
+        </div>
     );
 }

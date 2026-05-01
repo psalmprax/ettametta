@@ -175,8 +175,8 @@ async def get_test_results(
             test.variant_b_conversion_count,
         )
     else:  # views
-        views_a, views_b = test.variant_a_view_count, test.variant_b_view_count
-        conv_a, conv_b = test.variant_a_view_count, test.variant_b_view_count
+        views_a, views_b = (test.variant_a_view_count or 0), (test.variant_b_view_count or 0)
+        conv_a, conv_b = (test.variant_a_view_count or 0), (test.variant_b_view_count or 0)
 
     total_views = views_a + views_b
 
@@ -207,7 +207,7 @@ async def get_test_results(
         data={
             "test_id": test.id,
             "content_id": test.content_id,
-            "status": test.status,
+            "status": test.status.value if hasattr(test.status, "value") else test.status,
             "variant_a": {
                 "title": test.variant_a_title,
                 "description": test.variant_a_description,
@@ -464,12 +464,13 @@ async def get_active_tests(
                 {
                     "id": t.id,
                     "content_id": t.content_id,
+                    "status": t.status.value if hasattr(t.status, 'value') else t.status,
                     "variant_a_title": t.variant_a_title,
                     "variant_b_title": t.variant_b_title,
-                    "variant_a_view_count": t.variant_a_view_count,
-                    "variant_b_view_count": t.variant_b_view_count,
+                    "variant_a_view_count": t.variant_a_view_count or 0,
+                    "variant_b_view_count": t.variant_b_view_count or 0,
                     "target_metric": t.target_metric,
-                    "total_events": t.variant_a_view_count + t.variant_b_view_count,
+                    "total_events": (t.variant_a_view_count or 0) + (t.variant_b_view_count or 0),
                     "created_at": t.created_at.isoformat() if t.created_at else None,
                 }
                 for t in tests

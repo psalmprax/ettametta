@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
-import DashboardLayout from "@/components/layout";
+import CommandCenterLayout from "@/components/CommandCenterLayout";
+import { DesignCard } from "@/components/ui/DesignCard";
+import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
 import {
     Video,
     Layers,
@@ -19,162 +21,118 @@ import {
     PlusCircle,
     Link as LinkIcon,
     Circle,
-    X
+    X,
+    Monitor,
+    Loader2,
+    Activity,
+    Box,
+    Terminal,
+    Target,
+    Zap,
+    ZapOff
 } from "lucide-react";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { API_BASE } from "@/lib/config";
-import dynamic from "next/dynamic";
-
-const ProcessingFlow = dynamic(() => import("@/components/ui/ProcessingFlow"), { ssr: false });
+import { API_BASE, WS_BASE } from "@/lib/config";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { WS_BASE } from "@/lib/config";
-import { useNiches } from "@/hooks/useNiches";
-
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
-import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/Button";
 
 interface VideoJob {
     id: string;
     title: string;
     status: string;
     progress: number;
-    time_remaining?: string;
     output_path?: string;
-    error_message?: string;
 }
 
-import { useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-
-function TransformationPageContent() {
-    const { niches } = useNiches();
-    const searchParams = useSearchParams();
+export default function TransformationPage() {
+    const [activeEngine, setActiveEngine] = useState("control");
     const [processingJobs, setProcessingJobs] = useState<VideoJob[]>([]);
-    const [activeFilters, setActiveFilters] = useState<any[]>([]);
     const [selectedJob, setSelectedJob] = useState<VideoJob | null>(null);
-    const [isJobModalOpen, setIsJobModalOpen] = useState(false);
-    const [newJobUrl, setNewJobUrl] = useState("");
-    const [targetPlatform, setTargetPlatform] = useState("YouTube Shorts");
-    const [generateThumbnail, setGenerateThumbnail] = useState(false);
-    const [premiumQuality, setPremiumQuality] = useState(true); // Default to true for Remotion
-    const [enableSoundDesign, setEnableSoundDesign] = useState(false);
-    const [enableMotionGraphics, setEnableMotionGraphics] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isBatchMode, setIsBatchMode] = useState(false);
-    const [aiInsight, setAiInsight] = useState<any>(null);
-    const [currentNiche, setCurrentNiche] = useState("Motivation");
+    const [logs, setLogs] = useState<string[]>(["STUDIO_INITIALIZED", "AWAITING_SOURCE_TELEMETRY"]);
+    const [telemetry, setTelemetry] = useState<any>(null);
+
+    const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/jobs`);
+    const { data: telemetryUpdate } = useWebSocket<any>(`${WS_BASE}/nexus/telemetry`);
 
     useEffect(() => {
-        const urlParam = searchParams.get("url");
-        if (urlParam) {
-            setNewJobUrl(urlParam);
-            setIsJobModalOpen(true);
-        }
+        if (telemetryUpdate) setTelemetry(telemetryUpdate);
+    }, [telemetryUpdate]);
 
-        const jobIdParam = searchParams.get("job_id");
-        if (jobIdParam && processingJobs.length > 0) {
-            const job = processingJobs.find(j => j.id === jobIdParam);
-            if (job) setSelectedJob(job);
-        }
-    }, [searchParams, processingJobs]);
-
-    // ... handleNewJob update
-    const handleNewJob = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        if (!newJobUrl) return;
-
-        const token = getAuthToken();
-        if (!token) {
-            setIsSubmitting(false);
-            return;
-        }
-
-        const urls = isBatchMode 
-            ? newJobUrl.split(/[\n,]+/).map(u => u.trim()).filter(u => u.length > 0)
-            : [newJobUrl.trim()];
-
-        if (urls.length === 0) return;
-
-        setIsSubmitting(true);
-        let successCount = 0;
-
-        for (const url of urls) {
-            await withRealFallback(
-                async () => {
-                    return fetch(`${API_BASE}/video/transform`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            source_uri: url,
-                            platform: targetPlatform,
-                            niche: currentNiche,
-                            generate_thumbnail: generateThumbnail,
-                            quality_tier: premiumQuality ? "premium" : "standard",
-                            sound_design: enableSoundDesign,
-                            motion_graphics: enableMotionGraphics
-                        })
-                    });
-                },
-                {
-                    fallback: null,
-                    onSuccess: () => {
-                        successCount++;
-                    },
-                    onFallback: (err: any) => {
-                        toast.error(`Failed to dispatch: ${url.substring(0, 30)}...`, {
-                            description: err.message
-                        });
-                    }
-                }
-            );
-        }
-
-        if (successCount > 0) {
-            toast.success(`Dispatched ${successCount} Job(s)`, {
-                description: `${successCount} transformation(s) queued in the engine.`
+    useEffect(() => {
+        if (jobUpdate && jobUpdate.type === "job_update") {
+            const updatedJob = jobUpdate.data;
+            setProcessingJobs(prev => {
+                const exists = prev.find(j => j.id === updatedJob.id);
+                if (exists) return prev.map(j => j.id === updatedJob.id ? { ...j, ...updatedJob } : j);
+                return [updatedJob, ...prev];
             });
-            setNewJobUrl("");
-            setIsJobModalOpen(false);
-            
-            // Refresh jobs list
-            await withRealFallback<any>(
+            if (selectedJob?.id === updatedJob.id) setSelectedJob(updatedJob);
+        }
+    }, [jobUpdate, selectedJob]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const token = await getAuthToken();
+            if (!token) return;
+            await withRealFallback<VideoJob[]>(
                 () => fetch(`${API_BASE}/video/jobs`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
                 {
                     fallback: [],
-                    onSuccess: (data) => setProcessingJobs(data)
+                    onSuccess: (jobs) => {
+                        setProcessingJobs(jobs);
+                        if (jobs.length > 0) setSelectedJob(jobs[0]);
+                    }
                 }
             );
-        }
-        setIsSubmitting(false);
-    };
+        };
+        fetchData();
+    }, []);
 
-    const handleToggleFilter = async (id: string) => {
+    const handleAbort = async (id: string) => {
+        const token = await getAuthToken();
+        if (!token) return;
+        setLogs(prev => [`[SIGNAL] Aborting Job: ${id}`, ...prev]);
+        
         await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) return;
-                return fetch(`${API_BASE}/settings/filters/${id}/toggle`, {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-            },
+            () => fetch(`${API_BASE}/video/jobs/${id}/abort`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
             {
                 fallback: null,
-                onSuccess: (updated: any) => {
-                    setActiveFilters(prev => prev.map(f => f.id === id ? updated : f));
-                    toast.success(`${updated.name} ${updated.enabled ? 'Activated' : 'Standby'}`);
+                onSuccess: () => {
+                    toast.success("Job Aborted Successfully");
+                    setLogs(prev => [`[SUCCESS] Job ${id} Terminated.`, ...prev]);
+                }
+            }
+        );
+    };
+
+    const handleAutoLinks = async (id: string) => {
+        const token = await getAuthToken();
+        if (!token) return;
+        setLogs(prev => [`[SIGNAL] Triggering Neural Link Insertion for ${id}`, ...prev]);
+        
+        await withRealFallback(
+            () => fetch(`${API_BASE}/video/auto-insert-links`, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}` 
                 },
-                onFallback: (err: any) => {
-                    toast.error("Node Config Error", {
-                        description: err.message || "Failed to update filter preference."
-                    });
+                body: JSON.stringify({ job_id: id })
+            }),
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("Affiliate Nodes Injected");
+                    setLogs(prev => [`[SUCCESS] Links injected into ${id}`, ...prev]);
                 }
             }
         );
@@ -183,734 +141,191 @@ function TransformationPageContent() {
     const getStaticUrl = (path: string | undefined) => {
         if (!path) return null;
         if (path.startsWith('http')) return path;
-
-        // Handle local paths
-        if (!path.includes('.mp4') && !path.includes('.')) return null;
-
         const filename = path.split('/').pop();
         return `${API_BASE}/static/${filename}`;
     };
 
-    const handleAbort = async (id: string) => {
-        await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) return;
-                return fetch(`${API_BASE}/video/jobs/${id}/abort`, {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-            },
-            {
-                fallback: null,
-                onSuccess: () => {
-                    setProcessingJobs(prev => prev.map(j => j.id === id ? { ...j, status: "Aborted" } : j));
-                    if (selectedJob?.id === id) {
-                        setSelectedJob(prev => prev ? { ...prev, status: "Aborted" } : null);
-                    }
-                    toast.info("Process Aborted", {
-                        description: "Neural transform terminated successfully."
-                    });
-                },
-                onFallback: (err: any) => {
-                    toast.error("Abort Failed", { description: err.message });
-                }
-            }
-        );
-    };
-
-    const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/jobs`);
-    const { data: telemetryData } = useWebSocket<any>(`${WS_BASE}/telemetry`);
-
-    useEffect(() => {
-        if (!jobUpdate) return;
-
-        if (jobUpdate.type === "job_update") {
-            const updatedJob = jobUpdate.data;
-            setProcessingJobs(prev => {
-                const exists = prev.find(j => j.id === updatedJob.id);
-                if (exists) {
-                    return prev.map(j => j.id === updatedJob.id ? { ...j, ...updatedJob } : j);
-                } else {
-                    return [updatedJob, ...prev];
-                }
-            });
-
-            // Update selected job if it's the one that changed
-            setSelectedJob(prev => {
-                if (prev && prev.id === updatedJob.id) {
-                    return { ...prev, ...updatedJob };
-                }
-                return prev;
-            });
-        }
-    }, [jobUpdate]);
-
-    React.useEffect(() => {
-        const fetchData = async () => {
-            const token = getAuthToken();
-            if (!token) return;
-            const headers = { Authorization: `Bearer ${token}` };
-
-            await Promise.all([
-                withRealFallback<any>(
-                    () => fetch(`${API_BASE}/video/jobs`, { headers }),
-                    {
-                        fallback: [],
-                        onSuccess: (jobsRes) => {
-                            setProcessingJobs(jobsRes);
-                            if (jobsRes.length > 0 && !selectedJob) {
-                                setSelectedJob(jobsRes[0]);
-                            } else if (selectedJob) {
-                                const updated = jobsRes.find((j: any) => j.id === selectedJob.id);
-                                if (updated) setSelectedJob(updated);
-                            }
-                        }
-                    }
-                ),
-                withRealFallback<any>(
-                    () => fetch(`${API_BASE}/settings/filters`, { headers }),
-                    {
-                        fallback: [],
-                        onSuccess: (filtersRes) => setActiveFilters(filtersRes)
-                    }
-                )
-            ]);
-        };
-
-        fetchData();
-    }, []); // Only fetch initial data on mount
-
-    // Fetch AI insights based on niche
-    useEffect(() => {
-        const fetchInsight = async () => {
-            const token = getAuthToken();
-            if (!token) return;
-            await withRealFallback<any>(
-                () => fetch(`${API_BASE}/discovery/insights/${currentNiche}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                {
-                    fallback: null,
-                    onSuccess: (data) => data && setAiInsight(data)
-                }
-            );
-        };
-        fetchInsight();
-    }, [currentNiche]);
-
-    const activeFilterCount = Array.isArray(activeFilters) ? activeFilters.filter(f => f.enabled).length : 0;
-
-
-
-    const [flowSteps, setFlowSteps] = useState<{ id: string; label: string; status: "pending" | "active" | "complete" | "error" }[]>([
-        { id: "ingest", label: "Packet Ingestion", status: "pending" },
-        { id: "analyze", label: "Semantic Analysis", status: "pending" },
-        { id: "remix", label: "Neural Patterning", status: "pending" },
-        { id: "render", label: "Final Synthesis", status: "pending" }
-    ]);
-
-    useEffect(() => {
-        if (!selectedJob) return;
-
-        const status = selectedJob.status.toLowerCase();
-        
-        // Define mapping of backend status to step indices
-        const statusMap: Record<string, number> = {
-            'queued': 0,
-            'validating': 0,
-            'downloading': 0,
-            'downloading asset': 0,
-            'analyzing visuals': 1,
-            'strategizing': 1,
-            'scripting': 1,
-            'narrative analysis': 1,
-            'transcribing': 1,
-            'analyzing': 1,
-            'processing': 2,
-            'transforming': 2,
-            'remixing': 2,
-            'composing': 2,
-            'cinematic fusion': 2,
-            'rendering': 3,
-            'synthesizing': 3,
-            'synthesizing story': 3,
-            'assembling': 3,
-            'adding sound design': 3,
-            'adding motion graphics': 3,
-            'optimizing': 4,
-            'uploading': 4,
-            'tiktok upload': 4,
-            'completed': 4,
-            'failed': -1
-        };
-
-        const activeIdx = statusMap[status] ?? -1;
-
-        setFlowSteps(prev => prev.map((step, idx) => {
-            if (activeIdx === -1 && status === 'failed') {
-                // Determine which step failed based on previous state or just mark current active as error
-                // For simplicity, if failed and no specific mapping, we keep current or mark all as pending
-                return { ...step, status: step.status === 'active' ? 'error' as const : step.status };
-            }
-            if (activeIdx === 4) return { ...step, status: "complete" as const };
-            if (activeIdx > idx) return { ...step, status: "complete" as const };
-            if (activeIdx === idx) return { ...step, status: "active" as const };
-            return { ...step, status: "pending" as const };
-        }));
-
-    }, [selectedJob]);
+    // Prepare Agent Data
+    const agents = [
+        { id: "RENDER_01", name: "Remotion Cluster", icon: Film, status: "ACTIVE" as any, latency: 120, load: 85, details: "Rendering Frame_2401" },
+        { id: "FFMPEG_01", name: "Codec Engine", icon: Video, status: "ACTIVE" as any, latency: 450, load: 32, details: "Encoding: VP9/H.265" },
+        { id: "LINK_01", name: "Affiliate Bot", icon: LinkIcon, status: "IDLE" as any, latency: 5, load: 0, details: "Waiting for Commit" },
+    ];
 
     return (
-        <DashboardLayout>
-            <HighVelocityTicker />
-            <div className="section-container relative pb-20 mt-10">
-                {/* Custom Modal for New Job */}
-                <AnimatePresence>
-                    {isJobModalOpen && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+        <CommandCenterLayout
+            title="ORIGINALITY STUDIO"
+            subtitle="ASSET_TRANSFORMATION_V4.2"
+            leftPanel={
+                <div className="space-y-1">
+                    {[
+                        { id: "control", label: "Studio Control", icon: Activity },
+                        { id: "queue", label: "Mass Deployment", icon: Layers },
+                        { id: "nodes", label: "Neural Nodes", icon: Box },
+                        { id: "logs", label: "Engine Logs", icon: Terminal },
+                    ].map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveEngine(item.id)}
+                            className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                                activeEngine === item.id ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                            )}
                         >
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                                animate={{ scale: 1, opacity: 1, y: 0 }}
-                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                                className="glass-card w-full max-w-xl rounded-6xl p-12 shadow-[0_32px_128px_rgba(0,0,0,0.8)] space-y-10 relative overflow-hidden"
-                            >
-                                <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-1 w-8 bg-primary rounded-full" />
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Engine Initialization</span>
-                                    </div>
-                                    <h3 className="text-3xl font-bold uppercase tracking-tighter text-white">Launch Transformation</h3>
-                                    <p className="text-zinc-500 font-medium leading-relaxed">Input source telemetry (Video URL) to apply high-velocity <span className="text-primary font-bold">Neural pattern injection</span>.</p>
-                                </div>
-                                <form onSubmit={handleNewJob} className="space-y-8">
-                                    <div className="relative group">
-                                        <LinkIcon className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500 group-hover:text-primary transition-colors" />
-                                        <input
-                                            type="text"
-                                            placeholder={isBatchMode ? "Paste Multiple URLs (Line Separated)..." : "Paste Viral Intel URL (YouTube/TikTok)..."}
-                                            value={newJobUrl}
-                                            onChange={(e) => setNewJobUrl(e.target.value)}
-                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-6 pl-16 pr-6 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all text-white font-bold placeholder:text-zinc-700 tracking-tight"
-                                        />
-                                    </div>
-
-                                    {/* Platform Targeting */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {["YouTube Shorts", "TikTok"].map((p) => (
-                                            <button
-                                                key={p}
-                                                type="button"
-                                                onClick={() => setTargetPlatform(p)}
-                                                className={cn(
-                                                    "py-4 rounded-xl border font-bold uppercase text-[10px] tracking-widest transition-all",
-                                                    targetPlatform === p
-                                                        ? "bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]"
-                                                        : "bg-zinc-950/30 border-white/10 text-zinc-600 hover:text-zinc-400"
-                                                )}
-                                            >
-                                                {p}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {/* AI Thumbnail Toggle */}
-                                    <div className="bg-zinc-950/30 border border-white/10 p-6 rounded-xl flex items-center justify-between group/toggle hover:border-primary/30 transition-all cursor-pointer" onClick={() => setGenerateThumbnail(!generateThumbnail)}>
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn(
-                                                "p-3 rounded-lg transition-all",
-                                                generateThumbnail ? "bg-primary/20 text-primary" : "bg-zinc-900 text-zinc-600"
-                                            )}>
-                                                <Sparkles className="h-5 w-5" />
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                <span className="text-[11px] font-bold uppercase tracking-tight text-white">Neural Thumbnail Generator</span>
-                                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">AI-Optimized Click-Through Vector</p>
-                                            </div>
-                                        </div>
-                                        <div className={cn(
-                                            "w-12 h-6 rounded-full transition-all relative border",
-                                            generateThumbnail ? "bg-primary border-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]" : "bg-zinc-800 border-white/5"
-                                        )}>
-                                            <motion.div
-                                                animate={{ x: generateThumbnail ? 24 : 4 }}
-                                                className="absolute top-1 w-3 h-3 bg-white rounded-full transition-all"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Niche Selection */}
-                                    <div className="space-y-3 pb-2">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-2">Content Niche (Alpha)</label>
-                                        <select
-                                            className="w-full bg-zinc-950/30 border border-white/10 rounded-xl p-5 text-xs font-bold text-white uppercase outline-none focus:ring-1 focus:ring-primary/40 transition-all hover:border-primary/30"
-                                            value={currentNiche}
-                                            onChange={(e) => setCurrentNiche(e.target.value)}
-                                        >
-                                            {niches.map(n => <option key={n} value={n}>{n}</option>)}
-                                        </select>
-                                    </div>
-
-                                    {/* Remotion Premium Toggle */}
-                                    <div className="bg-zinc-950/30 border border-white/10 p-6 rounded-xl flex items-center justify-between group/toggle hover:border-primary/30 transition-all cursor-pointer" onClick={() => setPremiumQuality(!premiumQuality)}>
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn(
-                                                "p-3 rounded-lg transition-all",
-                                                premiumQuality ? "bg-primary/20 text-primary" : "bg-zinc-900 text-zinc-600"
-                                            )}>
-                                                <Cpu className="h-5 w-5" />
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                <span className="text-[11px] font-bold uppercase tracking-tight text-white">Remotion Engine (Premium)</span>
-                                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">High-Fidelity Cinematic Rendering</p>
-                                            </div>
-                                        </div>
-                                        <div className={cn(
-                                            "w-12 h-6 rounded-full transition-all relative border",
-                                            premiumQuality ? "bg-primary border-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]" : "bg-zinc-800 border-white/5"
-                                        )}>
-                                            <motion.div
-                                                animate={{ x: premiumQuality ? 24 : 4 }}
-                                                className="absolute top-1 w-3 h-3 bg-white rounded-full transition-all"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Sound Design Toggle */}
-                                    <div className="bg-zinc-950/30 border border-white/10 p-6 rounded-xl flex items-center justify-between group/toggle hover:border-emerald-500/30 transition-all cursor-pointer" onClick={() => setEnableSoundDesign(!enableSoundDesign)}>
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn(
-                                                "p-3 rounded-lg transition-all",
-                                                enableSoundDesign ? "bg-emerald-500/20 text-emerald-500" : "bg-zinc-900 text-zinc-600"
-                                            )}>
-                                                <Sparkles className="h-5 w-5" />
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                <span className="text-[11px] font-bold uppercase tracking-tight text-white">Sound Design</span>
-                                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Auto Music & SFX by Niche Mood</p>
-                                            </div>
-                                        </div>
-                                        <div className={cn(
-                                            "w-12 h-6 rounded-full transition-all relative border",
-                                            enableSoundDesign ? "bg-emerald-500 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "bg-zinc-800 border-white/5"
-                                        )}>
-                                            <motion.div
-                                                animate={{ x: enableSoundDesign ? 24 : 4 }}
-                                                className="absolute top-1 w-3 h-3 bg-white rounded-full transition-all"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Motion Graphics Toggle */}
-                                    <div className="bg-zinc-950/30 border border-white/10 p-6 rounded-xl flex items-center justify-between group/toggle hover:border-violet-500/30 transition-all cursor-pointer" onClick={() => setEnableMotionGraphics(!enableMotionGraphics)}>
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn(
-                                                "p-3 rounded-lg transition-all",
-                                                enableMotionGraphics ? "bg-violet-500/20 text-violet-500" : "bg-zinc-900 text-zinc-600"
-                                            )}>
-                                                <Film className="h-5 w-5" />
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                <span className="text-[11px] font-bold uppercase tracking-tight text-white">Motion Graphics</span>
-                                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Animated Titles & Text Overlays</p>
-                                            </div>
-                                        </div>
-                                        <div className={cn(
-                                            "w-12 h-6 rounded-full transition-all relative border",
-                                            enableMotionGraphics ? "bg-violet-500 border-violet-500 shadow-[0_0_15px_rgba(139,92,246,0.3)]" : "bg-zinc-800 border-white/5"
-                                        )}>
-                                            <motion.div
-                                                animate={{ x: enableMotionGraphics ? 24 : 4 }}
-                                                className="absolute top-1 w-3 h-3 bg-white rounded-full transition-all"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsJobModalOpen(false)}
-                                            className="flex-1 bg-zinc-950/50 border border-white/10 hover:bg-white/5 text-zinc-400 font-bold py-5 rounded-xl transition-all uppercase text-xs tracking-widest"
-                                        >
-                                            Abort
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={isSubmitting || !newJobUrl}
-                                            className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-bold py-5 rounded-xl transition-all shadow-[0_0_40px_rgba(var(--primary-rgb),0.3)] flex items-center justify-center gap-3 uppercase text-xs tracking-widest"
-                                        >
-                                            {isSubmitting ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Layers className="h-5 w-5" />}
-                                            {isSubmitting ? "Locking..." : "Start Engine"}
-                                        </button>
-                                    </div>
-                                </form>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Processing Flow Diagram */}
-                <div className="mb-16">
-                    <ProcessingFlow steps={flowSteps} telemetry={telemetryData} />
+                            <item.icon className="h-4 w-4" />
+                            <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
+                            {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />}
+                        </button>
+                    ))}
                 </div>
-
-                <div className="flex items-end justify-between mb-12">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
-                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Production Hub</span>
-                        </div>
-                        <h1 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-white leading-none">Originality <span className="text-transparent bg-clip-text bg-linear-to-r from-pink-500 to-rose-500 text-hollow">Studio</span></h1>
-                        <p className="text-zinc-500 font-medium">Applying cinematic filters and managing <span className="text-zinc-300 font-bold">social compliance</span> workflows.</p>
-                    </div>
-                    <div className="flex gap-4">
-                        <div className="glass-card px-6 py-4 rounded-2xl flex items-center gap-4">
-                            <div className="flex -space-x-3">
-                                {Array.isArray(activeFilters) && activeFilters.filter(f => f.enabled).slice(0, 3).map((f, i) => (
-                                    <div key={i} className="h-8 w-8 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center backdrop-blur-md shadow-sm">
-                                        <Sparkles className="h-4 w-4 text-primary" />
-                                    </div>
-                                ))}
+            }
+            rightPanel={
+                <>
+                    <AgentMatrix agents={agents} />
+                    <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Quotas</h4>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] text-zinc-600 font-bold uppercase">Render Time</span>
+                                <span className="text-[10px] text-white font-bold">14.2h / 24h</span>
                             </div>
-                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                                {activeFilterCount} Active Nodes
-                            </span>
-                        </div>
-                        <motion.button
-                            whileHover={{ scale: 1.05, y: -2 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setIsJobModalOpen(true)}
-                            className="bg-primary hover:bg-primary/90 text-white font-bold py-4 px-8 rounded-xl transition-all flex items-center gap-3 shadow-[0_0_40px_rgba(var(--primary-rgb),0.2)] uppercase text-xs tracking-widest"
-                        >
-                            <Film className="h-5 w-5" />
-                            Launch Studio
-                        </motion.button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                    {/* Active Jobs Section */}
-                    <div className="lg:col-span-2 space-y-10">
-                        {/* Live Studio Preview */}
-                        <div className="glass-card overflow-hidden flex flex-col shadow-[0_32px_64px_rgba(0,0,0,0.4)] relative">
-                            <div className="absolute inset-0 scanline opacity-[var(--scanline-opacity)] pointer-events-none" />
-                            <div className="p-8 border-b border-white/5 bg-white/2 flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                                        <Play className="h-5 w-5 text-emerald-500 neon-glow" />
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <h3 className="font-bold uppercase tracking-tight text-white">Live Monitor</h3>
-                                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Real-time Node Rendering</p>
-                                    </div>
-                                </div>
-                                {selectedJob && (
-                                    <div className="flex items-center gap-6">
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 font-mono">
-                                            JOB_ID: {selectedJob.id.slice(0, 8)}
-                                        </span>
-                                        {getStaticUrl(selectedJob.output_path) && (
-                                        <a
-                                            href={getStaticUrl(selectedJob.output_path) ?? undefined}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="glass-card hover:border-primary/50 text-zinc-400 hover:text-white text-[10px] font-bold py-2 px-4 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest"
-                                        >
-                                            <ArrowUpRight className="h-3 w-3" />
-                                            Raw Intel
-                                        </a>
-                                        )}
-                                        <a
-                                            href={`https://149.104.110.122.sslip.io:7203?job_id=${selectedJob.id}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="glass-card border-violet-500/50 hover:bg-violet-500/10 text-violet-400 hover:text-white text-[10px] font-bold py-2 px-4 rounded-xl transition-all flex items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.2)]"
-                                        >
-                                            <Layers className="h-3 w-3" />
-                                            Edit in Studio
-                                        </a>
-                                    </div>
-                                )}
+                            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-full w-[60%] bg-rose-500" />
                             </div>
-
-                            <div className="aspect-video bg-zinc-950 relative flex items-center justify-center group overflow-hidden">
-                                {selectedJob?.status === "Completed" && getStaticUrl(selectedJob.output_path) ? (
-                                    <video
-                                        src={getStaticUrl(selectedJob.output_path) || ""}
-                                        controls
-                                        className="w-full h-full object-contain"
-                                    />
-                                ) : (selectedJob?.status === "Completed") ? (
-                                    <div className="flex flex-col items-center gap-6 opacity-30">
-                                        <Layers className="h-24 w-24 text-zinc-800" />
-                                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-zinc-700">Intel Lost // Asset Not Found</p>
-                                    </div>
-                                ) : selectedJob ? (
-                                    <>
-                                        <div className="flex flex-col items-center gap-8 p-12 text-center relative z-10">
-                                            <div className="relative">
-                                                <RefreshCw className="h-32 w-32 text-primary/10 animate-spin-slow transition-transform" />
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <Layers className="h-14 w-14 text-primary animate-pulse shadow-[0_0_50px_rgba(var(--primary-rgb),0.4)]" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-3">
-                                                <h4 className="text-3xl font-bold tracking-tighter text-white uppercase">Injecting Originality...</h4>
-                                                <p className="text-zinc-500 font-medium max-w-sm mx-auto leading-relaxed">Applying high-velocity neural transforms to maximize reach and bypass platform signatures.</p>
-                                            </div>
-                                            <div className="w-80 space-y-3">
-                                                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                                                    <span>Render Progress</span>
-                                                    <span className="text-primary">{selectedJob.progress}%</span>
-                                                </div>
-                                            </div>
+                        </div>
+                    </div>
+                </>
+            }
+        >
+            <div className="p-10 space-y-10 relative h-full flex flex-col">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeEngine}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="flex-1 flex flex-col min-h-0"
+                    >
+                        {activeEngine === "control" && (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+                                <div className="lg:col-span-2 rounded-[32px] border border-white/5 bg-[#0F0F11]/60 p-8 flex flex-col overflow-hidden">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-3">
+                                            <Monitor className="h-5 w-5 text-rose-500" />
+                                            <h3 className="text-sm font-bold text-white uppercase tracking-widest">Live Production Feed</h3>
                                         </div>
-                                        {selectedJob.status.toLowerCase() === 'failed' && selectedJob.error_message && (
-                                            <div className="mt-8 p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 max-w-sm mx-auto">
-                                                <div className="flex items-center gap-3 mb-2 font-bold uppercase text-xs tracking-widest justify-center">
-                                                    <X className="h-4 w-4" />
-                                                    Engine Failure
-                                                </div>
-                                                <p className="text-sm font-medium opacity-90 leading-relaxed">{selectedJob.error_message}</p>
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-6 opacity-30">
-                                        <Video className="h-24 w-24 text-zinc-800" />
-                                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-zinc-700">Offline // Select Pipeline Job</p>
-                                    </div>
-                                )}
-
-                                {/* Premium Success Overlay */}
-                                <AnimatePresence>
-                                    {selectedJob?.status === "Completed" && (
-                                        <motion.div
-                                            initial={{ y: 20, opacity: 0 }}
-                                            animate={{ y: 0, opacity: 1 }}
-                                            className="absolute bottom-8 left-8 right-8 p-6 glass-card border-none bg-black/60 backdrop-blur-xl rounded-3xl flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all shadow-2xl"
-                                        >
+                                        {selectedJob && (
                                             <div className="flex items-center gap-4">
-                                                <div className="h-12 w-12 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.4)]">
-                                                    <CheckCircle2 className="h-7 w-7 text-black" />
-                                                </div>
-                                                <div className="space-y-0.5">
-                                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">Intel Validated</p>
-                                                    <h5 className="text-sm font-bold text-white uppercase tracking-tighter">Ready for Global Distribution</h5>
+                                                <span className="text-[10px] font-mono text-zinc-600">ID: {selectedJob.id}</span>
+                                                <Button onClick={() => handleAbort(selectedJob.id)} variant="outline" className="h-10 border-rose-500/20 text-rose-500 text-[10px] uppercase font-bold hover:bg-rose-500/10">
+                                                    <ZapOff className="h-3 w-3 mr-2" /> Abort Job
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 bg-black rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center relative group">
+                                        {selectedJob?.status === "Completed" && getStaticUrl(selectedJob.output_path) ? (
+                                            <video src={getStaticUrl(selectedJob.output_path)!} controls className="w-full h-full object-contain" />
+                                        ) : selectedJob ? (
+                                            <div className="flex flex-col items-center gap-6">
+                                                <RefreshCw className="h-12 w-12 text-rose-500 animate-spin" />
+                                                <div className="text-center">
+                                                    <p className="text-lg font-bold text-white uppercase">{selectedJob.status}</p>
+                                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{selectedJob.progress}% Synchronized</p>
                                                 </div>
                                             </div>
-                                            <Link href={`/publishing${selectedJob ? `?job_id=${selectedJob.id}` : ''}`} className="bg-primary text-white text-[11px] font-bold px-6 py-3 rounded-2xl hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] transition-all uppercase tracking-widest">
-                                                Deploy Matrix
-                                            </Link>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        </div>
-
-                        {/* Queue List */}
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between px-4">
-                                <div className="flex items-center gap-3">
-                                    <Layers className="h-5 w-5 text-primary" />
-                                    <h3 className="text-xs font-bold uppercase tracking-[0.25em] text-white">Mass Deployment Cluster</h3>
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-4 opacity-10">
+                                                <Video className="h-16 w-16" />
+                                                <span className="text-[10px] font-bold uppercase tracking-[0.5em]">Feed Offline</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-                                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">{processingJobs.length} NODES ACTIVE</span>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <AnimatePresence mode="popLayout">
-                                    {!Array.isArray(processingJobs) || processingJobs.length === 0 ? (
-                                        <div className="col-span-full py-16 glass-card border-dashed rounded-5xl flex flex-col items-center gap-4 opacity-40">
-                                            <PlusCircle className="h-10 w-10 text-zinc-700" />
-                                            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Pipeline Offline</p>
-                                        </div>
-                                    ) : (
-                                        processingJobs.map((job, idx) => (
-                                            <motion.div
-                                                layout
-                                                key={job.id}
-                                                initial={{ scale: 0.9, opacity: 0 }}
-                                                animate={{ scale: 1, opacity: 1 }}
-                                                whileHover={{ scale: 1.02, y: -2 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                transition={{
-                                                    delay: idx * 0.05,
-                                                    scale: { type: "spring", stiffness: 400, damping: 25 },
-                                                    y: { type: "spring", stiffness: 400, damping: 25 }
-                                                }}
-                                                onClick={() => setSelectedJob(job)}
-                                                className={cn(
-                                                    "group flex items-center gap-5 relative overflow-hidden transition-all cursor-pointer",
-                                                    selectedJob?.id === job.id
-                                                        ? "glass-card border-primary/40 bg-primary/10 shadow-[0_0_40px_rgba(var(--primary-rgb),0.1)]"
-                                                        : "glass-card hover:border-zinc-700"
-                                                )}
+                                <div className="space-y-6">
+                                    <div className="p-8 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-8">
+                                        <h3 className="text-[10px] font-bold text-zinc-500 tracking-[0.2em] uppercase">Neural Overrides</h3>
+                                        <div className="space-y-4">
+                                            <Button 
+                                                onClick={() => handleAutoLinks(selectedJob?.id || "")}
+                                                disabled={!selectedJob}
+                                                className="w-full h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold text-xs uppercase rounded-xl flex items-center gap-3"
                                             >
-                                                <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-[var(--shimmer-opacity)] transition-opacity pointer-events-none" />
-                                                <div className={cn(
-                                                    "h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 group-hover:scale-110",
-                                                    job.status === "Completed" ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]" : "bg-primary/10 text-primary border border-primary/20"
-                                                )}>
-                                                    {job.status === "Completed" ? (
-                                                        <CheckCircle2 className="h-7 w-7 neon-glow" />
-                                                    ) : (
-                                                        <RefreshCw className={cn("h-7 w-7", job.status === "Rendering" && "animate-spin")} />
-                                                    )}
-                                                </div>
-                                                <div className="flex-1 min-w-0 space-y-3">
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <h4 className="font-bold text-sm tracking-tight truncate uppercase text-white">{job.title || "VIRAL_TRANSFORM_1"}</h4>
-                                                        {job.status.toLowerCase() === 'failed' && (
-                                                            <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
-                                                        )}
-                                                        {job.status !== "Completed" && job.status !== "Failed" && job.status !== "Aborted" && (
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleAbort(job.id);
-                                                                }}
-                                                                className="text-[8px] font-bold text-rose-500 hover:text-rose-400 uppercase tracking-widest px-2 py-1 rounded-md border border-rose-500/20 hover:border-rose-500/50 transition-all"
-                                                            >
-                                                                Abort
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-zinc-500">
-                                                            <span>{String(job.status)}</span>
-                                                            <span className={job.status === 'Completed' ? 'text-emerald-500' : 'text-primary'}>{String(job.progress)}%</span>
-                                                        </div>
-                                                        <div className="bg-zinc-950 h-1 rounded-full overflow-hidden border border-white/5">
-                                                            <motion.div
-                                                                initial={{ width: 0 }}
-                                                                animate={{ width: `${job.progress}%` }}
-                                                                transition={{ duration: 0.8 }}
-                                                                className={cn(
-                                                                    "h-full",
-                                                                    job.status === "Completed" ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-primary"
-                                                                )}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        ))
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Filter Configuration Sidebar */}
-                    <div className="space-y-10">
-                        <div className="flex items-center gap-4">
-                            <h3 className="text-xl font-bold uppercase tracking-tighter text-white">Engine Nodes</h3>
-                            <div className="h-[1px] flex-1 bg-white/5" />
-                        </div>
-
-                        <div className="glass-card rounded-5xl overflow-hidden shadow-2xl flex flex-col max-h-[700px]">
-                            <div className="flex-1 overflow-y-auto divide-y divide-white/5 custom-scrollbar">
-                                {(!Array.isArray(activeFilters) || activeFilters.length === 0) && (
-                                    <div className="p-8 text-zinc-600 font-bold uppercase tracking-[0.2em] text-[10px] text-center">Nodes Desynchronized</div>
-                                )}
-                                {Array.isArray(activeFilters) && activeFilters.map((filter: any, idx: number) => (
-                                    <motion.div
-                                        key={filter.id}
-                                        initial={{ x: 20, opacity: 0 }}
-                                        animate={{ x: 0, opacity: 1 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        onClick={() => handleToggleFilter(filter.id)}
-                                        className="p-8 flex flex-col gap-4 group cursor-pointer hover:bg-white/2 transition-colors relative"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className={cn(
-                                                    "h-10 w-10 rounded-xl flex items-center justify-center transition-all border",
-                                                    filter.enabled ? "bg-primary/20 border-primary/30 shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)]" : "bg-zinc-900 border-white/5"
-                                                )}>
-                                                    <Sparkles className={cn("h-5 w-5", filter.enabled ? "text-primary neon-glow" : "text-zinc-700")} />
-                                                </div>
-                                                <div className="space-y-0.5">
-                                                    <span className="font-bold text-xs tracking-[0.05em] uppercase text-white">{filter.name}</span>
-                                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{filter.enabled ? 'Active' : 'Standby'}</p>
-                                                </div>
-                                            </div>
-                                            {/* Toggle Switch */}
-                                            <div className={cn(
-                                                "w-12 h-6 rounded-full transition-all relative border",
-                                                filter.enabled ? "bg-primary border-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]" : "bg-zinc-800 border-white/5"
-                                            )}>
-                                                <motion.div
-                                                    animate={{ x: filter.enabled ? 24 : 4 }}
-                                                    className="absolute top-1 w-3 h-3 bg-white rounded-full transition-all"
-                                                />
-                                            </div>
+                                                <LinkIcon className="h-4 w-4 text-rose-500" />
+                                                Auto-Inject Affiliate Nodes
+                                            </Button>
+                                            <Button 
+                                                disabled={!selectedJob}
+                                                className="w-full h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold text-xs uppercase rounded-xl flex items-center gap-3"
+                                            >
+                                                <Sparkles className="h-4 w-4 text-violet-400" />
+                                                Neural Upscale (4K)
+                                            </Button>
+                                            <Button 
+                                                disabled={!selectedJob}
+                                                className="w-full h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold text-xs uppercase rounded-xl flex items-center gap-3"
+                                            >
+                                                <Target className="h-4 w-4 text-cyan-400" />
+                                                Test Drive Generation
+                                            </Button>
                                         </div>
-                                        <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">{filter.description}</p>
-                                    </motion.div>
+                                    </div>
+                                    <DesignCard 
+                                        title="System Load"
+                                        status="Active"
+                                        metrics={[
+                                            { label: "GPU Load", value: "85%", progress: 85, color: "text-rose-500" },
+                                            { label: "VRAM", value: "11.2GB", progress: 92, color: "text-rose-500" }
+                                        ]}
+                                        footerInfo="Cluster is operating at peak capacity."
+                                        toolsStatus="Stable"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {activeEngine === "queue" && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {processingJobs.map((job) => (
+                                    <DesignCard 
+                                        key={job.id}
+                                        title={job.title || "VIRAL_TRANSFORM"}
+                                        status={job.status}
+                                        metrics={[
+                                            { label: "Completion", value: `${job.progress}%`, progress: job.progress, color: "text-rose-500" }
+                                        ]}
+                                        footerInfo={`PIPELINE: ${job.id}`}
+                                        toolsStatus="Verified"
+                                        onClick={() => {
+                                            setSelectedJob(job);
+                                            setActiveEngine("control");
+                                        }}
+                                    />
                                 ))}
                             </div>
+                        )}
 
-                        </div>
-
-                        {/* AI Assistant Insight */}
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="glass-card p-8 rounded-2xl space-y-5 relative overflow-hidden"
-                        >
-                            <div className="absolute inset-0 scanline opacity-5" />
-                            <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                                    <Cpu className="h-4 w-4 text-emerald-500 animate-pulse" />
-                                </div>
-                                <span className="text-emerald-500 text-[10px] font-bold uppercase tracking-[0.2em]">Neural Recommendation</span>
+                        <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
+                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Transformation Node Logs</span>
+                                <span className="text-[8px] font-mono text-rose-500/50">ENGINE_ACTIVE</span>
                             </div>
-                            <p className="text-zinc-400 text-xs leading-relaxed font-medium">
-                                {aiInsight ? `"${aiInsight.recommendation}"` : "Analyzing cluster trends for optimal node configuration..."}
-                            </p>
-                            <div className="flex items-center justify-between pt-2">
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">
-                                    Confidence: {aiInsight ? (aiInsight.confidence * 100).toFixed(1) : "88.2"}% {aiInsight?.alpha_status ? "Alpha" : ""}
-                                </span>
-                                {aiInsight?.target_regions && (
-                                    <div className="flex gap-2">
-                                        {aiInsight.target_regions.map((reg: string) => (
-                                            <span key={reg} className="text-[8px] font-bold text-primary/60 border border-primary/20 px-1.5 rounded">{reg}</span>
-                                        ))}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                                {logs.map((log, i) => (
+                                    <div key={i} className="flex gap-4">
+                                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                                        <span className={cn(
+                                            log.includes("[ERROR]") ? "text-rose-500" :
+                                            log.includes("[SUCCESS]") ? "text-emerald-500" :
+                                            log.includes("[SIGNAL]") ? "text-cyan-400" : "text-zinc-600"
+                                        )}>{log}</span>
                                     </div>
-                                )}
+                                ))}
                             </div>
-                        </motion.div>
-                    </div>
-                </div>
+                        </div>
+                    </motion.div>
+                </AnimatePresence>
             </div>
-        </DashboardLayout>
-    );
-}
-
-export default function TransformationPage() {
-    return (
-        <Suspense fallback={
-            <DashboardLayout>
-                <div className="flex items-center justify-center min-h-screen bg-black relative overflow-hidden">
-                    <div className="absolute inset-0 scanline opacity-20 pointer-events-none" />
-                    <div className="flex flex-col items-center gap-6">
-                        <RefreshCw className="h-16 w-16 animate-spin text-primary shadow-[0_0_30px_rgba(var(--primary-rgb),0.4)]" />
-                        <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-primary animate-pulse">Initializing Neural Core...</p>
-                    </div>
-                </div>
-            </DashboardLayout>
-        }>
-            <TransformationPageContent />
-        </Suspense>
+        </CommandCenterLayout>
     );
 }
