@@ -43,7 +43,8 @@ import {
     Settings,
     ShieldCheck,
     Dna,
-    Target
+    Target,
+    Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
