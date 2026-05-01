@@ -82,7 +82,7 @@ export default function AutonomousPage() {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === "log" && (data.module === "AGENT_ZERO" || data.module === "SYSTEM")) {
-                    setLogs(prev => [`[${data.level}] ${data.message}`, ...prev.slice(0, 49)]);
+                    setLogs((prev: string[]) => [`[${data.level}] ${data.message}`, ...prev.slice(0, 49)]);
                 }
             } catch (e) {}
         };
@@ -102,7 +102,7 @@ export default function AutonomousPage() {
             return;
         }
 
-        setLogs(prev => [`[PROTOCOL] Sending ${action.toUpperCase()} signal to Agent Zero...`, ...prev]);
+        setLogs((prev: string[]) => [`[PROTOCOL] Sending ${action.toUpperCase()} signal to Agent Zero...`, ...prev]);
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/zero/${action}`, {
                 method: "POST",
@@ -112,7 +112,7 @@ export default function AutonomousPage() {
                 fallback: null,
                 onSuccess: (data) => {
                     setIsRunning(!isRunning);
-                    setLogs(prev => [`[SUCCESS] ${data?.message || `Agent Zero ${action}ed`}`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] ${data?.message || `Agent Zero ${action}ed`}`, ...prev]);
                     toast.success(`Agent Zero ${action === 'start' ? 'Activated' : 'Halted'}`);
                     fetchData();
                 }

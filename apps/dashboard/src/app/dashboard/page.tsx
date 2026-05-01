@@ -89,7 +89,7 @@ export default function Home() {
           engine_load: `${Math.min(100, Math.round((real_stats.active_jobs / 10) * 100))}%`
         };
       });
-      setLogs(prev => [`[TELEMETRY] Pulse received. Velocity: ${metrics.global_velocity.toFixed(2)}x`, ...prev.slice(0, 50)]);
+      setLogs((prev: string[]) => [`[TELEMETRY] Pulse received. Velocity: ${metrics.global_velocity.toFixed(2)}x`, ...prev.slice(0, 50)]);
     }
   }, [wsData]);
 

@@ -86,7 +86,7 @@ export default function ABTestingStudio() {
         if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
 
-        setLogs(prev => [`[ANALYSIS] Pulling deep metrics for Node: ${testId}`, ...prev]);
+        setLogs((prev: string[]) => [`[ANALYSIS] Pulling deep metrics for Node: ${testId}`, ...prev]);
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/ab-testing/test/${testId}`, { headers }),
             { 
@@ -94,7 +94,7 @@ export default function ABTestingStudio() {
                 onSuccess: (data) => {
                     setTestDetail(data);
                     setActiveEngine("analysis");
-                    setLogs(prev => [`[SUCCESS] Neural mapping complete. Confidence: ${data.statistics?.confidence_level}%`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] Neural mapping complete. Confidence: ${data.statistics?.confidence_level}%`, ...prev]);
                 }
             }
         );
@@ -115,7 +115,7 @@ export default function ABTestingStudio() {
         const token = await getAuthToken();
         if (!token) return;
 
-        setLogs(prev => [`[WINNER] Calculating statistical significance...`, ...prev]);
+        setLogs((prev: string[]) => [`[WINNER] Calculating statistical significance...`, ...prev]);
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/ab-testing/test/${testId}/determine-winner`, {
                 method: "POST",
@@ -126,12 +126,12 @@ export default function ABTestingStudio() {
                 onSuccess: (data) => {
                     if (data.status === "winner_determined") {
                         toast.success(`Winner Determined: Variant ${data.winner}`);
-                        setLogs(prev => [`[SUCCESS] Variant ${data.winner} is the superior pattern.`, ...prev]);
+                        setLogs((prev: string[]) => [`[SUCCESS] Variant ${data.winner} is the superior pattern.`, ...prev]);
                         fetchData();
                         fetchDetail(testId);
                     } else {
                         toast.info(data.message || "Test inconclusive yet");
-                        setLogs(prev => [`[INFO] ${data.message || "Sample size insufficient."}`, ...prev]);
+                        setLogs((prev: string[]) => [`[INFO] ${data.message || "Sample size insufficient."}`, ...prev]);
                     }
                 }
             }
@@ -144,7 +144,7 @@ export default function ABTestingStudio() {
         const token = await getAuthToken();
         if (!token) return;
 
-        setLogs(prev => [`[EVOLUTION] Triggering Flywheel Neural Evolution...`, ...prev]);
+        setLogs((prev: string[]) => [`[EVOLUTION] Triggering Flywheel Neural Evolution...`, ...prev]);
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/ab-testing/evolution/${parentId}`, {
                 method: "POST",
@@ -158,7 +158,7 @@ export default function ABTestingStudio() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("Flywheel Evolution Complete");
-                    setLogs(prev => [`[SUCCESS] New neural cluster established.`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] New neural cluster established.`, ...prev]);
                     fetchData();
                 }
             }
