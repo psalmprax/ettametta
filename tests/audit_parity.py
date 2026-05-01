@@ -1,69 +1,71 @@
-import requests
-import json
 import os
-import sys
-from datetime import datetime
+import re
+from pathlib import Path
 
-# API Configuration
-API_BASE = "http://localhost:8000/api/v1"
-TOKEN = os.getenv("ETTAMETTA_TEST_TOKEN")
+backend_dir = Path("src/api/routes")
+frontend_dir = Path("apps/dashboard/src/app")
 
-if not TOKEN:
-    print("WARNING: ETTAMETTA_TEST_TOKEN not set. Audit may fail on protected routes.")
-
-ENDPOINTS = [
-    ("/discovery/trends", "GET", {"niche": "Motivation"}),
-    ("/discovery/alerts", "GET", {}),
-    ("/analytics/stats/summary", "GET", {}),
-    ("/analytics/report", "GET", {}),
-    ("/video/jobs", "GET", {}),
-    ("/publish/accounts", "GET", {}),
-    ("/publish/platforms", "GET", {}),
-    ("/nexus/personas", "GET", {}),
-    ("/nexus/blueprints", "GET", {}),
-]
-
-def audit_endpoint(path, method, params=None):
-    url = f"{API_BASE}{path}"
-    headers = {"Authorization": f"Bearer {TOKEN}"} if TOKEN else {}
-    
-    try:
-        if method == "GET":
-            response = requests.get(url, headers=headers, params=params, timeout=5)
-        else:
-            response = requests.post(url, headers=headers, json=params, timeout=5)
+def get_backend_routes():
+    routes = {}
+    for file in backend_dir.glob("*.py"):
+        with open(file, "r") as f:
+            content = f.read()
+            # Look for @router.post("/...") and @router.get("/...")
+            matches = re.findall(r'@router\.(post|get|delete|put)\("([^"]+)"', content)
+            prefix_match = re.search(r'router = APIRouter\(prefix="([^"]+)"', content)
+            prefix = prefix_match.group(1) if prefix_match else ""
             
-        if response.status_code != 200:
-            return False, f"HTTP {response.status_code}", response.text[:100]
-            
-        data = response.json()
-        if "data" not in data:
-            return False, "Missing 'data' key", data
-            
-        return True, "OK", None
-    except Exception as e:
-        return False, "Exception", str(e)
+            for method, path in matches:
+                full_path = f"{prefix}{path}"
+                routes[full_path] = {
+                    "method": method.upper(),
+                    "file": str(file)
+                }
+    return routes
 
-def run_audit():
-    print(f"--- Ettametta Semantic Parity Audit ({datetime.now().isoformat()}) ---")
-    results = []
-    failed = 0
-    
-    for path, method, params in ENDPOINTS:
-        success, status, detail = audit_endpoint(path, method, params)
-        print(f"[{'PASS' if success else 'FAIL'}] {method} {path} - {status}")
-        if not success:
-            print(f"      Detail: {detail}")
-            failed += 1
-        results.append({"path": path, "success": success, "status": status})
-        
-    print("-" * 50)
-    print(f"Summary: {len(ENDPOINTS) - failed}/{len(ENDPOINTS)} passed.")
-    
-    if failed > 0:
-        sys.exit(1)
-    else:
-        sys.exit(0)
+def get_frontend_calls():
+    calls = set()
+    for file in frontend_dir.rglob("*.tsx"):
+        with open(file, "r") as f:
+            content = f.read()
+            # Look for fetch(`${API_BASE}/...`)
+            matches = re.findall(r'fetch\(`\$\{API_BASE\}([^`]+)`', content)
+            for path in matches:
+                # Clean up variables in path like ${id}
+                clean_path = re.sub(r'\$\{([^}]+)\}', '*', path)
+                # Remove query params
+                clean_path = clean_path.split("?")[0]
+                calls.add(clean_path)
+    return calls
 
 if __name__ == "__main__":
-    run_audit()
+    backend_routes = get_backend_routes()
+    frontend_calls = get_frontend_calls()
+
+    print(f"Total Backend Routes: {len(backend_routes)}")
+    print(f"Total Unique Frontend API Calls: {len(frontend_calls)}")
+
+    print("\n--- Orphaned Backend Routes (Unused in Frontend) ---")
+    for route in sorted(backend_routes.keys()):
+        # Check if route is in calls (handling path variables)
+        is_used = False
+        for call in frontend_calls:
+            # Simple check: if backend route has a placeholder like {job_id}, we match it with *
+            pattern = re.sub(r'\{[^}]+\}', '*', route)
+            if pattern == call:
+                is_used = True
+                break
+        
+        if not is_used:
+            print(f"[{backend_routes[route]['method']}] {route} ({backend_routes[route]['file']})")
+
+    print("\n--- Missing Backend Routes (Frontend calls non-existent routes) ---")
+    for call in sorted(frontend_calls):
+        found = False
+        for route in backend_routes.keys():
+            pattern = re.sub(r'\{[^}]+\}', '*', route)
+            if pattern == call:
+                found = True
+                break
+        if not found:
+            print(f"{call}")

@@ -20,7 +20,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     fullWidth = false,
     icon,
     iconPosition = "left",
-    rounded = "lg",
+    rounded = "xl",
     children,
     disabled,
     ...props
@@ -36,7 +36,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const variants = {
-      primary: `bg-primary text-white hover:bg-primary-hover shadow-lg shadow-blue-900/20 border border-white/10`,
+      primary: `bg-primary text-white hover:bg-primary-hover shadow-lg shadow-cyan-900/20 border border-white/10`,
       secondary: "bg-slate-900 text-white border border-white/10 hover:bg-slate-800 hover:border-white/20 shadow-sm",
       outline: "bg-transparent text-white border border-white/20 hover:bg-white/5 shadow-sm",
       ghost: "bg-transparent text-slate-400 hover:bg-white/5 hover:text-white border-transparent",

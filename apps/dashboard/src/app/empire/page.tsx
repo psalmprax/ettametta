@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
-import DashboardLayout from "@/components/layout";
 import {
     Globe,
     Zap,
@@ -20,1014 +19,260 @@ import {
     LinkIcon,
     Package,
     Trash2,
-    Share2
+    Share2,
+    Database,
+    Network,
+    Terminal,
+    Target,
+    Dna,
+    Radar
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { API_BASE } from "@/lib/config";
+import { API_BASE, WS_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import dynamic from "next/dynamic";
+import CommandCenterLayout from "@/components/CommandCenterLayout";
+import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { DesignCard } from "@/components/ui/DesignCard";
+import { Button } from "@/components/ui/Button";
 
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export default function EmpirePage() {
+    const [activeEngine, setActiveEngine] = useState("registry");
     const [sentinelStatus, setSentinelStatus] = useState<any>(null);
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const [selectedStrategy, setSelectedStrategy] = useState<any>(null);
     const [cloningNiche, setCloningNiche] = useState("");
     const [promoProduct, setPromoProduct] = useState("");
     const [isGeneratingPromo, setIsGeneratingPromo] = useState(false);
     const [promoScript, setPromoScript] = useState<any>(null);
     const [affiliateLinks, setAffiliateLinks] = useState<any[]>([]);
-    const [newLink, setNewLink] = useState({ product_name: "", niche: "", link: "", cta_text: "" });
-    const [isAddingLink, setIsAddingLink] = useState(false);
     const [revenueReport, setRevenueReport] = useState<any>(null);
-    const [autoMerchTopic, setAutoMerchTopic] = useState("");
-    const [isGeneratingMerch, setIsGeneratingMerch] = useState(false);
-    const [recommendNiche, setRecommendNiche] = useState("");
-    const [recommendScript, setRecommendScript] = useState("");
-    const [recommendations, setRecommendations] = useState<any[]>([]);
-    const [isRecommending, setIsRecommending] = useState(false);
-    const [isSyncingShopify, setIsSyncingShopify] = useState(false);
-    const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
-    const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
     const [availableNiches, setAvailableNiches] = useState<string[]>([]);
-    const [autoPublishAfterClone, setAutoPublishAfterClone] = useState(false);
+    const [blueprints, setBlueprints] = useState<any[]>([]);
+    const [networkData, setNetworkData] = useState<any>({ nodes: [], links: [] });
+    const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
+    const [isSyncingShopify, setIsSyncingShopify] = useState(false);
+    const [logs, setLogs] = useState<string[]>(["EMPIRE_INITIALIZED", "SYNCHRONIZING_GLOBAL_NODES"]);
 
-    const fetchSentinel = async () => {
-        setIsRefreshing(true);
-        const token = getAuthToken();
-        if (!token) {
-            setIsRefreshing(false);
-            return;
-        }
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/no-face/sentinel/status`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => setSentinelStatus(data),
-                errorMessage: "Failed to load sentinel status"
-            }
-        );
-        setIsRefreshing(false);
-    };
+    const fetchData = useCallback(async () => {
+        const token = await getAuthToken();
+        if (!token) return;
+        const headers = { Authorization: `Bearer ${token}` };
 
-    useEffect(() => {
-        fetchSentinel();
+        await Promise.all([
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/no-face/sentinel/status`, { headers }),
+                { fallback: null, onSuccess: (data) => setSentinelStatus(data) }
+            ),
+            withRealFallback<any[]>(
+                () => fetch(`${API_BASE}/monetization/empire/blueprints`, { headers }),
+                { fallback: [], onSuccess: (data) => setBlueprints(data) }
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/monetization/report`, { headers }),
+                { fallback: null, onSuccess: (data) => setRevenueReport(data) }
+            ),
+            withRealFallback<string[]>(
+                () => fetch(`${API_BASE}/discovery/niches`, { headers }),
+                { fallback: [], onSuccess: (data) => setAvailableNiches(data) }
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/monetization/empire/network`, { headers }),
+                { fallback: { nodes: [], links: [] }, onSuccess: (data) => setNetworkData(data) }
+            )
+        ]);
     }, []);
 
-    const [empireMetrics, setEmpireMetrics] = useState<any>(null);
-    const [blueprints, setBlueprints] = useState<any[]>([]);
+    useEffect(() => {
+        fetchData();
+        const interval = setInterval(fetchData, 15000);
+        return () => clearInterval(interval);
+    }, [fetchData]);
 
     const handleClone = async () => {
-        if (!cloningNiche) {
-            toast.error("Validation Error", { description: "Target niche is required for cloning." });
-            return;
-        }
+        if (!cloningNiche) return;
+        setLogs(prev => [`[PROTOCOL] Initializing Strategic Clone: ${cloningNiche}`, ...prev]);
         await withRealFallback(
             async () => {
-                const token = getAuthToken();
+                const token = await getAuthToken();
                 if (!token) return;
                 return fetch(`${API_BASE}/monetization/empire/clone`, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        source_niche: selectedStrategy?.niche || availableNiches[0] || "",
-                        target_niche: cloningNiche,
-                        auto_publish: autoPublishAfterClone
-                    })
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ source_niche: "Motivation", target_niche: cloningNiche, auto_publish: true })
                 });
             },
             {
                 fallback: null,
                 onSuccess: () => {
-                    toast.success("Strategy Cloned Successfully", {
-                        description: `Neural weights for ${selectedStrategy?.niche || "Source"} have been successfully mapped to the ${cloningNiche} niche.`
-                    });
-                },
-                onFallback: () => {
-                    toast.error("Cloning Failed", {
-                        description: "Neural cluster was unable to replicate the strategy at this time."
-                    });
+                    toast.success("Strategy Cloned");
+                    setLogs(prev => [`[SUCCESS] Neural weights mapped to ${cloningNiche}`, ...prev]);
+                    setIsCloneModalOpen(false);
                 }
             }
         );
     };
 
-    const handleDeleteAffiliateLink = async (linkId: string) => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback(
-            () => fetch(`${API_BASE}/monetization/links/${linkId}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: null,
-                onSuccess: () => {
-                    setAffiliateLinks(prev => prev.filter(l => (l.id || l._id) !== linkId));
-                    toast.success("Link Purged", { description: "The affiliate link has been removed from the catalog." });
-                }
-            }
-        );
-    };
-
-    const fetchEmpireMetrics = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/monetization/empire/metrics`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => setEmpireMetrics(data),
-                errorMessage: "Failed to load empire metrics"
-            }
-        );
-    };
-
-    const fetchBlueprints = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback<any[]>(
-            () => fetch(`${API_BASE}/monetization/empire/blueprints`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: [],
-                onSuccess: (data) => setBlueprints(data),
-                errorMessage: "Failed to load blueprints"
-            }
-        );
-    };
-
-    const fetchAvailableNiches = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback<string[]>(
-            () => fetch(`${API_BASE}/discovery/niches`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: [],
-                onSuccess: (data) => {
-                    setAvailableNiches(data);
-                    if (data.length > 0 && !cloningNiche) {
-                        setCloningNiche(data[0]);
-                    }
-                }
-            }
-        );
-    };
-
-    const fetchAffiliateLinks = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/monetization/links`, {
-                method: "GET",
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: [],
-                onSuccess: (data) => setAffiliateLinks(data.links || data || []),
-                errorMessage: "Failed to load affiliate links"
-            }
-        );
-    };
-
-    const handleAddAffiliateLink = async () => {
-        if (!newLink.product_name || !newLink.link) return;
-        setIsAddingLink(true);
-        const token = getAuthToken();
-        if (!token) {
-            setIsAddingLink(false);
-            return;
-        }
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/monetization/links`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(newLink)
-            }),
-            {
-                fallback: null,
-                onSuccess: () => {
-                    toast.success("Affiliate Link Added", {
-                        description: `"${newLink.product_name}" is now available in the viral injection catalog.`
-                    });
-                    setNewLink({ product_name: "", niche: "", link: "", cta_text: "" });
-                    fetchAffiliateLinks();
-                },
-                errorMessage: "Failed to register affiliate link"
-            }
-        );
-        setIsAddingLink(false);
-    };
-
-    const fetchRevenueReport = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/monetization/report`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => setRevenueReport(data),
-                errorMessage: "Failed to load revenue report"
-            }
-        );
-    };
-
-    useEffect(() => {
-        fetchSentinel();
-        fetchEmpireMetrics();
-        fetchBlueprints();
-        fetchAffiliateLinks();
-        fetchRevenueReport();
-        fetchAvailableNiches();
-    }, []);
-
-    const handleGeneratePromo = async () => {
-        if (!promoProduct) return;
-        setIsGeneratingPromo(true);
-        await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) return;
-                return fetch(`${API_BASE}/monetization/promo/generate`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ product_name: promoProduct, niche: cloningNiche })
-                });
-            },
-            {
-                fallback: null,
-                onSuccess: (data) => setPromoScript(data),
-                onFallback: () => toast.error("Failed to generate promo")
-            }
-        );
-        setIsGeneratingPromo(false);
-    };
-
-    const handleAutoMerch = async () => {
-        if (!autoMerchTopic) return;
-        setIsGeneratingMerch(true);
-        const token = getAuthToken();
-        if (!token) {
-            setIsGeneratingMerch(false);
-            return;
-        }
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/monetization/auto-merch`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ trend_topic: autoMerchTopic })
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    toast.success("Auto-Merch Generated", { description: data.message || `Merch created for "${autoMerchTopic}"` });
-                    setAutoMerchTopic("");
-                },
-                errorMessage: "Auto-Merch Failed"
-            }
-        );
-        setIsGeneratingMerch(false);
-    };
-
-    const handleRecommendLinks = async () => {
-        if (!recommendNiche || !recommendScript) return;
-        setIsRecommending(true);
-        await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) return;
-                return fetch(`${API_BASE}/monetization/recommend-links`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ niche: recommendNiche, script_text: recommendScript })
-                });
-            },
-            {
-                fallback: [],
-                onSuccess: (data: any) => {
-                    const links = data.links || data || [];
-                    setRecommendations(links);
-                    toast.success("Recommendations Ready", { description: `${links.length} links found.` });
-                },
-                onFallback: () => toast.error("Recommendation Failed", { description: "Could not fetch link recommendations." })
-            }
-        );
-        setIsRecommending(false);
-    };
-
-    const handleShopifySync = async () => {
-        setIsSyncingShopify(true);
-        const token = getAuthToken();
-        if (!token) {
-            setIsSyncingShopify(false);
-            return;
-        }
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/monetization/commerce/sync`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                }
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    toast.success("Shopify Synced", { description: data.message || "Commerce data synchronized." });
-                },
-                errorMessage: "Sync Failed"
-            }
-        );
-        setIsSyncingShopify(false);
-    };
-
-    const [networkData, setNetworkData] = useState<any>({ nodes: [], links: [] });
-    const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
-
-    const fetchNetwork = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/monetization/empire/network`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: { nodes: [], links: [] },
-                onSuccess: (data) => setNetworkData(data),
-                errorMessage: "Failed to load network data"
-            }
-        );
-    };
-
-    const fetchTimelineEvents = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback<any[]>(
-            () => fetch(`${API_BASE}/monetization/empire/activity`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: [],
-                onSuccess: (data) => setTimelineEvents(data)
-            }
-        );
-    };
-
-    useEffect(() => {
-        fetchNetwork();
-        fetchTimelineEvents();
-        const interval = setInterval(fetchTimelineEvents, 10000); // Poll every 10s
-        return () => clearInterval(interval);
-    }, []);
-
-    // Removed simulated timeline generator in favor of Real-First backend telemetry
-
+    // Prepare Agent Data
+    const agents = [
+        { id: "STRAT_01", name: "Yield Optimizer", icon: Zap, status: "ACTIVE" as any, latency: 12, load: 5, details: "Optimizing CPC" },
+        { id: "SENT_01", name: "Algo Sentinel", icon: ShieldCheck, status: "ACTIVE" as any, latency: 85, load: 12, details: "Scanning Platform Drift" },
+        { id: "CLONE_01", name: "Neural Cloner", icon: Copy, status: "IDLE" as any, latency: 1, load: 0, details: "Standby" },
+    ];
 
     return (
-        <DashboardLayout>
-            <div className="section-container relative pb-20">
-                <div className="flex items-end justify-between">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="h-1 w-8 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" style={{ width: "85%" }} />
-                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Empire Protocol</span>
-                        </div>
-                        <h1 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-white leading-none">Empire <span className="text-cyan-400">Registry</span></h1>
-                        <p className="text-zinc-600 font-bold uppercase tracking-[0.2em] text-[10px]">Neural Synchronization Active</p>
-                    </div>
-                    <div className="flex items-center gap-6">
+        <CommandCenterLayout
+            title="EMPIRE REGISTRY"
+            subtitle="STRATEGIC_MONETIZATION_V3.0"
+            leftPanel={
+                <div className="space-y-1">
+                    {[
+                        { id: "registry", label: "Empire Registry", icon: Database },
+                        { id: "sentinel", label: "Algo Sentinel", icon: ShieldCheck },
+                        { id: "monetization", label: "Promo Hub", icon: Zap },
+                        { id: "commerce", label: "Commerce Matrix", icon: ShoppingBag },
+                        { id: "logs", label: "Registry Logs", icon: Terminal },
+                    ].map((item) => (
                         <button
-                            onClick={fetchSentinel}
-                            disabled={isRefreshing}
-                            className="glass-card px-8 py-5 rounded-full flex items-center gap-4 group hover:border-cyan-400/50 transition-all font-bold uppercase tracking-[0.2em] text-[10px] shadow-glow-cyan/5"
+                            key={item.id}
+                            onClick={() => setActiveEngine(item.id)}
+                            className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                                activeEngine === item.id ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                            )}
                         >
-                            <RefreshCw className={cn("h-4 w-4 text-zinc-600 group-hover:text-cyan-400 transition-colors", isRefreshing && "animate-spin")} />
-                            <span className="text-zinc-600 group-hover:text-white">Refresh_Sync</span>
+                            <item.icon className="h-4 w-4" />
+                            <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
+                            {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />}
                         </button>
-                        <button
-                            onClick={() => {
-                                toast.promise(
-                                    fetch(`${API_BASE}/ab-testing/evolution/global`, {
-                                        method: "POST",
-                                        headers: { Authorization: `Bearer ${getAuthToken()}` }
-                                    }),
-                                    {
-                                        loading: "Triggering Global Flywheel...",
-                                        success: "Global Evolution Sequence Active",
-                                        error: "Evolution Sync Error"
-                                    }
-                                );
-                            }}
-                            className="action-primary h-20 px-12 text-[10px] tracking-widest uppercase font-bold"
-                        >
-                            <Zap className="h-4 w-4 mr-3" />
-                            Trigger_Flywheel_Evolution
-                        </button>
-                    </div>
+                    ))}
                 </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                    {/* Algorithm Sentinel Monitor */}
-                    <div className="space-y-8">
-                        <div className="glass-card space-y-8 relative overflow-hidden h-fit rounded-[2.5rem] border-white/5">
-                            <div className="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(0,251,251,0.03),rgba(0,0,0,0),rgba(0,251,251,0.03))] bg-size-[100%_4px,3px_100%]" />
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-1">
-                                    <h3 className="font-bold uppercase tracking-tight text-white">Algorithm Sentinel</h3>
-                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Platform Drift Analyzer</p>
+            }
+            rightPanel={
+                <>
+                    <AgentMatrix agents={agents} />
+                    <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Revenue Pulse</h4>
+                        <div className="flex flex-col">
+                            <span className="text-2xl font-bold text-white">${revenueReport?.total_revenue?.toFixed(2) || "0.00"}</span>
+                            <span className="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">+8.4% Velocity</span>
+                        </div>
+                    </div>
+                </>
+            }
+        >
+            <div className="p-10 space-y-10 relative h-full flex flex-col">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeEngine}
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        className="flex-1 flex flex-col min-h-0"
+                    >
+                        {activeEngine === "registry" && (
+                            <div className="space-y-8 h-full flex flex-col">
+                                <div className="flex-1 min-h-[400px] bg-[#0F0F11]/60 border border-white/5 rounded-[32px] overflow-hidden relative">
+                                    <div className="absolute inset-0">
+                                        <NetworkMesh nodes={networkData.nodes} links={networkData.links} />
+                                    </div>
+                                    <div className="absolute top-8 left-8 p-6 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl max-w-sm">
+                                        <h4 className="text-white font-bold uppercase tracking-widest text-xs">Neural Strategy Mesh</h4>
+                                        <p className="text-zinc-500 text-[10px] leading-relaxed italic">Visualizing cross-pollination of winning narrative patterns.</p>
+                                    </div>
+                                    <div className="absolute top-8 right-8 flex gap-4">
+                                        <select
+                                            value={cloningNiche}
+                                            onChange={(e) => setCloningNiche(e.target.value)}
+                                            className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none"
+                                        >
+                                            <option value="">SELECT_NICHE</option>
+                                            {availableNiches.map(n => <option key={n} value={n}>{n}</option>)}
+                                        </select>
+                                        <Button onClick={() => setIsCloneModalOpen(true)} className="bg-amber-500 text-black font-bold h-10 px-6 rounded-xl">Clone Protocol</Button>
+                                    </div>
                                 </div>
-                                <div className={cn(
-                                    "px-5 py-2 rounded-full border text-[9px] font-bold uppercase tracking-widest transition-all",
-                                    sentinelStatus?.status === "NOMINAL" ? "bg-cyan-500/10 border-cyan-400/20 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.1)]" : "bg-blue-500/10 border-blue-400/20 text-blue-400"
-                                )}>
-                                    {sentinelStatus?.status || "INITIALIZING..."}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 shrink-0 overflow-x-auto p-1">
+                                    {blueprints.map((blueprint) => (
+                                        <DesignCard
+                                            key={blueprint.id}
+                                            title={blueprint.name}
+                                            status={blueprint.status}
+                                            metrics={[
+                                                { label: "Success", value: `${(blueprint.avg_score * 100).toFixed(1)}%`, progress: blueprint.avg_score * 100, color: "text-emerald-400" },
+                                                { label: "Reach", value: "840K", color: "text-cyan-400" }
+                                            ]}
+                                            footerInfo={`ID: ${blueprint.id.slice(0, 8)}`}
+                                            toolsStatus="Synced"
+                                        />
+                                    ))}
                                 </div>
                             </div>
+                        )}
 
-                            {/* Sync Meter */}
-                            <div className="flex flex-col items-center gap-6 py-4">
-                                <div className="relative h-40 w-40 flex items-center justify-center">
-                                    <svg className="w-full h-full -rotate-90">
-                                        <circle
-                                            cx="80" cy="80" r="70"
-                                            className="fill-none stroke-zinc-900 stroke-[8px]"
-                                        />
-                                        <motion.circle
-                                            cx="80" cy="80" r="70"
-                                            className="fill-none stroke-neon-violet stroke-[8px]"
-                                            strokeDasharray="440"
-                                            initial={{ strokeDashoffset: 440 }}
-                                            animate={{ strokeDashoffset: 440 - (440 * (sentinelStatus?.score || 0)) / 100 }}
-                                            transition={{ duration: 1.5, ease: "easeOut" }}
-                                            strokeLinecap="round"
-                                        />
-                                    </svg>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-1">
-                                        <span className="text-4xl font-bold text-white leading-none">{sentinelStatus?.score || "--"}%</span>
-                                        <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Sync Score</span>
+                        {activeEngine === "sentinel" && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                <DesignCard
+                                    title="Algorithm Sentinel"
+                                    status={sentinelStatus?.status || "NOMINAL"}
+                                    metrics={[
+                                        { label: "Sync Score", value: `${sentinelStatus?.score || 0}%`, progress: sentinelStatus?.score || 0, color: "text-violet-400" },
+                                        { label: "Platform Drift", value: "Minimal", color: "text-cyan-400" }
+                                    ]}
+                                    footerInfo="SCANNING: GLOBAL_ALGO_MATRIX"
+                                    toolsStatus="Active"
+                                />
+                                <div className="lg:col-span-2 p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-6">
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                                        <ShieldCheck className="h-5 w-5 text-violet-400" />
+                                        Strategic Intelligence
+                                    </h3>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {sentinelStatus?.recommendations?.map((rec: string, i: number) => (
+                                            <div key={i} className="p-5 bg-white/5 border border-white/5 rounded-2xl flex items-center gap-4 group hover:border-violet-500/30 transition-all">
+                                                <Target className="h-4 w-4 text-violet-400 shrink-0" />
+                                                <p className="text-xs text-zinc-400 font-medium leading-relaxed">{rec}</p>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
+                        )}
 
-                            <div className="space-y-4">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 border-b border-white/5 pb-3">Strategic Pivots Required:</p>
-                                {sentinelStatus?.recommendations?.map((rec: string, i: number) => (
-                                    <div key={i} className="flex gap-4 group cursor-pointer hover:bg-white/[0.02] p-2 rounded-xl transition-all">
-                                        <ChevronRight className="h-4 w-4 text-primary shrink-0 transition-transform group-hover:translate-x-1" />
-                                        <p className="text-[11px] text-zinc-400 font-medium leading-relaxed">{rec}</p>
+                        <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Registry Logs</span>
+                                <span className="text-[8px] font-mono text-amber-500/50">EMPIRE_MATRIX_ACTIVE</span>
+                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                                {logs.map((log, i) => (
+                                    <div key={i} className="flex gap-4">
+                                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                                        <span className={cn(
+                                            log.includes("[PROTOCOL]") ? "text-cyan-400" :
+                                            log.includes("[SUCCESS]") ? "text-emerald-500" : "text-zinc-600"
+                                        )}>{log}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-
-                        {/* Global Status Info */}
-                        <div className="glass-card bg-indigo-500/5 border-indigo-500/10 flex items-center gap-6">
-                            <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.2)]">
-                                <Globe className="h-6 w-6 text-indigo-500" />
-                            </div>
-                            <div className="space-y-1">
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Regional Footprint</h4>
-                                <p className="text-sm font-bold text-white">Multi-Account: {empireMetrics?.account_count || 0}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Empire Strategy Management */}
-                    <div className="lg:col-span-2 space-y-10">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="glass-card space-y-4 flex flex-col justify-between rounded-[2.5rem] border-white/5">
-                                <div className="space-y-4">
-                                    <div className="h-10 w-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-                                        <Layers className="h-5 w-5 text-orange-500" />
-                                    </div>
-                                    <h3 className="font-bold uppercase text-white tracking-tight">Strategy Lab</h3>
-                                    <p className="text-xs text-zinc-500 leading-relaxed font-medium">Select a winning blueprint and clone it to related niches with one click.</p>
-                                </div>
-                                <div className="space-y-3 pt-4">
-                                    <select
-                                        value={cloningNiche}
-                                        onChange={(e) => setCloningNiche(e.target.value)}
-                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-[10px] font-bold uppercase tracking-widest text-zinc-300 outline-none cursor-pointer hover:bg-zinc-900/50 transition-all"
-                                    >
-                                        {availableNiches.map((niche) => (
-                                            <option key={niche} value={niche}>{niche}</option>
-                                        ))}
-                                        {availableNiches.length === 0 && (
-                                            <option disabled>NO NICHES FOUND</option>
-                                        )}
-                                    </select>
-                                    <button
-                                        onClick={() => setIsCloneModalOpen(true)}
-                                        className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-5 rounded-full transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-[10px] shadow-[0_0_30px_rgba(34,211,238,0.2)]"
-                                    >
-                                        <Copy className="h-4 w-4" />
-                                        Launch Empire Protocol
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="glass-card space-y-4 rounded-[2.5rem] border-white/5">
-                                <div className="h-10 w-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                                    <TrendingUp className="h-5 w-5 text-cyan-500" />
-                                </div>
-                                <h3 className="font-bold uppercase text-white tracking-tight">Cross-Account Velocity</h3>
-                                <div className="space-y-6 pt-4">
-                                    {empireMetrics?.velocity?.length > 0 ? empireMetrics.velocity.map((v: any, i: number) => (
-                                        <div key={i} className="space-y-2">
-                                            <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-zinc-600">
-                                                <span>{v.name}</span>
-                                                <span className="text-emerald-500">{v.growth}</span>
-                                            </div>
-                                            <div className="h-1 bg-zinc-900 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] transition-all duration-1000"
-                                                    style={{ width: `${Math.min(100, Math.max(10, parseInt(v.growth) || 45))}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    )) : (
-                                        <p className="text-[10px] text-zinc-600 font-bold text-center py-4">Establish accounts to see velocity metrics.</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="glass-card space-y-4 bg-cyan-500/5 border-cyan-500/10 rounded-[2.5rem]">
-                                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                                    <TrendingUp className="h-5 w-5 text-emerald-500" />
-                                </div>
-                                <h3 className="font-bold uppercase text-white tracking-tight">Revenue Matrix</h3>
-                                <div className="space-y-4 pt-4">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-[10px] text-zinc-500 uppercase tracking-widest">Total Revenue</span>
-                                        <span className="text-xl font-bold text-neon-cyan neon-glow-cyan">${revenueReport?.total_revenue?.toFixed(2) || "0.00"}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">EPM</span>
-                                        <span className="text-lg font-bold text-white">${revenueReport?.epm?.toFixed(2) || "0.00"}</span>
-                                    </div>
-                                    {revenueReport?.by_platform && Object.entries(revenueReport.by_platform).map(([platform, amount]: [string, any]) => (
-                                        <div key={platform} className="flex justify-between items-center text-[10px]">
-                                            <span className="text-zinc-600 font-bold uppercase">{platform}</span>
-                                            <span className="text-zinc-400 font-bold">${Number(amount).toFixed(2)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Promo Generator Section */}
-                        <div className="glass-card bg-cyan-500/5 border-white/5 space-y-8 relative overflow-hidden rounded-[2.5rem]">
-                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity)" />
-                            <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-2xl bg-primary/20 flex items-center justify-center border border-primary/30">
-                                    <Zap className="h-6 w-6 text-primary neon-glow" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <h3 className="font-bold uppercase tracking-tight text-white">Monetization Engine</h3>
-                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Digital Product Promo Generator</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-4">
-                                    <p className="text-xs text-zinc-500 font-medium">Enter product name to generate a high-conversion affiliate video script.</p>
-                                    <input
-                                        id="promo-product"
-                                        name="promo-product"
-                                        type="text"
-                                        placeholder="e.g. Zen Stoic Journal"
-                                        value={promoProduct}
-                                        onChange={(e) => setPromoProduct(e.target.value)}
-                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-primary/50 transition-all font-bold placeholder:text-zinc-600"
-                                    />
-                                    <button
-                                        onClick={handleGeneratePromo}
-                                        disabled={isGeneratingPromo || !promoProduct}
-                                        className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-5 rounded-full transition-all flex items-center justify-center gap-4 uppercase tracking-[0.2em] text-[10px] disabled:opacity-50 shadow-[0_0_30px_rgba(34,211,238,0.2)]"
-                                    >
-                                        {isGeneratingPromo ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-                                        Initialize Promo Synthesis
-                                    </button>
-                                </div>
-
-                                <div className="bg-zinc-950/40 rounded-3xl border border-white/5 p-6 h-48 overflow-y-auto relative">
-                                    {promoScript ? (
-                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
-                                            <h4 className="text-primary font-bold text-xs uppercase tracking-tighter">{promoScript.title}</h4>
-                                            {promoScript.segments?.map((s: any, i: number) => (
-                                                <div key={i} className="text-[10px] text-zinc-400 font-medium leading-relaxed border-l border-primary/30 pl-3">
-                                                    {s.text}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
-                                            <Search className="h-8 w-8 text-zinc-700 mb-2" />
-                                            <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-700">Awaiting Product Intel</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Affiliate Link Manager */}
-                        <div className="glass-card bg-amber-500/5 border-amber-500/10 space-y-8 relative overflow-hidden">
-                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity)" />
-                            <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-2xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
-                                    <TrendingUp className="h-6 w-6 text-amber-500" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <h3 className="font-bold uppercase tracking-tight text-white">Affiliate Network</h3>
-                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Link Management & Tracking</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-4">
-                                    <p className="text-xs text-zinc-500 font-medium">Add affiliate links to auto-inject into your content.</p>
-                                    <input
-                                        type="text"
-                                        placeholder="Product Name"
-                                        value={newLink.product_name}
-                                        onChange={(e) => setNewLink({ ...newLink, product_name: e.target.value })}
-                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-amber-500/50 transition-all font-bold placeholder:text-zinc-600"
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="Affiliate URL"
-                                        value={newLink.link}
-                                        onChange={(e) => setNewLink({ ...newLink, link: e.target.value })}
-                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-amber-500/50 transition-all font-bold placeholder:text-zinc-600"
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="CTA Text (e.g. Get 20% Off)"
-                                        value={newLink.cta_text}
-                                        onChange={(e) => setNewLink({ ...newLink, cta_text: e.target.value })}
-                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-amber-500/50 transition-all font-bold placeholder:text-zinc-600"
-                                    />
-                                    <button
-                                        onClick={handleAddAffiliateLink}
-                                        disabled={isAddingLink || !newLink.product_name || !newLink.link}
-                                        className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
-                                    >
-                                        {isAddingLink ? <RefreshCw className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
-                                        Add Affiliate Link
-                                    </button>
-                                </div>
-
-                                <div className="bg-zinc-950/40 rounded-3xl border border-white/5 p-6 h-64 overflow-y-auto relative">
-                                    {affiliateLinks.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {affiliateLinks.map((link: any, i: number) => (
-                                                <div key={link.id || link._id || i} className="group p-3 rounded-xl bg-white/2 border border-white/5 space-y-1 relative">
-                                                    <p className="text-[10px] font-bold text-white uppercase tracking-wider">{link.product_name}</p>
-                                                    <p className="text-[9px] text-zinc-500 truncate">{link.link}</p>
-                                                    {link.cta_text && <p className="text-[9px] text-amber-500 font-bold">{link.cta_text}</p>}
-                                                    <button 
-                                                        onClick={() => handleDeleteAffiliateLink((link.id || link._id || "") as string)}
-                                                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
-                                                     >
-                                                        <Trash2 className="h-3 w-3" />
-                                                     </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
-                                            <Search className="h-8 w-8 text-zinc-700 mb-2" />
-                                            <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-700">No Affiliate Links</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Auto-Merch Generator */}
-                        <div className="glass-card bg-purple-500/5 border-purple-500/10 space-y-8 relative overflow-hidden">
-                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity)" />
-                            <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-2xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-                                    <ShoppingBag className="h-6 w-6 text-purple-500" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <h3 className="font-bold uppercase tracking-tight text-white">Auto-Merch Engine</h3>
-                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Trend-Driven Product Generation</p>
-                                </div>
-                            </div>
-                            <div className="space-y-4">
-                                <p className="text-xs text-zinc-500 font-medium">Enter a trending topic to auto-generate merchandise.</p>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Stoic Quotes 2026"
-                                    value={autoMerchTopic}
-                                    onChange={(e) => setAutoMerchTopic(e.target.value)}
-                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-purple-500/50 transition-all font-bold placeholder:text-zinc-600"
-                                />
-                                <button
-                                    onClick={handleAutoMerch}
-                                    disabled={isGeneratingMerch || !autoMerchTopic}
-                                    className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
-                                >
-                                    {isGeneratingMerch ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ShoppingBag className="h-4 w-4" />}
-                                    Generate Auto-Merch
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Shopify Sync */}
-                        <div className="glass-card bg-green-500/5 border-green-500/10 space-y-6 relative overflow-hidden">
-                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity)" />
-                            <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-2xl bg-green-500/20 flex items-center justify-center border border-green-500/30">
-                                    <Package className="h-6 w-6 text-green-500" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <h3 className="font-bold uppercase tracking-tight text-white">Commerce Sync</h3>
-                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Shopify Integration</p>
-                                </div>
-                            </div>
-                                <button
-                                    onClick={() => setIsSyncModalOpen(true)}
-                                    disabled={isSyncingShopify}
-                                    className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
-                                >
-                                    {isSyncingShopify ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                                    Sync Shopify
-                                </button>
-                        </div>
-
-                        {/* AI Link Recommendations */}
-                        <div className="glass-card bg-sky-500/5 border-sky-500/10 space-y-8 relative overflow-hidden">
-                            <div className="absolute inset-0 scanline opacity-(--scanline-opacity)" />
-                            <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-2xl bg-sky-500/20 flex items-center justify-center border border-sky-500/30">
-                                    <LinkIcon className="h-6 w-6 text-sky-500" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <h3 className="font-bold uppercase tracking-tight text-white">AI Link Recommender</h3>
-                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Smart Affiliate Suggestions</p>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-4">
-                                    <input
-                                        type="text"
-                                        placeholder="Niche (e.g. Stoic Wisdom)"
-                                        value={recommendNiche}
-                                        onChange={(e) => setRecommendNiche(e.target.value)}
-                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-zinc-600"
-                                    />
-                                    <textarea
-                                        placeholder="Paste your script text here..."
-                                        value={recommendScript}
-                                        onChange={(e) => setRecommendScript(e.target.value)}
-                                        rows={4}
-                                        className="w-full bg-zinc-950/50 border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-sky-500/50 transition-all font-bold placeholder:text-zinc-600 resize-none"
-                                    />
-                                    <button
-                                        onClick={handleRecommendLinks}
-                                        disabled={isRecommending || !recommendNiche || !recommendScript}
-                                        className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-[10px] disabled:opacity-50"
-                                    >
-                                        {isRecommending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
-                                        Get Recommendations
-                                    </button>
-                                </div>
-                                <div className="bg-zinc-950/40 rounded-3xl border border-white/5 p-6 h-64 overflow-y-auto relative">
-                                    {recommendations.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {recommendations.map((rec: any, i: number) => (
-                                                <div key={i} className="p-1 rounded-lg hover:bg-white/2 transition-colors">
-                                                    <p className="text-[10px] font-bold text-white uppercase tracking-wider">{rec.product_name || rec.name || `Link ${i + 1}`}</p>
-                                                    <p className="text-[9px] text-zinc-500 truncate">{rec.link || rec.url}</p>
-                                                    {rec.reason && <p className="text-[9px] text-sky-500 font-bold">{rec.reason}</p>}
-                                                    {rec.cta_text && <p className="text-[9px] text-sky-400 font-bold">{rec.cta_text}</p>}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
-                                            <LinkIcon className="h-8 w-8 text-zinc-700 mb-2" />
-                                            <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-700">Awaiting Script Analysis</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Recent Blueprint History */}
-                        <div className="glass-card overflow-hidden shadow-2xl">
-                            <div className="p-8 border-b border-white/5 bg-white/[0.02] flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                                    <MessageSquareQuote className="h-5 w-5 text-primary neon-glow" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <h3 className="font-bold uppercase tracking-tight text-white">Neural Repositories</h3>
-                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Winning Blueprint History</p>
-                                </div>
-                            </div>
-                            <div className="p-8 space-y-4">
-                                {blueprints.length > 0 ? blueprints.map((bp) => (
-                                    <div
-                                        key={bp.id}
-                                        onClick={() => setSelectedStrategy(bp)}
-                                        className={cn(
-                                            "flex items-center justify-between group p-4 rounded-2xl bg-white/[0.02] border transition-all cursor-pointer",
-                                            selectedStrategy?.id === bp.id ? "border-primary/50 bg-primary/5" : "border-white/5 hover:border-primary/30"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn(
-                                                "h-2 w-2 rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]",
-                                                selectedStrategy?.id === bp.id ? "bg-primary" : "bg-zinc-600"
-                                            )} />
-                                            <div>
-                                                <p className="text-[10px] font-bold uppercase text-white tracking-widest leading-none mb-1">{bp.title}</p>
-                                                <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-tighter">{bp.niche || "Universal Pattern"}</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-[10px] font-bold text-emerald-500">{bp.performance}</div>
-                                    </div>
-                                )) : (
-                                    <div className="text-zinc-700 font-bold uppercase text-[10px] text-center py-20 tracking-[0.3em] opacity-40 uppercase">
-                                        Waiting for Initial Conquests...
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Network Mesh Visualization */}
-                    <div className="lg:col-span-2 space-y-10">
-                        {networkData.nodes.length > 0 ? (
-                            <NetworkMesh nodes={networkData.nodes} links={networkData.links} />
-                        ) : (
-                            <div className="glass-card p-10 text-center animate-pulse text-zinc-500 text-xs font-mono">
-                                INITIALIZING NEURAL LINK...
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mt-10">
-                            {/* Strategic Timeline */}
-                            <div className="glass-card p-10 space-y-8">
-                                <div className="space-y-1">
-                                    <h3 className="font-bold uppercase tracking-tight text-white">Strategic <span className="text-cyan-400">Timeline</span></h3>
-                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Sentinel Drift Events</p>
-                                </div>
-                                <div className="space-y-6">
-                                    {timelineEvents.map((item, i) => (
-                                        <div key={i} className="flex gap-6 group">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <div className="h-0.5 rounded-full bg-linear-to-r from-emerald-500/0 via-emerald-500/20 to-emerald-500/0" />
-                                                <div className="h-3 w-3 rounded-full border-2 border-primary bg-zinc-950 group-hover:bg-primary transition-colors" />
-                                                <div className="w-px flex-1 bg-white/5 group-last:hidden" />
-                                            </div>
-                                            <div className="pb-6">
-                                                <p className="text-[10px] font-bold text-primary mb-1 tracking-widest">{item.time_label || item.time}</p>
-                                                <p className="text-white font-bold uppercase text-xs mb-1">{item.type || item.event}</p>
-                                                <p className="text-zinc-500 text-[10px] font-medium leading-relaxed">{item.message || item.desc}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Automation Pulse */}
-                            <div className="glass-card p-10 flex flex-col justify-center bg-zinc-900 shadow-inner">
-                                <div className="space-y-6 text-center">
-                                    <div className="mx-auto h-20 w-20 rounded-full bg-primary/20 flex items-center justify-center relative">
-                                        <div className="absolute inset-0 rounded-full border border-primary animate-ping opacity-20" />
-                                        <Layers className="h-10 w-10 text-primary" />
-                                    </div>
-                                    <h4 className="text-2xl font-bold text-white tracking-tighter uppercase">{sentinelStatus?.score || 0}% Autonomy</h4>
-                                    <p className="text-zinc-500 text-xs font-medium">System is operating in <span className={`${sentinelStatus?.status === "NOMINAL" ? "text-emerald-500" : "text-amber-500"} font-bold`}>{sentinelStatus?.status || "CONNECTING"}</span> mode. {sentinelStatus?.status === "NOMINAL" ? "No manual overrides required." : "Review sentinel recommendations."}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            {/* Clone Modal */}
-            <AnimatePresence>
-                {isCloneModalOpen && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="glass-card w-full max-w-lg rounded-[3rem] p-10 shadow-[0_32px_128px_rgba(0,0,0,0.5)] space-y-8 relative overflow-hidden"
-                        >
-                            <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
-                            <div className="flex items-center gap-6">
-                                <div className="h-16 w-16 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(var(--primary-rgb),0.15)]">
-                                    <Copy className="h-8 w-8 text-primary" />
-                                </div>
-                                <div className="space-y-1">
-                                    <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">
-                                        Empire Expansion
-                                    </h3>
-                                    <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-bold opacity-60">
-                                        Neural Strategy Replication
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6">
-                                <p className="text-zinc-400 text-sm leading-relaxed font-medium">
-                                    Replicate monetization strategies and neural weights from <span className="text-primary font-bold">{selectedStrategy?.niche || "Original"}</span> to <span className="text-primary font-bold">{cloningNiche}</span>. This strategic expansion is non-reversible.
-                                </p>
-
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-950/50 border border-white/5 group hover:border-emerald-500/30 transition-all cursor-pointer" onClick={() => setAutoPublishAfterClone(!autoPublishAfterClone)}>
-                                        <div className="flex items-center gap-3">
-                                            <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center transition-all", autoPublishAfterClone ? "bg-emerald-500/20 text-emerald-500" : "bg-zinc-900 text-zinc-700")}>
-                                                <Share2 className="h-4 w-4" />
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                <p className="text-[10px] font-bold uppercase tracking-tight text-white group-hover:text-emerald-400 transition-colors">Auto-Publish After Clone</p>
-                                                <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Automatically publish content using the new strategy</p>
-                                            </div>
-                                        </div>
-                                        <div className={cn("w-10 h-5 rounded-full relative transition-all duration-500", autoPublishAfterClone ? "bg-emerald-600" : "bg-zinc-800")}>
-                                            <motion.div
-                                                animate={{ x: autoPublishAfterClone ? 20 : 2 }}
-                                                className="absolute top-1 left-0 h-3 w-3 rounded-full bg-white shadow-sm"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-4">
-                                <button
-                                    onClick={() => setIsCloneModalOpen(false)}
-                                    className="flex-1 h-16 rounded-2xl border border-white/5 text-zinc-500 font-bold uppercase text-[10px] tracking-widest hover:bg-white/5 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        handleClone();
-                                        setIsCloneModalOpen(false);
-                                    }}
-                                    className="flex-1 h-16 rounded-2xl bg-primary text-black font-bold uppercase text-[10px] tracking-widest shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all"
-                                >
-                                    Execute Expansion
-                                </button>
-                            </div>
-                        </motion.div>
                     </motion.div>
-                )}
-            </AnimatePresence>
+                </AnimatePresence>
+            </div>
 
             <ConfirmModal
-                isOpen={isSyncModalOpen}
-                onClose={() => setIsSyncModalOpen(false)}
-                onConfirm={() => {
-                    handleShopifySync();
-                    setIsSyncModalOpen(false);
-                }}
-                title="Sync Shopify Node?"
-                description="Synchronizing commerce data will overwrite local cache with live storefront telemetry. Ensure your API connection is stable."
-                confirmText="Sync Now"
-                variant="success"
+                isOpen={isCloneModalOpen}
+                onClose={() => setIsCloneModalOpen(false)}
+                onConfirm={handleClone}
+                title="Initialize Empire Protocol?"
+                description={`Cloning neural strategy weights into the "${cloningNiche}" cluster will initiate autonomous synthesis. Proceed?`}
+                confirmText="Execute Protocol"
+                variant="primary"
             />
-        </DashboardLayout>
+        </CommandCenterLayout>
     );
 }

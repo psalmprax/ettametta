@@ -9,6 +9,7 @@ import logging
 
 from src.api.utils.models import VideoJobDB
 from src.shared.enums import SystemJobStatus
+from src.api.utils.user_models import UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,7 @@ class VideoJobService:
             unified_list.append({
                 "id": v.id,
                 "title": v.title,
-                "status": v.status,
+                "status": v.status.value if hasattr(v.status, 'value') else v.status,
                 "progress": v.progress,
                 "source_uri": v.source_uri,
                 "output_path": v.output_path,
@@ -91,7 +92,7 @@ class VideoJobService:
             unified_list.append({
                 "id": n.id,
                 "title": f"Nexus Production: {n.niche}",
-                "status": n.status,
+                "status": n.status.value if hasattr(n.status, 'value') else n.status,
                 "progress": n.progress,
                 "source_uri": "Cinema Mode / Studio",
                 "output_path": n.output_path,
@@ -121,7 +122,7 @@ class VideoJobService:
             return {
                 "id": v.id,
                 "title": v.title,
-                "status": v.status,
+                "status": v.status.value if hasattr(v.status, 'value') else v.status,
                 "progress": v.progress,
                 "source_uri": v.source_uri,
                 "output_path": v.output_path,
@@ -141,7 +142,7 @@ class VideoJobService:
             return {
                 "id": n.id,
                 "title": f"Nexus Production: {n.niche}",
-                "status": n.status,
+                "status": n.status.value if hasattr(n.status, 'value') else n.status,
                 "progress": n.progress,
                 "source_uri": "Cinema Mode / Studio",
                 "output_path": n.output_path,

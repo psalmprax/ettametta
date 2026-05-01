@@ -36,38 +36,33 @@ import {
     Music,
     Volume2,
     Brain,
-    FileVideo
+    FileVideo,
+    Scan,
+    Database,
+    Radar
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
-    { name: "Intelligence Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Command Center", href: "/dashboard", icon: LayoutDashboard },
     { name: "Empire Registry", href: "/empire", icon: Crown },
-    { name: "Trend Discovery", href: "/discovery", icon: TrendingUp },
+    { name: "Trend Discovery", href: "/discovery", icon: Radar },
     { name: "Global Publish", href: "/publishing", icon: Share2 },
     { name: "Autonomous OS", href: "/autonomous", icon: Activity },
 ];
 
-const workforceItems = [
-    { name: "Nexus Engine", href: "/nexus", icon: Cpu },
-    { name: "Nexus Workforce", href: "/nexus/workforce", icon: Users },
-    { name: "Intelligence Hub", href: "/dashboard/intelligence", icon: Brain },
-];
-
 const intelligenceItems = [
-    { name: "Analytics Core", href: "/analytics", icon: BarChart3 },
-    { name: "Neural A/B Lab", href: "/analytics/ab-testing", icon: Sparkles },
-    { name: "Security Sentinel", href: "/admin/audits", icon: ShieldCheck },
-    { name: "System Admin", href: "/admin", icon: Terminal },
+    { name: "Nexus Engine", href: "/nexus", icon: Cpu },
+    { name: "Workforce Hub", href: "/nexus/workforce", icon: Users },
+    { name: "Intel Core", href: "/analytics", icon: BarChart3 },
+    { name: "Security Audit", href: "/admin/audits", icon: ShieldCheck },
 ];
 
-const creationTools = [
-    { name: "AI Cinema", href: "/creation", icon: PlaySquare, badge: "Elite" },
-    { name: "Video Studio", href: "/dashboard/video-editor", icon: Video },
-    { name: "Asset Transformation", href: "/transformation", icon: Layers },
-    { name: "Credits & Billing", href: "/credits", icon: Coins },
-    { name: "Settings", href: "/settings", icon: Settings },
+const studioItems = [
+    { name: "Creation Hub", href: "/creation", icon: PlaySquare },
+    { name: "Transformation", href: "/transformation", icon: Layers },
+    { name: "Neural Sandbox", href: "/nexus/command", icon: Terminal },
 ];
 
 interface SidebarProps {
@@ -85,167 +80,131 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-                "flex flex-col h-full bg-black border-r border-white/5 relative z-40 transition-all duration-300",
-                collapsed ? "w-20" : "w-64"
+                "flex flex-col h-full bg-[#09090B] border-r border-white/5 relative z-40 transition-all duration-300",
+                collapsed ? "w-20" : "w-[260px]"
             )}
         >
-            {/* Logo Section */}
+            {/* System Header */}
             <div className={cn(
-                "flex items-center py-6 transition-all",
-                collapsed ? "px-4 justify-center" : "px-6"
+                "flex items-center py-8 transition-all",
+                collapsed ? "px-4 justify-center" : "px-8"
             )}>
-                <Link href="/" className="flex items-center gap-2 group">
-                    <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/20">
-                        <Zap className="h-4 w-4 text-white fill-current" />
+                <Link href="/" className="flex items-center gap-3 group">
+                    <div className="h-9 w-9 bg-cyan-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all group-hover:scale-105">
+                        <Zap className="h-5 w-5 text-black fill-current" />
                     </div>
                     {!collapsed && (
-                        <span className="text-xl font-bold text-white tracking-tight">Ettametta</span>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-black text-white tracking-widest uppercase italic">Ettametta</span>
+                            <span className="text-[8px] font-bold text-cyan-500/50 tracking-[0.3em] uppercase">Intelligence OS</span>
+                        </div>
                     )}
                 </Link>
             </div>
 
-            {/* Create with Agent Button */}
-            {!collapsed && (
-                <div className="px-4 mb-6">
-                    <button className="w-full py-2.5 px-4 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-600/30 text-blue-500 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all">
-                        <PlusSquare className="h-4 w-4" />
-                        Create with Agent
-                    </button>
-                </div>
-            )}
-
-            {/* Navigation */}
-            <nav className="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
-                {navItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-[13px] font-medium",
-                                isActive 
-                                    ? "bg-white/5 text-white" 
-                                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                            )}
-                        >
-                            <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-blue-500" : "text-slate-500")} />
-                            {!collapsed && <span className="truncate">{item.name}</span>}
-                        </Link>
-                    );
-                })}
-
-                <div className="pt-6 pb-2 px-3">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nexus Hub</span>
+            {/* Navigation Groups */}
+            <nav className="flex-1 px-4 space-y-8 overflow-y-auto custom-scrollbar pt-4">
+                <div className="space-y-1">
+                    {!collapsed && <label className="px-4 mb-2 block text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]">Operational</label>}
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={cn(
+                                    "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
+                                    isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                                )}
+                            >
+                                <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-cyan-400" : "text-zinc-600 group-hover:text-zinc-400")} />
+                                {!collapsed && <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>}
+                                {isActive && (
+                                    <motion.div layoutId="nav-active" className="absolute left-0 w-1 h-4 bg-cyan-400 rounded-full" />
+                                )}
+                            </Link>
+                        );
+                    })}
                 </div>
 
-                {workforceItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-[13px] font-medium",
-                                isActive 
-                                    ? "bg-white/5 text-white" 
-                                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                            )}
-                        >
-                            <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-purple-500" : "text-slate-500")} />
-                            {!collapsed && <span className="truncate">{item.name}</span>}
-                        </Link>
-                    );
-                })}
-
-                <div className="pt-6 pb-2 px-3">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Intelligence & Security</span>
+                <div className="space-y-1">
+                    {!collapsed && <label className="px-4 mb-2 block text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]">Intelligence</label>}
+                    {intelligenceItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={cn(
+                                    "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
+                                    isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                                )}
+                            >
+                                <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-violet-400" : "text-zinc-600 group-hover:text-zinc-400")} />
+                                {!collapsed && <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>}
+                            </Link>
+                        );
+                    })}
                 </div>
 
-                {intelligenceItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-[13px] font-medium",
-                                isActive 
-                                    ? "bg-white/5 text-white" 
-                                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                            )}
-                        >
-                            <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-cyan-500" : "text-slate-500")} />
-                            {!collapsed && <span className="truncate">{item.name}</span>}
-                        </Link>
-                    );
-                })}
-
-                <div className="pt-6 pb-2 px-3">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Creation Tools</span>
+                <div className="space-y-1">
+                    {!collapsed && <label className="px-4 mb-2 block text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]">Studio</label>}
+                    {studioItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={cn(
+                                    "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
+                                    isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                                )}
+                            >
+                                <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-rose-500" : "text-zinc-600 group-hover:text-zinc-400")} />
+                                {!collapsed && <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>}
+                            </Link>
+                        );
+                    })}
                 </div>
-
-                {creationTools.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-[13px] font-medium group",
-                                isActive 
-                                    ? "bg-white/10 text-white" 
-                                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                            )}
-                        >
-                            <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-blue-500" : "text-slate-500 group-hover:text-slate-300")} />
-                            {!collapsed && (
-                                <div className="flex items-center justify-between flex-1 min-w-0">
-                                    <span className="truncate">{item.name}</span>
-                                    {item.badge && (
-                                        <span className={cn(
-                                            "ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold",
-                                            item.badge === "New" ? "bg-blue-600/20 text-blue-500" : "bg-slate-800 text-slate-400"
-                                        )}>
-                                            {item.badge}
-                                        </span>
-                                    )}
-                                </div>
-                            )}
-                        </Link>
-                    );
-                })}
             </nav>
 
-            {/* User Profile Section */}
-            <div className="p-3 mt-auto border-t border-white/5">
-                {!collapsed ? (
-                    <div className="p-3 bg-white/5 rounded-xl space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-slate-800 border border-white/10 overflow-hidden shrink-0">
-                                <img src={"https://api.dicebear.com/7.x/avataaars/svg?seed=" + (user?.username || "Felix")} alt="User" className="w-full h-full object-cover" />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-sm font-bold text-white truncate">{user?.username || "Guest User"}</span>
-                                <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Pro Plan</span>
-                            </div>
+            {/* Bottom Telemetry & User */}
+            <div className="p-4 mt-auto border-t border-white/5 bg-black/20 space-y-4">
+                {!collapsed && (
+                    <div className="px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">System Pulse</span>
+                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
                         </div>
-                        <button 
-                            onClick={(e) => { e.preventDefault(); logout(); }}
-                            className="w-full py-2 px-3 flex items-center justify-center gap-2 text-[11px] font-semibold text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg border border-white/10 transition-all"
-                        >
-                            <LogOut className="h-3.5 w-3.5" />
-                            Sign Out
-                        </button>
+                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                            <motion.div 
+                                animate={{ x: [-100, 100] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                className="h-full w-20 bg-linear-to-r from-transparent via-cyan-500 to-transparent" 
+                            />
+                        </div>
                     </div>
-                ) : (
-                    <button 
-                        onClick={() => logout()}
-                        className="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
-                    >
-                        <LogOut className="h-5 w-5" />
-                    </button>
                 )}
+                
+                <div className={cn(
+                    "flex items-center gap-3 transition-all",
+                    collapsed ? "justify-center" : "px-4 py-2"
+                )}>
+                    <div className="h-9 w-9 rounded-xl bg-zinc-900 border border-white/10 overflow-hidden shrink-0">
+                        <img src={"https://api.dicebear.com/7.x/avataaars/svg?seed=" + (user?.username || "Felix")} alt="User" className="w-full h-full object-cover" />
+                    </div>
+                    {!collapsed && (
+                        <div className="flex flex-col min-w-0 flex-1">
+                            <span className="text-xs font-bold text-white truncate uppercase tracking-tighter">{user?.username || "OPERATIVE_01"}</span>
+                            <span className="text-[8px] text-zinc-500 font-black uppercase tracking-[0.2em]">Tier: Elite</span>
+                        </div>
+                    )}
+                    {!collapsed && (
+                        <button onClick={logout} className="text-zinc-600 hover:text-rose-500 transition-colors">
+                            <LogOut className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
             </div>
         </motion.div>
     );
@@ -253,16 +212,15 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
 
 export function MobileNav() {
     const pathname = usePathname();
-    
     const mobileNavItems = [
-        { name: "Explore", href: "/dashboard", Icon: Search },
-        { name: "Creation", href: "/dashboard/video-editor", Icon: PlusSquare },
-        { name: "Assets", href: "/assets", Icon: Activity },
-        { name: "Profile", href: "/profile", Icon: User },
+        { name: "Explore", href: "/discovery", Icon: Radar },
+        { name: "Creation", href: "/creation", Icon: PlaySquare },
+        { name: "Nexus", href: "/nexus", Icon: Cpu },
+        { name: "Stats", href: "/analytics", Icon: BarChart3 },
     ];
 
     return (
-        <nav className="bg-black/95 backdrop-blur-xl border-t border-white/5 fixed bottom-0 w-full z-50 h-16 flex justify-around items-center px-4 md:hidden">
+        <nav className="bg-black/95 backdrop-blur-3xl border-t border-white/5 fixed bottom-0 w-full z-50 h-20 flex justify-around items-center px-4 md:hidden">
             {mobileNavItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -271,18 +229,13 @@ export function MobileNav() {
                         href={item.href}
                         className={cn(
                             "flex flex-col items-center justify-center transition-all relative px-2",
-                            isActive ? "text-blue-500 scale-110" : "text-slate-500 hover:text-slate-300"
+                            isActive ? "text-cyan-400 scale-110" : "text-zinc-600 hover:text-zinc-400"
                         )}
                     >
-                        <item.Icon className={cn(
-                            "h-6 w-6 mb-1 transition-all"
-                        )} />
-                        <span className="text-[10px] font-medium tracking-wide">{item.name}</span>
+                        <item.Icon className="h-6 w-6 mb-1" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">{item.name}</span>
                         {isActive && (
-                            <motion.div 
-                                layoutId="mobile-active"
-                                className="absolute -bottom-2 h-0.5 w-8 bg-blue-500 rounded-full"
-                            />
+                            <motion.div layoutId="mobile-active" className="absolute -bottom-2 h-0.5 w-8 bg-cyan-400 rounded-full" />
                         )}
                     </Link>
                 );
@@ -293,29 +246,22 @@ export function MobileNav() {
 
 export function MobileHeader({ onMenuClick }: { onMenuClick?: () => void }) {
     return (
-        <header className="bg-black/80 backdrop-blur-xl border-b border-white/5 fixed top-0 z-50 flex justify-between items-center w-full px-4 h-16 md:hidden">
-            <div className="flex items-center gap-3">
+        <header className="bg-black/80 backdrop-blur-2xl border-b border-white/5 fixed top-0 z-50 flex justify-between items-center w-full px-4 h-20 md:hidden">
+            <div className="flex items-center gap-4">
                 <button 
                     onClick={onMenuClick} 
-                    className="h-10 w-10 flex items-center justify-center bg-white/5 border border-white/10 hover:border-white/20 transition-all rounded-xl"
+                    className="h-12 w-12 flex items-center justify-center bg-white/[0.02] border border-white/10 rounded-2xl"
                 >
-                    <Menu className="h-5 w-5 text-slate-300" />
+                    <Menu className="h-6 w-6 text-zinc-300" />
                 </button>
                 <div className="flex flex-col">
-                    <span className="text-base font-bold text-white">Ettametta</span>
-                    <span className="text-[9px] text-slate-500 font-medium uppercase tracking-wider">Video Workspace</span>
+                    <span className="text-sm font-black text-white uppercase tracking-widest italic">Ettametta</span>
+                    <span className="text-[8px] font-bold text-cyan-500/50 uppercase tracking-[0.3em]">Intelligence OS</span>
                 </div>
             </div>
-            <div className="flex items-center gap-2">
-                <div className="h-9 w-9 bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all rounded-lg">
-                    <Bell className="h-4 w-4 text-slate-400" />
-                </div>
-                <div className="h-9 w-9 border border-white/10 p-0.5 bg-slate-900 rounded-lg overflow-hidden">
-                    <img alt="User" className="w-full h-full object-cover" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"/>
-                </div>
+            <div className="h-10 w-10 bg-zinc-900 border border-white/10 rounded-xl overflow-hidden p-0.5">
+                <img alt="User" className="w-full h-full object-cover" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"/>
             </div>
         </header>
     );
 }
-
-

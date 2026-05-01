@@ -165,6 +165,13 @@ class DiscoveryService:
 
         # Prepare scanner tasks - used for both fast and deep scans
         tasks = []
+        def parse_horizon(h: str) -> datetime.timedelta:
+            h = h.lower()
+            if h.endswith("h"):
+                return datetime.timedelta(hours=int(h[:-1]))
+            if h.endswith("d"):
+                return datetime.timedelta(days=int(h[:-1]))
+            return datetime.timedelta(days=30)
         
         if deep_scan:
             await self._log(
@@ -223,11 +230,11 @@ class DiscoveryService:
             
             # For deep scan, use all available scanners with extended time horizon
             scanners_to_use = self.global_scanners + self.scanners
-            published_after = datetime.datetime.utcnow() - datetime.timedelta(days=90)
+            published_after = datetime.datetime.utcnow() - parse_horizon(horizon)
         else:
             # Fast Scan: Use primary scanners only
             scanners_to_use = self.scanners
-            published_after = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+            published_after = datetime.datetime.utcnow() - parse_horizon(horizon)
 
         # Add scanner tasks for both fast and deep scans
         for scanner in scanners_to_use:

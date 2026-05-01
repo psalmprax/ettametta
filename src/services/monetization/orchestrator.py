@@ -100,4 +100,4 @@ class MonetizationOrchestrator:
             return ""
         return await self._execute_with_failover("generate_cta", niche, context)
 
-base_monetization_orchestrator_service_service = MonetizationOrchestrator()
+base_monetization_orchestrator_service = MonetizationOrchestrator()

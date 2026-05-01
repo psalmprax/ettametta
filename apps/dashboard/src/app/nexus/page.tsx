@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
-import DashboardLayout from "@/components/layout";
 import {
     Zap,
     Layers,
@@ -29,7 +28,13 @@ import {
     Bot,
     ShieldCheck,
     Trash2,
-    X
+    X,
+    Terminal,
+    Fingerprint,
+    Brain,
+    Network,
+    Mic2,
+    Clapperboard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
@@ -38,81 +43,45 @@ import { NexusNode, NodeType } from "@/components/ui/NexusNode";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
-import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { ClusterManager } from "@/components/ui/ClusterManager";
+import CommandCenterLayout from "@/components/CommandCenterLayout";
+import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
 import { NeuralCanvas } from "@/components/ui/NeuralCanvas";
 import { CommandPod } from "@/components/ui/CommandPod";
-import { Card } from "@/components/ui/Card";
+import { DesignCard } from "@/components/ui/DesignCard";
+import { Button } from "@/components/ui/Button";
 
 import { Blueprint, NexusJob, Persona } from "@/lib/types";
 
-interface WorkforceStatus {
-    status: string;
-    circuit_breaker: string;
-    report: {
-        status: Record<string, boolean>;
-        impact: Record<string, string>;
-    };
-}
-
-interface CapabilityStatus {
-    available: boolean;
-    description: string;
-    workforce?: WorkforceStatus;
-}
-
 export default function NexusPage() {
+    const [activeEngine, setActiveEngine] = useState("orchestrator");
     const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
     const [activeBlueprint, setActiveBlueprint] = useState<Blueprint | null>(null);
     const [isLaunching, setIsLaunching] = useState(false);
     const [nexusJobs, setNexusJobs] = useState<NexusJob[]>([]);
     const [niches, setNiches] = useState<string[]>([]);
     const [selectedNiche, setSelectedNiche] = useState("");
-    const [userTier, setUserTier] = useState<string>("free");
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
-    const [isClearModalOpen, setIsClearModalOpen] = useState(false);
-    const [showClusterManager, setShowClusterManager] = useState(false);
-    const [showBlueprintBuilder, setShowBlueprintBuilder] = useState(false);
     const [selectedNodeIndex, setSelectedNodeIndex] = useState<number>(0);
     const [logStream, setLogStream] = useState<string[]>([]);
 
-    // AI Agent Chat state
-    const [chatMessages, setChatMessages] = useState<{ role: "user" | "agent"; content: string }[]>([]);
-    const [chatInput, setChatInput] = useState("");
-    const [isChatting, setIsChatting] = useState(false);
-    const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
-    const [agentCapabilities, setAgentCapabilities] = useState<string[]>([]);
-    const [workforceReport, setWorkforceReport] = useState<WorkforceStatus | null>(null);
-
+    // Telemetry & WebSocket
+    const [telemetry, setTelemetry] = useState<any>(null);
     const { data: jobUpdate } = useWebSocket<{ type: string, data: NexusJob }>(`${WS_BASE}/jobs`);
     const { data: logUpdate } = useWebSocket<{ type: string, module: string, level: string, message: string }>(`${WS_BASE}/logs`);
+    const { data: telemetryUpdate } = useWebSocket<any>(`${WS_BASE}/nexus/telemetry`);
 
-    // Persona Lab state
-    const [personaName, setPersonaName] = useState("");
-    const [personaImageUrl, setPersonaImageUrl] = useState("");
-    const [isCreatingPersona, setIsCreatingPersona] = useState(false);
-    const [personas, setPersonas] = useState<Persona[]>([]);
-    const [createdPersona, setCreatedPersona] = useState<Persona | null>(null);
-    const [videoTopic, setVideoTopic] = useState("");
-    const [videoScript, setVideoScript] = useState("");
-    const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
-    const [telemetry, setTelemetry] = useState<any>(null);
+    useEffect(() => {
+        if (telemetryUpdate) setTelemetry(telemetryUpdate);
+    }, [telemetryUpdate]);
 
     // Fetch initial data
     useEffect(() => {
         const fetchData = async () => {
-            const token = getAuthToken();
+            const token = await getAuthToken();
             if (!token) return;
             const headers = { Authorization: `Bearer ${token}` };
 
             await Promise.all([
-                withRealFallback<{ subscription?: string }>(
-                    () => fetch(`${API_BASE}/auth/me`, { headers }),
-                    {
-                        fallback: { subscription: "free" },
-                        onSuccess: (data) => setUserTier(data.subscription?.toLowerCase() || "free")
-                    }
-                ),
                 withRealFallback<Blueprint[]>(
                     () => fetch(`${API_BASE}/nexus/blueprints`, { headers }),
                     {
@@ -140,63 +109,19 @@ export default function NexusPage() {
                         onSuccess: (data) => setNexusJobs(data)
                     }
                 ),
-                withRealFallback<Record<string, CapabilityStatus>>(
-                    () => fetch(`${API_BASE}/agent/capabilities`, { headers }),
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/nexus/telemetry`, { headers }),
                     {
-                        fallback: {},
-                        onSuccess: (capabilities) => {
-                            // Extract workforce report if available (Phase 4 Hardening)
-                            if (capabilities.workforce && capabilities.workforce.workforce) {
-                                setWorkforceReport(capabilities.workforce.workforce);
-                            }
-
-                            const flattenedCaps = Object.entries(capabilities).map(([key, value]) => {
-                                if (key === 'workforce' && value.workforce) {
-                                    return `🏛️ Workforce: ${value.workforce.status.toUpperCase()} (${value.workforce.circuit_breaker})`;
-                                }
-                                if (key === 'discovery') return `🔍 Advanced Discovery: Trend analysis, competitor research, content ideation`;
-                                if (key === 'competitor') return `🎯 Competitor Analysis: Strategy breakdown and market intelligence`;
-                                
-                                const statusIcon = value.available ? '✅' : '⚠️';
-                                return `${statusIcon} ${key}: ${value.description || 'Service active'}`;
-                            });
-                            setAgentCapabilities(flattenedCaps);
-                        }
-                    }
-                ),
-                withRealFallback<Persona[]>(
-                    () => fetch(`${API_BASE}/persona/list`, { headers }),
-                    {
-                        fallback: [],
-                        onSuccess: (data) => setPersonas(data)
+                        fallback: null,
+                        onSuccess: (data) => setTelemetry(data)
                     }
                 ),
             ]);
         };
 
         fetchData();
-
-        // Polling for telemetry
-        const fetchTelemetry = async () => {
-            const token = getAuthToken();
-            if (!token) return;
-            await withRealFallback<any>(
-                () => fetch(`${API_BASE}/nexus/telemetry`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }),
-                {
-                    fallback: null,
-                    onSuccess: (data) => setTelemetry(data)
-                }
-            );
-        };
-
-        fetchTelemetry();
-        const interval = setInterval(fetchTelemetry, 5000); // 5s intervals for real-first dashboarding
-        return () => clearInterval(interval);
     }, []);
 
-    // Handle WebSocket updates
     useEffect(() => {
         if (jobUpdate && jobUpdate.type === "nexus_job_update") {
             const updatedJob = jobUpdate.data;
@@ -207,972 +132,218 @@ export default function NexusPage() {
                 }
                 return [updatedJob, ...prev];
             });
-            if (activeJobId === String(updatedJob.id) && updatedJob.current_node) {
-                 // Auto-select or focus on the current active node
-                 const nodeIdx = activeBlueprint?.nodes.findIndex(n => n.type === updatedJob.current_node);
-                 if (nodeIdx !== undefined && nodeIdx !== -1) {
-                     setSelectedNodeIndex(nodeIdx);
-                 }
-            }
         }
-    }, [jobUpdate, activeJobId, activeBlueprint]);
+    }, [jobUpdate]);
 
-    // Handle Live Logs
     useEffect(() => {
-        if (logUpdate && logUpdate.type === "log" && (logUpdate.module === "NEXUS" || logUpdate.module === "SYSTEM")) {
-            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            setLogStream(prev => [`[${timestamp}] [${logUpdate.level}] ${logUpdate.message}`, ...prev.slice(0, 49)]);
+        if (logUpdate && logUpdate.type === "log") {
+            setLogStream(prev => [`[${logUpdate.level}] ${logUpdate.message}`, ...prev.slice(0, 49)]);
         }
     }, [logUpdate]);
-
-    // Button handlers
-    const handleClusterSettings = () => {
-        setShowClusterManager(true);
-    };
-
-    const handleCustomRecipe = () => {
-        setShowBlueprintBuilder(true);
-    };
-
-    const handleBlueprintCreated = async (newBlueprint: Blueprint) => {
-        const token = getAuthToken();
-        if (!token) return;
-
-        await withRealFallback<Blueprint>(
-            () => fetch(`${API_BASE}/nexus/blueprints`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(newBlueprint)
-            }),
-            {
-                fallback: newBlueprint,
-                onSuccess: (savedBlueprint) => {
-                    setBlueprints(prev => [...prev, savedBlueprint]);
-                    setActiveBlueprint(savedBlueprint);
-                    toast.success("Architecture Committed", {
-                        description: `"${savedBlueprint.name}" is now persistently indexed.`
-                    });
-                },
-                onFallback: (err) => {
-                    toast.error("Cluster Desync", { description: err.message });
-                }
-            }
-        );
-    };
-
-    const handleInspectResult = (job: NexusJob) => {
-        if (job.output_path) {
-            // Fix: handle absolute paths from backend by stripping the storage root if present
-            // or just prepending the correct proxy path.
-            let cleanPath = job.output_path;
-            if (cleanPath.startsWith('/app/data/storage/')) {
-                cleanPath = cleanPath.replace('/app/data/storage/', '');
-            }
-            // Ensure we don't have double slashes
-            cleanPath = cleanPath.startsWith('/') ? cleanPath.substring(1) : cleanPath;
-            window.open(`/api/storage/${cleanPath}`, '_blank');
-        } else {
-            toast.message("Output Incomplete", {
-                description: "The pipeline is still processing this segment.",
-                icon: <Loader2 className="h-4 w-4 animate-spin" />
-            });
-        }
-    };
 
     const handleLaunchPipeline = async () => {
         if (!selectedNiche || !activeBlueprint) return;
         setIsLaunching(true);
+        const token = await getAuthToken();
+        if (!token) return;
+
         await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) throw new Error("Authentication required");
-                return fetch(`${API_BASE}/nexus/compose`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        niche: selectedNiche,
-                        blueprint_id: activeBlueprint.id,
-                        cinema_mode: true
-                    })
-                });
-            },
+            () => fetch(`${API_BASE}/nexus/compose`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    niche: selectedNiche,
+                    blueprint_id: activeBlueprint.id,
+                    cinema_mode: true
+                })
+            }),
             {
                 fallback: null,
                 onSuccess: (data: any) => {
                     setActiveJobId(String(data.job_id));
-                    toast.success("Pipeline Dispatched", {
-                        description: `Job ID: ${data.job_id} is now active in the neural cluster.`
-                    });
-                    setSelectedNodeIndex(0);
-                },
-                onFallback: (err: any) => {
-                    toast.error("Launch Failed", {
-                        description: err.message || "Neural cluster rejected the composition request."
-                    });
+                    toast.success("Pipeline Dispatched");
                 }
             }
         );
         setIsLaunching(false);
     };
 
-    const handleSendChat = async () => {
-        const message = chatInput.trim();
-        if (!message || isChatting) return;
-
-        setChatMessages(prev => [...prev, { role: "user", content: message }]);
-        setChatInput("");
-        setIsChatting(true);
-
-        await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) throw new Error("Authentication required");
-                return fetch(`${API_BASE}/agent/chat`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ message })
-                });
-            },
-            {
-                fallback: null,
-                onSuccess: (data: any) => {
-                    setChatMessages(prev => [...prev, { role: "agent", content: data.response || data.message || JSON.stringify(data) }]);
-                },
-                onFallback: (err: any) => {
-                    toast.error("Agent Error", {
-                        description: err.message || "The AI agent failed to process your request."
-                    });
-                }
-            }
-        );
-        setIsChatting(false);
-    };
-
-    const handleCreatePersona = async () => {
-        if (!personaName || !personaImageUrl) return;
-        setIsCreatingPersona(true);
-        await withRealFallback<Persona>(
-            async () => {
-                const token = getAuthToken();
-                if (!token) throw new Error("Authentication required");
-                
-                // Use URLSearchParams for simple fields and FormData for files
-                // Since our current UI only has text fields, we'll use query params
-                const params = new URLSearchParams();
-                params.append("name", personaName);
-                if (personaImageUrl) params.append("reference_image_uri", personaImageUrl);
-
-                return fetch(`${API_BASE}/persona/create?${params.toString()}`, {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                });
-            },
-            {
-                fallback: { name: personaName, reference_image_uri: personaImageUrl } as Persona,
-                onSuccess: (data) => {
-                    const newPersona = { id: data.id || Date.now().toString(), name: personaName, reference_image_uri: personaImageUrl };
-                    setCreatedPersona(newPersona);
-                    setPersonas(prev => [newPersona, ...prev]);
-                    toast.success("Persona Created", {
-                        description: `Persona "${personaName}" is ready for video generation.`
-                    });
-                },
-                onFallback: (err: unknown) => {
-                    toast.error("Creation Failed", {
-                        description: err instanceof Error ? err.message : "Could not create the persona."
-                    });
-                }
-            }
-        );
-        setIsCreatingPersona(false);
-    };
-
-    const handleDeletePersona = async (personaId: string) => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback(
-            () => fetch(`${API_BASE}/persona/${personaId}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: null,
-                onSuccess: () => {
-                    setPersonas(prev => prev.filter(p => (p.id || p._id) !== personaId));
-                    if (createdPersona && (createdPersona.id === personaId)) setCreatedPersona(null);
-                    toast.success("Persona Purged", { description: "The digital identity has been removed from the lab." });
-                }
-            }
-        );
-    };
-
-    const handleClearHistory = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-        await withRealFallback(
-            () => fetch(`${API_BASE}/nexus/jobs`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: null,
-                onSuccess: () => {
-                    setNexusJobs([]);
-                    toast.success("Activity Cleared", { description: "Production job history has been truncated." });
-                }
-            }
-        );
-    };
-
-    const handleGenerateVideo = async () => {
-        if (!createdPersona || !videoTopic) return;
-        setIsGeneratingVideo(true);
-        await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) throw new Error("Authentication required");
-                const body: Record<string, string> = {
-                    persona_id: String(createdPersona.id || createdPersona._id),
-                    topic: videoTopic,
-                };
-                if (videoScript) body.script = videoScript;
-
-                return fetch(`${API_BASE}/persona/generate`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify(body)
-                });
-            },
-            {
-                fallback: null,
-                onSuccess: (data: any) => {
-                    toast.success("Video Generated", {
-                        description: data.video_uri || "Persona video has been generated successfully."
-                    });
-                },
-                onFallback: (err: any) => {
-                    toast.error("Generation Failed", {
-                        description: err.message || "Could not generate the persona video."
-                    });
-                }
-            }
-        );
-        setIsGeneratingVideo(false);
-    };
+    // Prepare Agent Data
+    const agents = [
+        { id: "ORCH_01", name: "Nexus Orchestrator", icon: Cpu, status: "ACTIVE" as any, latency: 4, load: 15, details: "Managing Pipeline_X4" },
+        { id: "TELE_01", name: "Telemetry Node", icon: Activity, status: "ACTIVE" as any, latency: 1, load: 2, details: `Uptime: ${telemetry?.uptime || "99.9%"}` },
+        { id: "STORAGE_01", name: "Storage Cluster", icon: Database, status: telemetry?.storage_status || "ACTIVE" as any, latency: 45, load: 32, details: "Read/Write: 1.2 GB/s" },
+    ];
 
     return (
-        <DashboardLayout>
-            <div className="max-w-[1600px] mx-auto p-8 space-y-12">
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="h-1 w-12 bg-cyan-400 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.4)]" />
-                            <span className="text-[10px] font-bold tracking-[0.4em] text-cyan-400 uppercase">Neural Orchestration</span>
-                        </div>
-                        <h1 className="text-6xl md:text-7xl font-bold tracking-tight uppercase text-white leading-none">
-                            Nexus <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-cyan-200">Engine</span>
-                        </h1>
-                        <p className="text-zinc-500 max-w-xl text-sm font-medium leading-relaxed tracking-tight">
-                            Deploy end-to-end autonomous media pipelines. Ettametta's Nexus translates niche signals into cinematic realities through a <span className="text-cyan-400 font-bold">four-stage neural synthesis</span>.
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <div className="flex -space-x-3">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="h-10 w-10 rounded-full border-2 border-black bg-zinc-900 flex items-center justify-center overflow-hidden">
-                                    <div className="h-full w-full bg-linear-to-br from-primary/20 to-zinc-900" />
-                                </div>
-                            ))}
-                            <div className="h-10 w-10 rounded-full border-2 border-black bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-white">
-                                +{niches.length}
-                            </div>
-                        </div>
-                        <div className="h-12 w-px bg-white/10 mx-2" />
-                        <div className="text-right">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Tier Access</p>
-                            <p className="text-white font-bold uppercase tracking-tight">{userTier} CLUSTER</p>
-                        </div>
-                        <a 
-                            href="/nexus/workforce"
-                            className="surface-glass rim-light h-16 px-10 flex items-center justify-center text-[10px] font-bold tracking-widest hover:bg-purple-500/10 transition-all border border-white/5 uppercase"
+        <CommandCenterLayout
+            title="NEXUS ENGINE"
+            subtitle="PIPELINE_ORCHESTRATOR_V4.2"
+            leftPanel={
+                <div className="space-y-1">
+                    {[
+                        { id: "orchestrator", label: "Orchestrator", icon: Cpu },
+                        { id: "identities", label: "Neural IDs", icon: Fingerprint },
+                        { id: "command", label: "Command Pod", icon: Terminal },
+                        { id: "history", label: "Pipeline History", icon: Layers },
+                    ].map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveEngine(item.id)}
+                            className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                                activeEngine === item.id ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                            )}
                         >
-                            WORKFORCE_HUB
-                        </a>
-                    </div>
-                </div>
-
-                {/* Configuration Bar */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-2xl bg-slate-900/40 border border-white/5 backdrop-blur-3xl shadow-2xl shadow-neon-cyan/5">
-                    <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/2 border border-white/5 group hover:border-cyan-400/20 transition-all">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 flex items-center gap-2">
-                            <Layers className="h-3 w-3" /> NEURAL_TARGET
-                        </label>
-                        <select 
-                            value={selectedNiche}
-                            onChange={(e) => setSelectedNiche(e.target.value)}
-                            className="bg-transparent text-white font-bold uppercase tracking-tight focus:outline-none cursor-pointer"
-                        >
-                            {niches.map(n => <option key={n} value={n} className="bg-zinc-900">{n}</option>)}
-                        </select>
-                    </div>
-
-                    <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/3 border border-white/5 group hover:border-cyan-400/20 transition-all">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 flex items-center gap-2">
-                           <Cpu className="h-3 w-3" /> SYSTEM_PROTOCOL
-                        </label>
-                        <select 
-                           value={activeBlueprint?.id}
-                           onChange={(e) => setActiveBlueprint(blueprints.find(b => b.id === e.target.value) || null)}
-                           className="bg-transparent text-white font-bold uppercase tracking-tight focus:outline-none cursor-pointer"
-                        >
-                            {blueprints.map(b => (
-                                <option key={b.id} value={b.id} className="bg-zinc-900">{b.name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/3 border border-white/5 group hover:border-cyan-400/20 transition-all">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 flex items-center gap-2">
-                           <Database className="h-3 w-3" /> Storage Node
-                        </label>
-                        <p className="text-white font-bold uppercase tracking-tight">{telemetry?.hostname || (telemetry ? "---" : "Primary Node")}</p>
-                    </div>
-
-                    <button 
-                        onClick={handleLaunchPipeline}
-                        disabled={isLaunching || !selectedNiche}
-                        className={cn(
-                        "h-full rounded-2xl bg-gradient-to-r from-cyan-600 to-cyan-400 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 group relative overflow-hidden shadow-[0_0_20px_rgba(34,211,238,0.2)]",
-                        (isLaunching || !selectedNiche) && "opacity-50 cursor-not-allowed"
-                    )}>
-                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-                        {isLaunching ? <Loader2 className="h-6 w-6 text-white animate-spin" /> : <Play className="h-6 w-6 text-white fill-white" />}
-                        <span className="text-white font-bold uppercase tracking-widest text-sm relative">INITIALIZE_PIPELINE</span>
-                    </button>
-                </div>
-
-                {/* Pipeline Mesh Visualization */}
-                <div className="grid grid-cols-1 xl:grid-cols-4 gap-12">
-                    <div className="xl:col-span-3 space-y-12">
-                        <div className="relative aspect-21/9 rounded-2xl bg-zinc-950 border border-white/5 overflow-hidden shadow-inner group">
-                            {/* Animated Background Mesh */}
-                            <div className="absolute inset-0 opacity-20 pointer-events-none">
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--neon-violet)_0%,transparent_100%)] opacity-10 animate-pulse" />
-                                <svg className="w-full h-full">
-                                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5" strokeOpacity="0.05"/>
-                                    </pattern>
-                                    <rect width="100%" height="100%" fill="url(#grid)" />
-                                </svg>
-                            </div>
-
-                            {/* Node Connectors */}
-                            <div className="absolute inset-0 flex items-center justify-around px-20">
-                                <div className="absolute top-1/2 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/10 to-transparent" />
-                                
-                                {activeBlueprint?.nodes.map((node, idx) => {
-                                    const isActive = activeJobId && selectedNodeIndex === idx;
-                                    const job = nexusJobs.find(j => String(j.id) === activeJobId);
-                                    const rawStatus = (job?.node_status && job.node_status[node.type]) || 'IDLE';
-                                    
-                                    const nodeStatus: 'pending' | 'processing' | 'complete' | 'error' = 
-                                        rawStatus === 'COMPLETED' ? 'complete' :
-                                        rawStatus === 'PROCESSING' ? 'processing' :
-                                        rawStatus === 'ERROR' ? 'error' : 'pending';
-
-                                    return (
-                                        <div key={idx} className="relative z-10">
-                                            <NexusNode 
-                                                type={node.type as any}
-                                                label={node.label}
-                                                description={node.desc}
-                                                status={nodeStatus}
-                                                active={selectedNodeIndex === idx}
-                                                onClick={() => setSelectedNodeIndex(idx)}
-                                            />
-                                            {idx < activeBlueprint.nodes.length - 1 && (
-                                                <div className="absolute top-1/2 -right-20 translate-x-1/2 -translate-y-1/2">
-                                                    <ChevronRight className="h-6 w-6 text-white/10" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {/* HUD Overlays */}
-                            <div className="absolute bottom-6 left-8 p-4 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl pointer-events-none">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                                        Stream: <span className="text-white">{telemetry?.hostname || "---"}</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="absolute top-6 right-8 p-4 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl group-hover:border-cyan-400/30 transition-all pointer-events-none">
-                                 <div className="flex items-center gap-4">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Status:</p>
-                                    <p className="text-cyan-400 font-bold uppercase tracking-tight shadow-[0_0_15px_rgba(34,211,238,0.2)]">
-                                        {telemetry?.status || (activeJobId ? 'OPERATIONAL' : 'IDLE')}
-                                    </p>
-                                 </div>
-                            </div>
-                        </div>
-
-                        {/* Node Detail Section */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <Card variant="solid" className="p-10 space-y-6 rounded-2xl bg-slate-900/40 backdrop-blur-md">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                                        <Settings2 className="h-6 w-6" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white tracking-tight uppercase group-hover:text-cyan-400 transition-colors">Node Settings</h3>
-                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Configuration Matrix</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-4 pt-4">
-                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/2 border border-white/5">
-                                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Execution Priority</span>
-                                        <span className="text-xs font-bold text-white uppercase">Ultra_High</span>
-                                    </div>
-                                    <div className="flex items-center justify-between p-4 rounded-2xl bg-white/2 border border-white/5">
-                                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Cluster Routing</span>
-                                        <span className="text-xs font-bold text-white uppercase">{telemetry?.cluster_node || "Local-Edge-1"}</span>
-                                    </div>
-                                </div>
-                            </Card>
-
-                            <Card variant="solid" className="p-10 bg-slate-900/40 border-white/10 flex flex-col justify-center items-center text-center space-y-6 group cursor-pointer rounded-2xl backdrop-blur-md" onClick={handleCustomRecipe}>
-                                <div className="h-16 w-16 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Plus className="h-8 w-8 text-zinc-700" />
-                                </div>
-                                <div className="space-y-1">
-                                    <h3 className="text-lg font-bold text-zinc-500 group-hover:text-white transition-colors uppercase tracking-tight">INITIALIZE_CUSTOM_PROTOCOL</h3>
-                                    <p className="text-[10px] font-medium text-zinc-700 uppercase tracking-widest leading-relaxed">Design your own neural pipeline for custom workflows.</p>
-                                </div>
-                            </Card>
-                        </div>
-                    </div>
-
-                    {/* Secondary Metrics / Stream */}
-                    <div className="space-y-12">
-                        {/* Live Log Stream */}
-                        <div className="glass-card p-8 min-h-[500px] flex flex-col space-y-6 relative overflow-hidden bg-black shadow-2xl">
-                             <div className="flex items-center justify-between">
-                                <h3 className="text-xs font-bold uppercase tracking-widest text-neon-cyan flex items-center gap-2">
-                                    <Activity className="h-3 w-3" /> Live Event Stream
-                                </h3>
-                                <div className="px-2 py-1 rounded-md bg-zinc-900 border border-white/5 text-[8px] font-bold text-zinc-500 font-mono">
-                                    {telemetry?.latency_ms ? `${telemetry.latency_ms}ms OFFSET` : "--ms OFFSET"}
-                                </div>
-                             </div>
-
-                             <div className="flex-1 font-mono text-[10px] text-zinc-600 space-y-3 overflow-hidden">
-                                {logStream.length > 0 ? (
-                                     <div className="space-y-2">
-                                        {logStream.map((log, idx) => (
-                                            <p key={idx} className={cn(
-                                                "animate-in fade-in slide-in-from-left-2 duration-300",
-                                                log.includes("ERROR") ? "text-red-500" : 
-                                                log.includes("SUCCESS") ? "text-emerald-500" :
-                                                "text-zinc-400"
-                                            )}>
-                                                {log}
-                                            </p>
-                                        ))}
-                                     </div>
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center opacity-30 space-y-4 grayscale">
-                                        <Search className="h-8 w-8" />
-                                        <p className="uppercase tracking-[0.3em] font-bold text-[8px]">Waiting for signal...</p>
-                                    </div>
-                                )}
-                             </div>
-
-                             <div className="pt-4 border-t border-white/5">
-                                 <button 
-                                    onClick={handleClusterSettings}
-                                    className="w-full py-4 rounded-2xl bg-zinc-900 border border-white/5 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-all"
-                                 >
-                                    Cluster Topology
-                                 </button>
-                             </div>
-                        </div>
-
-                         {/* Global Pulse Indicator */}
-                        <div className="p-8 rounded-2xl bg-slate-900/40 backdrop-blur-md border border-white/5 space-y-4">
-                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Network Health</h4>
-                            <div className="flex gap-1 h-8 items-end">
-                                {[...Array(24)].map((_, i) => {
-                                    const load = telemetry?.load_avg || 0.1;
-                                    const variance = Math.sin(i * 0.5) * 5; // Deterministic wave instead of random
-                                    const height = Math.min(Math.max(20 + (load * 50) + variance, 10), 100);
-                                    return (
-                                        <div 
-                                            key={i}
-                                            style={{ height: `${height}%` }}
-                                            className="flex-1 bg-neon-cyan/20 rounded-t-sm transition-all duration-1000 shadow-glow-cyan/10"
-                                        />
-                                    );
-                                })}
-                            </div>
-                            <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-tight text-zinc-700">
-                                <span>Signal_01: {telemetry?.signals?.[0]?.status || 'STANDBY'}</span>
-                                <span>Latency: {telemetry?.latency_ms ? `${telemetry.latency_ms}ms` : "---ms"}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Persona Lab Section */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="space-y-8"
-                >
-                    <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-                        <div className="h-10 w-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                            <User className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-white tracking-tight uppercase">Persona Lab</h2>
-                            <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-widest">Create &amp; Generate Digital Personas</p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Create Persona Card */}
-                        <div className="p-8 rounded-4xl bg-zinc-900 border border-white/5 space-y-6">
-                            <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-xl bg-white/4 border border-white/5 flex items-center justify-center">
-                                    <Plus className="h-5 w-5 text-zinc-400" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-tight">INITIALIZE_IDENTITY</h3>
-                                    <p className="text-[9px] font-medium text-zinc-600 uppercase tracking-widest">Define a new digital identity</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                                        <User className="h-3 w-3" /> Persona Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={personaName}
-                                        onChange={(e) => setPersonaName(e.target.value)}
-                                        placeholder="Enter persona name..."
-                                        className="w-full px-4 py-3 rounded-xl bg-white/3 border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                                        <ImageIcon className="h-3 w-3" /> Reference Image URL
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={personaImageUrl}
-                                        onChange={(e) => setPersonaImageUrl(e.target.value)}
-                                        placeholder="https://example.com/image.png"
-                                        className="w-full px-4 py-3 rounded-xl bg-white/3 border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors"
-                                    />
-                                </div>
-
-                                <button
-                                    onClick={handleCreatePersona}
-                                    disabled={isCreatingPersona || !personaName || !personaImageUrl}
-                                    className={cn(
-                                        "w-full py-3 rounded-2xl bg-cyan-500 text-black font-bold uppercase tracking-widest text-xs transition-all hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2",
-                                        (isCreatingPersona || !personaName || !personaImageUrl) && "opacity-50 cursor-not-allowed hover:scale-100"
-                                    )}
-                                >
-                                    {isCreatingPersona ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                                    INITIALIZE_IDENTITY
-                                </button>
-                            </div>
-
-
-                            <div className="space-y-3 pt-4 border-t border-white/5">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Identities</p>
-                                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-                                    {personas.map((p, i) => (
-                                        <div key={p.id || p._id || i} className="group flex items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5 hover:border-primary/20 transition-all cursor-pointer" onClick={() => setCreatedPersona(p)}>
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-lg bg-zinc-800 border border-white/5 overflow-hidden">
-                                                    <div 
-                                                        className="h-full w-full bg-cover bg-center" 
-                                                        style={{ backgroundImage: `url(${p.reference_image_uri})` }}
-                                                        role="img"
-                                                        aria-label={p.name}
-                                                    />
-                                                </div>
-                                                <span className="text-xs font-bold text-white uppercase tracking-tight">{p.name}</span>
-                                            </div>
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); handleDeletePersona((p.id || p._id || "") as string); }}
-                                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                                            >
-                                                <Trash2 className="h-3 w-3" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {personas.length === 0 && <p className="text-[9px] text-zinc-700">No identities established.</p>}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Generate Video Card */}
-                        <div className={cn(
-                            "p-8 rounded-4xl bg-zinc-900 border border-white/5 space-y-6 transition-opacity",
-                            !createdPersona && "opacity-40 pointer-events-none"
-                        )}>
-                            <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 rounded-xl bg-white/4 border border-white/5 flex items-center justify-center">
-                                    <Video className="h-5 w-5 text-zinc-400" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-tight">Generate Video</h3>
-                                    <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Produce persona-driven content</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                                        <Sparkles className="h-3 w-3" /> Topic
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={videoTopic}
-                                        onChange={(e) => setVideoTopic(e.target.value)}
-                                        placeholder="Video topic or subject..."
-                                        className="w-full px-4 py-3 rounded-xl bg-white/3 border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                                        <MessageSquare className="h-3 w-3" /> Script (Optional)
-                                    </label>
-                                    <textarea
-                                        value={videoScript}
-                                        onChange={(e) => setVideoScript(e.target.value)}
-                                        placeholder="Enter custom script or leave blank for auto-generation..."
-                                        rows={3}
-                                        className="w-full px-4 py-3 rounded-xl bg-white/3 border border-white/5 text-white text-sm font-medium placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-colors resize-none"
-                                    />
-                                </div>
-
-                                <button
-                                    onClick={handleGenerateVideo}
-                                    disabled={isGeneratingVideo || !videoTopic}
-                                    className={cn(
-                                        "w-full py-3 rounded-xl bg-linear-to-r from-violet-600 to-cyan-500 text-white font-bold uppercase tracking-widest text-xs transition-all hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2 shadow-glow-cyan/10",
-                                        (isGeneratingVideo || !videoTopic) && "opacity-50 cursor-not-allowed hover:scale-100"
-                                    )}
-                                >
-                                    {isGeneratingVideo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-white" />}
-                                    Generate Persona Video
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* 13. Activity History (Manual items + dynamic job items) */}
-                <div className="space-y-8 pb-20">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                        <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-3">
-                        <Zap className="h-5 w-5 text-neon-violet shadow-glow-violet/20" />
-                        Activity Stream
-                        </h3>
-                        <button 
-                            onClick={() => setIsClearModalOpen(true)}
-                            className="text-[10px] font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors"
-                        >
-                            Clear History
+                            <item.icon className="h-4 w-4" />
+                            <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
+                            {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]" />}
                         </button>
-                    </div>
-
-                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
-                        {nexusJobs.length > 0 ? (
-                        nexusJobs.map((job) => (
-                            <div key={job.id} className="flex gap-4 p-4 rounded-2xl bg-white/2 border border-white/5 hover:border-white/10 transition-colors group">
-                                <div className="shrink-0 pt-1">
-                                    {job.status === 'COMPLETED' ? <CheckCircle2 className="h-5 w-5 text-neon-cyan neon-glow-cyan" /> : 
-                                    job.status === 'FAILED' ? <AlertCircle className="h-5 w-5 text-red-500" /> : 
-                                    <RefreshCw className="h-5 w-5 text-neon-violet animate-spin" />}
-                                </div>
-                                <div className="flex-1 space-y-1">
-                                    <div className="flex justify-between items-start">
-                                        <p className="text-xs font-bold uppercase tracking-tight text-white">{job.niche} / {String(job.status)}</p>
-                                        <span className="text-[8px] font-bold text-zinc-600 font-mono">{new Date(job.created_at).toLocaleTimeString()}</span>
+                    ))}
+                </div>
+            }
+            rightPanel={
+                <>
+                    <AgentMatrix agents={agents} />
+                    <div className="space-y-4">
+                        <h3 className="text-[10px] font-bold text-zinc-500 tracking-[0.2em] uppercase">Pipeline Queue</h3>
+                        <div className="space-y-2">
+                            {nexusJobs.slice(0, 3).map((job) => (
+                                <div key={job.id} className="p-3 rounded-xl border border-white/5 bg-white/5 flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-white uppercase">{job.niche}</span>
+                                        <span className="text-[8px] text-zinc-600 font-mono">{job.status}</span>
                                     </div>
-                                    <p className="text-[10px] font-medium text-zinc-500">{String(job.job_metadata?.blueprint_id || job.blueprint_id || 'autonomous')} pipeline {job.status === 'COMPLETED' ? 'successfully finished' : 'is currently processing'}.</p>
+                                    <div className="h-1 w-12 bg-white/5 rounded-full overflow-hidden">
+                                        <div className="h-full bg-cyan-500" style={{ width: `${job.progress || 0}%` }} />
+                                    </div>
                                 </div>
-                                {job.output_path && (
-                                    <button 
-                                        onClick={() => handleInspectResult(job)}
-                                        className="opacity-0 group-hover:opacity-100 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
-                                    >
-                                        <ExternalLink className="h-3 w-3 text-white" />
-                                    </button>
-                                )}
-                            </div>
-                        ))
-                        ) : (
-                            <div className="py-12 text-center space-y-4">
-                            <div className="h-12 w-12 rounded-full bg-white/5 border border-white/5 mx-auto flex items-center justify-center">
-                                <Activity className="h-6 w-6 text-zinc-700" />
-                            </div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-700">No active pipelines detected</p>
+                            ))}
+                        </div>
+                    </div>
+                </>
+            }
+        >
+            <div className="p-10 space-y-10 relative h-full flex flex-col">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeEngine}
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        className="flex-1 flex flex-col min-h-0"
+                    >
+                        {activeEngine === "orchestrator" && (
+                            <div className="space-y-8 h-full flex flex-col">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+                                    <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Neural Target</label>
+                                        <select 
+                                            value={selectedNiche}
+                                            onChange={(e) => setSelectedNiche(e.target.value)}
+                                            className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none"
+                                        >
+                                            {niches.map(n => <option key={n} value={n} className="bg-zinc-900">{n}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Architecture</label>
+                                        <select 
+                                            value={activeBlueprint?.id}
+                                            onChange={(e) => setActiveBlueprint(blueprints.find(b => b.id === e.target.value) || null)}
+                                            className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none"
+                                        >
+                                            {blueprints.map(b => <option key={b.id} value={b.id} className="bg-zinc-900">{b.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col justify-end">
+                                        <Button 
+                                            onClick={handleLaunchPipeline}
+                                            disabled={isLaunching || !selectedNiche}
+                                            className="w-full h-16 bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-lg rounded-2xl shadow-[0_0_30px_rgba(34,211,238,0.3)] transition-all uppercase tracking-widest"
+                                        >
+                                            {isLaunching ? <Loader2 className="h-6 w-6 animate-spin" /> : "Dispatch Pipeline"}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 min-h-[400px] rounded-[32px] bg-[#0F0F11]/40 border border-white/5 relative overflow-hidden group">
+                                    <NeuralCanvas />
+                                    <div className="absolute inset-0 flex items-center justify-around px-20">
+                                        {activeBlueprint?.nodes.map((node, idx) => (
+                                            <div key={idx} className="relative z-10">
+                                                <NexusNode 
+                                                    type={node.type as any}
+                                                    label={node.label}
+                                                    description={node.desc}
+                                                    status={idx === selectedNodeIndex ? "processing" : "pending"}
+                                                    active={selectedNodeIndex === idx}
+                                                    onClick={() => setSelectedNodeIndex(idx)}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    {/* Connection Mesh Overlay */}
+                                    <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
+                                        <svg className="w-full h-full">
+                                            <defs>
+                                                <linearGradient id="meshGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#22d3ee" stopOpacity="0" />
+                                                    <stop offset="50%" stopColor="#22d3ee" stopOpacity="0.5" />
+                                                    <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+                                                </linearGradient>
+                                            </defs>
+                                            <path d="M 0 50 Q 500 0 1000 50" stroke="url(#meshGrad)" strokeWidth="2" fill="none" className="animate-pulse" />
+                                        </svg>
+                                    </div>
+                                </div>
                             </div>
                         )}
-                    </div>
-                </div>
 
-                {/* AI Agent Chat Section */}
-                <div className="space-y-8 pb-20">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                        <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-3">
-                            <MessageSquare className="h-5 w-5 text-primary" />
-                            AI Agent
-                        </h3>
-                        <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold uppercase tracking-widest text-primary">
-                            Neural Core
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                        {/* Chat Interface */}
-                        <div className="xl:col-span-2 glass-card p-0 flex flex-col bg-black border border-white/5 rounded-4xl overflow-hidden">
-                            {/* Messages Area */}
-                            <div className="flex-1 min-h-[400px] max-h-[500px] overflow-y-auto p-8 space-y-6 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent" data-testid="agent-chat-messages">
-                                {chatMessages.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center opacity-30 space-y-4 py-16">
-                                        <Bot className="h-12 w-12" />
-                                        <div className="text-center space-y-1">
-                                            <p className="uppercase tracking-[0.3em] font-bold text-[10px]">No messages yet</p>
-                                            <p className="text-[10px] font-medium text-zinc-600">Start a conversation with the AI agent</p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <AnimatePresence>
-                                        {chatMessages.map((msg, idx) => (
-                                            <motion.div
-                                                key={idx}
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ duration: 0.3 }}
-                                                className={cn(
-                                                    "flex gap-4",
-                                                    msg.role === "user" ? "justify-end" : "justify-start"
-                                                )}
-                                            >
-                                                {msg.role === "agent" && (
-                                                    <div className="shrink-0 h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                                                        <Bot className="h-4 w-4 text-primary" />
-                                                    </div>
-                                                )}
-                                                <div className={cn(
-                                                    "max-w-[75%] p-4 rounded-2xl text-sm leading-relaxed",
-                                                    msg.role === "user"
-                                                        ? "bg-primary/10 border border-primary/20 text-white"
-                                                        : "bg-white/3 border border-white/5 text-zinc-300"
-                                                )}>
-                                                    <p className="text-[10px] font-bold uppercase tracking-widest mb-1 opacity-50">
-                                                        {msg.role === "user" ? "You" : "Agent"}
-                                                    </p>
-                                                    <p className="font-medium">{msg.content}</p>
-                                                </div>
-                                                {msg.role === "user" && (
-                                                    <div className="shrink-0 h-9 w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                                                        <User className="h-4 w-4 text-zinc-400" />
-                                                    </div>
-                                                )}
-                                            </motion.div>
-                                        ))}
-                                    </AnimatePresence>
-                                )}
-                                {isChatting && (
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="flex gap-4"
-                                    >
-                                        <div className="shrink-0 h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                                            <Bot className="h-4 w-4 text-primary" />
-                                        </div>
-                                        <div className="bg-white/3 border border-white/5 rounded-2xl p-4 flex items-center gap-2">
-                                            <Loader2 className="h-4 w-4 text-primary animate-spin" />
-                                            <span className="text-xs text-zinc-500 font-medium">Agent is thinking...</span>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </div>
-
-                            {/* Input Area */}
-                            <div className="p-6 border-t border-white/5">
-                                <div className="flex gap-3">
-                                    <input
-                                        type="text"
-                                        value={chatInput}
-                                        onChange={(e) => setChatInput(e.target.value)}
-                                        onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
-                                        placeholder="Try: 'Find trending topics in fitness' or 'Analyze competitor strategy at example.com'"
-                                        data-testid="agent-chat-input"
-                                        className="flex-1 bg-white/3 border border-white/5 rounded-2xl px-5 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/30 transition-colors"
+                        {activeEngine === "history" && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {nexusJobs.map((job) => (
+                                    <DesignCard 
+                                        key={job.id}
+                                        title={`PIPELINE_${job.id}`}
+                                        status={job.status}
+                                        metrics={[
+                                            { label: "Completion", value: `${job.progress || 0}%`, progress: job.progress, color: "text-cyan-400" },
+                                            { label: "Niche", value: job.niche, color: "text-zinc-500" }
+                                        ]}
+                                        footerInfo={new Date(job.created_at).toLocaleString()}
+                                        toolsStatus="Verified"
                                     />
-                                    <button
-                                        onClick={handleSendChat}
-                                        data-testid="agent-chat-send"
-                                        disabled={!chatInput.trim() || isChatting}
-                                        className={cn(
-                                            "h-12 w-12 rounded-2xl bg-primary flex items-center justify-center transition-all hover:scale-105 active:scale-95",
-                                            (!chatInput.trim() || isChatting) && "opacity-50 cursor-not-allowed hover:scale-100"
-                                        )}
-                                    >
-                                        <Send className="h-5 w-5 text-black" />
-                                    </button>
-                                </div>
+                                ))}
                             </div>
-                        </div>
+                        )}
 
-                        {/* Capabilities Display */}
-                        <div className="space-y-6">
-                            {/* Workforce Cluster Health Module (Phase 4) */}
-                            {/* Workforce Cluster Health Module (Elite Visuals) */}
-                            {(telemetry?.signals || workforceReport) && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {telemetry?.signals ? (
-                                        telemetry.signals.map((sig: any) => (
-                                            <CommandPod 
-                                                key={sig.id}
-                                                name={sig.id.replace(/_/g, ' ')}
-                                                status={sig.status === 'HEALTHY' || sig.status === 'CLOSED' || sig.status === 'OPERATIONAL' ? "nominal" : "degraded"}
-                                                load={Math.min(Math.round((telemetry.load_avg || 0.4) * 100), 100)}
-                                                circuitBreaker={sig.id === 'GPU_Cluster' ? (sig.status.toLowerCase() === 'open' ? 'open' : 'closed') : "closed"}
-                                                description={`Live telemetry signal from the ${sig.id} cluster node.`}
-                                            />
-                                        ))
-                                    ) : (
-                                        <>
-                                            <CommandPod 
-                                                name="Neural Gateway"
-                                                status={workforceReport?.status === 'healthy' ? "nominal" : "degraded"}
-                                                load={workforceReport?.status === 'healthy' ? 42 : 89}
-                                                circuitBreaker={workforceReport?.circuit_breaker as any || "closed"}
-                                                description="Handles ingestion and API protocol stabilization."
-                                            />
-                                            <CommandPod 
-                                                name="Synthesis Cluster"
-                                                status={workforceReport?.status === 'healthy' ? "nominal" : "critical"}
-                                                load={workforceReport?.status === 'healthy' ? 24 : 95}
-                                                circuitBreaker={workforceReport?.circuit_breaker as any || "closed"}
-                                                description="Video rendering and AI pattern synthesis engine."
-                                            />
-                                        </>
-                                    )}
+                        {activeEngine === "command" && (
+                            <div className="flex-1 flex flex-col h-full bg-[#0F0F11]/60 rounded-[32px] border border-white/5 overflow-hidden">
+                                <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                                    <h3 className="text-[10px] font-bold text-zinc-400 tracking-[0.2em] uppercase">Log Stream</h3>
+                                    <span className="text-[8px] font-mono text-cyan-400">NEXUS_CORE_ACTIVE</span>
                                 </div>
-                            )}
-
-                            <div className="glass-card p-8 space-y-6 bg-black border border-white/5 rounded-4xl">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                                        <ShieldCheck className="h-6 w-6" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-white tracking-tight uppercase">Capabilities</h3>
-                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Agent Skill Matrix</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3 pt-2">
-                                    {agentCapabilities.length > 0 ? (
-                                        agentCapabilities.map((cap, idx) => (
-                                            <motion.div
-                                                key={idx}
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: idx * 0.05 }}
-                                                className="flex items-center gap-3 p-3 rounded-xl bg-white/2 border border-white/5 hover:border-primary/20 transition-all group"
-                                            >
-                                                <Sparkles className="h-4 w-4 text-primary/60 group-hover:text-primary transition-colors shrink-0" />
-                                                <span className="text-xs font-medium text-zinc-400 group-hover:text-white transition-colors">{cap}</span>
-                                            </motion.div>
-                                        ))
-                                    ) : (
-                                        <div className="py-8 text-center space-y-3 opacity-40">
-                                            <Cpu className="h-8 w-8 mx-auto text-zinc-600" />
-                                            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Loading capabilities...</p>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-[11px] space-y-2">
+                                    {logStream.map((log, i) => (
+                                        <div key={i} className="flex gap-4">
+                                            <span className="text-zinc-700">[{new Date().toLocaleTimeString()}]</span>
+                                            <span className={cn(
+                                                log.includes("ERROR") ? "text-rose-500" : 
+                                                log.includes("SUCCESS") ? "text-emerald-500" : "text-zinc-500"
+                                            )}>{log}</span>
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        )}
+                    </motion.div>
+                </AnimatePresence>
             </div>
-
-            {/* Neural Canvas Studio Mode */}
-            {showBlueprintBuilder && (
-                <NeuralCanvas
-                    isOpen={showBlueprintBuilder}
-                    onClose={() => setShowBlueprintBuilder(false)}
-                    onSave={(newBlueprint) => {
-                        handleBlueprintCreated(newBlueprint);
-                        setShowBlueprintBuilder(false);
-                    }}
-                    initialBlueprint={activeBlueprint || undefined}
-                />
-            )}
-
-            {/* Confirmation Modals */}
-            <ConfirmModal
-                isOpen={isClearModalOpen}
-                onClose={() => setIsClearModalOpen(false)}
-                onConfirm={handleClearHistory}
-                title="Purge Job History?"
-                description="This will permanently delete all autonomous pipeline history from the production cluster. Visual results and logs will be removed."
-                confirmText="Purge History"
-                variant="danger"
-            />
-            
-            <ConfirmModal
-                isOpen={isConfirmClearOpen}
-                onClose={() => setIsConfirmClearOpen(false)}
-                onConfirm={() => {
-                    setLogStream([]);
-                    setIsConfirmClearOpen(false);
-                    toast.info("Event Stream Purged");
-                }}
-                title="Purge Event Stream?"
-                description="This will clear all localized telemetry logs from the current session view. Raw cluster data remains intact."
-                confirmText="Purge Stream"
-                variant="danger"
-            />
-
-            {showClusterManager && <ClusterManager onClose={() => setShowClusterManager(false)} />}
-        </DashboardLayout>
+        </CommandCenterLayout>
     );
 }

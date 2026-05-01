@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import DashboardLayout from "@/components/layout";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { 
     Zap, 
     Target, 
@@ -17,18 +16,26 @@ import {
     CheckCircle2,
     XCircle,
     Info,
-    Layout
+    Layout,
+    FlaskConical,
+    Microscope,
+    History,
+    Dna,
+    Cpu,
+    Radar,
+    Database,
+    ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { API_BASE } from "@/lib/config";
+import { API_BASE, WS_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { withRealFallback } from "@/lib/real_first_utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
-import { Card } from "@/components/ui/Card";
+import CommandCenterLayout from "@/components/CommandCenterLayout";
+import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 
 interface ABTest {
     id: string;
@@ -45,41 +52,15 @@ interface ABTest {
     confidence_level?: number;
 }
 
-interface TestDetail extends ABTest {
-    variant_a: {
-        title: string;
-        description: string;
-        view_count: number;
-        click_count: number;
-        conversion_count: number;
-        conversion_rate: number;
-    };
-    variant_b: {
-        title: string;
-        description: string;
-        view_count: number;
-        click_count: number;
-        conversion_count: number;
-        conversion_rate: number;
-    };
-    statistics: {
-        significant: boolean;
-        confidence_level: number;
-        winner: string | null;
-        p_value: number | null;
-        effect_size: number;
-        interpretation: string;
-    };
-    winner_variant: string | null;
-}
-
 export default function ABTestingStudio() {
+    const [activeEngine, setActiveEngine] = useState("lab");
     const [activeTests, setActiveTests] = useState<ABTest[]>([]);
     const [completedTests, setCompletedTests] = useState<ABTest[]>([]);
     const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
-    const [testDetail, setTestDetail] = useState<TestDetail | null>(null);
+    const [testDetail, setTestDetail] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [logs, setLogs] = useState<string[]>(["LAB_INITIALIZED", "SYNCHRONIZING_NEURAL_EXPERIMENTS"]);
 
     const fetchData = useCallback(async () => {
         const token = await getAuthToken();
@@ -105,11 +86,16 @@ export default function ABTestingStudio() {
         if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
 
-        await withRealFallback<TestDetail>(
+        setLogs(prev => [`[ANALYSIS] Pulling deep metrics for Node: ${testId}`, ...prev]);
+        await withRealFallback<any>(
             () => fetch(`${API_BASE}/ab-testing/test/${testId}`, { headers }),
             { 
-                fallback: null as any, 
-                onSuccess: (data) => setTestDetail(data)
+                fallback: null, 
+                onSuccess: (data) => {
+                    setTestDetail(data);
+                    setActiveEngine("analysis");
+                    setLogs(prev => [`[SUCCESS] Neural mapping complete. Confidence: ${data.statistics?.confidence_level}%`, ...prev]);
+                }
             }
         );
     }, []);
@@ -129,6 +115,7 @@ export default function ABTestingStudio() {
         const token = await getAuthToken();
         if (!token) return;
 
+        setLogs(prev => [`[WINNER] Calculating statistical significance...`, ...prev]);
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/ab-testing/test/${testId}/determine-winner`, {
                 method: "POST",
@@ -139,13 +126,14 @@ export default function ABTestingStudio() {
                 onSuccess: (data) => {
                     if (data.status === "winner_determined") {
                         toast.success(`Winner Determined: Variant ${data.winner}`);
+                        setLogs(prev => [`[SUCCESS] Variant ${data.winner} is the superior pattern.`, ...prev]);
                         fetchData();
                         fetchDetail(testId);
                     } else {
                         toast.info(data.message || "Test inconclusive yet");
+                        setLogs(prev => [`[INFO] ${data.message || "Sample size insufficient."}`, ...prev]);
                     }
-                },
-                onFallback: (err) => toast.error("Calculation Error", { description: err.message })
+                }
             }
         );
         setIsProcessing(false);
@@ -156,274 +144,233 @@ export default function ABTestingStudio() {
         const token = await getAuthToken();
         if (!token) return;
 
+        setLogs(prev => [`[EVOLUTION] Triggering Flywheel Neural Evolution...`, ...prev]);
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/ab-testing/evolution/${parentId}`, {
                 method: "POST",
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { 
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}` 
+                },
+                body: JSON.stringify({ parent_id: parentId })
             }),
             {
                 fallback: null,
-                onSuccess: (data) => {
-                    toast.success("Flywheel Evolution Complete", { description: "Pruning underperforming variants and scaling winner." });
+                onSuccess: () => {
+                    toast.success("Flywheel Evolution Complete");
+                    setLogs(prev => [`[SUCCESS] New neural cluster established.`, ...prev]);
                     fetchData();
-                },
-                onFallback: (err) => toast.error("Evolution Failed", { description: err.message })
+                }
             }
         );
         setIsProcessing(false);
     };
 
-    return (
-        <DashboardLayout>
-            <div className="min-h-screen bg-bg-base relative flex flex-col font-sans overflow-hidden">
-                <div className="noise-overlay" />
-                <div className="absolute inset-0 cyber-grid opacity-10 pointer-events-none" />
-                
-                <div className="flex-1 section-container relative py-16 px-8 lg:px-24 max-w-screen-2xl mx-auto w-full z-10">
-                    <HighVelocityTicker />
+    // Prepare Agent Data
+    const agents = [
+        { id: "STAT_01", name: "Bayesian Analyst", icon: BarChart3, status: "ACTIVE" as any, latency: 12, load: 2, details: "Analyzing Variances" },
+        { id: "NEURAL_01", name: "Pattern Injector", icon: Dna, status: "ACTIVE" as any, latency: 145, load: 32, details: "Cloning Winning Nodes" },
+        { id: "DATA_01", name: "Vault Synchronizer", icon: Database, status: "IDLE" as any, latency: 2, load: 0, details: "Standby" },
+    ];
 
-                    <header className="mb-20 flex flex-col xl:flex-row xl:items-end justify-between gap-12">
-                        <div className="space-y-6">
-                            <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: 120 }}
-                                className="h-1 bg-cyan-400 shadow-[0_0_20px_#00fbfb]"
-                            />
-                            <div className="space-y-2">
-                                <h1 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tighter leading-none">
-                                    Neural A/B <span className="text-hollow">Studio</span>
-                                </h1>
-                                <p className="font-data-mono text-zinc-500 text-[10px] flex items-center gap-3 uppercase tracking-widest">
-                                    <Activity className="h-3 w-3 text-cyan-400 animate-pulse" />
-                                    Experiment Hub // Statistical_Confidence: {testDetail?.statistics?.confidence_level || "0"}%
-                                </p>
+    return (
+        <CommandCenterLayout
+            title="NEURAL AB STUDIO"
+            subtitle="STATISTICAL_EVOLUTION_V3.0"
+            leftPanel={
+                <div className="space-y-1">
+                    {[
+                        { id: "lab", label: "Active Lab", icon: FlaskConical },
+                        { id: "analysis", label: "Neural Analysis", icon: Microscope },
+                        { id: "vault", label: "Experiment Vault", icon: History },
+                        { id: "logs", label: "Evolution Logs", icon: Terminal },
+                    ].map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveEngine(item.id)}
+                            className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                                activeEngine === item.id ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                            )}
+                        >
+                            <item.icon className="h-4 w-4" />
+                            <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
+                            {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.5)]" />}
+                        </button>
+                    ))}
+                </div>
+            }
+            rightPanel={
+                <>
+                    <AgentMatrix agents={agents} />
+                    <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Lab Metrics</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col">
+                                <span className="text-[8px] text-zinc-600 font-bold uppercase">Active</span>
+                                <span className="text-xl font-bold text-white">{activeTests.length}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] text-zinc-600 font-bold uppercase">Archived</span>
+                                <span className="text-xl font-bold text-zinc-500">{completedTests.length}</span>
                             </div>
                         </div>
-
-                        <div className="flex items-center gap-6">
-                            <Card variant="solid" className="p-6 text-right rounded-2xl border-white/5 bg-slate-900/40 backdrop-blur-md">
-                                <span className="font-data-mono text-[8px] text-zinc-600 uppercase block mb-1">Active Clusters</span>
-                                <span className="text-xl font-bold text-white tabular-nums tracking-tighter">{activeTests.length}</span>
-                            </Card>
-                            <Button 
-                                onClick={fetchData}
-                                variant="primary"
-                                className="h-20 px-12 text-[10px] tracking-widest uppercase font-bold rounded-2xl"
-                            >
-                                <RefreshCw className={cn("h-4 w-4 mr-3", isLoading && "animate-spin")} />
-                                Resync_Experiments
-                            </Button>
-                        </div>
-                    </header>
-
-                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 items-start">
-                        {/* EXPERIMENT LIST */}
-                        <div className="xl:col-span-4 space-y-8">
-                            <Card variant="solid" className="p-8 space-y-6 rounded-2xl border-white/5 bg-slate-900/40 backdrop-blur-md">
-                                <h3 className="font-label-caps text-[10px] text-zinc-500 flex items-center gap-3 uppercase tracking-[0.2em]">
-                                    <Terminal className="h-4 w-4 text-cyan-400" />
-                                    Active Experiments
-                                </h3>
-                                
-                                <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
-                                    {activeTests.length === 0 && (
-                                        <div className="py-20 text-center opacity-30 flex flex-col items-center gap-4">
-                                            <BarChart3 className="h-12 w-12" />
-                                            <p className="text-[10px] font-bold uppercase tracking-widest">No Active Tests</p>
-                                        </div>
-                                    )}
-                                    {activeTests.map(test => (
-                                        <button
-                                            key={test.id}
-                                            onClick={() => setSelectedTestId(test.id)}
-                                            className={cn(
-                                                "w-full p-6 text-left border transition-all group relative overflow-hidden rounded-xl",
-                                                selectedTestId === test.id 
-                                                    ? "bg-cyan-400/5 border-cyan-400/30" 
-                                                    : "bg-white/2 border-white/5 hover:border-white/10"
-                                            )}
-                                        >
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00fbfb]" />
-                                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">{test.target_metric}</span>
-                                            </div>
-                                            <h4 className="text-sm font-bold text-white mb-2 uppercase truncate">{test.variant_a_title} vs {test.variant_b_title}</h4>
-                                            <div className="flex items-center justify-between text-[10px] font-data-mono text-zinc-500">
-                                                <span>{test.total_events} Samples</span>
-                                                <ChevronRight className={cn("h-4 w-4 transition-transform", selectedTestId === test.id && "translate-x-1 text-cyan-400")} />
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </Card>
-
-                            <Card variant="solid" className="p-8 space-y-6 bg-slate-900/40 rounded-2xl border-white/5 backdrop-blur-md">
-                                <h3 className="font-label-caps text-[10px] text-zinc-500 uppercase tracking-[0.2em]">History_Log</h3>
-                                <div className="space-y-4">
-                                    {completedTests.slice(0, 3).map(test => (
-                                        <div key={test.id} className="p-4 border-l-2 border-emerald-500 bg-white/2 flex justify-between items-center">
-                                            <div>
-                                                <p className="text-[10px] font-bold text-white uppercase truncate max-w-[150px]">{test.variant_a_title}</p>
-                                                <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">Confidence: {test.confidence_level}%</span>
-                                            </div>
-                                            <div className="text-[8px] font-bold text-emerald-500 uppercase">WINNER: {test.winner_variant}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </Card>
-                        </div>
-
-                        {/* DETAIL WORKSPACE */}
-                        <div className="xl:col-span-8">
-                            <AnimatePresence mode="wait">
-                                {testDetail ? (
-                                    <motion.div
-                                        key={testDetail.id}
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -20 }}
-                                        className="space-y-10"
-                                    >
-                                        <Card variant="solid" className="p-12 space-y-12 relative overflow-hidden rounded-2xl border-white/5 bg-slate-900/40 backdrop-blur-md">
-                                            <div className="absolute top-0 right-0 p-8">
-                                                <div className={cn(
-                                                    "px-6 py-2 rounded-full text-[10px] font-bold tracking-widest border uppercase",
-                                                    testDetail.statistics.significant 
-                                                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
-                                                        : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                                                )}>
-                                                    {testDetail.statistics.significant ? "STATISTICALLY_SIGNIFICANT" : "COLLECTING_SIGNALS"}
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-4">
-                                                <span className="font-data-mono text-[10px] text-cyan-400 uppercase tracking-[0.3em]">Neural Deep Dive</span>
-                                                <h2 className="text-3xl font-bold text-white uppercase tracking-tighter leading-none">
-                                                    Analysis: {testDetail.variant_a_title} <span className="text-zinc-700">/</span> {testDetail.variant_b_title}
-                                                </h2>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                                {/* Variant A Card */}
-                                                <div className="p-8 bg-black/40 border border-white/5 space-y-8 relative overflow-hidden group rounded-2xl">
-                                                    {testDetail.winner_variant === "A" && <div className="absolute top-0 right-0 h-1 w-24 bg-emerald-500" />}
-                                                    <div className="flex justify-between items-start">
-                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Variant A (Control)</span>
-                                                        {testDetail.winner_variant === "A" && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <h4 className="text-lg font-bold text-white uppercase">{testDetail.variant_a.title}</h4>
-                                                        <p className="text-[10px] text-zinc-500 leading-relaxed uppercase">{testDetail.variant_a.description || "Baseline performance variant."}</p>
-                                                    </div>
-                                                    <div className="flex items-end justify-between pt-6 border-t border-white/5">
-                                                        <div>
-                                                            <span className="text-[9px] font-bold text-zinc-600 uppercase block mb-1">Conversion Rate</span>
-                                                            <span className="text-3xl font-bold text-white">{(testDetail.variant_a.conversion_rate * 100).toFixed(2)}%</span>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <span className="text-[9px] font-bold text-zinc-600 uppercase block mb-1">Samples</span>
-                                                            <span className="text-xl font-bold text-zinc-400">{(testDetail.variant_a.view_count / 1000).toFixed(1)}K</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Variant B Card */}
-                                                <div className="p-8 bg-black/40 border border-white/5 space-y-8 relative overflow-hidden group rounded-2xl">
-                                                    {testDetail.winner_variant === "B" && <div className="absolute top-0 right-0 h-1 w-24 bg-emerald-500" />}
-                                                    <div className="flex justify-between items-start">
-                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Variant B (Challenger)</span>
-                                                        {testDetail.winner_variant === "B" && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <h4 className="text-lg font-bold text-white uppercase">{testDetail.variant_b.title}</h4>
-                                                        <p className="text-[10px] text-zinc-500 leading-relaxed uppercase">{testDetail.variant_b.description || "Optimization challenger variant."}</p>
-                                                    </div>
-                                                    <div className="flex items-end justify-between pt-6 border-t border-white/5">
-                                                        <div>
-                                                            <span className="text-[9px] font-bold text-zinc-600 uppercase block mb-1">Conversion Rate</span>
-                                                            <span className={cn(
-                                                                "text-3xl font-bold",
-                                                                testDetail.variant_b.conversion_rate > testDetail.variant_a.conversion_rate ? "text-emerald-400" : "text-white"
-                                                            )}>{(testDetail.variant_b.conversion_rate * 100).toFixed(2)}%</span>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <span className="text-[9px] font-bold text-zinc-600 uppercase block mb-1">Samples</span>
-                                                            <span className="text-xl font-bold text-zinc-400">{(testDetail.variant_b.view_count / 1000).toFixed(1)}K</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* STATS HUD */}
-                                            <div className="p-10 bg-cyan-400/5 border-y border-cyan-400/20 flex flex-col md:flex-row items-center justify-between gap-10 rounded-xl">
-                                                <div className="flex items-center gap-8">
-                                                    <div className="h-24 w-24 rounded-full border-4 border-white/5 flex items-center justify-center relative">
-                                                        <div className="absolute inset-2 border-2 border-cyan-400/30 rounded-full animate-pulse" />
-                                                        <span className="text-2xl font-bold text-white tracking-tighter">{testDetail.statistics.confidence_level.toFixed(1)}%</span>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <h5 className="font-data-mono text-[10px] text-zinc-500 uppercase tracking-widest">Statistical Power</h5>
-                                                        <p className="text-sm font-bold text-white uppercase tracking-tight">Effect Size: <span className="text-cyan-400">{testDetail.statistics.effect_size.toFixed(4)} ({testDetail.statistics.interpretation})</span></p>
-                                                        <p className="text-[9px] font-bold text-zinc-600 uppercase">P-VALUE: {testDetail.statistics.p_value?.toFixed(4) || "N/A"}</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex gap-4">
-                                                    <Button 
-                                                        onClick={() => handleDetermineWinner(testDetail.id)}
-                                                        disabled={isProcessing || testDetail.status === "COMPLETED"}
-                                                        variant="primary"
-                                                        className="px-10 py-5 font-bold text-[10px] uppercase tracking-widest rounded-xl"
-                                                    >
-                                                        Determine Winner
-                                                    </Button>
-                                                    <Button 
-                                                        onClick={() => handleTriggerEvolution(testDetail.content_id)}
-                                                        disabled={isProcessing}
-                                                        variant="outline"
-                                                        className="px-10 py-5 border-cyan-400/30 text-cyan-400 font-bold text-[10px] uppercase tracking-widest hover:bg-cyan-400 hover:text-black transition-all flex items-center gap-3 rounded-xl"
-                                                    >
-                                                        <Zap className="h-4 w-4" />
-                                                        Trigger Flywheel
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </Card>
-
-                                        {/* ADVISORY HUD */}
-                                        <Card variant="solid" className="p-8 flex items-start gap-6 bg-purple-500/5 border-purple-500/10 rounded-2xl">
-                                            <Info className="h-5 w-5 text-purple-400 shrink-0 mt-1" />
-                                            <div className="space-y-2">
-                                                <h6 className="text-[10px] font-bold text-white uppercase tracking-widest">Flywheel Advisory</h6>
-                                                <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">
-                                                    Running an evolution cycle will automatically prune the bottom 70% of variants for this parent job and prepare the winner for immediate iteration across the propagation mesh.
-                                                </p>
-                                            </div>
-                                        </Card>
-                                    </motion.div>
-                                ) : (
-                                    <div className="h-[800px] flex flex-col items-center justify-center space-y-10 opacity-40">
-                                        <div className="w-48 h-48 relative">
-                                            <motion.div 
-                                                animate={{ rotate: 360 }}
-                                                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                                                className="absolute inset-0 border border-cyan-400/10 rounded-full border-t-cyan-400/40"
-                                            />
-                                            <div className="absolute inset-8 rounded-full bg-white/5 flex items-center justify-center">
-                                                <BarChart3 className="h-16 w-16 text-zinc-600" />
-                                            </div>
-                                        </div>
-                                        <div className="text-center space-y-4">
-                                            <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-[0.5em]">Workspace_Idle</h3>
-                                            <p className="font-data-mono text-[9px] text-zinc-700 uppercase tracking-widest">Select An active experiment to initialize analysis</p>
-                                        </div>
+                    </div>
+                </>
+            }
+        >
+            <div className="p-10 space-y-10 relative h-full flex flex-col">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeEngine}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="flex-1 flex flex-col min-h-0"
+                    >
+                        {activeEngine === "lab" && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {activeTests.map((test) => (
+                                    <DesignCard 
+                                        key={test.id}
+                                        title={`${test.variant_a_title} VS ${test.variant_b_title}`}
+                                        status="Active"
+                                        metrics={[
+                                            { label: "Samples", value: test.total_events, color: "text-cyan-400" },
+                                            { label: "Target", value: test.target_metric, color: "text-zinc-500" }
+                                        ]}
+                                        footerInfo={`ID: ${test.id}`}
+                                        toolsStatus="Live Polling"
+                                        onClick={() => setSelectedTestId(test.id)}
+                                    />
+                                ))}
+                                {activeTests.length === 0 && (
+                                    <div className="col-span-full py-40 flex flex-col items-center justify-center space-y-6 opacity-30 grayscale">
+                                        <FlaskConical className="h-16 w-16" />
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.5em]">No active experiments</p>
                                     </div>
                                 )}
-                            </AnimatePresence>
+                            </div>
+                        )}
+
+                        {activeEngine === "analysis" && (
+                            <div className="space-y-12 overflow-y-auto custom-scrollbar flex-1 p-1">
+                                {testDetail ? (
+                                    <>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="p-10 rounded-[32px] bg-[#0F0F11] border border-white/5 space-y-8 relative overflow-hidden group">
+                                                {testDetail.winner_variant === "A" && <div className="absolute top-0 right-0 h-1 w-32 bg-emerald-500 shadow-[0_0_15px_#10b981]" />}
+                                                <div className="flex justify-between items-start">
+                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Variant A (Control)</span>
+                                                    {testDetail.winner_variant === "A" && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
+                                                </div>
+                                                <h3 className="text-2xl font-bold text-white uppercase">{testDetail.variant_a.title}</h3>
+                                                <div className="flex items-end justify-between pt-8 border-t border-white/5">
+                                                    <div>
+                                                        <span className="text-[9px] font-bold text-zinc-600 uppercase block mb-2">Conversion Rate</span>
+                                                        <span className="text-4xl font-bold text-white">{(testDetail.variant_a.conversion_rate * 100).toFixed(2)}%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-10 rounded-[32px] bg-[#0F0F11] border border-white/5 space-y-8 relative overflow-hidden group">
+                                                {testDetail.winner_variant === "B" && <div className="absolute top-0 right-0 h-1 w-32 bg-emerald-500 shadow-[0_0_15px_#10b981]" />}
+                                                <div className="flex justify-between items-start">
+                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Variant B (Challenger)</span>
+                                                    {testDetail.winner_variant === "B" && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
+                                                </div>
+                                                <h3 className="text-2xl font-bold text-white uppercase">{testDetail.variant_b.title}</h3>
+                                                <div className="flex items-end justify-between pt-8 border-t border-white/5">
+                                                    <div>
+                                                        <span className="text-[9px] font-bold text-zinc-600 uppercase block mb-2">Conversion Rate</span>
+                                                        <span className={cn("text-4xl font-bold", testDetail.variant_b.conversion_rate > testDetail.variant_a.conversion_rate ? "text-emerald-400" : "text-white")}>
+                                                            {(testDetail.variant_b.conversion_rate * 100).toFixed(2)}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-10 rounded-[32px] bg-cyan-500/5 border border-cyan-500/10 flex flex-col md:flex-row items-center justify-between gap-10">
+                                            <div className="flex items-center gap-8">
+                                                <div className="h-24 w-24 rounded-full border-4 border-white/5 flex items-center justify-center relative">
+                                                    <div className="absolute inset-2 border-2 border-cyan-400/30 rounded-full animate-pulse" />
+                                                    <span className="text-2xl font-bold text-white">{testDetail.statistics?.confidence_level.toFixed(1)}%</span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <h5 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Statistical Power</h5>
+                                                    <p className="text-sm font-bold text-white uppercase">{testDetail.statistics?.interpretation}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-4">
+                                                <Button 
+                                                    onClick={() => handleDetermineWinner(testDetail.id)}
+                                                    disabled={isProcessing || testDetail.status === "COMPLETED"}
+                                                    className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold h-16 px-10 rounded-2xl"
+                                                >
+                                                    Determine Winner
+                                                </Button>
+                                                <Button 
+                                                    onClick={() => handleTriggerEvolution(testDetail.content_id)}
+                                                    disabled={isProcessing}
+                                                    variant="outline"
+                                                    className="border-cyan-400/30 text-cyan-400 h-16 px-10 rounded-2xl gap-2"
+                                                >
+                                                    <Dna className="h-4 w-4" />
+                                                    Scale Winner
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center space-y-6 opacity-30 py-40">
+                                        <Microscope className="h-16 w-16" />
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.5em]">Select an experiment for deep analysis</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeEngine === "vault" && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-y-auto custom-scrollbar flex-1 p-1">
+                                {completedTests.map((test) => (
+                                    <DesignCard 
+                                        key={test.id}
+                                        title={`${test.variant_a_title} VS ${test.variant_b_title}`}
+                                        status="Completed"
+                                        metrics={[
+                                            { label: "Winner", value: `Variant ${test.winner_variant || "---"}`, color: "text-emerald-400" },
+                                            { label: "Confidence", value: `${test.confidence_level || 0}%`, color: "text-zinc-500" }
+                                        ]}
+                                        footerInfo={`Finished: ${new Date(test.created_at).toLocaleDateString()}`}
+                                        toolsStatus="Archived"
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Evolution Logs</span>
+                                <span className="text-[8px] font-mono text-cyan-500/50">NEURAL_LAB_ACTIVE</span>
+                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                                {logs.map((log, i) => (
+                                    <div key={i} className="flex gap-4">
+                                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                                        <span className={cn(
+                                            log.includes("[ANALYSIS]") ? "text-cyan-400" :
+                                            log.includes("[SUCCESS]") ? "text-emerald-500" :
+                                            log.includes("[WINNER]") ? "text-amber-500" :
+                                            log.includes("[EVOLUTION]") ? "text-violet-500" : "text-zinc-600"
+                                        )}>{log}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </AnimatePresence>
             </div>
-        </DashboardLayout>
+        </CommandCenterLayout>
     );
 }

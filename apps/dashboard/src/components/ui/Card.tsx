@@ -15,7 +15,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       solid: "bg-slate-900/50 border border-white/5 shadow-sm hover:border-white/10",
       elevated: "bg-slate-900 border border-white/10 shadow-lg",
       subtle: "bg-black/20 border border-white/5 hover:border-white/10",
-      accent: "bg-blue-600/5 border border-blue-500/20 shadow-sm",
+      accent: "bg-cyan-400/5 border border-cyan-400/20 shadow-sm",
     };
 
     return (
