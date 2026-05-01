@@ -110,7 +110,7 @@ export default function AdminSettingsPage() {
 
     const saveSettings = async () => {
         setIsSaving(true);
-        setLogs(prev => [`[PROTOCOL] Committing global system changes...`, ...prev]);
+        setLogs((prev: string[]) => [`[PROTOCOL] Committing global system changes...`, ...prev]);
         const token = await getAuthToken();
         if (!token) return;
 
@@ -124,7 +124,7 @@ export default function AdminSettingsPage() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("System protocols updated");
-                    setLogs(prev => [`[SUCCESS] Nodes synchronized with new configuration.`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] Nodes synchronized with new configuration.`, ...prev]);
                     fetchData();
                 }
             }
