@@ -45,7 +45,6 @@ import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
-import { NeuralCanvas } from "@/components/ui/NeuralCanvas";
 import { CommandPod } from "@/components/ui/CommandPod";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
@@ -271,7 +270,7 @@ export default function NexusPage() {
                                 </div>
 
                                 <div className="flex-1 min-h-[400px] rounded-[32px] bg-[#0F0F11]/40 border border-white/5 relative overflow-hidden group">
-                                    <NeuralCanvas />
+                                    <div className="absolute inset-0 architect-grid pointer-events-none opacity-40" />
                                     <div className="absolute inset-0 flex items-center justify-around px-20">
                                         {activeBlueprint?.nodes.map((node, idx) => (
                                             <div key={idx} className="relative z-10">
@@ -344,6 +343,14 @@ export default function NexusPage() {
                     </motion.div>
                 </AnimatePresence>
             </div>
+            <style jsx global>{`
+                .architect-grid {
+                    background-image: 
+                        linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+                    background-size: 40px 40px;
+                }
+            `}</style>
         </CommandCenterLayout>
     );
 }
