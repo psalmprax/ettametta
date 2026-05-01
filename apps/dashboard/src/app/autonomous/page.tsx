@@ -21,7 +21,8 @@ import {
     Dna,
     Radar,
     Clock,
-    Sparkles
+    Sparkles,
+    ArrowUpRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
