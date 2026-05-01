@@ -18,7 +18,8 @@ import {
   Radar,
   Target,
   ShieldCheck,
-  LineChart
+  LineChart,
+  ArrowUpRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
