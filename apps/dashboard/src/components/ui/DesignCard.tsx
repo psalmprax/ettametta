@@ -15,7 +15,7 @@ interface DesignCardProps {
     color?: string;
   }[];
   footerInfo?: string;
-  toolsStatus?: "Online" | "Offline" | "Live Polling" | "Syncing";
+  toolsStatus?: "Online" | "Offline" | "Live Polling" | "Syncing" | "Archived";
   onClick?: () => void;
   actions?: ReactNode;
 }
@@ -107,9 +107,10 @@ export function DesignCard({
           "flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-bold transition-all",
           (toolsStatus === "Online" || toolsStatus === "Live Polling") ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : 
           toolsStatus === "Syncing" ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
+          toolsStatus === "Archived" ? "bg-zinc-800 border-zinc-700 text-zinc-500" :
           "bg-rose-500/10 border-rose-500/20 text-rose-500"
         )}>
-          <div className={cn("h-1.5 w-1.5 rounded-full", (toolsStatus === "Online" || toolsStatus === "Live Polling") ? "bg-emerald-500 animate-pulse" : toolsStatus === "Syncing" ? "bg-amber-500 animate-pulse" : "bg-rose-500")} />
+          <div className={cn("h-1.5 w-1.5 rounded-full", (toolsStatus === "Online" || toolsStatus === "Live Polling") ? "bg-emerald-500 animate-pulse" : toolsStatus === "Syncing" ? "bg-amber-500 animate-pulse" : toolsStatus === "Archived" ? "bg-zinc-600" : "bg-rose-500")} />
           Tools: {toolsStatus}
         </div>
       </div>
