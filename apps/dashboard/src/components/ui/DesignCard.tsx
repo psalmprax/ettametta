@@ -7,7 +7,7 @@ import { CheckCircle2, MoreVertical, CreditCard, Trash2, RotateCcw, Share } from
 
 interface DesignCardProps {
   title: string;
-  status?: "Current" | "Active" | "Inactive" | "Offline" | "Live Polling" | "Syncing" | "Completed" | "Scheduled";
+  status?: "Current" | "Active" | "Inactive" | "Offline" | "Live Polling" | "Syncing" | "Completed" | "Scheduled" | "Nominal" | "Optimized";
   metrics: {
     label: string;
     value: string | number;
@@ -54,8 +54,8 @@ export function DesignCard({
         
         <span className={cn(
           "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-          (status === "Current" || status === "Active" || status === "Completed") ? "bg-emerald-500/10 text-emerald-500" :
-          (status === "Scheduled" || status === "Syncing" || status === "Live Polling") ? "bg-amber-500/10 text-amber-500" :
+          (status === "Current" || status === "Active" || status === "Completed" || status === "Optimized") ? "bg-emerald-500/10 text-emerald-500" :
+          (status === "Scheduled" || status === "Syncing" || status === "Live Polling" || status === "Nominal") ? "bg-amber-500/10 text-amber-500" :
           "bg-slate-800 text-slate-400"
         )}>
           {status}
