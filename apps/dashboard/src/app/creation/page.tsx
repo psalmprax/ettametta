@@ -238,7 +238,7 @@ export default function CreationPage() {
                         { id: "voice", label: "Voice Forge", icon: Mic2 },
                         { id: "script", label: "Script Engine", icon: Edit3 },
                         { id: "visual", label: "Visual Core", icon: Clapperboard },
-                        { id: "logs", label: "System Logs", icon: Activity },
+                        { id: "logs", label: "System Logs", icon: Terminal },
                     ].map((item) => (
                         <button
                             key={item.id}
