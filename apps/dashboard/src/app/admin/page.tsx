@@ -52,6 +52,7 @@ import { toast } from "sonner";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
 import EnvManager from "@/components/admin/EnvManager";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 
 export default function AdminSettingsPage() {
