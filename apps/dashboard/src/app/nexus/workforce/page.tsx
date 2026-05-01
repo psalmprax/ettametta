@@ -26,7 +26,8 @@ import {
     Microscope,
     BarChart3,
     BookOpen,
-    Rss
+    Rss,
+    Radio
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
