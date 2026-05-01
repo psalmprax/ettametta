@@ -234,7 +234,7 @@ export default function CreationPage() {
             leftPanel={
                 <div className="space-y-1">
                     {[
-                        { id: "genesis", label: "Command Center", icon: Layout },
+                        { id: "genesis", label: "Command Center", icon: Command },
                         { id: "voice", label: "Voice Forge", icon: Mic2 },
                         { id: "script", label: "Script Engine", icon: Edit3 },
                         { id: "visual", label: "Visual Core", icon: Clapperboard },
