@@ -58,7 +58,7 @@ function DiscoveryContent() {
         const token = await getAuthToken();
         if (!token) return;
 
-        setLogs(prev => [`[SCAN] Initiating Trend Analysis: ${activeNiche}`, ...prev]);
+        setLogs((prev: string[]) => [`[SCAN] Initiating Trend Analysis: ${activeNiche}`, ...prev]);
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/discovery/trends?niche=${encodeURIComponent(activeNiche)}`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -68,7 +68,7 @@ function DiscoveryContent() {
                 onSuccess: (data) => {
                     const trends = Array.isArray(data) ? data : (data?.trends || []);
                     setCandidates(trends);
-                    setLogs(prev => [`[SUCCESS] Found ${trends.length} Viral Candidates.`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] Found ${trends.length} Viral Candidates.`, ...prev]);
                 }
             }
         );

@@ -82,7 +82,7 @@ export default function CreditsPage() {
         const token = await getAuthToken();
         if (!token) return;
 
-        setLogs(prev => [`[PROTOCOL] Initializing Credit Acquisition: ${packageId}`, ...prev]);
+        setLogs((prev: string[]) => [`[PROTOCOL] Initializing Credit Acquisition: ${packageId}`, ...prev]);
         await withRealFallback(
             () => fetch(`${API_BASE}/credits/purchase`, {
                 method: "POST",

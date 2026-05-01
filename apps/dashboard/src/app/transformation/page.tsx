@@ -97,7 +97,7 @@ export default function TransformationPage() {
     const handleAbort = async (id: string) => {
         const token = await getAuthToken();
         if (!token) return;
-        setLogs(prev => [`[SIGNAL] Aborting Job: ${id}`, ...prev]);
+        setLogs((prev: string[]) => [`[SIGNAL] Aborting Job: ${id}`, ...prev]);
         
         await withRealFallback(
             () => fetch(`${API_BASE}/video/jobs/${id}/abort`, {
@@ -108,7 +108,7 @@ export default function TransformationPage() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("Job Aborted Successfully");
-                    setLogs(prev => [`[SUCCESS] Job ${id} Terminated.`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] Job ${id} Terminated.`, ...prev]);
                 }
             }
         );
@@ -117,7 +117,7 @@ export default function TransformationPage() {
     const handleAutoLinks = async (id: string) => {
         const token = await getAuthToken();
         if (!token) return;
-        setLogs(prev => [`[SIGNAL] Triggering Neural Link Insertion for ${id}`, ...prev]);
+        setLogs((prev: string[]) => [`[SIGNAL] Triggering Neural Link Insertion for ${id}`, ...prev]);
         
         await withRealFallback(
             () => fetch(`${API_BASE}/video/auto-insert-links`, {
@@ -132,7 +132,7 @@ export default function TransformationPage() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("Affiliate Nodes Injected");
-                    setLogs(prev => [`[SUCCESS] Links injected into ${id}`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] Links injected into ${id}`, ...prev]);
                 }
             }
         );

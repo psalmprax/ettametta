@@ -94,7 +94,7 @@ export default function EmpirePage() {
 
     const handleClone = async () => {
         if (!cloningNiche) return;
-        setLogs(prev => [`[PROTOCOL] Initializing Strategic Clone: ${cloningNiche}`, ...prev]);
+        setLogs((prev: string[]) => [`[PROTOCOL] Initializing Strategic Clone: ${cloningNiche}`, ...prev]);
         await withRealFallback(
             async () => {
                 const token = await getAuthToken();
@@ -109,7 +109,7 @@ export default function EmpirePage() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("Strategy Cloned");
-                    setLogs(prev => [`[SUCCESS] Neural weights mapped to ${cloningNiche}`, ...prev]);
+                    setLogs((prev: string[]) => [`[SUCCESS] Neural weights mapped to ${cloningNiche}`, ...prev]);
                     setIsCloneModalOpen(false);
                 }
             }
