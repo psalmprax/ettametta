@@ -19,7 +19,7 @@ import {
     ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sidebar } from "../sidebar";
+import { Sidebar } from "./sidebar";
 
 interface CommandCenterLayoutProps {
     children: React.ReactNode;
