@@ -26,7 +26,7 @@ import { motion } from "framer-motion";
 interface AgentStatus {
     id: string;
     name: string;
-    icon: React.ElementType;
+    icon: any;
     status: "ACTIVE" | "IDLE" | "DEGRADED" | "QUEUED";
     latency: number;
     load: number;
