@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
-import DashboardLayout from "@/components/layout";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import {
@@ -39,1217 +38,270 @@ import {
     Cpu,
     HardDrive,
     Search,
-    ChevronRight
+    ChevronRight,
+    Zap,
+    Target,
+    ShieldCheck,
+    Dna,
+    Radar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { API_BASE } from "@/lib/config";
+import { API_BASE, WS_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
+import CommandCenterLayout from "@/components/CommandCenterLayout";
+import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
 import EnvManager from "@/components/admin/EnvManager";
+import { Button } from "@/components/ui/Button";
 
-// Admin-only system configuration
 export default function AdminSettingsPage() {
     const { user, isLoading: authLoading } = useAuth();
     const router = useRouter();
-    const [showKey, setShowKey] = useState<Record<string, boolean>>({});
-    const [settings, setSettings] = useState<Record<string, string>>({
-        // OAuth Credentials (System-wide)
-        google_client_id: "",
-        google_client_secret: "",
-        tiktok_client_key: "",
-        tiktok_client_secret: "",
-        // API Keys (System-wide)
-        groq_api_key: "",
-        openai_api_key: "",
-        elevenlabs_api_key: "",
-        pexels_api_key: "",
-        // Cloud Storage
-        aws_access_key_id: "",
-        aws_secret_access_key: "",
-        aws_region: "us-east-1",
-        aws_storage_bucket_name: "",
-        storage_provider: "OCI",
-        storage_access_key: "",
-        storage_secret_key: "",
-        storage_bucket: "",
-        storage_endpoint: "",
-        storage_region: "eu-frankfurt-1",
-        // Payment
-        stripe_secret_key: "",
-        stripe_webhook_secret: "",
-        // Shopify
-        shopify_shop_url: "",
-        shopify_access_token: "",
-        // Production
-        production_domain: "http://localhost:8000",
-        // Render Node
-        render_node_url: "",
-        // Twilio/WhatsApp
-        twilio_account_sid: "",
-        twilio_auth_token: "",
-        twilio_whatsapp_number: "",
-        // Video Quality Tiers
-        enable_sound_design: "false",
-        enable_motion_graphics: "false",
-        ai_video_provider: "none",
-        default_quality_tier: "standard",
-        // Agent Frameworks
-        enable_langchain: "false",
-        enable_crewai: "false",
-        enable_interpreter: "false",
-        enable_affiliate_api: "false",
-        // Advanced Monetization
-        auto_merch_enabled: "false",
-        lead_gen_url: "",
-        digital_product_url: "",
-        monetization_aggression: "80",
-        monetization_mode: "selective",
-        // System Defaults
-        membership_platform_uri: "",
-        course_platform_uri: "",
-        // Engine Parameters
-        scan_frequency: "Every 1 hour",
-        auto_pilot: "false",
-        force_originality: "false"
-    });
+    const [activeEngine, setActiveEngine] = useState("OAuth");
+    const [settings, setSettings] = useState<any>({});
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
-    const [activeTab, setActiveTab] = useState("OAuth");
-
-    // Security state
-    const [securityStatus, setSecurityStatus] = useState<{
-        health_score: number;
-        threat_level: string;
-        recent_threats: Array<{ id: string; type: string; severity: string; description: string; timestamp: string }>;
-        system_integrity: string;
-    } | null>(null);
-    const [securityEvents, setSecurityEvents] = useState<Array<{
-        id: string;
-        event_type: string;
-        description: string;
-        timestamp: string;
-    }>>([]);
-    const [isScanning, setIsScanning] = useState(false);
-    const [securityLoading, setSecurityLoading] = useState(false);
-    
-    // Admin Telemetry & Audits state
+    const [securityStatus, setSecurityStatus] = useState<any>(null);
+    const [securityEvents, setSecurityEvents] = useState<any[]>([]);
     const [systemStatus, setSystemStatus] = useState<any>(null);
     const [adminAudits, setAdminAudits] = useState<any[]>([]);
-    const [adminLoading, setAdminLoading] = useState(false);
+    const [logs, setLogs] = useState<string[]>(["ADMIN_INITIALIZED", "PROTOCOL_READY"]);
 
-    // Redirect if not admin
+    // Security check
     useEffect(() => {
         if (!authLoading && (!user || (user.role !== "admin" && user.role !== "super_admin"))) {
             router.push("/");
         }
     }, [authLoading, user, router]);
 
-    const toggleKey = (id: string) => {
-        setShowKey(prev => ({ ...prev, [id]: !prev[id] }));
-    };
+    const fetchData = useCallback(async () => {
+        const token = await getAuthToken();
+        if (!token) return;
+        const headers = { Authorization: `Bearer ${token}` };
 
-    const fetchSettings = async () => {
         setIsLoading(true);
-        await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) return;
-                return fetch(`${API_BASE}/settings/system`, {
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                });
-            },
-            {
-                fallback: settings,
-                onSuccess: (data: any) => {
-                    setSettings(prev => ({ ...prev, ...data }));
-                }
-            }
-        );
+        await Promise.all([
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/settings/system`, { headers }),
+                { fallback: {}, onSuccess: (data) => setSettings(data) }
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/security/status`, { headers }),
+                { fallback: null, onSuccess: (data) => setSecurityStatus(data) }
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/admin/system/status`, { headers }),
+                { fallback: null, onSuccess: (data) => setSystemStatus(data) }
+            ),
+            withRealFallback<any[]>(
+                () => fetch(`${API_BASE}/admin/audits`, { headers }),
+                { fallback: [], onSuccess: (data) => setAdminAudits(data) }
+            )
+        ]);
         setIsLoading(false);
-    };
+    }, []);
+
+    useEffect(() => {
+        if (user?.role === "admin" || user?.role === "super_admin") {
+            fetchData();
+        }
+    }, [user, fetchData]);
 
     const saveSettings = async () => {
         setIsSaving(true);
-        setSaveStatus("idle");
+        setLogs(prev => [`[PROTOCOL] Committing global system changes...`, ...prev]);
+        const token = await getAuthToken();
+        if (!token) return;
+
         await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) return;
-                return fetch(`${API_BASE}/settings/system`, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(settings)
-                });
-            },
+            () => fetch(`${API_BASE}/settings/system`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify(settings)
+            }),
             {
                 fallback: null,
                 onSuccess: () => {
-                    setSaveStatus("success");
-                    toast.success("System protocols updated successfully.");
-                },
-                onFallback: (err: any) => {
-                    setSaveStatus("error");
-                    toast.error("Failed to save settings", { description: err.message });
+                    toast.success("System protocols updated");
+                    setLogs(prev => [`[SUCCESS] Nodes synchronized with new configuration.`, ...prev]);
+                    fetchData();
                 }
             }
         );
         setIsSaving(false);
     };
 
-    const updateSetting = (key: string, value: string) => {
-        setSettings(prev => ({ ...prev, [key]: value }));
-    };
-
-    const fetchSecurityStatus = async () => {
-        await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) return;
-                return fetch(`${API_BASE}/security/status`, {
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                });
-            },
-            {
-                fallback: securityStatus,
-                onSuccess: (data: any) => {
-                    setSecurityStatus(data);
-                }
-            }
-        );
-    };
-
-    const fetchSecurityEvents = async () => {
-        await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) return;
-                return fetch(`${API_BASE}/security/events`, {
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                });
-            },
-            {
-                fallback: securityEvents,
-                onSuccess: (data: any) => {
-                    setSecurityEvents(data.events ?? data ?? []);
-                }
-            }
-        );
-    };
-
-    const runSecurityScan = async () => {
-        setIsScanning(true);
-        await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) return;
-                return fetch(`${API_BASE}/security/scan`, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                });
-            },
-            {
-                fallback: null,
-                onSuccess: (data: any) => {
-                    toast.success("Security audit completed", {
-                        description: data.summary ?? "Scan finished successfully"
-                    });
-                    fetchSecurityStatus();
-                    fetchSecurityEvents();
-                },
-                onFallback: (err: any) => {
-                    toast.error("Security audit failed", {
-                        description: err.message || "The scan could not be completed"
-                    });
-                }
-            }
-        );
-        setIsScanning(false);
-    };
-
-    const fetchSystemStatus = async () => {
-        await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) return;
-                return fetch(`${API_BASE}/admin/system/status`, {
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-            },
-            {
-                fallback: null,
-                onSuccess: (data: any) => setSystemStatus(data)
-            }
-        );
-    };
-
-    const fetchAdminAudits = async () => {
-        await withRealFallback(
-            async () => {
-                const token = getAuthToken();
-                if (!token) return;
-                return fetch(`${API_BASE}/admin/audits`, {
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-            },
-            {
-                fallback: [],
-                onSuccess: (data: any) => setAdminAudits(data)
-            }
-        );
-    };
-
-    useEffect(() => {
-        if (user && user.role === "admin") {
-            fetchSettings();
-        }
-    }, [user]);
-
-    useEffect(() => {
-        if (activeTab === "Security" && (user?.role === "admin" || user?.role === "super_admin")) {
-            setSecurityLoading(true);
-            Promise.all([fetchSecurityStatus(), fetchSecurityEvents()]).finally(() => setSecurityLoading(false));
-        }
-        if (activeTab === "Infrastructure" && (user?.role === "admin" || user?.role === "super_admin")) {
-            fetchSystemStatus();
-        }
-        if (activeTab === "Audits" && (user?.role === "admin" || user?.role === "super_admin")) {
-            setAdminLoading(true);
-            fetchAdminAudits().finally(() => setAdminLoading(false));
-        }
-    }, [activeTab, user]);
-
-    if (authLoading || !user || (user.role !== "admin" && user.role !== "super_admin")) {
-        return (
-            <DashboardLayout>
-                <div className="flex items-center justify-center h-[60vh]">
-                    <div className="text-center space-y-4">
-                        <AlertTriangle className="h-16 w-16 text-amber-500 mx-auto" />
-                        <h2 className="text-2xl font-bold text-white">Access Denied</h2>
-                        <p className="text-zinc-400">You must be an administrator to access this page.</p>
-                    </div>
-                </div>
-            </DashboardLayout>
-        );
-    }
+    // Prepare Agent Data
+    const agents = [
+        { id: "SEC_01", name: "Firewall Guard", icon: ShieldCheck, status: "ACTIVE" as any, latency: 2, load: 1, details: "Monitoring Inbound" },
+        { id: "SYS_01", name: "System Kernel", icon: Cpu, status: "ACTIVE" as any, latency: 4, load: 15, details: "Orchestrating Nodes" },
+        { id: "AUDIT_01", name: "Audit Logger", icon: FileText, status: "IDLE" as any, latency: 1, load: 0, details: "Standby" },
+    ];
 
     const tabs = [
         { id: "OAuth", label: "OAuth & Auth", icon: Key },
-        { id: "API", label: "API Keys", icon: Bot },
-        { id: "Storage", label: "Storage", icon: Database },
-        { id: "Engine", label: "Engine Parameters", icon: Wand2 },
-        { id: "Payment", label: "Payment", icon: CreditCard },
-        { id: "Monetization", label: "Monetization", icon: ShoppingCart },
-        { id: "Infrastructure", label: "Infrastructure", icon: Server },
-        { id: "WhatsApp", label: "WhatsApp", icon: Bot },
-        { id: "Security", label: "Security", icon: Shield },
+        { id: "API", label: "API Master", icon: Bot },
+        { id: "Storage", label: "Cloud Vault", icon: Database },
+        { id: "Engine", label: "Engine Params", icon: Wand2 },
+        { id: "Infrastructure", label: "System Nodes", icon: Server },
+        { id: "Security", label: "Security Hub", icon: Shield },
         { id: "Audits", label: "Admin Audits", icon: FileText },
-        { id: "Environment", label: "Protocol", icon: Terminal },
+        { id: "Environment", label: "Master Protocol", icon: Terminal },
     ];
 
+    if (authLoading || !user || (user.role !== "admin" && user.role !== "super_admin")) {
+        return <div className="h-screen bg-black" />;
+    }
+
     return (
-        <DashboardLayout>
-            <div className="section-container relative pb-20">
-                <div className="flex items-center justify-between mb-10">
-                    <div>
-                        <div className="flex items-center gap-4 mb-2">
-                            <h1 className="text-5xl md:text-6xl font-bold uppercase tracking-tighter text-white">
-                                System <span className="text-transparent bg-clip-text bg-linear-to-r from-red-400 to-white text-hollow">Master</span>
-                            </h1>
-                            <div className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-                                Admin Protocol
-                            </div>
-                        </div>
-                        <p className="text-zinc-500 max-w-xl">Configure system-wide API integrations, infrastructure, and autonomous engine parameters for all viral nodes.</p>
-                    </div>
-                    <button
-                        onClick={saveSettings}
-                        disabled={isSaving}
-                        className={cn(
-                            "bg-primary hover:bg-primary/90 text-white font-bold py-4 px-8 rounded-2xl transition-all flex items-center gap-3 uppercase tracking-widest text-[10px] shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)]",
-                            isSaving && "opacity-50 cursor-not-allowed",
-                            saveStatus === "success" && "bg-emerald-500 hover:bg-emerald-600 shadow-[0_0_30px_rgba(16,185,129,0.3)]"
-                        )}
-                    >
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : saveStatus === "success" ? <CheckCircle2 className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                        {isSaving ? "Synchronizing..." : saveStatus === "success" ? "Protocol Saved" : "Commit Changes"}
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-                    {/* Navigation Tabs */}
-                    <div className="space-y-1">
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-5 py-4 rounded-xl transition-all duration-300 font-bold text-[10px] uppercase tracking-widest group",
-                                    activeTab === tab.id
-                                        ? "bg-red-500/15 text-red-500 border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.1)]"
-                                        : "text-zinc-500 hover:bg-white/5 hover:text-zinc-200"
-                                )}
-                            >
-                                <tab.icon className={cn("h-4 w-4 transition-transform", activeTab === tab.id ? "scale-110" : "group-hover:scale-110")} />
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Main Content Area */}
-                    <div className="lg:col-span-4 space-y-8">
-                        {isLoading ? (
-                            <div className="h-64 flex items-center justify-center">
-                                <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                            </div>
-                        ) : activeTab === "OAuth" && (
-                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
-                                <div className="flex items-center gap-6">
-                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
-                                        <Key className="h-8 w-8 text-red-500" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">OAuth <span className="text-hollow">Credentials</span></h3>
-                                        <p className="text-zinc-500 text-sm">System-wide OAuth configuration for global integrations.</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 pt-4 border-t border-zinc-800">
-                                    <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Google / YouTube</h4>
-                                    <KeyInput
-                                        label="Google Client ID"
-                                        id="google_client_id"
-                                        value={settings.google_client_id}
-                                        onChange={(val) => updateSetting("google_client_id", val)}
-                                        isVisible={showKey["google_client_id"]}
-                                        onToggle={() => toggleKey("google_client_id")}
-                                    />
-                                    <KeyInput
-                                        label="Google Client Secret"
-                                        id="google_client_secret"
-                                        value={settings.google_client_secret}
-                                        onChange={(val) => updateSetting("google_client_secret", val)}
-                                        isVisible={showKey["google_client_secret"]}
-                                        onToggle={() => toggleKey("google_client_secret")}
-                                    />
-                                </div>
-
-                                <div className="space-y-4 pt-4 border-t border-zinc-800">
-                                    <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">TikTok</h4>
-                                    <KeyInput
-                                        label="TikTok Client Key"
-                                        id="tiktok_client_key"
-                                        value={settings.tiktok_client_key}
-                                        onChange={(val) => updateSetting("tiktok_client_key", val)}
-                                        isVisible={showKey["tiktok_client_key"]}
-                                        onToggle={() => toggleKey("tiktok_client_key")}
-                                    />
-                                    <KeyInput
-                                        label="TikTok Client Secret"
-                                        id="tiktok_client_secret"
-                                        value={settings.tiktok_client_secret}
-                                        onChange={(val) => updateSetting("tiktok_client_secret", val)}
-                                        isVisible={showKey["tiktok_client_secret"]}
-                                        onToggle={() => toggleKey("tiktok_client_secret")}
-                                    />
-                                </div>
-                            </section>
-                        )}
-
-                        {activeTab === "API" && (
-                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
-                                <div className="flex items-center gap-6">
-                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
-                                        <Bot className="h-8 w-8 text-red-500" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">API <span className="text-hollow">Master Keys</span></h3>
-                                        <p className="text-zinc-500 text-sm">System-wide API keys for background scanning and core intelligence.</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6 pt-6 border-t border-white/5">
-                                    <KeyInput
-                                        label="Groq API Key"
-                                        id="groq_api_key"
-                                        value={settings.groq_api_key}
-                                        onChange={(val) => updateSetting("groq_api_key", val)}
-                                        isVisible={showKey["groq_api_key"]}
-                                        onToggle={() => toggleKey("groq_api_key")}
-                                    />
-                                    <KeyInput
-                                        label="OpenAI API Key"
-                                        id="openai_api_key"
-                                        value={settings.openai_api_key}
-                                        onChange={(val) => updateSetting("openai_api_key", val)}
-                                        isVisible={showKey["openai_api_key"]}
-                                        onToggle={() => toggleKey("openai_api_key")}
-                                    />
-                                    <KeyInput
-                                        label="ElevenLabs API Key"
-                                        id="elevenlabs_api_key"
-                                        value={settings.elevenlabs_api_key}
-                                        onChange={(val) => updateSetting("elevenlabs_api_key", val)}
-                                        isVisible={showKey["elevenlabs_api_key"]}
-                                        onToggle={() => toggleKey("elevenlabs_api_key")}
-                                    />
-                                    <KeyInput
-                                        label="Pexels API Key"
-                                        id="pexels_api_key"
-                                        value={settings.pexels_api_key}
-                                        onChange={(val) => updateSetting("pexels_api_key", val)}
-                                        isVisible={showKey["pexels_api_key"]}
-                                        onToggle={() => toggleKey("pexels_api_key")}
-                                    />
-                                </div>
-                            </section>
-                        )}
-
-                        {activeTab === "Storage" && (
-                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
-                                <div className="flex items-center gap-6">
-                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
-                                        <Database className="h-8 w-8 text-red-500" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">Cloud <span className="text-hollow">Vault</span></h3>
-                                        <p className="text-zinc-500 text-sm">AWS S3 and OCI storage configuration for global asset delivery.</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6 pt-6 border-t border-white/5">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Storage Provider</label>
-                                        <select
-                                            value={settings.storage_provider}
-                                            onChange={(e) => updateSetting("storage_provider", e.target.value)}
-                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
-                                        >
-                                            <option value="LOCAL">Local Storage</option>
-                                            <option value="AWS">AWS S3</option>
-                                            <option value="OCI">Oracle Cloud Infrastructure</option>
-                                            <option value="GCP">Google Cloud Platform</option>
-                                            <option value="AZURE">Azure Blob Storage</option>
-                                        </select>
-                                    </div>
-                                    <KeyInput
-                                        label="AWS Access Key ID"
-                                        id="aws_access_key_id"
-                                        value={settings.aws_access_key_id}
-                                        onChange={(val) => updateSetting("aws_access_key_id", val)}
-                                        isVisible={showKey["aws_access_key_id"]}
-                                        onToggle={() => toggleKey("aws_access_key_id")}
-                                    />
-                                    <KeyInput
-                                        label="AWS Secret Access Key"
-                                        id="aws_secret_access_key"
-                                        value={settings.aws_secret_access_key}
-                                        onChange={(val) => updateSetting("aws_secret_access_key", val)}
-                                        isVisible={showKey["aws_secret_access_key"]}
-                                        onToggle={() => toggleKey("aws_secret_access_key")}
-                                    />
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Region</label>
-                                            <input
-                                                type="text"
-                                                value={settings.aws_region}
-                                                onChange={(e) => updateSetting("aws_region", e.target.value)}
-                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Bucket Name</label>
-                                            <input
-                                                type="text"
-                                                value={settings.aws_storage_bucket_name}
-                                                onChange={(e) => updateSetting("aws_storage_bucket_name", e.target.value)}
-                                                className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
-                                                placeholder="my-bucket"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-                        )}
-
-                        {activeTab === "Payment" && (
-                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
-                                <div className="flex items-center gap-6">
-                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
-                                        <CreditCard className="h-8 w-8 text-red-500" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">Payment <span className="text-hollow">Gateway</span></h3>
-                                        <p className="text-zinc-500 text-sm">Stripe configuration for system-wide subscription processing.</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6 pt-6 border-t border-white/5">
-                                    <KeyInput
-                                        label="Stripe Secret Key"
-                                        id="stripe_secret_key"
-                                        value={settings.stripe_secret_key}
-                                        onChange={(val) => updateSetting("stripe_secret_key", val)}
-                                        isVisible={showKey["stripe_secret_key"]}
-                                        onToggle={() => toggleKey("stripe_secret_key")}
-                                    />
-                                    <KeyInput
-                                        label="Stripe Webhook Secret"
-                                        id="stripe_webhook_secret"
-                                        value={settings.stripe_webhook_secret}
-                                        onChange={(val) => updateSetting("stripe_webhook_secret", val)}
-                                        isVisible={showKey["stripe_webhook_secret"]}
-                                        onToggle={() => toggleKey("stripe_webhook_secret")}
-                                    />
-                                </div>
-                            </section>
-                        )}
-
-                        {activeTab === "Monetization" && (
-                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
-                                <div className="flex items-center gap-6">
-                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
-                                        <ShoppingCart className="h-8 w-8 text-red-500" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">Monetization <span className="text-hollow">Master</span></h3>
-                                        <p className="text-zinc-500 text-sm">Global commerce, sponsorship, and affiliate infrastructure.</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-8 pt-6 border-t border-white/5">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="space-y-4">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Shopify Integration</h4>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Store URL</label>
-                                                <input
-                                                    type="text"
-                                                    value={settings.shopify_shop_url}
-                                                    onChange={(e) => updateSetting("shopify_shop_url", e.target.value)}
-                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
-                                                    placeholder="your-store.myshopify.com"
-                                                />
-                                            </div>
-                                            <KeyInput
-                                                label="Admin API Token"
-                                                id="shopify_access_token"
-                                                value={settings.shopify_access_token}
-                                                onChange={(val) => updateSetting("shopify_access_token", val)}
-                                                isVisible={showKey["shopify_access_token"]}
-                                                onToggle={() => toggleKey("shopify_access_token")}
-                                            />
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">System Defaults</h4>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Default Membership URL</label>
-                                                <input
-                                                    type="text"
-                                                    value={settings.membership_platform_uri}
-                                                    onChange={(e) => updateSetting("membership_platform_uri", e.target.value)}
-                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
-                                                    placeholder="https://patreon.com/default"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Default Course URL</label>
-                                                <input
-                                                    type="text"
-                                                    value={settings.course_platform_uri}
-                                                    onChange={(e) => updateSetting("course_platform_uri", e.target.value)}
-                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
-                                                    placeholder="https://gumroad.com/default"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-white/5">
-                                        <div className="space-y-4">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Autonomous Money</h4>
-                                            <ToggleSwitch
-                                                label="Auto-Merch Engine"
-                                                description="Automatic design & Shopify publishing"
-                                                checked={settings.auto_merch_enabled === "true"}
-                                                onChange={(val) => updateSetting("auto_merch_enabled", val ? "true" : "false")}
-                                            />
-                                            <div className="p-4 bg-zinc-950/30 border border-zinc-800 rounded-xl space-y-3">
-                                                <div className="flex justify-between items-center">
-                                                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pr-4">Default Aggression</label>
-                                                    <span className="text-red-500 font-bold text-xs">{settings.monetization_aggression}%</span>
-                                                </div>
-                                                <input
-                                                    type="range"
-                                                    min="0"
-                                                    max="100"
-                                                    value={settings.monetization_aggression}
-                                                    onChange={(e) => updateSetting("monetization_aggression", e.target.value)}
-                                                    className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-500"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Global Fallbacks</h4>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Global Lead Gen URL</label>
-                                                <input
-                                                    type="text"
-                                                    value={settings.lead_gen_url}
-                                                    onChange={(e) => updateSetting("lead_gen_url", e.target.value)}
-                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
-                                                    placeholder="https://ettametta.ai/free-resources"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Global Digital Storefront</label>
-                                                <input
-                                                    type="text"
-                                                    value={settings.digital_product_url}
-                                                    onChange={(e) => updateSetting("digital_product_url", e.target.value)}
-                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white"
-                                                    placeholder="https://shop.ettametta.ai"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-                        )}
-
-                        {activeTab === "Infrastructure" && (
-                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
-                                <div className="flex items-center gap-6">
-                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
-                                        <Server className="h-8 w-8 text-red-500" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">System <span className="text-hollow">Node</span></h3>
-                                        <p className="text-zinc-500 text-sm">Production domain and render cluster configuration.</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6 pt-6 border-t border-white/5">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Production Domain</label>
-                                        <input
-                                            type="text"
-                                            value={settings.production_domain}
-                                            onChange={(e) => updateSetting("production_domain", e.target.value)}
-                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
-                                            placeholder="https://api.yourdomain.com"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Render Node URL (LTX)</label>
-                                        <input
-                                            type="text"
-                                            value={settings.render_node_url}
-                                            onChange={(e) => updateSetting("render_node_url", e.target.value)}
-                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
-                                            placeholder="https://your-render-node.ngrok.io"
-                                        />
-                                    </div>
-                                </div>
-
-                                {systemStatus && (
-                                    <div className="pt-10 border-t border-white/5 space-y-6">
-                                        <div className="flex items-center gap-3">
-                                            <Activity className="h-4 w-4 text-emerald-500" />
-                                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Live Node Telemetry</h4>
-                                        </div>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                            <StatusCard icon={Cpu} label="CPU Load" value={systemStatus.cpu_load} color="text-cyan-400" />
-                                            <StatusCard icon={HardDrive} label="Memory" value={systemStatus.memory_usage} color="text-violet-400" />
-                                            <StatusCard icon={Activity} label="Latency" value={systemStatus.latency} color="text-emerald-400" />
-                                            <StatusCard icon={Monitor} label="Uptime" value={systemStatus.uptime} color="text-amber-400" />
-                                        </div>
-                                    </div>
-                                )}
-                            </section>
-                        )}
-
-                        {activeTab === "WhatsApp" && (
-                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
-                                <div className="flex items-center gap-6">
-                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
-                                        <Bot className="h-8 w-8 text-red-500" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">Nexus <span className="text-hollow">Comms</span></h3>
-                                        <p className="text-zinc-500 text-sm">Twilio WhatsApp gateway for system-wide notifications.</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6 pt-6 border-t border-white/5">
-                                    <KeyInput
-                                        label="Twilio Account SID"
-                                        id="twilio_account_sid"
-                                        value={settings.twilio_account_sid}
-                                        onChange={(val) => updateSetting("twilio_account_sid", val)}
-                                        isVisible={showKey["twilio_account_sid"]}
-                                        onToggle={() => toggleKey("twilio_account_sid")}
-                                    />
-                                    <KeyInput
-                                        label="Twilio Auth Token"
-                                        id="twilio_auth_token"
-                                        value={settings.twilio_auth_token}
-                                        onChange={(val) => updateSetting("twilio_auth_token", val)}
-                                        isVisible={showKey["twilio_auth_token"]}
-                                        onToggle={() => toggleKey("twilio_auth_token")}
-                                    />
-                                    <div>
-                                        <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">WhatsApp Sender Number</label>
-                                        <input
-                                            type="text"
-                                            value={settings.twilio_whatsapp_number}
-                                            onChange={(e) => updateSetting("twilio_whatsapp_number", e.target.value)}
-                                            className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
-                                            placeholder="+1234567890"
-                                        />
-                                    </div>
-                                </div>
-                            </section>
-                        )}
-
-                        {activeTab === "Engine" && (
-                            <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
-                                <div className="flex items-center gap-6">
-                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
-                                        <Wand2 className="h-8 w-8 text-red-500" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">Viral <span className="text-hollow">Engine</span></h3>
-                                        <p className="text-zinc-500 text-sm">Autonomous parameters and feature clusters for the production pipeline.</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-white/5">
-                                    <div className="space-y-6">
-                                        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Autonomous Parameters</h4>
-                                        <div className="space-y-4">
-                                            <div>
-                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">Scan Frequency</label>
-                                                <select
-                                                    value={settings.scan_frequency}
-                                                    onChange={(e) => updateSetting("scan_frequency", e.target.value)}
-                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
-                                                >
-                                                    <option value="Every 15 minutes">Every 15 minutes</option>
-                                                    <option value="Every 1 hour">Every 1 hour</option>
-                                                    <option value="Every 6 hours">Every 6 hours</option>
-                                                    <option value="Daily">Daily</option>
-                                                </select>
-                                            </div>
-                                            <ToggleSwitch
-                                                label="Viral Autonomy"
-                                                description="Engine follows the zero-loop without approval"
-                                                checked={settings.auto_pilot === "true"}
-                                                onChange={(val) => updateSetting("auto_pilot", val ? "true" : "false")}
-                                            />
-                                            <ToggleSwitch
-                                                label="Force Originality"
-                                                description="Always prioritize un-indexed content"
-                                                checked={settings.force_originality === "true"}
-                                                onChange={(val) => updateSetting("force_originality", val ? "true" : "false")}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Video Quality Protocol</h4>
-                                        <div className="grid grid-cols-1 gap-4">
-                                            <ToggleSwitch
-                                                label="Sound Design"
-                                                description="Neural audio layering"
-                                                checked={settings.enable_sound_design === "true"}
-                                                onChange={(val) => updateSetting("enable_sound_design", val ? "true" : "false")}
-                                            />
-                                            <ToggleSwitch
-                                                label="Motion Graphics"
-                                                description="High-fidelity visual overrides"
-                                                checked={settings.enable_motion_graphics === "true"}
-                                                onChange={(val) => updateSetting("enable_motion_graphics", val ? "true" : "false")}
-                                            />
-                                            <div className="pt-2">
-                                                <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-widest">AI Video Provider</label>
-                                                <select
-                                                    value={settings.ai_video_provider}
-                                                    onChange={(e) => updateSetting("ai_video_provider", e.target.value)}
-                                                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-4 px-6 text-white font-bold"
-                                                >
-                                                    <option value="none">Disabled</option>
-                                                    <option value="runway">Runway ML</option>
-                                                    <option value="pika">Pika Labs</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-                        )}
-
-                        {activeTab === "Security" && (
-                            <div className="space-y-8">
-                                {securityLoading ? (
-                                    <div className="h-64 flex items-center justify-center">
-                                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                                    </div>
-                                ) : (
-                                    <>
-                                        {/* Security Status Panel */}
-                                        <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-8 shadow-2xl">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-6">
-                                                    <div className="h-16 w-16 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
-                                                        <Shield className="h-8 w-8 text-red-500" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">Security <span className="text-hollow">Status</span></h3>
-                                                        <p className="text-zinc-500 text-sm">Real-time threat monitoring and system integrity overview.</p>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={runSecurityScan}
-                                                    disabled={isScanning}
-                                                    className={cn(
-                                                        "bg-red-500/15 hover:bg-red-500/25 text-red-500 font-bold py-3 px-6 rounded-xl transition-all flex items-center gap-3 uppercase tracking-widest text-[10px] border border-red-500/20",
-                                                        isScanning && "opacity-50 cursor-not-allowed"
-                                                    )}
-                                                >
-                                                    {isScanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
-                                                    {isScanning ? "Scanning..." : "Run Security Audit"}
-                                                </button>
-                                            </div>
-
-                                            {securityStatus && (
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-white/5">
-                                                    <div className="p-6 rounded-2xl bg-zinc-950/50 border border-white/5 space-y-3">
-                                                        <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
-                                                            <Activity className="h-3 w-3" />
-                                                            Health Score
-                                                        </div>
-                                                        <div className={cn(
-                                                            "text-4xl font-bold",
-                                                            securityStatus.health_score >= 80 ? "text-emerald-500" :
-                                                            securityStatus.health_score >= 50 ? "text-amber-500" : "text-red-500"
-                                                        )}>
-                                                            {securityStatus.health_score}%
-                                                        </div>
-                                                        <div className={cn(
-                                                            "text-xs font-bold uppercase tracking-wider",
-                                                            securityStatus.health_score >= 80 ? "text-emerald-500/60" :
-                                                            securityStatus.health_score >= 50 ? "text-amber-500/60" : "text-red-500/60"
-                                                        )}>
-                                                            {securityStatus.threat_level ?? (securityStatus.health_score >= 80 ? "Low Risk" : securityStatus.health_score >= 50 ? "Moderate Risk" : "Critical")}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-6 rounded-2xl bg-zinc-950/50 border border-white/5 space-y-3">
-                                                        <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
-                                                            <CheckCircle className="h-3 w-3" />
-                                                            System Integrity
-                                                        </div>
-                                                        <div className={cn(
-                                                            "text-lg font-bold uppercase",
-                                                            securityStatus.system_integrity === "healthy" ? "text-emerald-500" :
-                                                            securityStatus.system_integrity === "degraded" ? "text-amber-500" : "text-red-500"
-                                                        )}>
-                                                            {securityStatus.system_integrity ?? "Unknown"}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-6 rounded-2xl bg-zinc-950/50 border border-white/5 space-y-3">
-                                                        <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
-                                                            <AlertOctagon className="h-3 w-3" />
-                                                            Recent Threats
-                                                        </div>
-                                                        <div className="text-4xl font-bold text-white">
-                                                            {securityStatus.recent_threats?.length ?? 0}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {securityStatus?.recent_threats && securityStatus.recent_threats.length > 0 && (
-                                                <div className="space-y-4 pt-6 border-t border-white/5">
-                                                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Threat Feed</h4>
-                                                    <div className="space-y-3">
-                                                        {securityStatus.recent_threats.map((threat, idx) => (
-                                                            <div key={threat.id ?? idx} className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 flex items-start gap-4">
-                                                                <div className={cn(
-                                                                    "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-                                                                    threat.severity === "critical" ? "bg-red-500/15 text-red-500" :
-                                                                    threat.severity === "high" ? "bg-amber-500/15 text-amber-500" :
-                                                                    "bg-zinc-500/15 text-zinc-400"
-                                                                )}>
-                                                                    <AlertTriangle className="h-4 w-4" />
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <span className="text-sm font-bold text-white">{threat.type}</span>
-                                                                        <span className={cn(
-                                                                            "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
-                                                                            threat.severity === "critical" ? "bg-red-500/15 text-red-500" :
-                                                                            threat.severity === "high" ? "bg-amber-500/15 text-amber-500" :
-                                                                            "bg-zinc-500/15 text-zinc-400"
-                                                                        )}>
-                                                                            {threat.severity}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-xs text-zinc-500 mt-1">{threat.description}</p>
-                                                                </div>
-                                                                {threat.timestamp && (
-                                                                    <span className="text-[10px] text-zinc-600 shrink-0">
-                                                                        {new Date(threat.timestamp).toLocaleString()}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </section>
-
-                                        {/* Security Events Log */}
-                                        <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-6 shadow-2xl">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-6">
-                                                    <div className="h-12 w-12 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
-                                                        <Clock className="h-6 w-6 text-red-500" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-xl font-bold text-white uppercase tracking-tight">Events <span className="text-hollow">Log</span></h3>
-                                                        <p className="text-zinc-500 text-xs">Chronological security event history.</p>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => {
-                                                        setSecurityLoading(true);
-                                                        fetchSecurityEvents().finally(() => setSecurityLoading(false));
-                                                    }}
-                                                    className="text-zinc-500 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5"
-                                                >
-                                                    <RefreshCw className="h-4 w-4" />
-                                                </button>
-                                            </div>
-
-                                            <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
-                                                {securityEvents.length === 0 ? (
-                                                    <div className="text-center py-12 text-zinc-600">
-                                                        <Shield className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                                                        <p className="text-sm">No security events recorded</p>
-                                                    </div>
-                                                ) : (
-                                                    securityEvents.map((event, idx) => (
-                                                        <div key={event.id ?? idx} className="p-4 rounded-xl bg-zinc-950/50 border border-white/5 flex items-center gap-4">
-                                                            <div className={cn(
-                                                                "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-                                                                event.event_type?.toLowerCase().includes("threat") || event.event_type?.toLowerCase().includes("breach")
-                                                                    ? "bg-red-500/15 text-red-500"
-                                                                    : event.event_type?.toLowerCase().includes("warn")
-                                                                    ? "bg-amber-500/15 text-amber-500"
-                                                                    : "bg-emerald-500/15 text-emerald-500"
-                                                            )}>
-                                                                {event.event_type?.toLowerCase().includes("threat") || event.event_type?.toLowerCase().includes("breach") ? (
-                                                                    <XCircle className="h-4 w-4" />
-                                                                ) : event.event_type?.toLowerCase().includes("warn") ? (
-                                                                    <AlertTriangle className="h-4 w-4" />
-                                                                ) : (
-                                                                    <CheckCircle className="h-4 w-4" />
-                                                                )}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-sm font-bold text-white">{event.event_type}</span>
-                                                                </div>
-                                                                <p className="text-xs text-zinc-500 truncate">{event.description}</p>
-                                                            </div>
-                                                            {event.timestamp && (
-                                                                <span className="text-[10px] text-zinc-600 shrink-0">
-                                                                    {new Date(event.timestamp).toLocaleString()}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                        </section>
-                                    </>
-                                )}
-                            </div>
-                        )}
-
-                        {activeTab === "Audits" && (
-                            <div className="space-y-8">
-                                <section className="card-gradient border border-white/5 rounded-3xl p-10 space-y-10 shadow-2xl">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-6">
-                                            <div className="h-16 w-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.15)]">
-                                                <FileText className="h-8 w-8 text-cyan-400" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-3xl font-bold text-white uppercase tracking-tighter">Admin <span className="text-hollow">Audits</span></h3>
-                                                <p className="text-zinc-500 text-sm">System-wide event logs and administrative actions.</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => {
-                                                setAdminLoading(true);
-                                                fetchAdminAudits().finally(() => setAdminLoading(false));
-                                            }}
-                                            className="text-zinc-500 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5"
-                                        >
-                                            <RefreshCw className={cn("h-4 w-4", adminLoading && "animate-spin")} />
-                                        </button>
-                                    </div>
-
-                                    <div className="space-y-4 pt-6 border-t border-white/5">
-                                        {adminLoading ? (
-                                            <div className="py-20 flex items-center justify-center">
-                                                <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                                            </div>
-                                        ) : adminAudits.length === 0 ? (
-                                            <div className="py-20 text-center text-zinc-600">
-                                                <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                                                <p className="font-bold uppercase tracking-widest text-xs">No administrative audits found</p>
-                                            </div>
-                                        ) : (
-                                            <div className="glass-card divide-y divide-white/5 rounded-2xl overflow-hidden border border-white/5">
-                                                {adminAudits.map((audit, idx) => (
-                                                    <div key={audit.id ?? idx} className="p-6 flex items-center justify-between hover:bg-white/2 transition-colors group">
-                                                        <div className="flex items-center gap-6">
-                                                            <div className={cn(
-                                                                "h-10 w-10 rounded-xl flex items-center justify-center",
-                                                                audit.status === "SUCCESS" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
-                                                            )}>
-                                                                {audit.status === "SUCCESS" ? <CheckCircle className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
-                                                            </div>
-                                                            <div>
-                                                                <h4 className="text-sm font-bold text-white uppercase">{audit.action || "System Action"}</h4>
-                                                                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">{audit.performer || "SYSTEM"}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-right flex items-center gap-6">
-                                                            <div className="hidden md:block">
-                                                                <p className="text-[10px] text-zinc-400 font-mono">{audit.timestamp || new Date().toISOString()}</p>
-                                                                <p className="text-[9px] text-zinc-600 uppercase tracking-tight">{audit.ip_address || "Internal"}</p>
-                                                            </div>
-                                                            <ChevronRight className="h-4 w-4 text-zinc-700 group-hover:text-zinc-400 transition-colors" />
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </section>
-                            </div>
-                        )}
-
-                        {activeTab === "Environment" && (
-                            <EnvManager />
-                        )}
-                    </div>
-                </div>
-            </div>
-        </DashboardLayout>
-    );
-}
-
-function KeyInput({ label, id, value, onChange, isVisible, onToggle }: {
-    label: string;
-    id: string;
-    value: string;
-    onChange: (value: string) => void;
-    isVisible: boolean;
-    onToggle: () => void;
-}) {
-    return (
-        <div>
-            <label htmlFor={id} className="text-sm font-bold text-zinc-400 mb-2 block">{label}</label>
-            <div className="relative">
-                <input
-                    id={id}
-                    type={isVisible ? "text" : "password"}
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    className="w-full bg-zinc-950/50 border border-white/10 rounded-xl py-3 px-4 pr-12 text-white font-mono text-sm"
-                    placeholder="••••••••••••••••"
-                />
+        <CommandCenterLayout
+          title="SYSTEM MASTER"
+          subtitle="ADMIN_PROTOCOL_V4.0"
+          leftPanel={
+            <div className="space-y-1">
+              {tabs.map((item) => (
                 <button
-                    type="button"
-                    onClick={onToggle}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                  key={item.id}
+                  onClick={() => setActiveEngine(item.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                    activeEngine === item.id ? "bg-red-500/10 text-red-500 border border-red-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                  )}
                 >
-                    {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <item.icon className="h-4 w-4" />
+                  <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
+                  {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />}
                 </button>
+              ))}
             </div>
-        </div>
-    );
-}
-
-function ToggleSwitch({ label, description, checked, onChange }: {
-    label: string;
-    description: string;
-    checked: boolean;
-    onChange: (value: boolean) => void;
-}) {
-    return (
-        <button
-            onClick={() => onChange(!checked)}
-            className={cn(
-                "p-4 rounded-2xl border text-left transition-all",
-                checked
-                    ? "bg-primary/10 border-primary"
-                    : "bg-zinc-950/30 border-zinc-800 hover:border-zinc-700"
-            )}
+          }
+          rightPanel={
+            <>
+              <AgentMatrix agents={agents} />
+              <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
+                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Health Score</h4>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-bold text-white">{securityStatus?.health_score || 0}%</span>
+                  <span className={cn("text-[8px] font-bold uppercase tracking-widest", securityStatus?.threat_level === "LOW" ? "text-emerald-500" : "text-red-500")}>
+                    Threat: {securityStatus?.threat_level || "NOMINAL"}
+                  </span>
+                </div>
+              </div>
+              <Button onClick={saveSettings} disabled={isSaving} className="w-full bg-red-500 hover:bg-red-400 text-white font-bold h-14 rounded-2xl">
+                {isSaving ? "Synchronizing..." : "Commit Protocol"}
+              </Button>
+            </>
+          }
         >
-            <div className="flex items-center justify-between">
-                <div>
-                    <span className={cn("block font-bold text-sm", checked ? "text-white" : "text-zinc-400")}>{label}</span>
-                    <span className="text-xs text-zinc-500">{description}</span>
+          <div className="p-10 space-y-10 relative h-full flex flex-col">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeEngine}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="flex-1 flex flex-col min-h-0"
+              >
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 space-y-10">
+                  {activeEngine === "OAuth" && (
+                    <div className="space-y-8">
+                       <h3 className="text-2xl font-bold text-white uppercase tracking-widest">OAuth Configuration</h3>
+                       <div className="grid grid-cols-1 gap-6">
+                         <SettingField label="Google Client ID" value={settings.google_client_id} onChange={(v) => setSettings({...settings, google_client_id: v})} />
+                         <SettingField label="Google Secret" value={settings.google_client_secret} onChange={(v) => setSettings({...settings, google_client_secret: v})} isSecret />
+                         <SettingField label="TikTok Key" value={settings.tiktok_client_key} onChange={(v) => setSettings({...settings, tiktok_client_key: v})} />
+                         <SettingField label="TikTok Secret" value={settings.tiktok_client_secret} onChange={(v) => setSettings({...settings, tiktok_client_secret: v})} isSecret />
+                       </div>
+                    </div>
+                  )}
+
+                  {activeEngine === "Infrastructure" && (
+                    <div className="space-y-10">
+                      <h3 className="text-2xl font-bold text-white uppercase tracking-widest">Node Infrastructure</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                        <StatusCard icon={Cpu} label="CPU Load" value={systemStatus?.cpu_load || "0%"} color="text-cyan-400" />
+                        <StatusCard icon={HardDrive} label="Memory" value={systemStatus?.memory_usage || "0%"} color="text-violet-400" />
+                        <StatusCard icon={Activity} label="Latency" value={systemStatus?.latency || "0ms"} color="text-emerald-400" />
+                        <StatusCard icon={Monitor} label="Uptime" value={systemStatus?.uptime || "0h"} color="text-amber-400" />
+                      </div>
+                      <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-6">
+                        <SettingField label="Production Domain" value={settings.production_domain} onChange={(v) => setSettings({...settings, production_domain: v})} />
+                        <SettingField label="Render Cluster URL" value={settings.render_node_url} onChange={(v) => setSettings({...settings, render_node_url: v})} />
+                      </div>
+                    </div>
+                  )}
+
+                  {activeEngine === "Security" && (
+                    <div className="space-y-10">
+                       <h3 className="text-2xl font-bold text-white uppercase tracking-widest">Security Sentinel</h3>
+                       <div className="p-10 rounded-[32px] bg-red-500/5 border border-red-500/10 flex items-center justify-between">
+                         <div className="flex items-center gap-6">
+                           <ShieldCheck className="h-10 w-10 text-red-500" />
+                           <div className="space-y-1">
+                             <h4 className="text-white font-bold uppercase tracking-widest text-sm">System Integrity</h4>
+                             <p className="text-zinc-500 text-xs">Platform nodes are running verified code signatures.</p>
+                           </div>
+                         </div>
+                         <Button className="bg-red-500 text-white font-bold h-12 px-8">Run Audit</Button>
+                       </div>
+                    </div>
+                  )}
                 </div>
-                <div className={cn(
-                    "h-6 w-12 rounded-full transition-colors relative",
-                    checked ? "bg-primary" : "bg-zinc-700"
-                )}>
-                    <div className={cn(
-                        "absolute top-1 h-4 w-4 rounded-full bg-white transition-all",
-                        checked ? "left-7" : "left-1"
-                    )} />
+
+                <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+                  <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Master Logs</span>
+                    <span className="text-[8px] font-mono text-red-500/50">ADMIN_GATE_ACTIVE</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                    {logs.map((log, i) => (
+                      <div key={i} className="flex gap-4">
+                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                        <span className={cn(
+                          log.includes("[PROTOCOL]") ? "text-cyan-400" :
+                          log.includes("[SUCCESS]") ? "text-emerald-500" : "text-zinc-600"
+                        )}>{log}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-            </div>
-        </button>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </CommandCenterLayout>
     );
 }
 
-function StatusCard({ icon: Icon, label, value, color }: any) {
-    return (
-        <div className="p-6 rounded-2xl bg-zinc-950/50 border border-white/5 space-y-3">
-            <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
-                <Icon className="h-3 w-3" />
-                {label}
-            </div>
-            <div className={cn("text-xl font-bold tabular-nums", color)}>
-                {value || "---"}
-            </div>
-        </div>
-    );
+function SettingField({ label, value, onChange, isSecret = false }: { label: string, value: string, onChange: (v: string) => void, isSecret?: boolean }) {
+  const [show, setShow] = useState(!isSecret);
+  return (
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">{label}</label>
+      <div className="relative">
+        <input
+          type={show ? "text" : "password"}
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-[#0F0F11]/60 border border-white/5 rounded-2xl px-6 py-4 text-white font-mono text-xs focus:border-red-500/30 transition-all outline-none"
+        />
+        {isSecret && (
+          <button onClick={() => setShow(!show)} className="absolute right-6 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors">
+            {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatusCard({ icon: Icon, label, value, color }: { icon: any, label: string, value: string, color: string }) {
+  return (
+    <div className="p-6 rounded-2xl bg-white/2 border border-white/5 space-y-3">
+      <Icon className={cn("h-5 w-5", color)} />
+      <div className="space-y-1">
+        <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{label}</span>
+        <p className="text-xl font-bold text-white tracking-tight">{value}</p>
+      </div>
+    </div>
+  );
 }

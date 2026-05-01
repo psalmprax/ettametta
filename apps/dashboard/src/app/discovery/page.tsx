@@ -1,146 +1,66 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import dynamic from "next/dynamic";
-import { Canvas } from "@react-three/fiber";
-import { Float, Sphere, MeshDistortMaterial } from "@react-three/drei";
-import DashboardLayout from "@/components/layout";
-import {
-    Search,
+import { 
+    Search, 
+    Activity, 
+    Zap, 
+    TrendingUp, 
+    Globe, 
+    ShieldAlert, 
+    Cpu,
+    ArrowUpRight,
     Play,
-    RefreshCw,
-    Activity,
-    ArrowRight,
     BarChart3,
-    Zap
+    RefreshCw,
+    Network,
+    Target,
+    Radar,
+    Loader2,
+    Terminal
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { API_BASE } from "@/lib/config";
+import { API_BASE, WS_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { withRealFallback } from "@/lib/real_first_utils";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
+import CommandCenterLayout from "@/components/CommandCenterLayout";
+import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
+import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
-import { HighVelocityTicker } from "@/components/ui/HighVelocityTicker";
 
 const Geomap = dynamic(() => import("@/components/ui/Geomap"), { ssr: false });
-
-// --- CLEAN DESIGN COMPONENTS ---
-
-function DiscoveryBackground() {
-    return (
-        <div className="absolute inset-0 z-0 pointer-events-none">
-            <div className="absolute inset-0 bg-zinc-950" />
-            <div className="absolute inset-0 cyber-grid opacity-10" />
-            <div className="absolute inset-0 scanline opacity-5" />
-            <div className="absolute top-0 left-0 w-full h-96 bg-linear-to-b from-primary/5 to-transparent" />
-        </div>
-    );
-}
+const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
 
 interface ContentCandidate {
     id: string;
     platform: string;
     category: string;
-    description: string;
-    thumbnail_uri: string;
-    view_count: number;
-    engagement_score: number;
-    viral_score: number;
-    published_at: string;
-    creator_name: string;
-    source_uri: string;
-    duration_seconds: number;
     title: string;
-}
-
-interface DiscoveryAlert {
-    id: string;
-    niche: string;
-    message: string;
-    severity: string;
-    threshold?: number | string;
+    viral_score: number;
+    view_count: number;
+    creator_name: string;
 }
 
 function DiscoveryContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const [activeEngine, setActiveEngine] = useState("trends");
     const [candidates, setCandidates] = useState<ContentCandidate[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [activeNiche, setActiveNiche] = useState(searchParams.get("q") || "Motivation");
-    const [filter, setFilter] = useState("all");
-    const [timeHorizon, setTimeHorizon] = useState("30d");
-    const [niches, setNiches] = useState<string[]>(["Motivation", "AI", "Gaming", "Tech", "Finance"]);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [isSearching, setIsSearching] = useState(false);
-    const [alerts, setAlerts] = useState<DiscoveryAlert[]>([]);
-    const [monitoredNiches, setMonitoredNiches] = useState<string[]>([]);
-    
-    const [selectedCandidate, setSelectedCandidate] = useState<ContentCandidate | null>(null);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [analysisResult, setAnalysisResult] = useState<any>(null);
-    const [analysisTask, setAnalysisTask] = useState<string | null>(null);
-    const [isClusterScanning, setIsClusterScanning] = useState(false);
-    const [summary, setSummary] = useState({ total_candidates: 0, high_viral_count: 0 });
-
-    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-    useEffect(() => {
-        return () => {
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-        };
-    }, []);
-
-    // Fetch Initial Data
-    const loadInitialData = useCallback(async () => {
-        try {
-            const token = await getAuthToken();
-            const headers = { Authorization: `Bearer ${token}` };
-            
-            const alertsRes = await fetch(`${API_BASE}/discovery/alerts`, { headers });
-            if (alertsRes.ok) {
-                const alertData = await alertsRes.json();
-                const alertList = (alertData.data?.alerts || alertData.alerts || []) as DiscoveryAlert[];
-                setAlerts(alertList);
-                const watchedNiches = alertList.map((a) => a.niche);
-                setMonitoredNiches(watchedNiches);
-                // Sync niches list with monitored ones if that's the primary source
-                if (watchedNiches.length > 0) {
-                    setNiches(prev => Array.from(new Set([...prev, ...watchedNiches])));
-                }
-            }
-            const summaryRes = await fetch(`${API_BASE}/discovery/summary`, { headers });
-            if (summaryRes.ok) {
-                const summaryData = await summaryRes.json();
-                setSummary({
-                    total_candidates: summaryData.data?.total_candidates || 0,
-                    high_viral_count: summaryData.data?.high_viral_count || 0
-                });
-            }
-        } catch (err) {
-            console.error("Failed to load discovery data:", err);
-        }
-    }, []);
-
-    useEffect(() => {
-        loadInitialData();
-    }, [loadInitialData]);
+    const [logs, setLogs] = useState<string[]>(["SCANNER_INITIALIZED", "POOLING_GLOBAL_TELEMETRY"]);
+    const [telemetry, setTelemetry] = useState<any>(null);
 
     const fetchTrends = useCallback(async () => {
-        setIsLoading(true);
         const token = await getAuthToken();
-        if (!token) {
-            setIsLoading(false);
-            return;
-        }
+        if (!token) return;
 
-        // Logic: The backend trends endpoint expects niche and horizon.
-        // We handle platform filtering on the client side for higher agility.
-        await withRealFallback<{ trends: ContentCandidate[] } | ContentCandidate[]>(
-            () => fetch(`${API_BASE}/discovery/trends?niche=${encodeURIComponent(activeNiche)}&horizon=${timeHorizon}`, {
+        setLogs(prev => [`[SCAN] Initiating Trend Analysis: ${activeNiche}`, ...prev]);
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/discovery/trends?niche=${encodeURIComponent(activeNiche)}`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
@@ -148,593 +68,155 @@ function DiscoveryContent() {
                 onSuccess: (data) => {
                     const trends = Array.isArray(data) ? data : (data?.trends || []);
                     setCandidates(trends);
-                },
-                onFallback: (err: any) => {
-                    toast.error("Discovery module unstable", {
-                        description: err.message
-                    });
+                    setLogs(prev => [`[SUCCESS] Found ${trends.length} Viral Candidates.`, ...prev]);
                 }
             }
         );
-        setIsLoading(false);
-    }, [activeNiche, timeHorizon]);
+    }, [activeNiche]);
 
     useEffect(() => {
         fetchTrends();
     }, [fetchTrends]);
 
-    // Client-side filtering logic
-    const filteredCandidates = useMemo(() => {
-        if (filter === "all") return candidates;
-        return candidates.filter(c => c.platform?.toLowerCase() === filter.toLowerCase());
-    }, [candidates, filter]);
-
-    const handleSearch = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!searchQuery.trim()) return;
-
-        setIsSearching(true);
-        const token = await getAuthToken();
-        if (!token) {
-            setIsSearching(false);
-            return;
-        }
-
-        await withRealFallback<{ results: ContentCandidate[] } | ContentCandidate[]>(
-            () => fetch(`${API_BASE}/discovery/search?q=${encodeURIComponent(searchQuery)}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: [],
-                onSuccess: (data) => {
-                    const results = Array.isArray(data) ? data : (data?.results || []);
-                    setCandidates(results);
-                    setActiveNiche(searchQuery);
-                },
-                onFallback: (err: any) => {
-                    toast.error("Search failed", { description: err.message });
-                }
-            }
-        );
-        setIsSearching(false);
-    };
-
-    const handleDefineCluster = async () => {
-        setIsClusterScanning(true);
-        const token = await getAuthToken();
-        if (!token) {
-            setIsClusterScanning(false);
-            return;
-        }
-
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/discovery/scan`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ 
-                    niches: [activeNiche],
-                    deep: true 
-                })
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    toast.success(data?.message || "Autonomous cluster scan initiated");
-                },
-                onFallback: (err) => {
-                    toast.error("Cluster protocol failed", { description: err.message });
-                }
-            }
-        );
-        setIsClusterScanning(false);
-    };
-
-    const handleWatchNiche = async (niche: string) => {
-        const isWatching = monitoredNiches.includes(niche);
-        const token = await getAuthToken();
-        if (!token) return;
-
-        await withRealFallback<any>(
-            async () => {
-                if (isWatching) {
-                    const alert = alerts.find(a => a.niche === niche);
-                    if (alert) {
-                        return fetch(`${API_BASE}/discovery/alerts/${alert.id}`, {
-                            method: "DELETE",
-                            headers: { Authorization: `Bearer ${token}` }
-                        });
-                    }
-                } else {
-                    return fetch(`${API_BASE}/discovery/niche/watch`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`
-                        },
-                        body: JSON.stringify({ niche })
-                    });
-                }
-            },
-            {
-                fallback: null,
-                onSuccess: () => {
-                    toast.success(isWatching ? `Stopped watching ${niche}` : `Watching ${niche} for viral breakouts`);
-                    loadInitialData();
-                },
-                onFallback: (err) => {
-                    toast.error("Failed to update watch status", { description: err.message });
-                }
-            }
-        );
-    };
-
-    const handleOpenAnalysis = async (candidate: ContentCandidate) => {
-        setSelectedCandidate(candidate);
-        setAnalysisResult(null);
-        setIsAnalyzing(true);
-
-        const token = await getAuthToken();
-        if (!token) {
-            setIsAnalyzing(false);
-            return;
-        }
-
-        await withRealFallback<{ task_id: string }>(
-            () => fetch(`${API_BASE}/discovery/analyze`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ 
-                    url: candidate.source_uri || candidate.id,
-                    niche: activeNiche 
-                })
-            }),
-            {
-                fallback: { task_id: "" },
-                onSuccess: (data) => {
-                    const taskId = data.task_id;
-                    setAnalysisTask(taskId);
-
-                    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-                    
-                    pollIntervalRef.current = setInterval(async () => {
-                        await withRealFallback<any>(
-                            () => fetch(`${API_BASE}/discovery/analyze/${taskId}`, {
-                                headers: { Authorization: `Bearer ${token}` }
-                            }),
-                            {
-                                fallback: null,
-                                onSuccess: (statusData) => {
-                                    if (statusData.status === "completed") {
-                                        setAnalysisResult(statusData.result);
-                                        setIsAnalyzing(false);
-                                        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-                                    } else if (statusData.status === "failed") {
-                                        setIsAnalyzing(false);
-                                        toast.error("Analysis sequence failed");
-                                        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-                                    }
-                                }
-                            }
-                        );
-                    }, 3000);
-                },
-                onFallback: (err) => {
-                    setIsAnalyzing(false);
-                    toast.error("Analysis initialization failed", { description: err.message });
-                }
-            }
-        );
-    };
-
-    const handleCloseAnalysis = () => {
-        setSelectedCandidate(null);
-        if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-        }
-    };
+    // Prepare Agent Data
+    const agents = [
+        { id: "SCAN_01", name: "Viral Radar", icon: Radar, status: "ACTIVE" as any, latency: 850, load: 12, details: "Scraping TikTok/YT" },
+        { id: "INTEL_01", name: "Trend Engine", icon: Cpu, status: "ACTIVE" as any, latency: 45, load: 5, details: "Cross-pollinating Niches" },
+        { id: "GEO_01", name: "Global Sentinel", icon: Globe, status: "IDLE" as any, latency: 2, load: 0, details: "Ready" },
+    ];
 
     return (
-        <div className="min-h-screen bg-bg-base relative flex flex-col font-sans overflow-hidden">
-            <DiscoveryBackground />
-
-            <div className="flex-1 section-container relative py-12 px-6 lg:px-16 max-w-screen-2xl mx-auto w-full z-10">
-                <HighVelocityTicker />
-                
-                {/* DISCOVERY HEADER */}
-                <header className="mb-16 flex flex-col xl:flex-row xl:items-end justify-between gap-12">
-                    <div className="space-y-6">
-                        <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: 80 }}
-                            className="h-1 bg-primary shadow-glow-primary/20"
-                        />
-                        <div className="space-y-2">
-                            <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight uppercase">
-                                Viral Intelligence
-                            </h1>
-                            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest flex items-center gap-3">
-                                <span className="flex items-center gap-2 text-emerald-400">
-                                    <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]"></div>
-                                    Network_Online
-                                </span>
-                                <span className="text-zinc-800">•</span>
-                                <span>Scanning {(summary.total_candidates / 1000).toFixed(1)}K Global Trends</span>
-                            </p>
-                        </div>
-                    </div>
-
-                    <form onSubmit={handleSearch} className="flex-1 max-w-2xl relative">
-                        <Input
-                            variant="default"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Inject Search Query..."
-                            className="pr-32"
-                            data-testid="discovery-search-input"
-                            icon={<Search className="h-4 w-4" />}
-                        />
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                            <Button 
-                                type="submit"
-                                variant="primary"
-                                size="sm"
-                                isLoading={isSearching}
-                                className="px-8"
-                            >
-                                Scan
-                            </Button>
-                        </div>
-                    </form>
-                </header>
-
-                {/* CONTROL PANEL */}
-                <div className="flex flex-wrap items-center gap-6 mb-12">
-                    <div className="flex gap-2 p-1.5 bg-white/5 rounded-2xl border border-white/5 shadow-inner">
-                        {["All", "YouTube", "TikTok", "Instagram", "X"].map(plat => (
-                            <button 
-                                key={plat}
-                                onClick={() => setFilter(plat.toLowerCase())}
-                                className={cn(
-                                    "px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
-                                    filter === plat.toLowerCase() 
-                                        ? "bg-primary text-black shadow-glow-primary/20" 
-                                        : "text-zinc-500 hover:text-white hover:bg-white/5"
-                                )}
-                            >
-                                {plat}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="flex gap-2 p-1.5 bg-white/5 rounded-2xl border border-white/5 shadow-inner">
-                        {["24H", "7D", "30D"].map(h => (
-                            <button 
-                                key={h}
-                                onClick={() => setTimeHorizon(h.toLowerCase())}
-                                className={cn(
-                                    "px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
-                                    timeHorizon === h.toLowerCase()
-                                        ? "bg-zinc-800 text-white"
-                                        : "text-zinc-500 hover:text-white hover:bg-white/5"
-                                )}
-                            >
-                                {h}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="ml-auto flex items-center gap-4">
-                        <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Active_Cluster:</span>
-                        <div className="px-6 py-2 bg-primary/10 border border-primary/20 text-primary font-bold text-[10px] rounded-full uppercase tracking-widest">
-                            {activeNiche || "General"}
-                        </div>
-                    </div>
+        <CommandCenterLayout
+            title="VIRAL INTELLIGENCE"
+            subtitle="GLOBAL_DISCOVERY_V3.0"
+            leftPanel={
+                <div className="space-y-1">
+                    {[
+                        { id: "trends", label: "Viral Trends", icon: TrendingUp },
+                        { id: "intel", label: "Niche Intel", icon: Cpu },
+                        { id: "alerts", label: "Neural Alerts", icon: ShieldAlert },
+                        { id: "hotspots", label: "Hotspots", icon: Globe },
+                        { id: "logs", label: "Engine Logs", icon: Terminal },
+                    ].map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveEngine(item.id)}
+                            className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                                activeEngine === item.id ? "bg-primary/10 text-primary border border-primary/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                            )}
+                        >
+                            <item.icon className="h-4 w-4" />
+                            <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
+                            {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />}
+                        </button>
+                    ))}
                 </div>
-
-                {/* CONTENT GRID */}
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
-                    
-                    {/* SIDEBAR: NICHE CLUSTERS */}
-                    <div className="xl:col-span-3 space-y-8">
-                        <Card variant="solid" className="p-10 space-y-8 rounded-2xl border-white/5 bg-slate-900/40 backdrop-blur-xl">
-                            <div className="flex items-center justify-between border-b border-white/5 pb-6">
-                                <h2 className="text-[10px] font-bold text-white flex items-center gap-3 uppercase tracking-[0.3em]">
-                                    <Activity className="h-4 w-4 text-primary" />
-                                    Market Intel Pods
-                                </h2>
-                                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
+            }
+            rightPanel={
+                <>
+                    <AgentMatrix agents={agents} />
+                    <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Scanner Metrics</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col">
+                                <span className="text-[8px] text-zinc-600 font-bold uppercase">Candidates</span>
+                                <span className="text-xl font-bold text-white">{candidates.length}</span>
                             </div>
-                            <div className="space-y-2">
-                                {niches.slice(0, 10).map(n => (
-                                    <div key={n} className="group relative">
-                                        <button 
-                                            onClick={() => setActiveNiche(n)}
-                                            className={cn(
-                                                "w-full text-left px-6 py-5 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-between group relative overflow-hidden",
-                                                activeNiche === n 
-                                                    ? "bg-primary/5 text-primary border border-primary/20" 
-                                                    : "text-zinc-500 hover:text-white hover:bg-white/2 border border-transparent"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className={cn(
-                                                    "h-2 w-2 rounded-full",
-                                                    activeNiche === n ? "bg-primary shadow-[0_0_8px_#00fbfb]" : "bg-zinc-800"
-                                                )} />
-                                                {n}
-                                            </div>
-                                            <ArrowRight className={cn("h-4 w-4 opacity-0 transition-all -translate-x-2", activeNiche === n && "opacity-100 translate-x-0")} />
-                                        </button>
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); handleWatchNiche(n); }}
-                                            className={cn(
-                                                "absolute right-12 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all z-20",
-                                                monitoredNiches.includes(n) ? "text-emerald-500" : "text-zinc-800 opacity-0 group-hover:opacity-100"
-                                            )}
-                                            title={monitoredNiches.includes(n) ? "Watching" : "Watch Niche"}
-                                        >
-                                            <Zap className={cn("h-3 w-3", monitoredNiches.includes(n) && "fill-current")} />
-                                        </button>
-                                    </div>
-                                ))}
+                            <div className="flex flex-col">
+                                <span className="text-[8px] text-zinc-600 font-bold uppercase">Alerts</span>
+                                <span className="text-xl font-bold text-rose-500">2</span>
                             </div>
-                            <button 
-                                onClick={handleDefineCluster}
-                                disabled={isClusterScanning}
-                                className={cn(
-                                    "action-secondary w-full py-6 border-dashed opacity-50 hover:opacity-100 rounded-2xl text-[10px] tracking-widest uppercase transition-all disabled:cursor-wait",
-                                    isClusterScanning && "opacity-100 bg-primary/10 border-primary/20"
-                                )}
-                            >
-                                {isClusterScanning ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                        Scanning...
-                                    </span>
-                                ) : (
-                                    "+ Define Cluster"
-                                )}
-                            </button>
-                        </Card>
-
-                        {/* ALERTS SECTION */}
-                        <Card variant="solid" className="p-8 space-y-6 rounded-2xl border-white/5 bg-slate-900/40">
-                            <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-3">
-                                <Zap className="h-4 w-4 text-amber-500" />
-                                Neural Alerts
-                            </h3>
-                            <div className="space-y-4 max-h-64 overflow-y-auto custom-scrollbar pr-2">
-                                {alerts.length > 0 ? alerts.map((alert, i) => (
-                                    <div key={i} className="p-4 rounded-2xl bg-white/2 border border-white/5 space-y-1">
-                                        <p className="text-[10px] font-bold text-white uppercase">{alert.niche}</p>
-                                        <p className="text-[8px] text-zinc-600 font-medium">Monitoring for score &gt; {alert.threshold}</p>
-                                    </div>
-                                )) : (
-                                    <div className="py-8 text-center opacity-30">
-                                        <p className="text-[9px] font-bold uppercase text-zinc-700">No active alerts</p>
-                                    </div>
-                                )}
-                            </div>
-                        </Card>
-
-                        <div className="surface-glass rounded-2xl border border-white/5 h-80 overflow-hidden relative group bg-black/40 backdrop-blur-md">
-                            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent z-10 flex flex-col justify-end p-8">
-                                <span className="text-white text-[10px] font-bold uppercase tracking-widest mb-1">Global Hotspots</span>
-                                <p className="text-zinc-500 text-[8px] uppercase tracking-widest">Live Geographic Feed</p>
-                            </div>
-                            <Geomap />
                         </div>
                     </div>
+                </>
+            }
+        >
+            <div className="p-10 space-y-10 relative h-full flex flex-col">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeEngine}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="flex-1 flex flex-col min-h-0"
+                    >
+                        {activeEngine === "trends" && (
+                            <div className="space-y-8 h-full flex flex-col">
+                                <div className="flex items-center gap-6 shrink-0">
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="text"
+                                            placeholder="SCAN_NICHE_FOR_VIRALITY..."
+                                            value={activeNiche}
+                                            onChange={(e) => setActiveNiche(e.target.value)}
+                                            onKeyDown={(e) => e.key === "Enter" && fetchTrends()}
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 pl-14 text-white font-mono text-lg focus:outline-none focus:border-primary/50"
+                                        />
+                                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500" />
+                                    </div>
+                                    <Button onClick={fetchTrends} className="h-20 px-10 bg-primary text-black font-bold text-lg rounded-2xl uppercase tracking-widest">
+                                        Initiate Scan
+                                    </Button>
+                                </div>
 
-                    {/* MAIN: CANDIDATES */}
-                    <div className="xl:col-span-9">
-                        {isLoading ? (
-                            <div className="h-[600px] flex flex-col items-center justify-center space-y-6">
-                                <div className="h-16 w-16 border-2 border-primary border-t-transparent rounded-full animate-spin shadow-glow-primary/20" />
-                                <span className="text-zinc-600 text-[10px] font-bold uppercase tracking-[0.3em] animate-pulse">Syncing Viral Data...</span>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {filteredCandidates.map((c, i) => (
-                                    <motion.div 
-                                        key={c.id}
-                                        initial={{ opacity: 0, y: 30 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: i * 0.05 }}
-                                        className="group relative"
-                                        data-testid="candidate-card"
-                                    >
-                                        <Card variant="solid" className="h-full overflow-hidden flex flex-col border-white/5 hover:border-primary/30 transition-all duration-500 rounded-2xl">
-                                            {/* Thumbnail */}
-                                            <div className="relative aspect-video overflow-hidden bg-zinc-900">
-                                                <img 
-                                                    src={c.thumbnail_uri || "https://api.dicebear.com/7.x/shapes/svg?seed=" + c.id} 
-                                                    alt={c.title}
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
-                                                />
-                                                <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-transparent opacity-60" />
-                                                
-                                                <div className="absolute top-4 left-4 flex gap-2">
-                                                    <div className="px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-full text-[8px] font-bold text-white uppercase tracking-widest">
-                                                        {c.platform}
-                                                    </div>
-                                                </div>
-
-                                                <div className="absolute bottom-4 right-4">
-                                                    <div className="px-4 py-1.5 bg-emerald-500 rounded-full text-black font-black text-[9px] flex items-center gap-2 shadow-glow-emerald/20">
-                                                        <Activity className="h-3 w-3" />
-                                                        {c.viral_score}% VIRAL
-                                                    </div>
-                                                </div>
-
-                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
-                                                    <div 
-                                                        onClick={() => handleOpenAnalysis(c)}
-                                                        className="h-16 w-16 bg-primary rounded-full flex items-center justify-center shadow-glow-primary/40 transform scale-75 group-hover:scale-100 transition-transform duration-500 cursor-pointer"
-                                                    >
-                                                        <Play className="h-6 w-6 text-black ml-1" />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Info */}
-                                            <div className="p-8 flex flex-col flex-1 space-y-6">
-                                                <h3 className="text-lg font-bold text-white line-clamp-2 leading-tight uppercase tracking-tight group-hover:text-primary transition-colors">
-                                                    {c.title}
-                                                </h3>
-                                                
-                                                <div className="flex items-center justify-between text-zinc-500 font-bold text-[9px] uppercase tracking-widest">
-                                                    <span className="flex items-center gap-2">
-                                                        <div className="h-1.5 w-1.5 bg-zinc-700 rounded-full" />
-                                                        {c.creator_name}
-                                                    </span>
-                                                    <span className="text-zinc-400">{(c.view_count / 1000).toFixed(1)}K VIEWS</span>
-                                                </div>
-
-                                                <div className="flex gap-4 pt-6 border-t border-white/5">
-                                                    <Button 
-                                                        onClick={() => handleOpenAnalysis(c)}
-                                                        variant="primary"
-                                                        size="sm"
-                                                        className="flex-1 py-6 rounded-2xl text-[10px] tracking-[0.2em]"
-                                                    >
-                                                        Deep Scan
-                                                    </Button>
-                                                    <Button variant="secondary" size="sm" className="rounded-2xl w-14 p-0">
-                                                        <BarChart3 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    </motion.div>
-                                ))}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 overflow-y-auto custom-scrollbar p-1">
+                                    {candidates.map((c, i) => (
+                                        <DesignCard
+                                            key={c.id}
+                                            title={c.title}
+                                            status="Viral"
+                                            metrics={[
+                                                { label: "Viral Score", value: `${c.viral_score}%`, progress: c.viral_score, color: "text-emerald-400" },
+                                                { label: "Views", value: `${(c.view_count / 1000).toFixed(1)}K`, color: "text-cyan-400" }
+                                            ]}
+                                            footerInfo={`${c.platform.toUpperCase()} • ${c.creator_name}`}
+                                            toolsStatus="Live"
+                                            onClick={() => router.push(`/creation?seed=${encodeURIComponent(c.title)}`)}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         )}
-                    </div>
-                </div>
+
+                        {activeEngine === "hotspots" && (
+                            <div className="flex-1 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 overflow-hidden relative">
+                                <Geomap points={[]} />
+                                <div className="absolute top-8 right-8 p-6 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl max-w-xs space-y-2">
+                                    <h4 className="text-white font-bold uppercase tracking-widest text-xs">Live Geolocation Feed</h4>
+                                    <p className="text-zinc-500 text-[10px] leading-relaxed italic">Mapping real-time viral outbreaks across platform clusters.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Scanner Logs</span>
+                                <span className="text-[8px] font-mono text-primary/50">SYSTEM_READY</span>
+                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                                {logs.map((log, i) => (
+                                    <div key={i} className="flex gap-4">
+                                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                                        <span className={cn(
+                                            log.includes("[SCAN]") ? "text-cyan-400" :
+                                            log.includes("[SUCCESS]") ? "text-emerald-500" : "text-zinc-600"
+                                        )}>{log}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </motion.div>
+                </AnimatePresence>
             </div>
-
-            {/* Analysis Modal (Playwright Expects this) */}
-            <AnimatePresence>
-                {selectedCandidate && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={handleCloseAnalysis}
-                            className="absolute inset-0 bg-black/80 backdrop-blur-md"
-                        />
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-4xl p-10 overflow-hidden shadow-2xl"
-                            data-testid="analysis-modal"
-                        >
-                            <div className="absolute top-0 right-0 p-6">
-                                <button onClick={handleCloseAnalysis} className="text-zinc-500 hover:text-white transition-colors">
-                                    <Activity className="h-5 w-5 rotate-45" />
-                                </button>
-                            </div>
-
-                            <div className="space-y-8">
-                                <div className="flex items-center gap-6">
-                                    <div className="h-20 w-20 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-glow-primary/10">
-                                        <BarChart3 className="h-10 w-10" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-white uppercase tracking-tight">Neural Analysis</h2>
-                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Candidate ID: {selectedCandidate.id}</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="p-6 rounded-3xl bg-white/2 border border-white/5 space-y-2">
-                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Viral Potential</p>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-4xl font-black text-white" data-testid="viral-score">{selectedCandidate.viral_score}%</span>
-                                            <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">High Probability</span>
-                                        </div>
-                                    </div>
-                                    <div className="p-6 rounded-3xl bg-white/2 border border-white/5 space-y-2">
-                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Engagement Rate</p>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-4xl font-black text-white">{(selectedCandidate.engagement_score * 10).toFixed(1)}%</span>
-                                            <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Top 5%</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Synthesized Intelligence</h4>
-                                    {isAnalyzing ? (
-                                        <div className="flex items-center gap-4 py-4">
-                                            <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] animate-pulse">Running Neural Simulation...</p>
-                                        </div>
-                                    ) : analysisResult ? (
-                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                            <p className="text-sm text-zinc-300 leading-relaxed font-medium">
-                                                {analysisResult.analysis?.optimization_hook || "Analysis complete. Optimization patterns identified."}
-                                            </p>
-                                            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                                                <p className="text-[9px] font-bold text-primary uppercase tracking-wider mb-2">Strategy Recommendation</p>
-                                                <p className="text-[11px] text-zinc-400 font-medium">{analysisResult.analysis?.strategy || "Deploying automated variations via Creation engine."}</p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-zinc-300 leading-relaxed font-medium">
-                                            This content cluster shows high resonance in the {selectedCandidate.category} niche. 
-                                            The visual hooks used by {selectedCandidate.creator_name} correlate with current viral peaks 
-                                            in the {activeNiche} sector. Recommendation: Trigger automated variation engine.
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="flex gap-4 pt-4">
-                                    <Button 
-                                        onClick={() => router.push(`/creation?seed=${encodeURIComponent(selectedCandidate.title)}`)}
-                                        variant="primary" 
-                                        className="flex-1 py-8 rounded-2xl text-xs tracking-[0.2em]"
-                                    >
-                                        Transform to Video
-                                    </Button>
-                                    <Button 
-                                        variant="outline" 
-                                        onClick={handleCloseAnalysis}
-                                        className="px-10 rounded-2xl border-white/5 text-zinc-500 hover:text-white"
-                                    >
-                                        Dismiss
-                                    </Button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-        </div>
+        </CommandCenterLayout>
     );
 }
 
 export default function DiscoveryPage() {
     return (
-        <DashboardLayout>
-            <Suspense fallback={
-                <div className="min-h-screen bg-bg-base flex flex-col items-center justify-center space-y-4">
-                    <div className="h-12 w-12 border-2 border-primary border-t-transparent rounded-full animate-spin shadow-glow-primary/20" />
-                    <span className="text-zinc-600 text-[10px] font-bold uppercase tracking-[0.3em] animate-pulse">Initializing Neural Link...</span>
-                </div>
-            }>
-                <DiscoveryContent />
-            </Suspense>
-        </DashboardLayout>
+        <Suspense fallback={null}>
+            <DiscoveryContent />
+        </Suspense>
     );
 }

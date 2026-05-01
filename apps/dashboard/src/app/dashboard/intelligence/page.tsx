@@ -99,11 +99,11 @@ export default function IntelligencePage() {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
                     <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                            <div className="h-1 w-8 bg-purple-600 rounded-full" />
-                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-purple-500">Neural Nexus</span>
+                            <div className="h-1 w-8 bg-violet-500 rounded-full" />
+                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-violet-400">Neural Nexus</span>
                         </div>
                         <h1 className="text-4xl md:text-5xl font-bold tracking-tight uppercase text-white leading-none">
-                            Intelligence <span className="text-purple-400">OS</span>
+                            Intelligence <span className="text-violet-400">OS</span>
                         </h1>
                         <p className="text-slate-500 font-medium max-w-xl">
                             Access high-fidelity reasoning engines and multi-agent crews for complex content strategy and execution.
@@ -115,7 +115,7 @@ export default function IntelligencePage() {
                             onClick={() => setActiveTab('reasoning')}
                             className={cn(
                                 "px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
-                                activeTab === 'reasoning' ? "bg-purple-600 text-white shadow-glow-purple/20" : "text-slate-500 hover:text-white"
+                                activeTab === 'reasoning' ? "bg-violet-500 text-white shadow-glow-purple/20" : "text-slate-500 hover:text-white"
                             )}
                         >
                             DEEP_REASONING
@@ -124,7 +124,7 @@ export default function IntelligencePage() {
                             onClick={() => setActiveTab('crews')}
                             className={cn(
                                 "px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
-                                activeTab === 'crews' ? "bg-purple-600 text-white shadow-glow-purple/20" : "text-slate-500 hover:text-white"
+                                activeTab === 'crews' ? "bg-violet-500 text-white shadow-glow-purple/20" : "text-slate-500 hover:text-white"
                             )}
                         >
                             AGENT_CREWS
@@ -142,10 +142,10 @@ export default function IntelligencePage() {
                             className="grid grid-cols-1 xl:grid-cols-12 gap-12"
                         >
                             <div className="xl:col-span-4 space-y-8">
-                                <Card variant="solid" className="p-8 space-y-8 rounded-[2.5rem] border-white/5 bg-slate-900/40 relative overflow-hidden">
+                                <Card variant="solid" className="p-8 space-y-8 rounded-2xl border-white/5 bg-slate-900/40 relative overflow-hidden">
                                     <div className="flex items-center gap-4">
-                                        <div className="h-10 w-10 rounded-xl bg-purple-600/10 border border-purple-600/20 flex items-center justify-center">
-                                            <Cpu className="h-5 w-5 text-purple-500" />
+                                        <div className="h-10 w-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                                            <Cpu className="h-5 w-5 text-violet-400" />
                                         </div>
                                         <h3 className="font-bold uppercase tracking-tight text-white">Problem Injection</h3>
                                     </div>
@@ -157,7 +157,7 @@ export default function IntelligencePage() {
                                                 value={reasoningPrompt}
                                                 onChange={(e) => setReasoningPrompt(e.target.value)}
                                                 placeholder="Explain the optimal viral strategy for a Stoicism-based TikTok account targeting Gen-Z..."
-                                                className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 text-sm text-slate-300 min-h-[160px] outline-none focus:border-purple-500/50 transition-all resize-none"
+                                                className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 text-sm text-slate-300 min-h-[160px] outline-none focus:border-violet-400/50 transition-all resize-none"
                                             />
                                         </div>
 
@@ -165,7 +165,7 @@ export default function IntelligencePage() {
                                             onClick={handleReason}
                                             disabled={isReasoning}
                                             variant="primary" 
-                                            className="w-full py-6 rounded-2xl bg-purple-600 hover:bg-purple-500 shadow-glow-purple/10"
+                                            className="w-full py-6 rounded-2xl bg-violet-500 hover:bg-violet-400 shadow-glow-purple/10"
                                         >
                                             {isReasoning ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                                             TRIGGER_SYNTHESIS
@@ -173,8 +173,8 @@ export default function IntelligencePage() {
                                     </div>
                                 </Card>
 
-                                <div className="glass-card p-8 rounded-2xl bg-purple-500/5 border-purple-500/10 space-y-4">
-                                    <div className="flex items-center gap-3 text-purple-400">
+                                <div className="glass-card p-8 rounded-2xl bg-violet-400/5 border-violet-400/10 space-y-4">
+                                    <div className="flex items-center gap-3 text-violet-400">
                                         <Shield className="h-4 w-4" />
                                         <span className="text-[9px] font-bold uppercase tracking-widest">Logic Tier 10</span>
                                     </div>
@@ -185,7 +185,7 @@ export default function IntelligencePage() {
                             </div>
 
                             <div className="xl:col-span-8">
-                                <Card variant="solid" className="min-h-[500px] rounded-[2.5rem] border-white/5 bg-black/20 p-10 overflow-hidden relative">
+                                <Card variant="solid" className="min-h-[500px] rounded-2xl border-white/5 bg-black/20 p-10 overflow-hidden relative">
                                     {!reasoningResult && !isReasoning && (
                                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-20 opacity-20">
                                             <Terminal className="h-20 w-20 text-slate-700 mb-6" />
@@ -196,7 +196,7 @@ export default function IntelligencePage() {
 
                                     {isReasoning && (
                                         <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6">
-                                            <div className="h-16 w-16 border-2 border-purple-600 border-t-transparent rounded-full animate-spin shadow-glow-purple/20" />
+                                            <div className="h-16 w-16 border-2 border-violet-500 border-t-transparent rounded-full animate-spin shadow-glow-purple/20" />
                                             <div className="space-y-1 text-center">
                                                 <p className="text-xs font-bold text-white uppercase tracking-[0.4em] animate-pulse">Thinking...</p>
                                                 <p className="text-[8px] text-slate-600 uppercase tracking-widest">Recursive Loop Phase {Math.floor(Date.now() / 1000) % 3 + 1}</p>
@@ -207,7 +207,7 @@ export default function IntelligencePage() {
                                     {reasoningResult && (
                                         <div className="space-y-10 animate-fade-in">
                                             <div className="space-y-4">
-                                                <h3 className="text-[10px] font-bold text-purple-500 uppercase tracking-widest flex items-center gap-2">
+                                                <h3 className="text-[10px] font-bold text-violet-400 uppercase tracking-widest flex items-center gap-2">
                                                     <Workflow className="h-4 w-4" />
                                                     Reasoning Trace
                                                 </h3>
@@ -239,7 +239,7 @@ export default function IntelligencePage() {
                             className="space-y-12"
                         >
                             <div className="max-w-3xl mx-auto space-y-8">
-                                <Card variant="solid" className="p-8 rounded-[2.5rem] border-white/5 bg-slate-900/40 space-y-8">
+                                <Card variant="solid" className="p-8 rounded-2xl border-white/5 bg-slate-900/40 space-y-8">
                                     <div className="flex items-center gap-4">
                                         <div className="h-10 w-10 rounded-xl bg-blue-600/10 border border-blue-600/20 flex items-center justify-center">
                                             <Users className="h-5 w-5 text-blue-500" />
@@ -255,7 +255,7 @@ export default function IntelligencePage() {
                                 </Card>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <Card variant="solid" className="p-8 rounded-[2.5rem] border-white/5 hover:border-blue-500/30 transition-all cursor-pointer group" onClick={() => handleRunCrew('content')}>
+                                    <Card variant="solid" className="p-8 rounded-2xl border-white/5 hover:border-blue-500/30 transition-all cursor-pointer group" onClick={() => handleRunCrew('content')}>
                                         <div className="flex flex-col items-center text-center space-y-6">
                                             <div className="h-20 w-20 rounded-full bg-blue-600/10 border border-blue-600/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                                                 <Workflow className="h-8 w-8 text-blue-500" />
@@ -268,7 +268,7 @@ export default function IntelligencePage() {
                                         </div>
                                     </Card>
 
-                                    <Card variant="solid" className="p-8 rounded-[2.5rem] border-white/5 hover:border-emerald-500/30 transition-all cursor-pointer group" onClick={() => handleRunCrew('affiliate')}>
+                                    <Card variant="solid" className="p-8 rounded-2xl border-white/5 hover:border-emerald-500/30 transition-all cursor-pointer group" onClick={() => handleRunCrew('affiliate')}>
                                         <div className="flex flex-col items-center text-center space-y-6">
                                             <div className="h-20 w-20 rounded-full bg-emerald-600/10 border border-emerald-600/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                                                 <Users className="h-8 w-8 text-emerald-500" />
@@ -296,7 +296,7 @@ export default function IntelligencePage() {
                                     animate={{ opacity: 1, scale: 1 }}
                                     className="max-w-4xl mx-auto"
                                 >
-                                    <Card variant="solid" className="p-10 rounded-[2.5rem] border-white/5 bg-slate-900/40 space-y-8">
+                                    <Card variant="solid" className="p-10 rounded-2xl border-white/5 bg-slate-900/40 space-y-8">
                                         <div className="flex items-center justify-between border-b border-white/5 pb-6">
                                             <h3 className="text-[10px] font-bold text-blue-500 uppercase tracking-widest flex items-center gap-3">
                                                 <Terminal className="h-4 w-4" />

@@ -181,7 +181,7 @@ export default React.memo(function Geomap({ points = [] }: GeomapProps) {
     return (
         <div
             ref={containerRef}
-            className="w-full flex justify-center py-10 overflow-hidden bg-zinc-950/20 rounded-[3rem] border border-white/5 relative"
+            className="w-full flex justify-center py-10 overflow-hidden bg-zinc-950/20 rounded-2xl border border-white/5 relative"
             role="img"
             aria-label={`Global activity map showing ${points.length} active locations`}
         >
