@@ -16,6 +16,7 @@ interface DesignCardProps {
   }[];
   footerInfo?: string;
   toolsStatus?: "Online" | "Offline" | "Live Polling" | "Syncing";
+  onClick?: () => void;
   actions?: ReactNode;
 }
 
@@ -25,13 +26,18 @@ export function DesignCard({
   metrics,
   footerInfo,
   toolsStatus = "Offline",
+  onClick,
   actions
 }: DesignCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="group bg-[#0F0F11] border border-white/5 hover:border-cyan-500/30 rounded-[32px] p-8 transition-all duration-300 relative overflow-hidden"
+      onClick={onClick}
+      className={cn(
+        "group bg-[#0F0F11] border border-white/5 hover:border-cyan-500/30 rounded-[32px] p-8 transition-all duration-300 relative overflow-hidden",
+        onClick && "cursor-pointer active:scale-95"
+      )}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       
