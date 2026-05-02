@@ -22,7 +22,8 @@ const getWsBase = () => {
     }
     if (typeof window !== "undefined") {
         const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const host = window.location.host; // Use the current host and port (e.g. 149...:7200)
+        // If we are on port 7202 (direct dashboard), we likely need port 7200 for WS (Nginx)
+        const host = window.location.host.includes(":7202") ? window.location.host.replace(":7202", ":7200") : window.location.host;
         return `${proto}//${host}/ws`;
     }
     return "ws://localhost:8000/ws";

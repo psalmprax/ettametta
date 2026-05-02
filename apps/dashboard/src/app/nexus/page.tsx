@@ -278,6 +278,57 @@ function NexusContent() {
                         exit={{ opacity: 0, scale: 0.98 }}
                         className="flex-1 flex flex-col min-h-0"
                     >
+                        {activeEngine === "registry" && (
+                            <div className="h-full min-h-[500px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px] relative overflow-hidden group">
+                                <div className="absolute inset-0 architect-grid pointer-events-none opacity-20" />
+                                <div className="flex flex-col items-center gap-6 relative z-10 text-center">
+                                    <div className="relative">
+                                        <Database className="h-16 w-16 text-cyan-500 animate-pulse" />
+                                        <div className="absolute -inset-4 bg-cyan-500/20 blur-2xl rounded-full -z-10" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Empire Registry</h3>
+                                    <div className="flex flex-col gap-1 items-center">
+                                        <span className="text-[10px] text-zinc-500 font-mono italic">SECURE_STORAGE_ORCHESTRATION_ACTIVE</span>
+                                        <span className="text-[8px] text-cyan-500/50 font-mono">ENCRYPTED_VOXEL_HASH: 0x93F...A2</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeEngine === "forge" && (
+                            <div className="h-full min-h-[500px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px] relative overflow-hidden group">
+                                <div className="absolute inset-0 architect-grid pointer-events-none opacity-20" />
+                                <div className="flex flex-col items-center gap-6 relative z-10 text-center">
+                                    <div className="relative">
+                                        <Zap className="h-16 w-16 text-cyan-500 animate-pulse" />
+                                        <div className="absolute -inset-4 bg-cyan-500/20 blur-2xl rounded-full -z-10" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Neural Forge</h3>
+                                    <div className="flex flex-col gap-1 items-center">
+                                        <span className="text-[10px] text-zinc-500 font-mono italic">CREATIVE_SYNTHESIS_PIPELINE_READY</span>
+                                        <span className="text-[8px] text-cyan-500/50 font-mono">ACTIVE_TEMP: 4200K_NEURAL_BURN</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeEngine === "network" && (
+                            <div className="h-full min-h-[500px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px] relative overflow-hidden group">
+                                <div className="absolute inset-0 architect-grid pointer-events-none opacity-20" />
+                                <div className="flex flex-col items-center gap-6 relative z-10 text-center">
+                                    <div className="relative">
+                                        <Network className="h-16 w-16 text-cyan-500 animate-pulse" />
+                                        <div className="absolute -inset-4 bg-cyan-500/20 blur-2xl rounded-full -z-10" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Global Network Mesh</h3>
+                                    <div className="flex flex-col gap-1 items-center">
+                                        <span className="text-[10px] text-zinc-500 font-mono italic">SWARM_INTELLIGENCE_ROUTING_ACTIVE</span>
+                                        <span className="text-[8px] text-cyan-500/50 font-mono">NODES_CONNECTED: 4,092_DIRECT_LINKS</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {activeEngine === "orchestrator" && (
                             <div className="space-y-8 h-full flex flex-col">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
