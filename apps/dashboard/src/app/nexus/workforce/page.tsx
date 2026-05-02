@@ -71,7 +71,7 @@ export default function WorkforceHub() {
         const token = await getAuthToken();
         if (!token) return;
         await withRealFallback<any>(
-            () => fetch(`${API_BASE}/tools/nexus/workforce/status`, {
+            () => fetch(`${API_BASE}/nexus/workforce/status`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
@@ -226,7 +226,7 @@ export default function WorkforceHub() {
                     >
                         {activeEngine === "registry" && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {skills.map((skill) => (
+                                {skills?.map((skill) => (
                                     <DesignCard 
                                         key={skill.id}
                                         title={skill.name}
@@ -358,7 +358,7 @@ export default function WorkforceHub() {
                                 </div>
                             </div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                                {logs.map((log, i) => (
+                                {logs?.map((log, i) => (
                                     <div key={i} className="flex gap-4">
                                         <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
                                         <span className={cn(

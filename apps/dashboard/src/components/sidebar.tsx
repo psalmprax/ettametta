@@ -125,7 +125,7 @@ const studioItems = [
             { name: "Neural Nodes", href: "/transformation?engine=nodes" }
         ]
     },
-    { name: "Neural Sandbox", href: "/nexus/command", icon: Terminal },
+    { name: "Neural Sandbox", href: "/nexus?engine=command", icon: Terminal },
 ];
 
 interface SidebarProps {
