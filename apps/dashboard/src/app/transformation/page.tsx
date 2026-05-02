@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useMemo, useCallback } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { DesignCard } from "@/components/ui/DesignCard";
@@ -33,11 +31,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { useTelemetry } from "@/context/TelemetryContext";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface VideoJob {
     id: string;
@@ -45,26 +44,27 @@ interface VideoJob {
     status: string;
     progress: number;
     output_path?: string;
+    created_at?: string;
 }
 
-export default function TransformationPage() {
-    const [activeEngine, setActiveEngine] = useState("control");
+function TransformationContent() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "studio");
     const [processingJobs, setProcessingJobs] = useState<VideoJob[]>([]);
     const [selectedJob, setSelectedJob] = useState<VideoJob | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [logs, setLogs] = useState<string[]>(["STUDIO_INITIALIZED", "AWAITING_SOURCE_TELEMETRY"]);
-    const [telemetry, setTelemetry] = useState<any>(null);
+    const [actionLogs, setActionLogs] = useState<string[]>([]);
 
-    const { data: jobUpdate } = useWebSocket<any>(`${WS_BASE}/jobs`);
-    const { data: telemetryUpdate } = useWebSocket<any>(`${WS_BASE}/nexus/telemetry`);
+    const { agents, logs: systemLogs, lastJobUpdate, pulse, status } = useTelemetry();
 
     useEffect(() => {
-        if (telemetryUpdate) setTelemetry(telemetryUpdate);
-    }, [telemetryUpdate]);
+        const engine = searchParams.get("engine");
+        if (engine) setActiveEngine(engine);
+    }, [searchParams]);
 
     useEffect(() => {
-        if (jobUpdate && jobUpdate.type === "job_update") {
-            const updatedJob = jobUpdate.data;
+        if (lastJobUpdate && (lastJobUpdate.type === "job_update" || lastJobUpdate.type === "nexus_job_update")) {
+            const updatedJob = lastJobUpdate.data;
             setProcessingJobs(prev => {
                 const exists = prev.find(j => j.id === updatedJob.id);
                 if (exists) return prev.map(j => j.id === updatedJob.id ? { ...j, ...updatedJob } : j);
@@ -72,7 +72,7 @@ export default function TransformationPage() {
             });
             if (selectedJob?.id === updatedJob.id) setSelectedJob(updatedJob);
         }
-    }, [jobUpdate, selectedJob]);
+    }, [lastJobUpdate, selectedJob]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -97,7 +97,7 @@ export default function TransformationPage() {
     const handleAbort = async (id: string) => {
         const token = await getAuthToken();
         if (!token) return;
-        setLogs((prev: string[]) => [`[SIGNAL] Aborting Job: ${id}`, ...prev]);
+        setActionLogs((prev: string[]) => [`[SIGNAL] Aborting Job: ${id}`, ...prev]);
         
         await withRealFallback(
             () => fetch(`${API_BASE}/video/jobs/${id}/abort`, {
@@ -108,7 +108,7 @@ export default function TransformationPage() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("Job Aborted Successfully");
-                    setLogs((prev: string[]) => [`[SUCCESS] Job ${id} Terminated.`, ...prev]);
+                    setActionLogs((prev: string[]) => [`[SUCCESS] Job ${id} Terminated.`, ...prev]);
                 }
             }
         );
@@ -117,7 +117,7 @@ export default function TransformationPage() {
     const handleAutoLinks = async (id: string) => {
         const token = await getAuthToken();
         if (!token) return;
-        setLogs((prev: string[]) => [`[SIGNAL] Triggering Neural Link Insertion for ${id}`, ...prev]);
+        setActionLogs((prev: string[]) => [`[SIGNAL] Triggering Neural Link Insertion for ${id}`, ...prev]);
         
         await withRealFallback(
             () => fetch(`${API_BASE}/video/auto-insert-links`, {
@@ -132,7 +132,7 @@ export default function TransformationPage() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("Affiliate Nodes Injected");
-                    setLogs((prev: string[]) => [`[SUCCESS] Links injected into ${id}`, ...prev]);
+                    setActionLogs((prev: string[]) => [`[SUCCESS] Links injected into ${id}`, ...prev]);
                 }
             }
         );
@@ -145,12 +145,19 @@ export default function TransformationPage() {
         return `${API_BASE}/static/${filename}`;
     };
 
-    // Prepare Agent Data
-    const agents = [
-        { id: "RENDER_01", name: "Remotion Cluster", icon: Film, status: "ACTIVE" as any, latency: 120, load: 85, details: "Rendering Frame_2401" },
-        { id: "FFMPEG_01", name: "Codec Engine", icon: Video, status: "ACTIVE" as any, latency: 450, load: 32, details: "Encoding: VP9/H.265" },
-        { id: "LINK_01", name: "Affiliate Bot", icon: LinkIcon, status: "IDLE" as any, latency: 5, load: 0, details: "Waiting for Commit" },
-    ];
+    const displayLogs = useMemo(() => {
+        const merged = [
+            ...actionLogs.map(msg => ({ 
+                type: "log", 
+                level: "ACTION", 
+                module: "STUDIO",
+                message: msg, 
+                timestamp: Date.now() / 1000 
+            })),
+            ...systemLogs
+        ].sort((a, b) => b.timestamp - a.timestamp);
+        return merged;
+    }, [actionLogs, systemLogs]);
 
     return (
         <CommandCenterLayout
@@ -159,14 +166,17 @@ export default function TransformationPage() {
             leftPanel={
                 <div className="space-y-1">
                     {[
-                        { id: "control", label: "Studio Control", icon: Activity },
-                        { id: "queue", label: "Mass Deployment", icon: Layers },
-                        { id: "nodes", label: "Neural Nodes", icon: Box },
+                        { id: "studio", label: "Studio Control", icon: Activity },
+                        { id: "mass", label: "Mass Deployment", icon: Layers },
+                        { id: "queue", label: "Render Queue", icon: Clock },
                         { id: "logs", label: "Engine Logs", icon: Terminal },
                     ].map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => setActiveEngine(item.id)}
+                            onClick={() => {
+                                setActiveEngine(item.id);
+                                router.replace(`/transformation?engine=${item.id}`);
+                            }}
                             className={cn(
                                 "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
                                 activeEngine === item.id ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
@@ -206,7 +216,7 @@ export default function TransformationPage() {
                         exit={{ opacity: 0, y: -20 }}
                         className="flex-1 flex flex-col min-h-0"
                     >
-                        {activeEngine === "control" && (
+                        {activeEngine === "studio" && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
                                 <div className="lg:col-span-2 rounded-[32px] border border-white/5 bg-[#0F0F11]/60 p-8 flex flex-col overflow-hidden">
                                     <div className="flex items-center justify-between mb-8">
@@ -272,19 +282,19 @@ export default function TransformationPage() {
                                     </div>
                                     <DesignCard 
                                         title="System Load"
-                                        status="Active"
+                                        status={status === "open" ? "Active" : "Offline"}
                                         metrics={[
-                                            { label: "GPU Load", value: "85%", progress: 85, color: "text-rose-500" },
-                                            { label: "VRAM", value: "11.2GB", progress: 92, color: "text-rose-500" }
+                                            { label: "GPU Load", value: `${Math.round((pulse?.load_avg || 0) * 100)}%`, progress: (pulse?.load_avg || 0) * 100, color: "text-rose-500" },
+                                            { label: "Memory", value: pulse?.memory_usage ? `${pulse.memory_usage.toFixed(1)}GB` : "---", progress: pulse?.memory_usage ? (pulse.memory_usage / 32) * 100 : 0, color: "text-rose-500" }
                                         ]}
-                                        footerInfo="Cluster is operating at peak capacity."
+                                        footerInfo={pulse?.uptime ? `Uptime: ${pulse.uptime}` : "Synchronizing..."}
                                         toolsStatus="Stable"
                                     />
                                 </div>
                             </div>
                         )}
 
-                        {activeEngine === "queue" && (
+                        {activeEngine === "mass" && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                 {processingJobs.map((job) => (
                                     <DesignCard 
@@ -298,27 +308,71 @@ export default function TransformationPage() {
                                         toolsStatus="Verified"
                                         onClick={() => {
                                             setSelectedJob(job);
-                                            setActiveEngine("control");
+                                            setActiveEngine("studio");
+                                            router.replace("/transformation?engine=studio");
                                         }}
                                     />
                                 ))}
                             </div>
                         )}
 
+                        {activeEngine === "queue" && (
+                            <div className="flex-1 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 p-10 overflow-hidden flex flex-col">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-tighter">Render Queue Status</h3>
+                                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-500 uppercase tracking-widest">
+                                        {processingJobs.filter(j => j.status === "Processing" || j.status === "Active").length} Active Renders
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                                    {processingJobs.map((job) => (
+                                        <div key={job.id} className="p-6 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between group hover:bg-white/8 transition-all">
+                                            <div className="flex items-center gap-6">
+                                                <div className={cn(
+                                                    "h-12 w-12 rounded-xl flex items-center justify-center border",
+                                                    job.status === "Completed" ? "bg-emerald-500/20 border-emerald-500/20 text-emerald-400" :
+                                                    job.status === "Error" ? "bg-rose-500/20 border-rose-500/20 text-rose-400" : "bg-white/5 border-white/10 text-zinc-500"
+                                                )}>
+                                                    {job.status === "Completed" ? <CheckCircle2 className="h-6 w-6" /> : <Clock className="h-6 w-6" />}
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-sm font-bold text-white uppercase tracking-tight">{job.title || "PIPELINE_JOB"}</span>
+                                                    <span className="text-[10px] font-mono text-zinc-500 uppercase">{job.id} • {job.created_at ? new Date(job.created_at).toLocaleString() : "Recently Dispatched"}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-8">
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <span className="text-[10px] font-bold text-rose-500 uppercase">{job.progress}%</span>
+                                                    <div className="h-1 w-32 bg-white/5 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-rose-500" style={{ width: `${job.progress}%` }} />
+                                                    </div>
+                                                </div>
+                                                <Button onClick={() => { setSelectedJob(job); setActiveEngine("studio"); router.replace("/transformation?engine=studio"); }} className="h-10 w-10 p-0 bg-white/5 border border-white/10 hover:bg-white/10">
+                                                    <Eye className="h-4 w-4 text-white" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
                             <div className="p-4 border-b border-white/5 flex items-center justify-between">
                                 <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Transformation Node Logs</span>
-                                <span className="text-[8px] font-mono text-rose-500/50">ENGINE_ACTIVE</span>
+                                <span className="text-[8px] font-mono text-rose-500/50">{status === "open" ? "LIVE_SYNC" : "OFFLINE"}</span>
                             </div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                                {logs.map((log, i) => (
+                                {displayLogs.map((log, i) => (
                                     <div key={i} className="flex gap-4">
-                                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                                        <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
                                         <span className={cn(
-                                            log.includes("[ERROR]") ? "text-rose-500" :
-                                            log.includes("[SUCCESS]") ? "text-emerald-500" :
-                                            log.includes("[SIGNAL]") ? "text-cyan-400" : "text-zinc-600"
-                                        )}>{log}</span>
+                                            log.level === "ACTION" ? "text-cyan-400" :
+                                            log.level === "ERROR" ? "text-rose-500" :
+                                            log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
+                                        )}>
+                                            {log.module ? `[${log.module}] ` : ""}{log.message}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
@@ -327,5 +381,17 @@ export default function TransformationPage() {
                 </AnimatePresence>
             </div>
         </CommandCenterLayout>
+    );
+}
+
+export default function TransformationPage() {
+    return (
+        <Suspense fallback={
+            <div className="h-screen w-full flex items-center justify-center bg-[#050505]">
+                <Loader2 className="h-12 w-12 text-primary animate-spin" />
+            </div>
+        }>
+            <TransformationContent />
+        </Suspense>
     );
 }

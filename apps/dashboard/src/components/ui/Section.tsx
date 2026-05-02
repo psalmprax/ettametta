@@ -15,7 +15,7 @@ export const Section = React.forwardRef<HTMLDivElement, SectionProps>(
     const variants = {
       default: "py-16 lg:py-24",
       hero: "py-20 lg:py-32",
-      featured: "py-12 lg:py-20 bg-gradient-to-b from-transparent via-cyan-400/5 to-transparent",
+      featured: "py-12 lg:py-20 bg-linear-to-b from-transparent via-cyan-400/5 to-transparent",
       compact: "py-8 lg:py-12",
     };
 

@@ -76,27 +76,38 @@ class VideoJobService:
         unified_list = []
         
         for v in video_jobs:
+            # Defensive check for status and metadata
+            try:
+                status_val = v.status.value if hasattr(v.status, 'value') else v.status
+            except Exception:
+                status_val = str(v.status)
+
             unified_list.append({
                 "id": v.id,
                 "title": v.title,
-                "status": v.status.value if hasattr(v.status, 'value') else v.status,
-                "progress": v.progress,
+                "status": status_val,
+                "progress": v.progress or 0,
                 "source_uri": v.source_uri,
                 "output_path": v.output_path,
-                "job_metadata": v.job_metadata,
+                "job_metadata": v.job_metadata or {},
                 "created_at": v.created_at,
                 "engine": "video_transform"
             })
             
         for n in nexus_jobs:
+            try:
+                status_val = n.status.value if hasattr(n.status, 'value') else n.status
+            except Exception:
+                status_val = str(n.status)
+
             unified_list.append({
                 "id": n.id,
                 "title": f"Nexus Production: {n.niche}",
-                "status": n.status.value if hasattr(n.status, 'value') else n.status,
-                "progress": n.progress,
+                "status": status_val,
+                "progress": n.progress or 0,
                 "source_uri": "Cinema Mode / Studio",
                 "output_path": n.output_path,
-                "job_metadata": n.job_metadata,
+                "job_metadata": n.job_metadata or {},
                 "created_at": n.created_at,
                 "engine": "nexus_compose"
             })
@@ -178,12 +189,31 @@ class VideoJobService:
         return False
 
     async def delete_job(self, job_id: str, user_id: str) -> bool:
-        """Delete a job"""
-        job = await self.get_job_by_id(job_id, user_id)
-        if job:
-            await self.db.delete(job)
+        """Delete a job from either Video or Nexus tables"""
+        from src.api.utils.models import NexusJobDB
+        
+        # Check Video jobs
+        stmt = select(VideoJobDB).where(
+            VideoJobDB.id == job_id, VideoJobDB.user_id == user_id
+        )
+        result = await self.db.execute(stmt)
+        v = result.scalar_one_or_none()
+        if v:
+            await self.db.delete(v)
             await self.db.commit()
             return True
+            
+        # Check Nexus jobs
+        stmt_n = select(NexusJobDB).where(
+            NexusJobDB.id == job_id, NexusJobDB.user_id == user_id
+        )
+        result_n = await self.db.execute(stmt_n)
+        n = result_n.scalar_one_or_none()
+        if n:
+            await self.db.delete(n)
+            await self.db.commit()
+            return True
+            
         return False
 
     async def abort_job(self, job_id: str, user_id: str, user_role: UserRole) -> bool:
