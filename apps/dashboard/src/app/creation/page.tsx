@@ -218,10 +218,32 @@ function CreationContent() {
         return merged;
     }, [actionLogs, systemLogs]);
 
-    const recentAssets = [
-        { id: "ASSET_092", title: "Cyber Dream", type: "VIDEO" as any, timestamp: "3s AGO", tags: ["4K_READY"], size: "24.5 MB" },
-        { id: "ASSET_012", title: "Logic Gate", type: "VIDEO" as any, timestamp: "12m AGO", tags: ["VOICE_SYNCED"], size: "18.2 MB" },
-    ];
+    const [activityFeed, setActivityFeed] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            const token = await getAuthToken();
+            if (!token) return;
+            await withRealFallback<any[]>(
+                () => fetch(`${API_BASE}/publish/history`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                }),
+                { fallback: [], onSuccess: (data) => setActivityFeed(data.slice(0, 5)) }
+            );
+        };
+        fetchHistory();
+    }, []);
+
+    const recentAssets = useMemo(() => {
+        return activityFeed.map(item => ({
+            id: item.id,
+            title: item.title,
+            type: "VIDEO" as any,
+            timestamp: new Date(item.published_at).toLocaleTimeString(),
+            tags: ["PRODUCTION"],
+            size: "---"
+        }));
+    }, [activityFeed]);
 
     return (
         <CommandCenterLayout

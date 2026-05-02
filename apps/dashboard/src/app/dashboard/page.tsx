@@ -25,85 +25,68 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { API_BASE, WS_BASE } from "@/lib/config";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import { getAuthToken } from "@/lib/auth_utils";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useTelemetry } from "@/context/TelemetryContext";
 
 export default function Home() {
-  const [activeEngine, setActiveEngine] = useState("overview");
-  const [stats, setStats] = useState({
-    active_trends: 0,
-    videos_processed: 0,
-    total_reach: "0",
-    success_rate: "0%",
-    velocity: "Nominal",
-    engine_load: "0%"
-  });
-  const [activityFeed, setActivityFeed] = useState<any[]>([
-    { title: "Sustenance Logic Mapping", published_at: new Date().toISOString(), id: "H128S9210" },
-    { title: "Global Egress Optimization", published_at: new Date().toISOString(), id: "K9921002J" }
-  ]);
-  const [logs, setLogs] = useState<string[]>(["SYSTEM_INITIALIZED", "SYNCHRONIZING_GLOBAL_NODES"]);
-  const { data: wsData } = useWebSocket<any>(`${WS_BASE}/telemetry`);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { agents, logs: systemLogs, pulse, status } = useTelemetry();
+  
+  const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "overview");
+  const [activityFeed, setActivityFeed] = useState<any[]>([]);
+  const [actionLogs, setActionLogs] = useState<string[]>([]);
 
   const fetchStats = useCallback(async () => {
     const token = await getAuthToken();
     if (!token) return;
     const headers = { Authorization: `Bearer ${token}` };
 
-    await Promise.all([
-      withRealFallback<any>(
-        () => fetch(`${API_BASE}/analytics/stats/summary`, { headers }),
-        { fallback: null, onSuccess: (data) => data && setStats(prev => ({ ...prev, ...data })) }
-      ),
-      withRealFallback<any[]>(
-        () => fetch(`${API_BASE}/publish/history`, { headers }),
-        { fallback: [], onSuccess: (data) => data && setActivityFeed(data.slice(0, 10)) }
-      )
-    ]);
+    await withRealFallback<any[]>(
+      () => fetch(`${API_BASE}/publish/history`, { headers }),
+      { fallback: [], onSuccess: (data) => data && setActivityFeed(data.slice(0, 10)) }
+    );
   }, []);
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
   }, [fetchStats]);
 
-  useEffect(() => {
-    if (wsData && wsData.type === "telemetry_pulse") {
-      const { real_stats, metrics } = wsData;
-      setStats(prev => {
-        const total_views = real_stats.total_views || 0;
-        let reach_formatted = "0";
-        if (total_views >= 1000000) reach_formatted = `${(total_views / 1000000).toFixed(1)}M`;
-        else if (total_views >= 1000) reach_formatted = `${(total_views / 1000).toFixed(1)}K`;
-        else reach_formatted = total_views.toString();
+  const stats = useMemo(() => {
+    const rs = (pulse as any)?.real_stats || {};
+    const total_views = rs.total_views || 0;
+    let reach_formatted = "0";
+    if (total_views >= 1000000) reach_formatted = `${(total_views / 1000000).toFixed(1)}M`;
+    else if (total_views >= 1000) reach_formatted = `${(total_views / 1000).toFixed(1)}K`;
+    else reach_formatted = total_views.toString();
 
-        const success_rate_val = total_views > 0 ? (real_stats.total_likes / total_views * 100) : 0;
-        
-        return {
-          ...prev,
-          active_trends: real_stats.total_discovered || prev.active_trends,
-          videos_processed: real_stats.completed_jobs || prev.videos_processed,
-          total_reach: reach_formatted,
-          success_rate: `${success_rate_val.toFixed(1)}%`,
-          velocity: metrics.global_velocity > 3 ? "Critical" : metrics.global_velocity > 1.5 ? "High" : "Nominal",
-          engine_load: `${Math.min(100, Math.round((real_stats.active_jobs / 10) * 100))}%`
-        };
-      });
-      setLogs((prev: string[]) => [`[TELEMETRY] Pulse received. Velocity: ${metrics.global_velocity.toFixed(2)}x`, ...prev.slice(0, 50)]);
-    }
-  }, [wsData]);
+    const success_rate_val = total_views > 0 ? (rs.total_likes / total_views * 100) : 0;
 
-  // Prepare Agent Data
-  const agents = [
-    { id: "CORE_01", name: "System Kernel", icon: Cpu, status: "ACTIVE" as any, latency: 4, load: 2, details: "Kernel Stable" },
-    { id: "INTEL_01", name: "Trend Monitor", icon: Radar, status: "ACTIVE" as any, latency: 45, load: 12, details: "Polling Viral Clusters" },
-    { id: "EGRESS_01", name: "Egress Gate", icon: Zap, status: "ACTIVE" as any, latency: 12, load: 5, details: "Nodes Verified" },
-  ];
+    return {
+      active_trends: rs.total_discovered || 0,
+      videos_processed: rs.completed_jobs || 0,
+      total_reach: reach_formatted,
+      success_rate: `${success_rate_val.toFixed(1)}%`,
+      velocity: "Nominal",
+      engine_load: `${Math.min(100, Math.round((rs.active_jobs / 10) * 100))}%`
+    };
+  }, [pulse]);
+
+  // Combined logs for display
+  const displayLogs = useMemo(() => {
+    const actionLogsFormatted = actionLogs.map(msg => ({
+      level: "ACTION",
+      module: "SYSTEM",
+      message: msg,
+      timestamp: Date.now() / 1000
+    }));
+    return [...actionLogsFormatted, ...systemLogs].sort((a, b) => b.timestamp - a.timestamp);
+  }, [actionLogs, systemLogs]);
 
   return (
     <CommandCenterLayout
@@ -203,13 +186,13 @@ export default function Home() {
                     <span className="text-[8px] font-mono text-primary/50">DATA_HUB_ACTIVE</span>
                   </div>
                   <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                    {logs.slice(0, 15).map((log, i) => (
+                    {displayLogs.slice(0, 15).map((log, i) => (
                       <div key={i} className="flex gap-4">
-                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                        <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
                         <span className={cn(
-                          log.includes("[TELEMETRY]") ? "text-cyan-400" :
-                          log.includes("[SYSTEM]") ? "text-violet-500" : "text-zinc-600"
-                        )}>{log}</span>
+                          log.level === "ACTION" ? "text-cyan-400" :
+                          log.level === "ERROR" ? "text-rose-500" : "text-zinc-600"
+                        )}>{log.message}</span>
                       </div>
                     ))}
                   </div>
@@ -319,18 +302,17 @@ export default function Home() {
                     <Terminal className="h-4 w-4 text-cyan-400" />
                     <h3 className="text-xs font-bold text-white uppercase tracking-widest">Master System Log Stream</h3>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-[10px] font-bold text-zinc-500 hover:text-white" onClick={() => setLogs(["LOGS_PURGED", ...logs])}>Clear Buffer</Button>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-[11px] space-y-2">
-                  {logs.map((log, i) => (
+                  {displayLogs.map((log, i) => (
                     <div key={i} className="flex gap-6 items-start border-b border-white/[0.02] pb-2">
-                      <span className="text-zinc-800 shrink-0">[{new Date().toLocaleTimeString()}]</span>
+                      <span className="text-zinc-800 shrink-0">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
                       <span className={cn(
                         "break-all",
-                        log.includes("[TELEMETRY]") ? "text-cyan-400" :
-                        log.includes("[SYSTEM]") ? "text-violet-500" : 
-                        log.includes("[ERROR]") ? "text-rose-500" : "text-zinc-500"
-                      )}>{log}</span>
+                        log.level === "ACTION" ? "text-cyan-400" :
+                        log.level === "ERROR" ? "text-rose-500" : 
+                        log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-500"
+                      )}>{log.module ? `[${log.module}] ` : ""}{log.message}</span>
                     </div>
                   ))}
                 </div>
