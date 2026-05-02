@@ -7,6 +7,7 @@ import { UIProvider } from '@/context/UIContext';
 import { UIThemeProvider } from '@/context/UIThemeContext';
 import QueryProvider from '@/components/providers/QueryProvider';
 import GlobalErrorBoundary from '@/components/GlobalErrorBoundary';
+import { TelemetryProvider } from '@/context/TelemetryContext';
 import { Toaster } from 'sonner';
 
 export default function RootClientContext({ children }: { children: React.ReactNode }) {
@@ -15,9 +16,11 @@ export default function RootClientContext({ children }: { children: React.ReactN
       <UIThemeProvider>
         <UIProvider>
           <AuthProvider>
-            <GlobalErrorBoundary>
-              {children}
-            </GlobalErrorBoundary>
+            <TelemetryProvider>
+              <GlobalErrorBoundary>
+                {children}
+              </GlobalErrorBoundary>
+            </TelemetryProvider>
             <Toaster
               theme="dark"
               position="top-right"

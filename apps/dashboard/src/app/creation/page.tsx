@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useRef, Suspense } from "react";
+import React, { useState, useCallback, useEffect, useRef, Suspense, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, MeshDistortMaterial, Sphere, Points, PointMaterial } from "@react-three/drei";
 import * as THREE from "three";
@@ -49,7 +49,8 @@ import { getAuthToken } from "@/lib/auth_utils";
 import { toast } from "sonner";
 import { useNiches } from "@/hooks/useNiches";
 import { Button } from "@/components/ui/Button";
-import { useWebSocket } from "@/hooks/useWebSocket";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useTelemetry } from "@/context/TelemetryContext";
 
 // --- Three.js Background Components ---
 
@@ -115,43 +116,28 @@ function NeuralCore() {
 
 // --- Main Page Component ---
 
-export default function CreationPage() {
+function CreationContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const { niches, isLoading: isLoadingNiches } = useNiches();
-    const [activeEngine, setActiveEngine] = useState("genesis");
-    const [prompt, setPrompt] = useState("");
+    
+    const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "genesis");
+    const [prompt, setPrompt] = useState(searchParams.get("seed") || "");
     const [niche, setNiche] = useState("Motivation");
     const [activeStack, setActiveStack] = useState<"cloud" | "os">("cloud");
     const [isGenerating, setIsGenerating] = useState(false);
     const [script, setScript] = useState<ScriptOutput | null>(null);
-    const [telemetry, setTelemetry] = useState<any>(null);
-    const [logs, setLogs] = useState<string[]>(["SYSTEM_INITIALIZED", "READY_FOR_NEURAL_SEED"]);
+    const [actionLogs, setActionLogs] = useState<string[]>(["CREATION_HUB_READY", "AWAITING_NEURAL_SEED"]);
     const [isCinemaLaunching, setIsCinemaLaunching] = useState(false);
 
-    // WebSocket for Real-time Telemetry
-    const { data: telemetryUpdate } = useWebSocket<any>(`${WS_BASE}/nexus/telemetry`);
+    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
 
     useEffect(() => {
-        if (telemetryUpdate) setTelemetry(telemetryUpdate);
-    }, [telemetryUpdate]);
-
-    // Initial Telemetry Fetch
-    const fetchInitialTelemetry = async () => {
-        const token = await getAuthToken();
-        if (!token) return;
-        await withRealFallback<any>(
-            () => fetch(`${API_BASE}/nexus/telemetry`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => setTelemetry(data)
-            }
-        );
-    };
-
-    useEffect(() => {
-        fetchInitialTelemetry();
-    }, []);
+        const engine = searchParams.get("engine");
+        if (engine) setActiveEngine(engine);
+        const seed = searchParams.get("seed");
+        if (seed) setPrompt(seed);
+    }, [searchParams]);
 
     const handleGenerate = async () => {
         if (!prompt) {
@@ -159,10 +145,13 @@ export default function CreationPage() {
             return;
         }
         setIsGenerating(true);
-        setLogs((prev: string[]) => [`[SIGNAL] Initializing Generation: ${prompt.slice(0, 30)}...`, ...prev]);
+        setActionLogs((prev: string[]) => [`[SIGNAL] Initializing Generation: ${prompt.slice(0, 30)}...`, ...prev]);
         
         const token = await getAuthToken();
-        if (!token) return;
+        if (!token) {
+            setIsGenerating(false);
+            return;
+        }
 
         await withRealFallback<ScriptOutput>(
             () => fetch(`${API_BASE}/no-face/script`, {
@@ -177,11 +166,11 @@ export default function CreationPage() {
                 fallback: {} as ScriptOutput,
                 onSuccess: (data) => {
                     setScript(data);
-                    setLogs((prev: string[]) => [`[SUCCESS] Neural Script Synthesized: ${data.title}`, ...prev]);
+                    setActionLogs((prev: string[]) => [`[SUCCESS] Neural Script Synthesized: ${data.title}`, ...prev]);
                     toast.success("Script Protocol Synthesized");
                 },
                 onFallback: (err) => {
-                    setLogs((prev: string[]) => [`[ERROR] ${err.message}`, ...prev]);
+                    setActionLogs((prev: string[]) => [`[ERROR] ${err.message}`, ...prev]);
                 }
             }
         );
@@ -206,7 +195,7 @@ export default function CreationPage() {
             {
                 fallback: null,
                 onSuccess: (data) => {
-                    setLogs((prev: string[]) => [`[CINEMA] Sequence Initiated. JobID: ${data.job_id}`, ...prev]);
+                    setActionLogs((prev: string[]) => [`[CINEMA] Sequence Initiated. JobID: ${data.job_id}`, ...prev]);
                     toast.success("Cinema Sequence Initiated");
                 }
             }
@@ -214,14 +203,21 @@ export default function CreationPage() {
         setIsCinemaLaunching(false);
     };
 
-    // Prepare Agent Data for Matrix
-    const agents = [
-        { id: "SYNTH_01", name: "Voice Forge", icon: Mic2, status: "ACTIVE" as any, latency: 12, load: 45, details: "Cloning: Operative_V4" },
-        { id: "VISUAL_02", name: "Visual Core", icon: Clapperboard, status: telemetry?.status === "OPERATIONAL" ? "ACTIVE" : "IDLE" as any, latency: 45, load: telemetry?.load_avg * 10 || 0, details: "Rendering: Scene_08" },
-        { id: "LOGIC_03", name: "Neural Logic", icon: Brain, status: "ACTIVE" as any, latency: 5, load: 22, details: "Optimizing Hook Patterns" },
-    ];
+    // Merge system logs and action logs for display
+    const displayLogs = useMemo(() => {
+        const merged = [
+            ...actionLogs.map(msg => ({ 
+                type: "log", 
+                level: "ACTION", 
+                module: "CREATION",
+                message: msg, 
+                timestamp: Date.now() / 1000 
+            })),
+            ...systemLogs
+        ].sort((a, b) => b.timestamp - a.timestamp);
+        return merged;
+    }, [actionLogs, systemLogs]);
 
-    // Prepare Mock Assets (Should be wired to real jobs in next phase)
     const recentAssets = [
         { id: "ASSET_092", title: "Cyber Dream", type: "VIDEO" as any, timestamp: "3s AGO", tags: ["4K_READY"], size: "24.5 MB" },
         { id: "ASSET_012", title: "Logic Gate", type: "VIDEO" as any, timestamp: "12m AGO", tags: ["VOICE_SYNCED"], size: "18.2 MB" },
@@ -242,7 +238,10 @@ export default function CreationPage() {
                     ].map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => setActiveEngine(item.id)}
+                            onClick={() => {
+                                setActiveEngine(item.id);
+                                router.replace(`/creation?engine=${item.id}`);
+                            }}
                             className={cn(
                                 "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
                                 activeEngine === item.id ? "bg-violet-500/10 text-violet-400 border border-violet-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
@@ -266,7 +265,6 @@ export default function CreationPage() {
                 <NeuralCore />
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10 shrink-0">
-                    {/* Neural Prompt Terminal */}
                     <div className="rounded-[32px] border border-white/5 bg-[#0F0F11]/60 backdrop-blur-xl p-8 space-y-6 flex flex-col">
                         <div className="flex items-center justify-between border-b border-white/5 pb-4">
                             <h3 className="text-[10px] font-bold text-violet-400 tracking-[0.2em] uppercase">Neural Prompt Terminal</h3>
@@ -300,7 +298,6 @@ export default function CreationPage() {
                         </Button>
                     </div>
 
-                    {/* Active Processing Stream */}
                     <div className="rounded-[32px] border border-white/5 bg-[#0F0F11]/60 backdrop-blur-xl p-8 space-y-6 flex flex-col relative overflow-hidden">
                         <div className="flex items-center justify-between border-b border-white/5 pb-4">
                             <h3 className="text-[10px] font-bold text-emerald-400 tracking-[0.2em] uppercase">Active Processing Stream</h3>
@@ -308,7 +305,7 @@ export default function CreationPage() {
                         </div>
 
                         <div className="flex-1 flex flex-col justify-center items-center relative py-10">
-                            <div className="w-full h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent absolute top-1/2 -translate-y-1/2" />
+                            <div className="w-full h-px bg-linear-to-r from-transparent via-violet-500/30 to-transparent absolute top-1/2 -translate-y-1/2" />
                             <motion.div 
                                 animate={{ scale: [1, 1.1, 1] }}
                                 transition={{ duration: 2, repeat: Infinity }}
@@ -322,39 +319,41 @@ export default function CreationPage() {
                         <div className="space-y-2">
                             <div className="flex justify-between items-center text-[8px] font-bold text-zinc-500 uppercase">
                                 <span>Synthesis Progress</span>
-                                <span>{isGenerating ? "Processing..." : "0.0%"}</span>
+                                <span>{isGenerating ? "Processing..." : (pulse?.load_avg ? `${Math.round(pulse.load_avg * 100)}%` : "0.0%")}</span>
                             </div>
                             <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                                 <motion.div 
                                     className="h-full bg-emerald-500"
-                                    animate={isGenerating ? { x: ["-100%", "100%"] } : { width: 0 }}
-                                    transition={isGenerating ? { duration: 1.5, repeat: Infinity, ease: "linear" } : {}}
+                                    initial={{ width: 0 }}
+                                    animate={isGenerating ? { x: ["-100%", "100%"] } : { width: pulse?.load_avg ? `${pulse.load_avg * 100}%` : 0 }}
+                                    transition={isGenerating ? { duration: 1.5, repeat: Infinity, ease: "linear" } : { duration: 1 }}
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* System Logs / Neural Script Preview */}
                 <div className="flex-1 min-h-0 relative z-10 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
                     <div className="p-6 border-b border-white/5 flex items-center justify-between">
                         <h3 className="text-[10px] font-bold text-zinc-400 tracking-[0.2em] uppercase">Neural Transcript Log</h3>
                         <div className="flex items-center gap-4">
                             <span className="text-[8px] font-mono text-zinc-600">LOG_LEVEL: VERBOSE</span>
-                            <button onClick={() => setLogs(["SYSTEM_RESET", "READY"])} className="text-zinc-600 hover:text-white transition-colors">
+                            <button onClick={() => setActionLogs([])} className="text-zinc-600 hover:text-white transition-colors">
                                 <RefreshCw className="h-3 w-3" />
                             </button>
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-[11px] space-y-2">
-                        {logs.map((log, i) => (
+                        {displayLogs.map((log, i) => (
                             <div key={i} className="flex gap-4">
-                                <span className="text-zinc-700">[{new Date().toLocaleTimeString()}]</span>
+                                <span className="text-zinc-700">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
                                 <span className={cn(
-                                    log.includes("[ERROR]") ? "text-rose-500" :
-                                    log.includes("[SUCCESS]") ? "text-emerald-500" :
-                                    log.includes("[SIGNAL]") ? "text-cyan-400" : "text-zinc-500"
-                                )}>{log}</span>
+                                    log.level === "ACTION" ? "text-cyan-400" :
+                                    log.level === "ERROR" ? "text-rose-500" :
+                                    log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-500"
+                                )}>
+                                    {log.module ? `[${log.module}] ` : ""}{log.message}
+                                </span>
                             </div>
                         ))}
                     </div>
@@ -376,5 +375,13 @@ export default function CreationPage() {
                 </div>
             </div>
         </CommandCenterLayout>
+    );
+}
+
+export default function CreationPage() {
+    return (
+        <Suspense fallback={null}>
+            <CreationContent />
+        </Suspense>
     );
 }
