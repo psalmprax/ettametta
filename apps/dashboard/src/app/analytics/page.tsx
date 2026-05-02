@@ -233,6 +233,59 @@ export default function AnalyticsPage() {
                             </div>
                         )}
 
+                        {activeEngine === "patterns" && (
+                            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-0">
+                                <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-8 flex flex-col min-h-0">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                                            <Cpu className="h-5 w-5 text-violet-400" />
+                                            Success Correlation
+                                        </h3>
+                                        <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Active Patterns</span>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
+                                        {[
+                                            { label: "Narrative Hook Resonance", score: 92, status: "DOMINANT" },
+                                            { label: "High-Contrast Visual Flow", score: 84, status: "OPTIMIZED" },
+                                            { label: "Cognitive Ease Index", score: 78, status: "STABLE" },
+                                            { label: "Emotional Amplitude", score: 65, status: "GROWING" }
+                                        ].map((pattern, i) => (
+                                            <div key={i} className="p-6 bg-white/5 border border-white/5 rounded-[24px] group hover:border-violet-500/30 transition-all space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="text-sm font-bold text-white">{pattern.label}</h4>
+                                                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">{pattern.status}</span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center justify-between text-[10px]">
+                                                        <span className="text-zinc-500 font-bold uppercase">Probability Shift</span>
+                                                        <span className="text-white font-mono">+{pattern.score}%</span>
+                                                    </div>
+                                                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                                        <motion.div initial={{ width: 0 }} animate={{ width: `${pattern.score}%` }} className="h-full bg-violet-500" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-8 flex flex-col min-h-0">
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                                        <LineChart className="h-5 w-5 text-cyan-400" />
+                                        Prediction Matrix
+                                    </h3>
+                                    <div className="flex-1 flex flex-col items-center justify-center space-y-6 opacity-20">
+                                        <Radar className="h-16 w-16 text-zinc-500 animate-pulse" />
+                                        <div className="text-center space-y-2">
+                                            <p className="text-sm font-black uppercase tracking-[0.4em] text-white">Aggregating Global Drift</p>
+                                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic">Simulation running at 14.2 GFLOPS</p>
+                                        </div>
+                                    </div>
+                                    <Button className="w-full h-14 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-2xl uppercase tracking-widest text-xs transition-all">Launch Strategic Forecast</Button>
+                                </div>
+                            </div>
+                        )}
+
                         {activeEngine === "propagation" && (
                             <div className="flex-1 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 overflow-hidden relative">
                                 <GlobalPulseGlobe pulseIntensity={1} />
@@ -243,23 +296,65 @@ export default function AnalyticsPage() {
                             </div>
                         )}
 
-                        <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
-                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Telemetry Logs</span>
-                                <span className="text-[8px] font-mono text-violet-500/50">DATA_CORE_ACTIVE</span>
-                            </div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                                {logs.map((log, i) => (
-                                    <div key={i} className="flex gap-4">
-                                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
-                                        <span className={cn(
-                                            log.includes("[DATA]") ? "text-cyan-400" :
-                                            log.includes("[SUCCESS]") ? "text-emerald-500" : "text-zinc-600"
-                                        )}>{log}</span>
+                        {activeEngine === "logs" && (
+                            <div className="flex-1 flex flex-col min-h-0 bg-[#0F0F11]/60 border border-white/5 rounded-[32px] overflow-hidden">
+                                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
+                                    <div className="flex items-center gap-4">
+                                        <Terminal className="h-4 w-4 text-zinc-500" />
+                                        <h3 className="text-xs font-bold text-white uppercase tracking-widest">Telemetry Stream</h3>
                                     </div>
-                                ))}
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-pulse" />
+                                            <span className="text-[9px] font-bold text-violet-500 uppercase">Observer_Sync</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-xs space-y-3">
+                                    {logs.map((log, i) => (
+                                        <div key={i} className="flex gap-6 group hover:bg-white/5 p-2 rounded-lg transition-all">
+                                            <span className="text-zinc-700 shrink-0 select-none">{new Date().toLocaleTimeString()}</span>
+                                            <span className="text-zinc-800 shrink-0 select-none">|</span>
+                                            <span className={cn(
+                                                "shrink-0 font-bold tracking-widest uppercase text-[9px] px-2 py-0.5 rounded",
+                                                log.includes("[DATA]") ? "bg-cyan-500/10 text-cyan-500" :
+                                                log.includes("[SUCCESS]") ? "bg-emerald-500/10 text-emerald-500" : "bg-white/5 text-zinc-500"
+                                            )}>
+                                                {log.includes("[DATA]") ? "DATA" : log.includes("[SUCCESS]") ? "SUCCESS" : "INFO"}
+                                            </span>
+                                            <span className={cn(
+                                                "leading-relaxed",
+                                                log.includes("[DATA]") ? "text-cyan-400" :
+                                                log.includes("[SUCCESS]") ? "text-emerald-500" : "text-zinc-400"
+                                            )}>
+                                                {log}
+                                            </span>
+                                        </div>
+                                    ))}
+                                    <div className="h-4" />
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {activeEngine !== "logs" && activeEngine !== "patterns" && activeEngine !== "propagation" && activeEngine !== "retention" && activeEngine !== "overview" && (
+                            <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+                                <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Telemetry Logs</span>
+                                    <span className="text-[8px] font-mono text-violet-500/50">DATA_CORE_ACTIVE</span>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                                    {logs.map((log, i) => (
+                                        <div key={i} className="flex gap-4">
+                                            <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                                            <span className={cn(
+                                                log.includes("[DATA]") ? "text-cyan-400" :
+                                                log.includes("[SUCCESS]") ? "text-emerald-500" : "text-zinc-600"
+                                            )}>{log}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </motion.div>
                 </AnimatePresence>
             </div>
