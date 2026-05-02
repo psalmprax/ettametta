@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/Button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTelemetry } from "@/context/TelemetryContext";
 
-export default function Home() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { agents, logs: systemLogs, pulse, status } = useTelemetry();
@@ -91,19 +91,22 @@ export default function Home() {
   return (
     <CommandCenterLayout
       title="SYSTEM DASHBOARD"
-      subtitle="GLOBAL_INTELLIGENCE_OS_V4.0"
+      subtitle="TELEMETRY_ENGINE_V2"
       leftPanel={
         <div className="space-y-1">
           {[
-            { id: "overview", label: "Intelligence Overview", icon: LayoutDashboard },
-            { id: "egress", label: "Live Egress Stream", icon: Zap },
+            { id: "overview", label: "Overview", icon: LayoutDashboard },
+            { id: "egress", label: "Egress Stream", icon: Zap },
             { id: "engine", label: "Engine Pulse", icon: Cpu },
-            { id: "history", label: "Neural History", icon: History },
-            { id: "logs", label: "System Logs", icon: Terminal },
+            { id: "history", label: "History", icon: History },
+            { id: "logs", label: "Master Logs", icon: Terminal },
           ].map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveEngine(item.id)}
+              onClick={() => {
+                setActiveEngine(item.id);
+                router.replace(`/dashboard?engine=${item.id}`);
+              }}
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
                 activeEngine === item.id ? "bg-primary/10 text-primary border border-primary/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
@@ -111,48 +114,37 @@ export default function Home() {
             >
               <item.icon className="h-4 w-4" />
               <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
-              {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />}
+              {activeEngine === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" />}
             </button>
           ))}
         </div>
       }
-      rightPanel={
-        <>
-          <AgentMatrix agents={agents} />
-          <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
-            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Global Reach</h4>
-            <div className="flex flex-col">
-              <span className="text-2xl font-bold text-white">{stats.total_reach}</span>
-              <span className="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">{stats.success_rate} Accuracy</span>
-            </div>
-          </div>
-        </>
-      }
+      rightPanel={<AgentMatrix agents={agents} />}
     >
-      <div className="p-10 space-y-10 relative h-full flex flex-col">
+      <div className="p-10 space-y-10 relative h-full overflow-y-auto custom-scrollbar">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeEngine}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="flex-1 flex flex-col min-h-0"
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="flex-1"
           >
             {activeEngine === "overview" && (
-              <div className="flex-1 flex flex-col min-h-0 space-y-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 shrink-0">
+              <div className="flex flex-col gap-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   <DesignCard 
-                    title="Neural Core" 
-                    status="CURRENT" 
+                    title="Active Trends" 
+                    status="ACTIVE" 
                     metrics={[
-                      { label: "Active Trends", value: stats.active_trends.toString(), progress: stats.active_trends / 10, color: "text-cyan-400" },
-                      { label: "Core Output", value: stats.videos_processed.toString(), progress: stats.videos_processed / 5, color: "text-violet-500" }
+                      { label: "Discovered", value: stats.active_trends.toString(), color: "text-primary" },
+                      { label: "Processed", value: stats.videos_processed.toString(), color: "text-zinc-400" }
                     ]}
                     footerInfo="SYSTEM_ARCH: NEURAL_LATTICE_V4"
                     toolsStatus="Online"
                     onRefresh={fetchStats}
                     onShare={() => toast.success("System Link Copied")}
-                    onDelete={() => toast.error("System Core cannot be deleted")}
                   />
                   <DesignCard 
                     title="Global Reach" 
@@ -323,5 +315,13 @@ export default function Home() {
       </div>
 
     </CommandCenterLayout>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <DashboardContent />
+    </Suspense>
   );
 }
