@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    allowedHosts: ["92.209.217.18.sslip.io"],
-  },
+  experimental: {},
   async rewrites() {
     const apiUrl = process.env.API_INTERNAL_URL || "http://api:8000";
     return [

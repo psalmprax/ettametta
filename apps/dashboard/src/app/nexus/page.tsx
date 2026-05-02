@@ -196,15 +196,16 @@ function NexusContent() {
 
     // Unified logs pattern
     const displayLogs = useMemo(() => {
+        const logs = Array.isArray(systemLogs) ? systemLogs : [];
         const merged = [
-            ...actionLogs?.map(msg => ({ 
+            ...(actionLogs || []).map(msg => ({ 
                 type: "log", 
                 level: "ACTION", 
                 module: "NEXUS",
                 message: msg, 
                 timestamp: Date.now() / 1000 
             })),
-            ...systemLogs
+            ...logs
         ].sort((a, b) => b.timestamp - a.timestamp);
         return merged;
     }, [actionLogs, systemLogs]);
@@ -217,6 +218,7 @@ function NexusContent() {
                 <div className="space-y-1">
                     {[
                         { id: "orchestrator", label: "Orchestrator", icon: Cpu },
+                        { id: "crews", label: "Workforce", icon: Users },
                         { id: "identities", label: "Neural IDs", icon: Fingerprint },
                         { id: "command", label: "Command Pod", icon: Terminal },
                         { id: "history", label: "Pipeline History", icon: Layers },
