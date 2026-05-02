@@ -130,7 +130,7 @@ function DiscoveryContent() {
                 message: msg, 
                 timestamp: Date.now() / 1000 
             })),
-            ...systemLogs
+            ...(Array.isArray(systemLogs) ? systemLogs : [])
         ].sort((a, b) => b.timestamp - a.timestamp);
         return merged;
     }, [actionLogs, systemLogs]);
