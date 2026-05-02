@@ -97,6 +97,19 @@ class CrewAIService:
                 self.enabled = False
                 return
 
+        if not self.llm and settings.DEFAULT_LLM_PROVIDER == "ollama":
+            try:
+                from langchain_community.chat_models import ChatOllama
+                ollama_base_url = settings.OLLAMA_URL.rstrip("/")
+                self.llm = ChatOllama(
+                    model=settings.OLLAMA_MODEL,
+                    base_url=ollama_base_url
+                )
+                logger.info(f"[CrewAI] Initialized with Ollama ({settings.OLLAMA_MODEL})")
+            except Exception as e:
+                logger.warning(f"[CrewAI] Ollama initialization failed: {e}")
+                self.llm = None
+
         if not self.llm:
             logger.error("[CrewAI] No valid LLM keys configured")
             self.enabled = False
