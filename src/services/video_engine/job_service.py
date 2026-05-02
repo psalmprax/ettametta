@@ -123,7 +123,16 @@ class VideoJobService:
         # 4. Sort and Paginate
         # Defensive sorting: ensure created_at is not None
         from datetime import datetime
-        unified_list.sort(key=lambda x: x["created_at"] if x["created_at"] else datetime.min, reverse=True)
+        def safe_sort_key(x):
+            dt = x.get("created_at")
+            if not dt:
+                return datetime.min
+            # Standard: Ensure naive for comparison with datetime.min
+            if hasattr(dt, "tzinfo") and dt.tzinfo is not None:
+                return dt.replace(tzinfo=None)
+            return dt
+
+        unified_list.sort(key=safe_sort_key, reverse=True)
         total_count = len(unified_list)
         paginated_jobs = unified_list[offset:offset+limit]
         
