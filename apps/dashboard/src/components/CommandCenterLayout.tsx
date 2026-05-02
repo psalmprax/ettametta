@@ -38,6 +38,8 @@ export default function CommandCenterLayout({
 }: CommandCenterLayoutProps) {
     const [isLeftExpanded, setIsLeftExpanded] = useState(true);
     const [isRightExpanded, setIsRightExpanded] = useState(true);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     return (
         <div className="flex h-screen bg-[#050507] text-white font-space-grotesk overflow-hidden relative">
@@ -107,11 +109,17 @@ export default function CommandCenterLayout({
                         </div>
                         <div className="h-10 w-px bg-white/5" />
                         <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer">
-                                <Search className="h-5 w-5" />
+                            <div 
+                                onClick={() => setIsSearchOpen(true)}
+                                className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer hover:bg-white/10 group"
+                            >
+                                <Search className="h-5 w-5 group-hover:scale-110 transition-transform" />
                             </div>
-                            <div className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer">
-                                <Settings className="h-5 w-5" />
+                            <div 
+                                onClick={() => setIsSettingsOpen(true)}
+                                className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer hover:bg-white/10 group"
+                            >
+                                <Settings className="h-5 w-5 group-hover:rotate-90 transition-transform duration-500" />
                             </div>
                         </div>
                     </div>
@@ -175,6 +183,93 @@ export default function CommandCenterLayout({
                     <ChevronLeft className="h-4 w-4" />
                 </button>
             )}
+            {/* Global Overlays */}
+            <AnimatePresence>
+                {isSearchOpen && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-black/80 backdrop-blur-2xl flex items-center justify-center p-6"
+                        onClick={() => setIsSearchOpen(false)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            className="w-full max-w-2xl bg-[#0F0F11] border border-white/10 rounded-[32px] p-8 shadow-2xl"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-center gap-4 mb-8">
+                                <Search className="h-6 w-6 text-cyan-400" />
+                                <input 
+                                    autoFocus
+                                    placeholder="SEARCH_NEURAL_ASSETS..."
+                                    className="bg-transparent border-none outline-none text-2xl font-bold text-white placeholder:text-zinc-800 w-full uppercase"
+                                />
+                            </div>
+                            <div className="space-y-4">
+                                <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Recent Queries</span>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {["TREND_CLUSTER_ALPHA", "EGRESS_GATE_STATS", "AGENT_PERSONA_SYNC"].map(q => (
+                                        <div key={q} className="p-4 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 cursor-pointer transition-all flex items-center justify-between group">
+                                            <span className="text-xs font-bold text-zinc-400 group-hover:text-white">{q}</span>
+                                            <ChevronRight className="h-4 w-4 text-zinc-700" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {isSettingsOpen && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-black/80 backdrop-blur-2xl flex items-center justify-center p-6"
+                        onClick={() => setIsSettingsOpen(false)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, x: 20 }}
+                            animate={{ scale: 1, x: 0 }}
+                            className="w-full max-w-xl bg-[#0F0F11] border border-white/10 rounded-[32px] p-10 shadow-2xl"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-10">
+                                <h2 className="text-2xl font-bold text-white uppercase tracking-tighter flex items-center gap-3">
+                                    <Settings className="h-6 w-6 text-violet-400" />
+                                    System Settings
+                                </h2>
+                                <button onClick={() => setIsSettingsOpen(false)} className="text-zinc-500 hover:text-white transition-colors uppercase text-[10px] font-bold tracking-widest">Close</button>
+                            </div>
+                            
+                            <div className="space-y-8">
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Neural Sync Mode</label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button className="p-4 bg-violet-500/10 border border-violet-500/20 rounded-2xl text-xs font-bold text-violet-400">High Velocity</button>
+                                        <button className="p-4 bg-white/5 border border-white/5 rounded-2xl text-xs font-bold text-zinc-500 hover:text-white transition-all">Deep Analysis</button>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Global Egress</label>
+                                    <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl">
+                                        <span className="text-xs font-bold text-zinc-400">Auto-Publish to TikTok</span>
+                                        <div className="h-6 w-12 bg-emerald-500/20 border border-emerald-500/40 rounded-full relative p-1">
+                                            <div className="h-full aspect-square bg-emerald-500 rounded-full ml-auto" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="pt-4 border-t border-white/5 flex gap-4">
+                                    <button className="flex-1 h-12 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest text-zinc-400">Export Config</button>
+                                    <button className="flex-1 h-12 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl text-[10px] font-bold uppercase tracking-widest text-rose-500">Purge Local Cache</button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

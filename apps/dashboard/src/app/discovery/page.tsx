@@ -335,26 +335,70 @@ function DiscoveryContent() {
                             </div>
                         )}
 
-                        <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
-                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Scanner Logs</span>
-                                <span className="text-[8px] font-mono text-primary/50">{status === "open" ? "LIVE_SYNC" : "OFFLINE"}</span>
-                            </div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                                {displayLogs.map((log, i) => (
-                                    <div key={i} className="flex gap-4">
-                                        <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
-                                        <span className={cn(
-                                            log.level === "ACTION" ? "text-cyan-400" :
-                                            log.level === "ERROR" ? "text-rose-500" :
-                                            log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
-                                        )}>
-                                            {log.module ? `[${log.module}] ` : ""}{log.message}
-                                        </span>
+                        {activeEngine === "logs" && (
+                            <div className="flex-1 flex flex-col min-h-0 bg-[#0F0F11]/60 border border-white/5 rounded-[32px] overflow-hidden">
+                                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
+                                    <div className="flex items-center gap-4">
+                                        <Terminal className="h-4 w-4 text-zinc-500" />
+                                        <h3 className="text-xs font-bold text-white uppercase tracking-widest">Discovery Engine Logs</h3>
                                     </div>
-                                ))}
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span className="text-[9px] font-bold text-emerald-500 uppercase">Engine_Active</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-xs space-y-3">
+                                    {displayLogs.map((log, i) => (
+                                        <div key={i} className="flex gap-6 group hover:bg-white/5 p-2 rounded-lg transition-all">
+                                            <span className="text-zinc-700 shrink-0 select-none">{new Date(log.timestamp * 1000).toLocaleTimeString()}</span>
+                                            <span className="text-zinc-800 shrink-0 select-none">|</span>
+                                            <span className={cn(
+                                                "shrink-0 font-bold tracking-widest uppercase text-[9px] px-2 py-0.5 rounded",
+                                                log.level === "ACTION" ? "bg-cyan-500/10 text-cyan-500" :
+                                                log.level === "ERROR" ? "bg-rose-500/10 text-rose-500" :
+                                                log.level === "SUCCESS" ? "bg-emerald-500/10 text-emerald-500" : "bg-white/5 text-zinc-500"
+                                            )}>
+                                                {log.level || "INFO"}
+                                            </span>
+                                            <span className={cn(
+                                                "leading-relaxed",
+                                                log.level === "ACTION" ? "text-cyan-400" :
+                                                log.level === "ERROR" ? "text-rose-500" :
+                                                log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-400"
+                                            )}>
+                                                <span className="text-zinc-600">[{log.module || "SYSTEM"}]</span> {log.message}
+                                            </span>
+                                        </div>
+                                    ))}
+                                    <div className="h-4" />
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {activeEngine !== "logs" && (
+                            <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+                                <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Scanner Logs</span>
+                                    <span className="text-[8px] font-mono text-primary/50">{status === "open" ? "LIVE_SYNC" : "OFFLINE"}</span>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                                    {displayLogs.map((log, i) => (
+                                        <div key={i} className="flex gap-4">
+                                            <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
+                                            <span className={cn(
+                                                log.level === "ACTION" ? "text-cyan-400" :
+                                                log.level === "ERROR" ? "text-rose-500" :
+                                                log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
+                                            )}>
+                                                {log.module ? `[${log.module}] ` : ""}{log.message}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </motion.div>
                 </AnimatePresence>
             </div>
