@@ -609,6 +609,16 @@ scout.on("VIRAL_DETECT", async (data) => {
                                         ]}
                                         footerInfo={new Date(job.created_at).toLocaleString()}
                                         toolsStatus="Verified"
+                                        onDelete={() => {
+                                            toast.promise(fetch(`${API_BASE}/nexus/jobs/${job.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getAuthToken()}` } }), {
+                                                loading: 'Purging pipeline...',
+                                                success: 'Pipeline purged',
+                                                error: 'Deletion restricted'
+                                            });
+                                        }}
+                                        onRefresh={() => {
+                                            toast.info(`Syncing PIPELINE_${job.id}`);
+                                        }}
                                     />
                                 ))}
                             </div>
