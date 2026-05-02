@@ -256,6 +256,10 @@ function EmpireContent() {
                                                 fetchData();
                                                 toast.info(`Refreshing ${blueprint.niche} metrics...`);
                                             }}
+                                            onMore={() => {
+                                                setActionLogs(prev => [`[INSPECT] Opening Deep Diagnostics for ${blueprint.niche}`, ...prev]);
+                                                toast.info(`Inspecting strategy: ${blueprint.niche}`);
+                                            }}
                                             onDelete={() => {
                                                 setBlueprints(prev => prev.filter(b => b.id !== blueprint.id));
                                                 setActionLogs(prev => [`[WARNING] Blueprint Purged: ${blueprint.niche}`, ...prev]);
@@ -287,9 +291,19 @@ function EmpireContent() {
                                         fetchData();
                                         toast.info("Resyncing Algorithm Sentinel...");
                                     }}
+                                    onMore={() => {
+                                        toast.promise(fetchData(), {
+                                            loading: 'Accessing Deep Diagnostics...',
+                                            success: 'Sentinel Diagnostics Fetched',
+                                            error: 'Failed to access neural core'
+                                        });
+                                    }}
                                     onShare={() => {
                                         navigator.clipboard.writeText(`https://ettametta.ai/sentinel/status`);
                                         toast.success("Sentinel Data Shared");
+                                    }}
+                                    onDelete={() => {
+                                        toast.error("Security Protocol: System Core Protection Active. Deletion restricted.");
                                     }}
                                 />
                                 <div className="lg:col-span-2 p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-6">
