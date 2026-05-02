@@ -131,7 +131,7 @@ export function DesignCard({
         {onMore && (
           <button 
             onClick={(e) => { e.stopPropagation(); onMore(); }}
-            className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-cyan-400"
+            className="h-10 w-10 bg-white/5 hover:bg-cyan-500/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-cyan-400 hover:text-cyan-300 hover:border-cyan-500/30 active:scale-90"
           >
             <motion.div whileHover={{ scale: 1.1 }}><MoreVertical className="h-4 w-4" /></motion.div>
           </button>
@@ -139,7 +139,7 @@ export function DesignCard({
         {onRefresh && (
           <button 
             onClick={(e) => { e.stopPropagation(); onRefresh(); }}
-            className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400"
+            className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400 hover:text-white hover:border-white/20 active:scale-90"
           >
             <RotateCcw className="h-4 w-4" />
           </button>
@@ -147,7 +147,7 @@ export function DesignCard({
         {onShare && (
           <button 
             onClick={(e) => { e.stopPropagation(); onShare(); }}
-            className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400"
+            className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400 hover:text-white hover:border-white/20 active:scale-90"
           >
             <Share className="h-4 w-4" />
           </button>
@@ -155,7 +155,7 @@ export function DesignCard({
         {onDelete && (
           <button 
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="h-10 w-10 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl flex items-center justify-center transition-all border border-rose-500/10 text-rose-400 ml-auto"
+            className="h-10 w-10 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl flex items-center justify-center transition-all border border-rose-500/10 text-rose-400 hover:text-rose-300 active:scale-90 ml-auto"
           >
             <Trash2 className="h-4 w-4" />
           </button>
