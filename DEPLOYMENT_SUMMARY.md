@@ -1,11 +1,41 @@
-# Deployment Summary: Visual Redesign Complete ✅
+# Deployment Summary: High-Fidelity Intelligence OS Redesign ✅
 
 ## Deployment Details
 
-**Date:** 2026-04-27  
-**Branch:** master  
-**Commit:** 891d1ed  
+**Date:** 2026-05-02
+**Branch:** master
+**Commit:** b2aa451
 **Server:** 149.104.110.122
+
+## Major Updates Deployed
+
+### 1. Dashboard Engine Decoupling
+- **Isolation:** Fully decoupled 'Intelligence Overview', 'Engine Pulse', 'Neural History', and 'Live Egress Stream'.
+- **Unique Views:** Each engine now renders specialized diagnostic components instead of a shared log view.
+- **Restored Overview:** Reactivated summary metrics for Neural Core, Global Reach, and Engine Load.
+
+### 2. Empire Registry Functional Parity
+- **Registry Logs:** Isolated to the main registry view for architectural cleanliness.
+- **Clone Protocol:** Activated the `/monetization/empire/clone` workflow with full state confirmation.
+- **Niche Dropdown:** Implemented a robust fallback system ensuring `SELECT_NICHE` is never empty.
+
+### 3. Nexus & Workforce Integration
+- **Merged Views:** Merged the independent Workforce Hub into the unified Nexus Engine under the `?engine=crews` view.
+- **Real Data:** Workforce agents and capabilities are now fetched from live backend endpoints.
+
+### 4. Administrative Controls
+- **DesignCard Actions:** Wired Refresh, Delete, and Share buttons to real action callbacks.
+- **Global Overlays:** Implemented functional Search and Settings modals in the `CommandCenterLayout`.
+
+### 5. Technical Improvements
+- ✅ Re-declared `DesignCardProps` interface to resolve TS linting errors.
+- ✅ Integrated `sonner` toasts for real-time interaction feedback.
+- ✅ Verified git push to trigger automated OCI ARM deployment.
+
+## Deployment Status: PROCESSING 🚀
+The GitHub Action is currently deploying the latest build to the OCI ARM server.
+- Dashboard: http://149.104.110.122:7202
+- API: http://149.104.110.122:7201
 
 ## Changes Deployed
 
