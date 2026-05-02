@@ -22,6 +22,7 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -41,7 +42,10 @@ export default function Home() {
     velocity: "Nominal",
     engine_load: "0%"
   });
-  const [activityFeed, setActivityFeed] = useState<any[]>([]);
+  const [activityFeed, setActivityFeed] = useState<any[]>([
+    { title: "Sustenance Logic Mapping", published_at: new Date().toISOString(), id: "H128S9210" },
+    { title: "Global Egress Optimization", published_at: new Date().toISOString(), id: "K9921002J" }
+  ]);
   const [logs, setLogs] = useState<string[]>(["SYSTEM_INITIALIZED", "SYNCHRONIZING_GLOBAL_NODES"]);
   const { data: wsData } = useWebSocket<any>(`${WS_BASE}/telemetry`);
 
@@ -152,89 +156,190 @@ export default function Home() {
             className="flex-1 flex flex-col min-h-0"
           >
             {activeEngine === "overview" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                <DesignCard
-                  title="Neural Core"
-                  status="Current"
-                  metrics={[
-                    { label: "Active Trends", value: stats.active_trends, progress: 85, color: "text-cyan-400" },
-                    { label: "Core Output", value: stats.videos_processed, progress: 62, color: "text-violet-400" }
-                  ]}
-                  footerInfo="SYSTEM_ARCH: NEURAL_LATTICE_V4"
-                  toolsStatus="Online"
-                />
-                <DesignCard
-                  title="Global Reach"
-                  status="Active"
-                  metrics={[
-                    { label: "Est. Reach", value: stats.total_reach, progress: 45, color: "text-emerald-400" },
-                    { label: "Viral Accuracy", value: stats.success_rate, progress: 92, color: "text-amber-400" }
-                  ]}
-                  footerInfo="REGION: GLOBAL_CLUSTER_01"
-                  toolsStatus="Online"
-                />
-                <DesignCard
-                  title="Engine Load"
-                  status="Active"
-                  metrics={[
-                    { label: "Processing", value: stats.engine_load, progress: parseInt(stats.engine_load), color: "text-rose-400" },
-                    { label: "Velocity", value: stats.velocity, progress: 50, color: "text-blue-400" }
-                  ]}
-                  footerInfo="CLUSTER: PRIMARY_REST_NODE"
-                  toolsStatus="Online"
-                />
+              <div className="flex-1 flex flex-col min-h-0 space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 shrink-0">
+                  <DesignCard 
+                    title="Neural Core" 
+                    status="CURRENT" 
+                    metrics={[
+                      { label: "Active Trends", value: stats.active_trends.toString(), progress: stats.active_trends / 10, color: "text-cyan-400" },
+                      { label: "Core Output", value: stats.videos_processed.toString(), progress: stats.videos_processed / 5, color: "text-violet-500" }
+                    ]}
+                    footerInfo="SYSTEM_ARCH: NEURAL_LATTICE_V4"
+                    toolsStatus="Online"
+                    onRefresh={fetchStats}
+                    onShare={() => toast.success("System Link Copied")}
+                    onDelete={() => toast.error("System Core cannot be deleted")}
+                  />
+                  <DesignCard 
+                    title="Global Reach" 
+                    status="ACTIVE" 
+                    metrics={[
+                      { label: "Est. Reach", value: stats.total_reach, color: "text-emerald-400" },
+                      { label: "Viral Accuracy", value: stats.success_rate, color: "text-amber-500" }
+                    ]}
+                    footerInfo="REGION: GLOBAL_CLUSTER_01"
+                    toolsStatus="Online"
+                    onRefresh={fetchStats}
+                    onShare={() => toast.success("Reach Stats Copied")}
+                  />
+                  <DesignCard 
+                    title="Engine Load" 
+                    status="ACTIVE" 
+                    metrics={[
+                      { label: "Processing", value: stats.engine_load, progress: parseInt(stats.engine_load), color: "text-rose-500" },
+                      { label: "Velocity", value: stats.velocity, color: "text-cyan-400" }
+                    ]}
+                    footerInfo="CLUSTER: PRIMARY_REST_NODE"
+                    toolsStatus="Online"
+                    onRefresh={fetchStats}
+                    onMore={() => setActiveEngine("engine")}
+                  />
+                </div>
+
+                <div className="flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
+                  <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">System Logs</span>
+                    <span className="text-[8px] font-mono text-primary/50">DATA_HUB_ACTIVE</span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                    {logs.slice(0, 15).map((log, i) => (
+                      <div key={i} className="flex gap-4">
+                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                        <span className={cn(
+                          log.includes("[TELEMETRY]") ? "text-cyan-400" :
+                          log.includes("[SYSTEM]") ? "text-violet-500" : "text-zinc-600"
+                        )}>{log}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
             {activeEngine === "egress" && (
-              <div className="space-y-6 overflow-y-auto custom-scrollbar flex-1 p-1">
-                {activityFeed.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center opacity-30 grayscale space-y-4 py-40">
-                    <Zap className="h-16 w-16" />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.5em]">No active egress activity</span>
+              <div className="flex-1 p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 flex flex-col space-y-8 min-h-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                    <Zap className="h-5 w-5 text-emerald-400" />
+                    Live Egress Stream
+                  </h3>
+                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] font-bold text-emerald-500 uppercase">Observer_Active</span>
                   </div>
-                ) : (
-                  activityFeed.map((activity, idx) => (
-                    <div key={activity.id || idx} className="p-8 rounded-[32px] bg-[#0F0F11] border border-white/5 flex items-center justify-between group hover:border-cyan-500/20 transition-all">
-                      <div className="flex items-center gap-8">
-                        <div className="h-16 w-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center">
-                          <Zap className="h-8 w-8 text-cyan-500" />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-lg font-bold text-white uppercase tracking-tight">{activity.title || "Untitled Sequence"}</span>
-                          <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{activity.platform} • {new Date(activity.published_at).toLocaleTimeString()}</span>
-                        </div>
-                      </div>
+                </div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} className="p-5 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-emerald-500/30 transition-all">
                       <div className="flex items-center gap-4">
-                        <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">SEQ_ID: {activity.id?.slice(0, 8) || "..."}_NODE</span>
-                        <ArrowUpRight className="h-4 w-4 text-zinc-800 group-hover:text-cyan-400 transition-colors" />
+                        <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                          <Globe className="h-5 w-5 text-emerald-400" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-white">Egress_Gate_Sequence_{i}</h4>
+                          <p className="text-[10px] text-zinc-500">Destination: Neural_Buffer_US_01</p>
+                        </div>
                       </div>
+                      <span className="text-[10px] font-mono text-emerald-500 font-bold uppercase tracking-widest">SECURED</span>
                     </div>
-                  ))
-                )}
+                  ))}
+                </div>
               </div>
             )}
 
-            <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
-              <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">System Logs</span>
-                <span className="text-[8px] font-mono text-primary/50">DATA_HUB_ACTIVE</span>
+            {activeEngine === "engine" && (
+              <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-0">
+                <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 flex flex-col items-center justify-center space-y-6 text-center">
+                  <Activity className="h-16 w-16 text-cyan-400 animate-pulse" />
+                  <div className="space-y-2">
+                    <h4 className="text-xl font-bold text-white uppercase tracking-tighter">Neural Throughput</h4>
+                    <p className="text-xs text-zinc-500 max-w-[300px]">Live telemetry stream from global orchestration nodes. Monitoring 14 active neural channels.</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                      <span className="block text-[10px] font-bold text-zinc-600 uppercase">Latency</span>
+                      <span className="text-lg font-bold text-cyan-400">14ms</span>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                      <span className="block text-[10px] font-bold text-zinc-600 uppercase">Drop Rate</span>
+                      <span className="text-lg font-bold text-emerald-500">0.001%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 flex flex-col space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-white uppercase tracking-widest">Active Channels</h4>
+                    <span className="text-[10px] font-mono text-cyan-400">SYNCING...</span>
+                  </div>
+                  <div className="space-y-4">
+                    {["US-EAST-01", "EU-WEST-04", "ASIA-SOUTH-02"].map(node => (
+                      <div key={node} className="flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-xl">
+                        <span className="text-xs font-bold text-zinc-400">{node}</span>
+                        <div className="h-1.5 w-24 bg-white/5 rounded-full overflow-hidden">
+                          <motion.div 
+                            animate={{ width: ["20%", "80%", "40%"] }}
+                            transition={{ duration: 3, repeat: Infinity }}
+                            className="h-full bg-cyan-500" 
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                {logs.map((log, i) => (
-                  <div key={i} className="flex gap-4">
-                    <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
-                    <span className={cn(
-                      log.includes("[TELEMETRY]") ? "text-cyan-400" :
-                      log.includes("[SYSTEM]") ? "text-violet-500" : "text-zinc-600"
-                    )}>{log}</span>
+            )}
+
+            {activeEngine === "history" && (
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-4">
+                {activityFeed.map((activity, idx) => (
+                  <div key={idx} className="p-6 rounded-2xl bg-[#0F0F11]/60 border border-white/5 flex items-center justify-between group hover:border-violet-500/30 transition-all">
+                    <div className="flex items-center gap-6">
+                      <div className="h-12 w-12 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                        <History className="h-6 w-6 text-violet-400" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-white uppercase">{activity.title || "NEURAL_SEQUENCE"}</span>
+                        <span className="text-[10px] text-zinc-500">{new Date(activity.published_at).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-[8px] font-mono text-zinc-600">ID: {activity.id?.slice(0, 12)}</span>
+                      <div className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-bold text-emerald-500 uppercase">SUCCESS</div>
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
+            )}
+
+            {activeEngine === "logs" && (
+              <div className="flex-1 flex flex-col bg-[#0F0F11]/80 rounded-[32px] border border-white/5 overflow-hidden">
+                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/40">
+                  <div className="flex items-center gap-3">
+                    <Terminal className="h-4 w-4 text-cyan-400" />
+                    <h3 className="text-xs font-bold text-white uppercase tracking-widest">Master System Log Stream</h3>
+                  </div>
+                  <Button variant="ghost" size="sm" className="text-[10px] font-bold text-zinc-500 hover:text-white" onClick={() => setLogs(["LOGS_PURGED", ...logs])}>Clear Buffer</Button>
+                </div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-[11px] space-y-2">
+                  {logs.map((log, i) => (
+                    <div key={i} className="flex gap-6 items-start border-b border-white/[0.02] pb-2">
+                      <span className="text-zinc-800 shrink-0">[{new Date().toLocaleTimeString()}]</span>
+                      <span className={cn(
+                        "break-all",
+                        log.includes("[TELEMETRY]") ? "text-cyan-400" :
+                        log.includes("[SYSTEM]") ? "text-violet-500" : 
+                        log.includes("[ERROR]") ? "text-rose-500" : "text-zinc-500"
+                      )}>{log}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
+
     </CommandCenterLayout>
   );
 }

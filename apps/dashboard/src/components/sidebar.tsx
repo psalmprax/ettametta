@@ -93,11 +93,13 @@ const intelligenceItems = [
         subItems: [
             { name: "Orchestrator", href: "/nexus?engine=orchestrator" },
             { name: "Neural IDs", href: "/nexus?engine=identities" },
-            { name: "Command Pod", href: "/nexus?engine=command" },
-            { name: "Pipeline History", href: "/nexus?engine=history" }
+            { name: "Workforce", href: "/nexus?engine=crews" },
+            { name: "Code Sandbox", href: "/nexus?engine=sandbox" },
+            { name: "Pipeline History", href: "/nexus?engine=history" },
+            { name: "Command Pod", href: "/nexus?engine=command" }
         ]
     },
-    { name: "Workforce Hub", href: "/nexus/workforce", icon: Users },
+    { name: "Workforce Hub", href: "/nexus?engine=crews", icon: Users },
     { name: "Intel Core", href: "/analytics", icon: BarChart3 },
     { name: "Security Audit", href: "/admin/audits", icon: ShieldCheck },
 ];
@@ -178,7 +180,7 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                                     href={item.href}
                                     className={cn(
                                         "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
-                                        isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                                        isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/2"
                                     )}
                                 >
                                     <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-cyan-400" : "text-zinc-600 group-hover:text-zinc-400")} />
@@ -218,7 +220,7 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                                     href={item.href}
                                     className={cn(
                                         "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
-                                        isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                                        isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/2"
                                     )}
                                 >
                                     <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-violet-400" : "text-zinc-600 group-hover:text-zinc-400")} />
@@ -255,7 +257,7 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                                     href={item.href}
                                     className={cn(
                                         "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
-                                        isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                                        isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/2"
                                     )}
                                 >
                                     <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-rose-500" : "text-zinc-600 group-hover:text-zinc-400")} />

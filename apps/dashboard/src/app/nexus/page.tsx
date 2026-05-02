@@ -58,6 +58,8 @@ function NexusContent() {
     const searchParams = useSearchParams();
     const { agents, logs: systemLogs, lastJobUpdate, pulse, status } = useTelemetry();
     
+    const [personas, setPersonas] = useState<Persona[]>([]);
+    const [capabilities, setCapabilities] = useState<any[]>([]);
     const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "orchestrator");
     const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
     const [activeBlueprint, setActiveBlueprint] = useState<Blueprint | null>(null);
@@ -100,6 +102,24 @@ function NexusContent() {
                             const nicheList = Array.isArray(data) ? data : [];
                             setNiches(nicheList);
                             if (nicheList.length > 0) setSelectedNiche(nicheList[0]);
+                        }
+                    }
+                ),
+                withRealFallback<Persona[]>(
+                    () => fetch(`${API_BASE}/agent/personas`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (data) => setPersonas(Array.isArray(data) ? data : [])
+                    }
+                ),
+                withRealFallback<any>(
+                    () => fetch(`${API_BASE}/agent/capabilities`, { headers }),
+                    {
+                        fallback: [],
+                        onSuccess: (data) => {
+                            if (data && data.workers) {
+                                setCapabilities(data.workers);
+                            }
                         }
                     }
                 ),
@@ -454,6 +474,145 @@ function NexusContent() {
                             </div>
                         )}
 
+                        {activeEngine === "crews" && (
+                            <div className="space-y-8 h-full flex flex-col">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-2xl font-bold text-white uppercase tracking-tighter">Workforce Orchestrator</h3>
+                                    <div className="flex gap-4">
+                                        <div className="px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-bold uppercase tracking-widest">
+                                            {capabilities.length} Available Skills
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1 min-h-0">
+                                    <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-8 flex flex-col overflow-hidden">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-sm font-bold text-white uppercase tracking-widest">Specialized Agents</h4>
+                                            <Bot className="h-4 w-4 text-cyan-400" />
+                                        </div>
+                                        <div className="space-y-4 overflow-y-auto custom-scrollbar pr-2">
+                                            {capabilities.map((worker, i) => (
+                                                <div key={i} className="p-6 bg-white/5 border border-white/5 rounded-2xl group hover:border-cyan-500/30 transition-all flex items-center justify-between">
+                                                    <div className="space-y-1">
+                                                        <h5 className="text-sm font-bold text-white uppercase tracking-tight">{worker.name}</h5>
+                                                        <p className="text-[10px] text-zinc-500 font-mono">{worker.category} • {worker.stability}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <span className="text-[10px] text-zinc-600 font-mono">CR: {worker.credits_per_task}</span>
+                                                        <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-cyan-400 hover:bg-cyan-500/10">Deploy</Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {capabilities.length === 0 && (
+                                                <div className="py-20 text-center space-y-4 opacity-20">
+                                                    <Users className="h-12 w-12 mx-auto" />
+                                                    <p className="text-xs font-bold uppercase tracking-widest">No Active Workforce Nodes</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 flex flex-col items-center justify-center space-y-8 text-center relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-linear-to-b from-cyan-500/5 to-transparent pointer-events-none" />
+                                        <Network className="h-20 w-20 text-cyan-500/20 animate-pulse" />
+                                        <div className="space-y-4 z-10">
+                                            <h4 className="text-xl font-bold text-white uppercase tracking-tighter">Neural Workforce Mesh</h4>
+                                            <p className="text-xs text-zinc-500 max-w-[280px] leading-relaxed mx-auto">
+                                                Orchestrate multiple specialized agents into a unified autonomous crew. 
+                                                The mesh is currently operating at {pulse?.load_avg ? Math.round(pulse.load_avg * 100) : 12}% global capacity.
+                                            </p>
+                                        </div>
+                                        <Button className="h-14 px-10 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-2xl uppercase tracking-widest text-[10px] shadow-[0_0_30px_rgba(8,145,178,0.3)] transition-all hover:scale-105">Initialize New Crew</Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeEngine === "sandbox" && (
+                            <div className="flex-1 flex flex-col min-h-0 bg-[#0F0F11]/60 border border-white/5 rounded-[32px] overflow-hidden">
+                                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
+                                    <div className="flex items-center gap-4">
+                                        <Terminal className="h-4 w-4 text-cyan-400" />
+                                        <h3 className="text-xs font-bold text-white uppercase tracking-widest">Neural Code Sandbox</h3>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Button 
+                                            size="sm" 
+                                            className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-4 h-8 text-[10px] uppercase"
+                                            onClick={async () => {
+                                                const token = await getAuthToken();
+                                                if (!token) return;
+                                                toast.info("Dispatching code to sandbox...");
+                                                await withRealFallback(
+                                                    () => fetch(`${API_BASE}/agent/sandbox-execute`, {
+                                                        method: "POST",
+                                                        headers: {
+                                                            "Content-Type": "application/json",
+                                                            Authorization: `Bearer ${token}`
+                                                        },
+                                                        body: JSON.stringify({ code: "// Nexus Sandbox Logic" })
+                                                    }),
+                                                    {
+                                                        fallback: null,
+                                                        onSuccess: (data: any) => {
+                                                            toast.success("Execution Complete");
+                                                            if (data.logs) {
+                                                                setActionLogs(prev => [...data.logs, ...prev]);
+                                                            }
+                                                        }
+                                                    }
+                                                );
+                                            }}
+                                        >
+                                            Execute_Node
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 min-h-0">
+                                    <div className="border-r border-white/5 flex flex-col min-h-0">
+                                        <div className="p-4 border-b border-white/5 bg-white/5">
+                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Script</span>
+                                        </div>
+                                        <div className="flex-1 p-8 font-mono text-sm text-cyan-400/80 overflow-y-auto custom-scrollbar">
+                                            <pre>
+{`// Initialize Intelligence Bridge
+const nexus = await Nexus.connect();
+
+// Spawn autonomous scout
+const scout = await nexus.spawnAgent("SCOUT_01", {
+    role: "Discovery",
+    niche: "${selectedNiche || 'Global'}",
+    behavior: "Aggressive"
+});
+
+// Await viral triggers
+scout.on("VIRAL_DETECT", async (data) => {
+    console.log("[NEXUS] Outbreak detected:", data.id);
+    await nexus.dispatchPipeline("AUTO_SYNTH_V1", data);
+});`}
+                                            </pre>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 flex flex-col h-full bg-[#0F0F11]/60 rounded-r-[32px] border-l border-white/5 overflow-hidden">
+                                        <div className="p-4 border-b border-white/5 bg-white/5">
+                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Execution Output</span>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-[10px] space-y-2">
+                                            {actionLogs.map((log, i) => (
+                                                <p key={i} className={cn(
+                                                    log.includes("[SUCCESS]") ? "text-emerald-500" :
+                                                    log.includes("[EXEC]") ? "text-cyan-400" :
+                                                    log.includes("[SYSTEM]") ? "text-zinc-600" : "text-zinc-400"
+                                                )}>{log}</p>
+                                            ))}
+                                            <div className="animate-pulse flex gap-2">
+                                                <span className="text-white">_</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {activeEngine === "history" && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-y-auto custom-scrollbar">
                                 {nexusJobs?.map((job) => (
@@ -473,21 +632,35 @@ function NexusContent() {
                         )}
 
                         {activeEngine === "command" && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-y-auto custom-scrollbar pr-4">
                                 <CommandPod 
-                                    name="Nexus Core" 
-                                    status="nominal" 
-                                    load={15} 
+                                    name="Nexus Master Core" 
+                                    status={status === "open" ? "nominal" : "offline"} 
+                                    load={pulse?.load_avg ? Math.round(pulse.load_avg * 100) : 15} 
                                     circuitBreaker="closed" 
-                                    description="Primary orchestration layer for Nexus Workforce."
+                                    description="Primary orchestration layer for global Nexus Workforce. Synchronizing 14 neural channels."
                                 />
                                 <CommandPod 
-                                    name="Neural Gateway" 
+                                    name="Neural ID Gateway" 
                                     status="nominal" 
-                                    load={8} 
+                                    load={personas.length > 0 ? 8 : 2} 
                                     circuitBreaker="closed" 
-                                    description="High-throughput ingress for autonomous discovery signals."
+                                    description="High-throughput ingress for autonomous identity verification and persona mapping."
                                 />
+                                <CommandPod 
+                                    name="Pipeline Dispatcher" 
+                                    status={isLaunching ? "active" : "nominal"} 
+                                    load={nexusJobs.filter(j => j.status === 'processing').length * 20} 
+                                    circuitBreaker="closed" 
+                                    description="Real-time job scheduling and blueprint execution engine."
+                                />
+                                <div className="col-span-full p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 flex items-center justify-between">
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Global Master Override</span>
+                                        <h4 className="text-lg font-bold text-white uppercase tracking-tight">Emergency System Halt</h4>
+                                    </div>
+                                    <Button variant="outline" className="h-14 px-10 border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white font-bold uppercase tracking-widest text-[10px]">Execute Halt_0</Button>
+                                </div>
                             </div>
                         )}
 
