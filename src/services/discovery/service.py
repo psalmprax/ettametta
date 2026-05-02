@@ -353,8 +353,6 @@ class DiscoveryService:
                         niche=l.niche,
                         metadata={
                             **(l.metadata_json or {}),
-                            "similarity_score": similarity,
-                            "original_id": content_id,
                             "is_reupload": True,
                         },
                     )
