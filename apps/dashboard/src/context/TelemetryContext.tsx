@@ -81,51 +81,75 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     const ws = useRef<WebSocket | null>(null);
     const reconnectAttempts = useRef(0);
 
-    const connect = useCallback(() => {
-        if (ws.current?.readyState === WebSocket.OPEN) return;
-
-        try {
-            const socket = new WebSocket(`${WS_BASE}/telemetry`);
-            
-            socket.onopen = () => {
-                setStatus("open");
-                reconnectAttempts.current = 0;
-                console.log("[Telemetry] Secure Stream Established");
-            };
-
-            socket.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === "telemetry_pulse") {
-                        setPulse(data);
-                    } else if (data.type === "log") {
-                        setLogs(prev => [data, ...prev].slice(0, 100));
-                    } else if (data.type === "job_update" || data.type === "nexus_job_update") {
-                        setLastJobUpdate(data);
-                    }
-                } catch (e) {
-                    console.error("[Telemetry] Parse Error:", e);
-                }
-            };
-
-            socket.onclose = () => {
-                setStatus("closed");
-                const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
-                reconnectAttempts.current++;
-                setTimeout(connect, delay);
-            };
-
-            ws.current = socket;
-        } catch (e) {
-            console.error("[Telemetry] Connection Failed:", e);
-            setStatus("closed");
-        }
-    }, []);
-
     useEffect(() => {
+        let isMounted = true;
+        let reconnectTimeout: NodeJS.Timeout;
+
+        const connect = () => {
+            if (!isMounted) return;
+            if (ws.current?.readyState === WebSocket.OPEN || ws.current?.readyState === WebSocket.CONNECTING) return;
+
+            try {
+                const socket = new WebSocket(`${WS_BASE}/telemetry`);
+                
+                socket.onopen = () => {
+                    if (!isMounted) {
+                        socket.close();
+                        return;
+                    }
+                    setStatus("open");
+                    reconnectAttempts.current = 0;
+                    console.log("[Telemetry] Secure Stream Established");
+                };
+
+                socket.onmessage = (event) => {
+                    if (!isMounted) return;
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === "telemetry_pulse") {
+                            setPulse(data);
+                        } else if (data.type === "log") {
+                            setLogs(prev => [data, ...prev].slice(0, 100));
+                        } else if (data.type === "job_update" || data.type === "nexus_job_update") {
+                            setLastJobUpdate(data);
+                        }
+                    } catch (e) {
+                        console.error("[Telemetry] Parse Error:", e);
+                    }
+                };
+
+                socket.onclose = () => {
+                    if (!isMounted) return;
+                    setStatus("closed");
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+                    reconnectAttempts.current++;
+                    reconnectTimeout = setTimeout(connect, delay);
+                };
+
+                ws.current = socket;
+            } catch (e) {
+                console.error("[Telemetry] Connection Failed:", e);
+                if (isMounted) {
+                    setStatus("closed");
+                    reconnectTimeout = setTimeout(connect, 5000);
+                }
+            }
+        };
+
         connect();
-        return () => ws.current?.close();
-    }, [connect]);
+
+        return () => {
+            isMounted = false;
+            clearTimeout(reconnectTimeout);
+            if (ws.current) {
+                const socket = ws.current;
+                if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+                    socket.close();
+                }
+                ws.current = null;
+            }
+        };
+    }, []);
 
     // Map pulse signals to AgentMatrix format
     const agents = (pulse?.signals || []).map((s, i) => {

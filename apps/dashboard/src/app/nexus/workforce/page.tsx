@@ -71,7 +71,7 @@ export default function WorkforceHub() {
         const token = await getAuthToken();
         if (!token) return;
         await withRealFallback<any>(
-            () => fetch(`${API_BASE}/nexus/workforce/status`, {
+            () => fetch(`${API_BASE}/tools/nexus/workforce/status`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {

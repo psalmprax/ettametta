@@ -190,77 +190,168 @@ function AutonomousContent() {
             }
         >
             <div className="p-10 space-y-10 relative h-full flex flex-col">
-                <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 space-y-10">
-                    <div className="glass-card aspect-21/9 rounded-[40px] flex items-center justify-center relative overflow-hidden bg-[#0F0F11]/60 border border-white/5">
-                        <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
-                        <div className="flex items-center gap-12 relative z-10">
-                            <LogicNode icon={Search} label="Scout" active={isRunning && currentStep === "SCOUTING"} pulse={currentStep === "SCOUTING"} />
-                            <Connector active={isRunning && ["SCREENING", "BRAINSTORMING", "RENDERING", "PUBLISHING", "WAITING"].includes(currentStep)} />
-                            <LogicNode icon={Cpu} label="Brain" active={isRunning && ["SCREENING", "BRAINSTORMING"].includes(currentStep)} pulse={currentStep === "BRAINSTORMING"} />
-                            <Connector active={isRunning && ["RENDERING", "PUBLISHING", "WAITING"].includes(currentStep)} />
-                            <LogicNode icon={Layers} label="Render" active={isRunning && currentStep === "RENDERING"} pulse={currentStep === "RENDERING"} />
-                            <Connector active={isRunning && ["PUBLISHING", "WAITING"].includes(currentStep)} />
-                            <LogicNode icon={Share2} label="Post" active={isRunning && currentStep === "PUBLISHING"} pulse={currentStep === "PUBLISHING"} />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-6">
-                            <div className="flex items-center gap-3">
-                                <Sparkles className="h-4 w-4 text-emerald-500" />
-                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Autonomous Insight Oracle</h3>
-                            </div>
-                            {insights ? (
-                                <div className="space-y-4">
-                                    <h4 className="text-3xl font-bold text-white uppercase tracking-tighter">{insights.title}</h4>
-                                    <p className="text-zinc-500 text-sm leading-relaxed">{insights.hook}</p>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeEngine}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className={cn("flex-1 pr-4 space-y-10", activeEngine !== "console" && "overflow-y-auto custom-scrollbar")}
+                    >
+                        {activeEngine === "launch" && (
+                            <>
+                                <div className="glass-card aspect-21/9 rounded-[40px] flex items-center justify-center relative overflow-hidden bg-[#0F0F11]/60 border border-white/5">
+                                    <div className="absolute inset-0 scanline opacity-5 pointer-events-none" />
+                                    <div className="flex items-center gap-12 relative z-10">
+                                        <LogicNode icon={Search} label="Scout" active={isRunning && currentStep === "SCOUTING"} pulse={currentStep === "SCOUTING"} />
+                                        <Connector active={isRunning && ["SCREENING", "BRAINSTORMING", "RENDERING", "PUBLISHING", "WAITING"].includes(currentStep)} />
+                                        <LogicNode icon={Cpu} label="Brain" active={isRunning && ["SCREENING", "BRAINSTORMING"].includes(currentStep)} pulse={currentStep === "BRAINSTORMING"} />
+                                        <Connector active={isRunning && ["RENDERING", "PUBLISHING", "WAITING"].includes(currentStep)} />
+                                        <LogicNode icon={Layers} label="Render" active={isRunning && currentStep === "RENDERING"} pulse={currentStep === "RENDERING"} />
+                                        <Connector active={isRunning && ["PUBLISHING", "WAITING"].includes(currentStep)} />
+                                        <LogicNode icon={Share2} label="Post" active={isRunning && currentStep === "PUBLISHING"} pulse={currentStep === "PUBLISHING"} />
+                                    </div>
                                 </div>
-                            ) : (
-                                <div className="h-32 flex flex-col items-center justify-center opacity-20">
-                                    <Radar className="h-10 w-10 animate-pulse" />
-                                    <span className="text-[8px] font-bold mt-2">LISTENING_FOR_PULSES</span>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                    <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-6">
+                                        <div className="flex items-center gap-3">
+                                            <Sparkles className="h-4 w-4 text-emerald-500" />
+                                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Autonomous Insight Oracle</h3>
+                                        </div>
+                                        {insights ? (
+                                            <div className="space-y-4">
+                                                <h4 className="text-3xl font-bold text-white uppercase tracking-tighter">{insights.title}</h4>
+                                                <p className="text-zinc-500 text-sm leading-relaxed">{insights.hook}</p>
+                                            </div>
+                                        ) : (
+                                            <div className="h-32 flex flex-col items-center justify-center opacity-20">
+                                                <Radar className="h-10 w-10 animate-pulse" />
+                                                <span className="text-[8px] font-bold mt-2">LISTENING_FOR_PULSES</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="p-10 rounded-[32px] bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-8">
+                                        <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                                            <Activity className="h-8 w-8" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] font-bold text-emerald-500/60 uppercase tracking-widest">Self-Correction Mode</span>
+                                            <p className="text-white font-bold uppercase">Dynamic Optimization Active</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
+                            </>
+                        )}
 
-                        <div className="p-10 rounded-[32px] bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-8">
-                            <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-                                <Activity className="h-8 w-8" />
+                        {activeEngine === "logic" && (
+                            <div className="h-full min-h-[400px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px] relative overflow-hidden group">
+                                <div className="absolute inset-0 architect-grid pointer-events-none opacity-20" />
+                                <div className="flex flex-col items-center gap-6 relative z-10">
+                                    <Layers className="h-16 w-16 text-emerald-500 animate-pulse" />
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Logic Flow Mapping</h3>
+                                    <span className="text-[10px] text-zinc-500 font-mono italic">REAL_TIME_PROCESS_VISUALIZATION_ACTIVE</span>
+                                </div>
                             </div>
-                            <div className="space-y-1">
-                                <span className="text-[10px] font-bold text-emerald-500/60 uppercase tracking-widest">Self-Correction Mode</span>
-                                <p className="text-white font-bold uppercase">Dynamic Optimization Active</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        )}
 
-                <div className="mt-8 h-64 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
-                    <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Terminal className="h-3 w-3 text-emerald-500" />
-                            <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">System Console</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[8px] font-mono text-emerald-500/50">{status === "open" ? "LINK_ESTABLISHED" : "LINK_OFFLINE"}</span>
-                            <div className={cn("h-1.5 w-1.5 rounded-full", status === "open" ? "bg-emerald-500 animate-pulse" : "bg-zinc-800")} />
-                        </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                        {displayLogs.map((log, i) => (
-                            <div key={i} className="flex gap-4">
-                                <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
-                                <span className={cn(
-                                    log.level === "ACTION" ? "text-cyan-400" :
-                                    log.level === "ERROR" ? "text-red-500" :
-                                    log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
-                                )}>
-                                    {log.module ? `[${log.module}] ` : ""}{log.message}
-                                </span>
+                        {activeEngine === "oracle" && (
+                            <div className="h-full min-h-[400px] p-12 border border-white/5 bg-[#0F0F11]/60 rounded-[40px] space-y-8">
+                                <div className="flex items-center gap-4">
+                                    <Sparkles className="h-8 w-8 text-emerald-500" />
+                                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Strategic Insight Oracle</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="p-8 rounded-3xl bg-white/2 border border-white/5 space-y-4">
+                                        <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Hypothesis</label>
+                                        <p className="text-white text-lg font-bold leading-tight">{insights?.title || "HYPOTHESIS_PENDING"}</p>
+                                    </div>
+                                    <div className="p-8 rounded-3xl bg-white/2 border border-white/5 space-y-4">
+                                        <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Market Alignment</label>
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-2 flex-1 bg-white/5 rounded-full overflow-hidden">
+                                                <div className="h-full bg-emerald-500 w-[78%]" />
+                                            </div>
+                                            <span className="text-emerald-500 font-bold">78%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-8 rounded-3xl bg-emerald-500/5 border border-emerald-500/10">
+                                    <p className="text-zinc-400 leading-relaxed italic">"{insights?.hook || "Waiting for autonomous agents to report high-confidence signals..."}"</p>
+                                </div>
                             </div>
-                        ))}
+                        )}
+
+                        {activeEngine === "market" && (
+                            <div className="h-full min-h-[400px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px]">
+                                <div className="flex flex-col items-center gap-6">
+                                    <Radar className="h-16 w-16 text-emerald-500 animate-spin-slow" />
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Market Pulse Radar</h3>
+                                    <span className="text-[10px] text-zinc-500 font-mono italic">SCANNING_GLOBAL_TREND_SIGNAL_VECTORS</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeEngine === "console" && (
+                            <div className="h-full flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
+                                <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <Terminal className="h-4 w-4 text-emerald-500" />
+                                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Full Spectrum System Console</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-[8px] font-mono text-emerald-500/50">{status === "open" ? "LINK_ESTABLISHED" : "LINK_OFFLINE"}</span>
+                                        <div className={cn("h-1.5 w-1.5 rounded-full", status === "open" ? "bg-emerald-500 animate-pulse" : "bg-zinc-800")} />
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-[11px] space-y-2">
+                                    {displayLogs.map((log, i) => (
+                                        <div key={i} className="flex gap-4">
+                                            <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
+                                            <span className={cn(
+                                                log.level === "ACTION" ? "text-cyan-400" :
+                                                log.level === "ERROR" ? "text-red-500" :
+                                                log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
+                                            )}>
+                                                {log.module ? `[${log.module}] ` : ""}{log.message}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                </AnimatePresence>
+
+                {activeEngine !== "console" && (
+                    <div className="mt-8 h-64 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+                        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Terminal className="h-3 w-3 text-emerald-500" />
+                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">System Console</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[8px] font-mono text-emerald-500/50">{status === "open" ? "LINK_ESTABLISHED" : "LINK_OFFLINE"}</span>
+                                <div className={cn("h-1.5 w-1.5 rounded-full", status === "open" ? "bg-emerald-500 animate-pulse" : "bg-zinc-800")} />
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                            {displayLogs.map((log, i) => (
+                                <div key={i} className="flex gap-4">
+                                    <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
+                                    <span className={cn(
+                                        log.level === "ACTION" ? "text-cyan-400" :
+                                        log.level === "ERROR" ? "text-red-500" :
+                                        log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
+                                    )}>
+                                        {log.module ? `[${log.module}] ` : ""}{log.message}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </CommandCenterLayout>
     );

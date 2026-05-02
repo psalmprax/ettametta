@@ -120,12 +120,13 @@ const studioItems = [
         href: "/transformation", 
         icon: Layers,
         subItems: [
-            { name: "Studio Control", href: "/transformation?engine=control" },
-            { name: "Mass Deployment", href: "/transformation?engine=queue" },
-            { name: "Neural Nodes", href: "/transformation?engine=nodes" }
+            { name: "Studio Control", href: "/transformation?engine=studio" },
+            { name: "Mass Deployment", href: "/transformation?engine=mass" },
+            { name: "Render Queue", href: "/transformation?engine=queue" },
+            { name: "Neural Nodes", href: "/transformation?engine=nodes" },
+            { name: "System Logs", href: "/transformation?engine=logs" }
         ]
     },
-    { name: "Neural Sandbox", href: "/nexus?engine=command", icon: Terminal },
 ];
 
 interface SidebarProps {

@@ -76,44 +76,54 @@ class VideoJobService:
         unified_list = []
         
         for v in video_jobs:
-            # Defensive check for status and metadata
             try:
-                status_val = v.status.value if hasattr(v.status, 'value') else v.status
-            except Exception:
-                status_val = str(v.status)
+                # Defensive check for status and metadata
+                try:
+                    status_val = v.status.value if hasattr(v.status, 'value') else v.status
+                except Exception:
+                    status_val = str(v.status) if v.status else "UNKNOWN"
 
-            unified_list.append({
-                "id": v.id,
-                "title": v.title,
-                "status": status_val,
-                "progress": v.progress or 0,
-                "source_uri": v.source_uri,
-                "output_path": v.output_path,
-                "job_metadata": v.job_metadata or {},
-                "created_at": v.created_at,
-                "engine": "video_transform"
-            })
+                unified_list.append({
+                    "id": v.id,
+                    "title": v.title or f"Video Job {v.id[:8] if v.id else '???'}",
+                    "status": status_val,
+                    "progress": v.progress or 0,
+                    "source_uri": v.source_uri,
+                    "output_path": v.output_path,
+                    "job_metadata": v.job_metadata or {},
+                    "created_at": v.created_at,
+                    "engine": "video_transform"
+                })
+            except Exception as e:
+                logger.error(f"[JobService] Error normalizing video job {v.id if hasattr(v, 'id') else 'unknown'}: {e}")
+                continue
             
         for n in nexus_jobs:
             try:
-                status_val = n.status.value if hasattr(n.status, 'value') else n.status
-            except Exception:
-                status_val = str(n.status)
+                try:
+                    status_val = n.status.value if hasattr(n.status, 'value') else n.status
+                except Exception:
+                    status_val = str(n.status) if n.status else "UNKNOWN"
 
-            unified_list.append({
-                "id": n.id,
-                "title": f"Nexus Production: {n.niche}",
-                "status": status_val,
-                "progress": n.progress or 0,
-                "source_uri": "Cinema Mode / Studio",
-                "output_path": n.output_path,
-                "job_metadata": n.job_metadata or {},
-                "created_at": n.created_at,
-                "engine": "nexus_compose"
-            })
+                unified_list.append({
+                    "id": n.id,
+                    "title": f"Nexus Production: {n.niche}" if hasattr(n, 'niche') else f"Nexus Job {n.id[:8] if n.id else '???'}",
+                    "status": status_val,
+                    "progress": n.progress or 0,
+                    "source_uri": "Cinema Mode / Studio",
+                    "output_path": n.output_path,
+                    "job_metadata": n.job_metadata or {},
+                    "created_at": n.created_at,
+                    "engine": "nexus_compose"
+                })
+            except Exception as e:
+                logger.error(f"[JobService] Error normalizing nexus job {n.id if hasattr(n, 'id') else 'unknown'}: {e}")
+                continue
             
         # 4. Sort and Paginate
-        unified_list.sort(key=lambda x: x["created_at"], reverse=True)
+        # Defensive sorting: ensure created_at is not None
+        from datetime import datetime
+        unified_list.sort(key=lambda x: x["created_at"] if x["created_at"] else datetime.min, reverse=True)
         total_count = len(unified_list)
         paginated_jobs = unified_list[offset:offset+limit]
         
