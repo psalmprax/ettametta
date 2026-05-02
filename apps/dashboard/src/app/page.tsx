@@ -115,7 +115,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-indigo-200">
+            <div className="h-10 w-10 rounded-xl bg-linear-to-br from-indigo-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-indigo-200">
               <Zap className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900">Ettametta<span className="text-indigo-600">OS</span></span>
@@ -179,7 +179,7 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="relative"
           >
-            <div className="absolute -inset-4 bg-gradient-to-br from-indigo-400/20 via-indigo-500/5 to-amber-400/10 blur-3xl" />
+            <div className="absolute -inset-4 bg-linear-to-br from-indigo-400/20 via-indigo-500/5 to-amber-400/10 blur-3xl" />
             <Card variant="elevated" className="p-3 rounded-3xl relative overflow-hidden">
               <div className="bg-slate-50 rounded-2xl aspect-video flex items-center justify-center overflow-hidden relative">
                 <img 
@@ -187,7 +187,7 @@ export default function LandingPage() {
                     alt="Content Dashboard" 
                     className="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-slate-900/60 via-transparent to-transparent" />
                 <div className="absolute bottom-6 left-6 space-y-2">
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-2 bg-emerald-400 rounded-full animate-ping" />
@@ -305,4 +305,3 @@ export default function LandingPage() {
     </BaseLayout>
   );
 }
-

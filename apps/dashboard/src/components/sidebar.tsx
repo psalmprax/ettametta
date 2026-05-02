@@ -46,22 +46,85 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
     { name: "Command Center", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Empire Registry", href: "/empire", icon: Crown },
-    { name: "Trend Discovery", href: "/discovery", icon: Radar },
+    { 
+        name: "Empire Registry", 
+        href: "/empire", 
+        icon: Crown,
+        subItems: [
+            { name: "Registry", href: "/empire?engine=registry" },
+            { name: "Algo Sentinel", href: "/empire?engine=sentinel" },
+            { name: "Promo Hub", href: "/empire?engine=monetization" },
+            { name: "Commerce Matrix", href: "/empire?engine=commerce" },
+            { name: "Registry Logs", href: "/empire?engine=logs" }
+        ]
+    },
+    { 
+        name: "Trend Discovery", 
+        href: "/discovery", 
+        icon: Radar,
+        subItems: [
+            { name: "Viral Trends", href: "/discovery?engine=trends" },
+            { name: "Niche Intel", href: "/discovery?engine=intel" },
+            { name: "Neural Alerts", href: "/discovery?engine=alerts" },
+            { name: "Global Hotspots", href: "/discovery?engine=hotspots" },
+            { name: "Scanner Logs", href: "/discovery?engine=logs" }
+        ]
+    },
     { name: "Global Publish", href: "/publishing", icon: Share2 },
-    { name: "Autonomous OS", href: "/autonomous", icon: Activity },
+    { 
+        name: "Autonomous OS", 
+        href: "/autonomous", 
+        icon: Activity,
+        subItems: [
+            { name: "Launch Control", href: "/autonomous?engine=launch" },
+            { name: "Logic Flow", href: "/autonomous?engine=logic" },
+            { name: "Insight Oracle", href: "/autonomous?engine=oracle" },
+            { name: "Market Pulse", href: "/autonomous?engine=market" },
+            { name: "System Console", href: "/autonomous?engine=console" }
+        ]
+    },
 ];
 
 const intelligenceItems = [
-    { name: "Nexus Engine", href: "/nexus", icon: Cpu },
+    { 
+        name: "Nexus Engine", 
+        href: "/nexus", 
+        icon: Cpu,
+        subItems: [
+            { name: "Orchestrator", href: "/nexus?engine=orchestrator" },
+            { name: "Neural IDs", href: "/nexus?engine=identities" },
+            { name: "Command Pod", href: "/nexus?engine=command" },
+            { name: "Pipeline History", href: "/nexus?engine=history" }
+        ]
+    },
     { name: "Workforce Hub", href: "/nexus/workforce", icon: Users },
     { name: "Intel Core", href: "/analytics", icon: BarChart3 },
     { name: "Security Audit", href: "/admin/audits", icon: ShieldCheck },
 ];
 
 const studioItems = [
-    { name: "Creation Hub", href: "/creation", icon: PlaySquare },
-    { name: "Transformation", href: "/transformation", icon: Layers },
+    { 
+        name: "Creation Hub", 
+        href: "/creation", 
+        icon: PlaySquare,
+        subItems: [
+            { name: "Command Center", href: "/creation?engine=genesis" },
+            { name: "Voice Forge", href: "/creation?engine=voice" },
+            { name: "Script Engine", href: "/creation?engine=script" },
+            { name: "Visual Core", href: "/creation?engine=visual" },
+            { name: "System Logs", href: "/creation?engine=logs" }
+        ]
+    },
+    { 
+        name: "Transformation", 
+        href: "/transformation", 
+        icon: Layers,
+        subItems: [
+            { name: "Studio Control", href: "/transformation?engine=control" },
+            { name: "Mass Deployment", href: "/transformation?engine=queue" },
+            { name: "Neural Nodes", href: "/transformation?engine=nodes" }
+        ]
+    },
     { name: "Neural Sandbox", href: "/nexus/command", icon: Terminal },
 ];
 
@@ -107,22 +170,39 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                 <div className="space-y-1">
                     {!collapsed && <label className="px-4 mb-2 block text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]">Operational</label>}
                     {navItems.map((item) => {
-                        const isActive = pathname === item.href;
+                        const isActive = pathname.startsWith(item.href);
                         return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={cn(
-                                    "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
-                                    isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                            <div key={item.href} className="space-y-1">
+                                <Link
+                                    href={item.href}
+                                    className={cn(
+                                        "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
+                                        isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                                    )}
+                                >
+                                    <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-cyan-400" : "text-zinc-600 group-hover:text-zinc-400")} />
+                                    {!collapsed && <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>}
+                                    {isActive && !item.subItems && (
+                                        <motion.div layoutId="nav-active" className="absolute left-0 w-1 h-4 bg-cyan-400 rounded-full" />
+                                    )}
+                                </Link>
+                                {!collapsed && isActive && item.subItems && (
+                                    <div className="ml-9 border-l border-white/5 pl-4 py-1 space-y-1">
+                                        {item.subItems.map(sub => (
+                                            <Link 
+                                                key={sub.href} 
+                                                href={sub.href}
+                                                className={cn(
+                                                    "block text-[10px] font-bold uppercase tracking-wider py-1.5 transition-colors",
+                                                    pathname === sub.href ? "text-cyan-400" : "text-zinc-600 hover:text-zinc-400"
+                                                )}
+                                            >
+                                                {sub.name}
+                                            </Link>
+                                        ))}
+                                    </div>
                                 )}
-                            >
-                                <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-cyan-400" : "text-zinc-600 group-hover:text-zinc-400")} />
-                                {!collapsed && <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>}
-                                {isActive && (
-                                    <motion.div layoutId="nav-active" className="absolute left-0 w-1 h-4 bg-cyan-400 rounded-full" />
-                                )}
-                            </Link>
+                            </div>
                         );
                     })}
                 </div>
@@ -130,19 +210,36 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                 <div className="space-y-1">
                     {!collapsed && <label className="px-4 mb-2 block text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]">Intelligence</label>}
                     {intelligenceItems.map((item) => {
-                        const isActive = pathname === item.href;
+                        const isActive = pathname.startsWith(item.href);
                         return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={cn(
-                                    "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
-                                    isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                            <div key={item.href} className="space-y-1">
+                                <Link
+                                    href={item.href}
+                                    className={cn(
+                                        "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
+                                        isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                                    )}
+                                >
+                                    <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-violet-400" : "text-zinc-600 group-hover:text-zinc-400")} />
+                                    {!collapsed && <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>}
+                                </Link>
+                                {!collapsed && isActive && item.subItems && (
+                                    <div className="ml-9 border-l border-white/5 pl-4 py-1 space-y-1">
+                                        {item.subItems.map(sub => (
+                                            <Link 
+                                                key={sub.href} 
+                                                href={sub.href}
+                                                className={cn(
+                                                    "block text-[10px] font-bold uppercase tracking-wider py-1.5 transition-colors",
+                                                    pathname === sub.href ? "text-violet-400" : "text-zinc-600 hover:text-zinc-400"
+                                                )}
+                                            >
+                                                {sub.name}
+                                            </Link>
+                                        ))}
+                                    </div>
                                 )}
-                            >
-                                <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-violet-400" : "text-zinc-600 group-hover:text-zinc-400")} />
-                                {!collapsed && <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>}
-                            </Link>
+                            </div>
                         );
                     })}
                 </div>
@@ -150,19 +247,36 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                 <div className="space-y-1">
                     {!collapsed && <label className="px-4 mb-2 block text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em]">Studio</label>}
                     {studioItems.map((item) => {
-                        const isActive = pathname === item.href;
+                        const isActive = pathname.startsWith(item.href);
                         return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={cn(
-                                    "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
-                                    isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                            <div key={item.href} className="space-y-1">
+                                <Link
+                                    href={item.href}
+                                    className={cn(
+                                        "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative",
+                                        isActive ? "bg-white/5 text-white" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                                    )}
+                                >
+                                    <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-rose-500" : "text-zinc-600 group-hover:text-zinc-400")} />
+                                    {!collapsed && <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>}
+                                </Link>
+                                {!collapsed && isActive && item.subItems && (
+                                    <div className="ml-9 border-l border-white/5 pl-4 py-1 space-y-1">
+                                        {item.subItems.map(sub => (
+                                            <Link 
+                                                key={sub.href} 
+                                                href={sub.href}
+                                                className={cn(
+                                                    "block text-[10px] font-bold uppercase tracking-wider py-1.5 transition-colors",
+                                                    pathname === sub.href ? "text-rose-400" : "text-zinc-600 hover:text-zinc-400"
+                                                )}
+                                            >
+                                                {sub.name}
+                                            </Link>
+                                        ))}
+                                    </div>
                                 )}
-                            >
-                                <item.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-rose-500" : "text-zinc-600 group-hover:text-zinc-400")} />
-                                {!collapsed && <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>}
-                            </Link>
+                            </div>
                         );
                     })}
                 </div>
@@ -171,7 +285,7 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
             {/* Bottom Telemetry & User */}
             <div className="p-4 mt-auto border-t border-white/5 bg-black/20 space-y-4">
                 {!collapsed && (
-                    <div className="px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                    <div className="px-4 py-3 rounded-2xl bg-white/2 border border-white/5 space-y-2">
                         <div className="flex items-center justify-between">
                             <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">System Pulse</span>
                             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
@@ -250,7 +364,7 @@ export function MobileHeader({ onMenuClick }: { onMenuClick?: () => void }) {
             <div className="flex items-center gap-4">
                 <button 
                     onClick={onMenuClick} 
-                    className="h-12 w-12 flex items-center justify-center bg-white/[0.02] border border-white/10 rounded-2xl"
+                    className="h-12 w-12 flex items-center justify-center bg-white/2 border border-white/10 rounded-2xl"
                 >
                     <Menu className="h-6 w-6 text-zinc-300" />
                 </button>
