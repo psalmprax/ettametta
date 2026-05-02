@@ -93,11 +93,15 @@ const intelligenceItems = [
         subItems: [
             { name: "Orchestrator", href: "/nexus?engine=orchestrator" },
             { name: "Neural IDs", href: "/nexus?engine=identities" },
-            { name: "Workforce", href: "/nexus?engine=crews" },
             { name: "Code Sandbox", href: "/nexus?engine=sandbox" },
             { name: "Pipeline History", href: "/nexus?engine=history" },
             { name: "Command Pod", href: "/nexus?engine=command" }
         ]
+    },
+    { 
+        name: "Workforce Hub", 
+        href: "/nexus?engine=crews", 
+        icon: Users 
     },
     { name: "Intel Core", href: "/analytics", icon: BarChart3 },
     { name: "Security Audit", href: "/admin/audits", icon: ShieldCheck },
