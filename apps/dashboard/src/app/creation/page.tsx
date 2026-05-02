@@ -264,115 +264,199 @@ function CreationContent() {
             <div className="p-10 space-y-10 relative h-full flex flex-col">
                 <NeuralCore />
                 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10 shrink-0">
-                    <div className="rounded-[32px] border border-white/5 bg-[#0F0F11]/60 backdrop-blur-xl p-8 space-y-6 flex flex-col">
-                        <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                            <h3 className="text-[10px] font-bold text-violet-400 tracking-[0.2em] uppercase">Neural Prompt Terminal</h3>
-                            <span className="text-[8px] font-mono text-zinc-600">READY_FOR_INPUT.EXE</span>
-                        </div>
-                        
-                        <div className="flex-1 min-h-[160px] relative">
-                            <div className="absolute left-0 top-0 text-violet-500 font-mono text-xs opacity-50">&gt;</div>
-                            <textarea 
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
-                                placeholder="ENTER INSTRUCTIONS FOR THE NEURAL NETWORK..."
-                                className="w-full h-full bg-transparent border-none p-0 pl-6 text-sm font-mono text-white placeholder:text-zinc-700 focus:outline-none resize-none"
-                            />
-                            {isGenerating && (
-                                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center rounded-xl">
-                                    <div className="flex flex-col items-center gap-4">
-                                        <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
-                                        <span className="text-[10px] font-bold text-violet-400 animate-pulse uppercase tracking-widest">Synthesizing Protocol...</span>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeEngine}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className={cn("flex-1 relative z-10 flex flex-col gap-10", activeEngine !== "logs" && "overflow-y-auto custom-scrollbar pr-4")}
+                    >
+                        {activeEngine === "genesis" && (
+                            <>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 shrink-0">
+                                    <div className="rounded-[32px] border border-white/5 bg-[#0F0F11]/60 backdrop-blur-xl p-8 space-y-6 flex flex-col">
+                                        <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                            <h3 className="text-[10px] font-bold text-violet-400 tracking-[0.2em] uppercase">Neural Prompt Terminal</h3>
+                                            <span className="text-[8px] font-mono text-zinc-600">READY_FOR_INPUT.EXE</span>
+                                        </div>
+                                        
+                                        <div className="flex-1 min-h-[160px] relative">
+                                            <div className="absolute left-0 top-0 text-violet-500 font-mono text-xs opacity-50">&gt;</div>
+                                            <textarea 
+                                                value={prompt}
+                                                onChange={(e) => setPrompt(e.target.value)}
+                                                placeholder="ENTER INSTRUCTIONS FOR THE NEURAL NETWORK..."
+                                                className="w-full h-full bg-transparent border-none p-0 pl-6 text-sm font-mono text-white placeholder:text-zinc-700 focus:outline-none resize-none"
+                                            />
+                                            {isGenerating && (
+                                                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center rounded-xl">
+                                                    <div className="flex flex-col items-center gap-4">
+                                                        <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
+                                                        <span className="text-[10px] font-bold text-violet-400 animate-pulse uppercase tracking-widest">Synthesizing Protocol...</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <Button 
+                                            onClick={handleGenerate}
+                                            disabled={isGenerating || !prompt}
+                                            className="w-full h-16 bg-violet-500 hover:bg-violet-400 text-white font-bold text-lg rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all uppercase tracking-widest"
+                                        >
+                                            {isGenerating ? "Synthesizing..." : "Initialize Generation"}
+                                        </Button>
+                                    </div>
+
+                                    <div className="rounded-[32px] border border-white/5 bg-[#0F0F11]/60 backdrop-blur-xl p-8 space-y-6 flex flex-col relative overflow-hidden">
+                                        <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                            <h3 className="text-[10px] font-bold text-emerald-400 tracking-[0.2em] uppercase">Active Processing Stream</h3>
+                                            <span className="text-[8px] font-mono text-zinc-600">LIVE DATA FEED_001</span>
+                                        </div>
+
+                                        <div className="flex-1 flex flex-col justify-center items-center relative py-10">
+                                            <div className="w-full h-px bg-linear-to-r from-transparent via-violet-500/30 to-transparent absolute top-1/2 -translate-y-1/2" />
+                                            <motion.div 
+                                                animate={{ scale: [1, 1.1, 1] }}
+                                                transition={{ duration: 2, repeat: Infinity }}
+                                                className="h-16 w-16 rounded-2xl border border-violet-500/50 flex items-center justify-center bg-violet-500/10 z-10"
+                                            >
+                                                <Brain className="h-8 w-8 text-violet-400" />
+                                            </motion.div>
+                                            <span className="text-[10px] font-bold text-violet-400 mt-4 tracking-widest uppercase opacity-80">Synapse Core</span>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center text-[8px] font-bold text-zinc-500 uppercase">
+                                                <span>Synthesis Progress</span>
+                                                <span>{isGenerating ? "Processing..." : (pulse?.load_avg ? `${Math.round(pulse.load_avg * 100)}%` : "0.0%")}</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                                <motion.div 
+                                                    className="h-full bg-emerald-500"
+                                                    initial={{ width: 0 }}
+                                                    animate={isGenerating ? { x: ["-100%", "100%"] } : { width: pulse?.load_avg ? `${pulse.load_avg * 100}%` : 0 }}
+                                                    transition={isGenerating ? { duration: 1.5, repeat: Infinity, ease: "linear" } : { duration: 1 }}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            )}
-                        </div>
 
-                        <Button 
-                            onClick={handleGenerate}
-                            disabled={isGenerating || !prompt}
-                            className="w-full h-16 bg-violet-500 hover:bg-violet-400 text-white font-bold text-lg rounded-2xl shadow-[0_0_30px_rgba(139,92,246,0.3)] transition-all uppercase tracking-widest"
-                        >
-                            {isGenerating ? "Synthesizing..." : "Initialize Generation"}
-                        </Button>
-                    </div>
+                                <div className="flex-1 min-h-[300px] flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
+                                    <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                                        <h3 className="text-[10px] font-bold text-zinc-400 tracking-[0.2em] uppercase">Neural Transcript Log</h3>
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-[8px] font-mono text-zinc-600">LOG_LEVEL: VERBOSE</span>
+                                            <button onClick={() => setActionLogs([])} className="text-zinc-600 hover:text-white transition-colors">
+                                                <RefreshCw className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-[11px] space-y-2">
+                                        {displayLogs.map((log, i) => (
+                                            <div key={i} className="flex gap-4">
+                                                <span className="text-zinc-700">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
+                                                <span className={cn(
+                                                    log.level === "ACTION" ? "text-cyan-400" :
+                                                    log.level === "ERROR" ? "text-rose-500" :
+                                                    log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-500"
+                                                )}>
+                                                    {log.module ? `[${log.module}] ` : ""}{log.message}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {script && (
+                                        <div className="p-6 border-t border-white/5 bg-violet-500/5 flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <span className="text-xs font-bold text-white uppercase">{script.title}</span>
+                                                <span className="text-[10px] text-zinc-500">{script.segments?.length} SEGMENTS DETECTED</span>
+                                            </div>
+                                            <Button 
+                                                onClick={handleLaunchCinema}
+                                                disabled={isCinemaLaunching}
+                                                className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs uppercase h-10 px-6 rounded-xl"
+                                            >
+                                                {isCinemaLaunching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Commit to Production"}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
 
-                    <div className="rounded-[32px] border border-white/5 bg-[#0F0F11]/60 backdrop-blur-xl p-8 space-y-6 flex flex-col relative overflow-hidden">
-                        <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                            <h3 className="text-[10px] font-bold text-emerald-400 tracking-[0.2em] uppercase">Active Processing Stream</h3>
-                            <span className="text-[8px] font-mono text-zinc-600">LIVE DATA FEED_001</span>
-                        </div>
-
-                        <div className="flex-1 flex flex-col justify-center items-center relative py-10">
-                            <div className="w-full h-px bg-linear-to-r from-transparent via-violet-500/30 to-transparent absolute top-1/2 -translate-y-1/2" />
-                            <motion.div 
-                                animate={{ scale: [1, 1.1, 1] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className="h-16 w-16 rounded-2xl border border-violet-500/50 flex items-center justify-center bg-violet-500/10 z-10"
-                            >
-                                <Brain className="h-8 w-8 text-violet-400" />
-                            </motion.div>
-                            <span className="text-[10px] font-bold text-violet-400 mt-4 tracking-widest uppercase opacity-80">Synapse Core</span>
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center text-[8px] font-bold text-zinc-500 uppercase">
-                                <span>Synthesis Progress</span>
-                                <span>{isGenerating ? "Processing..." : (pulse?.load_avg ? `${Math.round(pulse.load_avg * 100)}%` : "0.0%")}</span>
+                        {activeEngine === "voice" && (
+                            <div className="h-full min-h-[400px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px] relative overflow-hidden group">
+                                <div className="absolute inset-0 architect-grid pointer-events-none opacity-20" />
+                                <div className="flex flex-col items-center gap-6 relative z-10 text-center">
+                                    <div className="relative">
+                                        <Mic2 className="h-16 w-16 text-violet-400 animate-pulse" />
+                                        <div className="absolute -inset-4 bg-violet-500/20 blur-2xl rounded-full -z-10" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Voice Forge Core</h3>
+                                    <span className="text-[10px] text-zinc-500 font-mono italic">NEURAL_AUDIO_SYNTHESIS_HUB_ACTIVE</span>
+                                </div>
                             </div>
-                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                <motion.div 
-                                    className="h-full bg-emerald-500"
-                                    initial={{ width: 0 }}
-                                    animate={isGenerating ? { x: ["-100%", "100%"] } : { width: pulse?.load_avg ? `${pulse.load_avg * 100}%` : 0 }}
-                                    transition={isGenerating ? { duration: 1.5, repeat: Infinity, ease: "linear" } : { duration: 1 }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        )}
 
-                <div className="flex-1 min-h-0 relative z-10 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
-                    <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                        <h3 className="text-[10px] font-bold text-zinc-400 tracking-[0.2em] uppercase">Neural Transcript Log</h3>
-                        <div className="flex items-center gap-4">
-                            <span className="text-[8px] font-mono text-zinc-600">LOG_LEVEL: VERBOSE</span>
-                            <button onClick={() => setActionLogs([])} className="text-zinc-600 hover:text-white transition-colors">
-                                <RefreshCw className="h-3 w-3" />
-                            </button>
-                        </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-[11px] space-y-2">
-                        {displayLogs.map((log, i) => (
-                            <div key={i} className="flex gap-4">
-                                <span className="text-zinc-700">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
-                                <span className={cn(
-                                    log.level === "ACTION" ? "text-cyan-400" :
-                                    log.level === "ERROR" ? "text-rose-500" :
-                                    log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-500"
-                                )}>
-                                    {log.module ? `[${log.module}] ` : ""}{log.message}
-                                </span>
+                        {activeEngine === "script" && (
+                            <div className="h-full min-h-[400px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px] relative overflow-hidden group">
+                                <div className="absolute inset-0 architect-grid pointer-events-none opacity-20" />
+                                <div className="flex flex-col items-center gap-6 relative z-10 text-center">
+                                    <div className="relative">
+                                        <Edit3 className="h-16 w-16 text-violet-400 animate-pulse" />
+                                        <div className="absolute -inset-4 bg-violet-500/20 blur-2xl rounded-full -z-10" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Script Synthesis Engine</h3>
+                                    <span className="text-[10px] text-zinc-500 font-mono italic">LLM_ORCHESTRATION_LAYER_READY</span>
+                                </div>
                             </div>
-                        ))}
-                    </div>
-                    {script && (
-                        <div className="p-6 border-t border-white/5 bg-violet-500/5 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <span className="text-xs font-bold text-white uppercase">{script.title}</span>
-                                <span className="text-[10px] text-zinc-500">{script.segments?.length} SEGMENTS DETECTED</span>
+                        )}
+
+                        {activeEngine === "visual" && (
+                            <div className="h-full min-h-[400px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px] relative overflow-hidden group">
+                                <div className="absolute inset-0 architect-grid pointer-events-none opacity-20" />
+                                <div className="flex flex-col items-center gap-6 relative z-10 text-center">
+                                    <div className="relative">
+                                        <Clapperboard className="h-16 w-16 text-violet-400 animate-pulse" />
+                                        <div className="absolute -inset-4 bg-violet-500/20 blur-2xl rounded-full -z-10" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Visual Synthesis Core</h3>
+                                    <span className="text-[10px] text-zinc-500 font-mono italic">FRAME_GENERATION_PIPELINE_ACTIVE</span>
+                                </div>
                             </div>
-                            <Button 
-                                onClick={handleLaunchCinema}
-                                disabled={isCinemaLaunching}
-                                className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs uppercase h-10 px-6 rounded-xl"
-                            >
-                                {isCinemaLaunching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Commit to Production"}
-                            </Button>
-                        </div>
-                    )}
-                </div>
+                        )}
+
+                        {activeEngine === "logs" && (
+                            <div className="h-full flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
+                                <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                                    <h3 className="text-[10px] font-bold text-zinc-400 tracking-[0.2em] uppercase">Global Creation Stream</h3>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-[8px] font-mono text-zinc-600">LOG_LEVEL: VERBOSE</span>
+                                        <button onClick={() => setActionLogs([])} className="text-zinc-600 hover:text-white transition-colors">
+                                            <RefreshCw className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-[11px] space-y-2">
+                                    {displayLogs.map((log, i) => (
+                                        <div key={i} className="flex gap-4">
+                                            <span className="text-zinc-700">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
+                                            <span className={cn(
+                                                log.level === "ACTION" ? "text-cyan-400" :
+                                                log.level === "ERROR" ? "text-rose-500" :
+                                                log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-500"
+                                            )}>
+                                                {log.module ? `[${log.module}] ` : ""}{log.message}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                </AnimatePresence>
             </div>
         </CommandCenterLayout>
     );
