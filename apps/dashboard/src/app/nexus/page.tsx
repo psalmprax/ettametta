@@ -63,7 +63,7 @@ function NexusContent() {
     const [activeBlueprint, setActiveBlueprint] = useState<Blueprint | null>(null);
     const [isLaunching, setIsLaunching] = useState(false);
     const [nexusJobs, setNexusJobs] = useState<NexusJob[]>([]);
-    const [niches, setNiches] = useState<string[]>([]);
+    const [niches, setNiches] = useState<any[]>([]);
     const [selectedNiche, setSelectedNiche] = useState("");
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
     const [selectedNodeIndex, setSelectedNodeIndex] = useState<number>(0);
@@ -167,6 +167,10 @@ function NexusContent() {
     const fetchPersonas = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;
+        await withRealFallback<any[]>(
+            () => fetch(`${API_BASE}/discovery/niches`, { headers: { Authorization: `Bearer ${token}` } }),
+            { fallback: [], onSuccess: setNiches }
+        );
         await withRealFallback<Persona[]>(
             () => fetch(`${API_BASE}/persona/list`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -190,7 +194,7 @@ function NexusContent() {
     // Unified logs pattern
     const displayLogs = useMemo(() => {
         const merged = [
-            ...actionLogs.map(msg => ({ 
+            ...actionLogs?.map(msg => ({ 
                 type: "log", 
                 level: "ACTION", 
                 module: "NEXUS",
@@ -243,7 +247,7 @@ function NexusContent() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            {nexusJobs.slice(0, 3).map((job) => (
+                            {nexusJobs?.slice(0, 3).map((job) => (
                                 <div key={job.id} className="p-4 rounded-2xl border border-white/5 bg-white/5 flex items-center justify-between group hover:bg-white/8 transition-all">
                                     <div className="flex flex-col gap-1">
                                         <span className="text-[10px] font-bold text-white uppercase tracking-tight">{job.niche}</span>
@@ -284,7 +288,11 @@ function NexusContent() {
                                             onChange={(e) => setSelectedNiche(e.target.value)}
                                             className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none"
                                         >
-                                            {niches.map(n => <option key={n} value={n} className="bg-zinc-900">{n}</option>)}
+                                            {niches?.map((n) => (
+                                                <option key={typeof n === 'string' ? n : n.niche} value={typeof n === 'string' ? n : n.niche} className="bg-zinc-900">
+                                                    {typeof n === 'string' ? n : n.niche}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                     <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl">
@@ -294,7 +302,7 @@ function NexusContent() {
                                             onChange={(e) => setActiveBlueprint(blueprints.find(b => b.id === e.target.value) || null)}
                                             className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none"
                                         >
-                                            {blueprints.map(b => <option key={b.id} value={b.id} className="bg-zinc-900">{b.name}</option>)}
+                                            {blueprints?.map((b) => <option key={b.id} value={b.id} className="bg-zinc-900">{b.name}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex flex-col justify-end">
@@ -357,7 +365,7 @@ function NexusContent() {
                                     </Button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 overflow-y-auto custom-scrollbar p-1">
-                                    {personas.map((persona) => (
+                                    {personas?.map((persona) => (
                                         <div key={persona.id} className="p-8 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-6 group hover:border-cyan-500/20 transition-all">
                                             <div className="aspect-square rounded-2xl bg-zinc-900 overflow-hidden relative border border-white/5">
                                                 {persona.reference_image_uri ? (
@@ -397,7 +405,7 @@ function NexusContent() {
 
                         {activeEngine === "history" && (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-y-auto custom-scrollbar">
-                                {nexusJobs.map((job) => (
+                                {nexusJobs?.map((job) => (
                                     <DesignCard 
                                         key={job.id}
                                         title={`PIPELINE_${job.id}`}
@@ -413,14 +421,33 @@ function NexusContent() {
                             </div>
                         )}
 
-                        {(activeEngine === "command" || activeEngine === "logs") && (
+                        {activeEngine === "command" && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <CommandPod 
+                                    name="Nexus Core" 
+                                    status="nominal" 
+                                    load={15} 
+                                    circuitBreaker="closed" 
+                                    description="Primary orchestration layer for Nexus Workforce."
+                                />
+                                <CommandPod 
+                                    name="Neural Gateway" 
+                                    status="nominal" 
+                                    load={8} 
+                                    circuitBreaker="closed" 
+                                    description="High-throughput ingress for autonomous discovery signals."
+                                />
+                            </div>
+                        )}
+
+                        {activeEngine === "logs" && (
                             <div className="flex-1 flex flex-col h-full bg-[#0F0F11]/60 rounded-[32px] border border-white/5 overflow-hidden">
                                 <div className="p-6 border-b border-white/5 flex items-center justify-between">
                                     <h3 className="text-[10px] font-bold text-zinc-400 tracking-[0.2em] uppercase">Log Stream</h3>
                                     <span className="text-[8px] font-mono text-cyan-400">{status === "open" ? "NEXUS_CORE_ACTIVE" : "OFFLINE"}</span>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-[11px] space-y-2">
-                                    {displayLogs.map((log, i) => (
+                                    {displayLogs?.map((log, i) => (
                                         <div key={i} className="flex gap-4">
                                             <span className="text-zinc-700">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
                                             <span className={cn(
