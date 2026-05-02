@@ -65,7 +65,7 @@ export function DesignCard({
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 gap-y-6 gap-x-12 mb-10 relative z-10">
-        {metrics.map((metric, i) => (
+        {metrics?.map((metric, i) => (
           <div key={i} className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-slate-400">{metric.label}</span>
