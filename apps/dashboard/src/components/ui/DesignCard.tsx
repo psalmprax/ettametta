@@ -18,6 +18,10 @@ interface DesignCardProps {
   toolsStatus?: "Online" | "Offline" | "Live Polling" | "Syncing" | "Archived" | (string & {});
   onClick?: () => void;
   actions?: ReactNode;
+  onRefresh?: () => void;
+  onDelete?: () => void;
+  onShare?: () => void;
+  onMore?: () => void;
 }
 
 export function DesignCard({
@@ -27,7 +31,11 @@ export function DesignCard({
   footerInfo,
   toolsStatus = "Offline",
   onClick,
-  actions
+  actions,
+  onRefresh,
+  onDelete,
+  onShare,
+  onMore
 }: DesignCardProps) {
   return (
     <motion.div
@@ -116,18 +124,30 @@ export function DesignCard({
         </div>
       </div>
 
-      {/* Action Overlay (Optional) */}
+      {/* Action Overlay */}
       <div className="flex items-center gap-2 mt-6 relative z-10">
-        <button className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-cyan-400">
+        <button 
+          onClick={(e) => { e.stopPropagation(); onMore?.(); }}
+          className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-cyan-400"
+        >
           <motion.div whileHover={{ scale: 1.1 }}><MoreVertical className="h-4 w-4" /></motion.div>
         </button>
-        <button className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400">
+        <button 
+          onClick={(e) => { e.stopPropagation(); onRefresh?.(); }}
+          className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400"
+        >
           <RotateCcw className="h-4 w-4" />
         </button>
-        <button className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400">
+        <button 
+          onClick={(e) => { e.stopPropagation(); onShare?.(); }}
+          className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400"
+        >
           <Share className="h-4 w-4" />
         </button>
-        <button className="h-10 w-10 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl flex items-center justify-center transition-all border border-rose-500/10 text-rose-400 ml-auto">
+        <button 
+          onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+          className="h-10 w-10 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl flex items-center justify-center transition-all border border-rose-500/10 text-rose-400 ml-auto"
+        >
           <Trash2 className="h-4 w-4" />
         </button>
       </div>

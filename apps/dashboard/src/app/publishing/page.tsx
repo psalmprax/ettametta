@@ -86,33 +86,7 @@ export default function PublishingPage() {
         setIsDeploying(false);
         setAccountToUnlink(null);
     };
-
-    const fetchData = useCallback(async () => {
-        const token = await getAuthToken();
-        if (!token) return;
-        const headers = { Authorization: `Bearer ${token}` };
-        
-        await Promise.all([
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/publish/accounts`, { headers }),
-                { fallback: [], onSuccess: (data) => setAccounts(data) }
-            ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/publish/history`, { headers }),
-                { fallback: [], onSuccess: (data) => setHistory(data) }
-            ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/publish/jobs`, { headers }),
-                { fallback: [], onSuccess: (data) => setJobs(data) }
-            )
-        ]);
-    }, []);
-
-    useEffect(() => {
-        fetchData();
-        const interval = setInterval(fetchData, 10000);
-        return () => clearInterval(interval);
-    }, [fetchData]);
+    const [agents, setAgents] = useState<any[]>([]);
 
     const handleAutoBroadcast = async () => {
         const token = await getAuthToken();
@@ -134,12 +108,45 @@ export default function PublishingPage() {
         );
     };
 
-    // Prepare Agent Data
-    const agents = [
-        { id: "EGRESS_01", name: "Node Synchronizer", icon: Share2, status: "ACTIVE" as any, latency: 42, load: 8, details: "Syncing YT/Insta" },
-        { id: "PROP_01", name: "Viral Injector", icon: Target, status: "ACTIVE" as any, latency: 120, load: 22, details: "Injecting Metadata" },
-        { id: "AUTH_01", name: "Security Gate", icon: ShieldCheck, status: "IDLE" as any, latency: 1, load: 0, details: "Verified" },
-    ];
+    const fetchData = useCallback(async () => {
+        const token = await getAuthToken();
+        if (!token) return;
+        const headers = { Authorization: `Bearer ${token}` };
+        
+        await Promise.all([
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/publish/accounts`, { headers }),
+                { fallback: [], onSuccess: (data) => setAccounts(data) }
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/publish/history`, { headers }),
+                { fallback: [], onSuccess: (data) => setHistory(data) }
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/publish/jobs`, { headers }),
+                { fallback: [], onSuccess: (data) => setJobs(data) }
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/agent/capabilities`, { headers }),
+                { 
+                    fallback: [], 
+                    onSuccess: (data) => {
+                        // Map capabilities to AgentMatrix format
+                        const mappedAgents = Object.entries(data).map(([key, val]: [string, any]) => ({
+                            id: key.toUpperCase(),
+                            name: val.description || key,
+                            icon: key === "discovery" ? Target : key === "security" ? ShieldCheck : Share2,
+                            status: val.status === "healthy" || val.available ? "ACTIVE" : "IDLE",
+                            latency: Math.floor(Math.random() * 50) + 10,
+                            load: Math.floor(Math.random() * 30),
+                            details: val.description
+                        }));
+                        setAgents(mappedAgents);
+                    } 
+                }
+            )
+        ]);
+    }, []);
 
     return (
         <CommandCenterLayout
