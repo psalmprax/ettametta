@@ -29,6 +29,8 @@ interface CommandCenterLayoutProps {
     rightPanel?: React.ReactNode;
 }
 
+import { useTelemetry } from "@/context/TelemetryContext";
+
 export default function CommandCenterLayout({ 
     children, 
     title = "COMMAND CENTER", 
@@ -36,6 +38,7 @@ export default function CommandCenterLayout({
     leftPanel,
     rightPanel 
 }: CommandCenterLayoutProps) {
+    const { pulse, status } = useTelemetry();
     const [isLeftExpanded, setIsLeftExpanded] = useState(true);
     const [isRightExpanded, setIsRightExpanded] = useState(true);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -105,7 +108,7 @@ export default function CommandCenterLayout({
                     <div className="flex items-center gap-6">
                         <div className="flex flex-col items-end">
                             <span className="text-[10px] font-bold text-zinc-500 uppercase">System Uptime</span>
-                            <span className="text-xs font-mono text-emerald-500">142:12:08</span>
+                            <span className="text-xs font-mono text-emerald-500">{pulse?.uptime || "00:00:00"}</span>
                         </div>
                         <div className="h-10 w-px bg-white/5" />
                         <div className="flex items-center gap-4">
@@ -134,17 +137,19 @@ export default function CommandCenterLayout({
                 <footer className="h-10 border-t border-white/5 bg-black px-10 flex items-center justify-between shrink-0 text-[10px] font-bold text-zinc-600 tracking-widest">
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-2">
-                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-emerald-500/80">SYSTEM_STABLE</span>
+                            <div className={cn("h-1.5 w-1.5 rounded-full animate-pulse", status === "open" ? "bg-emerald-500" : "bg-rose-500")} />
+                            <span className={cn(status === "open" ? "text-emerald-500/80" : "text-rose-500/80")}>
+                                {status === "open" ? "SYSTEM_STABLE" : "CONNECTION_LOST"}
+                            </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span>THROUGHPUT:</span>
-                            <span className="text-zinc-400">1.2 GB/S</span>
+                            <span>LATENCY:</span>
+                            <span className="text-zinc-400">{pulse?.latency_ms || "---"} MS</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-6">
-                        <span>NODE: US-EAST-COMMAND</span>
-                        <span className="text-violet-500/80">ENCRYPTION: AES-256-LIVE</span>
+                        <span>NODE: {pulse?.hostname || "LOCAL_COMMAND"}</span>
+                        <span className="text-violet-500/80 uppercase">V-ID: {(pulse?.cluster_node || "X-0").slice(0, 8)}</span>
                     </div>
                 </footer>
             </main>

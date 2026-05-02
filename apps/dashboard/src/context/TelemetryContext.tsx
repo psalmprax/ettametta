@@ -18,6 +18,7 @@ import {
 
 interface TelemetryPulse {
     status: string;
+    credits?: number;
     cluster_node: string;
     hostname: string;
     active_jobs: number;
