@@ -128,30 +128,38 @@ export function DesignCard({
 
       {/* Action Overlay */}
       <div className="flex items-center gap-2 mt-6 relative z-10">
-        <button 
-          onClick={(e) => { e.stopPropagation(); onMore?.(); }}
-          className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-cyan-400"
-        >
-          <motion.div whileHover={{ scale: 1.1 }}><MoreVertical className="h-4 w-4" /></motion.div>
-        </button>
-        <button 
-          onClick={(e) => { e.stopPropagation(); onRefresh?.(); }}
-          className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400"
-        >
-          <RotateCcw className="h-4 w-4" />
-        </button>
-        <button 
-          onClick={(e) => { e.stopPropagation(); onShare?.(); }}
-          className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400"
-        >
-          <Share className="h-4 w-4" />
-        </button>
-        <button 
-          onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
-          className="h-10 w-10 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl flex items-center justify-center transition-all border border-rose-500/10 text-rose-400 ml-auto"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        {onMore && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onMore(); }}
+            className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-cyan-400"
+          >
+            <motion.div whileHover={{ scale: 1.1 }}><MoreVertical className="h-4 w-4" /></motion.div>
+          </button>
+        )}
+        {onRefresh && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onRefresh(); }}
+            className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+        )}
+        {onShare && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onShare(); }}
+            className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/5 text-slate-400"
+          >
+            <Share className="h-4 w-4" />
+          </button>
+        )}
+        {onDelete && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="h-10 w-10 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl flex items-center justify-center transition-all border border-rose-500/10 text-rose-400 ml-auto"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </motion.div>
   );
