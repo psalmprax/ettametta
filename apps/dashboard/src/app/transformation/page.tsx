@@ -171,6 +171,7 @@ function TransformationContent() {
                         { id: "studio", label: "Studio Control", icon: Activity },
                         { id: "mass", label: "Mass Deployment", icon: Layers },
                         { id: "queue", label: "Render Queue", icon: Clock },
+                        { id: "nodes", label: "Neural Nodes", icon: Box },
                         { id: "logs", label: "Engine Logs", icon: Terminal },
                     ].map((item) => (
                         <button
@@ -216,7 +217,7 @@ function TransformationContent() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="flex-1 flex flex-col min-h-0"
+                        className={cn("flex-1 flex flex-col min-h-0", activeEngine !== "logs" && "overflow-y-auto custom-scrollbar pr-4")}
                     >
                         {activeEngine === "studio" && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
@@ -235,7 +236,7 @@ function TransformationContent() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex-1 bg-black rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center relative group">
+                                    <div className="flex-1 bg-black rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center relative group min-h-[400px]">
                                         {selectedJob?.status === "Completed" && getStaticUrl(selectedJob.output_path) ? (
                                             <video src={getStaticUrl(selectedJob.output_path)!} controls className="w-full h-full object-contain" />
                                         ) : selectedJob ? (
@@ -326,7 +327,7 @@ function TransformationContent() {
                                         {processingJobs.filter(j => j.status === "Processing" || j.status === "Active").length} Active Renders
                                     </div>
                                 </div>
-                                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-4">
                                     {processingJobs.map((job) => (
                                         <div key={job.id} className="p-6 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between group hover:bg-white/8 transition-all">
                                             <div className="flex items-center gap-6">
@@ -359,26 +360,42 @@ function TransformationContent() {
                             </div>
                         )}
 
-                        <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
-                            <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Transformation Node Logs</span>
-                                <span className="text-[8px] font-mono text-rose-500/50">{status === "open" ? "LIVE_SYNC" : "OFFLINE"}</span>
-                            </div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                                {displayLogs.map((log, i) => (
-                                    <div key={i} className="flex gap-4">
-                                        <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
-                                        <span className={cn(
-                                            log.level === "ACTION" ? "text-cyan-400" :
-                                            log.level === "ERROR" ? "text-rose-500" :
-                                            log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
-                                        )}>
-                                            {log.module ? `[${log.module}] ` : ""}{log.message}
-                                        </span>
+                        {activeEngine === "nodes" && (
+                            <div className="h-full min-h-[400px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px] relative overflow-hidden group">
+                                <div className="absolute inset-0 architect-grid pointer-events-none opacity-20" />
+                                <div className="flex flex-col items-center gap-6 relative z-10 text-center">
+                                    <div className="relative">
+                                        <Box className="h-16 w-16 text-rose-500 animate-pulse" />
+                                        <div className="absolute -inset-4 bg-rose-500/20 blur-2xl rounded-full -z-10" />
                                     </div>
-                                ))}
+                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Neural Transformation Nodes</h3>
+                                    <span className="text-[10px] text-zinc-500 font-mono italic">DISTRIBUTED_VFX_PIPELINE_ACTIVE</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {activeEngine === "logs" && (
+                            <div className="flex-1 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
+                                <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Global Engine Stream</span>
+                                    <span className="text-[8px] font-mono text-rose-500/50">{status === "open" ? "LIVE_SYNC" : "OFFLINE"}</span>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                                    {displayLogs.map((log, i) => (
+                                        <div key={i} className="flex gap-4">
+                                            <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
+                                            <span className={cn(
+                                                log.level === "ACTION" ? "text-cyan-400" :
+                                                log.level === "ERROR" ? "text-rose-500" :
+                                                log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
+                                            )}>
+                                                {log.module ? `[${log.module}] ` : ""}{log.message}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </motion.div>
                 </AnimatePresence>
             </div>
