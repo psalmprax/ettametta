@@ -242,9 +242,26 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
             "model": "llama-3.3-70b-versatile",
             "description": "Direct Groq LLM access (used as fallback)",
         },
+        "workers": [
+            {"name": "Researcher", "category": "Intelligence", "stability": "Elite", "credits_per_task": 10},
+            {"name": "Fact Checker", "category": "Validation", "stability": "Stable", "credits_per_task": 5},
+            {"name": "Writer", "category": "Creative", "stability": "Creative", "credits_per_task": 15},
+            {"name": "Editor", "category": "Production", "stability": "Precise", "credits_per_task": 10},
+        ],
     }
 
     return success_response(data=capabilities)
+
+
+@router.get("/personas")
+async def list_agent_personas(
+    current_user: UserDB = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    """
+    Returns all personas created by the current user (Agent Router Proxy).
+    """
+    from src.api.routes.persona import list_personas
+    return await list_personas(current_user=current_user, db=db)
 
 
 class AuditRequest(BaseModel):
