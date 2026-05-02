@@ -43,7 +43,7 @@ export function AgentMatrix({ agents }: { agents: AgentStatus[] }) {
                 </div>
             </div>
             <div className="space-y-3">
-                {agents.map((agent) => (
+                {agents?.map((agent) => (
                     <motion.div
                         key={agent.id}
                         whileHover={{ scale: 1.02, backgroundColor: "rgba(255, 255, 255, 0.03)" }}
@@ -127,7 +127,7 @@ export function AssetQuickview({ assets }: { assets: Asset[] }) {
                 </button>
             </div>
             <div className="space-y-4">
-                {assets.map((asset) => (
+                {assets?.map((asset) => (
                     <motion.div
                         key={asset.id}
                         whileHover={{ scale: 1.02 }}
@@ -166,7 +166,7 @@ export function AssetQuickview({ assets }: { assets: Asset[] }) {
 
                             {/* Tags */}
                             <div className="absolute top-2 right-2 flex gap-1">
-                                {asset.tags.map((tag, i) => (
+                                {asset.tags?.map((tag, i) => (
                                     <span key={i} className="px-1.5 py-0.5 bg-black/60 backdrop-blur-md border border-white/10 rounded text-[7px] font-bold text-cyan-400 uppercase tracking-tighter">
                                         {tag}
                                     </span>

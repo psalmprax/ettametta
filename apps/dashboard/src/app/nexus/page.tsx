@@ -272,7 +272,7 @@ export default function NexusPage() {
                                 <div className="flex-1 min-h-[400px] rounded-[32px] bg-[#0F0F11]/40 border border-white/5 relative overflow-hidden group">
                                     <div className="absolute inset-0 architect-grid pointer-events-none opacity-40" />
                                     <div className="absolute inset-0 flex items-center justify-around px-20">
-                                        {activeBlueprint?.nodes.map((node, idx) => (
+                                        {activeBlueprint?.nodes?.map((node, idx) => (
                                             <div key={idx} className="relative z-10">
                                                 <NexusNode 
                                                     type={node.type as any}
