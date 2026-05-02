@@ -153,7 +153,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     // Map pulse signals to AgentMatrix format
-    const agents = (pulse?.signals || []).map((s, i) => {
+    const agents = (Array.isArray(pulse?.signals) ? pulse.signals : []).map((s, i) => {
         const icons = {
             GPU_Cluster: HardDrive,
             Neural: Bot,
