@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, Suspense, useMemo, useCallback } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
