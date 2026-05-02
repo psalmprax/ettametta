@@ -283,6 +283,12 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     "oracle_status": drift_report["status"],
                 },
             }
+            # 10/10 PRODUCTION: Keep-alive heartbeat
+            try:
+                await websocket.send_text(json.dumps({"type": "ping", "ts": time.time()}))
+            except Exception:
+                break
+
             await websocket.send_text(json.dumps(pulse_data))
             await asyncio.sleep(3.0)
     except WebSocketDisconnect:

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import {
     Globe,
@@ -25,13 +25,19 @@ import {
     Terminal,
     Target,
     Dna,
-    Radar
+    Radar,
+    ShieldCheck as ShieldCheckIcon,
+    Database as DatabaseIcon,
+    Terminal as TerminalIcon,
+    ShoppingBag as ShoppingBagIcon
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTelemetry } from "@/context/TelemetryContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
@@ -41,25 +47,30 @@ import { Button } from "@/components/ui/Button";
 const NetworkMesh = dynamic(() => import("@/components/ui/NetworkMesh"), { ssr: false });
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
-export default function EmpirePage() {
-    const [activeEngine, setActiveEngine] = useState("registry");
-    const [sentinelStatus, setSentinelStatus] = useState<any>(null);
-    const [cloningNiche, setCloningNiche] = useState("");
-    const [promoProduct, setPromoProduct] = useState("");
-    const [isGeneratingPromo, setIsGeneratingPromo] = useState(false);
-    const [promoScript, setPromoScript] = useState<any>(null);
-    const [affiliateLinks, setAffiliateLinks] = useState<any[]>([]);
-    const [revenueReport, setRevenueReport] = useState<any>(null);
-    const [availableNiches, setAvailableNiches] = useState<string[]>([]);
-    const [blueprints, setBlueprints] = useState<any[]>([]);
+function EmpireContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { agents: telemetryAgents, logs: systemLogs, status } = useTelemetry();
+    
+    const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "registry");
     const [networkData, setNetworkData] = useState<any>({ nodes: [], links: [] });
+    const [blueprints, setBlueprints] = useState<any[]>([]);
+    const [revenueReport, setRevenueReport] = useState<any>(null);
+    const [sentinelStatus, setSentinelStatus] = useState<any>(null);
+    const [availableNiches, setAvailableNiches] = useState<string[]>([]);
+    const [cloningNiche, setCloningNiche] = useState("");
     const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
-    const [isSyncingShopify, setIsSyncingShopify] = useState(false);
-    const [logs, setLogs] = useState<string[]>(["EMPIRE_INITIALIZED", "SYNCHRONIZING_GLOBAL_NODES"]);
+    const [actionLogs, setActionLogs] = useState<string[]>(["EMPIRE_INITIALIZED", "SYNCHRONIZING_GLOBAL_NODES"]);
+
+    useEffect(() => {
+        const engine = searchParams.get("engine");
+        if (engine) setActiveEngine(engine);
+    }, [searchParams]);
 
     const fetchData = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;
+
         const headers = { Authorization: `Bearer ${token}` };
 
         await Promise.all([
@@ -67,17 +78,31 @@ export default function EmpirePage() {
                 () => fetch(`${API_BASE}/no-face/sentinel/status`, { headers }),
                 { fallback: null, onSuccess: (data) => setSentinelStatus(data) }
             ),
-            withRealFallback<any[]>(
+            withRealFallback<any>(
                 () => fetch(`${API_BASE}/monetization/empire/blueprints`, { headers }),
-                { fallback: [], onSuccess: (data) => setBlueprints(data) }
+                { 
+                    fallback: { blueprints: [] }, 
+                    onSuccess: (data) => {
+                        const list = Array.isArray(data) ? data : (data?.blueprints || []);
+                        setBlueprints(list);
+                    } 
+                }
             ),
             withRealFallback<any>(
                 () => fetch(`${API_BASE}/monetization/report`, { headers }),
                 { fallback: null, onSuccess: (data) => setRevenueReport(data) }
             ),
-            withRealFallback<string[]>(
+            withRealFallback<any[]>(
                 () => fetch(`${API_BASE}/discovery/niches`, { headers }),
-                { fallback: [], onSuccess: (data) => setAvailableNiches(data) }
+                { 
+                    fallback: [], 
+                    onSuccess: (data) => {
+                        if (Array.isArray(data)) {
+                            const nicheNames = data.map(n => typeof n === 'string' ? n : (n.niche || 'General'));
+                            setAvailableNiches(nicheNames);
+                        }
+                    } 
+                }
             ),
             withRealFallback<any>(
                 () => fetch(`${API_BASE}/monetization/empire/network`, { headers }),
@@ -94,7 +119,7 @@ export default function EmpirePage() {
 
     const handleClone = async () => {
         if (!cloningNiche) return;
-        setLogs((prev: string[]) => [`[PROTOCOL] Initializing Strategic Clone: ${cloningNiche}`, ...prev]);
+        setActionLogs((prev: string[]) => [`[PROTOCOL] Initializing Strategic Clone: ${cloningNiche}`, ...prev]);
         await withRealFallback(
             async () => {
                 const token = await getAuthToken();
@@ -109,19 +134,27 @@ export default function EmpirePage() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("Strategy Cloned");
-                    setLogs((prev: string[]) => [`[SUCCESS] Neural weights mapped to ${cloningNiche}`, ...prev]);
+                    setActionLogs((prev: string[]) => [`[SUCCESS] Neural weights mapped to ${cloningNiche}`, ...prev]);
                     setIsCloneModalOpen(false);
                 }
             }
         );
     };
 
-    // Prepare Agent Data
-    const agents = [
-        { id: "STRAT_01", name: "Yield Optimizer", icon: Zap, status: "ACTIVE" as any, latency: 12, load: 5, details: "Optimizing CPC" },
-        { id: "SENT_01", name: "Algo Sentinel", icon: ShieldCheck, status: "ACTIVE" as any, latency: 85, load: 12, details: "Scanning Platform Drift" },
-        { id: "CLONE_01", name: "Neural Cloner", icon: Copy, status: "IDLE" as any, latency: 1, load: 0, details: "Standby" },
-    ];
+    // Merge system logs and action logs for display
+    const displayLogs = useMemo(() => {
+        const merged = [
+            ...actionLogs.map(msg => ({ 
+                type: "log", 
+                level: "ACTION", 
+                module: "EMPIRE",
+                message: msg, 
+                timestamp: Date.now() / 1000 
+            })),
+            ...(Array.isArray(systemLogs) ? systemLogs : [])
+        ].sort((a, b) => b.timestamp - a.timestamp);
+        return merged;
+    }, [actionLogs, systemLogs]);
 
     return (
         <CommandCenterLayout
@@ -130,15 +163,18 @@ export default function EmpirePage() {
             leftPanel={
                 <div className="space-y-1">
                     {[
-                        { id: "registry", label: "Empire Registry", icon: Database },
-                        { id: "sentinel", label: "Algo Sentinel", icon: ShieldCheck },
+                        { id: "registry", label: "Empire Registry", icon: DatabaseIcon },
+                        { id: "sentinel", label: "Algo Sentinel", icon: ShieldCheckIcon },
                         { id: "monetization", label: "Promo Hub", icon: Zap },
-                        { id: "commerce", label: "Commerce Matrix", icon: ShoppingBag },
-                        { id: "logs", label: "Registry Logs", icon: Terminal },
+                        { id: "commerce", label: "Commerce Matrix", icon: ShoppingBagIcon },
+                        { id: "logs", label: "Registry Logs", icon: TerminalIcon },
                     ].map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => setActiveEngine(item.id)}
+                            onClick={() => {
+                                setActiveEngine(item.id);
+                                router.replace(`/empire?engine=${item.id}`);
+                            }}
                             className={cn(
                                 "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
                                 activeEngine === item.id ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
@@ -153,7 +189,7 @@ export default function EmpirePage() {
             }
             rightPanel={
                 <>
-                    <AgentMatrix agents={agents} />
+                    <AgentMatrix agents={telemetryAgents} />
                     <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
                         <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Revenue Pulse</h4>
                         <div className="flex flex-col">
@@ -177,7 +213,7 @@ export default function EmpirePage() {
                             <div className="space-y-8 h-full flex flex-col">
                                 <div className="flex-1 min-h-[400px] bg-[#0F0F11]/60 border border-white/5 rounded-[32px] overflow-hidden relative">
                                     <div className="absolute inset-0">
-                                        <NetworkMesh nodes={networkData.nodes} links={networkData.links} />
+                                        <NetworkMesh nodes={networkData?.nodes || []} links={networkData?.links || []} />
                                     </div>
                                     <div className="absolute top-8 left-8 p-6 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl max-w-sm">
                                         <h4 className="text-white font-bold uppercase tracking-widest text-xs">Neural Strategy Mesh</h4>
@@ -190,23 +226,23 @@ export default function EmpirePage() {
                                             className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none"
                                         >
                                             <option value="">SELECT_NICHE</option>
-                                            {availableNiches.map(n => <option key={n} value={n}>{n}</option>)}
+                                            {Array.isArray(availableNiches) && availableNiches.map(n => <option key={n} value={n}>{n}</option>)}
                                         </select>
                                         <Button onClick={() => setIsCloneModalOpen(true)} className="bg-amber-500 text-black font-bold h-10 px-6 rounded-xl">Clone Protocol</Button>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 shrink-0 overflow-x-auto p-1">
-                                    {blueprints.map((blueprint) => (
+                                    {Array.isArray(blueprints) && blueprints.map((blueprint) => (
                                         <DesignCard
-                                            key={blueprint.id}
-                                            title={blueprint.name}
-                                            status={blueprint.status}
+                                            key={blueprint.id || blueprint.niche}
+                                            title={blueprint.name || blueprint.niche}
+                                            status={blueprint.status || "ACTIVE"}
                                             metrics={[
-                                                { label: "Success", value: `${(blueprint.avg_score * 100).toFixed(1)}%`, progress: blueprint.avg_score * 100, color: "text-emerald-400" },
-                                                { label: "Reach", value: "840K", color: "text-cyan-400" }
+                                                { label: "Success", value: `${((blueprint.avg_score || 0) * 100).toFixed(1)}%`, progress: (blueprint.avg_score || 0) * 100, color: "text-emerald-400" },
+                                                { label: "Reach", value: blueprint.total_views ? `${(blueprint.total_views / 1000).toFixed(0)}K` : "---", color: "text-cyan-400" }
                                             ]}
-                                            footerInfo={`ID: ${blueprint.id.slice(0, 8)}`}
+                                            footerInfo={`ID: ${(blueprint.id || blueprint.niche).slice(0, 8)}`}
                                             toolsStatus="Synced"
                                         />
                                     ))}
@@ -232,7 +268,7 @@ export default function EmpirePage() {
                                         Strategic Intelligence
                                     </h3>
                                     <div className="grid grid-cols-1 gap-4">
-                                        {sentinelStatus?.recommendations?.map((rec: string, i: number) => (
+                                        {Array.isArray(sentinelStatus?.recommendations) && sentinelStatus.recommendations.map((rec: string, i: number) => (
                                             <div key={i} className="p-5 bg-white/5 border border-white/5 rounded-2xl flex items-center gap-4 group hover:border-violet-500/30 transition-all">
                                                 <Target className="h-4 w-4 text-violet-400 shrink-0" />
                                                 <p className="text-xs text-zinc-400 font-medium leading-relaxed">{rec}</p>
@@ -246,16 +282,19 @@ export default function EmpirePage() {
                         <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
                             <div className="p-4 border-b border-white/5 flex items-center justify-between">
                                 <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Registry Logs</span>
-                                <span className="text-[8px] font-mono text-amber-500/50">EMPIRE_MATRIX_ACTIVE</span>
+                                <span className="text-[8px] font-mono text-amber-500/50">{status === "open" ? "LIVE_SYNC" : "OFFLINE"}</span>
                             </div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                                {logs.map((log, i) => (
+                                {Array.isArray(displayLogs) && displayLogs.map((log: any, i: number) => (
                                     <div key={i} className="flex gap-4">
-                                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                                        <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
                                         <span className={cn(
-                                            log.includes("[PROTOCOL]") ? "text-cyan-400" :
-                                            log.includes("[SUCCESS]") ? "text-emerald-500" : "text-zinc-600"
-                                        )}>{log}</span>
+                                            log.level === "ACTION" ? "text-cyan-400" :
+                                            log.level === "ERROR" ? "text-rose-500" :
+                                            log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
+                                        )}>
+                                            {log.module ? `[${log.module}] ` : ""}{log.message}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
@@ -274,5 +313,13 @@ export default function EmpirePage() {
                 variant="primary"
             />
         </CommandCenterLayout>
+    );
+}
+
+export default function EmpirePage() {
+    return (
+        <Suspense fallback={null}>
+            <EmpireContent />
+        </Suspense>
     );
 }
