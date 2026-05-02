@@ -35,7 +35,8 @@ import {
     Network,
     Mic2,
     Clapperboard,
-    PlusCircle
+    PlusCircle,
+    Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
@@ -77,77 +78,75 @@ function NexusContent() {
     }, [searchParams]);
 
     // Fetch initial data
-    useEffect(() => {
-        const fetchData = async () => {
-            const token = await getAuthToken();
-            if (!token) return;
-            const headers = { Authorization: `Bearer ${token}` };
+    // Fetch initial data
+    const fetchData = useCallback(async () => {
+        const token = await getAuthToken();
+        if (!token) return;
+        const headers = { Authorization: `Bearer ${token}` };
 
-            await Promise.all([
-                withRealFallback<Blueprint[]>(
-                    () => fetch(`${API_BASE}/nexus/blueprints`, { headers }),
-                    {
-                        fallback: [],
-                        onSuccess: (data) => {
-                            setBlueprints(data);
-                            if (data.length > 0) setActiveBlueprint(data[0]);
+        await Promise.all([
+            withRealFallback<Blueprint[]>(
+                () => fetch(`${API_BASE}/nexus/blueprints`, { headers }),
+                {
+                    fallback: [],
+                    onSuccess: (data) => {
+                        setBlueprints(data);
+                        if (data.length > 0) setActiveBlueprint(data[0]);
+                    }
+                }
+            ),
+            withRealFallback<string[]>(
+                () => fetch(`${API_BASE}/discovery/niches`, { headers }),
+                {
+                    fallback: [],
+                    onSuccess: (data) => {
+                        const nicheList = Array.isArray(data) ? data : [];
+                        setNiches(nicheList);
+                        if (nicheList.length > 0) setSelectedNiche(nicheList[0]);
+                    }
+                }
+            ),
+            withRealFallback<Persona[]>(
+                () => fetch(`${API_BASE}/agent/personas`, { headers }),
+                {
+                    fallback: [],
+                    onSuccess: (data) => setPersonas(Array.isArray(data) ? data : [])
+                }
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/agent/capabilities`, { headers }),
+                {
+                    fallback: [],
+                    onSuccess: (data) => {
+                        if (data && data.workers) {
+                            setCapabilities(data.workers);
                         }
                     }
-                ),
-                withRealFallback<string[]>(
-                    () => fetch(`${API_BASE}/discovery/niches`, { headers }),
-                    {
-                        fallback: [],
-                        onSuccess: (data) => {
-                            const nicheList = Array.isArray(data) ? data : [];
-                            setNiches(nicheList);
-                            if (nicheList.length > 0) setSelectedNiche(nicheList[0]);
-                        }
-                    }
-                ),
-                withRealFallback<Persona[]>(
-                    () => fetch(`${API_BASE}/agent/personas`, { headers }),
-                    {
-                        fallback: [],
-                        onSuccess: (data) => setPersonas(Array.isArray(data) ? data : [])
-                    }
-                ),
-                withRealFallback<any>(
-                    () => fetch(`${API_BASE}/agent/capabilities`, { headers }),
-                    {
-                        fallback: [],
-                        onSuccess: (data) => {
-                            if (data && data.workers) {
-                                setCapabilities(data.workers);
-                            }
-                        }
-                    }
-                ),
-                withRealFallback<NexusJob[]>(
-                    () => fetch(`${API_BASE}/nexus/jobs`, { headers }),
-                    {
-                        fallback: [],
-                        onSuccess: (data) => setNexusJobs(Array.isArray(data) ? data : [])
-                    }
-                ),
-            ]);
-        };
-
-        fetchData();
+                }
+            ),
+            withRealFallback<NexusJob[]>(
+                () => fetch(`${API_BASE}/nexus/jobs`, { headers }),
+                {
+                    fallback: [],
+                    onSuccess: (data) => setNexusJobs(Array.isArray(data) ? data : [])
+                }
+            ),
+        ]);
     }, []);
 
-    useEffect(() => {
-        if (lastJobUpdate && (lastJobUpdate.type === "nexus_job_update" || lastJobUpdate.type === "job_update")) {
-            const updatedJob = lastJobUpdate.data;
-            setNexusJobs(prev => {
-                const exists = prev.find(j => j.id === updatedJob.id);
-                if (exists) {
-                    return prev.map(j => j.id === updatedJob.id ? { ...j, ...updatedJob } : j);
-                }
-                return [updatedJob, ...prev];
-            });
-        }
-    }, [lastJobUpdate]);
+    const fetchPersonas = useCallback(async () => {
+        const token = await getAuthToken();
+        if (!token) return;
+        await withRealFallback<Persona[]>(
+            () => fetch(`${API_BASE}/persona/list`, {
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: [],
+                onSuccess: (data) => setPersonas(Array.isArray(data) ? data : [])
+            }
+        );
+    }, []);
 
     const handleLaunchPipeline = async () => {
         if (!selectedNiche || !activeBlueprint) return;
@@ -182,25 +181,9 @@ function NexusContent() {
         setIsLaunching(false);
     };
 
-    const [personas, setPersonas] = useState<Persona[]>([]);
-
-    const fetchPersonas = useCallback(async () => {
-        const token = await getAuthToken();
-        if (!token) return;
-        await withRealFallback<any[]>(
-            () => fetch(`${API_BASE}/discovery/niches`, { headers: { Authorization: `Bearer ${token}` } }),
-            { fallback: [], onSuccess: setNiches }
-        );
-        await withRealFallback<Persona[]>(
-            () => fetch(`${API_BASE}/persona/list`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
-            {
-                fallback: [],
-                onSuccess: (data) => setPersonas(Array.isArray(data) ? data : [])
-            }
-        );
-    }, []);
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     useEffect(() => {
         if (activeEngine === "identities") fetchPersonas();
@@ -649,7 +632,7 @@ scout.on("VIRAL_DETECT", async (data) => {
                                 />
                                 <CommandPod 
                                     name="Pipeline Dispatcher" 
-                                    status={isLaunching ? "active" : "nominal"} 
+                                    status={isLaunching ? "nominal" : "nominal"} 
                                     load={nexusJobs.filter(j => j.status === 'processing').length * 20} 
                                     circuitBreaker="closed" 
                                     description="Real-time job scheduling and blueprint execution engine."

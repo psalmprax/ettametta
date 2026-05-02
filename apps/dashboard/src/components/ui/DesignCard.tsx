@@ -22,6 +22,7 @@ interface DesignCardProps {
   onDelete?: () => void;
   onShare?: () => void;
   onMore?: () => void;
+  credits?: number;
 }
 
 export function DesignCard({
@@ -35,7 +36,8 @@ export function DesignCard({
   onRefresh,
   onDelete,
   onShare,
-  onMore
+  onMore,
+  credits
 }: DesignCardProps) {
   return (
     <motion.div
@@ -91,7 +93,7 @@ export function DesignCard({
               </div>
             )}
             {metric.progress === undefined && (
-               <div className="text-[11px] font-mono text-slate-600">1d 21h 15m</div>
+               <div className="h-2" />
             )}
           </div>
         ))}
@@ -103,13 +105,13 @@ export function DesignCard({
           <CreditCard className="h-4 w-4 text-amber-500" />
           <span className="text-sm font-bold text-slate-300">Credits</span>
         </div>
-        <span className="text-lg font-mono font-bold text-white tracking-widest">1,000</span>
+        <span className="text-lg font-mono font-bold text-white tracking-widest">{credits?.toLocaleString() || "0"}</span>
       </div>
 
       {/* Footer Info */}
       <div className="flex items-center justify-between pt-6 border-t border-white/5 relative z-10">
         <span className="text-[10px] font-mono text-slate-600 uppercase tracking-widest">
-          {footerInfo || "05/01/2026, 02:39 PM"}
+          {footerInfo || new Date().toLocaleString()}
         </span>
         
         <div className={cn(

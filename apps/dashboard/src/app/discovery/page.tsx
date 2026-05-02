@@ -137,13 +137,17 @@ function DiscoveryContent() {
 
     // Derive map points from candidates
     const mapPoints = useMemo(() => {
-        return candidates.map(c => ({
-            id: c.id,
-            lat: (Math.random() - 0.5) * 120,
-            lng: (Math.random() - 0.5) * 240,
-            intensity: c.viral_score / 100,
-            label: c.title
-        }));
+        return candidates.map(c => {
+            // Deterministic coords based on ID hash
+            const hash = Array.from(c.id || "").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            return {
+                id: c.id,
+                lat: ((hash % 180) - 90) * 0.8,
+                lng: ((hash % 360) - 180) * 0.8,
+                intensity: (c.viral_score || 50) / 100,
+                label: c.title
+            };
+        });
     }, [candidates]);
 
     // Mock network data for intel view
@@ -246,6 +250,19 @@ function DiscoveryContent() {
                                             ]}
                                             footerInfo={`${c.platform.toUpperCase()} • ${c.creator_name}`}
                                             toolsStatus="Live"
+                                            credits={pulse?.credits || 0}
+                                            onRefresh={() => {
+                                                fetchTrends();
+                                                toast.info(`Scanning: ${c.title}`);
+                                            }}
+                                            onDelete={() => {
+                                                setCandidates(prev => prev.filter(cand => cand.id !== c.id));
+                                                toast.error(`Purged Candidate: ${c.title.slice(0, 20)}...`);
+                                            }}
+                                            onShare={() => {
+                                                navigator.clipboard.writeText(`https://ettametta.ai/discovery/candidate/${c.id}`);
+                                                toast.success("Viral Candidate Link Copied");
+                                            }}
                                             onClick={() => router.push(`/creation?seed=${encodeURIComponent(c.title)}`)}
                                         />
                                     ))}

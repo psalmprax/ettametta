@@ -50,7 +50,7 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 function EmpireContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { agents: telemetryAgents, logs: systemLogs, status } = useTelemetry();
+    const { agents: telemetryAgents, logs: systemLogs, status, pulse } = useTelemetry();
     
     const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "registry");
     const [networkData, setNetworkData] = useState<any>({ nodes: [], links: [] });
@@ -60,6 +60,8 @@ function EmpireContent() {
     const [availableNiches, setAvailableNiches] = useState<string[]>(["Motivation", "Finance", "Wellness", "AI News", "Life Hacks"]);
     const [cloningNiche, setCloningNiche] = useState("");
     const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
+    const [affiliateLinks, setAffiliateLinks] = useState<any[]>([]);
+    const [commerceStatus, setCommerceStatus] = useState<any>(null);
     const [actionLogs, setActionLogs] = useState<string[]>(["EMPIRE_INITIALIZED", "SYNCHRONIZING_GLOBAL_NODES"]);
 
     useEffect(() => {
@@ -107,6 +109,10 @@ function EmpireContent() {
             withRealFallback<any>(
                 () => fetch(`${API_BASE}/monetization/empire/network`, { headers }),
                 { fallback: { nodes: [], links: [] }, onSuccess: (data) => setNetworkData(data) }
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/monetization/links`, { headers }),
+                { fallback: { links: [] }, onSuccess: (data) => setAffiliateLinks(Array.isArray(data.links) ? data.links : []) }
             )
         ]);
     }, []);
@@ -244,12 +250,21 @@ function EmpireContent() {
                                             ]}
                                             footerInfo={`ID: ${(blueprint.id || blueprint.niche).slice(0, 8)}`}
                                             toolsStatus="Synced"
+                                            credits={pulse?.credits || 0}
                                             onRefresh={() => {
                                                 setActionLogs(prev => [`[SYSTEM] Refreshing ${blueprint.niche} blueprint...`, ...prev]);
                                                 fetchData();
+                                                toast.info(`Refreshing ${blueprint.niche} metrics...`);
                                             }}
-                                            onDelete={() => setActionLogs(prev => [`[WARNING] Delete requested for ${blueprint.niche}`, ...prev])}
-                                            onShare={() => toast.success("Blueprint Link Copied")}
+                                            onDelete={() => {
+                                                setBlueprints(prev => prev.filter(b => b.id !== blueprint.id));
+                                                setActionLogs(prev => [`[WARNING] Blueprint Purged: ${blueprint.niche}`, ...prev]);
+                                                toast.error(`Purged Blueprint: ${blueprint.niche}`);
+                                            }}
+                                            onShare={() => {
+                                                navigator.clipboard.writeText(`https://ettametta.ai/strategy/${blueprint.id || blueprint.niche}`);
+                                                toast.success("Strategy Blueprint Link Copied");
+                                            }}
                                         />
                                     ))}
                                 </div>
@@ -267,6 +282,15 @@ function EmpireContent() {
                                     ]}
                                     footerInfo="SCANNING: GLOBAL_ALGO_MATRIX"
                                     toolsStatus="Active"
+                                    credits={pulse?.credits || 0}
+                                    onRefresh={() => {
+                                        fetchData();
+                                        toast.info("Resyncing Algorithm Sentinel...");
+                                    }}
+                                    onShare={() => {
+                                        navigator.clipboard.writeText(`https://ettametta.ai/sentinel/status`);
+                                        toast.success("Sentinel Data Shared");
+                                    }}
                                 />
                                 <div className="lg:col-span-2 p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-6">
                                     <h3 className="text-xl font-bold text-white flex items-center gap-3">
@@ -296,23 +320,29 @@ function EmpireContent() {
                                         <Button className="h-8 px-4 text-[10px] bg-white/5 hover:bg-white/10 text-white rounded-lg border border-white/10 uppercase tracking-widest font-bold">Add Link</Button>
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
-                                        {[1, 2, 3].map((i) => (
-                                            <div key={i} className="p-6 bg-white/5 border border-white/5 rounded-[24px] group hover:border-amber-500/30 transition-all flex items-center justify-between">
+                                        {affiliateLinks.map((link, i) => (
+                                            <div key={link.id || i} className="p-6 bg-white/5 border border-white/5 rounded-[24px] group hover:border-amber-500/30 transition-all flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
                                                     <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
                                                         <LinkIcon className="h-5 w-5 text-amber-500" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-sm font-bold text-white">Product_{i} Special</h4>
-                                                        <p className="text-[10px] text-zinc-500 font-medium">Niche: Motivation</p>
+                                                        <h4 className="text-sm font-bold text-white">{link.product_name}</h4>
+                                                        <p className="text-[10px] text-zinc-500 font-medium">Niche: {link.niche}</p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-sm font-bold text-white">$12.50</div>
-                                                    <div className="text-[10px] text-emerald-500 font-bold tracking-widest uppercase">3.2% CR</div>
+                                                    <div className="text-sm font-bold text-white">${link.commission || "0.00"}</div>
+                                                    <div className="text-[10px] text-emerald-500 font-bold tracking-widest uppercase">{link.conversion_rate || "0.0"}% CR</div>
                                                 </div>
                                             </div>
                                         ))}
+                                        {affiliateLinks.length === 0 && (
+                                            <div className="flex flex-col items-center justify-center py-20 opacity-20 gap-4">
+                                                <LinkIcon className="h-12 w-12" />
+                                                <p className="text-[10px] font-bold uppercase tracking-widest">No Active Links Found</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 
@@ -350,23 +380,45 @@ function EmpireContent() {
                                             <ShoppingBagIcon className="h-5 w-5 text-emerald-400" />
                                             Store Sync
                                         </h3>
-                                        <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                        <div className={cn("h-2 w-2 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]", commerceStatus?.status === "success" ? "bg-emerald-500" : "bg-zinc-700")} />
                                     </div>
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between text-xs">
                                             <span className="text-zinc-500 uppercase font-bold tracking-widest text-[9px]">Platform</span>
-                                            <span className="text-white font-bold">Shopify</span>
+                                            <span className="text-white font-bold">{commerceStatus?.source || "None"}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-xs">
-                                            <span className="text-zinc-500 uppercase font-bold tracking-widest text-[9px]">Last Sync</span>
-                                            <span className="text-white font-bold">2m ago</span>
+                                            <span className="text-zinc-500 uppercase font-bold tracking-widest text-[9px]">Status</span>
+                                            <span className="text-white font-bold">{commerceStatus?.status || "Awaiting Sync"}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-xs">
                                             <span className="text-zinc-500 uppercase font-bold tracking-widest text-[9px]">Products</span>
-                                            <span className="text-white font-bold">42</span>
+                                            <span className="text-white font-bold">{commerceStatus?.sample_count || 0}</span>
                                         </div>
                                     </div>
-                                    <Button className="w-full h-12 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 uppercase tracking-widest text-[10px] font-bold">Manual Refresh</Button>
+                                    <Button 
+                                        onClick={async () => {
+                                            const token = await getAuthToken();
+                                            if (!token) return;
+                                            toast.info("Initializing Commerce Sync...");
+                                            await withRealFallback(
+                                                () => fetch(`${API_BASE}/monetization/commerce/sync?niche=General`, { 
+                                                    method: "POST",
+                                                    headers: { Authorization: `Bearer ${token}` }
+                                                }),
+                                                {
+                                                    fallback: null,
+                                                    onSuccess: (data) => {
+                                                        setCommerceStatus(data);
+                                                        toast.success("Store Synchronized");
+                                                    }
+                                                }
+                                            );
+                                        }}
+                                        className="w-full h-12 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 uppercase tracking-widest text-[10px] font-bold"
+                                    >
+                                        Manual Refresh
+                                    </Button>
                                 </div>
 
                                 <div className="xl:col-span-2 p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-8">
