@@ -49,7 +49,7 @@ export function DesignCard({
         onClick && "cursor-pointer active:scale-95"
       )}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       
       {/* Card Header */}
       <div className="flex items-start justify-between mb-8 relative z-10">
