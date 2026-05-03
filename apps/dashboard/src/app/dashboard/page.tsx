@@ -205,20 +205,27 @@ function DashboardContent() {
                   </div>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <div key={i} className="p-5 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-emerald-500/30 transition-all">
-                      <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                          <Globe className="h-5 w-5 text-emerald-400" />
+                  {(pulse?.active_segments || []).length > 0 ? (
+                    (pulse?.active_segments || []).map((node, i) => (
+                      <div key={i} className="p-5 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-emerald-500/30 transition-all">
+                        <div className="flex items-center gap-4">
+                          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                            <Globe className="h-5 w-5 text-emerald-400" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-white">Egress_Gate_{node.label}</h4>
+                            <p className="text-[10px] text-zinc-500">Node Load: {node.load}%</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-white">Egress_Gate_Sequence_{i}</h4>
-                          <p className="text-[10px] text-zinc-500">Destination: Neural_Buffer_US_01</p>
-                        </div>
+                        <span className="text-[10px] font-mono text-emerald-500 font-bold uppercase tracking-widest">ACTIVE</span>
                       </div>
-                      <span className="text-[10px] font-mono text-emerald-500 font-bold uppercase tracking-widest">SECURED</span>
+                    ))
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center space-y-4 py-20 opacity-40">
+                      <Globe className="h-12 w-12 text-zinc-700 animate-pulse" />
+                      <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Awaiting Egress Signal...</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}
