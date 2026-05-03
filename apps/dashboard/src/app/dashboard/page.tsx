@@ -229,37 +229,40 @@ function DashboardContent() {
                   <Activity className="h-16 w-16 text-cyan-400 animate-pulse" />
                   <div className="space-y-2">
                     <h4 className="text-xl font-bold text-white uppercase tracking-tighter">Neural Throughput</h4>
-                    <p className="text-xs text-zinc-500 max-w-[300px]">Live telemetry stream from global orchestration nodes. Monitoring 14 active neural channels.</p>
+                    <p className="text-xs text-zinc-500 max-w-[300px]">Live telemetry stream from global orchestration nodes. Monitoring {pulse?.active_segments?.length || 0} active neural channels.</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
                       <span className="block text-[10px] font-bold text-zinc-600 uppercase">Latency</span>
-                      <span className="text-lg font-bold text-cyan-400">14ms</span>
+                      <span className="text-lg font-bold text-cyan-400">{pulse?.metrics?.latency?.toFixed(0) || pulse?.latency_ms?.toFixed(0) || "---"}ms</span>
                     </div>
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                      <span className="block text-[10px] font-bold text-zinc-600 uppercase">Drop Rate</span>
-                      <span className="text-lg font-bold text-emerald-500">0.001%</span>
+                      <span className="block text-[10px] font-bold text-zinc-600 uppercase">Signal</span>
+                      <span className="text-lg font-bold text-emerald-500">{(pulse?.metrics?.signal_strength || 1.0) * 100}%</span>
                     </div>
                   </div>
                 </div>
                 <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 flex flex-col space-y-6">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-bold text-white uppercase tracking-widest">Active Channels</h4>
-                    <span className="text-[10px] font-mono text-cyan-400">SYNCING...</span>
+                    <span className="text-[10px] font-mono text-cyan-400">{status === "open" ? "SYNCED" : "RECONNECTING..."}</span>
                   </div>
                   <div className="space-y-4">
-                    {["US-EAST-01", "EU-WEST-04", "ASIA-SOUTH-02"].map(node => (
-                      <div key={node} className="flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-xl">
-                        <span className="text-xs font-bold text-zinc-400">{node}</span>
+                    {(pulse?.active_segments || []).slice(0, 5).map(node => (
+                      <div key={node.label} className="flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-xl">
+                        <span className="text-xs font-bold text-zinc-400">{node.label}</span>
                         <div className="h-1.5 w-24 bg-white/5 rounded-full overflow-hidden">
                           <motion.div 
-                            animate={{ width: ["20%", "80%", "40%"] }}
+                            animate={{ width: [`${node.load}%`, `${Math.min(100, node.load + 10)}%`, `${node.load}%`] }}
                             transition={{ duration: 3, repeat: Infinity }}
                             className="h-full bg-cyan-500" 
                           />
                         </div>
                       </div>
                     ))}
+                    {(!pulse?.active_segments || pulse.active_segments.length === 0) && (
+                      <div className="text-center py-10 text-zinc-600 text-[10px] uppercase font-bold tracking-widest">Awaiting Neural Link...</div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Nexus Composition - Assemble Video from Segments', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
+        await page.fill('input[name="username"]', 'test@example.com');
         await page.fill('input[name="password"]', 'testpassword');
         await page.click('button[type="submit"]');
         await page.waitForURL('/');
@@ -55,7 +55,7 @@ test.describe('Nexus Composition - Assemble Video from Segments', () => {
 test.describe('Nexus Composition - Cinema Mode', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
+        await page.fill('input[name="username"]', 'test@example.com');
         await page.fill('input[name="password"]', 'testpassword');
         await page.click('button[type="submit"]');
         await page.waitForURL('/');
@@ -93,7 +93,7 @@ test.describe('Nexus Composition - Cinema Mode', () => {
 test.describe('Nexus Composition - Story Factory', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
+        await page.fill('input[name="username"]', 'test@example.com');
         await page.fill('input[name="password"]', 'testpassword');
         await page.click('button[type="submit"]');
         await page.waitForURL('/');
@@ -130,7 +130,7 @@ test.describe('Nexus Composition - Story Factory', () => {
 test.describe('Nexus Composition - Blueprint Templates', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/login');
-        await page.fill('input[name="email"]', 'test@example.com');
+        await page.fill('input[name="username"]', 'test@example.com');
         await page.fill('input[name="password"]', 'testpassword');
         await page.click('button[type="submit"]');
         await page.waitForURL('/');
