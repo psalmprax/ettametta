@@ -32,6 +32,7 @@ import CommandCenterLayout from "@/components/CommandCenterLayout";
 import { AgentMatrix, AssetQuickview } from "@/components/ui/CommandCenterComponents";
 import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
+import { useTelemetry } from "@/context/TelemetryContext";
 
 import {
     AreaChart,
@@ -56,6 +57,7 @@ interface AnalyticsMetrics {
 }
 
 export default function AnalyticsPage() {
+    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
     const [activeEngine, setActiveEngine] = useState("overview");
     const [metrics, setMetrics] = useState<AnalyticsMetrics>({
         views: 0,
@@ -66,7 +68,7 @@ export default function AnalyticsPage() {
         engineLoad: "12%",
         retentionData: Array.from({ length: 20 }, (_, i) => ({ time: i, value: Math.max(20, 100 - i * 4 + Math.random() * 10) }))
     });
-    const [logs, setLogs] = useState<string[]>(["ANALYTICS_INITIALIZED", "SYNCHRONIZING_HISTORICAL_DATA"]);
+    const [actionLogs, setActionLogs] = useState<string[]>(["ANALYTICS_INITIALIZED", "SYNCHRONIZING_HISTORICAL_DATA"]);
 
     const fetchAnalytics = useCallback(async () => {
         const token = await getAuthToken();
@@ -87,7 +89,7 @@ export default function AnalyticsPage() {
                         velocity: stats.velocity || "Nominal",
                         engineLoad: stats.engine_load || "5%"
                     }));
-                    setLogs((prev: string[]) => [`[DATA] Metrics synchronized. Total Reach: ${stats.total_views}`, ...prev]);
+                    setActionLogs((prev: string[]) => [`[DATA] Metrics synchronized. Total Reach: ${stats.total_views}`, ...prev]);
                 }
             }
         );
@@ -97,12 +99,7 @@ export default function AnalyticsPage() {
         fetchAnalytics();
     }, [fetchAnalytics]);
 
-    // Prepare Agent Data
-    const agents = [
-        { id: "INTEL_01", name: "Data Aggregator", icon: Database, status: "ACTIVE" as any, latency: 12, load: 4, details: "Syncing DB Clusters" },
-        { id: "ANALYZ_01", name: "Neural Analytics", icon: Cpu, status: "ACTIVE" as any, latency: 85, load: 15, details: "Predicting Trend Drift" },
-        { id: "PULSE_01", name: "Signal Monitor", icon: Radar, status: "ACTIVE" as any, latency: 1, load: 2, details: "Monitoring Global Pulse" },
-    ];
+    const { agents } = useTelemetry();
 
     return (
         <CommandCenterLayout
@@ -310,24 +307,28 @@ export default function AnalyticsPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-xs space-y-3">
-                                    {logs.map((log, i) => (
+                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-xs space-y-3">
+                                    {[
+                                        ...actionLogs.map(msg => ({ level: "ACTION", message: msg, timestamp: Date.now() / 1000 })),
+                                        ...(Array.isArray(systemLogs) ? systemLogs.filter(l => l.module === "ANALYTICS") : [])
+                                    ].sort((a, b) => b.timestamp - a.timestamp).map((log: any, i) => (
                                         <div key={i} className="flex gap-6 group hover:bg-white/5 p-2 rounded-lg transition-all">
-                                            <span className="text-zinc-700 shrink-0 select-none">{new Date().toLocaleTimeString()}</span>
+                                            <span className="text-zinc-700 shrink-0 select-none">{new Date(log.timestamp * 1000).toLocaleTimeString()}</span>
                                             <span className="text-zinc-800 shrink-0 select-none">|</span>
                                             <span className={cn(
                                                 "shrink-0 font-bold tracking-widest uppercase text-[9px] px-2 py-0.5 rounded",
-                                                log.includes("[DATA]") ? "bg-cyan-500/10 text-cyan-500" :
-                                                log.includes("[SUCCESS]") ? "bg-emerald-500/10 text-emerald-500" : "bg-white/5 text-zinc-500"
+                                                log.message?.includes("[DATA]") || log.level === "DATA" ? "bg-cyan-500/10 text-cyan-500" :
+                                                log.message?.includes("[SUCCESS]") || log.level === "SUCCESS" ? "bg-emerald-500/10 text-emerald-500" : "bg-white/5 text-zinc-500"
                                             )}>
-                                                {log.includes("[DATA]") ? "DATA" : log.includes("[SUCCESS]") ? "SUCCESS" : "INFO"}
+                                                {log.message?.includes("[DATA]") || log.level === "DATA" ? "DATA" : 
+                                                 log.message?.includes("[SUCCESS]") || log.level === "SUCCESS" ? "SUCCESS" : "INFO"}
                                             </span>
                                             <span className={cn(
                                                 "leading-relaxed",
-                                                log.includes("[DATA]") ? "text-cyan-400" :
-                                                log.includes("[SUCCESS]") ? "text-emerald-500" : "text-zinc-400"
+                                                log.message?.includes("[DATA]") || log.level === "DATA" ? "text-cyan-400" :
+                                                log.message?.includes("[SUCCESS]") || log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-400"
                                             )}>
-                                                {log}
+                                                {log.message}
                                             </span>
                                         </div>
                                     ))}
@@ -340,16 +341,19 @@ export default function AnalyticsPage() {
                             <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
                                 <div className="p-4 border-b border-white/5 flex items-center justify-between">
                                     <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Telemetry Logs</span>
-                                    <span className="text-[8px] font-mono text-violet-500/50">DATA_CORE_ACTIVE</span>
+                                    <span className="text-[8px] font-mono text-violet-500/50">{status === "open" ? "LINK_ESTABLISHED" : "LINK_OFFLINE"}</span>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                                    {logs.map((log, i) => (
+                                    {[
+                                        ...actionLogs.map(msg => ({ level: "ACTION", message: msg, timestamp: Date.now() / 1000 })),
+                                        ...(Array.isArray(systemLogs) ? systemLogs.filter(l => l.module === "ANALYTICS") : [])
+                                    ].sort((a, b) => b.timestamp - a.timestamp).map((log: any, i) => (
                                         <div key={i} className="flex gap-4">
-                                            <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                                            <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
                                             <span className={cn(
-                                                log.includes("[DATA]") ? "text-cyan-400" :
-                                                log.includes("[SUCCESS]") ? "text-emerald-500" : "text-zinc-600"
-                                            )}>{log}</span>
+                                                log.message?.includes("[DATA]") || log.level === "DATA" ? "text-cyan-400" :
+                                                log.message?.includes("[SUCCESS]") || log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
+                                            )}>{log.message}</span>
                                         </div>
                                     ))}
                                 </div>

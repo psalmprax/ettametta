@@ -2,18 +2,20 @@
 
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout";
-import { 
-    ShieldCheck, 
-    UserCheck, 
-    AlertTriangle, 
-    Fingerprint, 
-    FileText, 
-    Play, 
+import {
+    ShieldCheck,
+    UserCheck,
+    AlertTriangle,
+    Fingerprint,
+    FileText,
+    Play,
     RefreshCw,
     Download,
     Eye,
     ChevronRight,
-    Terminal
+    Terminal,
+    Target,
+    Cpu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
@@ -21,13 +23,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { getAuthToken } from "@/lib/auth_utils";
 import { withRealFallback } from "@/lib/real_first_utils";
+import CommandCenterLayout from "@/components/CommandCenterLayout";
+import { AgentMatrix } from "@/components/ui/CommandCenterComponents";
+import { useTelemetry } from "@/context/TelemetryContext";
 
 export default function AuditsPage() {
-    const [activeTab, setActiveTab] = useState<"account" | "security" | "bias">("account");
+    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
+    const [activeTab, setActiveTab] = useState<"account" | "security" | "bias" | "logs">("account");
     const [isLoading, setIsLoading] = useState(false);
     const [securityStatus, setSecurityStatus] = useState<any>(null);
     const [auditReports, setAuditReports] = useState<any[]>([]);
     const [securityEvents, setSecurityEvents] = useState<any[]>([]);
+    const [actionLogs, setActionLogs] = useState<string[]>(["GOVERNANCE_INITIALIZED", "SYNCHRONIZING_TRUST_MATRIX"]);
 
     useEffect(() => {
         fetchData();
@@ -35,7 +42,7 @@ export default function AuditsPage() {
 
     const fetchData = async () => {
         setIsLoading(true);
-        const token = getAuthToken();
+        const token = await getAuthToken();
         if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
 
@@ -56,8 +63,9 @@ export default function AuditsPage() {
 
     const handleRunSecurityAudit = async () => {
         setIsLoading(true);
-        const token = getAuthToken();
+        const token = await getAuthToken();
         if (!token) return;
+        setActionLogs(prev => [`[ACTION] Triggering Red Team Security Audit...`, ...prev]);
 
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/security/scan`, {
@@ -69,6 +77,7 @@ export default function AuditsPage() {
                 onSuccess: (data) => {
                     toast.success("Security Audit Complete");
                     setSecurityStatus(data.report);
+                    setActionLogs(prev => [`[SUCCESS] Integrity Score: ${data.report?.health_score || 100}`, ...prev]);
                     fetchData();
                 },
                 onFallback: () => toast.error("Audit Failed")
@@ -79,8 +88,9 @@ export default function AuditsPage() {
 
     const handleRunAccountAudit = async (platform: string) => {
         setIsLoading(true);
-        const token = getAuthToken();
+        const token = await getAuthToken();
         if (!token) return;
+        setActionLogs(prev => [`[ACTION] Dispatched compliance audit for ${platform}...`, ...prev]);
 
         await withRealFallback<any>(
             () => fetch(`${API_BASE}/agent/account-audit`, {
@@ -95,7 +105,7 @@ export default function AuditsPage() {
                 fallback: { result: null },
                 onSuccess: (data) => {
                     toast.success(`${platform.toUpperCase()} Audit Dispatched`);
-                    // Append simulated report for UI immediate feedback
+                    setActionLogs(prev => [`[SUCCESS] Neural alignment verified for ${platform}.`, ...prev]);
                     setAuditReports(prev => [{
                         id: Math.random().toString(36).substr(2, 9),
                         platform,
@@ -120,33 +130,59 @@ export default function AuditsPage() {
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
-        toast.success("Report Exported", { description: "Compliance data saved to local storage." });
+        toast.success("Report Exported");
     };
 
     return (
-        <DashboardLayout>
-            <div className="space-y-10 pb-24">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="h-1 w-8 bg-cyan-400 rounded-full shadow-[0_0_15px_rgba(34,211,238,0.5)]" />
-                            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400">Governance & Compliance</span>
-                        </div>
-                        <h1 className="text-5xl md:text-6xl font-bold tracking-tighter uppercase text-white">Trust <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-blue-600 text-hollow">Matrix</span></h1>
-                        <p className="text-zinc-500 font-medium">Verify system integrity, platform compliance, and <span className="text-zinc-300 font-bold">neural bias neutrality</span>.</p>
-                    </div>
-
-                    <div className="flex bg-zinc-950 p-1.5 rounded-2xl border border-white/5">
-                        <TabButton active={activeTab === "account"} onClick={() => setActiveTab("account")} icon={UserCheck} label="Account" />
-                        <TabButton active={activeTab === "security"} onClick={() => setActiveTab("security")} icon={ShieldCheck} label="Security" />
-                        <TabButton active={activeTab === "bias"} onClick={() => setActiveTab("bias")} icon={Fingerprint} label="Bias Scan" />
-                    </div>
+        <CommandCenterLayout
+            title="TRUST MATRIX"
+            subtitle="GOVERNANCE_ENGINE_V4.0"
+            leftPanel={
+                <div className="space-y-1">
+                    {[
+                        { id: "account", label: "Account Audit", icon: UserCheck },
+                        { id: "security", label: "Security Audit", icon: ShieldCheck },
+                        { id: "bias", label: "Bias Scan", icon: Fingerprint },
+                        { id: "logs", label: "Governance Logs", icon: Terminal },
+                    ].map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveTab(item.id as any)}
+                            className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group",
+                                activeTab === item.id ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                            )}
+                        >
+                            <item.icon className="h-4 w-4" />
+                            <span className="text-xs font-bold uppercase tracking-tight">{item.label}</span>
+                            {activeTab === item.id && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]" />}
+                        </button>
+                    ))}
                 </div>
-
-                {/* Content Area */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                    <div className="lg:col-span-2 space-y-8">
+            }
+            rightPanel={
+                <>
+                    <AgentMatrix agents={agents} />
+                    <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 p-8 rounded-2xl space-y-6">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500">Compliance Health</h3>
+                        <div className="space-y-4">
+                            <HealthMetric label="Global Integrity" value={`${securityStatus?.health_score || 98.2}%`} color="text-cyan-400" />
+                            <HealthMetric label="Privacy Parity" value={`${securityStatus?.privacy_score || 100}%`} color="text-emerald-400" />
+                            <HealthMetric label="Bias Neutrality" value={`${securityStatus?.bias_score || 94.5}%`} color="text-amber-400" />
+                        </div>
+                    </div>
+                </>
+            }
+        >
+            <div className="p-10 space-y-10 relative h-full flex flex-col">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="flex-1 flex flex-col min-h-0"
+                    >
                         {activeTab === "account" && (
                             <AccountAuditSection onAudit={handleRunAccountAudit} onDownload={handleDownloadReport} reports={auditReports} />
                         )}
@@ -156,37 +192,69 @@ export default function AuditsPage() {
                         {activeTab === "bias" && (
                             <BiasScanSection />
                         )}
-                    </div>
-
-                    {/* Sidebar Stats */}
-                    <div className="space-y-8">
-                        <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 p-8 rounded-2xl space-y-6">
-                            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500">Compliance Health</h3>
-                            <div className="space-y-4">
-                                <HealthMetric label="Global Integrity" value={`${securityStatus?.health_score || 98.2}%`} color="text-cyan-400" />
-                                <HealthMetric label="Privacy Parity" value={`${securityStatus?.privacy_score || 100}%`} color="text-emerald-400" />
-                                <HealthMetric label="Bias Neutrality" value={`${securityStatus?.bias_score || 94.5}%`} color="text-amber-400" />
+                        {activeTab === "logs" && (
+                            <div className="flex-1 flex flex-col min-h-0 bg-[#0F0F11]/60 border border-white/5 rounded-[32px] overflow-hidden">
+                                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
+                                    <div className="flex items-center gap-4">
+                                        <Terminal className="h-4 w-4 text-zinc-500" />
+                                        <h3 className="text-xs font-bold text-white uppercase tracking-widest">Governance Telemetry</h3>
+                                    </div>
+                                    <span className="text-[10px] font-mono text-cyan-500/50">{status === "open" ? "LINK_ESTABLISHED" : "LINK_OFFLINE"}</span>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 font-mono text-xs space-y-3">
+                                    {[
+                                        ...actionLogs.map(msg => ({ level: "ACTION", message: msg, timestamp: Date.now() / 1000 })),
+                                        ...(Array.isArray(systemLogs) ? systemLogs.filter(l => l.module === "SECURITY" || l.module === "AGENT") : [])
+                                    ].sort((a, b) => b.timestamp - a.timestamp).map((log: any, i) => (
+                                        <div key={i} className="flex gap-6 group hover:bg-white/5 p-2 rounded-lg transition-all">
+                                            <span className="text-zinc-700 shrink-0 select-none">{new Date(log.timestamp * 1000).toLocaleTimeString()}</span>
+                                            <span className="text-zinc-800 shrink-0 select-none">|</span>
+                                            <span className={cn(
+                                                "shrink-0 font-bold tracking-widest uppercase text-[9px] px-2 py-0.5 rounded",
+                                                log.level === "ACTION" ? "bg-cyan-500/10 text-cyan-500" :
+                                                log.level === "SUCCESS" ? "bg-emerald-500/10 text-emerald-500" : "bg-white/5 text-zinc-500"
+                                            )}>
+                                                {log.level || "INFO"}
+                                            </span>
+                                            <span className={cn(
+                                                "leading-relaxed",
+                                                log.level === "ACTION" ? "text-cyan-400" :
+                                                log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-400"
+                                            )}>
+                                                {log.message}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="pt-6 border-t border-white/5">
-                                <p className="text-[9px] text-zinc-600 leading-relaxed font-bold uppercase tracking-tight">
-                                    All neural clusters are currently operating within the <span className="text-white">ISO/AI-2026</span> standard for safe generative distribution.
-                                </p>
+                        )}
+                        
+                        {activeTab !== "logs" && (
+                            <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+                                <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Governance Engine Logs</span>
+                                    <span className="text-[8px] font-mono text-cyan-500/50">{status === "open" ? "LINK_ESTABLISHED" : "LINK_OFFLINE"}</span>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
+                                    {[
+                                        ...actionLogs.map(msg => ({ level: "ACTION", message: msg, timestamp: Date.now() / 1000 })),
+                                        ...(Array.isArray(systemLogs) ? systemLogs.filter(l => l.module === "SECURITY" || l.module === "AGENT") : [])
+                                    ].sort((a, b) => b.timestamp - a.timestamp).map((log: any, i) => (
+                                        <div key={i} className="flex gap-4">
+                                            <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
+                                            <span className={cn(
+                                                log.level === "ACTION" ? "text-cyan-400" :
+                                                log.level === "SUCCESS" ? "text-emerald-500" : "text-zinc-600"
+                                            )}>{log.message}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 p-8 rounded-2xl space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Terminal className="h-4 w-4 text-violet-400" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-violet-400">Node Advisory</span>
-                            </div>
-                            <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">
-                                Red Team audits monitor for generative drift. We recommend a full system scan every 72 hours of autonomous production.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                        )}
+                    </motion.div>
+                </AnimatePresence>
             </div>
-        </DashboardLayout>
+        </CommandCenterLayout>
     );
 }
 

@@ -44,6 +44,7 @@ import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 import { PlatformLinkModal } from "@/components/ui/PlatformLinkModal";
 import { ManualBroadcastModal } from "@/components/ui/ManualBroadcastModal";
+import { useTelemetry } from "@/context/TelemetryContext";
 
 const getPlatformIcon = (platform: string) => {
     if (platform?.toLowerCase().includes("youtube")) return Youtube;
@@ -53,6 +54,7 @@ const getPlatformIcon = (platform: string) => {
 };
 
 export default function PublishingPage() {
+    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
     const [activeEngine, setActiveEngine] = useState("nodes");
     const [accounts, setAccounts] = useState<any[]>([]);
     const [history, setHistory] = useState<any[]>([]);
@@ -61,7 +63,7 @@ export default function PublishingPage() {
     const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
     const [isDeploying, setIsDeploying] = useState(false);
     const [accountToUnlink, setAccountToUnlink] = useState<any | null>(null);
-    const [logs, setLogs] = useState<string[]>(["EGRESS_INITIALIZED", "SYNCHRONIZING_DISTRIBUTION_NODES"]);
+    const [actionLogs, setActionLogs] = useState<string[]>(["EGRESS_INITIALIZED", "SYNCHRONIZING_DISTRIBUTION_NODES"]);
 
     const handleUnlink = async (id: string) => {
         setIsDeploying(true);
@@ -79,19 +81,18 @@ export default function PublishingPage() {
                 onSuccess: () => {
                     setAccounts(prev => prev.filter(acc => acc.id !== id));
                     toast.success("Node Unlinked");
-                    setLogs((prev: string[]) => [`[DECOUPLE] Decoupled node: ${id}`, ...prev]);
+                    setActionLogs((prev: string[]) => [`[DECOUPLE] Decoupled node: ${id}`, ...prev]);
                 }
             }
         );
         setIsDeploying(false);
         setAccountToUnlink(null);
     };
-    const [agents, setAgents] = useState<any[]>([]);
 
     const handleAutoBroadcast = async () => {
         const token = await getAuthToken();
         if (!token) return;
-        setLogs((prev: string[]) => [`[ACTION] Triggering Autonomous Broadcast Pattern...`, ...prev]);
+        setActionLogs((prev: string[]) => [`[ACTION] Triggering Autonomous Broadcast Pattern...`, ...prev]);
         
         await withRealFallback(
             () => fetch(`${API_BASE}/publish/auto-broadcast`, {
@@ -102,7 +103,7 @@ export default function PublishingPage() {
                 fallback: null,
                 onSuccess: () => {
                     toast.success("Autonomous Broadcast Initiated");
-                    setLogs((prev: string[]) => [`[SUCCESS] Neural Pattern Propagated.`, ...prev]);
+                    setActionLogs((prev: string[]) => [`[SUCCESS] Neural Pattern Propagated.`, ...prev]);
                 }
             }
         );
@@ -125,25 +126,6 @@ export default function PublishingPage() {
             withRealFallback<any>(
                 () => fetch(`${API_BASE}/publish/jobs`, { headers }),
                 { fallback: [], onSuccess: (data) => setJobs(data) }
-            ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/agent/capabilities`, { headers }),
-                { 
-                    fallback: [], 
-                    onSuccess: (data) => {
-                        // Map capabilities to AgentMatrix format
-                        const mappedAgents = Object.entries(data).map(([key, val]: [string, any]) => ({
-                            id: key.toUpperCase(),
-                            name: val.description || key,
-                            icon: key === "discovery" ? Target : key === "security" ? ShieldCheck : Share2,
-                            status: val.status === "healthy" || val.available ? "ACTIVE" : "IDLE",
-                            latency: Math.floor(Math.random() * 50) + 10,
-                            load: Math.floor(Math.random() * 30),
-                            details: val.description
-                        }));
-                        setAgents(mappedAgents);
-                    } 
-                }
             )
         ]);
     }, []);
@@ -350,17 +332,20 @@ export default function PublishingPage() {
                         <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
                             <div className="p-4 border-b border-white/5 flex items-center justify-between">
                                 <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Engine Logs</span>
-                                <span className="text-[8px] font-mono text-blue-500/50">SYSTEM_EGRESS_ACTIVE</span>
+                                <span className="text-[8px] font-mono text-blue-500/50">{status === "open" ? "LINK_ESTABLISHED" : "LINK_OFFLINE"}</span>
                             </div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-1">
-                                {logs.map((log, i) => (
+                                {[
+                                    ...actionLogs.map(msg => ({ level: "ACTION", message: msg, timestamp: Date.now() / 1000 })),
+                                    ...(Array.isArray(systemLogs) ? systemLogs.filter(l => l.module === "PUBLISH") : [])
+                                ].sort((a, b) => b.timestamp - a.timestamp).map((log: any, i) => (
                                     <div key={i} className="flex gap-4">
-                                        <span className="text-zinc-800">[{new Date().toLocaleTimeString()}]</span>
+                                        <span className="text-zinc-800">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
                                         <span className={cn(
-                                            log.includes("[ACTION]") ? "text-cyan-400" :
-                                            log.includes("[SUCCESS]") ? "text-emerald-500" :
-                                            log.includes("[DECOUPLE]") ? "text-rose-500" : "text-zinc-600"
-                                        )}>{log}</span>
+                                            log.level === "ACTION" ? "text-cyan-400" :
+                                            log.level === "SUCCESS" ? "text-emerald-500" :
+                                            log.level === "DECOUPLE" ? "text-rose-500" : "text-zinc-600"
+                                        )}>{log.message}</span>
                                     </div>
                                 ))}
                             </div>

@@ -98,11 +98,6 @@ const intelligenceItems = [
             { name: "Command Pod", href: "/nexus?engine=command" }
         ]
     },
-    { 
-        name: "Workforce Hub", 
-        href: "/nexus?engine=crews", 
-        icon: Users 
-    },
     { name: "Intel Core", href: "/analytics", icon: BarChart3 },
     { name: "Security Audit", href: "/admin/audits", icon: ShieldCheck },
 ];
@@ -113,7 +108,6 @@ const studioItems = [
         href: "/creation", 
         icon: PlaySquare,
         subItems: [
-            { name: "Command Center", href: "/creation?engine=genesis" },
             { name: "Voice Forge", href: "/creation?engine=voice" },
             { name: "Script Engine", href: "/creation?engine=script" },
             { name: "Visual Core", href: "/creation?engine=visual" },
