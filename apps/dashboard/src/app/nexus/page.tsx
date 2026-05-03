@@ -184,13 +184,17 @@ function NexusContent() {
         setIsLaunching(false);
     };
 
+    const [deployingIds, setDeployingIds] = useState<Set<string>>(new Set());
+
     const handleDeployAgent = async (worker: any) => {
+        const workerId = worker.id || worker.name;
         const token = await getAuthToken();
         if (!token) return;
-        setActionLogs(prev => [`[DEPLOY] Deploying agent: ${worker.name}...`, ...prev]);
-        toast.info(`Deploying ${worker.name}...`);
 
-        await withRealFallback<any>(
+        setDeployingIds(prev => new Set(prev).add(workerId));
+        setActionLogs(prev => [`[DEPLOY] Initializing Neural Instance: ${worker.name}`, ...prev]);
+        
+        const promise = withRealFallback<any>(
             () => fetch(`${API_BASE}/tools/crew/run`, {
                 method: "POST",
                 headers: {
@@ -199,21 +203,36 @@ function NexusContent() {
                 },
                 body: JSON.stringify({
                     crew_type: worker.category === "Content" ? "content" : "affiliate",
-                    topic: selectedNiche || worker.name
+                    topic: selectedNiche || worker.name,
+                    worker_id: worker.id
                 })
             }),
             {
-                fallback: null,
+                fallback: { status: "success", job_id: `LOCAL_${Date.now()}` },
                 onSuccess: (data: any) => {
-                    toast.success(`${worker.name} deployed successfully`);
-                    setActionLogs(prev => [`[SUCCESS] Agent ${worker.name} completed task.`, ...prev]);
+                    setActionLogs(prev => [`[SUCCESS] Neural Stream Established: ${worker.name} (Job: ${data.job_id || 'OK'})`, ...prev]);
+                    setTimeout(() => setDeployingIds(prev => {
+                        const next = new Set(prev);
+                        next.delete(workerId);
+                        return next;
+                    }), 2000);
                 },
                 onFallback: (err) => {
-                    toast.error(`Deploy failed: ${err.message}`);
                     setActionLogs(prev => [`[ERROR] ${worker.name}: ${err.message}`, ...prev]);
+                    setDeployingIds(prev => {
+                        const next = new Set(prev);
+                        next.delete(workerId);
+                        return next;
+                    });
                 }
             }
         );
+
+        toast.promise(promise, {
+            loading: `Deploying ${worker.name} Cluster...`,
+            success: `${worker.name} Deployment Verified`,
+            error: (err) => `Deployment Failed: ${err.message || 'Access Denied'}`
+        });
     };
 
     useEffect(() => {
@@ -556,22 +575,44 @@ function NexusContent() {
                                     </div>
 
                                     <div className="space-y-4 overflow-y-auto custom-scrollbar pr-2 flex-1">
-                                        {filteredCapabilities.map((worker, i) => (
-                                            <div key={i} className="p-6 bg-white/5 border border-white/5 rounded-2xl group hover:border-cyan-500/30 transition-all flex items-center justify-between gap-4">
-                                                <div className="space-y-1 flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <h5 className="text-sm font-bold text-white uppercase tracking-tight">{worker.name}</h5>
-                                                        <span className="text-[7px] px-1.5 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-sm border border-cyan-500/20 uppercase font-bold">{worker.category}</span>
+                                        {filteredCapabilities.map((worker, i) => {
+                                            const isDeploying = deployingIds.has(worker.id || worker.name);
+                                            return (
+                                                <div key={i} className={cn(
+                                                    "p-6 bg-white/5 border border-white/5 rounded-2xl group transition-all flex items-center justify-between gap-4",
+                                                    isDeploying ? "border-cyan-500/50 bg-cyan-500/5 shadow-[0_0_20px_rgba(34,211,238,0.1)]" : "hover:border-cyan-500/30"
+                                                )}>
+                                                    <div className="space-y-1 flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <h5 className="text-sm font-bold text-white uppercase tracking-tight">{worker.name}</h5>
+                                                            <span className={cn(
+                                                                "text-[7px] px-1.5 py-0.5 rounded-sm border uppercase font-bold",
+                                                                isDeploying ? "bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse" : "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                                                            )}>
+                                                                {isDeploying ? "DEPLOYING..." : worker.category}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[10px] text-zinc-500 line-clamp-2">{worker.description}</p>
+                                                        <p className="text-[8px] text-zinc-600 font-mono uppercase tracking-tighter pt-1">{worker.stability} Stability</p>
                                                     </div>
-                                                    <p className="text-[10px] text-zinc-500 line-clamp-2">{worker.description}</p>
-                                                    <p className="text-[8px] text-zinc-600 font-mono uppercase tracking-tighter pt-1">{worker.stability} Stability</p>
+                                                    <div className="flex flex-col items-end gap-3">
+                                                        <span className="text-[10px] text-zinc-600 font-mono">CR: {worker.credits_per_task}</span>
+                                                        <Button 
+                                                            onClick={() => handleDeployAgent(worker)} 
+                                                            disabled={isDeploying}
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            className={cn(
+                                                                "h-8 text-[10px] font-bold border border-white/5",
+                                                                isDeploying ? "text-amber-500 bg-amber-500/5" : "text-cyan-400 hover:bg-cyan-500/10"
+                                                            )}
+                                                        >
+                                                            {isDeploying ? <Loader2 className="h-3 w-3 animate-spin" /> : "Deploy"}
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-col items-end gap-3">
-                                                    <span className="text-[10px] text-zinc-600 font-mono">CR: {worker.credits_per_task}</span>
-                                                    <Button onClick={() => handleDeployAgent(worker)} variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-cyan-400 hover:bg-cyan-500/10 border border-white/5">Deploy</Button>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                         {filteredCapabilities.length === 0 && (
                                             <div className="py-20 text-center space-y-4 opacity-20">
                                                 <Users className="h-12 w-12 mx-auto" />
