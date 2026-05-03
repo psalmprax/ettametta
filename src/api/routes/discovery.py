@@ -6,6 +6,7 @@ import os
 import logging
 import datetime
 import json
+import asyncio
 
 from src.services.discovery.service import base_discovery_service
 from src.services.discovery.models import ContentCandidate, ViralPattern
@@ -539,6 +540,18 @@ async def create_video_from_analysis(
         )
         db.add(new_job)
         await db.commit()
+
+        # Agentic Intelligence Injection (Official Skill Integration)
+        try:
+            from src.services.openclaw.agent import openclaw_agent
+            # Trigger Competitor Analysis for the niche
+            asyncio.create_task(openclaw_agent.process_message(
+                identifier=str(current_user.id),
+                message=f"Perform a deep competitor strategy analysis for the '{request.niche}' niche on {request.platform}. Identify top 3 viral hooks currently working."
+            ))
+            logger.info(f"[Discovery] Triggered agentic niche intelligence for {request.niche}")
+        except Exception as ai_err:
+            logger.warning(f"[Discovery] Agentic injection skipped: {ai_err}")
 
         return success_response(
             data={

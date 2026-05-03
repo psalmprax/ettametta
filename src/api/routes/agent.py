@@ -180,12 +180,44 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
         openclaw_agent.circuit_breaker.state
     )  # Returns "CLOSED", "OPEN", or "HALF_OPEN"
 
+    # Dynamic worker generation from skill registry
+    workers = []
+    
+    # Categorization mapping
+    VIDEO_GEN = ["PIXVERSE", "LUMA", "KAIBER", "PIKA", "RUNWAY", "KLING", "HAILUO", "HAIPER", "GENMO", "MORPH", "VIDU", "WAVESPEED", "SEEDANCE", "FRAMELOOP", "LEIAPIX", "VIDEOANY", "HEYGEN", "LTX", "LEONARDO", "INVIDEO", "FLIKI", "PERCHANCE"]
+    INTEL = ["DISCOVERY", "RESEARCH", "NICHE", "COMPETITOR", "TREND_PRED", "SCRAPE", "ANALYTICS", "METRICS", "INGESTION"]
+    CREATIVE = ["CONTENT", "CONTENT_EDITOR", "BRANDING", "LANDING_PAGE", "PERSONA", "NOFACE"]
+    PROD = ["PUBLISH", "RENDER", "REMOTION", "WORKFLOW", "INTELLIGENT_WORKFLOW", "VIDEO_ASSISTANT", "VIDEO_LEAD", "SCENE_VIDEO"]
+    OPS = ["SECURITY", "SYSTEM", "MEMORY", "NOTIFICATIONS", "SELF_IMPROVE", "SELF_HEALING", "BROWSER", "DOCUMENT", "ZERO", "PAPERCLIP", "SCIENTIFIC"]
+    BUSINESS = ["REPUTATION", "CHAT_SALES", "SEO_AUDIT", "ACCOUNT_AUDIT", "OUTREACH"]
+
+    for key, skill in openclaw_agent.skill_registry.items():
+        # Extract metadata from skill instance if available, otherwise use defaults
+        metadata = getattr(skill, "metadata", {})
+        
+        category = "General"
+        if key in VIDEO_GEN: category = "Video Generation"
+        elif key in INTEL: category = "Intelligence"
+        elif key in CREATIVE: category = "Creative"
+        elif key in PROD: category = "Production"
+        elif key in OPS: category = "Operations"
+        elif key in BUSINESS: category = "Business"
+
+        workers.append({
+            "id": key,
+            "name": metadata.get("name", key.replace("_", " ").title()),
+            "category": category,
+            "stability": metadata.get("stability", "Stable"),
+            "credits_per_task": metadata.get("credits_per_task", 10),
+            "description": metadata.get("description", f"Specialized {category} capability: {key}")
+        })
+
     capabilities = {
         "workforce": {
             "enabled": True,
             "status": "healthy" if cb_status.upper() == "CLOSED" else "degraded",
             "report": report,
-            "circuit_breaker": cb_status.lower(),  # Return lowercase for API consistency
+            "circuit_breaker": cb_status.lower(),
             "description": "Alpha Workforce (OpenClaw) Agentic Engine",
         },
         "discovery": {
@@ -195,59 +227,7 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
             "fallback": "groq-discovery" if settings.GROQ_API_KEY else None,
             "available": True,
         },
-        "competitor": {
-            "enabled": True,
-            "description": "Competitor strategy analysis and market intelligence",
-            "fallback": "groq-analysis" if settings.GROQ_API_KEY else None,
-            "available": True,
-        },
-        "account_audit": {
-            "enabled": True,
-            "actions": ["audit", "compare"],
-            "description": "Audit YOUR account on any platform for growth and monetization readiness with 2-week sprint plan",
-            "platforms": [
-                "youtube",
-                "tiktok",
-                "instagram",
-                "facebook",
-                "x",
-                "linkedin",
-                "snapchat",
-                "twitch",
-            ],
-            "available": bool(settings.GROQ_API_KEY),
-        },
-        "langchain": {
-            "enabled": settings.ENABLE_LANGCHAIN,
-            "model": settings.LANGCHAIN_MODEL,
-            "description": "LLM-powered conversational agent",
-            "fallback": "groq-direct" if settings.GROQ_API_KEY else None,
-            "available": settings.ENABLE_LANGCHAIN or bool(settings.GROQ_API_KEY),
-        },
-        "crewai": {
-            "enabled": settings.ENABLE_CREWAI,
-            "agents": settings.CREWAI_AGENTS.split(","),
-            "description": "Multi-agent crew for complex tasks",
-            "fallback": "groq-multi" if settings.GROQ_API_KEY else None,
-            "available": settings.ENABLE_CREWAI or bool(settings.GROQ_API_KEY),
-        },
-        "interpreter": {
-            "enabled": settings.ENABLE_INTERPRETER,
-            "description": "Code execution agent",
-            "fallback": "groq-code-analysis" if settings.GROQ_API_KEY else None,
-            "available": settings.ENABLE_INTERPRETER or bool(settings.GROQ_API_KEY),
-        },
-        "groq": {
-            "available": bool(settings.GROQ_API_KEY),
-            "model": "llama-3.3-70b-versatile",
-            "description": "Direct Groq LLM access (used as fallback)",
-        },
-        "workers": [
-            {"name": "Researcher", "category": "Intelligence", "stability": "Elite", "credits_per_task": 10},
-            {"name": "Fact Checker", "category": "Validation", "stability": "Stable", "credits_per_task": 5},
-            {"name": "Writer", "category": "Creative", "stability": "Creative", "credits_per_task": 15},
-            {"name": "Editor", "category": "Production", "stability": "Precise", "credits_per_task": 10},
-        ],
+        "workers": sorted(workers, key=lambda x: (x["category"], x["name"])),
     }
 
     return success_response(data=capabilities)
