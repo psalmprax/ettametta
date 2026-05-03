@@ -11,7 +11,7 @@ class RedditScanner:
             "User-Agent": "ettametta/1.0 (Enterprise Content Engine)"
         }
 
-    async def scan_trends(self, niche: str, published_after: Any | None = None) -> list[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: Any | None = None, region: str | None = None) -> list[ContentCandidate]:
         """
         Scans top subreddits for trending video content.
         Note: Uses the .json endpoint to fetch data without requiring Oauth for public reads.

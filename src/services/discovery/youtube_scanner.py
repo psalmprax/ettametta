@@ -17,7 +17,7 @@ YouTubeScanner = None  # Will be set after class definition
 
 class YouTubeShortsScanner(DiscoveryScannerBase):
     async def scan_trends(
-        self, niche: str, published_after: datetime.datetime | None = None
+        self, niche: str, published_after: datetime.datetime | None = None, region: str | None = "US"
     ) -> list[ContentCandidate]:
         """
         Scans YouTube for trending Shorts in a specific niche using the Data API v3.
@@ -37,10 +37,11 @@ class YouTubeShortsScanner(DiscoveryScannerBase):
             search_params = {
                 "q": f"{niche} #shorts",
                 "part": "id,snippet",
-                "maxResults": 10,
+                "maxResults": 15,
                 "type": "video",
                 "videoDuration": "short",
                 "relevanceLanguage": "en",
+                "regionCode": region or "US",
                 "order": "viewCount",
             }
 

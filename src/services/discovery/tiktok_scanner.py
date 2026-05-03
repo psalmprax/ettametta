@@ -16,7 +16,7 @@ class TikTokScanner:
         ]
 
     async def scan_trends(
-        self, niche: str, published_after: datetime | None = None
+        self, niche: str, published_after: datetime | None = None, region: str | None = None
     ) -> list[ContentCandidate]:
         """
         Scans TikTok for trending videos in a niche by scraping the public search page.
