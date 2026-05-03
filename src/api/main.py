@@ -175,34 +175,42 @@ app.mount("/static", StaticFiles(directory=settings.STORAGE_OUTPUT_DIR), name="s
 app.state.limiter = limiter
 
 
+from src.api.utils.api_responses import error_response, api_error_response, APIError
+from fastapi import HTTPException
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Normalize HTTPException to standard nested error format."""
+    return error_response(
+        code="HTTP_ERROR",
+        message=exc.detail if isinstance(exc.detail, str) else "An error occurred",
+        status_code=exc.status_code,
+        details=exc.detail if isinstance(exc.detail, dict) else {"detail": exc.detail},
+    )
+
+
 @app.exception_handler(RateLimitExceeded)
 async def custom_rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
-    return JSONResponse(
+    return error_response(
+        code="RATE_LIMIT_EXCEEDED",
+        message="Too many requests. Please slow down.",
         status_code=429,
-        content={
-            "error": "Rate limit exceeded",
-            "message": "Too many requests. Please slow down.",
-            "retry_after": exc.detail if hasattr(exc, "detail") else "60s",
-            "code": "RATE_LIMIT_EXCEEDED",
-        },
+        details={"retry_after": exc.detail if hasattr(exc, "detail") else "60s"},
     )
 
 
 @app.exception_handler(SQLAlchemyError)
 async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
     logger.error(f"Database error: {str(exc)}")
-    # Masking details in production for security
     message = "An internal database error occurred."
     if settings.DEBUG:
         message = f"Database Error: {str(exc)}"
 
-    return JSONResponse(
+    return error_response(
+        code="DB_ERROR",
+        message=message,
         status_code=500,
-        content={
-            "error": "Database Error",
-            "message": message,
-            "code": "DB_ERROR",
-        },
     )
 
 
@@ -223,28 +231,29 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             else:
                 cleaned[k] = v
         details.append(cleaned)
-    return JSONResponse(
+
+    return error_response(
+        code="VALIDATION_ERROR",
+        message="Invalid data provided.",
         status_code=422,
-        content={
-            "error": "Validation Error",
-            "message": "Invalid data provided.",
-            "details": details,
-            "code": "VALIDATION_ERROR",
-        },
+        details={"errors": details},
     )
 
 
 @app.exception_handler(ValueError)
 async def value_error_exception_handler(request: Request, exc: ValueError):
     logger.warning(f"Value error: {exc}")
-    return JSONResponse(
+    return error_response(
+        code="VALUE_ERROR",
+        message=str(exc),
         status_code=400,
-        content={
-            "error": "Bad Request",
-            "message": str(exc),
-            "code": "VALUE_ERROR",
-        },
     )
+
+
+@app.exception_handler(APIError)
+async def api_error_exception_handler(request: Request, exc: APIError):
+    """Handler for custom APIError types."""
+    return api_error_response(exc, request.url.path, request.method)
 
 
 import traceback
@@ -285,13 +294,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     except Exception as db_exc:
         logger.error(f"Failed to persist fault audit or report incident: {db_exc}")
 
-    return JSONResponse(
+    return error_response(
+        code="INTERNAL_SERVER_ERROR",
+        message="An unexpected error occurred. Our engineers have been notified.",
         status_code=500,
-        content={
-            "error": "Internal Server Error",
-            "message": "An unexpected error occurred. Our engineers have been notified.",
-            "code": "INTERNAL_SERVER_ERROR",
-        },
     )
 
 

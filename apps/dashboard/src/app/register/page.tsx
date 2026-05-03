@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock } from "lucide-react";
+import { Mail, Lock, User } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { API_BASE } from "@/lib/config";
@@ -13,6 +13,7 @@ import { BaseLayout } from "@/components/layout/BaseLayout";
 
 export default function RegisterPage() {
     const [email, setEmail] = useState("");
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
@@ -40,7 +41,7 @@ export default function RegisterPage() {
         setError("");
 
         try {
-            const result = await register(email, password);
+            const result = await register(email, password, username);
             if (result.success) {
                 router.push("/login?registered=true");
             } else {
@@ -80,7 +81,18 @@ export default function RegisterPage() {
                         placeholder="you@example.com"
                         icon={<Mail className="h-5 w-5" />}
                         variant="default"
-                        error={error}
+                        error={error && error.includes("Email") ? error : undefined}
+                    />
+
+                    <Input
+                        label="Username (Optional)"
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Choose a display name"
+                        icon={<User className="h-5 w-5" />}
+                        variant="default"
+                        error={error && error.includes("Username") ? error : undefined}
                     />
 
                     <Input
@@ -92,7 +104,7 @@ export default function RegisterPage() {
                         placeholder="Create a secure password"
                         icon={<Lock className="h-5 w-5" />}
                         variant="default"
-                        error={error && !error.includes("Password must") ? error : undefined}
+                        error={error && (error.includes("Password") || error === "Registration failed") ? error : undefined}
                     />
 
                     <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-600 space-y-2">

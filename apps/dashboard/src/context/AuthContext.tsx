@@ -10,7 +10,7 @@ interface AuthContextType {
     credits: number | null;
     isLoading: boolean;
     login: (token: string, remember?: boolean) => Promise<boolean>;
-    register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+    register: (email: string, password: string, username?: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
     refreshCredits: () => Promise<void>;
 }
@@ -131,19 +131,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const register = async (email: string, password: string) => {
+    const register = async (email: string, password: string, username?: string) => {
         try {
             const response = await fetch(`${API_BASE}/auth/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, password, username }),
             });
 
             if (response.ok) {
                 return { success: true };
             } else {
                 const data = await response.json();
-                return { success: false, error: data.detail || "Registration failed" };
+                // Standard: Extract from nested error object
+                const errorMessage = data.error?.message || data.message || data.detail || "Registration failed";
+                return { success: false, error: errorMessage };
             }
         } catch (err) {
             return { success: false, error: "Connection failed" };

@@ -91,7 +91,8 @@ export default function LoginPage() {
                 }
             } else {
                 const data = await response.json();
-                setError(data.detail || "Invalid credentials");
+                const errorMessage = data.error?.message || data.message || data.detail || "Invalid credentials";
+                setError(errorMessage);
             }
         } catch (err) {
             setError("Connection failed. Is the API running?");
