@@ -81,23 +81,20 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
     const handleShare = async () => {
         if (!videoUrl) return;
         try {
-            if (navigator.share) {
+            if (typeof navigator !== 'undefined' && navigator.share) {
                 await navigator.share({
                     title: title || "ettametta Video",
                     url: videoUrl,
                 });
                 setShareStatus("Shared");
+            } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                await navigator.clipboard.writeText(videoUrl);
+                setShareStatus("Link Copied");
             } else {
-                await navigator.clipboard.writeText(videoUrl);
-                setShareStatus("Link Copied");
-            }
-        } catch {
-            try {
-                await navigator.clipboard.writeText(videoUrl);
-                setShareStatus("Link Copied");
-            } catch {
                 setShareStatus("Failed");
             }
+        } catch {
+            setShareStatus("Failed");
         }
         setTimeout(() => setShareStatus(null), 2000);
     };
@@ -110,7 +107,7 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 pointer-events-none"
+                className="fixed inset-0 z-100 flex items-center justify-center p-4 md:p-10 pointer-events-none"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="video-preview-title"

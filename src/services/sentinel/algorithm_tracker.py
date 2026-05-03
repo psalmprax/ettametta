@@ -36,18 +36,25 @@ class AlgorithmSentinel(BaseEttamettaAgent):
 
             # Robust parsing for JSON
             try:
-                import json
+                if not response_content or "exhausted" in response_content.lower():
+                    raise ValueError("LLM response empty or exhausted")
+                
                 # Handle cases where LLM might wrap in markdown blocks
                 clean_content = response_content.strip()
-                if clean_content.startswith("```json"):
+                if "```json" in clean_content:
                     clean_content = clean_content.split("```json")[1].split("```")[0].strip()
-                elif clean_content.startswith("```"):
+                elif "```" in clean_content:
                     clean_content = clean_content.split("```")[1].split("```")[0].strip()
+                
+                # Remove common LLM prefixes if any
+                if clean_content.startswith("JSON:"):
+                    clean_content = clean_content[5:].strip()
                 
                 data = json.loads(clean_content)
             except Exception as parse_err:
-                await self._log(f"JSON Parse failed, attempting structural recovery: {parse_err}", "WARNING")
-                # Attempt manual extraction if possible, or just use defaults
+                # Only log if it's not a known exhaustion message to reduce noise
+                if "exhausted" not in str(response_content).lower():
+                    await self._log(f"JSON Parse failed, attempting structural recovery: {parse_err}", "WARNING")
                 data = {}
 
             return {

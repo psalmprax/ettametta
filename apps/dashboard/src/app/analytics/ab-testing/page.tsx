@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { withRealFallback } from "@/lib/real_first_utils";
+import { useTelemetry } from "@/context/TelemetryContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import CommandCenterLayout from "@/components/CommandCenterLayout";
@@ -61,6 +62,7 @@ export default function ABTestingStudio() {
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [logs, setLogs] = useState<string[]>(["LAB_INITIALIZED", "SYNCHRONIZING_NEURAL_EXPERIMENTS"]);
+    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
 
     const fetchData = useCallback(async () => {
         const token = await getAuthToken();
@@ -166,12 +168,7 @@ export default function ABTestingStudio() {
         setIsProcessing(false);
     };
 
-    // Prepare Agent Data
-    const agents = [
-        { id: "STAT_01", name: "Bayesian Analyst", icon: BarChart3, status: "ACTIVE" as any, latency: 12, load: 2, details: "Analyzing Variances" },
-        { id: "NEURAL_01", name: "Pattern Injector", icon: Dna, status: "ACTIVE" as any, latency: 145, load: 32, details: "Cloning Winning Nodes" },
-        { id: "DATA_01", name: "Vault Synchronizer", icon: Database, status: "IDLE" as any, latency: 2, load: 0, details: "Standby" },
-    ];
+    // Using real agents from useTelemetry
 
     return (
         <CommandCenterLayout

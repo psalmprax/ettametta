@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
 import { useAuth } from "@/context/AuthContext";
+import { useTelemetry } from "@/context/TelemetryContext";
 import { useRouter } from "next/navigation";
 import {
     Key,
@@ -57,6 +58,7 @@ import { Button } from "@/components/ui/Button";
 
 export default function AdminSettingsPage() {
     const { user, isLoading: authLoading } = useAuth();
+    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
     const router = useRouter();
     const [activeEngine, setActiveEngine] = useState("OAuth");
     const [settings, setSettings] = useState<any>({});
@@ -132,12 +134,7 @@ export default function AdminSettingsPage() {
         setIsSaving(false);
     };
 
-    // Prepare Agent Data
-    const agents = [
-        { id: "SEC_01", name: "Firewall Guard", icon: ShieldCheck, status: "ACTIVE" as any, latency: 2, load: 1, details: "Monitoring Inbound" },
-        { id: "SYS_01", name: "System Kernel", icon: Cpu, status: "ACTIVE" as any, latency: 4, load: 15, details: "Orchestrating Nodes" },
-        { id: "AUDIT_01", name: "Audit Logger", icon: FileText, status: "IDLE" as any, latency: 1, load: 0, details: "Standby" },
-    ];
+    // Using real agents from useTelemetry
 
     const tabs = [
         { id: "OAuth", label: "OAuth & Auth", icon: Key },

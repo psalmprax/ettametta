@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { getAuthToken } from "@/lib/auth_utils";
 import { withRealFallback } from "@/lib/real_first_utils";
+import { useTelemetry } from "@/context/TelemetryContext";
 import {
     Coins,
     CreditCard,
@@ -57,6 +58,7 @@ export default function CreditsPage() {
     const [packages, setPackages] = useState<any[]>([]);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [logs, setLogs] = useState<string[]>(["VAULT_INITIALIZED", "SYNCHRONIZING_LEDGER"]);
+    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
 
     const fetchData = useCallback(async () => {
         setIsRefreshing(true);
@@ -98,12 +100,7 @@ export default function CreditsPage() {
         );
     };
 
-    // Prepare Agent Data
-    const agents = [
-        { id: "FIN_01", name: "Ledger Guard", icon: ShieldCheck, status: "ACTIVE" as any, latency: 2, load: 1, details: "Syncing Transactions" },
-        { id: "VAULT_01", name: "Vault Warden", icon: Vault, status: "ACTIVE" as any, latency: 4, load: 1, details: "Resource Secure" },
-        { id: "NODE_01", name: "Referral Linker", icon: Network, status: "IDLE" as any, latency: 1, load: 0, details: "Standby" },
-    ];
+    // Using real agents from useTelemetry
 
     return (
         <CommandCenterLayout
