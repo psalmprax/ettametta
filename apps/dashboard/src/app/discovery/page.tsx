@@ -86,13 +86,16 @@ function DiscoveryContent() {
     const fetchAlerts = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;
-        await withRealFallback<any[]>(
+        await withRealFallback<any>(
             () => fetch(`${API_BASE}/discovery/alerts`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
                 fallback: [],
-                onSuccess: (data) => setAlerts(data)
+                onSuccess: (data) => {
+                    const alertList = Array.isArray(data) ? data : (data?.alerts || []);
+                    setAlerts(alertList);
+                }
             }
         );
     }, []);
