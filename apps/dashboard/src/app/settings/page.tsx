@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { withRealFallback } from "@/lib/real_first_utils";
+import { useTelemetry } from "@/context/TelemetryContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -72,6 +73,7 @@ export default function SettingsPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [showKey, setShowKey] = useState<Record<string, boolean>>({});
     const [logs, setLogs] = useState<string[]>(["IDENTITY_INITIALIZED", "PROTOCOL_READY"]);
+    const { agents, logs: systemLogs, status, pulse } = useTelemetry();
     
     const { register, handleSubmit, reset } = useForm<SettingsValues>({
         resolver: zodResolver(SettingsSchema)
@@ -122,12 +124,7 @@ export default function SettingsPage() {
         setIsSaving(false);
     });
 
-    // Prepare Agent Data
-    const agents = [
-        { id: "SEC_01", name: "Account Sentinel", icon: ShieldCheck, status: "ACTIVE" as any, latency: 4, load: 1, details: "Monitoring Session" },
-        { id: "ID_01", name: "Identity Manager", icon: Fingerprint, status: "ACTIVE" as any, latency: 12, load: 2, details: "Keys Encrypted" },
-        { id: "AUDIT_01", name: "Session Auditor", icon: Clock, status: "IDLE" as any, latency: 1, load: 0, details: "Standby" },
-    ];
+    // Remove mocked agents; using real agents from useTelemetry
 
     return (
         <CommandCenterLayout
