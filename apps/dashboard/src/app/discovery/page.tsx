@@ -54,6 +54,7 @@ function DiscoveryContent() {
     const [activeEngine, setActiveEngine] = useState(searchParams.get("engine") || "trends");
     const [candidates, setCandidates] = useState<ContentCandidate[]>([]);
     const [activeNiche, setActiveNiche] = useState(searchParams.get("q") || "Motivation");
+    const [activeRegion, setActiveRegion] = useState(searchParams.get("region") || "US");
     const [actionLogs, setActionLogs] = useState<string[]>([]);
     const [alerts, setAlerts] = useState<any[]>([]);
     const [intelData, setIntelData] = useState<any>(null);
@@ -67,9 +68,9 @@ function DiscoveryContent() {
         const token = await getAuthToken();
         if (!token) return;
 
-        setActionLogs((prev: string[]) => [`[SCAN] Initiating Trend Analysis: ${activeNiche}`, ...prev]);
+        setActionLogs((prev: string[]) => [`[SCAN] Initiating Trend Analysis: ${activeNiche} (${activeRegion})`, ...prev]);
         await withRealFallback<any>(
-            () => fetch(`${API_BASE}/discovery/trends?niche=${encodeURIComponent(activeNiche)}`, {
+            () => fetch(`${API_BASE}/discovery/trends?niche=${encodeURIComponent(activeNiche)}&region=${activeRegion}`, {
                 headers: { Authorization: `Bearer ${token}` }
             }),
             {
@@ -239,6 +240,35 @@ function DiscoveryContent() {
                                     <Button onClick={fetchTrends} className="h-20 px-10 bg-primary text-black font-bold text-lg rounded-2xl uppercase tracking-widest">
                                         Initiate Scan
                                     </Button>
+                                </div>
+
+                                <div className="flex items-center gap-2 overflow-x-auto pb-2 shrink-0">
+                                    {[
+                                        { id: "US", label: "USA", flag: "🇺🇸" },
+                                        { id: "GB", label: "United Kingdom", flag: "🇬🇧" },
+                                        { id: "DE", label: "Germany", flag: "🇩🇪" },
+                                        { id: "CA", label: "Canada", flag: "🇨🇦" },
+                                        { id: "FR", label: "France", flag: "🇫🇷" },
+                                        { id: "AU", label: "Australia", flag: "🇦🇺" },
+                                    ].map((reg) => (
+                                        <button
+                                            key={reg.id}
+                                            onClick={() => {
+                                                setActiveRegion(reg.id);
+                                                // Trigger scan immediately on region change for better UX
+                                                setTimeout(fetchTrends, 100);
+                                            }}
+                                            className={cn(
+                                                "flex items-center gap-2 px-4 py-2 rounded-xl border transition-all shrink-0",
+                                                activeRegion === reg.id 
+                                                    ? "bg-primary/20 border-primary/50 text-white shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)]" 
+                                                    : "bg-white/5 border-white/10 text-zinc-500 hover:border-white/20"
+                                            )}
+                                        >
+                                            <span className="text-sm">{reg.flag}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-tight">{reg.label}</span>
+                                        </button>
+                                    ))}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 overflow-y-auto custom-scrollbar p-1">

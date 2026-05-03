@@ -162,9 +162,9 @@ def search_by_date_youtube(
     return videos
 
 
-async def search_youtube_api(query: str, max_results: int = 5) -> list[dict]:
+async def search_youtube_api(query: str, max_results: int = 5, region: str | None = "US") -> list[dict]:
     """Search YouTube using the official Data API v3."""
-    print(f"  🔍 YouTube API: {query}")
+    print(f"  🔍 YouTube API: {query} (Region: {region})")
     from src.api.config import settings
     
     api_key = settings.YOUTUBE_API_KEY
@@ -178,6 +178,7 @@ async def search_youtube_api(query: str, max_results: int = 5) -> list[dict]:
         "maxResults": max_results,
         "type": "video",
         "key": api_key,
+        "regionCode": region or "US",
         "videoEmbeddable": "true"
     }
     
@@ -710,7 +711,7 @@ async def scrape_twitch(query: str, max_results: int = 2) -> list[dict]:
     return videos
 
 
-async def discover_multi_platform(query: str, max_per_platform: int = 2, session_id: str | None = None) -> list[dict]:
+async def discover_multi_platform(query: str, max_per_platform: int = 2, session_id: str | None = None, region: str | None = "US") -> list[dict]:
     """Discover content from 15+ platforms using an intelligent Query Swarm."""
     print(f"\n🌐 AUTONOMOUS INTELLIGENT DISCOVERY: {query} [ID: {session_id}]")
     print("=" * 60)
@@ -746,7 +747,7 @@ async def discover_multi_platform(query: str, max_per_platform: int = 2, session
             scrape_facebook(sub_query, max_per_platform),
             scrape_instagram(sub_query, max_per_platform),
             scrape_twitch(sub_query, max_per_platform),
-            search_youtube_api(sub_query, max_per_platform),
+            search_youtube_api(sub_query, max_per_platform, region=region),
         ])
 
     raw_results = await asyncio.gather(*tasks, return_exceptions=True)

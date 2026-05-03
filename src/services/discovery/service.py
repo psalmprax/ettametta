@@ -125,6 +125,7 @@ class DiscoveryService:
         min_viral_score: int = 0,
         exclude_shorts: bool = False,
         deep_scan: bool = False,
+        region: str | None = "US",
     ) -> list[ContentCandidate]:
         import json
         import redis
@@ -183,6 +184,7 @@ class DiscoveryService:
                 max_per_platform=max(
                     3, int(min_viral_score / 10) if min_viral_score else 3
                 ),
+                region=region,
             )
 
             import random
@@ -238,7 +240,7 @@ class DiscoveryService:
 
         # Add scanner tasks for both fast and deep scans
         for scanner in scanners_to_use:
-            tasks.append(scanner.scan_trends(niche, published_after=published_after))
+            tasks.append(scanner.scan_trends(niche, published_after=published_after, region=region))
 
         # Add global/supplementary scanners based on tier and deep scan status
         supplementary_scanners = (
