@@ -6,7 +6,7 @@ from .models import ContentCandidate
 class DiscoveryScannerBase(ABC):
     @abstractmethod
     async def scan_trends(
-        self, niche: str, published_after: datetime.datetime | None = None
+        self, niche: str, published_after: datetime.datetime | None = None, region: str | None = None
     ) -> list[ContentCandidate]:
         pass
 

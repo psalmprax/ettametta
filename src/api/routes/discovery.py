@@ -50,6 +50,7 @@ async def get_trends(
     limit: int = 20,
     min_viral_score: int = 0,
     exclude_shorts: bool = False,
+    region: str | None = "US",
     current_user: UserDB = Depends(get_current_user),
 ):
     try:
@@ -60,6 +61,7 @@ async def get_trends(
                 tier=get_subscription_tier_value(current_user),
                 min_viral_score=min_viral_score,
                 exclude_shorts=exclude_shorts,
+                region=region,
             )
         else:
             # Fallback to global trending if no niche specified or empty
@@ -200,6 +202,7 @@ async def trigger_scan(
                             )
                             if current_user.subscription
                             else "free",
+                            region="US", # Default for fallback
                         )
                         all_results.extend(results)
                     except Exception as inner_e:
@@ -591,6 +594,7 @@ async def auto_transform(
             horizon="7d",
             tier=get_subscription_tier_value(current_user),
             min_viral_score=request.min_viral_score,
+            region="US", # Default for auto-transform
         )
 
         if not candidates:

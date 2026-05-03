@@ -38,7 +38,7 @@ class DuckDuckGoScanner:
         return selected
 
     async def scan_trends(
-        self, niche: str, published_after: datetime | None = None
+        self, niche: str, published_after: datetime | None = None, region: str | None = None
     ) -> list[ContentCandidate]:
         """
         Searches DuckDuckGo for trending videos and content in the niche.
