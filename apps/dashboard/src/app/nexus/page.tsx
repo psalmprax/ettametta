@@ -184,6 +184,38 @@ function NexusContent() {
         setIsLaunching(false);
     };
 
+    const handleDeployAgent = async (worker: any) => {
+        const token = await getAuthToken();
+        if (!token) return;
+        setActionLogs(prev => [`[DEPLOY] Deploying agent: ${worker.name}...`, ...prev]);
+        toast.info(`Deploying ${worker.name}...`);
+
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/tools/crew/run`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    crew_type: worker.category === "Content" ? "content" : "affiliate",
+                    topic: selectedNiche || worker.name
+                })
+            }),
+            {
+                fallback: null,
+                onSuccess: (data: any) => {
+                    toast.success(`${worker.name} deployed successfully`);
+                    setActionLogs(prev => [`[SUCCESS] Agent ${worker.name} completed task.`, ...prev]);
+                },
+                onFallback: (err) => {
+                    toast.error(`Deploy failed: ${err.message}`);
+                    setActionLogs(prev => [`[ERROR] ${worker.name}: ${err.message}`, ...prev]);
+                }
+            }
+        );
+    };
+
     useEffect(() => {
         fetchData();
     }, [fetchData]);
@@ -536,7 +568,7 @@ function NexusContent() {
                                                 </div>
                                                 <div className="flex flex-col items-end gap-3">
                                                     <span className="text-[10px] text-zinc-600 font-mono">CR: {worker.credits_per_task}</span>
-                                                    <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-cyan-400 hover:bg-cyan-500/10 border border-white/5">Deploy</Button>
+                                                    <Button onClick={() => handleDeployAgent(worker)} variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-cyan-400 hover:bg-cyan-500/10 border border-white/5">Deploy</Button>
                                                 </div>
                                             </div>
                                         ))}
