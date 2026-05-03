@@ -120,6 +120,7 @@ export default function LoginPage() {
                 <form onSubmit={handleLogin} className="space-y-6">
                     <Input
                         label="Username"
+                        name="username"
                         type="text"
                         required
                         value={username}
@@ -137,6 +138,7 @@ export default function LoginPage() {
 
                     <Input
                         label="Password"
+                        name="password"
                         type="password"
                         required
                         value={password}
