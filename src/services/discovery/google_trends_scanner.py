@@ -17,19 +17,19 @@ class GoogleTrendsScanner:
         self.platform = "Google Trends"
         self.base_url = "https://trends.google.com/trends/api"
         
-    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None, region: str | None = "US") -> list[ContentCandidate]:
         """
         Fetches trending searches related to the niche from Google Trends.
         Uses the free daily trends endpoint - no API key required.
         """
-        logger.info(f"[GoogleTrends] Scanning for trending topics in: {niche}")
+        logger.info(f"[GoogleTrends] Scanning for trending topics in: {niche} (Region: {region or 'US'})")
         
         try:
             async with aiohttp.ClientSession() as session:
                 # Get trending related queries for the niche
                 url = f"{self.base_url}/dailytrends"
                 params = {
-                    "geo": "US",
+                    "geo": region or "US",
                     "hl": "en-US"
                 }
                 
