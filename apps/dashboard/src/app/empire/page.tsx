@@ -266,8 +266,12 @@ function EmpireContent() {
                                                 toast.error(`Purged Blueprint: ${blueprint.niche}`);
                                             }}
                                             onShare={() => {
-                                                navigator.clipboard.writeText(`https://ettametta.ai/strategy/${blueprint.id || blueprint.niche}`);
-                                                toast.success("Strategy Blueprint Link Copied");
+                                                if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                                                    navigator.clipboard.writeText(`https://ettametta.ai/strategy/${blueprint.id || blueprint.niche}`);
+                                                    toast.success("Strategy Blueprint Link Copied");
+                                                } else {
+                                                    toast.error("Clipboard access not available");
+                                                }
                                             }}
                                         />
                                     ))}
@@ -299,8 +303,12 @@ function EmpireContent() {
                                         });
                                     }}
                                     onShare={() => {
-                                        navigator.clipboard.writeText(`https://ettametta.ai/sentinel/status`);
-                                        toast.success("Sentinel Data Shared");
+                                        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                                            navigator.clipboard.writeText(`https://ettametta.ai/sentinel/status`);
+                                            toast.success("Sentinel Data Shared");
+                                        } else {
+                                            toast.error("Clipboard access not available");
+                                        }
                                     }}
                                     onDelete={() => {
                                         toast.error("Security Protocol: System Core Protection Active. Deletion restricted.");

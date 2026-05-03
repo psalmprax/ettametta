@@ -154,7 +154,7 @@ function DiscoveryContent() {
         });
     }, [candidates]);
 
-    // Mock network data for intel view
+    // Derive network graph data from real candidates for intel view
     const networkData = useMemo(() => ({
         nodes: [
             { id: "root", group: 1, label: activeNiche },
@@ -293,8 +293,7 @@ function DiscoveryContent() {
                                                 toast.error(`Purged Candidate: ${c.title.slice(0, 20)}...`);
                                             }}
                                             onShare={() => {
-                                                navigator.clipboard.writeText(`https://ettametta.ai/discovery/candidate/${c.id}`);
-                                                toast.success("Viral Candidate Link Copied");
+                                                if (typeof navigator !== "undefined" && navigator.clipboard) { navigator.clipboard.writeText(`https://ettametta.ai/discovery/candidate/${c.id}`); toast.success("Candidate Intelligence Link Copied"); } else { toast.error("Clipboard access not available"); }
                                             }}
                                             onClick={() => router.push(`/creation?seed=${encodeURIComponent(c.title)}`)}
                                         />
