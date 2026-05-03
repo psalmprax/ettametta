@@ -57,7 +57,7 @@ function EmpireContent() {
     const [blueprints, setBlueprints] = useState<any[]>([]);
     const [revenueReport, setRevenueReport] = useState<any>(null);
     const [sentinelStatus, setSentinelStatus] = useState<any>(null);
-    const [availableNiches, setAvailableNiches] = useState<string[]>(["Motivation", "Finance", "Wellness", "AI News", "Life Hacks"]);
+    const [availableNiches, setAvailableNiches] = useState<string[]>([]);
     const [cloningNiche, setCloningNiche] = useState("");
     const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
     const [affiliateLinks, setAffiliateLinks] = useState<any[]>([]);

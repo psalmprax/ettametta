@@ -295,7 +295,9 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
         logging.info("[WS] Telemetry Disconnected (Client Closed)")
         manager.disconnect(websocket)
     except Exception as e:
-        logging.error(f"[WS] Telemetry Error: {e}")
+        import traceback
+        logging.error(f"[WS] Telemetry Fatal Error: {e}")
+        logging.error(traceback.format_exc())
         manager.disconnect(websocket)
 
 
