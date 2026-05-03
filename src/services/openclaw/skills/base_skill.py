@@ -12,6 +12,13 @@ class OpenClawBaseSkill(ABC):
     def __init__(self):
         self.api_url = getattr(settings, "API_URL", "http://api:7001")
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.metadata = {
+            "name": self.__class__.__name__.replace("Skill", ""),
+            "category": "General",
+            "stability": "Stable",
+            "credits_per_task": 10,
+            "description": self.__doc__.strip() if self.__doc__ else "No description available."
+        }
 
     def _get_headers(self) -> dict:
         """Standardized authorization headers for internal OpenClaw routing."""
