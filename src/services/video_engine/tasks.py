@@ -303,6 +303,23 @@ def download_and_process_task(
             status=SystemJobStatus.COMPLETED, progress=100, output_path=public_url
         )
 
+        # 4.5 Post-Processing Agentic Loop (Official Skill Integration)
+        try:
+            from src.services.openclaw.agent import openclaw_agent
+            # Trigger SEO Auditor
+            run_async(openclaw_agent.process_message(
+                identifier=user_id or "system",
+                message=f"Analyze the SEO potential of this viral video: {public_url}. Niche: {niche}. Keywords: {metadata.get('tags', '')}. Provide a high-impact title upgrade."
+            ))
+            # Trigger Reputation Manager
+            run_async(openclaw_agent.process_message(
+                identifier=user_id or "system",
+                message=f"Initialize reputation monitoring for video: {public_url}. Platform: {platform}. Expected status: VIRAL_CANDIDATE."
+            ))
+            logger.info(f"[Task] Agentic post-processing triggered for {task_id}")
+        except Exception as pp_err:
+            logger.warning(f"[Task] Post-processing skipped: {pp_err}")
+
         # 5. Cleanup local artifacts (ONLY if cloud storage is active)
         if settings.STORAGE_PROVIDER != "LOCAL":
             cleanup_local_files(video_path, processed_path)
