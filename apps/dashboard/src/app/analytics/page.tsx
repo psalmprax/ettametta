@@ -99,8 +99,6 @@ export default function AnalyticsPage() {
         fetchAnalytics();
     }, [fetchAnalytics]);
 
-    const { agents } = useTelemetry();
-
     return (
         <CommandCenterLayout
             title="INTEL CORE"

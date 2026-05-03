@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import DashboardLayout from "@/components/layout";
 import {
     ShieldCheck,
     UserCheck,
@@ -34,6 +33,7 @@ export default function AuditsPage() {
     const [securityStatus, setSecurityStatus] = useState<any>(null);
     const [auditReports, setAuditReports] = useState<any[]>([]);
     const [securityEvents, setSecurityEvents] = useState<any[]>([]);
+    const [biasReport, setBiasReport] = useState<any>(null);
     const [actionLogs, setActionLogs] = useState<string[]>(["GOVERNANCE_INITIALIZED", "SYNCHRONIZING_TRUST_MATRIX"]);
 
     useEffect(() => {
@@ -81,6 +81,31 @@ export default function AuditsPage() {
                     fetchData();
                 },
                 onFallback: () => toast.error("Audit Failed")
+            }
+        );
+        setIsLoading(false);
+    };
+
+    const handleRunBiasScan = async () => {
+        setIsLoading(true);
+        const token = await getAuthToken();
+        if (!token) return;
+        setActionLogs(prev => [`[ACTION] Triggering Bias Neutrality Scan...`, ...prev]);
+
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/security/bias-scan`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: { report: null },
+                onSuccess: (data) => {
+                    toast.success("Bias Scan Complete");
+                    setBiasReport(data.report);
+                    setActionLogs(prev => [`[SUCCESS] Bias Score: ${data.report?.bias_score || 100}`, ...prev]);
+                    fetchData();
+                },
+                onFallback: () => toast.error("Scan Failed")
             }
         );
         setIsLoading(false);
@@ -190,7 +215,7 @@ export default function AuditsPage() {
                             <SecurityAuditSection status={securityStatus} events={securityEvents} onScan={handleRunSecurityAudit} isLoading={isLoading} />
                         )}
                         {activeTab === "bias" && (
-                            <BiasScanSection />
+                            <BiasScanSection onScan={handleRunBiasScan} report={biasReport} isLoading={isLoading} />
                         )}
                         {activeTab === "logs" && (
                             <div className="flex-1 flex flex-col min-h-0 bg-[#0F0F11]/60 border border-white/5 rounded-[32px] overflow-hidden">
@@ -411,21 +436,40 @@ function SecurityAuditSection({ status, events, onScan, isLoading }: any) {
     );
 }
 
-function BiasScanSection() {
+function BiasScanSection({ onScan, report, isLoading }: any) {
     return (
         <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 py-32 flex flex-col items-center justify-center text-center gap-8 rounded-2xl border-dashed">
             <div className="relative">
                 <Fingerprint className="h-24 w-24 text-zinc-800" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <RefreshCw className="h-12 w-12 text-cyan-400/20 animate-spin-slow" />
+                    <RefreshCw className={cn("h-12 w-12 text-cyan-400/20", isLoading ? "animate-spin" : "")} />
                 </div>
             </div>
             <div className="space-y-3">
                 <h3 className="text-2xl font-bold uppercase tracking-tight text-white">Neural Bias Neutrals</h3>
                 <p className="text-zinc-500 font-medium max-w-sm">Synchronizing with Global Compliance Mesh to verify generative neutrality across all 12 autonomous clusters.</p>
+                {report && (
+                    <div className="mt-6 space-y-2 text-left bg-black/40 p-6 rounded-xl border border-white/5 max-w-lg mx-auto">
+                        <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                            <span className="text-xs font-bold text-zinc-400">STATUS</span>
+                            <span className="text-xs font-mono text-emerald-400">{report.status}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-white/10 py-2">
+                            <span className="text-xs font-bold text-zinc-400">BIAS SCORE</span>
+                            <span className="text-xs font-mono text-cyan-400">{report.bias_score}%</span>
+                        </div>
+                        <div className="pt-2 text-xs text-zinc-500">
+                            Scanned entities: {report.scanned_entities}
+                        </div>
+                    </div>
+                )}
             </div>
-            <button className="bg-zinc-900 text-zinc-400 border border-white/10 px-10 py-4 rounded-xl font-bold uppercase text-[10px] tracking-widest cursor-not-allowed">
-                Initializing Cluster Sync...
+            <button 
+                onClick={onScan}
+                disabled={isLoading}
+                className="bg-zinc-900 text-zinc-400 hover:text-white hover:border-cyan-400 border border-white/10 px-10 py-4 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-colors"
+            >
+                {isLoading ? "Initializing Cluster Sync..." : (report ? "Re-Run Scan" : "Initialize Cluster Sync")}
             </button>
         </div>
     );

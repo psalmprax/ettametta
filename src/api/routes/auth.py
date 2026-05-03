@@ -11,7 +11,13 @@ from src.api.utils.auth import (
 )
 from pydantic import BaseModel, EmailStr, field_validator
 from src.api.config import settings
-from src.api.utils.api_responses import success_response
+from src.api.utils.api_responses import (
+    success_response,
+    ConflictError,
+    APIError,
+)
+from src.api.utils.user_models import UserDB, SubscriptionTier, UserRole
+from sqlalchemy import select, func
 from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
@@ -20,7 +26,9 @@ from authlib.integrations.base_client import OAuthError
 import secrets
 import redis
 import redis.asyncio as redis_async
-from src.api.utils.user_models import UserDB, SubscriptionTier
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -51,6 +59,7 @@ def create_google_flow():
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    username: str | None = None
 
     @field_validator("password")
     @classmethod
@@ -101,26 +110,55 @@ from src.api.utils.database import get_db
 
 @router.post("/register")
 async def register(user: UserCreate, db=Depends(get_db)):
+    # 1. Check for duplicate email
     stmt = select(UserDB).where(UserDB.email == user.email)
     result = await db.execute(stmt)
-    db_user = result.scalar_one_or_none()
+    if result.scalar_one_or_none():
+        raise ConflictError(message="Email already registered", resource_id=user.email)
 
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+    # 2. Determine username
+    username = user.username or user.email.split("@")[0]
 
+    # 3. Check for duplicate username
+    stmt = select(UserDB).where(UserDB.username == username)
+    result = await db.execute(stmt)
+    if result.scalar_one_or_none():
+        # If auto-generated username exists, append a suffix
+        if not user.username:
+            import random
+            username = f"{username}_{random.randint(100, 999)}"
+        else:
+            raise ConflictError(message="Username already taken", resource_id=username)
+
+    # 4. Check if this is the first user (for Admin promotion)
+    stmt = select(func.count()).select_from(UserDB)
+    result = await db.execute(stmt)
+    user_count = result.scalar()
+    
+    role = UserRole.ADMIN if user_count == 0 else UserRole.USER
+
+    # 5. Create user
     hashed_pwd = get_password_hash(user.password)
-    username = user.email.split("@")[0]
-
     new_user = UserDB(
         username=username,
         email=user.email,
         hashed_password=hashed_pwd,
+        role=role,
     )
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
+    
+    try:
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Registration failure: {e}")
+        raise APIError(message="Could not complete registration", status_code=500)
 
-    return success_response(data=UserResponse.model_validate(new_user).model_dump())
+    return success_response(
+        data=UserResponse.model_validate(new_user).model_dump(),
+        message="Registration successful"
+    )
 
 
 @router.post("/login")
