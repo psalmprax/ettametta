@@ -45,25 +45,25 @@ export function DesignCard({
       animate={{ opacity: 1, scale: 1 }}
       onClick={onClick}
       className={cn(
-        "group bg-[#0F0F11] border border-white/5 hover:border-cyan-500/30 rounded-[32px] p-8 transition-all duration-300 relative overflow-hidden",
+        "group bg-[#0F0F11] border border-white/5 hover:border-cyan-500/30 rounded-[32px] p-9 transition-all duration-300 relative overflow-hidden",
         onClick && "cursor-pointer active:scale-95"
       )}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       
       {/* Card Header */}
-      <div className="flex items-start justify-between mb-8 relative z-10">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between mb-8 relative z-10 gap-4">
+        <div className="flex items-center gap-4 min-w-0">
           <div className="h-6 w-6 bg-white/10 rounded flex items-center justify-center shrink-0">
              <div className="h-3 w-3 border-2 border-white rounded-sm" />
           </div>
-          <h3 className="text-xl font-bold tracking-tight text-slate-200 truncate max-w-[200px]">
+          <h3 className="text-xl font-bold tracking-tight text-slate-200 truncate">
             {title}
           </h3>
         </div>
         
         <span className={cn(
-          "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+          "shrink-0 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
           (status === "Current" || status === "Active" || status === "Completed" || status === "Optimized" || status === "Story") ? "bg-emerald-500/10 text-emerald-500" :
           (status === "Scheduled" || status === "Syncing" || status === "Live Polling" || status === "Nominal") ? "bg-amber-500/10 text-amber-500" :
           (status === "Archived") ? "bg-slate-500/10 text-slate-500" :

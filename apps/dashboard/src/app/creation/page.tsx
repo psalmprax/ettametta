@@ -190,7 +190,7 @@ function CreationContent() {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ topic: prompt, niche, duration_seconds: 60, engine: activeStack, script: script })
+                body: JSON.stringify({ topic: prompt, niche, duration_seconds: 60, engine: activeStack, script: script?.segments || script })
             }),
             {
                 fallback: null,

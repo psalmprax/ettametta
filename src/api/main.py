@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Request, APIRouter
+from fastapi import FastAPI, Request, APIRouter, HTTPException as FastAPIHTTPException
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -35,6 +36,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from src.api.utils.tracing import set_request_id, get_request_id, setup_tracing_logger
 import uuid
+from typing import Any
 
 logger = setup_tracing_logger(__name__)
 
@@ -177,17 +179,25 @@ app.state.limiter = limiter
 
 
 from src.api.utils.api_responses import error_response, api_error_response, APIError
-from fastapi import HTTPException
-
-
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
+@app.exception_handler(StarletteHTTPException)
+@app.exception_handler(FastAPIHTTPException)
+async def http_exception_handler(request: Request, exc: Any):
     """Normalize HTTPException to standard nested error format."""
+    status_code = getattr(exc, "status_code", 500)
+    detail = getattr(exc, "detail", "An error occurred")
+    
+    if status_code == 404:
+        return error_response(
+            code="NOT_FOUND",
+            message=f"Endpoint '{request.url.path}' not found.",
+            status_code=404,
+        )
+        
     return error_response(
         code="HTTP_ERROR",
-        message=exc.detail if isinstance(exc.detail, str) else "An error occurred",
-        status_code=exc.status_code,
-        details=exc.detail if isinstance(exc.detail, dict) else {"detail": exc.detail},
+        message=detail if isinstance(detail, str) else "An error occurred",
+        status_code=status_code,
+        details=detail if isinstance(detail, dict) else {"detail": detail},
     )
 
 
@@ -261,6 +271,7 @@ import traceback
 from src.api.utils.models import SelfHealingAuditDB
 
 
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
@@ -300,6 +311,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         message="An unexpected error occurred. Our engineers have been notified.",
         status_code=500,
     )
+
 
 
 app.add_exception_handler(RateLimitExceeded, custom_rate_limit_exceeded_handler)
