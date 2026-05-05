@@ -45,7 +45,7 @@ export function DesignCard({
       animate={{ opacity: 1, scale: 1 }}
       onClick={onClick}
       className={cn(
-        "group bg-[#0F0F11] border border-white/5 hover:border-cyan-500/30 rounded-[32px] p-9 transition-all duration-300 relative overflow-hidden",
+        "group bg-[#0F0F11] border border-white/5 hover:border-cyan-500/30 rounded-[32px] p-9 pb-12 transition-all duration-300 relative overflow-hidden",
         onClick && "cursor-pointer active:scale-95"
       )}
     >
@@ -108,26 +108,8 @@ export function DesignCard({
         <span className="text-lg font-mono font-bold text-white tracking-widest">{credits?.toLocaleString() || "0"}</span>
       </div>
 
-      {/* Footer Info */}
-      <div className="flex items-center justify-between pt-6 border-t border-white/5 relative z-10">
-        <span className="text-[10px] font-mono text-slate-600 uppercase tracking-widest">
-          {footerInfo || new Date().toLocaleString()}
-        </span>
-        
-        <div className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-bold transition-all",
-          (toolsStatus === "Online" || toolsStatus === "Live Polling") ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : 
-          toolsStatus === "Syncing" ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
-          toolsStatus === "Archived" ? "bg-zinc-800 border-zinc-700 text-zinc-500" :
-          "bg-rose-500/10 border-rose-500/20 text-rose-500"
-        )}>
-          <div className={cn("h-1.5 w-1.5 rounded-full", (toolsStatus === "Online" || toolsStatus === "Live Polling") ? "bg-emerald-500 animate-pulse" : toolsStatus === "Syncing" ? "bg-amber-500 animate-pulse" : toolsStatus === "Archived" ? "bg-zinc-600" : "bg-rose-500")} />
-          Tools: {toolsStatus}
-        </div>
-      </div>
-
       {/* Action Overlay */}
-      <div className="flex items-center gap-2 mt-6 relative z-10">
+      <div className="flex items-center gap-2 mt-10 mb-6 relative z-10">
         {onMore && (
           <button 
             onClick={(e) => { e.stopPropagation(); onMore(); }}
@@ -160,6 +142,24 @@ export function DesignCard({
             <Trash2 className="h-4 w-4" />
           </button>
         )}
+      </div>
+
+      {/* Footer Info */}
+      <div className="flex items-center justify-between pt-6 border-t border-white/5 relative z-10">
+        <span className="text-[10px] font-mono text-slate-600 uppercase tracking-widest">
+          {footerInfo || new Date().toLocaleString()}
+        </span>
+        
+        <div className={cn(
+          "flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-bold transition-all",
+          (toolsStatus === "Online" || toolsStatus === "Live Polling") ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : 
+          toolsStatus === "Syncing" ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
+          toolsStatus === "Archived" ? "bg-zinc-800 border-zinc-700 text-zinc-500" :
+          "bg-rose-500/10 border-rose-500/20 text-rose-500"
+        )}>
+          <div className={cn("h-1.5 w-1.5 rounded-full", (toolsStatus === "Online" || toolsStatus === "Live Polling") ? "bg-emerald-500 animate-pulse" : toolsStatus === "Syncing" ? "bg-amber-500 animate-pulse" : toolsStatus === "Archived" ? "bg-zinc-600" : "bg-rose-500")} />
+          Tools: {toolsStatus}
+        </div>
       </div>
     </motion.div>
   );
