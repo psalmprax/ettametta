@@ -138,7 +138,7 @@ class RepurposeSkill(OpenClawBaseSkill):
                     )
                     if gen_resp.status_code == 200:
                         gen_data = gen_resp.json()
-                        job_id = gen_data.get("job_id", "pending")
+                        job_id = gen_data.get("job_id", "PENDING")
                         results.append(
                             f"✅ {platform}: Job `{job_id}` queued ({adapt['aspect']}, {adapt['max_duration']}s max)"
                         )

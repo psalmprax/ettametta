@@ -18,7 +18,7 @@ class MetasearchScanner:
     def __init__(self):
         self.platform = "Metasearch (Google)"
         
-    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None, **kwargs) -> list[ContentCandidate]:
         """
         Combines Google Trends and Google Search results for comprehensive discovery.
         """

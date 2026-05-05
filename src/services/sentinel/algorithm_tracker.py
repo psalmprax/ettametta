@@ -4,6 +4,9 @@ from typing import Any
 from datetime import datetime
 
 
+logger = logging.getLogger(__name__)
+
+
 from src.services.base_agent import BaseEttamettaAgent
 
 class AlgorithmSentinel(BaseEttamettaAgent):
@@ -14,12 +17,21 @@ class AlgorithmSentinel(BaseEttamettaAgent):
 
     def __init__(self):
         super().__init__(agent_name="SENTINEL")
+        self._status_cache = None
+        self._last_cache_time = None
+        self._cache_ttl = 1800 # 30 minutes
 
     async def get_sync_status(self) -> dict[str, Any]:
         """
         Returns the 'Algorithm Sync' score and potential risks.
-        Tries to generate real-time metrics, falling back to probabilistic models on error.
+        Caches results to prevent 504 timeouts on frequent dashboard refreshes.
         """
+        # Check cache
+        if self._status_cache and self._last_cache_time:
+            elapsed = (datetime.utcnow() - self._last_cache_time).total_seconds()
+            if elapsed < self._cache_ttl:
+                return self._status_cache
+
         try:
             import json
             prompt = """
@@ -52,12 +64,14 @@ class AlgorithmSentinel(BaseEttamettaAgent):
                 
                 data = json.loads(clean_content)
             except Exception as parse_err:
-                # Only log if it's not a known exhaustion message to reduce noise
-                if "exhausted" not in str(response_content).lower():
-                    await self._log(f"JSON Parse failed, attempting structural recovery: {parse_err}", "WARNING")
+                # 10/10 UX Stabilization: Only log if it's not a known exhaustion/empty state
+                is_exhausted = not response_content or "exhausted" in str(response_content).lower()
+                if not is_exhausted:
+                    await self._log(f"Structural recovery triggered for platform shift analysis", "INFO")
+                    logger.warning(f"[SENTINEL] JSON Parse failed: {parse_err}. Content: {response_content[:100]}")
                 data = {}
 
-            return {
+            result = {
                 "score": data.get("score", 72), # Slightly dynamic default
                 "status": data.get("status", "NOMINAL"),
                 "last_shift_detected": datetime.utcnow().isoformat(),
@@ -67,6 +81,10 @@ class AlgorithmSentinel(BaseEttamettaAgent):
                     "A/B test audio overlays"
                 ]),
             }
+            # Update cache
+            self._status_cache = result
+            self._last_cache_time = datetime.utcnow()
+            return result
         except Exception as e:
             await self._log(f"Failed to fetch dynamic sentinel data: {e}. Using fallback.", "ERROR")
 

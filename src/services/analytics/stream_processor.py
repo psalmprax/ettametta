@@ -7,12 +7,14 @@ crashes, using a SQLite-backed persistent queue.
 """
 
 import asyncio
-import logging
+import threading
+from src.shared.enums import SystemJobStatus
 import json
 import sqlite3
 import time
 from typing import Any
 from pathlib import Path
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +29,13 @@ class PersistentQueue:
 
     def _init_db(self):
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+            conn.execute(f"""
                 CREATE TABLE IF NOT EXISTS queue (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     topic TEXT,
                     data_json TEXT,
                     priority INTEGER DEFAULT 1,
-                    status TEXT DEFAULT 'pending'
+                    status TEXT DEFAULT '{SystemJobStatus.QUEUED.value}'
                 )
             """)
 
@@ -50,13 +52,13 @@ class PersistentQueue:
         """Retrieves and marks the oldest pending item"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "SELECT id, topic, data_json FROM queue WHERE status = 'pending' ORDER BY priority DESC, id ASC LIMIT 1"
+                f"SELECT id, topic, data_json FROM queue WHERE status = '{SystemJobStatus.QUEUED.value}' ORDER BY priority DESC, id ASC LIMIT 1"
             )
             row = cursor.fetchone()
             if not row: return None
             
             q_id, topic, data_json = row
-            conn.execute("UPDATE queue SET status = 'processing' WHERE id = ?", (q_id,))
+            conn.execute(f"UPDATE queue SET status = '{SystemJobStatus.PROCESSING.value}' WHERE id = ?", (q_id,))
             return {"id": q_id, "topic": topic, "data": json.loads(data_json)}
 
     def complete(self, q_id: int):

@@ -37,9 +37,7 @@ class DuckDuckGoScanner:
         selected = random.sample(base_templates, min(3, len(base_templates)))
         return selected
 
-    async def scan_trends(
-        self, niche: str, published_after: datetime | None = None, region: str | None = None
-    ) -> list[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None, region: str | None = None, **kwargs) -> list[ContentCandidate]:
         """
         Searches DuckDuckGo for trending videos and content in the niche.
         Free alternative to YouTube API when quota is exceeded.

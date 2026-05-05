@@ -50,7 +50,20 @@ class ConnectionManager:
             async for message in pubsub.listen():
                 if message["type"] == "message":
                     data = message["data"].decode("utf-8")
-                    await self.broadcast(data)
+                    try:
+                        # Ensure it's valid JSON before broadcasting
+                        json.loads(data)
+                        await self.broadcast(data)
+                    except (json.JSONDecodeError, TypeError):
+                        # Wrap raw strings into a compliant log format to prevent frontend crashes
+                        wrapped = json.dumps({
+                            "type": "log",
+                            "level": "RAW",
+                            "module": "REDIS_BRIDGE",
+                            "message": data,
+                            "timestamp": time.time()
+                        })
+                        await self.broadcast(wrapped)
         except Exception as e:
             logging.error(f"Redis pubsub error: {e}")
         finally:

@@ -62,12 +62,14 @@ class ContentPublishStatus(str, Enum):
     PUBLISHED = "PUBLISHED"
     FAILED = "FAILED"
     PENDING_AUTH = "PENDING_AUTH"
+    EXPIRED = "EXPIRED"
 
 
 class ScanStatus(str, Enum):
     """Status enum for discovery scan operations."""
 
     PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
@@ -103,6 +105,14 @@ class StrategyStatus(str, Enum):
     ACTIVE = "ACTIVE"
     DOMINANT = "DOMINANT"
     KILLED = "KILLED"
+
+
+class ReferralStatus(str, Enum):
+    """Status enum for referral lifecycle."""
+
+    PENDING = "PENDING"
+    COMPLETED = "COMPLETED"
+    REWARD_CLAIMED = "REWARD_CLAIMED"
 
 
 class CreditAction(str, Enum):

@@ -25,7 +25,7 @@ class SnapchatScanner:
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         ]
     
-    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None, **kwargs) -> list[ContentCandidate]:
         """
         Scans Snapchat for trending Spotlight content in a niche.
         Note: Snapchat has limited public discovery via web.

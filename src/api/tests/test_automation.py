@@ -71,7 +71,7 @@ class TestAutomationE2E:
             assert response.status_code == 200
             data = response.json()
             assert "task_id" in data
-            assert data["status"] == "Queued"
+            assert data["status"] == "QUEUED"
 
     @pytest.mark.asyncio
     async def test_lite4k_synthesis_real(self, base_url, headers):

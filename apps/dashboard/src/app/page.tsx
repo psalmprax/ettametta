@@ -71,7 +71,7 @@ function StepCard({ icon, title, description }: { icon: React.ReactNode, title: 
   );
 }
 
-function PortfolioCard({ icon, title, description, tag }: { icon: React.ReactNode, title: string, description: string, tag: string }) {
+function PortfolioCard({ icon, title, description, tag, href }: { icon: React.ReactNode, title: string, description: string, tag: string, href: string }) {
   return (
     <motion.div variants={itemVariants} className="surface-card rounded-2xl border hover:shadow-lg transition-all text-left space-y-6 p-8 group relative overflow-hidden">
       <div className="absolute top-5 right-5">
@@ -84,9 +84,11 @@ function PortfolioCard({ icon, title, description, tag }: { icon: React.ReactNod
         <h3 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h3>
         <p className="text-slate-600 leading-relaxed">{description}</p>
       </div>
-      <button className="flex items-center gap-2 text-xs font-semibold text-indigo-600 group-hover:gap-4 transition-all">
-        Explore Platform <ArrowRight className="h-4 w-4" />
-      </button>
+      <Link href={href}>
+        <button className="flex items-center gap-2 text-xs font-semibold text-indigo-600 group-hover:gap-4 transition-all">
+          Explore Platform <ArrowRight className="h-4 w-4" />
+        </button>
+      </Link>
     </motion.div>
   );
 }
@@ -94,6 +96,13 @@ function PortfolioCard({ icon, title, description, tag }: { icon: React.ReactNod
 export default function LandingPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -165,7 +174,12 @@ export default function LandingPage() {
                   Begin Setup <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" rounded="full">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                rounded="full"
+                onClick={() => scrollToSection("how-it-works")}
+              >
                 <Play className="h-5 w-5 fill-indigo-600 mr-2" />
                 Watch Demo
               </Button>
@@ -197,7 +211,10 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-14 w-14 rounded-full bg-white/90 backdrop-blur-sm border border-white/40 flex items-center justify-center shadow-lg hover:scale-105 transition-all cursor-pointer">
+                <div 
+                  className="h-14 w-14 rounded-full bg-white/90 backdrop-blur-sm border border-white/40 flex items-center justify-center shadow-lg hover:scale-105 transition-all cursor-pointer"
+                  onClick={() => scrollToSection("how-it-works")}
+                >
                   <Play className="h-7 w-7 text-indigo-600 ml-0.5" />
                 </div>
               </div>
@@ -222,7 +239,7 @@ export default function LandingPage() {
         </section>
 
         {/* 3 Simple Steps */}
-        <section className="max-w-7xl mx-auto mb-32 text-center space-y-16">
+        <section id="how-it-works" className="max-w-7xl mx-auto mb-32 text-center space-y-16">
           <div className="space-y-4">
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900">How It Works</h2>
             <p className="text-slate-500 font-medium max-w-xl mx-auto">From discovery to publishing — fully automated in three simple steps.</p>
@@ -254,7 +271,7 @@ export default function LandingPage() {
         </section>
 
         {/* The Platform */}
-        <section className="max-w-7xl mx-auto mb-32 space-y-16">
+        <section id="products" className="max-w-7xl mx-auto mb-32 space-y-16">
           <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900">
               <span className="text-indigo-600 border-b-2 border-indigo-200 pb-2">The Platform</span>
@@ -273,18 +290,21 @@ export default function LandingPage() {
               title="Trend Discovery" 
               description="Real-time trend scanning and predictive scoring across global platforms." 
               tag="DISCOVER"
+              href="/discovery"
             />
             <PortfolioCard 
               icon={<Sparkles className="h-10 w-10 text-indigo-500" />} 
               title="AI Studio" 
               description="Intelligent content transformation with advanced synthesis tools." 
               tag="CREATE"
+              href="/creation"
             />
             <PortfolioCard 
               icon={<TrendingUp className="h-10 w-10 text-indigo-600" />} 
               title="Growth Engine" 
               description="Multi-platform publishing and revenue optimization suite." 
               tag="GROW"
+              href="/publishing"
             />
           </motion.div>
         </section>

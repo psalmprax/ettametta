@@ -34,7 +34,7 @@ import {
 import { toast } from "sonner";
 import { useTelemetry } from "@/context/TelemetryContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard, formatLabel } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -57,7 +57,17 @@ function EmpireContent() {
     const [blueprints, setBlueprints] = useState<any[]>([]);
     const [revenueReport, setRevenueReport] = useState<any>(null);
     const [sentinelStatus, setSentinelStatus] = useState<any>(null);
-    const [availableNiches, setAvailableNiches] = useState<string[]>([]);
+    const [availableNiches, setAvailableNiches] = useState<string[]>([
+        "Motivation", "AI Technology", "Finance", "Fitness",
+        "Business & Entrepreneurship", "Marketing & Sales",
+        "Lifestyle & Travel", "Gaming & Esports",
+        "Education & E-Learning", "Real Estate",
+        "E-commerce & Dropshipping", "Spirituality & Mindfulness",
+        "Relationships & Dating", "Fashion & Beauty",
+        "Food & Cooking", "Sports & Athletics",
+        "Arts & Entertainment", "Personal Finance",
+        "Crypto & Web3", "Productivity & Habits"
+    ]);
     const [cloningNiche, setCloningNiche] = useState("");
     const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
     const [affiliateLinks, setAffiliateLinks] = useState<any[]>([]);
@@ -98,12 +108,27 @@ function EmpireContent() {
                 () => fetch(`${API_BASE}/discovery/niches`, { headers }),
                 { 
                     fallback: [], 
-                    onSuccess: (data) => {
-                        if (Array.isArray(data) && data.length > 0) {
-                            const nicheNames = data.map(n => typeof n === 'string' ? n : (n.niche || 'General'));
+                    onSuccess: (responseData: any) => {
+                        const dataList = Array.isArray(responseData) ? responseData : (responseData?.data || []);
+                        if (Array.isArray(dataList) && dataList.length > 0) {
+                            const nicheNames = dataList.map(n => typeof n === 'string' ? n : (n.niche || 'General'));
                             setAvailableNiches(nicheNames);
                         }
-                    } 
+                    },
+                    onFallback: () => {
+                        // Re-apply defaults if API fails during session
+                        setAvailableNiches([
+                            "Motivation", "AI Technology", "Finance", "Fitness",
+                            "Business & Entrepreneurship", "Marketing & Sales",
+                            "Lifestyle & Travel", "Gaming & Esports",
+                            "Education & E-Learning", "Real Estate",
+                            "E-commerce & Dropshipping", "Spirituality & Mindfulness",
+                            "Relationships & Dating", "Fashion & Beauty",
+                            "Food & Cooking", "Sports & Athletics",
+                            "Arts & Entertainment", "Personal Finance",
+                            "Crypto & Web3", "Productivity & Habits"
+                        ]);
+                    }
                 }
             ),
             withRealFallback<any>(
@@ -232,7 +257,7 @@ function EmpireContent() {
                                             className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none"
                                         >
                                             <option value="">SELECT_NICHE</option>
-                                            {Array.isArray(availableNiches) && availableNiches.map(n => <option key={n} value={n}>{n}</option>)}
+                                            {Array.isArray(availableNiches) && availableNiches.map(n => <option key={n} value={n}>{formatLabel(n)}</option>)}
                                         </select>
                                         <Button onClick={() => setIsCloneModalOpen(true)} className="bg-amber-500 text-black font-bold h-10 px-6 rounded-xl">Clone Protocol</Button>
                                     </div>
@@ -265,9 +290,9 @@ function EmpireContent() {
                                                 setActionLogs(prev => [`[WARNING] Blueprint Purged: ${blueprint.niche}`, ...prev]);
                                                 toast.error(`Purged Blueprint: ${blueprint.niche}`);
                                             }}
-                                            onShare={() => {
-                                                if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                                                    navigator.clipboard.writeText(`https://ettametta.ai/strategy/${blueprint.id || blueprint.niche}`);
+                                            onShare={async () => {
+                                                const success = await copyToClipboard(`https://ettametta.ai/strategy/${blueprint.id || blueprint.niche}`);
+                                                if (success) {
                                                     toast.success("Strategy Blueprint Link Copied");
                                                 } else {
                                                     toast.error("Clipboard access not available");
@@ -302,9 +327,9 @@ function EmpireContent() {
                                             error: 'Failed to access neural core'
                                         });
                                     }}
-                                    onShare={() => {
-                                        if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                                            navigator.clipboard.writeText(`https://ettametta.ai/sentinel/status`);
+                                    onShare={async () => {
+                                        const success = await copyToClipboard(`https://ettametta.ai/sentinel/status`);
+                                        if (success) {
                                             toast.success("Sentinel Data Shared");
                                         } else {
                                             toast.error("Clipboard access not available");
@@ -349,8 +374,8 @@ function EmpireContent() {
                                                         <LinkIcon className="h-5 w-5 text-amber-500" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-sm font-bold text-white">{link.product_name}</h4>
-                                                        <p className="text-[10px] text-zinc-500 font-medium">Niche: {link.niche}</p>
+                                                        <h4 className="text-sm font-bold text-white">{formatLabel(link.product_name)}</h4>
+                                                        <p className="text-[10px] text-zinc-500 font-medium">Niche: {formatLabel(link.niche)}</p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
@@ -377,8 +402,19 @@ function EmpireContent() {
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Select Target Link</label>
                                             <select className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold text-white outline-none">
-                                                <option>Product_1 Special</option>
-                                                <option>Product_2 Special</option>
+                                                {affiliateLinks.length > 0 ? (
+                                                    affiliateLinks.map((link, i) => (
+                                                        <option key={link.id || i} value={link.product_name}>
+                                                            {formatLabel(link.product_name)} ({formatLabel(link.niche)})
+                                                        </option>
+                                                    ))
+                                                ) : (
+                                                    <>
+                                                        <option>Select Active Link</option>
+                                                        <option>Neural Optimizer v1 (Demo)</option>
+                                                        <option>Alpha Strategy Suite (Demo)</option>
+                                                    </>
+                                                )}
                                             </select>
                                         </div>
                                         <div className="space-y-4">

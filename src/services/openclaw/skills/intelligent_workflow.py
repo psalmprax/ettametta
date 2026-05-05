@@ -13,13 +13,14 @@ import asyncio
 from src.engines.intelligent_video_workflow import discover_multi_platform
 from src.services.video_engine.tasks import narrative_fusion_task
 
+from src.shared.enums import SystemJobStatus
 from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
 
 class IntelligentWorkflowSkill(OpenClawBaseSkill):
     """
-    OpenClaw skill for \"Tier 10\" intelligent discovery and narrative fusion.
+    OpenClaw skill for "Tier 10" intelligent discovery and narrative fusion.
     """
 
     def __init__(self):
@@ -87,7 +88,7 @@ class IntelligentWorkflowSkill(OpenClawBaseSkill):
             "success": True,
             "action": "autonomous_fusion",
             "task_id": task.id,
-            "status": "Queued",
+            "status": SystemJobStatus.QUEUED.value,
             "message": f"Autonomous narrative fusion task dispatched for '{niche}'. Task ID: {task.id}"
         }
 

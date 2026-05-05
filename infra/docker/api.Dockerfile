@@ -39,11 +39,21 @@ RUN curl -fsSL https://raw.githubusercontent.com/nashsu/opencli-rs/main/scripts/
     ln -sf /usr/local/bin/opencli-rs /usr/local/bin/opencli
 
 ENV PYTHONPATH=/app
+# Core Requirements
 COPY src/api/requirements.txt ./requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir --default-timeout=100 --upgrade pip && \
     pip install --no-cache-dir --default-timeout=100 --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt && \
-    pip install --no-cache-dir psutil && \
+    pip uninstall -y langchain langchain-community langchain-core && \
+    pip install --no-cache-dir --force-reinstall "langchain==0.1.20" "langchain-community==0.0.38" "langchain-core==0.1.52"
+
+# Agentic Requirements (Hardened Suite)
+COPY src/api/requirements-agents.txt ./requirements-agents.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir --default-timeout=100 -r requirements-agents.txt
+
+# Utilities
+RUN pip install --no-cache-dir psutil && \
     pip install --no-cache-dir -U yt-dlp
 
 # Install Remotion dependencies for Tier 3 Motion Graphics
