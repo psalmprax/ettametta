@@ -51,7 +51,7 @@ class FFmpegTransformer:
         elif self._hw_accel == "qsv":
             return "h264_qsv", "veryslow" if quality_mode == "ELITE" else "veryfast", ["-global_quality", "18" if quality_mode == "ELITE" else "28"]
         else:
-            return "libx264", "slow" if quality_mode == "ELITE" else "ultrafast", ["-crf", "18" if quality_mode == "ELITE" else "28"]
+            return "libx264", "superfast" if quality_mode == "ELITE" else "ultrafast", ["-crf", "23" if quality_mode == "ELITE" else "28"]
 
     def _run_cmd(self, cmd: list) -> bool:
         try:
@@ -251,6 +251,34 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         m = int((seconds % 3600) // 60)
         s = seconds % 60
         return f"{h}:{m:02d}:{s:05.2f}"
+
+    def generate_word_level_subtitles(self, words: list, output_path: str):
+        """
+        Generates a 'Viral Style' ASS file with word-by-word highlights.
+        This provides the fast-paced, high-engagement look seen on TikTok/Reels.
+        """
+        header = """[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,80,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,4,0,2,100,100,960,1
+Style: Highlight,Arial,90,&H0000FFFF,&H000000FF,&H00000000,&H00000000,1,0,0,0,110,110,0,0,1,4,0,2,100,100,960,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+        with open(output_path, "w") as f:
+            f.write(header)
+            for word_data in words:
+                start = self._format_ass_time(word_data["start"])
+                end = self._format_ass_time(word_data["end"])
+                text = word_data["word"].upper().strip()
+                # Use Highlight style for every word as it appears
+                f.write(f"Dialogue: 0,{start},{end},Highlight,,0,0,0,,{text}\n")
 
     def apply_production_render(self, video_path: str, ass_path: str, output_path: str, quality_mode: str = "ELITE") -> bool:
         """Renders final video with ASS subtitle overlay and professional encoding."""

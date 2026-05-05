@@ -15,9 +15,7 @@ class TikTokScanner:
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
         ]
 
-    async def scan_trends(
-        self, niche: str, published_after: datetime | None = None, region: str | None = None
-    ) -> list[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None, region: str | None = None, **kwargs) -> list[ContentCandidate]:
         """
         Scans TikTok for trending videos in a niche by scraping the public search page.
         This is a cost-free alternative to paid APIs.
@@ -110,6 +108,7 @@ class TikTokScanner:
                             share_count=stats.get("shareCount", 0),
                             engagement_score=engagement_score,
                             viral_score=viral_score,
+                            region=region,
                             duration_seconds=duration_seconds,
                             discovery_date=datetime.now(),
                             tags=item.get("challenges", []),

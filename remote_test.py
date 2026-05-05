@@ -1,0 +1,106 @@
+import asyncio
+import os
+import sys
+from typing import Any
+
+# Ensure we can import from src
+sys.path.append(os.getcwd())
+
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s:%(name)s:%(message)s',
+    stream=sys.stdout
+)
+
+from src.services.discovery.researcher_service import base_researcher_service
+from src.services.automation.interpreter_service import base_interpreter_service
+from src.services.knowledge.service import base_knowledge_service
+from src.services.llm.intelligence_hub import base_intelligence_service
+
+async def test_knowledge_base():
+    print("📥 Testing Knowledge Base (Qdrant)...")
+    try:
+        await base_knowledge_service.ingest_text("Ettametta is an autonomous content engine.", metadata={"source": "test"})
+        results = await base_knowledge_service.query("What is Ettametta?")
+        if results:
+            print(f"✅ Knowledge retrieval successful: {results[0]['content']}")
+        else:
+            print("❌ Knowledge retrieval failed.")
+    except Exception as e:
+        print(f"❌ Knowledge Base failed: {e}")
+
+async def test_vllm():
+    print("🚀 Testing vLLM Integration...")
+    try:
+        result = await base_intelligence_service.chat("Say 'VLLM_READY'", provider="vllm")
+        print(f"✅ vLLM successful: {result['response']}")
+    except Exception as e:
+        print(f"❌ vLLM failed: {e}")
+
+async def test_researcher():
+    print("🔬 Testing GPT Researcher (Local-First)...")
+    try:
+        # Use outline_report for speed
+        result = await base_researcher_service.perform_research("Who created AI?", report_type="outline_report")
+        if "error" in result:
+            print(f"❌ Researcher failed: {result['error']}")
+        else:
+            print(f"✅ Researcher successful: {result['report'][:100]}...")
+    except Exception as e:
+        print(f"❌ Researcher crashed: {e}")
+
+async def test_interpreter():
+    print("🤖 Testing Open Interpreter (Local Code Execution)...")
+    try:
+        # Simple print for verification
+        result = await base_interpreter_service.execute("print('INTERPRETER_SUCCESS')")
+        if "error" in result:
+            print(f"❌ Interpreter failed: {result['error']}")
+        else:
+            print(f"✅ Interpreter successful.")
+    except Exception as e:
+        print(f"❌ Interpreter crashed: {e}")
+
+async def test_sentinel():
+    print("🛰️ Testing Algorithm Sentinel (Cached Monitoring)...")
+    try:
+        from src.services.sentinel.algorithm_tracker import base_algorithm_service
+        status = await base_algorithm_service.get_sync_status()
+        if status.get("status"):
+            print(f"✅ Sentinel successful: Status={status['status']} Score={status['score']}")
+        else:
+            print("❌ Sentinel failed: Missing status in response.")
+    except Exception as e:
+        print(f"❌ Sentinel failed: {e}")
+
+async def test_proxy():
+    print("🛡️ Testing Neural Shield Proxy (Ollama Bridge)...")
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Use 127.0.0.1 to avoid IPv6 issues
+            resp = await client.get("http://127.0.0.1:8000/api/v1/proxy/status")
+            if resp.status_code == 200:
+                print(f"✅ Proxy successful: {resp.json()}")
+            else:
+                print(f"❌ Proxy failed: {resp.status_code}")
+    except Exception as e:
+        print(f"❌ Proxy failed: {e}")
+
+async def main():
+    print("🏁 Starting Remote Outcome Verifications...")
+    # Pull model first to avoid timeout in services
+    print("📥 Pulling hermes3 via Ollama (Better JSON)...")
+    os.system("curl -s -X POST http://ollama:11434/api/pull -d '{\"name\": \"hermes3\"}' > /dev/null")
+    
+    await test_proxy()
+    await test_knowledge_base()
+    await test_vllm()
+    await test_sentinel()
+    await test_researcher()
+    await test_interpreter()
+    print("🏁 Testing Complete.")
+
+if __name__ == "__main__":
+    asyncio.run(main())

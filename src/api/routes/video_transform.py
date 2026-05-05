@@ -201,22 +201,49 @@ async def test_drive(
         raise HTTPException(status_code=503, detail="Video processing unavailable")
 
 
+class AutoLinkRequest(BaseModel):
+    job_id: str | None = None
+    video_path: str | None = None
+    niche: str | None = None
+    script_content: str = ""
+
+
 @router.post("/auto-insert-links")
 async def auto_insert_affiliate_links(
-    video_path: str,
-    niche: str,
-    script_content: str = "",
+    body: AutoLinkRequest,
     current_user: UserDB = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Automatically inserts affiliate links into video content.
+    Consumes job_id to ensure we use the correct processed asset.
     """
     from src.services.monetization.service import base_monetization_service
 
     try:
+        video_path = body.video_path
+        niche = body.niche
+        script_content = body.script_content
+
+        # 1. If job_id provided, lookup real data
+        if body.job_id:
+            stmt = select(VideoJobDB).where(VideoJobDB.id == body.job_id)
+            result = await db.execute(stmt)
+            job = result.scalar_one_or_none()
+            
+            if job:
+                # Use output_path as the video source
+                video_path = job.output_path or video_path
+                niche = job.job_metadata.get("niche", niche) if job.job_metadata else niche
+                # Attempt to find script in metadata
+                script_content = job.job_metadata.get("script", script_content) if job.job_metadata else script_content
+
+        if not video_path:
+            raise HTTPException(status_code=400, detail="Video path or Job ID required")
+
         return success_response(
             data=await base_monetization_service.plan_monetization_strategy(
-                niche, script_content, video_path=video_path
+                niche or "General", script_content, video_path=video_path
             )
         )
     except HTTPException:

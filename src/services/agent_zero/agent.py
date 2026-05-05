@@ -183,8 +183,21 @@ class AgentZero(BaseEttamettaAgent):
                 "INFO",
             )
 
-        # 2. Discover Trends
+        # 2. Discover Trends with Knowledge Context
         self.current_step = "SCOUTING"
+        
+        # Standard: RAG Retrieval Hook
+        knowledge_context = ""
+        try:
+            from src.services.knowledge.service import base_knowledge_service
+            relevant_docs = await base_knowledge_service.query(text=target_niche, limit=2)
+            if relevant_docs:
+                knowledge_context = "\n".join([doc["content"] for doc in relevant_docs])
+                await self._log(f"Knowledge Base Sync: {len(relevant_docs)} historical anchors retrieved.", "SYSTEM")
+        except Exception as e:
+            logger.warning(f"[AgentZero] Knowledge retrieval failed: {e}")
+
+        # Inject context into discovery if supported (here we just use it for logs and future reasoning)
         trends = discovery_tool.run(niche=target_niche, limit=5)
 
         if "error" in trends or not trends.get("valid_candidates"):

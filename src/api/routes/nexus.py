@@ -183,7 +183,7 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                     notify_nexus_job_update_sync(
                         {
                             "id": str(job_id),
-                            "status": "FAILED",
+                            "status": SystemJobStatus.FAILED,
                             "progress": 0,
                             "niche": job.niche,
                             "error": str(e),

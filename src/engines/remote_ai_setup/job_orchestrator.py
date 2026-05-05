@@ -9,6 +9,7 @@ import traceback
 from typing import Any
 from video_model_manager import model_manager, VIDEO_MODELS
 import ai_actions
+from src.shared.enums import SystemJobStatus
 
 
 class AIJob:
@@ -17,7 +18,7 @@ class AIJob:
         self.job_type = job_type  # 'video', 'voice', 'vlm', 'transcribe'
         self.model_key = model_key  # 'ltx_2_19b', 'whisper', 'tts', etc.
         self.data = data
-        self.status = "queued"
+        self.status = SystemJobStatus.QUEUED
         self.created_at = time.time()
         self.started_at = None
         self.completed_at = None
@@ -54,7 +55,7 @@ class AIJobOrchestrator:
                 if job.job_id == job_id:
                     return {
                         "job_id": job_id,
-                        "status": "queued",
+                        "status": SystemJobStatus.QUEUED,
                         "position": i + 1,
                         "model": job.model_key,
                         "created_at": job.created_at,
@@ -122,7 +123,7 @@ class AIJobOrchestrator:
             f"🎬 [Orchestrator] Executing job {job.job_id} ({job.model_key})...",
             flush=True,
         )
-        job.status = "processing"
+        job.status = SystemJobStatus.PROCESSING
         job.started_at = time.time()
 
         try:
@@ -139,11 +140,11 @@ class AIJobOrchestrator:
             elif job.job_type == "transcribe":
                 job.result = ai_actions.action_transcription(job.data["file_path"])
 
-            job.status = "completed"
+            job.status = SystemJobStatus.COMPLETED
         except Exception as e:
             print(f"❌ [Orchestrator] Job {job.job_id} failed: {e}", flush=True)
             traceback.print_exc()
-            job.status = "failed"
+            job.status = SystemJobStatus.FAILED
             job.error = str(e)
         finally:
             job.completed_at = time.time()

@@ -1,0 +1,53 @@
+version: '3'
+services:
+  # Dify API Server
+  dify-api:
+    image: langgenius/dify-api:0.6.11
+    container_name: ettametta-dify-api
+    restart: always
+    environment:
+      - DB_USERNAME=${POSTGRES_USER:-psalmprax}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-ettametta_pass}
+      - DB_HOSTNAME=db
+      - DB_NAME=dify
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-ettametta_redis_pass}
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - VECTOR_STORE=qdrant
+    networks:
+      - ettametta
+
+  # Dify Worker
+  dify-worker:
+    image: langgenius/dify-api:0.6.11
+    container_name: ettametta-dify-worker
+    restart: always
+    command: /usr/bin/supervisord
+    environment:
+      - DB_USERNAME=${POSTGRES_USER:-psalmprax}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-ettametta_pass}
+      - DB_HOSTNAME=db
+      - DB_NAME=dify
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-ettametta_redis_pass}
+    networks:
+      - ettametta
+
+  # Dify Web Interface
+  dify-web:
+    image: langgenius/dify-web:0.6.11
+    container_name: ettametta-dify-web
+    restart: always
+    ports:
+      - "8081:3000"
+    environment:
+      - CONSOLE_API_URL=http://dify-api:5001
+      - APP_API_URL=http://dify-api:5001
+    networks:
+      - ettametta
+
+networks:
+  ettametta:
+    external: true
+    name: ettametta_ettametta

@@ -243,6 +243,41 @@ function NexusContent() {
         if (activeEngine === "identities") fetchPersonas();
     }, [activeEngine, fetchPersonas]);
 
+    // Handle real-time job updates from telemetry
+    useEffect(() => {
+        if (lastJobUpdate) {
+            // Unwrap data if it exists (WS message format: {type: "...", data: {...}})
+            const update = lastJobUpdate.data || lastJobUpdate;
+            
+            if (update && update.id) {
+                setNexusJobs(prev => {
+                    const index = prev.findIndex(j => j.id === update.id);
+                    if (index !== -1) {
+                        const next = [...prev];
+                        next[index] = { 
+                            ...next[index], 
+                            ...update,
+                            status: update.status || next[index].status
+                        };
+                        return next;
+                    }
+                    
+                    // If it's a new job (likely from a recent deployment), notify the user
+                    toast.success(`New Agent Deployment Active: ${update.id.slice(0, 8)}`);
+                    return [update as any, ...prev];
+                });
+
+                if (update.status === "COMPLETED") {
+                    setActionLogs(prev => [`[PIPELINE] Job ${update.id} Success`, ...prev]);
+                    toast.success(`Agent Deployment Completed: ${update.id.slice(0, 8)}`);
+                } else if (update.status === "FAILED") {
+                    setActionLogs(prev => [`[ERROR] Job ${update.id} Failed`, ...prev]);
+                    toast.error(`Agent Deployment Failed: ${update.id.slice(0, 8)}`);
+                }
+            }
+        }
+    }, [lastJobUpdate]);
+
     // Derived active job for orchestrator visualization
     const activePipelineJob = useMemo(() => {
         return nexusJobs.find(j => j.status === "Active" || j.status === "Processing") || nexusJobs[0];

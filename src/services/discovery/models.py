@@ -39,6 +39,7 @@ class ContentCandidate(BaseModel):
     category: str = "video"
     tags: list[str] = []
     niche: str | None = None
+    region: str | None = "US"
     # Quality & analysis
     quality_score: float = 1.0
     quality_flags: list[str] = []
