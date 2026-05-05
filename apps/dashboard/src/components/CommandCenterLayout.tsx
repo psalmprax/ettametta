@@ -134,21 +134,25 @@ export default function CommandCenterLayout({
                 </div>
 
                 {/* Footer / Status Bar */}
-                <footer className="h-10 border-t border-white/5 bg-black px-10 flex items-center justify-between shrink-0 text-[10px] font-bold text-zinc-600 tracking-widest">
+                <footer className="h-12 border-t border-white/5 bg-black px-10 flex items-center justify-between shrink-0 text-[10px] font-bold text-zinc-600 tracking-widest backdrop-blur-xl">
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-2">
-                            <div className={cn("h-1.5 w-1.5 rounded-full animate-pulse", status === "open" ? "bg-emerald-500" : "bg-rose-500")} />
+                            <ShieldCheck className={cn("h-3.5 w-3.5 animate-pulse", status === "open" ? "text-emerald-500" : "text-rose-500")} />
                             <span className={cn(status === "open" ? "text-emerald-500/80" : "text-rose-500/80")}>
                                 {status === "open" ? "SYSTEM_STABLE" : "CONNECTION_LOST"}
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
+                            <Activity className="h-3.5 w-3.5 text-zinc-500" />
                             <span>LATENCY:</span>
                             <span className="text-zinc-400">{pulse?.latency_ms || "---"} MS</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-6">
-                        <span>NODE: {pulse?.hostname || "LOCAL_COMMAND"}</span>
+                        <div className="flex items-center gap-2">
+                            <Cpu className="h-3.5 w-3.5 text-zinc-500" />
+                            <span>NODE: {pulse?.hostname || "LOCAL_COMMAND"}</span>
+                        </div>
                         <span className="text-violet-500/80 uppercase">V-ID: {(pulse?.cluster_node || "X-0").slice(0, 8)}</span>
                     </div>
                 </footer>
