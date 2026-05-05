@@ -10,9 +10,7 @@ class PublicDomainScanner:
         self.pexels_base_url = "https://api.pexels.com/videos/search"
         self.archive_base_url = "https://archive.org/advancedsearch.php"
 
-    async def scan_trends(
-        self, niche: str, published_after: Any | None = None
-    ) -> list[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: Any | None = None, **kwargs) -> list[ContentCandidate]:
         """
         Scans Archive.org and Pexels for relevant historical and stock footage.
         Includes a relaxation loop to ensure results.

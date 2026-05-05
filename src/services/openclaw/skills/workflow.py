@@ -5,6 +5,7 @@ from datetime import datetime
 from .memory import memory_skill
 
 from .base_skill import OpenClawBaseSkill
+from src.shared.enums import SystemJobStatus
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ class WorkflowStep:
         self.action = action
         self.params = params or {}
         self.dependencies = dependencies or []
-        self.status = "pending"  # pending, running, completed, failed
+        self.status = SystemJobStatus.QUEUED  # Standardized status
         self.result = None
         self.error = None
         self.start_time = None
@@ -67,13 +68,13 @@ class WorkflowSkill(OpenClawBaseSkill):
             "name": name,
             "steps": workflow_steps,
             "created_at": datetime.now().isoformat(),
-            "status": "created",
+            "status": SystemJobStatus.QUEUED,
         }
 
         self.active_workflows[name] = workflow
 
         # Store in memory
-        memory_skill.store_workflow(name, steps, 0.0, {"status": "created"})
+        memory_skill.store_workflow(name, steps, 0.0, {"status": SystemJobStatus.QUEUED})
 
         return f"✅ Workflow '{name}' created with {len(steps)} steps"
 
@@ -83,7 +84,7 @@ class WorkflowSkill(OpenClawBaseSkill):
             return f"❌ Workflow '{name}' not found"
 
         workflow = self.active_workflows[name]
-        workflow["status"] = "running"
+        workflow["status"] = SystemJobStatus.PROCESSING
         workflow["start_time"] = datetime.now().isoformat()
 
         # Start async execution
@@ -103,16 +104,16 @@ class WorkflowSkill(OpenClawBaseSkill):
                     # Wait for dependencies (simplified)
                     await asyncio.sleep(0.1)  # Placeholder
 
-                step.status = "running"
+                step.status = SystemJobStatus.PROCESSING
                 step.start_time = datetime.now().isoformat()
 
                 # Execute step (placeholder - would call actual tools)
                 result = await self._execute_step(step)
                 step.result = result
-                step.status = "completed"
+                step.status = SystemJobStatus.COMPLETED
                 step.end_time = datetime.now().isoformat()
 
-            workflow["status"] = "completed"
+            workflow["status"] = SystemJobStatus.COMPLETED
             workflow["end_time"] = datetime.now().isoformat()
 
             # Record success
@@ -126,7 +127,7 @@ class WorkflowSkill(OpenClawBaseSkill):
             )
 
         except Exception as e:
-            workflow["status"] = "failed"
+            workflow["status"] = SystemJobStatus.FAILED
             workflow["error"] = str(e)
             logger.error(f"Workflow '{name}' failed: {e}")
 
@@ -164,7 +165,7 @@ class WorkflowSkill(OpenClawBaseSkill):
         lines = [
             f"🔄 **Workflow: {name}**",
             f"Status: {status.upper()}",
-            f"Progress: {completed}/{len(steps)} completed, {running} running, {failed} failed",
+            f"Progress: {completed}/{len(steps)} completed, {running} processing, {failed} failed",
         ]
 
         if workflow.get("error"):
@@ -192,7 +193,7 @@ class WorkflowSkill(OpenClawBaseSkill):
 
         workflow = self.active_workflows[name]
         if workflow["status"] == "running":
-            workflow["status"] = "cancelled"
+            workflow["status"] = SystemJobStatus.ABORTED
             return f"✅ Workflow '{name}' cancelled"
         else:
             return f"⚠️ Workflow '{name}' is not running (status: {workflow['status']})"

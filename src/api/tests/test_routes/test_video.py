@@ -58,7 +58,7 @@ class TestVideoTransformation:
         assert response.status_code == 200
         data = response.json()
         assert "task_id" in data
-        assert data["status"] == "Queued"
+        assert data["status"] == "QUEUED"
     
     @patch("services.video_engine.tasks.download_and_process_task.delay")
     def test_transform_with_style(self, mock_task, client: TestClient, auth_token):

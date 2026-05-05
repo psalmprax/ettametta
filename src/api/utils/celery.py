@@ -56,5 +56,10 @@ celery_app.conf.update(
             "task": "src.services.openclaw.tasks.ettametta_polling",
             "schedule": 600.0,  # Every 10 minutes
         },
+        "viral-loop-compilation-12h": {
+            "task": "optimization.viral_loop_compilation",
+            "schedule": 43200.0,  # Every 12 hours
+            "args": ("AI Technology",),
+        },
     },
 )

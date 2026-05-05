@@ -11,7 +11,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 # 2. Async Database Configuration (for FastAPI event loop)
-def get_async_db_url(url: str) -> str:
+def get_async_db_url(url: str | None) -> str:
+    if not url:
+        url = "sqlite:///./data/db/ettametta.db"
     if url.startswith("sqlite:///"):
         return url.replace("sqlite:///", "sqlite+aiosqlite:///")
     if url.startswith("postgresql://") and "+asyncpg" not in url:

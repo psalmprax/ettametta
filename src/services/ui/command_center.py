@@ -9,6 +9,11 @@ health, accuracy drift, and A/B experimental performance.
 import os
 import json
 import logging
+import warnings
+
+# DEPRECATION NOTICE: This module is legacy and has been replaced by the React Dashboard
+# and TelemetryContext-driven hooks. Do not use for production logic.
+warnings.warn("src.services.ui.command_center is deprecated", DeprecationWarning, stacklevel=2)
 import time
 from datetime import datetime
 from src.services.analytics.ledger import base_ledger_service

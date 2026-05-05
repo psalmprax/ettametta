@@ -21,7 +21,7 @@ import {
     Terminal
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth_utils";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -55,6 +55,7 @@ function DiscoveryContent() {
     const [candidates, setCandidates] = useState<ContentCandidate[]>([]);
     const [activeNiche, setActiveNiche] = useState(searchParams.get("q") || "Motivation");
     const [activeRegion, setActiveRegion] = useState(searchParams.get("region") || "US");
+    const [isScanning, setIsScanning] = useState(false);
     const [actionLogs, setActionLogs] = useState<string[]>([]);
     const [alerts, setAlerts] = useState<any[]>([]);
     const [intelData, setIntelData] = useState<any>(null);
@@ -68,21 +69,40 @@ function DiscoveryContent() {
         const token = await getAuthToken();
         if (!token) return;
 
-        setActionLogs((prev: string[]) => [`[SCAN] Initiating Trend Analysis: ${activeNiche} (${activeRegion})`, ...prev]);
+        setIsScanning(true);
+        setActionLogs((prev: string[]) => [
+            `[SCAN] Initiating Trend Analysis: ${activeNiche}`,
+            `[SCAN] Target Region: ${activeRegion}`,
+            `[SCAN] Checking regional cache silos...`,
+            ...prev
+        ]);
+
         await withRealFallback<any>(
-            () => fetch(`${API_BASE}/discovery/trends?niche=${encodeURIComponent(activeNiche)}&region=${activeRegion}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }),
+            async () => {
+                setActionLogs((prev: string[]) => [`[SCAN] Dispatching live scanners for ${activeRegion}...`, ...prev]);
+                return fetch(`${API_BASE}/discovery/trends?niche=${encodeURIComponent(activeNiche)}&region=${activeRegion}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            },
             {
                 fallback: [],
                 onSuccess: (data) => {
                     const trends = Array.isArray(data) ? data : (data?.trends || []);
                     setCandidates(trends);
-                    setActionLogs((prev: string[]) => [`[SUCCESS] Found ${trends.length} Viral Candidates.`, ...prev]);
+                    setActionLogs((prev: string[]) => [
+                        `[SUCCESS] Analysis Complete: ${trends.length} viral candidates found in ${activeRegion}.`,
+                        `[DATA] Persistence synchronized for regional segment.`,
+                        ...prev
+                    ]);
+                    setIsScanning(false);
+                },
+                onFallback: (err) => {
+                    setActionLogs((prev: string[]) => [`[ERROR] Regional scan failed: ${err.message}`, ...prev]);
+                    setIsScanning(false);
                 }
             }
         );
-    }, [activeNiche]);
+    }, [activeNiche, activeRegion]);
 
     const fetchAlerts = useCallback(async () => {
         const token = await getAuthToken();
@@ -237,8 +257,19 @@ function DiscoveryContent() {
                                         />
                                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500" />
                                     </div>
-                                    <Button onClick={fetchTrends} className="h-20 px-10 bg-primary text-black font-bold text-lg rounded-2xl uppercase tracking-widest">
-                                        Initiate Scan
+                                    <Button 
+                                        onClick={fetchTrends} 
+                                        disabled={isScanning}
+                                        className="h-20 px-10 bg-primary text-black font-bold text-lg rounded-2xl uppercase tracking-widest flex items-center gap-3"
+                                    >
+                                        {isScanning ? (
+                                            <>
+                                                <Loader2 className="h-6 w-6 animate-spin" />
+                                                Scanning...
+                                            </>
+                                        ) : (
+                                            "Initiate Scan"
+                                        )}
                                     </Button>
                                 </div>
 
@@ -258,11 +289,13 @@ function DiscoveryContent() {
                                                 // Trigger scan immediately on region change for better UX
                                                 setTimeout(fetchTrends, 100);
                                             }}
+                                            disabled={isScanning}
                                             className={cn(
                                                 "flex items-center gap-2 px-4 py-2 rounded-xl border transition-all shrink-0",
                                                 activeRegion === reg.id 
                                                     ? "bg-primary/20 border-primary/50 text-white shadow-[0_0_15px_rgba(var(--primary-rgb),0.2)]" 
-                                                    : "bg-white/5 border-white/10 text-zinc-500 hover:border-white/20"
+                                                    : "bg-white/5 border-white/10 text-zinc-500 hover:border-white/20",
+                                                isScanning && "opacity-50 cursor-not-allowed"
                                             )}
                                         >
                                             <span className="text-sm">{reg.flag}</span>
@@ -292,8 +325,13 @@ function DiscoveryContent() {
                                                 setCandidates(prev => prev.filter(cand => cand.id !== c.id));
                                                 toast.error(`Purged Candidate: ${c.title.slice(0, 20)}...`);
                                             }}
-                                            onShare={() => {
-                                                if (typeof navigator !== "undefined" && navigator.clipboard) { navigator.clipboard.writeText(`https://ettametta.ai/discovery/candidate/${c.id}`); toast.success("Candidate Intelligence Link Copied"); } else { toast.error("Clipboard access not available"); }
+                                            onShare={async () => {
+                                                const success = await copyToClipboard(`https://ettametta.ai/discovery/candidate/${c.id}`);
+                                                if (success) {
+                                                    toast.success("Candidate Intelligence Link Copied");
+                                                } else {
+                                                    toast.error("Clipboard access not available");
+                                                }
                                             }}
                                             onClick={() => router.push(`/creation?seed=${encodeURIComponent(c.title)}`)}
                                         />

@@ -239,7 +239,7 @@ async def scrape_youtube(query: str, max_results: int = 2) -> list[dict]:
             timeout=30, headers=headers, follow_redirects=True
         ) as client:
             # Step 1: Accept cookies if needed
-            if yt_consent == "pending":
+            if yt_consent == "PENDING":
                 await client.get("https://www.youtube.com/abm")
                 await client.get(
                     f"https://www.youtube.com/ completasurvey?consent={yt_consent}"

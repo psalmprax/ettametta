@@ -92,7 +92,7 @@ class ReferralDB(Base):
         String(36), ForeignKey("users.id"), index=True
     )  # Who was referred
     referral_code = Column(String, unique=True, index=True)
-    status = Column(String, default="pending")  # pending, completed, reward_claimed
+    status = Column(String, default="PENDING")  # PENDING, COMPLETED, REWARD_CLAIMED
     reward_credits = Column(Integer, default=0)
     reward_claimed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())

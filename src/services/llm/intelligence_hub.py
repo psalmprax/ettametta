@@ -106,8 +106,9 @@ class IntelligenceHub:
         self.groq_key = settings.GROQ_API_KEY
         self.google_key = settings.GOOGLE_API_KEY
         # Corrected: Use settings and ensure endpoint suffix
-        base_url = settings.OLLAMA_URL.rstrip("/")
-        self.ollama_url = f"{base_url}/api/chat"
+        self.primary_ollama_url = settings.OLLAMA_URL.rstrip("/") + "/api/chat"
+        self.fallback_ollama_url = "http://localhost:11434/api/chat"
+        self.ollama_url = self.primary_ollama_url
 
         # Hardening: Dedicated Circuit Breakers per provider
         self.breakers = {
@@ -115,6 +116,7 @@ class IntelligenceHub:
             "openai": CircuitBreaker("OpenAI-Champion"),
             "groq": CircuitBreaker("Groq-Challenger"),
             "gemini": CircuitBreaker("Gemini-Titan"),
+            "vllm": CircuitBreaker("vLLM-Production-Edge"),
         }
 
         # Primary/Champion configuration
@@ -129,6 +131,7 @@ class IntelligenceHub:
         json_mode: bool = False,
         complexity: str = "medium",  # "low", "medium", "high"
         provider: str | None = None, # Explicit provider override
+        rag_context: str | None = None, # RAG context to inject
     ) -> dict[str, Any]:
         """
         Unified chat interface with complexity-based routing and failure persistence.
@@ -142,7 +145,7 @@ class IntelligenceHub:
         if provider:
             candidates = [provider]
         else:
-            candidates = [primary, "ollama", "gemini", "groq", "openai"]
+            candidates = [primary, "vllm", "ollama", "gemini", "groq", "openai"]
         
         # Remove duplicates while preserving order
         candidates = list(dict.fromkeys(candidates))
@@ -168,7 +171,7 @@ class IntelligenceHub:
 
             try:
                 result = await self._call_provider(
-                    p, prompt, system_prompt, request_id, json_mode
+                    p, prompt, system_prompt, request_id, json_mode, rag_context
                 )
                 self.breakers[p].record_success()
                 return {**result, "request_id": request_id, "provider": p}
@@ -230,27 +233,36 @@ class IntelligenceHub:
         return "ollama"
 
     async def _call_provider(
-        self, provider: str, prompt: str, system: str, rid: str, json_mode: bool
+        self, provider: str, prompt: str, system: str, rid: str, json_mode: bool, rag_context: str | None = None
     ) -> dict[str, Any]:
         if provider == "ollama":
-            return await self._call_ollama(prompt, system, rid, json_mode)
+            return await self._call_ollama(prompt, system, rid, json_mode, rag_context)
         elif provider == "openai":
-            return await self._call_openai(prompt, system, rid, json_mode)
+            return await self._call_openai(prompt, system, rid, json_mode, rag_context)
         elif provider == "groq":
-            return await self._call_groq(prompt, system, rid, json_mode)
+            return await self._call_groq(prompt, system, rid, json_mode, rag_context)
         elif provider == "gemini":
-            return await self._call_gemini(prompt, system, rid, json_mode)
+            return await self._call_gemini(prompt, system, rid, json_mode, rag_context)
+        elif provider == "vllm":
+            return await self._call_vllm(prompt, system, rid, json_mode, rag_context)
         raise ValueError(f"Unknown provider: {provider}")
 
     async def _call_ollama(
-        self, prompt: str, system: str, rid: str, json_mode: bool
+        self, prompt: str, system: str, rid: str, json_mode: bool, rag_context: str | None = None
     ) -> dict[str, Any]:
         url = self.ollama_url
+        
+        # Standard: RAG Context Injection
+        effective_prompt = prompt
+        if rag_context:
+            effective_prompt = f"Relevant Context:\n{rag_context}\n\nTask:\n{prompt}"
+            logger.info(f"[{rid}] Knowledge context injected into Ollama request.")
+
         payload = {
             "model": settings.OLLAMA_MODEL,
             "messages": [
                 {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
+                {"role": "user", "content": effective_prompt},
             ],
             "stream": False,
             "options": {"temperature": 0.7, "num_predict": 1000},
@@ -258,34 +270,55 @@ class IntelligenceHub:
         if json_mode:
             payload["format"] = "json"
 
-        async with httpx.AsyncClient(timeout=600) as client:
-            headers = {"X-Request-ID": rid}
+        # Standard: Dynamic Timeout for RAG operations (600s vs 300s)
+        timeout = 600 if rag_context else 300
+        
+        async def _try_post(url):
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                headers = {"X-Request-ID": rid}
+                return await client.post(url, json=payload, headers=headers)
+
+        try:
             start = time.time()
-            resp = await client.post(url, json=payload, headers=headers)
-            latency = time.time() - start
+            resp = await _try_post(self.ollama_url)
+        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+            if self.ollama_url != self.fallback_ollama_url:
+                logger.warning(f"Ollama primary failed ({str(e)}), trying fallback: {self.fallback_ollama_url}")
+                self.ollama_url = self.fallback_ollama_url
+                start = time.time()
+                resp = await _try_post(self.ollama_url)
+            else:
+                raise
 
-            if resp.status_code != 200:
-                raise RuntimeError(f"Ollama error {resp.status_code}: {resp.text}")
+        latency = time.time() - start
 
-            data = resp.json()
-            content = data["message"]["content"]
+        if resp.status_code != 200:
+            raise RuntimeError(f"Ollama error {resp.status_code}: {resp.text}")
 
-            return {
-                "response": content,
-                "latency_sec": latency,
-                "usage": {
-                    "prompt_tokens": data.get("prompt_eval_count", 0),
-                    "completion_tokens": data.get("eval_count", 0),
-                    "total_tokens": data.get("prompt_eval_count", 0)
-                    + data.get("eval_count", 0),
-                },
-            }
+        data = resp.json()
+        content = data["message"]["content"]
+
+        return {
+            "response": content,
+            "latency_sec": latency,
+            "usage": {
+                "prompt_tokens": data.get("prompt_eval_count", 0),
+                "completion_tokens": data.get("eval_count", 0),
+                "total_tokens": data.get("prompt_eval_count", 0)
+                + data.get("eval_count", 0),
+            },
+        }
 
     async def _call_openai(
-        self, prompt: str, system: str, rid: str, json_mode: bool
+        self, prompt: str, system: str, rid: str, json_mode: bool, rag_context: str | None = None
     ) -> dict[str, Any]:
         if not self.openai_key:
             raise ValueError("OpenAI key missing")
+
+        # Standard: RAG Context Injection
+        effective_prompt = prompt
+        if rag_context:
+            effective_prompt = f"Relevant Context:\n{rag_context}\n\nTask:\n{prompt}"
 
         url = "https://api.openai.com/v1/chat/completions"
         headers = {
@@ -297,7 +330,7 @@ class IntelligenceHub:
             "model": "gpt-4o-mini",
             "messages": [
                 {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
+                {"role": "user", "content": effective_prompt},
             ],
             "max_tokens": 1000,
         }
@@ -326,10 +359,15 @@ class IntelligenceHub:
             }
 
     async def _call_groq(
-        self, prompt: str, system: str, rid: str, json_mode: bool
+        self, prompt: str, system: str, rid: str, json_mode: bool, rag_context: str | None = None
     ) -> dict[str, Any]:
         if not self.groq_key:
             raise ValueError("Groq key missing")
+
+        # Standard: RAG Context Injection
+        effective_prompt = prompt
+        if rag_context:
+            effective_prompt = f"Relevant Context:\n{rag_context}\n\nTask:\n{prompt}"
 
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {
@@ -341,7 +379,7 @@ class IntelligenceHub:
             "model": "llama-3.3-70b-versatile",
             "messages": [
                 {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
+                {"role": "user", "content": effective_prompt},
             ],
             "max_tokens": 1000,
         }
@@ -366,10 +404,15 @@ class IntelligenceHub:
             }
 
     async def _call_gemini(
-        self, prompt: str, system: str, rid: str, json_mode: bool
+        self, prompt: str, system: str, rid: str, json_mode: bool, rag_context: str | None = None
     ) -> dict[str, Any]:
         if not self.google_key:
             raise ValueError("Google/Gemini key missing")
+
+        # Standard: RAG Context Injection
+        effective_prompt = prompt
+        if rag_context:
+            effective_prompt = f"Relevant Context:\n{rag_context}\n\nTask:\n{prompt}"
 
         # Using the standard Google AI SDK or REST API
         # Let's use REST for zero-dependency consistency here
@@ -377,7 +420,7 @@ class IntelligenceHub:
 
         headers = {"Content-Type": "application/json"}
 
-        combined_prompt = f"System: {system}\n\nUser: {prompt}"
+        combined_prompt = f"System: {system}\n\nUser: {effective_prompt}"
         if json_mode:
             combined_prompt += "\n\nReturn ONLY a valid JSON object."
 
@@ -410,6 +453,51 @@ class IntelligenceHub:
                 "response": content,
                 "latency_sec": latency,
                 "usage": {},  # Gemini REST doesn't always return usage in this format easily
+            }
+
+    async def _call_vllm(
+        self, prompt: str, system: str, rid: str, json_mode: bool, rag_context: str | None = None
+    ) -> dict[str, Any]:
+        """vLLM provider (OpenAI compatible high-throughput inference)"""
+        # Default to Ollama's OpenAI-compatible endpoint if not specified
+        url = os.getenv("VLLM_URL", "http://ollama:11434/v1")
+        if not url.endswith("/chat/completions"):
+            url = f"{url.rstrip('/')}/chat/completions"
+        
+        effective_prompt = prompt
+        if rag_context:
+            effective_prompt = f"Relevant Context:\n{rag_context}\n\nTask:\n{prompt}"
+
+        headers = {
+            "Content-Type": "application/json",
+            "X-Request-ID": rid,
+        }
+        payload = {
+            "model": os.getenv("VLLM_MODEL", settings.OLLAMA_MODEL),
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": effective_prompt},
+            ],
+            "max_tokens": 1000,
+        }
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            start = time.time()
+            resp = await client.post(url, headers=headers, json=payload)
+            latency = time.time() - start
+
+            if resp.status_code != 200:
+                raise RuntimeError(f"vLLM error {resp.status_code}: {resp.text}")
+
+            data = resp.json()
+            content = data["choices"][0]["message"]["content"]
+
+            return {
+                "response": content,
+                "latency_sec": latency,
+                "usage": data.get("usage", {}),
             }
 
 

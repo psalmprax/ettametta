@@ -1,25 +1,28 @@
 const getApiBase = () => {
-    // If NEXT_PUBLIC_API_URL is set (e.g. in .env), use it
     let base = process.env.NEXT_PUBLIC_API_URL;
     
     if (!base && typeof window !== "undefined") {
-        // If we are on port 7202 (direct dashboard), we likely need port 7200 for API (Nginx)
         const host = window.location.host.includes(":7202") ? window.location.host.replace(":7202", ":7200") : window.location.host;
-        // The API is served under /api/v1 via Nginx
         base = `${window.location.protocol}//${host}/api/v1`;
     }
     
     if (!base) base = "http://api:8000/api/v1";
 
-    // Production Hardening: Ensure /v1 is always present to avoid 404s on auth/login
-    if (base.endsWith("/api")) {
-        base += "/v1";
-    } else if (!base.includes("/v1")) {
-        if (base.endsWith("/")) base += "v1";
-        else base += "/v1";
+    // Ensure /v1 suffix exists and is not duplicated
+    let cleanBase = base.replace(/\/+$/, ""); // Remove trailing slashes
+    if (!cleanBase.includes("/v1")) {
+        if (cleanBase.endsWith("/api")) {
+            cleanBase += "/v1";
+        } else {
+            cleanBase += "/api/v1";
+        }
     }
     
-    return base;
+    if (typeof window !== "undefined") {
+        console.log("[Ettametta] Resolved API_BASE:", cleanBase);
+    }
+    
+    return cleanBase;
 };
 
 export const API_BASE = getApiBase();

@@ -87,11 +87,14 @@ export const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({ isOpen, on
                     url: videoUrl,
                 });
                 setShareStatus("Shared");
-            } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                await navigator.clipboard.writeText(videoUrl);
-                setShareStatus("Link Copied");
             } else {
-                setShareStatus("Failed");
+                const { copyToClipboard } = await import("@/lib/utils");
+                const success = await copyToClipboard(videoUrl);
+                if (success) {
+                    setShareStatus("Link Copied");
+                } else {
+                    setShareStatus("Failed");
+                }
             }
         } catch {
             setShareStatus("Failed");

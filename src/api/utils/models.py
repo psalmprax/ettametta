@@ -116,6 +116,7 @@ class ContentCandidateDB(Base):
     category = Column(String, default="video")  # video, article, social, news
     tags = Column(JSON, nullable=True)  # Array of strings
     niche = Column(String, index=True, nullable=True)
+    region = Column(String, index=True, nullable=True, default="US")
 
     # Additional metadata
     metadata_json = Column(JSON, default={})

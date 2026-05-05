@@ -18,6 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from src.api.utils.database import get_db
 
+from src.shared.enums import ReferralStatus
+
 logger = logging.getLogger(__name__)
 
 
@@ -261,7 +263,7 @@ class CreditService:
             # Generate new code
             code = f"ET{uuid.uuid4().hex[:8].upper()}"
             referral = ReferralDB(
-                referrer_id=user_id, referral_code=code, status="pending"
+                referrer_id=user_id, referral_code=code, status=ReferralStatus.PENDING.value
             )
             db.add(referral)
             await db.commit()
@@ -297,14 +299,14 @@ class CreditService:
             if not referral:
                 return False, "Invalid referral code"
 
-            if referral.status != "pending":
+            if referral.status != ReferralStatus.PENDING.value:
                 return False, "Referral code already used"
 
             if referral.referrer_id == referrer_id:
                 return False, "Cannot refer yourself"
 
             referral.referred_id = referrer_id
-            referral.status = "completed"
+            referral.status = ReferralStatus.COMPLETED.value
 
             REWARD_CREDITS = 50
             referral.reward_credits = REWARD_CREDITS
