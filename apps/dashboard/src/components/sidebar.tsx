@@ -98,6 +98,7 @@ const intelligenceItems = [
             { name: "Command Pod", href: "/nexus?engine=command" }
         ]
     },
+    { name: "Knowledge Base", href: "/knowledge", icon: Brain },
     { name: "Intel Core", href: "/analytics", icon: BarChart3 },
     { name: "Security Audit", href: "/admin/audits", icon: ShieldCheck },
 ];

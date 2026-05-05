@@ -29,7 +29,7 @@ from src.api.utils.database import get_db
 from src.services.discovery.service_extended import DiscoveryServiceExtended, get_discovery_service_extended
 from src.api.utils.subscription import credits_required, get_subscription_tier_value
 from src.api.config import settings
-from src.shared.enums import SystemJobStatus, CreditAction
+from src.shared.enums import SystemJobStatus, CreditAction, ScanStatus
 from src.api.utils.models import ContentCandidateDB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
@@ -67,7 +67,9 @@ async def get_trends(
         else:
             # Fallback to global trending if no niche specified or empty
             trends = await base_discovery_service.get_global_trending(
-                limit=limit * page, min_viral_score=float(min_viral_score)
+                limit=limit * page, 
+                min_viral_score=float(min_viral_score),
+                region=region
             )
 
         paginated = paginate_list(trends, page=page, page_size=limit)
@@ -92,6 +94,7 @@ async def search_discovery(
     limit: int = 50,
     offset: int = 0,
     page: int = 1,
+    region: str | None = "US",
     current_user: UserDB = Depends(get_current_user),
 ):
     try:
@@ -107,6 +110,7 @@ async def search_discovery(
             sort_by=sort_by,
             limit=limit,
             offset=offset,
+            region=region,
         )
         paginated = paginate_list(results, page=page, page_size=limit)
         paginated["results"] = paginated["items"]
@@ -116,8 +120,11 @@ async def search_discovery(
 
 
 class ScanRequest(BaseModel):
-    niches: list[str] = ["AI"]
+    niches: list[str] | None = None
+    niche: str | None = None # Support singular niche for UI compatibility
     deep: bool = False
+    region: str | None = "US"
+    depth: int = 1
 
 
 class NicheWatchRequest(BaseModel):
@@ -160,7 +167,7 @@ async def trigger_scan(
 
             return success_response(
                 data={
-                    "status": "Deep Scan Queued",
+                    "status": SystemJobStatus.QUEUED,
                     "task_id": task.id,
                     "niches": request.niches,
                     "message": "Deep scan started in background. Poll /analyze/{task_id} for results.",
@@ -171,9 +178,16 @@ async def trigger_scan(
             # with improved timeout and graceful fallback
             try:
                 async with httpx.AsyncClient(timeout=30.0) as client:
+                    # Ensure we have a list of niches
+                    scan_niches = request.niches or ([request.niche] if request.niche else ["AI"])
+                    
                     resp = await client.post(
                         f"{DISCOVERY_GO_URL}/scan",
-                        json={"niches": request.niches},
+                        json={
+                            "niches": scan_niches,
+                            "region": request.region,
+                            "depth": request.depth
+                        },
                         timeout=60.0,
                     )
                     resp.raise_for_status()
@@ -190,8 +204,11 @@ async def trigger_scan(
                 all_results = []
                 failed_niches = []
 
+                # Ensure we have a list of niches
+                scan_niches = request.niches or ([request.niche] if request.niche else ["AI"])
+
                 # Process niches with individual error handling for resilience
-                for niche in request.niches:
+                for niche in scan_niches:
                     try:
                         results = await base_discovery_service.find_trending_content(
                             niche,
@@ -203,7 +220,7 @@ async def trigger_scan(
                             )
                             if current_user.subscription
                             else "free",
-                            region="US", # Default for fallback
+                            region=request.region or "US",
                         )
                         all_results.extend(results)
                     except Exception as inner_e:
@@ -216,7 +233,7 @@ async def trigger_scan(
                 if all_results:
                     return success_response(
                         data={
-                            "status": "scan_completed",
+                            "status": ScanStatus.COMPLETED,
                             "niches": request.niches,
                             "candidates": all_results[:50],
                             "count": len(all_results),
@@ -266,7 +283,7 @@ async def trigger_scan(
 
                 return success_response(
                     data={
-                        "status": "scan_completed",
+                        "status": ScanStatus.COMPLETED,
                         "niches": request.niches,
                         "candidates": all_results[:50],
                         "count": len(all_results),
@@ -275,8 +292,8 @@ async def trigger_scan(
                 )
     except Exception as e:
         import traceback
-
-        traceback.print_exc()
+        logger.error(f"[Discovery] UNHANDLED EXCEPTION in trigger_scan: {e}")
+        logger.error(traceback.format_exc())
         return handle_exception(e)
 
 
@@ -322,7 +339,7 @@ async def analyze_candidate(
     task = analyze_viral_pattern_task.delay(candidate.dict())
     return success_response(
         data={
-            "status": "Task Dispatched",
+            "status": SystemJobStatus.QUEUED,
             "task_id": task.id,
             "candidate_id": candidate.id,
             "message": "AI Deconstruction in progress...",
@@ -418,7 +435,7 @@ async def get_analysis_status(
             if result.successful():
                 return success_response(
                     data={
-                        "status": "completed",
+                        "status": ScanStatus.COMPLETED,
                         "task_id": task_id,
                         "result": result.result,
                     }
@@ -426,7 +443,7 @@ async def get_analysis_status(
             else:
                 return success_response(
                     data={
-                        "status": "failed",
+                        "status": ScanStatus.FAILED,
                         "task_id": task_id,
                         "error": str(result.info),
                     }
@@ -434,7 +451,7 @@ async def get_analysis_status(
         else:
             return success_response(
                 data={
-                    "status": "pending",
+                    "status": ScanStatus.PENDING.value,
                     "task_id": task_id,
                     "message": "Analysis in progress...",
                 }
@@ -555,7 +572,7 @@ async def create_video_from_analysis(
 
         return success_response(
             data={
-                "status": "video_creation_started",
+                "status": SystemJobStatus.PROCESSING,
                 "task_id": task.id,
                 "analysis_task_id": task_id,
                 "message": "Video transformation started from analysis",
@@ -662,7 +679,7 @@ async def auto_transform(
 
         return success_response(
             data={
-                "status": "auto_transform_started",
+                "status": SystemJobStatus.PROCESSING,
                 "task_id": task.id,
                 "source_title": best.title,
                 "source_platform": best.platform,

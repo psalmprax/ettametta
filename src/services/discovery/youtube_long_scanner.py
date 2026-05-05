@@ -8,9 +8,7 @@ import re
 
 
 class YouTubeLongScanner(DiscoveryScannerBase):
-    async def scan_trends(
-        self, niche: str, published_after: datetime.datetime | None = None, region: str | None = "US"
-    ) -> list[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime.datetime | None = None, region: str | None = "US", **kwargs) -> list[ContentCandidate]:
         """
         Scans YouTube for high-performance long-form videos (4-20 mins) in a niche.
         """
@@ -81,6 +79,7 @@ class YouTubeLongScanner(DiscoveryScannerBase):
                         share_count=0,
                         engagement_score=engagement_score,
                         viral_score=viral_score,
+                        region=region,
                         duration_seconds=float(duration_seconds),
                         tags=[niche, "Pillar", "Long-Form"],
                         metadata={

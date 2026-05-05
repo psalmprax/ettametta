@@ -9,6 +9,8 @@ base_remotion_service = RemotionService()
 import uuid
 from src.api.routes.auth import get_current_user
 
+from src.shared.enums import SystemJobStatus
+
 router = APIRouter(prefix="/remotion", tags=["remotion"])
 logger = logging.getLogger(__name__)
 
@@ -57,7 +59,7 @@ async def trigger_render(
     background_tasks.add_task(run_render_task, req.composition_id, props, job_id)
 
     return {
-        "status": "pending",
+        "status": SystemJobStatus.QUEUED.value,
         "job_id": job_id,
         "message": "Render task queued in background.",
     }

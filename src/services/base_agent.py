@@ -163,32 +163,23 @@ class BaseEttamettaAgent:
                 pass
 
     def _init_ollama(self):
+        """Initializes Ollama client. Removal of restrictive ping to allow on-demand recovery."""
         try:
-            # Priority: OLLAMA_BASE_URL (env) > OLLAMA_URL (settings) > localhost
             url = os.getenv("OLLAMA_BASE_URL") or settings.OLLAMA_URL
-            resp = requests.get(f"{url}/api/tags", timeout=2)
-            if resp.status_code == 200:
-                try:
-                    from openai import OpenAI, AsyncOpenAI
-
-                    base_url = url.rstrip("/") + "/v1"
-                    self.clients["ollama"] = OpenAI(base_url=base_url, api_key="dummy")
-                    self.clients["ollama_async"] = AsyncOpenAI(
-                        base_url=base_url, api_key="dummy"
-                    )
-                except ImportError:
-                    logger.warning(
-                        f"[{self.agent_name}] OpenAI package not installed for Ollama"
-                    )
+            from openai import OpenAI, AsyncOpenAI
+            base_url = url.rstrip("/") + "/v1"
+            self.clients["ollama"] = OpenAI(base_url=base_url, api_key="dummy")
+            self.clients["ollama_async"] = AsyncOpenAI(
+                base_url=base_url, api_key="dummy"
+            )
+            logger.info(f"[{self.agent_name}] Ollama client initialized at {base_url}")
         except Exception as e:
             logger.debug(f"[{self.agent_name}] Ollama initialization failed: {e}")
 
     def _init_lm_studio(self):
         try:
             url = getattr(settings, "LM_STUDIO_URL", "http://localhost:1234")
-            resp = requests.get(f"{url}/v1/models", timeout=2)
-            if resp.status_code == 200:
-                self.clients["lm_studio"] = {"base_url": url}
+            self.clients["lm_studio"] = {"base_url": url}
         except Exception:
             pass
 
@@ -242,12 +233,11 @@ class BaseEttamettaAgent:
         providers = [
             self.llm_provider,
             "ollama",
-            "groq",
-            "openai",
-            "ollama_cloud",
             "xai",
             "deepseek",
             "cerebras",
+            "groq",
+            "openai",
             "openrouter",
             "mistral",
             "siliconflow",
@@ -257,10 +247,17 @@ class BaseEttamettaAgent:
         ]
 
         for provider in providers:
+            # On-demand initialization for Ollama if missing
+            if provider == "ollama" and "ollama" not in self.clients:
+                logger.info(f"🧬 [{self.agent_name}] Lazy-initializing Ollama client...")
+                self._init_ollama()
+
             client = self.clients.get(provider)
             if not client:
+                logger.debug(f"⏩ [{self.agent_name}] Skipping {provider} (client not initialized)")
                 continue
 
+            logger.info(f"🚀 [{self.agent_name}] Attempting {provider}... (VERSION_V56)")
             try:
                 if provider in [
                     "groq",
@@ -303,10 +300,39 @@ class BaseEttamettaAgent:
 
                     # Use async client if available
                     async_client = self.clients.get(f"{provider}_async")
-                    if async_client:
-                        resp = await async_client.chat.completions.create(**kwargs)
-                    else:
-                        resp = client.chat.completions.create(**kwargs)
+                    client = self.clients.get(provider)
+                    # Use direct httpx for local proxy to avoid library deadlocks/formatting issues
+                    import httpx
+                    from types import SimpleNamespace
+                    
+                    # Determine the target endpoint
+                    target_url = f"{self.clients[provider].base_url}/chat/completions"
+                    
+                    try:
+                        async with httpx.AsyncClient() as h_client:
+                            h_resp = await h_client.post(
+                                target_url,
+                                json=kwargs,
+                                timeout=600.0
+                            )
+                            
+                            if h_resp.status_code != 200:
+                                logger.error(f"❌ [{self.agent_name}] Proxy error {h_resp.status_code}: {h_resp.text}")
+                                raise ValueError(f"Proxy returned {h_resp.status_code}")
+                            
+                            raw_data = h_resp.json()
+                            resp = SimpleNamespace(
+                                choices=[
+                                    SimpleNamespace(
+                                        message=SimpleNamespace(
+                                            content=raw_data['choices'][0]['message']['content']
+                                        )
+                                    )
+                                ]
+                            )
+                    except Exception as call_err:
+                        logger.error(f"❌ [{self.agent_name}] {provider} call failed: {call_err}")
+                        raise call_err
 
                     return resp.choices[0].message.content
 

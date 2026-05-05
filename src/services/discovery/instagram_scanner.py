@@ -28,7 +28,7 @@ class InstagramScanner:
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
         ]
     
-    async def scan_trends(self, niche: str, published_after: datetime | None = None) -> list[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None, **kwargs) -> list[ContentCandidate]:
         """
         Scans Instagram for trending Reels in a niche.
         Uses the explore page and hashtag search to find trending content.

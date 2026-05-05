@@ -8,7 +8,7 @@ from src.api.utils.database import async_session_factory
 from src.api.utils.models import ScheduledPostDB, PublishedContentDB
 from src.services.optimization.models import PostMetadata
 from src.services.optimization.auth import token_manager
-from src.shared.enums import ContentPublishStatus
+from src.shared.enums import ContentPublishStatus, SystemJobStatus
 import datetime
 import logging
 import asyncio
@@ -58,7 +58,7 @@ async def _check_and_post_scheduled_internal(task_self):
         try:
             now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
             stmt = select(ScheduledPostDB).where(
-                ScheduledPostDB.status == "PENDING",
+                ScheduledPostDB.status == ContentPublishStatus.PENDING,
                 ScheduledPostDB.scheduled_time <= now,
             )
             result = await db.execute(stmt)
@@ -73,7 +73,7 @@ async def _check_and_post_scheduled_internal(task_self):
                     meta_dict = post.metadata_json
                     if not meta_dict:
                         logger.error(f"[Scheduler] No metadata for post {post.id}")
-                        post.status = "FAILED"
+                        post.status = ContentPublishStatus.FAILED
                         post.error_message = "No metadata available"
                         await db.commit()
                         failed += 1
@@ -88,7 +88,7 @@ async def _check_and_post_scheduled_internal(task_self):
                         logger.error(
                             f"[Scheduler] No tokens for user {post.user_id} on platform {post.platform}"
                         )
-                        post.status = "FAILED"
+                        post.status = ContentPublishStatus.FAILED
                         post.error_message = "No authentication tokens"
                         await db.commit()
                         failed += 1
@@ -99,7 +99,7 @@ async def _check_and_post_scheduled_internal(task_self):
                         logger.error(
                             f"[Scheduler] No publisher for platform: {post.platform}"
                         )
-                        post.status = "FAILED"
+                        post.status = ContentPublishStatus.FAILED
                         post.error_message = f"Platform {post.platform} not supported"
                         await db.commit()
                         failed += 1
@@ -108,7 +108,7 @@ async def _check_and_post_scheduled_internal(task_self):
                     # Adjust to nearest peak window
                     import asyncio
 
-                    peak_windows = await self._get_peak_windows_from_db(post.user_id)
+                    peak_windows = await task_self._get_peak_windows_from_db(post.user_id)
 
                     url = await publisher.upload_video(
                         post.video_path,
@@ -118,7 +118,7 @@ async def _check_and_post_scheduled_internal(task_self):
                     )
 
                     if url:
-                        post.status = "PUBLISHED"
+                        post.status = ContentPublishStatus.PUBLISHED
                         post.published_at = datetime.datetime.now(
                             datetime.timezone.utc
                         ).replace(tzinfo=None)
@@ -126,7 +126,7 @@ async def _check_and_post_scheduled_internal(task_self):
                         history = PublishedContentDB(
                             title=metadata.title,
                             platform=post.platform,
-                            status="Published",
+                            status=ContentPublishStatus.PUBLISHED,
                             url=url,
                             account_id=post.account_id,
                             user_id=post.user_id,
@@ -138,14 +138,14 @@ async def _check_and_post_scheduled_internal(task_self):
                             f"[Scheduler] Successfully published post {post.id}: {url}"
                         )
                     else:
-                        post.status = "FAILED"
+                        post.status = ContentPublishStatus.FAILED
                         post.error_message = "Upload failed - no URL returned"
                         logger.warning(f"[Scheduler] Post {post.id} upload failed")
                         failed += 1
 
                 except Exception as e:
                     logger.error(f"[Scheduler] Post {post.id} failed: {e}")
-                    post.status = "FAILED"
+                    post.status = ContentPublishStatus.FAILED
                     post.error_message = str(e)[:500]
                     failed += 1
                     # In a real async task, we'd handle retries differently,
@@ -158,11 +158,11 @@ async def _check_and_post_scheduled_internal(task_self):
                 "processed": processed,
                 "failed": failed,
                 "total": len(pending_posts),
-                "status": "completed",
+                "status": SystemJobStatus.COMPLETED,
             }
         except Exception as e:
             logger.error(f"[Scheduler] Critical error: {e}")
-            return {"error": str(e), "status": "failed"}
+            return {"error": str(e), "status": SystemJobStatus.FAILED}
 
 
 @celery_app.task(
@@ -186,7 +186,7 @@ async def _retry_failed_posts_internal():
     async with async_session_factory() as db:
         retried = 0
         try:
-            stmt = select(ScheduledPostDB).where(ScheduledPostDB.status == "FAILED")
+            stmt = select(ScheduledPostDB).where(ScheduledPostDB.status == ContentPublishStatus.FAILED)
             result = await db.execute(stmt)
             failed_posts = result.scalars().all()
 
@@ -195,7 +195,7 @@ async def _retry_failed_posts_internal():
                 max_retries = getattr(post, "max_retries", 3)
 
                 if retry_count < max_retries:
-                    post.status = "PENDING"
+                    post.status = ContentPublishStatus.PENDING
                     post.retry_count = retry_count + 1
                     post.error_message = f"Retry {retry_count + 1}/{max_retries}"
                     await db.commit()
@@ -204,10 +204,10 @@ async def _retry_failed_posts_internal():
                         f"[Scheduler] Retrying post {post.id} (attempt {retry_count + 1})"
                     )
 
-            return {"retried": retried, "status": "completed"}
+            return {"retried": retried, "status": SystemJobStatus.COMPLETED}
         except Exception as e:
             logger.error(f"[Scheduler] Retry internal error: {e}")
-            return {"error": str(e), "status": "failed"}
+            return {"error": str(e), "status": SystemJobStatus.FAILED}
 
 
 @celery_app.task(name="optimization.retry_failed_posts")
@@ -230,7 +230,7 @@ async def _retry_missed_schedules_internal():
 
             # Find posts that missed their scheduled time
             stmt = select(ScheduledPostDB).where(
-                ScheduledPostDB.status == "PENDING",
+                ScheduledPostDB.status == ContentPublishStatus.PENDING,
                 ScheduledPostDB.scheduled_time < now,
             )
             result = await db.execute(stmt)
@@ -244,7 +244,7 @@ async def _retry_missed_schedules_internal():
                     logger.warning(
                         f"[Scheduler] Post {post.id} reached max retries ({retry_count})"
                     )
-                    post.status = "FAILED"
+                    post.status = ContentPublishStatus.FAILED
                     post.error_message = f"Max retries exceeded ({retry_count})"
                     db.add(post)
                     await db.commit()
@@ -259,7 +259,7 @@ async def _retry_missed_schedules_internal():
                         select(ScheduledPostDB)
                         .where(
                             ScheduledPostDB.user_id == post.user_id,
-                            ScheduledPostDB.status == "PUBLISHED",
+                            ScheduledPostDB.status == ContentPublishStatus.PUBLISHED,
                         )
                         .order_by(ScheduledPostDB.published_at.desc())
                         .limit(1)
@@ -275,7 +275,7 @@ async def _retry_missed_schedules_internal():
                         continue
 
                 # Retry immediately
-                post.status = "PENDING"
+                post.status = ContentPublishStatus.PENDING
                 post.retry_count = retry_count + 1
                 post.last_retry_at = now
                 await db.commit()
@@ -284,10 +284,10 @@ async def _retry_missed_schedules_internal():
                     f"[Scheduler] Retrying missed post {post.id} (attempt {retry_count + 1})"
                 )
 
-            return {"retried": retried, "skipped": skipped, "status": "completed"}
+            return {"retried": retried, "skipped": skipped, "status": SystemJobStatus.COMPLETED}
         except Exception as e:
             logger.error(f"[Scheduler] Retry missed internal error: {e}")
-            return {"error": str(e), "status": "failed"}
+            return {"error": str(e), "status": SystemJobStatus.FAILED}
 
 
 @celery_app.task(name="optimization.retry_missed_schedules")
@@ -335,7 +335,7 @@ async def _cleanup_pending_videos_internal():
                                         f"[Cleanup] Failed to delete file: {e}"
                                     )
 
-                            video.status = "EXPIRED"
+                            video.status = ContentPublishStatus.EXPIRED
                             metadata["deleted_at"] = now.isoformat()
                             metadata["deletion_reason"] = "retention_expired"
                             video.metadata_json = metadata
@@ -347,10 +347,10 @@ async def _cleanup_pending_videos_internal():
                         )
 
             await db.commit()
-            return {"deleted": deleted_count, "status": "completed"}
+            return {"deleted": deleted_count, "status": SystemJobStatus.COMPLETED}
         except Exception as e:
             logger.error(f"[Cleanup] Critical internal error: {e}")
-            return {"error": str(e), "status": "failed"}
+            return {"error": str(e), "status": SystemJobStatus.FAILED}
 
 
 @celery_app.task(name="optimization.cleanup_pending_videos")
@@ -370,7 +370,7 @@ async def _cleanup_old_scheduled_internal():
                 tzinfo=None
             ) - datetime.timedelta(days=7)
             stmt = select(ScheduledPostDB).where(
-                ScheduledPostDB.status == "PENDING",
+                ScheduledPostDB.status == ContentPublishStatus.PENDING,
                 ScheduledPostDB.scheduled_time < cutoff,
             )
             result = await db.execute(stmt)
@@ -382,10 +382,10 @@ async def _cleanup_old_scheduled_internal():
                 deleted += 1
 
             await db.commit()
-            return {"deleted": deleted, "status": "completed"}
+            return {"deleted": deleted, "status": SystemJobStatus.COMPLETED}
         except Exception as e:
             logger.error(f"[Cleanup] Old scheduled internal error: {e}")
-            return {"error": str(e), "status": "failed"}
+            return {"error": str(e), "status": SystemJobStatus.FAILED}
 
 
 @celery_app.task(name="optimization.cleanup_old_scheduled")
@@ -394,3 +394,12 @@ def cleanup_old_scheduled():
     Clean up old scheduled posts wrapper.
     """
     return asyncio.run(_cleanup_old_scheduled_internal())
+
+
+@celery_app.task(name="optimization.viral_loop_compilation")
+def viral_loop_compilation(niche: str = "AI Technology"):
+    """
+    Trigger a full Lead-to-Edit compilation cycle for a niche.
+    """
+    from src.services.optimization.viral_loop import base_viral_loop
+    return asyncio.run(base_viral_loop.execute_compilation_cycle(niche=niche))

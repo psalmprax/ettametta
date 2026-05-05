@@ -11,6 +11,7 @@ from src.api.utils.database import async_session_factory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.models import ABTestDB
+from src.shared.enums import ABTestStatus, SystemJobStatus
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +31,14 @@ class ABTestingAutomation:
             return
 
         self.is_running = True
-        await self._log("A/B Testing Automation Started", "SYSTEM")
+        await self._log("A/B Testing Automation Started", SystemJobStatus.SYSTEM)
 
         while self.is_running:
             try:
                 await self._check_active_tests()
                 await asyncio.sleep(self.check_interval)
             except Exception as e:
-                await self._log(f"A/B Automation Error: {e}", "ERROR")
+                await self._log(f"A/B Automation Error: {e}", SystemJobStatus.FAILED)
                 await asyncio.sleep(60)  # Wait 1 minute on error
 
     def stop(self):
@@ -56,7 +57,7 @@ class ABTestingAutomation:
             try:
                 # Get all active tests that haven't been completed
                 stmt = select(ABTestDB).where(
-                    ABTestDB.status == "active",
+                    ABTestDB.status == ABTestStatus.ACTIVE,
                     ABTestDB.winner_variant.is_(None)
                 )
                 result = await db.execute(stmt)
@@ -116,7 +117,7 @@ class ABTestingAutomation:
                 test.winner_variant = stats.winner
                 test.confidence_level = stats.confidence_level
                 test.p_value = stats.p_value
-                test.status = "completed"
+                test.status = ABTestStatus.COMPLETED
                 test.completed_at = datetime.utcnow()
 
                 await db.commit()
@@ -130,7 +131,7 @@ class ABTestingAutomation:
                 await self._log(
                     f"A/B Test #{test.id} completed automatically. Winner: {stats.winner} ({winner_title}) "
                     f"with {stats.confidence_level:.1f}% confidence",
-                    "SUCCESS",
+                    SystemJobStatus.SUCCESS,
                 )
 
                 # Trigger optimization if enabled
@@ -138,7 +139,7 @@ class ABTestingAutomation:
 
             elif total_views >= 1000:  # Maximum sample size reached
                 # Call it a draw if no clear winner after max samples
-                test.status = "completed"
+                test.status = ABTestStatus.COMPLETED
                 test.completed_at = datetime.utcnow()
                 test.winner_variant = "DRAW"
 
@@ -146,7 +147,7 @@ class ABTestingAutomation:
 
                 await self._log(
                     f"A/B Test #{test.id} completed with no clear winner after {total_views} views",
-                    "INFO",
+                    SystemJobStatus.STRATEGIZING,
                 )
 
         except Exception as e:

@@ -7,7 +7,7 @@ import asyncio
 import datetime
 import os
 import logging
-from sqlalchemy import select
+from sqlalchemy import select, and_, or_
 from typing import Any
 from .models import ContentCandidate, ViralPattern
 
@@ -131,362 +131,370 @@ class DiscoveryService:
         import redis
         from src.api.config import settings
 
-        # 1. Check Cache (Skip if deep scan)
-        redis_url = settings.REDIS_URL
-        # Ensure we use the 'redis' hostname inside Docker, NOT 'localhost'
-        if "localhost" in redis_url:
-            redis_url = redis_url.replace("localhost", "redis")
-
         try:
-            r = redis.from_url(redis_url)
-            cache_key = f"discovery:trends:{niche}:{horizon}"
-            if not deep_scan:
-                cached_data = r.get(cache_key)
-                if cached_data:
-                    await self._log(
-                        f"Cache HIT for '{niche}' ({horizon}). Loading stored patterns.",
-                        "SUCCESS",
-                    )
-                    data = json.loads(cached_data)
-                    return [ContentCandidate(**item) for item in data]
-        except Exception as e:
-            await self._log(f"Redis connection failed: {e}", "WARNING")
-            r = None
+            # 1. Check Cache (Skip if deep scan)
+            redis_url = settings.REDIS_URL
+            # Ensure we use the 'redis' hostname inside Docker, NOT 'localhost'
+            if "localhost" in redis_url:
+                redis_url = redis_url.replace("localhost", "redis")
 
-        await self._log(
-            f"Initiating {'DEEP SCAN' if deep_scan else 'Fast Scan'} for '{niche}' ({horizon})...",
-            "SYSTEM",
-        )
+            try:
+                r = redis.from_url(redis_url)
+                cache_key = f"discovery:trends:{niche}:{horizon}:{region}"
+                if not deep_scan:
+                    cached_data = r.get(cache_key)
+                    if cached_data:
+                        await self._log(
+                            f"Cache HIT for '{niche}' ({horizon}) in {region}. Loading stored patterns.",
+                            "SUCCESS",
+                        )
+                        data = json.loads(cached_data)
+                        return [ContentCandidate(**item) for item in data]
+            except Exception as e:
+                await self._log(f"Redis connection failed: {e}", "WARNING")
+                r = None
 
-        # 2. Intelligent/Parallel Scanning
-        import asyncio
-        from src.engines.intelligent_video_workflow import discover_multi_platform
-
-        all_candidates = []
-
-        # Prepare scanner tasks - used for both fast and deep scans
-        tasks = []
-        def parse_horizon(h: str) -> datetime.timedelta:
-            h = h.lower()
-            if h.endswith("h"):
-                return datetime.timedelta(hours=int(h[:-1]))
-            if h.endswith("d"):
-                return datetime.timedelta(days=int(h[:-1]))
-            return datetime.timedelta(days=30)
-        
-        if deep_scan:
             await self._log(
-                f"Deploying Intelligent Discovery Swarm for '{niche}'...", "SYSTEM"
-            )
-            # The intelligent workflow performs expanding, multi-platform search
-            intelligent_results = await discover_multi_platform(
-                niche,
-                max_per_platform=max(
-                    3, int(min_viral_score / 10) if min_viral_score else 3
-                ),
-                region=region,
+                f"Initiating {'DEEP SCAN' if deep_scan else 'Fast Scan'} for '{niche}' ({horizon}) in region {region}...",
+                "SYSTEM",
             )
 
-            import random
-            for res in intelligent_results:
-                # 10/10 Resilience: Standardize mapping and fallback for data-starved scrapers
-                vc = res.get("view_count") or res.get("views") or 0
-                if vc == 0:
-                    # stochastic generation for trending content without metrics
-                    vc = random.randint(5000, 15000)
+            # 2. Intelligent/Parallel Scanning
+            import asyncio
+            from src.engines.intelligent_video_workflow import discover_multi_platform
+
+            all_candidates = []
+
+            # Prepare scanner tasks - used for both fast and deep scans
+            tasks = []
+            def parse_horizon(h: str) -> datetime.timedelta:
+                h = h.lower()
+                if h.endswith("h"):
+                    return datetime.timedelta(hours=int(h[:-1]))
+                if h.endswith("d"):
+                    return datetime.timedelta(days=int(h[:-1]))
+                return datetime.timedelta(days=30)
+        
+            if deep_scan:
+                await self._log(
+                    f"Deploying Intelligent Discovery Swarm for '{niche}'...", "SYSTEM"
+                )
+                # The intelligent workflow performs expanding, multi-platform search
+                intelligent_results = await discover_multi_platform(
+                    niche,
+                    max_per_platform=max(
+                        3, int(min_viral_score / 10) if min_viral_score else 3
+                    ),
+                    region=region,
+                )
+
+                import random
+                for res in intelligent_results:
+                    # 10/10 Resilience: Standardize mapping and fallback for data-starved scrapers
+                    vc = res.get("view_count") or res.get("views") or 0
+                    if vc == 0:
+                        # stochastic generation for trending content without metrics
+                        vc = random.randint(5000, 15000)
                 
-                vs = res.get("viral_score") or 0
-                if vs == 0:
-                    vs = random.randint(65, 85) # "Trending" range
+                    vs = res.get("viral_score") or 0
+                    if vs == 0:
+                        vs = random.randint(65, 85) # "Trending" range
 
-                all_candidates.append(
-                    ContentCandidate(
-                        id=res.get("id"),
-                        platform=res.get("platform", "unknown"),
-                        source_uri=res.get("url") or res.get("source_uri"),
-                        creator_name=res.get("channel")
-                        or res.get("author")
-                        or res.get("creator_name")
-                        or "Unknown",
-                        title=res.get("title", "No Title"),
-                        description=res.get("description", ""),
-                        thumbnail_uri=res.get("thumbnail_uri")
-                        or res.get("thumbnail")
-                        or f"https://picsum.photos/seed/{res.get('id')}/1280/720",
-                        view_count=vc,
-                        engagement_score=res.get("engagement_score", 0.1),
-                        viral_score=vs,
-                        duration_seconds=float(res.get("duration_seconds", 0.0)),
-                        category=res.get("category") or res.get("content_type") or "video",
-                        niche=niche,
-                        metadata_json=res.get(
-                            "metadata", {"source": "intelligent_workflow"}
-                        ),
-                    )
-                )
-
-            await self._log(
-                f"Intelligent Swarm returned {len(all_candidates)} candidates.",
-                "SUCCESS",
-            )
-            
-            # For deep scan, use all available scanners with extended time horizon
-            scanners_to_use = self.global_scanners + self.scanners
-            published_after = datetime.datetime.utcnow() - parse_horizon(horizon)
-        else:
-            # Fast Scan: Use primary scanners only
-            scanners_to_use = self.scanners
-            published_after = datetime.datetime.utcnow() - parse_horizon(horizon)
-
-        # Add scanner tasks for both fast and deep scans
-        for scanner in scanners_to_use:
-            tasks.append(scanner.scan_trends(niche, published_after=published_after, region=region))
-
-        # Add global/supplementary scanners based on tier and deep scan status
-        supplementary_scanners = (
-            self.global_scanners
-            if deep_scan or tier != "free"
-            else [
-                base_x_service,
-                base_instagram_service,
-                base_facebook_service,
-                base_twitch_service,
-                base_bilibili_service,
-                base_rumble_service,
-            ]
-        )
-        
-        for g_scanner in supplementary_scanners:
-            tasks.append(g_scanner.scan_trends(niche, published_after=published_after))
-
-        # Execute all scans concurrently
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        # 4. Neural Ranking & Scoring Enrichment
-        for res in results:
-            if isinstance(res, list):
-                all_candidates.extend(res)
-            elif isinstance(res, Exception):
-                logger.error(f"[Discovery] Scanner Exception: {res}")
-
-        # If Deep Scan: Automatically trigger analysis for top 5 candidates
-        if deep_scan and all_candidates:
-            logger.info(
-                f"[Discovery] Deep Scan: Auto-triggering analysis for top candidates."
-            )
-            from src.services.discovery.tasks import analyze_viral_pattern_task
-
-            for c in all_candidates[:5]:
-                analyze_viral_pattern_task.delay(c.dict())
-
-        # If no results from scan, fall back to database
-        if not all_candidates:
-            logger.info(
-                f"[Discovery] No scan results for {niche}, falling back to database..."
-            )
-            async with async_session_factory() as db:
-                stmt = (
-                    select(ContentCandidateDB)
-                    .where(ContentCandidateDB.niche == niche)
-                    .order_by(ContentCandidateDB.view_count.desc())
-                    .limit(50)
-                )
-                result = await db.execute(stmt)
-                db_results = result.scalars().all()
-
-                for r in db_results:
                     all_candidates.append(
                         ContentCandidate(
-                            id=r.id,
-                            platform=r.platform,
-                            source_uri=r.source_uri,
-                            creator_name=r.creator_name,
-                            creator_id=r.creator_id,
-                            title=r.title,
-                            description=r.description,
-                            thumbnail_uri=r.thumbnail_uri,
-                            view_count=r.view_count or 0,
-                            like_count=r.like_count or 0,
-                            comment_count=r.comment_count or 0,
-                            share_count=r.share_count or 0,
-                            engagement_score=r.engagement_score or 0.0,
-                            viral_score=r.viral_score or 0,
-                            duration_seconds=r.duration_seconds or 0.0,
-                            category=r.category or "video",
-                            tags=r.tags or [],
-                            published_at=r.published_at,
-                            scanned_at=r.scanned_at,
-                            niche=r.niche,
-                            metadata=r.metadata_json or {},
+                            id=res.get("id"),
+                            platform=res.get("platform", "unknown"),
+                            source_uri=res.get("url") or res.get("source_uri"),
+                            creator_name=res.get("channel")
+                            or res.get("author")
+                            or res.get("creator_name")
+                            or "Unknown",
+                            title=res.get("title", "No Title"),
+                            description=res.get("description", ""),
+                            thumbnail_uri=res.get("thumbnail_uri")
+                            or res.get("thumbnail")
+                            or f"https://picsum.photos/seed/{res.get('id')}/1280/720",
+                            view_count=vc,
+                            engagement_score=res.get("engagement_score", 0.1),
+                            viral_score=vs,
+                            duration_seconds=float(res.get("duration_seconds", 0.0)),
+                            category=res.get("category") or res.get("content_type") or "video",
+                            niche=niche,
+                            metadata_json=res.get(
+                                "metadata", {"source": "intelligent_workflow"}
+                            ),
                         )
                     )
 
-        # Real-First: If no results from scan, trigger the Global Scraper Swarm instead of generating dummies
-        if not all_candidates:
-            await self._log(
-                f"Primary scanners failed. Deploying High-Fidelity Scraper Swarm for '{niche}'",
-                "WARNING",
-            )
-            swarm_leads = await self.video_lead_scanner.scan_for_video_leads(
-                niche=niche,
-                platforms=["youtube", "tiktok", "rumble", "reddit", "instagram"],
-                min_viral_score=0,
-                max_results=20,
-            )
-
-            for l in swarm_leads:
-                all_candidates.append(
-                    ContentCandidate(
-                        id=l.video_id,
-                        platform=l.platform,
-                        source_uri=l.url,
-                        creator_name=l.creator,
-                        title=l.title,
-                        description=l.description,
-                        thumbnail_uri=l.thumbnail_uri or f"https://picsum.photos/seed/{l.video_id}/1280/720",
-                        view_count=l.view_count or 0,
-                        like_count=l.like_count or 0,
-                        comment_count=l.comment_count or 0,
-                        share_count=l.share_count or 0,
-                        engagement_score=l.engagement_score or 0.0,
-                        viral_score=l.viral_score or 0,
-                        duration_seconds=l.duration_seconds or 0.0,
-                        category=l.category or "video",
-                        niche=l.niche,
-                        metadata={
-                            **(l.metadata_json or {}),
-                            "is_reupload": True,
-                        },
-                    )
+                await self._log(
+                    f"Intelligent Swarm returned {len(all_candidates)} candidates.",
+                    "SUCCESS",
                 )
-
-        # 4. Neural Ranking & Quality Auditing
-        from .eligibility import audit_content_quality
-
-        for c in all_candidates:
-            # Audit for quality without rejecting
-            # Pass duration_seconds explicitly in metadata for robustness
-            candidate_metadata = c.metadata_json or {}
-            audit_metadata = candidate_metadata.copy()
-            audit_metadata["duration_seconds"] = c.duration_seconds
-
-            audit = await audit_content_quality(
-                c.title or "", c.description or "", audit_metadata
-            )
-            c.quality_score = audit["score"]
-            c.quality_flags = audit["flags"]
-            if audit["is_low_quality"]:
-                c.metadata_json["low_quality_warning"] = True
-                c.metadata_json["quality_reasons"] = audit["flags"]
-
-        # Enforcement: Selective Monetization Mode (Viral Score > 85)
-        async with async_session_factory() as db:
-            stmt = select(SystemSettings).where(
-                SystemSettings.key == "monetization_mode"
-            )
-            result = await db.execute(stmt)
-            mode_setting = result.scalar_one_or_none()
-            monetization_mode = mode_setting.value if mode_setting else "all"
-
-            if monetization_mode == "selective":
-                threshold = max(65, min_viral_score)
-                original_count = len(all_candidates)
-                all_candidates = [
-                    c
-                    for c in all_candidates
-                    if (getattr(c, "viral_score", 0) or 0) >= threshold
-                ]
-                logger.info(
-                    f"[Discovery] Selective Mode: Filtered {original_count} -> {len(all_candidates)} candidates (Threshold: {threshold})"
-                )
-            elif min_viral_score > 0:
-                original_count = len(all_candidates)
-                all_candidates = [
-                    c
-                    for c in all_candidates
-                    if (getattr(c, "viral_score", 0) or 0) >= min_viral_score
-                ]
-                print(
-                    f"[Discovery] Filtered by Min Viral Score: {original_count} -> {len(all_candidates)} (Threshold: {min_viral_score})"
-                )
-
-            if exclude_shorts:
-                original_count = len(all_candidates)
-                all_candidates = [
-                    c
-                    for c in all_candidates
-                    if "short" not in (c.platform or "").lower()
-                ]
-                print(
-                    f"[Discovery] Exclude Shorts: Filtered {original_count} -> {len(all_candidates)}"
-                )
-
-        # 3. Persistence Logic (Efficient Batch Integration)
-        async with async_session_factory() as db:
-            try:
-                for c in all_candidates:
-                    db_c = ContentCandidateDB(
-                        id=c.id,
-                        platform=c.platform,
-                        external_id=c.external_id,
-                        title=c.title,
-                        description=c.description,
-                        creator_name=c.creator_name,
-                        creator_id=c.creator_id,
-                        source_uri=c.source_uri,
-                        thumbnail_uri=c.thumbnail_uri,
-                        published_at=c.published_at,
-                        scanned_at=c.scanned_at,
-                        duration_seconds=c.duration_seconds,
-                        view_count=c.view_count,
-                        like_count=c.like_count,
-                        comment_count=c.comment_count,
-                        share_count=c.share_count,
-                        engagement_score=c.engagement_score,
-                        viral_score=c.viral_score,
-                        category=c.category,
-                        tags=c.tags,
-                        niche=c.niche or niche,
-                        metadata_json=c.metadata_json,
-                    )
-                    await db.merge(db_c)
-
-                await db.commit()
-                logger.info(
-                    f"[Discovery] Successfully persisted {len(all_candidates)} candidates for {niche}."
-                )
-            except Exception as e:
-                logger.error(f"[Discovery] Persistence Error: {e}")
-                await db.rollback()
-
-        # 5. Recalculate viral scores with fresh velocity data
-        if all_candidates:
-            all_candidates = await self._recalculate_viral_scores(all_candidates)
             
-            # 📡 [Intelligence Bridge] Ingest aggregate discovery signal into SignalBus
-            try:
-                from src.services.analytics.signal_bus import base_signal_bus
-                avg_views = sum(c.view_count for c in all_candidates) / len(all_candidates)
-                avg_viral = sum(c.viral_score for c in all_candidates) / len(all_candidates)
-                
-                base_signal_bus.ingest_signal(
-                    niche=niche,
-                    platform="discovery_aggregate",
-                    raw_metrics={
-                        "growth_rate": (avg_viral / 100.0),  # Normalize 0-100 to 0-1.0
-                        "avg_views": avg_views,
-                        "saturation": min(1.0, len(all_candidates) / 50.0)
-                    }
-                )
-                logger.info(f"📡 [Discovery] Signal bus updated for '{niche}' with {len(all_candidates)} candidates.")
-            except Exception as e:
-                logger.error(f"Failed to ingest signal to bus: {e}")
+                # For deep scan, use all available scanners with extended time horizon
+                scanners_to_use = self.global_scanners + self.scanners
+                published_after = datetime.datetime.utcnow() - parse_horizon(horizon)
+            else:
+                # Fast Scan: Use primary scanners only
+                scanners_to_use = self.scanners
+                published_after = datetime.datetime.utcnow() - parse_horizon(horizon)
 
-        # 6. Recursive Discovery Expansion (Autonomous Scaling)
-        if len(all_candidates) > 0:
-            asyncio.create_task(
-                self._trigger_recursive_expansion(niche, all_candidates)
+            # Add scanner tasks for both fast and deep scans
+            for scanner in scanners_to_use:
+                tasks.append(scanner.scan_trends(niche, published_after=published_after, region=region))
+
+            # Add global/supplementary scanners based on tier and deep scan status
+            supplementary_scanners = (
+                self.global_scanners
+                if deep_scan or tier != "free"
+                else [
+                    base_x_service,
+                    base_instagram_service,
+                    base_facebook_service,
+                    base_twitch_service,
+                    base_bilibili_service,
+                    base_rumble_service,
+                ]
             )
+        
+            for g_scanner in supplementary_scanners:
+                tasks.append(g_scanner.scan_trends(niche, published_after=published_after, region=region))
+
+            # Execute all scans concurrently
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            # 4. Neural Ranking & Scoring Enrichment
+            for res in results:
+                if isinstance(res, list):
+                    all_candidates.extend(res)
+                elif isinstance(res, Exception):
+                    logger.error(f"[Discovery] Scanner Exception: {res}")
+
+            # If Deep Scan: Automatically trigger analysis for top 5 candidates
+            if deep_scan and all_candidates:
+                logger.info(
+                    f"[Discovery] Deep Scan: Auto-triggering analysis for top candidates."
+                )
+                from src.services.discovery.tasks import analyze_viral_pattern_task
+
+                for c in all_candidates[:5]:
+                    analyze_viral_pattern_task.delay(c.dict())
+
+            # If no results from scan, fall back to database
+            if not all_candidates:
+                logger.info(
+                    f"[Discovery] No scan results for {niche}, falling back to database..."
+                )
+                async with async_session_factory() as db:
+                    stmt = (
+                        select(ContentCandidateDB)
+                        .where(and_(ContentCandidateDB.niche == niche, ContentCandidateDB.region == region))
+                        .order_by(ContentCandidateDB.view_count.desc())
+                        .limit(50)
+                    )
+                    result = await db.execute(stmt)
+                    db_results = result.scalars().all()
+
+                    for r in db_results:
+                        all_candidates.append(
+                            ContentCandidate(
+                                id=r.id,
+                                platform=r.platform,
+                                source_uri=r.source_uri,
+                                creator_name=r.creator_name,
+                                creator_id=r.creator_id,
+                                title=r.title,
+                                description=r.description,
+                                thumbnail_uri=r.thumbnail_uri,
+                                view_count=r.view_count or 0,
+                                like_count=r.like_count or 0,
+                                comment_count=r.comment_count or 0,
+                                share_count=r.share_count or 0,
+                                engagement_score=r.engagement_score or 0.0,
+                                viral_score=r.viral_score or 0,
+                                duration_seconds=r.duration_seconds or 0.0,
+                                category=r.category or "video",
+                                tags=r.tags or [],
+                                published_at=r.published_at,
+                                scanned_at=r.scanned_at,
+                                niche=r.niche,
+                                metadata=r.metadata_json or {},
+                            )
+                        )
+
+            # Real-First: If no results from scan, trigger the Global Scraper Swarm instead of generating dummies
+            if not all_candidates:
+                await self._log(
+                    f"Primary scanners failed. Deploying High-Fidelity Scraper Swarm for '{niche}'",
+                    "WARNING",
+                )
+                swarm_leads = await self.video_lead_scanner.scan_for_video_leads(
+                    niche=niche,
+                    platforms=["youtube", "tiktok", "rumble", "reddit", "instagram"],
+                    min_viral_score=0,
+                    max_results=20,
+                )
+
+                for l in swarm_leads:
+                    all_candidates.append(
+                        ContentCandidate(
+                            id=l.video_id,
+                            platform=l.platform,
+                            source_uri=l.url,
+                            creator_name=l.creator,
+                            title=l.title,
+                            description=l.description,
+                            thumbnail_uri=l.thumbnail_uri or f"https://picsum.photos/seed/{l.video_id}/1280/720",
+                            view_count=l.view_count or 0,
+                            like_count=l.like_count or 0,
+                            comment_count=l.comment_count or 0,
+                            share_count=l.share_count or 0,
+                            engagement_score=l.engagement_score or 0.0,
+                            viral_score=l.viral_score or 0,
+                            duration_seconds=l.duration_seconds or 0.0,
+                            category=l.category or "video",
+                            niche=l.niche,
+                            metadata={
+                                **(l.metadata_json or {}),
+                                "is_reupload": True,
+                            },
+                        )
+                    )
+
+            # 4. Neural Ranking & Quality Auditing
+            from .eligibility import audit_content_quality
+
+            for c in all_candidates:
+                # Audit for quality without rejecting
+                # Pass duration_seconds explicitly in metadata for robustness
+                candidate_metadata = c.metadata_json or {}
+                audit_metadata = candidate_metadata.copy()
+                audit_metadata["duration_seconds"] = c.duration_seconds
+
+                audit = await audit_content_quality(
+                    c.title or "", c.description or "", audit_metadata
+                )
+                c.quality_score = audit["score"]
+                c.quality_flags = audit["flags"]
+                if audit["is_low_quality"]:
+                    c.metadata_json["low_quality_warning"] = True
+                    c.metadata_json["quality_reasons"] = audit["flags"]
+
+            # Enforcement: Selective Monetization Mode (Viral Score > 85)
+            async with async_session_factory() as db:
+                stmt = select(SystemSettings).where(
+                    SystemSettings.key == "monetization_mode"
+                )
+                result = await db.execute(stmt)
+                mode_setting = result.scalar_one_or_none()
+                monetization_mode = mode_setting.value if mode_setting else "all"
+
+                if monetization_mode == "selective":
+                    threshold = max(65, min_viral_score)
+                    original_count = len(all_candidates)
+                    all_candidates = [
+                        c
+                        for c in all_candidates
+                        if (getattr(c, "viral_score", 0) or 0) >= threshold
+                    ]
+                    logger.info(
+                        f"[Discovery] Selective Mode: Filtered {original_count} -> {len(all_candidates)} candidates (Threshold: {threshold})"
+                    )
+                elif min_viral_score > 0:
+                    original_count = len(all_candidates)
+                    all_candidates = [
+                        c
+                        for c in all_candidates
+                        if (getattr(c, "viral_score", 0) or 0) >= min_viral_score
+                    ]
+                    print(
+                        f"[Discovery] Filtered by Min Viral Score: {original_count} -> {len(all_candidates)} (Threshold: {min_viral_score})"
+                    )
+
+                if exclude_shorts:
+                    original_count = len(all_candidates)
+                    all_candidates = [
+                        c
+                        for c in all_candidates
+                        if "short" not in (c.platform or "").lower()
+                    ]
+                    print(
+                        f"[Discovery] Exclude Shorts: Filtered {original_count} -> {len(all_candidates)}"
+                    )
+
+            # 5. Persistence Logic (Efficient Batch Integration)
+            async with async_session_factory() as db:
+                try:
+                    for c in all_candidates:
+                        db_c = ContentCandidateDB(
+                            id=c.id,
+                            platform=c.platform,
+                            external_id=c.external_id,
+                            title=c.title,
+                            description=c.description,
+                            creator_name=c.creator_name,
+                            creator_id=c.creator_id,
+                            source_uri=c.source_uri,
+                            thumbnail_uri=c.thumbnail_uri,
+                            published_at=c.published_at,
+                            scanned_at=c.scanned_at,
+                            duration_seconds=c.duration_seconds,
+                            view_count=c.view_count,
+                            like_count=c.like_count,
+                            comment_count=c.comment_count,
+                            share_count=c.share_count,
+                            engagement_score=c.engagement_score,
+                            viral_score=c.viral_score,
+                            category=c.category,
+                            tags=c.tags,
+                            niche=c.niche or niche,
+                            region=c.region or region,
+                            metadata_json=c.metadata_json,
+                        )
+                        await db.merge(db_c)
+
+                    await db.commit()
+                    logger.info(
+                        f"[Discovery] Successfully persisted {len(all_candidates)} candidates for {niche}."
+                    )
+                except Exception as e:
+                    logger.error(f"[Discovery] Persistence Error: {e}")
+                    await db.rollback()
+
+            # 6. Recalculate viral scores with fresh velocity data
+            if all_candidates:
+                all_candidates = await self._recalculate_viral_scores(all_candidates)
+            
+                # 📡 [Intelligence Bridge] Ingest aggregate discovery signal into SignalBus
+                try:
+                    from src.services.analytics.signal_bus import base_signal_bus
+                    avg_views = sum(c.view_count for c in all_candidates) / len(all_candidates)
+                    avg_viral = sum(c.viral_score for c in all_candidates) / len(all_candidates)
+                
+                    base_signal_bus.ingest_signal(
+                        niche=niche,
+                        platform="discovery_aggregate",
+                        raw_metrics={
+                            "growth_rate": (avg_viral / 100.0),  # Normalize 0-100 to 0-1.0
+                            "avg_views": avg_views,
+                            "saturation": min(1.0, len(all_candidates) / 50.0)
+                        }
+                    )
+                    logger.info(f"📡 [Discovery] Signal bus updated for '{niche}' with {len(all_candidates)} candidates.")
+                except Exception as e:
+                    logger.error(f"Failed to ingest signal to bus: {e}")
+
+            # 7. Recursive Discovery Expansion (Autonomous Scaling)
+            if len(all_candidates) > 0:
+                asyncio.create_task(
+                    self._trigger_recursive_expansion(niche, all_candidates)
+                )
+
+        except Exception as e:
+            import traceback
+            logger.error(f"[Discovery] CRITICAL FAILURE in find_trending_content: {e}")
+            logger.error(traceback.format_exc())
+            raise e
 
         return all_candidates
 
@@ -791,6 +799,7 @@ class DiscoveryService:
         sort_by: str = "viral_score",
         limit: int = 50,
         offset: int = 0,
+        region: str | None = "US",
     ) -> list[ContentCandidate]:
         """
         Comprehensive search for content candidates across DB and Live Scanners.
@@ -827,6 +836,9 @@ class DiscoveryService:
                     conditions.append(ContentCandidateDB.published_at >= date_from)
                 if date_to:
                     conditions.append(ContentCandidateDB.published_at <= date_to)
+
+                if region:
+                    conditions.append(ContentCandidateDB.region == region)
 
                 if conditions:
                     stmt = stmt.where(and_(*conditions))
@@ -881,6 +893,7 @@ class DiscoveryService:
                         niche=query,
                         tier="premium",  # Elevate for targeted search
                         min_viral_score=int(min_viral_score or 0),
+                        region=region,
                     )
                     # Deduplicate and merge
                     seen_urls = {c.source_uri for c in candidates}
@@ -895,7 +908,7 @@ class DiscoveryService:
                 return []
 
     async def get_global_trending(
-        self, limit: int = 50, min_viral_score: float = 0.0
+        self, limit: int = 50, min_viral_score: float = 0.0, region: str | None = "US"
     ) -> list[ContentCandidate]:
         """
         Passthrough to global DB trending results.
@@ -904,6 +917,9 @@ class DiscoveryService:
             stmt = select(ContentCandidateDB)
             if min_viral_score > 0:
                 stmt = stmt.where(ContentCandidateDB.viral_score >= min_viral_score)
+            
+            if region:
+                stmt = stmt.where(ContentCandidateDB.region == region)
 
             stmt = stmt.order_by(ContentCandidateDB.viral_score.desc()).limit(limit)
             result = await db.execute(stmt)

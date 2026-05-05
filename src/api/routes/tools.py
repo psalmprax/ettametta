@@ -2,8 +2,17 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 import os
+import logging
 from src.api.utils.api_responses import success_response
 import sys
+from fastapi import APIRouter, Depends, BackgroundTasks
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from src.api.utils.database import get_db, async_session_factory
+from src.shared.enums import SystemJobStatus
+from src.api.utils.models import NexusJobDB
+from src.api.routes.auth import get_current_user
+from src.api.utils.user_models import UserDB
 
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -62,6 +71,7 @@ class PromptTemplateRequest(BaseModel):
 class CrewRequest(BaseModel):
     crew_type: str
     topic: str
+    worker_id: str | None = None
 
 
 @router.post("/research")
@@ -195,16 +205,74 @@ async def langchain_status():
 
 
 @router.post("/crew/run")
-async def run_crewai_crew(request: CrewRequest):
-    """Run a CrewAI crew for content creation"""
-    if request.crew_type == "content":
-        result = await ettametta_crew.run_content_team(request.topic)
-    elif request.crew_type == "affiliate":
-        result = await ettametta_crew.run_affiliate_campaign(request.topic)
-    else:
-        return {"error": f"Unknown crew type: {request.crew_type}"}
+async def run_crewai_crew(
+    request: CrewRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    """Run a CrewAI crew for content creation as a persistent Nexus Job."""
+    from src.api.routes.ws import notify_nexus_job_update_sync
 
-    return success_response(data={"result": result, "crew_type": request.crew_type})
+    # Initialize job for visualization
+    new_job = NexusJobDB(
+        niche=request.topic,
+        user_id=current_user.id,
+        status=SystemJobStatus.QUEUED,
+        job_metadata={
+            "crew_type": request.crew_type,
+            "worker_id": request.worker_id,
+            "agent_deployment": True,
+        },
+    )
+    db.add(new_job)
+    await db.commit()
+    await db.refresh(new_job)
+
+    async def execute_crew_task(job_id: str, req: CrewRequest):
+        async with async_session_factory() as local_db:
+            try:
+                stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
+                res = await local_db.execute(stmt)
+                job = res.scalar_one_or_none()
+                if not job: return
+
+                job.status = SystemJobStatus.STRATEGIZING
+                await local_db.commit()
+                notify_nexus_job_update_sync({"id": str(job.id), "status": job.status, "progress": 20})
+
+                if req.crew_type == "content":
+                    result = await ettametta_crew.run_content_team(req.topic)
+                elif req.crew_type == "affiliate":
+                    result = await ettametta_crew.run_affiliate_campaign(req.topic)
+                else:
+                    result = f"Unknown crew type: {req.crew_type}"
+
+                job.status = SystemJobStatus.COMPLETED
+                job.progress = 100
+                job.error_log = str(result)[:1000] # Save summary
+                await local_db.commit()
+                notify_nexus_job_update_sync({"id": str(job.id), "status": job.status, "progress": 100})
+            except Exception as e:
+                logging.error(f"[Crew] Deployment failed: {e}")
+                # Update job to failed
+                stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
+                res = await local_db.execute(stmt)
+                job = res.scalar_one_or_none()
+                if job:
+                    job.status = SystemJobStatus.FAILED
+                    job.error_log = str(e)
+                    await local_db.commit()
+                    notify_nexus_job_update_sync({"id": str(job.id), "status": "FAILED", "error": str(e)})
+
+    background_tasks.add_task(execute_crew_task, new_job.id, request)
+
+    return success_response(data={
+        "status": "accepted",
+        "job_id": new_job.id,
+        "crew_type": request.crew_type,
+        "worker_id": request.worker_id
+    })
 
 
 @router.get("/crewai/status")

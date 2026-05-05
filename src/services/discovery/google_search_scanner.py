@@ -33,9 +33,7 @@ class GoogleSearchScanner:
         ]
         return random.sample(templates, min(3, len(templates)))
 
-    async def scan_trends(
-        self, niche: str, published_after: datetime | None = None
-    ) -> list[ContentCandidate]:
+    async def scan_trends(self, niche: str, published_after: datetime | None = None, **kwargs) -> list[ContentCandidate]:
         """
         Searches Google for trending products, affiliate opportunities, and monetization ideas.
         Uses Google Custom Search API.
