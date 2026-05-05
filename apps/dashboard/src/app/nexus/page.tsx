@@ -759,7 +759,7 @@ scout.on("VIRAL_DETECT", async (data) => {
                         )}
 
                         {activeEngine === "history" && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-y-auto custom-scrollbar p-1">
                                 {nexusJobs?.map((job) => (
                                     <DesignCard 
                                         key={job.id}
