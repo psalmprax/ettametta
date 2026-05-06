@@ -20,7 +20,7 @@ router = APIRouter(prefix="/no-face", tags=["Automation"])
 
 class ScriptRequest(BaseModel):
     topic: str
-    niche: str = "AI Technology"
+    niche: str | None = None  # Auto-detected if not provided
     duration_seconds: int = 60
     style: str = "story"
     engine: str = "cloud"
