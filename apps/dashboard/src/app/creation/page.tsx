@@ -377,8 +377,10 @@ function VisualCorePanel() {
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.data) {
-                        setJobs(data.data.slice(0, 10));
+                    if (data.data && data.data.jobs) {
+                        setJobs(data.data.jobs.slice(0, 10));
+                    } else if (data.jobs) {
+                        setJobs(data.jobs.slice(0, 10));
                     }
                 }
             } catch (error) {

@@ -80,13 +80,14 @@ function TransformationContent() {
         const fetchData = async () => {
             const token = await getAuthToken();
             if (!token) return;
-            await withRealFallback<VideoJob[]>(
+            await withRealFallback<{jobs: any[], pagination: any}>(
                 () => fetch(`${API_BASE}/video/jobs`, {
                     headers: { Authorization: `Bearer ${token}` }
                 }),
                 {
-                    fallback: [],
-                    onSuccess: (jobs) => {
+                    fallback: {jobs: [], pagination: {}},
+                    onSuccess: (response) => {
+                        const jobs = response.jobs || [];
                         setProcessingJobs(jobs);
                         if (jobs.length > 0) setSelectedJob(jobs[0]);
                     }
