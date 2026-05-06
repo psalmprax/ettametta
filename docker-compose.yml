@@ -119,8 +119,6 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://${API_HOST:-92.209.217.18}.sslip.io:7200/api/v1
     restart: always
-    networks:
-      - ettametta
 
   celery_worker:
     build:
@@ -198,8 +196,6 @@ services:
     volumes:
       - ./infra/docker/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
-    networks:
-      - ettametta
 
   openclaw:
     build:
