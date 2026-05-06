@@ -12,6 +12,35 @@ from tenacity import (
     retry_if_exception_type,
 )
 
+
+NICHE_TAXONOMY = {
+    "Motivation": ["success", "habits", "mindset", "discipline", "goals", "productivity", "overcoming", "inspiration", "growth"],
+    "Finance": ["money", "investing", "crypto", "stocks", "business", "wealth", "passive income", "financial freedom"],
+    "Tech": ["ai", "technology", "coding", "software", "gadgets", "programming", "apps", "innovation"],
+    "Health": ["fitness", "diet", "wellness", "exercise", "nutrition", "mental health", "sleep", "weight loss"],
+    "Gaming": ["game", "esports", "streaming", "minecraft", "fortnite", "gaming setup", "walkthrough"],
+    "Education": ["history", "science", "facts", "learning", "tutorial", "explained", "documentary", "how to"],
+    "Social Commentary": ["society", "culture", "politics", "feminism", "equality", "controversy", "debate", "opinion"],
+    "Entertainment": ["celebrity", "movies", "music", "viral", "trending", "reaction", "comedy", "funny"],
+    "Lifestyle": ["travel", "food", "fashion", "beauty", "home", "diy", "minimalism", "daily routine"],
+    "Spirituality": ["meditation", "consciousness", "universe", "law of attraction", "manifestation", "energy", "chakras"]
+}
+
+
+def detect_niche_from_topic(topic: str) -> str:
+    """Auto-detect the most relevant niche based on topic keywords."""
+    topic_lower = topic.lower()
+    best_match = "General"
+    best_score = 0
+    
+    for niche, keywords in NICHE_TAXONOMY.items():
+        score = sum(1 for kw in keywords if kw in topic_lower)
+        if score > best_score:
+            best_score = score
+            best_match = niche
+    
+    return best_match
+
 class ScriptGenerator:
     def __init__(self):
         self.logger = logging.getLogger("ScriptGenerator")
@@ -46,7 +75,7 @@ class ScriptGenerator:
     async def generate_script(
         self, 
         topic: str, 
-        niche: str, 
+        niche: str | None = None, 
         duration_sec: int = 60, 
         style: str = "story",
         clips: list[dict] = None,
@@ -54,7 +83,14 @@ class ScriptGenerator:
     ) -> dict[str, Any]:
         """
         Generates a structured script for a faceless video with Asset-Aware Narration.
+        
+        If niche is not provided or is 'General', auto-detects the best niche from the topic.
         """
+        # Auto-detect niche if not provided or too generic
+        if not niche or niche.lower() in ["general", "auto", ""]:
+            niche = detect_niche_from_topic(topic)
+            logging.info(f"Auto-detected niche '{niche}' for topic: {topic}")
+        
         # 1. Fetch crystallized winning patterns from Hermes
         hermes_context = ""
         try:
