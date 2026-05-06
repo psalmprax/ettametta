@@ -335,6 +335,8 @@ function ScriptEnginePanel() {
 function VisualCorePanel() {
     const [prompt, setPrompt] = useState("");
     const [style, setStyle] = useState("cinematic");
+    const [mode, setMode] = useState<"generate" | "remix">("generate");
+    const [niche, setNiche] = useState("Auto-Detect");
     const [isGenerating, setIsGenerating] = useState(false);
     const [jobs, setJobs] = useState<any[]>([]);
 
@@ -350,25 +352,41 @@ function VisualCorePanel() {
             return;
         }
 
+        // Choose endpoint based on mode
+        const endpoint = mode === "remix" 
+            ? `${API_BASE}/video/autonomous/remix`
+            : `${API_BASE}/video/generate`;
+
+        const payload = mode === "remix"
+            ? { topic: prompt, niche: niche === "Auto-Detect" ? null : niche, style, duration_seconds: 60 }
+            : { prompt, style, provider: "pixverse" };
+
         await withRealFallback<any>(
-            () => fetch(`${API_BASE}/video/generate`, {
+            () => fetch(endpoint, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ prompt, style, provider: "pixverse" })
+                body: JSON.stringify(payload)
             }),
             {
                 fallback: null,
                 onSuccess: (data) => {
-                    toast.success("Video generation started");
-                    if (data.job_id) {
-                        setJobs(prev => [data, ...prev]);
+                    if (mode === "remix") {
+                        toast.success("Remix video created!");
+                        if (data.data?.output_path) {
+                            setJobs(prev => [{ id: Date.now(), output_path: data.data.output_path, status: "COMPLETED", created_at: new Date().toISOString() }, ...prev]);
+                        }
+                    } else {
+                        toast.success("Video generation started");
+                        if (data.job_id) {
+                            setJobs(prev => [data, ...prev]);
+                        }
                     }
                 },
                 onFallback: (err) => {
-                    toast.error(`Generation failed: ${err.message}`);
+                    toast.error(`${mode === "remix" ? "Remix" : "Generation"} failed: ${err.message}`);
                 }
             }
         );
@@ -408,14 +426,49 @@ function VisualCorePanel() {
 
             <div className="space-y-4">
                 <div>
-                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Video Prompt</label>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Mode</label>
+                    <select
+                        value={mode}
+                        onChange={(e) => setMode(e.target.value as "generate" | "remix")}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50"
+                    >
+                        <option value="generate">🎬 Generate from Scratch (AI Models)</option>
+                        <option value="remix">✨ Remix Viral Content (Autonomous)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Video Prompt / Topic</label>
                     <textarea
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Describe the video you want to generate..."
+                        placeholder={mode === "remix" ? "Enter topic for viral remix (e.g., 'AI productivity tips')..." : "Describe the video you want to generate..."}
                         className="w-full h-24 bg-black/20 border border-white/10 rounded-xl p-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 resize-none"
                     />
                 </div>
+
+                {mode === "remix" && (
+                    <div>
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Niche</label>
+                        <select
+                            value={niche}
+                            onChange={(e) => setNiche(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50"
+                        >
+                            <option value="Auto-Detect">✨ Auto-Detect (Recommended)</option>
+                            <option value="Motivation">Motivation</option>
+                            <option value="Tech">Tech</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Health">Health</option>
+                            <option value="Gaming">Gaming</option>
+                            <option value="Education">Education</option>
+                            <option value="Social Commentary">Social Commentary</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Lifestyle">Lifestyle</option>
+                            <option value="Spirituality">Spirituality</option>
+                        </select>
+                    </div>
+                )}
 
                 <div>
                     <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Visual Style</label>
@@ -437,7 +490,7 @@ function VisualCorePanel() {
                     disabled={isGenerating || !prompt}
                     className="w-full h-14 bg-violet-500 hover:bg-violet-400 text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest"
                 >
-                    {isGenerating ? "Initializing..." : "Generate Video"}
+                    {isGenerating ? (mode === "remix" ? "Discovering & Creating..." : "Initializing...") : (mode === "remix" ? "Create Remix Video" : "Generate Video")}
                 </Button>
             </div>
 
