@@ -428,13 +428,13 @@ async def list_video_jobs(
         return success_response(data={
             "jobs": [
                 {
-                    "job_id": job.id,
-                    "status": job.status,
-                    "progress": job.progress,
-                    "public_url": job.output_path,
-                    "title": job.title,
-                    "created_at": job.created_at,
-                    "updated_at": job.updated_at,
+                    "job_id": job["id"],
+                    "status": job["status"],
+                    "progress": job["progress"],
+                    "public_url": job["output_path"],
+                    "title": job["title"],
+                    "created_at": job["created_at"],
+                    "updated_at": job.get("created_at"),  # Using created_at as updated_at fallback
                 }
                 for job in jobs
             ],
