@@ -162,6 +162,8 @@ from src.api.routes import (
     agent,
     knowledge_base,
     credits,
+    autonomous_video,
+    autonomous_leads,
     zero,
     opencli,
     tools,
@@ -416,6 +418,8 @@ v1_router.include_router(ws.router, tags=["WebSockets"])
 v1_router.include_router(health.router, tags=["Health"])
 v1_router.include_router(proxy.router, tags=["Proxy"])
 v1_router.include_router(internal.router, tags=["Internal"])
+v1_router.include_router(autonomous_video.router, tags=["Autonomous Video"])
+v1_router.include_router(autonomous_leads.router, tags=["Autonomous Leads"])
 
 # Include versioned router under /api
 app.include_router(v1_router, prefix="/api")
