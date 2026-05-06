@@ -240,8 +240,26 @@ async def list_agent_personas(
     """
     Returns all personas created by the current user (Agent Router Proxy).
     """
-    from src.api.routes.persona import list_personas
-    return await list_personas(current_user=current_user, db=db)
+    from sqlalchemy import select
+    from src.api.utils.models import PersonaDB
+    from src.api.utils.api_responses import success_response
+    from pydantic import BaseModel
+    
+    class PersonaResponse(BaseModel):
+        id: str
+        name: str
+        reference_image_uri: str | None = None
+        voice_clone_id: str | None = None
+
+        class Config:
+            from_attributes = True
+    
+    stmt = select(PersonaDB).where(PersonaDB.user_id == current_user.id)
+    result = await db.execute(stmt)
+    personas = result.scalars().all()
+    return success_response(
+        data=[PersonaResponse.model_validate(p).model_dump() for p in personas]
+    )
 
 
 class AuditRequest(BaseModel):
