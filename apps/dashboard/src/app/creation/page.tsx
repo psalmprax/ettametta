@@ -114,6 +114,350 @@ function NeuralCore() {
     );
 }
 
+// --- Sub-Panel Components ---
+
+function VoiceForgePanel() {
+    const [text, setText] = useState("");
+    const [voice, setVoice] = useState("alloy");
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
+    const handleGenerate = async () => {
+        if (!text) {
+            toast.error("Text input required");
+            return;
+        }
+        setIsGenerating(true);
+        const token = await getAuthToken();
+        if (!token) {
+            setIsGenerating(false);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/tools/prompt/template`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ text, voice })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                toast.success("Voice template generated");
+            } else {
+                toast.error("Failed to generate voice");
+            }
+        } catch (error) {
+            toast.error("Voice generation error");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    return (
+        <div className="h-full min-h-[400px] flex flex-col border border-white/5 bg-[#0F0F11]/60 rounded-[40px] p-8 space-y-6">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                <h3 className="text-[10px] font-bold text-violet-400 tracking-[0.2em] uppercase">Voice Forge Core</h3>
+                <span className="text-[8px] font-mono text-zinc-600">NEURAL_AUDIO_SYNTHESIS_HUB_ACTIVE</span>
+            </div>
+
+            <div className="space-y-4">
+                <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Input Text</label>
+                    <textarea
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        placeholder="Enter text to synthesize..."
+                        className="w-full h-32 bg-black/20 border border-white/10 rounded-xl p-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 resize-none"
+                    />
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Voice Model</label>
+                    <select
+                        value={voice}
+                        onChange={(e) => setVoice(e.target.value)}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50"
+                    >
+                        <option value="alloy">Alloy</option>
+                        <option value="echo">Echo</option>
+                        <option value="fable">Fable</option>
+                        <option value="onyx">Onyx</option>
+                        <option value="nova">Nova</option>
+                        <option value="shimmer">Shimmer</option>
+                    </select>
+                </div>
+
+                <Button
+                    onClick={handleGenerate}
+                    disabled={isGenerating || !text}
+                    className="w-full h-14 bg-violet-500 hover:bg-violet-400 text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest"
+                >
+                    {isGenerating ? "Synthesizing..." : "Generate Voice"}
+                </Button>
+
+                {audioUrl && (
+                    <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                        <audio controls src={audioUrl} className="w-full" />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function ScriptEnginePanel() {
+    const [topic, setTopic] = useState("");
+    const [niche, setNiche] = useState("Motivation");
+    const [duration, setDuration] = useState(60);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [script, setScript] = useState<ScriptOutput | null>(null);
+
+    const handleGenerate = async () => {
+        if (!topic) {
+            toast.error("Topic required");
+            return;
+        }
+        setIsGenerating(true);
+        const token = await getAuthToken();
+        if (!token) {
+            setIsGenerating(false);
+            return;
+        }
+
+        await withRealFallback<ScriptOutput>(
+            () => fetch(`${API_BASE}/no-face/script`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ topic, niche, duration_seconds: duration })
+            }),
+            {
+                fallback: {} as ScriptOutput,
+                onSuccess: (data) => {
+                    setScript(data);
+                    toast.success("Script generated successfully");
+                },
+                onFallback: (err) => {
+                    toast.error(`Script generation failed: ${err.message}`);
+                }
+            }
+        );
+        setIsGenerating(false);
+    };
+
+    return (
+        <div className="h-full min-h-[400px] flex flex-col border border-white/5 bg-[#0F0F11]/60 rounded-[40px] p-8 space-y-6">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                <h3 className="text-[10px] font-bold text-violet-400 tracking-[0.2em] uppercase">Script Synthesis Engine</h3>
+                <span className="text-[8px] font-mono text-zinc-600">LLM_ORCHESTRATION_LAYER_READY</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Topic</label>
+                    <input
+                        type="text"
+                        value={topic}
+                        onChange={(e) => setTopic(e.target.value)}
+                        placeholder="Enter video topic..."
+                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50"
+                    />
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Niche</label>
+                    <select
+                        value={niche}
+                        onChange={(e) => setNiche(e.target.value)}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50"
+                    >
+                        <option>Motivation</option>
+                        <option>Tech</option>
+                        <option>Finance</option>
+                        <option>Health</option>
+                        <option>Gaming</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Duration (seconds)</label>
+                    <input
+                        type="number"
+                        value={duration}
+                        onChange={(e) => setDuration(Number(e.target.value))}
+                        min={15}
+                        max={300}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50"
+                    />
+                </div>
+            </div>
+
+            <Button
+                onClick={handleGenerate}
+                disabled={isGenerating || !topic}
+                className="w-full h-14 bg-violet-500 hover:bg-violet-400 text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest"
+            >
+                {isGenerating ? "Synthesizing..." : "Generate Script"}
+            </Button>
+
+            {script && (
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 bg-black/20 rounded-xl border border-white/5">
+                    <h4 className="text-sm font-bold text-white mb-2">{script.title}</h4>
+                    <div className="space-y-2">
+                        {script.segments?.map((segment, i) => (
+                            <div key={i} className="p-3 bg-white/5 rounded-lg">
+                                <p className="text-xs text-zinc-300">{segment.text}</p>
+                                <span className="text-[8px] text-zinc-500 mt-1 block">{segment.duration}s</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function VisualCorePanel() {
+    const [prompt, setPrompt] = useState("");
+    const [style, setStyle] = useState("cinematic");
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [jobs, setJobs] = useState<any[]>([]);
+
+    const handleGenerate = async () => {
+        if (!prompt) {
+            toast.error("Prompt required");
+            return;
+        }
+        setIsGenerating(true);
+        const token = await getAuthToken();
+        if (!token) {
+            setIsGenerating(false);
+            return;
+        }
+
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/video/generate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ prompt, style, provider: "pixverse" })
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    toast.success("Video generation started");
+                    if (data.job_id) {
+                        setJobs(prev => [data, ...prev]);
+                    }
+                },
+                onFallback: (err) => {
+                    toast.error(`Generation failed: ${err.message}`);
+                }
+            }
+        );
+        setIsGenerating(false);
+    };
+
+    useEffect(() => {
+        const fetchJobs = async () => {
+            const token = await getAuthToken();
+            if (!token) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/video/jobs`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data) {
+                        setJobs(data.data.slice(0, 10));
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch jobs:", error);
+            }
+        };
+        fetchJobs();
+    }, []);
+
+    return (
+        <div className="h-full min-h-[400px] flex flex-col border border-white/5 bg-[#0F0F11]/60 rounded-[40px] p-8 space-y-6">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                <h3 className="text-[10px] font-bold text-violet-400 tracking-[0.2em] uppercase">Visual Synthesis Core</h3>
+                <span className="text-[8px] font-mono text-zinc-600">FRAME_GENERATION_PIPELINE_ACTIVE</span>
+            </div>
+
+            <div className="space-y-4">
+                <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Video Prompt</label>
+                    <textarea
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder="Describe the video you want to generate..."
+                        className="w-full h-24 bg-black/20 border border-white/10 rounded-xl p-4 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/50 resize-none"
+                    />
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Visual Style</label>
+                    <select
+                        value={style}
+                        onChange={(e) => setStyle(e.target.value)}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50"
+                    >
+                        <option value="cinematic">Cinematic</option>
+                        <option value="anime">Anime</option>
+                        <option value="realistic">Realistic</option>
+                        <option value="3d">3D Animation</option>
+                        <option value="pixel">Pixel Art</option>
+                    </select>
+                </div>
+
+                <Button
+                    onClick={handleGenerate}
+                    disabled={isGenerating || !prompt}
+                    className="w-full h-14 bg-violet-500 hover:bg-violet-400 text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest"
+                >
+                    {isGenerating ? "Initializing..." : "Generate Video"}
+                </Button>
+            </div>
+
+            {jobs.length > 0 && (
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Recent Jobs</h4>
+                    <div className="space-y-2">
+                        {jobs.map((job) => (
+                            <div key={job.id} className="p-3 bg-white/5 rounded-lg border border-white/5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-white truncate flex-1">{job.title || job.prompt}</span>
+                                    <span className={`text-[8px] px-2 py-1 rounded-full ml-2 ${
+                                        job.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' :
+                                        job.status === 'FAILED' ? 'bg-rose-500/20 text-rose-400' :
+                                        'bg-yellow-500/20 text-yellow-400'
+                                    }`}>
+                                        {job.status}
+                                    </span>
+                                </div>
+                                <span className="text-[8px] text-zinc-500 mt-1 block">
+                                    {new Date(job.created_at).toLocaleString()}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 // --- Main Page Component ---
 
 function CreationContent() {
@@ -409,45 +753,15 @@ function CreationContent() {
                         )}
 
                         {activeEngine === "voice" && (
-                            <div className="h-full min-h-[400px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px] relative overflow-hidden group">
-                                <div className="absolute inset-0 architect-grid pointer-events-none opacity-20" />
-                                <div className="flex flex-col items-center gap-6 relative z-10 text-center">
-                                    <div className="relative">
-                                        <Mic2 className="h-16 w-16 text-violet-400 animate-pulse" />
-                                        <div className="absolute -inset-4 bg-violet-500/20 blur-2xl rounded-full -z-10" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Voice Forge Core</h3>
-                                    <span className="text-[10px] text-zinc-500 font-mono italic">NEURAL_AUDIO_SYNTHESIS_HUB_ACTIVE</span>
-                                </div>
-                            </div>
+                            <VoiceForgePanel />
                         )}
 
                         {activeEngine === "script" && (
-                            <div className="h-full min-h-[400px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px] relative overflow-hidden group">
-                                <div className="absolute inset-0 architect-grid pointer-events-none opacity-20" />
-                                <div className="flex flex-col items-center gap-6 relative z-10 text-center">
-                                    <div className="relative">
-                                        <Edit3 className="h-16 w-16 text-violet-400 animate-pulse" />
-                                        <div className="absolute -inset-4 bg-violet-500/20 blur-2xl rounded-full -z-10" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Script Synthesis Engine</h3>
-                                    <span className="text-[10px] text-zinc-500 font-mono italic">LLM_ORCHESTRATION_LAYER_READY</span>
-                                </div>
-                            </div>
+                            <ScriptEnginePanel />
                         )}
 
                         {activeEngine === "visual" && (
-                            <div className="h-full min-h-[400px] flex items-center justify-center border border-white/5 bg-[#0F0F11]/60 rounded-[40px] relative overflow-hidden group">
-                                <div className="absolute inset-0 architect-grid pointer-events-none opacity-20" />
-                                <div className="flex flex-col items-center gap-6 relative z-10 text-center">
-                                    <div className="relative">
-                                        <Clapperboard className="h-16 w-16 text-violet-400 animate-pulse" />
-                                        <div className="absolute -inset-4 bg-violet-500/20 blur-2xl rounded-full -z-10" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-white uppercase tracking-[0.5em]">Visual Synthesis Core</h3>
-                                    <span className="text-[10px] text-zinc-500 font-mono italic">FRAME_GENERATION_PIPELINE_ACTIVE</span>
-                                </div>
-                            </div>
+                            <VisualCorePanel />
                         )}
 
                         {activeEngine === "logs" && (
