@@ -164,6 +164,7 @@ from src.api.routes import (
     credits,
     autonomous_video,
     autonomous_leads,
+    autonomous_remix,
     zero,
     opencli,
     tools,
@@ -420,6 +421,7 @@ v1_router.include_router(proxy.router, tags=["Proxy"])
 v1_router.include_router(internal.router, tags=["Internal"])
 v1_router.include_router(autonomous_video.router, tags=["Autonomous Video"])
 v1_router.include_router(autonomous_leads.router, tags=["Autonomous Leads"])
+v1_router.include_router(autonomous_remix.router, tags=["Autonomous Remix"])
 
 # Include versioned router under /api
 app.include_router(v1_router, prefix="/api")
