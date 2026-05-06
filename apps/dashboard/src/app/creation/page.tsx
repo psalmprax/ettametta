@@ -211,7 +211,7 @@ function VoiceForgePanel() {
 
 function ScriptEnginePanel() {
     const [topic, setTopic] = useState("");
-    const [niche, setNiche] = useState("Motivation");
+    const [niche, setNiche] = useState("Auto-Detect");
     const [duration, setDuration] = useState(60);
     const [isGenerating, setIsGenerating] = useState(false);
     const [script, setScript] = useState<ScriptOutput | null>(null);
@@ -228,6 +228,9 @@ function ScriptEnginePanel() {
             return;
         }
 
+        // Send null for niche to trigger auto-detection
+        const nichePayload = niche === "Auto-Detect" ? null : niche;
+
         await withRealFallback<ScriptOutput>(
             () => fetch(`${API_BASE}/no-face/script`, {
                 method: "POST",
@@ -235,7 +238,7 @@ function ScriptEnginePanel() {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ topic, niche, duration_seconds: duration })
+                body: JSON.stringify({ topic, niche: nichePayload, duration_seconds: duration })
             }),
             {
                 fallback: {} as ScriptOutput,
@@ -277,11 +280,17 @@ function ScriptEnginePanel() {
                         onChange={(e) => setNiche(e.target.value)}
                         className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500/50"
                     >
-                        <option>Motivation</option>
-                        <option>Tech</option>
-                        <option>Finance</option>
-                        <option>Health</option>
-                        <option>Gaming</option>
+                        <option value="Auto-Detect">✨ Auto-Detect (Recommended)</option>
+                        <option value="Motivation">Motivation</option>
+                        <option value="Tech">Tech</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Health">Health</option>
+                        <option value="Gaming">Gaming</option>
+                        <option value="Education">Education</option>
+                        <option value="Social Commentary">Social Commentary</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Lifestyle">Lifestyle</option>
+                        <option value="Spirituality">Spirituality</option>
                     </select>
                 </div>
 
