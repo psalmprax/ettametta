@@ -14,21 +14,13 @@ except ImportError:
 
 from src.api.utils.database import get_db
 from src.api.utils.user_models import UserDB, UserRole
-from src.api.routes.auth import get_current_user
+from src.api.routes.auth import get_current_user, admin_required
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/admin", tags=["Admin Operations"])
 logger = logging.getLogger(__name__)
-
-def admin_required(current_user: UserDB = Depends(get_current_user)):
-    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Administrative privileges required for this operation."
-        )
-    return current_user
 
 @router.get("/system/env")
 async def get_env_keys(current_user: UserDB = Depends(admin_required)):

@@ -4,11 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.api.utils.models import SystemSettings, BotCodeDB, UserSetting, VideoFilterDB
-from src.api.routes.auth import get_current_user
+from src.api.routes.auth import get_current_user, admin_required
 from src.api.utils.user_models import UserDB, UserRole
 from src.api.utils.notifications import configure_telegram_bot, configure_whatsapp_bot
 from src.api.utils.api_responses import success_response
 from pydantic import BaseModel
+import asyncio
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
@@ -24,15 +25,6 @@ class UserSettingsUpdate(BaseModel):
     whatsapp_number: str | None = None
     api_keys: dict | None = None
     system_settings: dict | None = None
-
-
-def admin_required(current_user: UserDB = Depends(get_current_user)):
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Administrative access required",
-        )
-    return current_user
 
 
 @router.get("/")
@@ -880,7 +872,7 @@ async def telegram_webhook(update: dict, db=Depends(get_db)):
                         user.telegram_chat_id = chat_id
                         bot_code.used = True
                         await db.commit()
-                        await configure_telegram_bot(current_user.id, chat_id)
+                        await configure_telegram_bot(user.id, chat_id)
                         return {"status": "configured"}
         return {"status": "ignored"}
     except Exception as e:
@@ -910,7 +902,7 @@ async def whatsapp_webhook(
                 user.whatsapp_number = from_number
                 bot_code.used = True
                 await db.commit()
-                await configure_whatsapp_bot(current_user.id, from_number)
+                await configure_whatsapp_bot(user.id, from_number)
                 return {"status": "configured"}
         return {"status": "ignored"}
     except Exception as e:
