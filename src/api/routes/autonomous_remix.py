@@ -73,3 +73,25 @@ async def get_remix_status(
         "progress": 100,
         "current_step": "complete",
     })
+
+
+@router.get("/remix/{job_id}/status")
+async def get_remix_status(
+    job_id: str,
+    current_user: UserDB = Depends(get_current_user),
+) -> dict[str, Any]:
+    """
+    Check status of a remix job with real-time progress updates.
+    Returns progress percentage and current step.
+    """
+    try:
+        status = await base_autonomous_remixer.get_job_status(job_id)
+        
+        if not status:
+            raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+        
+        return success_response(data=status)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Status check failed: {str(e)}")
