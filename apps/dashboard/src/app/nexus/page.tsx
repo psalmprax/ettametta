@@ -110,7 +110,7 @@ function NexusContent() {
                     onSuccess: (data) => setNexusJobs(Array.isArray(data) ? data : [])
                 }
             ),
-            withRealFallback<any>(
+            withRealFallback<any[]>(
                 () => fetch(`${API_BASE}/discovery/niches`, { headers }),
                 {
                     fallback: [
@@ -125,6 +125,17 @@ function NexusContent() {
                         if (nicheList.length > 0 && !selectedNiche) {
                             setSelectedNiche(typeof nicheList[0] === 'string' ? nicheList[0] : nicheList[0].name || nicheList[0].niche);
                         }
+                    }
+                }
+            ),
+            withRealFallback<any[]>(
+                () => fetch(`${API_BASE}/agent/capabilities`, { headers }),
+                {
+                    fallback: [],
+                    onSuccess: (data: any) => {
+                        // Capabilities endpoint returns { workers: [...] }
+                        const caps = Array.isArray(data) ? data : (data?.workers || []);
+                        setCapabilities(caps);
                     }
                 }
             )
