@@ -151,10 +151,17 @@ class PublishingService:
                 privacy_status=metadata.get("privacy", "private")
             )
         elif platform == "tiktok":
-            # TikTok Direct API is enterprise-only. 
-            # For now, we return a structured response indicating manual action needed
-            # or use a third-party service like Zapier webhook.
-            raise NotImplementedError("TikTok direct publishing requires Enterprise API access. Please use the manual download option.")
+            # TikTok Direct API is restricted to Enterprise Partners.
+            # Implementation: Use a third-party automation tool like Selenium/Appium 
+            # or a service like Zapier/Make.com webhook.
+            # For now, we provide a "Manual Publish" kit.
+            logger.warning("TikTok direct publishing requires Enterprise API. Providing manual download link.")
+            return {
+                "platform": "tiktok",
+                "status": "manual_action_required",
+                "message": "Please download the video and upload manually to TikTok.",
+                "download_link": f"/api/v1/video/download/{user_id}" # Hypothetical endpoint
+            }
         else:
             raise ValueError(f"Unsupported platform: {platform}")
 
