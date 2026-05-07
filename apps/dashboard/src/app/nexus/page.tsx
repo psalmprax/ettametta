@@ -74,6 +74,12 @@ function NexusContent() {
     
     const [searchTerm, setSearchTerm] = useState("");
     const [activeCategory, setActiveCategory] = useState("All");
+    
+    // Preview Scenes Modal State
+    const [previewJobId, setPreviewJobId] = useState<string | null>(null);
+    const [previewScenes, setPreviewScenes] = useState<any[]>([]);
+    const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
     useEffect(() => {
         const engine = searchParams.get("engine");
@@ -98,44 +104,40 @@ function NexusContent() {
                     }
                 }
             ),
-            withRealFallback<string[]>(
-                () => fetch(`${API_BASE}/discovery/niches`, { headers }),
-                {
-                    fallback: [],
-                    onSuccess: (data) => {
-                        const nicheList = Array.isArray(data) ? data : [];
-                        setNiches(nicheList);
-                        if (nicheList.length > 0) setSelectedNiche(nicheList[0]);
-                    }
-                }
-            ),
-            withRealFallback<Persona[]>(
-                () => fetch(`${API_BASE}/agent/personas`, { headers }),
-                {
-                    fallback: [],
-                    onSuccess: (data) => setPersonas(Array.isArray(data) ? data : [])
-                }
-            ),
-            withRealFallback<any>(
-                () => fetch(`${API_BASE}/agent/capabilities`, { headers }),
-                {
-                    fallback: [],
-                    onSuccess: (data) => {
-                        if (data && data.workers) {
-                            setCapabilities(data.workers);
-                        }
-                    }
-                }
-            ),
             withRealFallback<NexusJob[]>(
                 () => fetch(`${API_BASE}/nexus/jobs`, { headers }),
                 {
                     fallback: [],
                     onSuccess: (data) => setNexusJobs(Array.isArray(data) ? data : [])
                 }
-            ),
+            )
         ]);
     }, []);
+
+    // Function to fetch and display scene preview
+    const handlePreviewScenes = async (jobId: string) => {
+        setIsLoadingPreview(true);
+        setPreviewJobId(jobId);
+        
+        try {
+            const token = await getAuthToken();
+            const response = await fetch(`${API_BASE}/nexus/jobs/${jobId}/preview`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                setPreviewScenes(data.data?.scenes || []);
+                setIsPreviewModalOpen(true);
+            } else {
+                toast.error("No scene data available for this job");
+            }
+        } catch (error) {
+            toast.error("Failed to load scene preview");
+        } finally {
+            setIsLoadingPreview(false);
+        }
+    };
 
     const fetchPersonas = useCallback(async () => {
         const token = await getAuthToken();
@@ -771,15 +773,13 @@ scout.on("VIRAL_DETECT", async (data) => {
                                         ]}
                                         footerInfo={new Date(job.created_at).toLocaleString()}
                                         toolsStatus="Verified"
+                                        onRefresh={() => handlePreviewScenes(job.id)}
                                         onDelete={() => {
                                             toast.promise(fetch(`${API_BASE}/nexus/jobs/${job.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getAuthToken()}` } }), {
                                                 loading: 'Purging pipeline...',
                                                 success: 'Pipeline purged',
                                                 error: 'Deletion restricted'
                                             });
-                                        }}
-                                        onRefresh={() => {
-                                            toast.info(`Syncing PIPELINE_${job.id}`);
                                         }}
                                     />
                                 ))}
@@ -850,6 +850,123 @@ scout.on("VIRAL_DETECT", async (data) => {
                     background-size: 40px 40px;
                 }
             `}</style>
+            
+            {/* Preview Scenes Modal */}
+            <AnimatePresence>
+                {isPreviewModalOpen && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6"
+                        onClick={() => setIsPreviewModalOpen(false)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="w-full max-w-4xl bg-[#0F0F11] border border-white/10 rounded-[32px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-12 w-12 bg-violet-500/20 rounded-xl flex items-center justify-center">
+                                        <Layers className="h-6 w-6 text-violet-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white uppercase tracking-tight">Scene Preview</h3>
+                                        <p className="text-xs text-zinc-500">Pipeline: {previewJobId}</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setIsPreviewModalOpen(false)}
+                                    className="h-10 w-10 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-colors"
+                                >
+                                    <X className="h-5 w-5 text-zinc-400" />
+                                </button>
+                            </div>
+                            
+                            {isLoadingPreview ? (
+                                <div className="flex items-center justify-center py-20">
+                                    <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
+                                </div>
+                            ) : previewScenes.length === 0 ? (
+                                <div className="text-center py-20">
+                                    <AlertCircle className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
+                                    <p className="text-zinc-400">No scene data available for this pipeline.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {previewScenes.map((scene, index) => (
+                                        <div key={index} className="p-6 bg-white/5 border border-white/5 rounded-[24px] hover:border-violet-500/30 transition-all">
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="h-8 w-8 bg-violet-500/20 rounded-lg flex items-center justify-center text-violet-400 font-bold text-sm">
+                                                        {index + 1}
+                                                    </span>
+                                                    <span className={cn(
+                                                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                                                        scene.type === 'hook' ? "bg-amber-500/10 text-amber-500" :
+                                                        scene.type === 'problem' ? "bg-rose-500/10 text-rose-500" :
+                                                        scene.type === 'solution' ? "bg-emerald-500/10 text-emerald-500" :
+                                                        scene.type === 'outro' ? "bg-cyan-500/10 text-cyan-500" :
+                                                        "bg-zinc-500/10 text-zinc-500"
+                                                    )}>
+                                                        {scene.type || 'Scene'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-zinc-500">{scene.duration}s</span>
+                                            </div>
+                                            
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Description</span>
+                                                    <p className="text-sm text-zinc-300">{scene.description}</p>
+                                                </div>
+                                                
+                                                {scene.visual_prompt && (
+                                                    <div>
+                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Visual Prompt</span>
+                                                        <p className="text-xs text-zinc-400 italic">"{scene.visual_prompt}"</p>
+                                                    </div>
+                                                )}
+                                                
+                                                {scene.assets && scene.assets.length > 0 && (
+                                                    <div>
+                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Discovered Assets ({scene.assets.length})</span>
+                                                        <div className="flex gap-2 overflow-x-auto pb-2">
+                                                            {scene.assets.slice(0, 5).map((asset: any, i: number) => (
+                                                                <div key={i} className="shrink-0 h-16 w-24 bg-white/5 rounded-lg border border-white/5 overflow-hidden">
+                                                                    {asset.thumbnail ? (
+                                                                        <img src={asset.thumbnail} alt="" className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                                                                            <Video className="h-4 w-4" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            <div className="mt-8 pt-6 border-t border-white/5 flex justify-end">
+                                <Button 
+                                    onClick={() => setIsPreviewModalOpen(false)}
+                                    className="bg-white/5 hover:bg-white/10 text-white font-bold uppercase tracking-widest text-xs"
+                                >
+                                    Close Preview
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </CommandCenterLayout>
     );
 }
