@@ -37,6 +37,7 @@ async def publish_video(
     """
     try:
         result = await base_publishing_service.publish_to_platform(
+            user_id=current_user.id,  # Pass real user ID
             platform=request.platform,
             video_path=request.video_path,
             metadata={
