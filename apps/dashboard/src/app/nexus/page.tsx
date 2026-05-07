@@ -342,6 +342,7 @@ function NexusContent() {
                         { id: "orchestrator", label: "Orchestrator", icon: Cpu },
                         { id: "crews", label: "Workforce", icon: Users },
                         { id: "identities", label: "Neural IDs", icon: Fingerprint },
+                        { id: "sandbox", label: "Code Sandbox", icon: Terminal },
                         { id: "command", label: "Command Pod", icon: Terminal },
                         { id: "history", label: "Pipeline History", icon: Layers },
                     ].map((item) => (
