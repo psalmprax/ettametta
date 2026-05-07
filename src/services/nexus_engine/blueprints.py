@@ -34,6 +34,34 @@ FALLBACK_BLUEPRINTS = [
         ],
     },
     {
+        "id": "topic-fusion",
+        "name": "Topic Narrative Fusion",
+        "description": "Transforms a single topic into a 10-scene viral masterpiece using autonomous asset discovery.",
+        "composition_id": "ViralClip",
+        "nodes": [
+            {
+                "type": "ingress",
+                "label": "Topic Analysis",
+                "desc": "Analyzing niche relevance and trend velocity.",
+            },
+            {
+                "type": "cognition",
+                "label": "Narrative Decompose",
+                "desc": "Breaking topic into 10 high-retention scenes via Llama-3.",
+            },
+            {
+                "type": "synthesis",
+                "label": "Swarm Discovery",
+                "desc": "Finding viral video assets for every scene simultaneously.",
+            },
+            {
+                "type": "egress",
+                "label": "Neural Fusion",
+                "desc": "Stitching segments with narrative transitions and music.",
+            },
+        ],
+    },
+    {
         "id": "test-e2e-remote",
         "name": "Remote GPU E2E Test",
         "description": "Verification of remote AI worker synthesis and local assembly.",
@@ -95,6 +123,8 @@ async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
     logger = logging.getLogger(__name__)
     from src.api.routes.ws import notify_nexus_job_update_sync
 
+    from src.engines.topic_fusion_orchestrator import base_topic_fusion_orchestrator
+
     results = {}
     current_step = 0
 
@@ -126,14 +156,34 @@ async def execute_blueprint(blueprint: dict, inputs: dict, job_id: str) -> dict:
 
             elif node_type == "cognition":
                 # AI processing node
-                results["cognition"] = await _execute_cognition_node(
-                    inputs, results.get("ingress", {})
-                )
+                if blueprint.get("id") == "topic-fusion":
+                    topic = inputs.get("topic") or inputs.get("niche")
+                    results["scenes"] = await base_topic_fusion_orchestrator.decompose_topic_into_scenes(topic)
+                    results["cognition"] = {"ai_processed": True, "scenes_generated": len(results["scenes"])}
+                else:
+                    results["cognition"] = await _execute_cognition_node(
+                        inputs, results.get("ingress", {})
+                    )
                 logger.info(f"[Blueprint] Cognition completed for job {job_id}")
 
             elif node_type == "synthesis":
                 # Content synthesis node
-                results["synthesis"] = await _execute_synthesis_node(inputs, results)
+                if blueprint.get("id") == "topic-fusion":
+                    from src.services.video_engine.scene_orchestrator import base_scene_orchestrator_service
+                    topic = inputs.get("topic") or inputs.get("niche")
+                    scenes = results.get("scenes", [])
+                    
+                    fusion_result = await base_scene_orchestrator_service.produce_scene_based_video(
+                        scenes=scenes,
+                        niche=inputs.get("niche", topic)
+                    )
+                    results["synthesis"] = {
+                        "output_generated": fusion_result.get("success", False),
+                        "video_path": fusion_result.get("video_path"),
+                        "fusion_details": fusion_result
+                    }
+                else:
+                    results["synthesis"] = await _execute_synthesis_node(inputs, results)
                 logger.info(f"[Blueprint] Synthesis completed for job {job_id}")
 
             elif node_type == "egress":
