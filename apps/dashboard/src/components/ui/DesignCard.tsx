@@ -57,13 +57,13 @@ export function DesignCard({
           <div className="h-5 w-5 bg-white/10 rounded flex items-center justify-center shrink-0">
              <div className="h-2.5 w-2.5 border-2 border-white rounded-sm" />
           </div>
-          <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-200 truncate">
+          <h3 className="text-xs sm:text-sm font-bold tracking-tight text-slate-200 truncate">
             {title}
           </h3>
         </div>
         
         <span className={cn(
-          "shrink-0 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
+          "shrink-0 px-1.5 py-0.5 rounded-md text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] leading-none",
           (status === "Current" || status === "Active" || status === "Completed" || status === "Optimized" || status === "Story") ? "bg-emerald-500/10 text-emerald-500" :
           (status === "Scheduled" || status === "Syncing" || status === "Live Polling" || status === "Nominal") ? "bg-amber-500/10 text-amber-500" :
           (status === "Archived") ? "bg-slate-500/10 text-slate-500" :
@@ -77,9 +77,9 @@ export function DesignCard({
       <div className="grid grid-cols-2 gap-y-3 gap-x-3 mb-4 relative z-10 flex-grow">
         {metrics?.map((metric, i) => (
           <div key={i} className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-slate-400 truncate pr-2">{metric.label}</span>
-              <span className={cn("text-[10px] sm:text-xs font-bold whitespace-nowrap", metric.color || "text-emerald-500")}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
+              <span className="text-[9px] font-semibold text-slate-500 truncate">{metric.label}</span>
+              <span className={cn("text-[9px] font-black tracking-tight", metric.color || "text-emerald-500")}>
                 {metric.value}
               </span>
             </div>
@@ -97,12 +97,12 @@ export function DesignCard({
       </div>
 
       {/* Credits/Value Section */}
-      <div className="bg-black/20 border border-white/5 rounded-xl p-2 flex items-center justify-between mb-3 relative z-10">
-        <div className="flex items-center gap-2">
-          <CreditCard className="h-3 w-3 text-amber-500" />
-          <span className="text-[10px] font-bold text-slate-300">Credits</span>
+      <div className="bg-black/40 border border-white/5 rounded-lg p-1.5 flex items-center justify-between mb-2 relative z-10">
+        <div className="flex items-center gap-1.5">
+          <CreditCard className="h-2.5 w-2.5 text-amber-500" />
+          <span className="text-[8px] font-bold text-slate-500 uppercase">Credits</span>
         </div>
-        <span className="text-xs font-mono font-bold text-white tracking-widest">{credits?.toLocaleString() || "0"}</span>
+        <span className="text-[10px] font-mono font-black text-white tracking-widest">{credits?.toLocaleString() || "0"}</span>
       </div>
 
       {/* Action Overlay */}
