@@ -17,12 +17,13 @@ router = APIRouter(prefix="/publish", tags=["Publishing"])
 
 
 class PublishRequest(BaseModel):
-    platform: str  # 'youtube', 'tiktok'
+    platform: str  # 'youtube', 'tiktok', 'instagram'
     video_path: str  # Path to existing video or job_id
     title: str
     description: str = ""
     tags: list[str] = []
     privacy: str = "private"  # 'public', 'private', 'unlisted'
+    use_automation: bool = False  # Use Playwright for TikTok/Instagram
 
 
 @router.post("/video")
@@ -45,7 +46,8 @@ async def publish_video(
                 "description": request.description,
                 "tags": request.tags,
                 "privacy": request.privacy
-            }
+            },
+            use_automation=request.use_automation  # Pass automation flag
         )
         return success_response(data=result)
     except NotImplementedError:
