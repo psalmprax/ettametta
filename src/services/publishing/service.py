@@ -140,6 +140,11 @@ class PublishingService:
     ) -> dict[str, Any]:
         """
         Publish video to specified platform.
+        
+        Args:
+            platform: 'youtube', 'tiktok', 'instagram'
+            video_path: Path to video file
+            metadata: Title, description, tags, etc.
         """
         if platform == "youtube":
             return await self.youtube.upload_video(
@@ -151,16 +156,28 @@ class PublishingService:
                 privacy_status=metadata.get("privacy", "private")
             )
         elif platform == "tiktok":
-            # TikTok Direct API is restricted to Enterprise Partners.
-            # Implementation: Use a third-party automation tool like Selenium/Appium 
-            # or a service like Zapier/Make.com webhook.
-            # For now, we provide a "Manual Publish" kit.
-            logger.warning("TikTok direct publishing requires Enterprise API. Providing manual download link.")
+            # TikTok Direct API is restricted. 
+            # Solution: Provide a "Manual Publish Kit"
             return {
                 "platform": "tiktok",
                 "status": "manual_action_required",
-                "message": "Please download the video and upload manually to TikTok.",
-                "download_link": f"/api/v1/video/download/{user_id}" # Hypothetical endpoint
+                "message": "TikTok requires manual upload via mobile or desktop studio.",
+                "download_link": f"/api/v1/video/download/{os.path.basename(video_path)}",
+                "caption": metadata.get("description", ""),
+                "hashtags": " ".join(metadata.get("tags", [])),
+                "instructions": "1. Download the video. 2. Open TikTok. 3. Upload from gallery. 4. Paste caption."
+            }
+        elif platform == "instagram":
+            # Instagram Graph API requires Business Account + Facebook Login.
+            # Solution: Provide a "Manual Publish Kit" for Reels.
+            return {
+                "platform": "instagram",
+                "status": "manual_action_required",
+                "message": "Instagram Reels require manual upload via mobile app.",
+                "download_link": f"/api/v1/video/download/{os.path.basename(video_path)}",
+                "caption": metadata.get("description", ""),
+                "hashtags": " ".join(metadata.get("tags", [])),
+                "instructions": "1. Download the video. 2. Open Instagram. 3. Select Reel. 4. Paste caption."
             }
         else:
             raise ValueError(f"Unsupported platform: {platform}")

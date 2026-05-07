@@ -145,13 +145,13 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
                 "flex flex-col h-full bg-[#09090B] border-r border-white/5 relative z-40 transition-all duration-300",
-                collapsed ? "w-20" : "w-[260px]"
+                collapsed ? "w-20" : "w-[220px]"
             )}
         >
             {/* System Header */}
             <div className={cn(
-                "flex items-center py-8 transition-all",
-                collapsed ? "px-4 justify-center" : "px-8"
+                "flex items-center py-6 transition-all",
+                collapsed ? "px-4 justify-center" : "px-6"
             )}>
                 <Link href="/" className="flex items-center gap-3 group">
                     <div className="h-9 w-9 bg-cyan-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all group-hover:scale-105">
@@ -284,9 +284,9 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
             </nav>
 
             {/* Bottom Telemetry & User */}
-            <div className="p-4 mt-auto border-t border-white/5 bg-black/20 space-y-4">
+            <div className="p-3 mt-auto border-t border-white/5 bg-black/20 space-y-3">
                 {!collapsed && (
-                    <div className="px-4 py-3 rounded-2xl bg-white/2 border border-white/5 space-y-2">
+                    <div className="px-3 py-2 rounded-2xl bg-white/2 border border-white/5 space-y-2">
                         <div className="flex items-center justify-between">
                             <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">System Pulse</span>
                             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
@@ -303,7 +303,7 @@ export const Sidebar = React.memo<SidebarProps>(function Sidebar({ collapsed = f
                 
                 <div className={cn(
                     "flex items-center gap-3 transition-all",
-                    collapsed ? "justify-center" : "px-4 py-2"
+                    collapsed ? "justify-center" : "px-3 py-1"
                 )}>
                     <div className="h-9 w-9 rounded-xl bg-zinc-900 border border-white/10 overflow-hidden shrink-0">
                         <img src={"https://api.dicebear.com/7.x/avataaars/svg?seed=" + (user?.username || "Felix")} alt="User" className="w-full h-full object-cover" />
