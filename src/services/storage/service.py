@@ -143,7 +143,8 @@ class StorageService:
         """
         s3_client = self._get_client()
         if (
-            self.provider != "LOCAL"
+            object_key_or_path
+            and self.provider != "LOCAL"
             and s3_client
             and not object_key_or_path.startswith("/")
         ):
@@ -162,6 +163,8 @@ class StorageService:
                 return object_key_or_path
         else:
             # Local fallback logic
+            if not object_key_or_path:
+                return ""
             filename = os.path.basename(object_key_or_path)
             from src.api.config import settings
 

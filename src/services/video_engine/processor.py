@@ -882,7 +882,9 @@ class VideoProcessor:
         os.makedirs("temp", exist_ok=True)
 
         async def _download_media(url: str, ext: str) -> str:
-            if url.startswith("http"):
+            if not url:
+                return ""
+            if isinstance(url, str) and url.startswith("http"):
                 local_path = os.path.join("temp", f"dl_{uuid.uuid4()}{ext}")
                 async with httpx.AsyncClient(
                     follow_redirects=True, timeout=60

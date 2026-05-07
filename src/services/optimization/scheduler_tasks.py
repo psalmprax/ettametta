@@ -52,7 +52,8 @@ def _get_publisher(platform: str):
 
 async def _check_and_post_scheduled_internal(task_self):
     """Internal async logic for posting scheduled content"""
-    async with async_session_factory() as db:
+    from src.api.utils.database import get_async_session
+    async with get_async_session() as db:
         processed = 0
         failed = 0
         try:
@@ -176,14 +177,17 @@ async def _check_and_post_scheduled_internal(task_self):
 def check_and_post_scheduled(self):
     """
     Periodic task wrapper to check for scheduled posts.
-    Runs internal async logic.
+    Runs internal async logic with fresh loop.
     """
-    return asyncio.run(_check_and_post_scheduled_internal(self))
+    from src.services.video_engine.tasks import run_async
+    return run_async(_check_and_post_scheduled_internal(self))
+
 
 
 async def _retry_failed_posts_internal():
     """Internal async logic for retrying failed posts"""
-    async with async_session_factory() as db:
+    from src.api.utils.database import get_async_session
+    async with get_async_session() as db:
         retried = 0
         try:
             stmt = select(ScheduledPostDB).where(ScheduledPostDB.status == ContentPublishStatus.FAILED)
@@ -215,14 +219,16 @@ def retry_failed_posts():
     """
     Retry failed posts wrapper.
     """
-    return asyncio.run(_retry_failed_posts_internal())
+    from src.services.video_engine.tasks import run_async
+    return run_async(_retry_failed_posts_internal())
 
 
 async def _retry_missed_schedules_internal():
     """Retry missed scheduled posts - posts that passed their scheduled time"""
     from src.services.optimization.scheduler import smart_scheduler
+    from src.api.utils.database import get_async_session
 
-    async with async_session_factory() as db:
+    async with get_async_session() as db:
         retried = 0
         skipped = 0
         try:
@@ -295,12 +301,14 @@ def retry_missed_schedules():
     """
     Retry posts that missed their scheduled time.
     """
-    return asyncio.run(_retry_missed_schedules_internal())
+    from src.services.video_engine.tasks import run_async
+    return run_async(_retry_missed_schedules_internal())
 
 
 async def _cleanup_pending_videos_internal():
     """Internal async logic for cleaning up pending videos"""
-    async with async_session_factory() as db:
+    from src.api.utils.database import get_async_session
+    async with get_async_session() as db:
         deleted_count = 0
         try:
             now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
@@ -358,12 +366,14 @@ def cleanup_pending_videos():
     """
     Periodic task wrapper to clean up videos.
     """
-    return asyncio.run(_cleanup_pending_videos_internal())
+    from src.services.video_engine.tasks import run_async
+    return run_async(_cleanup_pending_videos_internal())
 
 
 async def _cleanup_old_scheduled_internal():
     """Internal async logic for cleaning up old scheduled posts"""
-    async with async_session_factory() as db:
+    from src.api.utils.database import get_async_session
+    async with get_async_session() as db:
         deleted = 0
         try:
             cutoff = datetime.datetime.now(datetime.timezone.utc).replace(
@@ -393,7 +403,8 @@ def cleanup_old_scheduled():
     """
     Clean up old scheduled posts wrapper.
     """
-    return asyncio.run(_cleanup_old_scheduled_internal())
+    from src.services.video_engine.tasks import run_async
+    return run_async(_cleanup_old_scheduled_internal())
 
 
 @celery_app.task(name="optimization.viral_loop_compilation")

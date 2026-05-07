@@ -12,6 +12,9 @@ services:
       - DB_NAME=dify
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD:-ettametta_redis_pass}
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/1
+      - SECRET_KEY=${SECRET_KEY:-ettametta_dify_secret_key_v1}
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - VECTOR_STORE=qdrant
@@ -31,6 +34,9 @@ services:
       - DB_NAME=dify
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD:-ettametta_redis_pass}
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/1
+      - SECRET_KEY=${SECRET_KEY:-ettametta_dify_secret_key_v1}
     networks:
       - ettametta
 
@@ -42,8 +48,8 @@ services:
     ports:
       - "8081:3000"
     environment:
-      - CONSOLE_API_URL=http://dify-api:5001
-      - APP_API_URL=http://dify-api:5001
+      - CONSOLE_API_URL=http://149.104.110.122.sslip.io:7200/api/v1/dify
+      - APP_API_URL=http://149.104.110.122.sslip.io:7200/api/v1/dify
     networks:
       - ettametta
 

@@ -233,13 +233,20 @@ async def auto_insert_affiliate_links(
             
             if job:
                 # Use output_path as the video source
-                video_path = job.output_path or video_path
+                if not job.output_path:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"Job {body.job_id} has no output path. Status: {job.status}. Error: {job.error_message}"
+                    )
+                video_path = job.output_path
                 niche = job.job_metadata.get("niche", niche) if job.job_metadata else niche
                 # Attempt to find script in metadata
                 script_content = job.job_metadata.get("script", script_content) if job.job_metadata else script_content
+            else:
+                raise HTTPException(status_code=404, detail=f"Job ID {body.job_id} not found")
 
         if not video_path:
-            raise HTTPException(status_code=400, detail="Video path or Job ID required")
+            raise HTTPException(status_code=400, detail="Video path or Job ID with output required")
 
         return success_response(
             data=await base_monetization_service.plan_monetization_strategy(
