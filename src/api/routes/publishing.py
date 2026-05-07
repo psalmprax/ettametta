@@ -141,3 +141,29 @@ async def test_login(
     except Exception as e:
         logger.error(f"Test login failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Test login failed: {str(e)}")
+
+
+@router.get("/auth/{platform}")
+async def init_oauth_auth(
+    platform: str,
+    current_user: UserDB = Depends(get_current_user),
+):
+    """
+    Initiate OAuth flow for connecting social media accounts.
+    Supported platforms: instagram, x (twitter), linkedin, facebook
+    """
+    # For now, return a placeholder response indicating manual setup is required
+    # In a full implementation, this would redirect to the OAuth authorization URL
+    
+    supported_platforms = ["instagram", "x", "twitter", "linkedin", "facebook"]
+    
+    if platform.lower() not in supported_platforms:
+        raise HTTPException(status_code=400, detail=f"Platform '{platform}' not supported for OAuth")
+    
+    # Return instructions for manual connection since full OAuth requires app registration
+    return success_response(data={
+        "platform": platform,
+        "status": "manual_setup_required",
+        "message": f"OAuth setup for {platform} requires app registration. Please use the Playwright 'test-login' method for now.",
+        "alternative": f"Use POST /api/v1/publish/test-login?platform={platform} for cookie-based authentication"
+    })
