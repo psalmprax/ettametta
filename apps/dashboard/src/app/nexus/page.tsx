@@ -87,7 +87,6 @@ function NexusContent() {
     }, [searchParams]);
 
     // Fetch initial data
-    // Fetch initial data
     const fetchData = useCallback(async () => {
         const token = await getAuthToken();
         if (!token) return;
@@ -109,6 +108,24 @@ function NexusContent() {
                 {
                     fallback: [],
                     onSuccess: (data) => setNexusJobs(Array.isArray(data) ? data : [])
+                }
+            ),
+            withRealFallback<any[]>(
+                () => fetch(`${API_BASE}/discovery/niches`, { headers }),
+                {
+                    fallback: [
+                        "AI Technology", "Motivation", "Finance", "Health & Fitness",
+                        "Business", "Marketing", "Lifestyle", "Gaming",
+                        "Education", "Real Estate", "E-commerce", "Spirituality"
+                    ],
+                    onSuccess: (data) => {
+                        // Handle both array and object responses
+                        const nicheList = Array.isArray(data) ? data : (data?.niches || []);
+                        setNiches(nicheList);
+                        if (nicheList.length > 0 && !selectedNiche) {
+                            setSelectedNiche(typeof nicheList[0] === 'string' ? nicheList[0] : nicheList[0].name || nicheList[0].niche);
+                        }
+                    }
                 }
             )
         ]);
