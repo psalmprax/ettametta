@@ -37,23 +37,23 @@ celery_app.conf.update(
             "schedule": 7200.0,  # Every 2 hours
         },
         "check-scheduled-posts-5m": {
-            "task": "src.services.optimization.scheduler_tasks.check_and_post_scheduled",
+            "task": "optimization.check_and_post_scheduled",
             "schedule": 300.0,  # Every 5 minutes
         },
         "retry-missed-schedules-5m": {
-            "task": "src.services.optimization.scheduler_tasks.retry_missed_schedules",
+            "task": "optimization.retry_missed_schedules",
             "schedule": 300.0,  # Every 5 minutes
         },
         "system-security-audit-daily": {
-            "task": "src.services.security.tasks.system_audit",
+            "task": "security.system_audit",
             "schedule": 86400.0,  # Every 24 hours
         },
         "storage-lifecycle-manager-daily": {
-            "task": "src.services.storage.tasks.manage_lifecycle",
+            "task": "storage.manage_lifecycle",
             "schedule": 86400.0,  # Every 24 hours
         },
         "ettametta-job-polling-10m": {
-            "task": "src.services.openclaw.tasks.ettametta_polling",
+            "task": "openclaw.ettametta_polling",
             "schedule": 600.0,  # Every 10 minutes
         },
         "viral-loop-compilation-12h": {

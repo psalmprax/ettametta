@@ -490,7 +490,7 @@ def generate_video_task(
 
         # 2. Download generated asset (if it's a URL)
         update_job(status=SystemJobStatus.DOWNLOADING_ASSET, progress=40)
-        if video_uri.startswith("http"):
+        if video_uri and video_uri.startswith("http"):
             local_video_path = run_async(
                 base_downloader_service.download_video(video_uri)
             )

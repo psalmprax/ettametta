@@ -218,6 +218,12 @@ class CircuitBreaker:
 
 
 class GpuQueueManager:
+    def __init__(self):
+        self.redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
+        self.semaphore_key = "ettametta:gpu:slots"
+        self.total_slots = settings.GPU_QUEUE_SLOTS or 1
+        self.timeout = settings.GPU_QUEUE_TIMEOUT or 300
+
     def _initialize_queue(self):
         """Initializes the GPU slot queue with tokens if empty."""
         try:
