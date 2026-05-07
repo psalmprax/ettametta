@@ -91,6 +91,13 @@ function EmpireContent() {
                 { fallback: null, onSuccess: (data) => setSentinelStatus(data) }
             ),
             withRealFallback<any>(
+                () => fetch(`${API_BASE}/monetization/revenue/summary?days=30`, { headers }),
+                { 
+                    fallback: null, 
+                    onSuccess: (data) => setRevenueReport(data)
+                } 
+            ),
+            withRealFallback<any>(
                 () => fetch(`${API_BASE}/monetization/empire/blueprints`, { headers }),
                 { 
                     fallback: { blueprints: [] }, 
@@ -225,8 +232,25 @@ function EmpireContent() {
                         <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Revenue Pulse</h4>
                         <div className="flex flex-col">
                             <span className="text-2xl font-bold text-white">${revenueReport?.total_revenue?.toFixed(2) || "0.00"}</span>
-                            <span className="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">+8.4% Velocity</span>
+                            <span className="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">
+                                {revenueReport ? `+${((revenueReport.total_revenue / 30) * 100).toFixed(1)}% Daily Avg` : "+8.4% Velocity"}
+                            </span>
                         </div>
+                        
+                        {/* Platform Breakdown */}
+                        {revenueReport?.platforms && (
+                            <div className="mt-4 space-y-2">
+                                {revenueReport.platforms.map((platform: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between text-[9px]">
+                                        <span className="text-zinc-400 font-bold uppercase">{platform.platform}</span>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-white">${platform.revenue.toFixed(2)}</span>
+                                            <span className="text-zinc-600">({platform.views?.toLocaleString() || platform.clicks?.toLocaleString() || 0})</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </>
             }

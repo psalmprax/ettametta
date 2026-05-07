@@ -166,6 +166,8 @@ from src.api.routes import (
     autonomous_leads,
     autonomous_remix,
     video_preview,
+    publishing,
+    monetization_dashboard,
     zero,
     opencli,
     tools,
@@ -424,6 +426,8 @@ v1_router.include_router(autonomous_video.router, tags=["Autonomous Video"])
 v1_router.include_router(autonomous_leads.router, tags=["Autonomous Leads"])
 v1_router.include_router(autonomous_remix.router, tags=["Autonomous Remix"])
 v1_router.include_router(video_preview.router, tags=["Video Preview/Download"])
+v1_router.include_router(publishing.router, tags=["Publishing"])
+v1_router.include_router(monetization_dashboard.router, tags=["Monetization Dashboard"])
 
 # Include versioned router under /api
 app.include_router(v1_router, prefix="/api")
