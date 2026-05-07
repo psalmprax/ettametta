@@ -102,7 +102,7 @@ export default function AnalyticsPage() {
     return (
         <CommandCenterLayout
             title="INTEL CORE"
-            subtitle="PERFORMANCE_MATRIX_V3.0"
+            subtitle="PERFORMANCE_MATRIX_V4.2"
             leftPanel={
                 <div className="space-y-1">
                     {[
@@ -143,7 +143,7 @@ export default function AnalyticsPage() {
                 </>
             }
         >
-            <div className="p-4 sm:p-6 space-y-6 relative h-full flex flex-col">
+            <div className="p-3 sm:p-4 space-y-4 relative h-full flex flex-col">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeEngine}
