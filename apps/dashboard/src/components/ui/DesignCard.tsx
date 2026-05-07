@@ -45,19 +45,19 @@ export function DesignCard({
       animate={{ opacity: 1, scale: 1 }}
       onClick={onClick}
       className={cn(
-        "group bg-[#0F0F11] border border-white/5 hover:border-cyan-500/30 rounded-[24px] p-6 sm:p-8 transition-all duration-300 relative overflow-hidden flex flex-col h-full",
+        "group bg-[#0F0F11] border border-white/5 hover:border-cyan-500/30 rounded-[20px] p-4 sm:p-5 transition-all duration-300 relative overflow-hidden flex flex-col h-full",
         onClick && "cursor-pointer active:scale-95"
       )}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
       
       {/* Card Header */}
-      <div className="flex items-center justify-between mb-6 relative z-10 gap-2">
+      <div className="flex items-center justify-between mb-4 relative z-10 gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-5 w-5 bg-white/10 rounded flex items-center justify-center shrink-0">
              <div className="h-2.5 w-2.5 border-2 border-white rounded-sm" />
           </div>
-          <h3 className="text-lg sm:text-xl font-bold tracking-tight text-slate-200 truncate">
+          <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-200 truncate">
             {title}
           </h3>
         </div>
@@ -74,12 +74,12 @@ export function DesignCard({
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 gap-y-4 gap-x-4 mb-6 relative z-10 flex-grow">
+      <div className="grid grid-cols-2 gap-y-3 gap-x-3 mb-4 relative z-10 flex-grow">
         {metrics?.map((metric, i) => (
           <div key={i} className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 truncate pr-2">{metric.label}</span>
-              <span className={cn("text-xs sm:text-sm font-bold whitespace-nowrap", metric.color || "text-emerald-500")}>
+              <span className="text-[10px] font-semibold text-slate-400 truncate pr-2">{metric.label}</span>
+              <span className={cn("text-[10px] sm:text-xs font-bold whitespace-nowrap", metric.color || "text-emerald-500")}>
                 {metric.value}
               </span>
             </div>
@@ -97,16 +97,16 @@ export function DesignCard({
       </div>
 
       {/* Credits/Value Section */}
-      <div className="bg-black/20 border border-white/5 rounded-xl p-3 flex items-center justify-between mb-4 relative z-10">
+      <div className="bg-black/20 border border-white/5 rounded-xl p-2 flex items-center justify-between mb-3 relative z-10">
         <div className="flex items-center gap-2">
-          <CreditCard className="h-3.5 w-3.5 text-amber-500" />
-          <span className="text-xs font-bold text-slate-300">Credits</span>
+          <CreditCard className="h-3 w-3 text-amber-500" />
+          <span className="text-[10px] font-bold text-slate-300">Credits</span>
         </div>
-        <span className="text-sm font-mono font-bold text-white tracking-widest">{credits?.toLocaleString() || "0"}</span>
+        <span className="text-xs font-mono font-bold text-white tracking-widest">{credits?.toLocaleString() || "0"}</span>
       </div>
 
       {/* Action Overlay */}
-      <div className="flex items-center gap-2 mt-auto mb-4 relative z-10">
+      <div className="flex items-center gap-2 mt-auto mb-3 relative z-10">
         {onMore && (
           <button 
             onClick={(e) => { e.stopPropagation(); onMore(); }}
@@ -143,12 +143,12 @@ export function DesignCard({
 
       {/* Footer Info */}
       <div className="flex items-center justify-between pt-4 border-t border-white/5 relative z-10">
-        <span className="text-[9px] sm:text-[10px] font-mono text-slate-600 uppercase tracking-widest truncate mr-2">
+        <span className="text-[8px] font-mono text-slate-600 uppercase tracking-widest truncate mr-2">
           {footerInfo || new Date().toLocaleString()}
         </span>
         
         <div className={cn(
-          "flex items-center gap-1.5 px-2 py-1 rounded-full border text-[9px] sm:text-[10px] font-bold transition-all shrink-0",
+          "flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[8px] font-bold transition-all shrink-0",
           (toolsStatus === "Online" || toolsStatus === "Live Polling") ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : 
           toolsStatus === "Syncing" ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
           toolsStatus === "Archived" ? "bg-zinc-800 border-zinc-700 text-zinc-500" :

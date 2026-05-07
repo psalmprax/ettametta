@@ -130,10 +130,10 @@ export default function AnalyticsPage() {
             rightPanel={
                 <>
                     <AgentMatrix agents={agents} />
-                    <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
+                    <div className="p-3 rounded-2xl border border-white/5 bg-white/5 space-y-3">
                         <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Global Reach</h4>
                         <div className="flex flex-col">
-                            <span className="text-2xl font-bold text-white">{(metrics.views / 1000).toFixed(1)}K</span>
+                            <span className="text-xl font-bold text-white">{(metrics.views / 1000).toFixed(1)}K</span>
                             <span className="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">+14.2% Growth</span>
                         </div>
                         <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
@@ -143,7 +143,7 @@ export default function AnalyticsPage() {
                 </>
             }
         >
-            <div className="p-10 space-y-10 relative h-full flex flex-col">
+            <div className="p-4 sm:p-6 space-y-6 relative h-full flex flex-col">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeEngine}
@@ -153,7 +153,7 @@ export default function AnalyticsPage() {
                         className="flex-1 flex flex-col min-h-0"
                     >
                         {activeEngine === "overview" && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 w-full">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
                                 <DesignCard
                                     title="Net Reach"
                                     status="Nominal"
@@ -198,8 +198,8 @@ export default function AnalyticsPage() {
                         )}
 
                         {activeEngine === "retention" && (
-                            <div className="flex-1 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 p-10 flex flex-col">
-                                <div className="flex items-center justify-between mb-8">
+                            <div className="flex-1 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 p-6 flex flex-col">
+                                <div className="flex items-center justify-between mb-6">
                                     <h3 className="text-xl font-bold text-white flex items-center gap-3">
                                         <Activity className="h-5 w-5 text-emerald-400" />
                                         Attention Decay Analysis
@@ -229,8 +229,8 @@ export default function AnalyticsPage() {
                         )}
 
                         {activeEngine === "patterns" && (
-                            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-0">
-                                <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-8 flex flex-col min-h-0">
+                            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
+                                <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-6 flex flex-col min-h-0">
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-xl font-bold text-white flex items-center gap-3">
                                             <Cpu className="h-5 w-5 text-violet-400" />
@@ -264,7 +264,7 @@ export default function AnalyticsPage() {
                                     </div>
                                 </div>
 
-                                <div className="p-10 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-8 flex flex-col min-h-0">
+                                <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-6 flex flex-col min-h-0">
                                     <h3 className="text-xl font-bold text-white flex items-center gap-3">
                                         <LineChart className="h-5 w-5 text-cyan-400" />
                                         Prediction Matrix
@@ -282,7 +282,7 @@ export default function AnalyticsPage() {
                         )}
 
                         {activeEngine === "propagation" && (
-                            <div className="flex-1 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 overflow-hidden relative">
+                            <div className="flex-1 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 overflow-hidden relative">
                                 <GlobalPulseGlobe pulseIntensity={1} />
                                 <div className="absolute bottom-10 left-10 p-8 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl max-w-sm space-y-2">
                                     <h4 className="text-white font-bold uppercase tracking-widest text-xs">Global Propagation Matrix</h4>
@@ -292,7 +292,7 @@ export default function AnalyticsPage() {
                         )}
 
                         {activeEngine === "logs" && (
-                            <div className="flex-1 flex flex-col min-h-0 bg-[#0F0F11]/60 border border-white/5 rounded-[32px] overflow-hidden">
+                            <div className="flex-1 flex flex-col min-h-0 bg-[#0F0F11]/60 border border-white/5 rounded-[24px] overflow-hidden">
                                 <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
                                     <div className="flex items-center gap-4">
                                         <Terminal className="h-4 w-4 text-zinc-500" />
@@ -336,7 +336,7 @@ export default function AnalyticsPage() {
                         )}
 
                         {activeEngine !== "logs" && activeEngine !== "patterns" && activeEngine !== "propagation" && activeEngine !== "retention" && activeEngine !== "overview" && (
-                            <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
+                            <div className="mt-6 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[24px] border border-white/5 overflow-hidden shrink-0">
                                 <div className="p-4 border-b border-white/5 flex items-center justify-between">
                                     <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Telemetry Logs</span>
                                     <span className="text-[8px] font-mono text-violet-500/50">{status === "open" ? "LINK_ESTABLISHED" : "LINK_OFFLINE"}</span>

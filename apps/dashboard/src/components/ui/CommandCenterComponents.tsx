@@ -35,19 +35,19 @@ interface AgentStatus {
 
 export function AgentMatrix({ agents }: { agents: AgentStatus[] }) {
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-[10px] font-bold text-violet-400 tracking-[0.2em] uppercase">Agent Matrix</h3>
                 <div className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[8px] font-bold text-emerald-500 uppercase">
                     Monitoring_Active
                 </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
                 {agents?.map((agent) => (
                     <motion.div
                         key={agent.id}
-                        whileHover={{ scale: 1.02, backgroundColor: "rgba(255, 255, 255, 0.03)" }}
-                        className="p-4 rounded-2xl border border-white/5 bg-white/5 space-y-3 transition-all group"
+                        whileHover={{ scale: 1.01, backgroundColor: "rgba(255, 255, 255, 0.03)" }}
+                        className="p-3 rounded-xl border border-white/5 bg-white/5 space-y-2 transition-all group"
                     >
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -119,19 +119,19 @@ interface Asset {
 
 export function AssetQuickview({ assets }: { assets: Asset[] }) {
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-[10px] font-bold text-cyan-400 tracking-[0.2em] uppercase">Asset Quickview</h3>
                 <button className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase transition-colors">
                     View_All
                 </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {assets?.map((asset) => (
                     <motion.div
                         key={asset.id}
-                        whileHover={{ scale: 1.02 }}
-                        className="group relative rounded-2xl border border-white/5 bg-white/5 overflow-hidden transition-all"
+                        whileHover={{ scale: 1.01 }}
+                        className="group relative rounded-xl border border-white/5 bg-white/5 overflow-hidden transition-all"
                     >
                         {/* Thumbnail or Icon Placeholder */}
                         <div className="aspect-video w-full bg-zinc-900 relative overflow-hidden">
@@ -175,7 +175,7 @@ export function AssetQuickview({ assets }: { assets: Asset[] }) {
                         </div>
 
                         {/* Metadata */}
-                        <div className="p-4 space-y-2">
+                        <div className="p-3 space-y-1.5">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-[10px] font-bold text-white uppercase truncate flex-1">{asset.title}</h4>
                                 <span className="text-[9px] text-zinc-600 font-mono ml-2">{asset.size}</span>
