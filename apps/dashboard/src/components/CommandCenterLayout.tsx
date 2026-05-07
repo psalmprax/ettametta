@@ -61,11 +61,11 @@ export default function CommandCenterLayout({
                 {isLeftExpanded && (
                     <motion.aside
                         initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: 260, opacity: 1 }}
+                        animate={{ width: 220, opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         className="h-full border-r border-white/5 bg-black/40 backdrop-blur-xl z-10 flex flex-col relative"
                     >
-                        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                        <div className="p-4 border-b border-white/5 flex items-center justify-between">
                             <span className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">Specialized Engines</span>
                             <button onClick={() => setIsLeftExpanded(false)} className="text-zinc-500 hover:text-white transition-colors">
                                 <ChevronLeft className="h-4 w-4" />
@@ -94,10 +94,10 @@ export default function CommandCenterLayout({
             {/* Center Creative Workspace (Flexible) */}
             <main className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
                 {/* Header */}
-                <header className="h-20 border-b border-white/5 bg-black/20 backdrop-blur-md px-10 flex items-center justify-between shrink-0">
+                <header className="h-16 border-b border-white/5 bg-black/20 backdrop-blur-md px-6 flex items-center justify-between shrink-0">
                     <div className="flex flex-col">
                         <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-bold tracking-tight text-white uppercase">{title}</h1>
+                            <h1 className="text-xl font-bold tracking-tight text-white uppercase">{title}</h1>
                             <div className="px-2 py-0.5 bg-violet-500/10 border border-violet-500/20 rounded text-[10px] font-bold text-violet-400">
                                 {subtitle}
                             </div>
@@ -134,7 +134,7 @@ export default function CommandCenterLayout({
                 </div>
 
                 {/* Footer / Status Bar */}
-                <footer className="h-12 border-t border-white/5 bg-black px-10 flex items-center justify-between shrink-0 text-[10px] font-bold text-zinc-600 tracking-widest backdrop-blur-xl">
+                <footer className="h-10 border-t border-white/5 bg-black px-6 flex items-center justify-between shrink-0 text-[10px] font-bold text-zinc-600 tracking-widest backdrop-blur-xl">
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-2">
                             <ShieldCheck className={cn("h-3.5 w-3.5 animate-pulse", status === "open" ? "text-emerald-500" : "text-rose-500")} />
@@ -163,17 +163,17 @@ export default function CommandCenterLayout({
                 {isRightExpanded && (
                     <motion.aside
                         initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: 320, opacity: 1 }}
+                        animate={{ width: 280, opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         className="h-full border-l border-white/5 bg-black/40 backdrop-blur-xl z-10 flex flex-col relative"
                     >
-                        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                        <div className="p-4 border-b border-white/5 flex items-center justify-between">
                             <button onClick={() => setIsRightExpanded(false)} className="text-zinc-500 hover:text-white transition-colors">
                                 <ChevronRight className="h-4 w-4" />
                             </button>
                             <span className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">Contextual Intelligence</span>
                         </div>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
                             {rightPanel || (
                                 <div className="space-y-4 opacity-50 text-center py-20 italic text-zinc-600 text-xs">
                                     CONTEXT_UNIT_IDLE
