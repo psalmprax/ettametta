@@ -355,6 +355,38 @@ async def get_nexus_stats(
     )
 
 
+@router.get("/jobs/{job_id}/preview")
+async def get_job_preview(
+    job_id: str,
+    current_user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """
+    Returns the scene breakdown and discovered assets for a Nexus job.
+    Used for previewing the narrative structure before final rendering.
+    """
+    stmt = select(NexusJobDB).where(
+        NexusJobDB.id == job_id,
+        NexusJobDB.user_id == current_user.id
+    )
+    result = await db.execute(stmt)
+    job = result.scalar_one_or_none()
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    metadata = job.job_metadata or {}
+    scenes = metadata.get("preview_scenes", [])
+    
+    return success_response(data={
+        "job_id": job_id,
+        "status": job.status,
+        "scenes": scenes,
+        "scene_count": len(scenes),
+        "message": "Preview data retrieved successfully"
+    })
+
+
 @router.get("/queue")
 async def get_nexus_queue(
     current_user=Depends(get_current_user), db=Depends(get_db)

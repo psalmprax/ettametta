@@ -210,32 +210,41 @@ class SceneBasedVideoOrchestrator:
             
             logger.info(f"Acquiring {len(segments)} segments for video fusion...")
             
-            for i, segment in enumerate(segments):
-                # Try local first, then download
+            # 1. Acquire Source Videos (Parallel Downloads for Top-Notch Performance)
+            from .downloader import base_downloader_service
+            from tenacity import retry, stop_after_attempt, wait_exponential
+            
+            logger.info(f"Acquiring assets for {len(segments)} segments in parallel...")
+            
+            @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=6))
+            async def download_asset(idx, segment):
                 source_path = segment.get("video_path") or segment.get("source_video")
                 video_uri = segment.get("url") or segment.get("source_uri")
                 
                 if source_path and Path(source_path).exists():
-                    video_files.append((source_path, segment))
-                elif video_uri:
-                    print(f"DEBUG: Downloading asset for segment {i+1}: {video_uri}")
-                    logger.info(f"Downloading asset for segment {i+1}: {video_uri}")
-                    # In a production loop, we'd use await, but for hardening we'll ensure we have some assets
+                    return (source_path, segment)
+                
+                if video_uri:
                     try:
+                        logger.info(f"[Scene {idx+1}] Downloading: {video_uri}")
                         downloaded_path = await base_downloader_service.download_video(video_uri)
                         if downloaded_path and Path(downloaded_path).exists():
-                            video_files.append((downloaded_path, segment))
-                            print(f"DEBUG: Downloaded segment {i+1} to {downloaded_path}")
-                        else:
-                            logger.warning(f"Failed to download segment {i+1}")
-                            print(f"DEBUG: Failed to download segment {i+1}")
+                            return (downloaded_path, segment)
                     except Exception as e:
-                        logger.error(f"Download error for segment {i+1}: {e}")
-                        print(f"DEBUG: Download EXCEPTION for segment {i+1}: {e}")
+                        logger.warning(f"[Scene {idx+1}] Download failed: {e}")
+                
+                return None
 
-            print(f"DEBUG: Acquired {len(video_files)} video files for fusion")
+            # Execute all downloads concurrently
+            download_tasks = [download_asset(i, seg) for i, seg in enumerate(segments)]
+            video_files_raw = await asyncio.gather(*download_tasks)
+            
+            # Filter out failed downloads
+            video_files = [v for v in video_files_raw if v is not None]
+
+            logger.info(f"Successfully acquired {len(video_files)} / {len(segments)} video assets.")
+            
             if not video_files:
-                print("DEBUG: No video files acquired, hitting fallback")
                 return {"success": False, "error": "No source videos could be acquired"}
 
             # 2. Production Assembly (MoviePy 2.x)
