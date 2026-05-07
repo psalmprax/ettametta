@@ -119,11 +119,26 @@ function NexusContent() {
                         "Education", "Real Estate", "E-commerce", "Spirituality"
                     ],
                     onSuccess: (data: any) => {
+                        const defaultNiches = [
+                            "AI Technology", "Motivation", "Finance", "Health & Fitness",
+                            "Business", "Marketing", "Lifestyle", "Gaming",
+                            "Education", "Real Estate", "E-commerce", "Spirituality"
+                        ];
+                        
                         // Handle both array and object responses
-                        const nicheList = Array.isArray(data) ? data : (data?.niches || []);
+                        let nicheList = Array.isArray(data) ? data : (data?.niches || []);
+                        
+                        // Top-Notch: If the user has no monitored niches, use the high-velocity defaults
+                        if (nicheList.length === 0) {
+                            nicheList = defaultNiches;
+                        }
+                        
                         setNiches(nicheList);
+                        
+                        // Ensure we have a selection if nothing is selected
                         if (nicheList.length > 0 && !selectedNiche) {
-                            setSelectedNiche(typeof nicheList[0] === 'string' ? nicheList[0] : nicheList[0].name || nicheList[0].niche);
+                            const firstNiche = typeof nicheList[0] === 'string' ? nicheList[0] : (nicheList[0].niche || nicheList[0].name);
+                            setSelectedNiche(firstNiche);
                         }
                     }
                 }
@@ -471,30 +486,49 @@ function NexusContent() {
                         {activeEngine === "orchestrator" && (
                             <div className="space-y-8 h-full flex flex-col">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
-                                    <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl">
+                                    {/* Neural Target Selector - Top-Notch Custom UI */}
+                                    <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl relative">
                                         <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Neural Target</label>
-                                        <select 
-                                            value={selectedNiche}
-                                            onChange={(e) => setSelectedNiche(e.target.value)}
-                                            className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none"
-                                        >
-                                            {niches?.map((n) => (
-                                                <option key={typeof n === 'string' ? n : n.niche} value={typeof n === 'string' ? n : n.niche} className="bg-zinc-900">
-                                                    {typeof n === 'string' ? n : n.niche}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <div className="relative">
+                                            <select 
+                                                value={selectedNiche}
+                                                onChange={(e) => setSelectedNiche(e.target.value)}
+                                                className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors"
+                                            >
+                                                {niches.length === 0 && <option value="">Loading Targets...</option>}
+                                                {niches?.map((n) => (
+                                                    <option key={typeof n === 'string' ? n : n.niche} value={typeof n === 'string' ? n : n.niche} className="bg-[#0F0F11] text-white">
+                                                        {typeof n === 'string' ? n : n.niche}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
+                                                <ChevronDown className="w-4 h-4" />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl">
+
+                                    {/* Active Architecture Selector - Top-Notch Custom UI */}
+                                    <div className="p-6 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 space-y-4 backdrop-blur-xl relative">
                                         <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Architecture</label>
-                                        <select 
-                                            value={activeBlueprint?.id}
-                                            onChange={(e) => setActiveBlueprint(blueprints.find(b => b.id === e.target.value) || null)}
-                                            className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none"
-                                        >
-                                            {blueprints?.map((b) => <option key={b.id} value={b.id} className="bg-zinc-900">{b.name}</option>)}
-                                        </select>
+                                        <div className="relative">
+                                            <select 
+                                                value={activeBlueprint?.id}
+                                                onChange={(e) => setActiveBlueprint(blueprints.find(b => b.id === e.target.value) || null)}
+                                                className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-white font-bold uppercase tracking-tight focus:outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors"
+                                            >
+                                                {blueprints?.map((b) => (
+                                                    <option key={b.id} value={b.id} className="bg-[#0F0F11] text-white">
+                                                        {b.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500">
+                                                <ChevronDown className="w-4 h-4" />
+                                            </div>
+                                        </div>
                                     </div>
+
                                     <div className="flex flex-col justify-end">
                                         <Button 
                                             onClick={handleLaunchPipeline}
