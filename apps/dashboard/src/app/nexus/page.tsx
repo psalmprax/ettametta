@@ -110,7 +110,7 @@ function NexusContent() {
                     onSuccess: (data) => setNexusJobs(Array.isArray(data) ? data : [])
                 }
             ),
-            withRealFallback<any[]>(
+            withRealFallback<any>(
                 () => fetch(`${API_BASE}/discovery/niches`, { headers }),
                 {
                     fallback: [
@@ -118,7 +118,7 @@ function NexusContent() {
                         "Business", "Marketing", "Lifestyle", "Gaming",
                         "Education", "Real Estate", "E-commerce", "Spirituality"
                     ],
-                    onSuccess: (data) => {
+                    onSuccess: (data: any) => {
                         // Handle both array and object responses
                         const nicheList = Array.isArray(data) ? data : (data?.niches || []);
                         setNiches(nicheList);
