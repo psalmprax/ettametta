@@ -135,6 +135,13 @@ services:
     depends_on:
       - redis
       - db
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
+      - PYTHONPATH=/app
+      - ENV=development
     deploy:
       resources:
         limits:
