@@ -339,8 +339,49 @@ function VisualCorePanel() {
     const [style, setStyle] = useState("cinematic");
     const [mode, setMode] = useState<"generate" | "remix">("generate");
     const [niche, setNiche] = useState("Auto-Detect");
+    const [currentJobId, setCurrentJobId] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [jobs, setJobs] = useState<any[]>([]);
+
+    const pollJobStatus = async (jobId: string, token: string) => {
+        const pollInterval = setInterval(async () => {
+            try {
+                const response = await fetch(`${API_BASE}/video/autonomous/remix/${jobId}/status`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const status = data.data;
+                    
+                    // Update job in list with progress
+                    setJobs(prev => prev.map(job => 
+                        job.id === jobId ? { ...job, ...status, id: jobId } : job
+                    ));
+                    
+                    // Stop polling when complete
+                    if (status.status === 'completed' || status.status === 'failed') {
+                        clearInterval(pollInterval);
+                        setCurrentJobId(null);
+                        setIsGenerating(false);
+                        
+                        if (status.status === 'completed') {
+                            toast.success("Remix video created successfully!");
+                        } else if (status.error) {
+                            toast.error(`Remix failed: ${status.error}`);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Polling error:", error);
+                clearInterval(pollInterval);
+                setCurrentJobId(null);
+                setIsGenerating(false);
+            }
+        }, 2000); // Poll every 2 seconds
+        
+        return () => clearInterval(pollInterval);
+    };
 
     const handleGenerate = async () => {
         if (!prompt) {
@@ -363,7 +404,68 @@ function VisualCorePanel() {
             ? { topic: prompt, niche: niche === "Auto-Detect" ? null : niche, style, duration_seconds: 60 }
             : { prompt, style, provider: "pixverse" };
 
-        await withRealFallback<any>(
+        if (mode === "remix") {
+            // For remix mode, start job and poll for status
+            try {
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) throw new Error("Request failed");
+                
+                const data = await response.json();
+                if (data.data?.job_id) {
+                    const jobId = data.data.job_id;
+                    setCurrentJobId(jobId);
+                    
+                    // Add initial job to list
+                    setJobs(prev => [{
+                        id: jobId,
+                        status: "processing",
+                        progress: 0,
+                        current_step: "Starting...",
+                        created_at: new Date().toISOString(),
+                    }, ...prev]);
+                    
+                    // Start polling
+                    pollJobStatus(jobId, token);
+                }
+            } catch (error: any) {
+                toast.error(`Remix failed: ${error.message}`);
+                setIsGenerating(false);
+            }
+        } else {
+            // For generate mode, use original logic
+            await withRealFallback<any>(
+                () => fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                }),
+                {
+                    fallback: null,
+                    onSuccess: (data) => {
+                        toast.success("Video generation started");
+                        if (data.job_id) {
+                            setJobs(prev => [data, ...prev]);
+                        }
+                    },
+                    onFallback: (err) => {
+                        toast.error(`Generation failed: ${err.message}`);
+                    }
+                }
+            );
+            setIsGenerating(false);
+        }
+    };
             () => fetch(endpoint, {
                 method: "POST",
                 headers: {
@@ -492,7 +594,14 @@ function VisualCorePanel() {
                     disabled={isGenerating || !prompt}
                     className="w-full h-14 bg-violet-500 hover:bg-violet-400 text-white font-bold text-sm rounded-xl transition-all uppercase tracking-widest"
                 >
-                    {isGenerating ? (mode === "remix" ? "Discovering & Creating..." : "Initializing...") : (mode === "remix" ? "Create Remix Video" : "Generate Video")}
+                    {isGenerating ? (
+                        mode === "remix" && currentJobId ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                {jobs.find(j => j.id === currentJobId)?.current_step || "Processing..."}
+                            </span>
+                        ) : (mode === "remix" ? "Discovering & Creating..." : "Initializing...")
+                    ) : (mode === "remix" ? "Create Remix Video" : "Generate Video")}
                 </Button>
             </div>
 
@@ -505,19 +614,36 @@ function VisualCorePanel() {
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-xs text-white truncate flex-1">{job.title || job.prompt || "Remix Video"}</span>
                                     <span className={`text-[8px] px-2 py-1 rounded-full ml-2 ${
-                                        job.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' :
-                                        job.status === 'FAILED' ? 'bg-rose-500/20 text-rose-400' :
+                                        job.status === 'completed' || job.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' :
+                                        job.status === 'failed' || job.status === 'FAILED' ? 'bg-rose-500/20 text-rose-400' :
                                         'bg-yellow-500/20 text-yellow-400'
                                     }`}>
-                                        {job.status}
+                                        {job.status === 'processing' ? 'PROCESSING' : job.status.toUpperCase()}
                                     </span>
                                 </div>
+                                
+                                {/* Progress bar for processing jobs */}
+                                {job.status === 'processing' && job.progress !== undefined && (
+                                    <div className="mb-2">
+                                        <div className="flex justify-between text-[8px] text-zinc-500 mb-1">
+                                            <span>{job.current_step || 'Processing...'}</span>
+                                            <span>{job.progress}%</span>
+                                        </div>
+                                        <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                                            <div 
+                                                className="h-full bg-violet-500 transition-all duration-500"
+                                                style={{ width: `${job.progress}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                                
                                 <span className="text-[8px] text-zinc-500 block mb-2">
                                     {new Date(job.created_at).toLocaleString()}
                                 </span>
                                 
                                 {/* Preview and Download buttons for completed videos */}
-                                {job.status === 'COMPLETED' && job.output_path && (
+                                {(job.status === 'completed' || job.status === 'COMPLETED') && (job.output_path || job.result?.output_path) && (
                                     <div className="flex gap-2 mt-2">
                                         <button
                                             onClick={() => window.open(`/api/v1/video/preview/${job.id}`, '_blank')}
