@@ -466,36 +466,6 @@ function VisualCorePanel() {
             setIsGenerating(false);
         }
     };
-            () => fetch(endpoint, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            }),
-            {
-                fallback: null,
-                onSuccess: (data) => {
-                    if (mode === "remix") {
-                        toast.success("Remix video created!");
-                        if (data.data?.output_path) {
-                            setJobs(prev => [{ id: Date.now(), output_path: data.data.output_path, status: "COMPLETED", created_at: new Date().toISOString() }, ...prev]);
-                        }
-                    } else {
-                        toast.success("Video generation started");
-                        if (data.job_id) {
-                            setJobs(prev => [data, ...prev]);
-                        }
-                    }
-                },
-                onFallback: (err) => {
-                    toast.error(`${mode === "remix" ? "Remix" : "Generation"} failed: ${err.message}`);
-                }
-            }
-        );
-        setIsGenerating(false);
-    };
 
     useEffect(() => {
         const fetchJobs = async () => {
