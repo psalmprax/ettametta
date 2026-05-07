@@ -20,6 +20,13 @@ try:
 except ImportError:
     GOOGLE_API_AVAILABLE = False
 
+# Playwright imports for automation
+try:
+    from src.services.openclaw.skills.social_publisher import base_playwright_publisher
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -136,15 +143,15 @@ class PublishingService:
         user_id: str,
         platform: str, 
         video_path: str, 
-        metadata: dict[str, Any]
+        metadata: dict[str, Any],
+        use_automation: bool = False  # New flag for Playwright
     ) -> dict[str, Any]:
         """
         Publish video to specified platform.
         
         Args:
-            platform: 'youtube', 'tiktok', 'instagram'
-            video_path: Path to video file
-            metadata: Title, description, tags, etc.
+            use_automation: If True, uses Playwright for TikTok/Instagram.
+                           If False, returns Manual Publish Kit.
         """
         if platform == "youtube":
             return await self.youtube.upload_video(
@@ -156,8 +163,18 @@ class PublishingService:
                 privacy_status=metadata.get("privacy", "private")
             )
         elif platform == "tiktok":
-            # TikTok Direct API is restricted. 
-            # Solution: Provide a "Manual Publish Kit"
+            if use_automation and PLAYWRIGHT_AVAILABLE:
+                try:
+                    return await base_playwright_publisher.post_to_tiktok(
+                        user_id=user_id,
+                        video_path=video_path,
+                        description=metadata.get("description", ""),
+                        tags=metadata.get("tags", [])
+                    )
+                except Exception as e:
+                    logger.warning(f"Playwright automation failed, falling back to manual kit: {e}")
+            
+            # Fallback to Manual Publish Kit
             return {
                 "platform": "tiktok",
                 "status": "manual_action_required",
@@ -168,8 +185,18 @@ class PublishingService:
                 "instructions": "1. Download the video. 2. Open TikTok. 3. Upload from gallery. 4. Paste caption."
             }
         elif platform == "instagram":
-            # Instagram Graph API requires Business Account + Facebook Login.
-            # Solution: Provide a "Manual Publish Kit" for Reels.
+            if use_automation and PLAYWRIGHT_AVAILABLE:
+                try:
+                    return await base_playwright_publisher.post_to_instagram(
+                        user_id=user_id,
+                        video_path=video_path,
+                        description=metadata.get("description", ""),
+                        tags=metadata.get("tags", [])
+                    )
+                except Exception as e:
+                    logger.warning(f"Playwright automation failed, falling back to manual kit: {e}")
+
+            # Fallback to Manual Publish Kit
             return {
                 "platform": "instagram",
                 "status": "manual_action_required",
