@@ -19,6 +19,7 @@ import {
     Activity,
     ExternalLink,
     ChevronRight,
+    ChevronDown,
     Search,
     User,
     Video,
