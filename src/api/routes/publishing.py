@@ -60,13 +60,17 @@ async def get_publishing_status(
     current_user: UserDB = Depends(get_current_user),
 ) -> dict[str, Any]:
     """
-    Check if a platform is connected and ready for publishing.
+    Check if a platform is connected and ready for publishing by verifying stored tokens.
     """
-    # Mock implementation - would check OAuth tokens in DB
-    is_connected = platform == "youtube"  # Assume YouTube is connected for demo
+    from pathlib import Path
+    token_file = Path(f"data/storage/tokens/{platform}_{current_user.id}.json")
+    
+    # Check for real token file
+    is_connected = token_file.exists()
     
     return success_response(data={
         "platform": platform,
         "connected": is_connected,
-        "status": "ready" if is_connected else "disconnected"
+        "status": "ready" if is_connected else "disconnected",
+        "message": f"{platform} account {'connected' if is_connected else 'not linked'}"
     })

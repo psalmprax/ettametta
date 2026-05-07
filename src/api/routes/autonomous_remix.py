@@ -62,25 +62,6 @@ async def get_remix_status(
     current_user: UserDB = Depends(get_current_user),
 ) -> dict[str, Any]:
     """
-    Check status of a remix job.
-    Returns progress percentage and current step.
-    """
-    # Would integrate with job tracking system
-    # For now, returns mock status
-    return success_response(data={
-        "job_id": job_id,
-        "status": "completed",  # or "processing", "failed"
-        "progress": 100,
-        "current_step": "complete",
-    })
-
-
-@router.get("/remix/{job_id}/status")
-async def get_remix_status(
-    job_id: str,
-    current_user: UserDB = Depends(get_current_user),
-) -> dict[str, Any]:
-    """
     Check status of a remix job with real-time progress updates.
     Returns progress percentage and current step.
     """
