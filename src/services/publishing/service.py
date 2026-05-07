@@ -1,59 +1,63 @@
 """
-Social Media Publishing Service
-===============================
+Real Social Media Publishing Service
+====================================
 Handles OAuth authentication and video uploading to major platforms.
-Currently supports YouTube Data API v3.
 """
 
 import logging
 import os
+import json
 from pathlib import Path
 from typing import Optional, Dict, Any
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+from datetime import datetime
+
+# Google API imports (for YouTube)
+try:
+    from google.oauth2.credentials import Credentials
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaFileUpload
+    GOOGLE_API_AVAILABLE = True
+except ImportError:
+    GOOGLE_API_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
-# Scopes for YouTube Data API
-YOUTUBE_SCOPES = ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube']
-
 
 class YouTubePublisher:
-    """Handles YouTube video uploads via Data API v3."""
+    """Handles real YouTube video uploads via Data API v3."""
 
     def __init__(self):
-        self.client_secrets_file = os.getenv('YOUTUBE_CLIENT_SECRETS', 'client_secrets.json')
-        self.token_file = Path("data/storage/tokens/youtube_token.json")
-        self.token_file.parent.mkdir(parents=True, exist_ok=True)
+        self.client_id = os.getenv('YOUTUBE_CLIENT_ID')
+        self.client_secret = os.getenv('YOUTUBE_CLIENT_SECRET')
+        self.token_dir = Path("data/storage/tokens")
+        self.token_dir.mkdir(parents=True, exist_ok=True)
 
-    def get_authenticated_service(self, user_id: str) -> Any:
-        """Get authenticated YouTube service instance for a user."""
-        credentials = None
+    def _get_credentials(self, user_id: str) -> Optional[Any]:
+        """Load user credentials from disk."""
+        token_file = self.token_dir / f"youtube_{user_id}.json"
+        if not token_file.exists():
+            logger.warning(f"No YouTube token found for user {user_id}")
+            return None
         
-        # Load existing token if available
-        if self.token_file.exists():
-            try:
-                credentials = Credentials.from_authorized_user_file(
-                    str(self.token_file), YOUTUBE_SCOPES
-                )
-            except Exception as e:
-                logger.warning(f"Failed to load token: {e}")
-
-        # If no valid credentials, let the user log in (in a real app, this would be a web flow)
-        if not credentials or not credentials.valid:
-            if credentials and credentials.expired and credentials.refresh_token:
-                credentials.refresh(Request())
-            else:
-                # For server-to-server or initial setup, we might use service accounts or manual token input
-                # Here we assume credentials are provided via env or pre-configured for simplicity
-                raise Exception("YouTube authentication required. Please connect your account.")
-
-        return build('youtube', 'v3', credentials=credentials)
+        try:
+            with open(token_file, 'r') as f:
+                token_data = json.load(f)
+            
+            creds = Credentials(
+                token=token_data['token'],
+                refresh_token=token_data.get('refresh_token'),
+                client_id=self.client_id,
+                client_secret=self.client_secret,
+                scopes=['https://www.googleapis.com/auth/youtube.upload']
+            )
+            return creds
+        except Exception as e:
+            logger.error(f"Failed to load credentials: {e}")
+            return None
 
     async def upload_video(
         self, 
+        user_id: str,
         video_path: str, 
         title: str, 
         description: str, 
@@ -61,52 +65,59 @@ class YouTubePublisher:
         privacy_status: str = "private"
     ) -> dict[str, Any]:
         """
-        Upload a video to YouTube.
-        
-        Args:
-            video_path: Path to the video file
-            title: Video title
-            description: Video description
-            tags: List of tags
-            privacy_status: 'public', 'private', or 'unlisted'
-            
-        Returns:
-            Dict with video_id and link
+        Upload a video to YouTube using real API.
         """
+        if not GOOGLE_API_AVAILABLE:
+            raise Exception("Google API libraries not installed. Run: pip install google-api-python-client google-auth-oauthlib")
+        
+        creds = self._get_credentials(user_id)
+        if not creds:
+            raise Exception("YouTube account not connected. Please authenticate first.")
+
         try:
-            youtube = self.get_authenticated_service("current_user")
+            youtube = build('youtube', 'v3', credentials=creds)
             
             body = {
                 'snippet': {
-                    'title': title,
-                    'description': description,
-                    'tags': tags,
-                    'categoryId': '22'  # People & Blogs
+                    'title': title[:100],  # YouTube limit
+                    'description': description[:5000],  # YouTube limit
+                    'tags': tags[:50],  # YouTube limit
+                    'categoryId': '28'  # Science & Technology (default)
                 },
                 'status': {
                     'privacyStatus': privacy_status
                 }
             }
 
+            # Check if file exists
+            if not Path(video_path).exists():
+                raise FileNotFoundError(f"Video file not found: {video_path}")
+
             insert_request = youtube.videos().insert(
                 part=",".join(body.keys()),
                 body=body,
-                media_body=MediaFileUpload(video_path, chunksize=-1, resumable=True)
+                media_body=MediaFileUpload(
+                    video_path, 
+                    chunksize=-1, 
+                    resumable=True
+                )
             )
 
+            logger.info(f"Starting upload for {title}...")
             response = insert_request.execute()
             
             video_id = response['id']
             video_url = f"https://www.youtube.com/watch?v={video_id}"
             
-            logger.info(f"Successfully uploaded video {video_id}")
+            logger.info(f"Successfully uploaded: {video_url}")
             
             return {
                 "platform": "youtube",
                 "video_id": video_id,
                 "url": video_url,
                 "status": "published",
-                "privacy": privacy_status
+                "privacy": privacy_status,
+                "published_at": datetime.utcnow().isoformat()
             }
 
         except Exception as e:
@@ -122,20 +133,17 @@ class PublishingService:
 
     async def publish_to_platform(
         self, 
+        user_id: str,
         platform: str, 
         video_path: str, 
         metadata: dict[str, Any]
     ) -> dict[str, Any]:
         """
         Publish video to specified platform.
-        
-        Args:
-            platform: 'youtube', 'tiktok', etc.
-            video_path: Path to video file
-            metadata: Title, description, tags, etc.
         """
         if platform == "youtube":
             return await self.youtube.upload_video(
+                user_id=user_id,
                 video_path=video_path,
                 title=metadata.get("title", "Untitled"),
                 description=metadata.get("description", ""),
@@ -143,7 +151,10 @@ class PublishingService:
                 privacy_status=metadata.get("privacy", "private")
             )
         elif platform == "tiktok":
-            raise NotImplementedError("TikTok publishing coming soon")
+            # TikTok Direct API is enterprise-only. 
+            # For now, we return a structured response indicating manual action needed
+            # or use a third-party service like Zapier webhook.
+            raise NotImplementedError("TikTok direct publishing requires Enterprise API access. Please use the manual download option.")
         else:
             raise ValueError(f"Unsupported platform: {platform}")
 
