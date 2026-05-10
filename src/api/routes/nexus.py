@@ -439,6 +439,25 @@ async def get_nexus_job(
     return success_response(data=job)
 
 
+@router.delete("/jobs/{job_id}")
+async def delete_nexus_job(
+    job_id: str,
+    current_user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    from sqlalchemy import delete
+    stmt = delete(NexusJobDB).where(
+        NexusJobDB.id == job_id, NexusJobDB.user_id == current_user.id
+    )
+    result = await db.execute(stmt)
+    await db.commit()
+    
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Job not found or unauthorized")
+        
+    return success_response(data={"status": "deleted", "id": job_id})
+
+
 @router.get("/telemetry")
 async def get_nexus_telemetry(
     current_user=Depends(get_current_user), db=Depends(get_db)
