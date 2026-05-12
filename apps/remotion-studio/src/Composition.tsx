@@ -56,10 +56,13 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
     const resolvePath = (url?: string) => {
         if (!url) return undefined;
         if (url.startsWith('http')) return url;
-        if (url.startsWith('./assets/') || url.startsWith('assets/')) {
-            return staticFile(url.replace('./', ''));
-        }
-        return url;
+        
+        // Remove leading slashes and dot-slashes to ensure clean staticFile path
+        let cleanUrl = url;
+        if (cleanUrl.startsWith('./')) cleanUrl = cleanUrl.substring(2);
+        if (cleanUrl.startsWith('/')) cleanUrl = cleanUrl.substring(1);
+        
+        return staticFile(cleanUrl);
     };
 
     const resolvedVideoUrl = resolvePath(video_url);

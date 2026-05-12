@@ -19,14 +19,18 @@ class StockService:
         Searches for videos matching the keyword.
         Priority: Pexels (High Quality) -> Mixkit/Coverr (Free Fallback)
         """
+        # Re-read key each call to pick up late-set env vars
+        pexels_key = self.pexels_api_key or get_secret("pexels_api_key")
+        pexels_headers = {"Authorization": pexels_key} if pexels_key else {}
+        
         urls = []
 
         # 1. Try Pexels First
-        if self.pexels_api_key and self.pexels_api_key != "your_key_here":
+        if pexels_key and pexels_key != "your_key_here":
             try:
                 async with httpx.AsyncClient() as client:
                     params = {"query": keyword, "per_page": 5, "orientation": "portrait"}
-                    response = await client.get(f"{self.pexels_base_url}/search", params=params, headers=self.pexels_headers)
+                    response = await client.get(f"{self.pexels_base_url}/search", params=params, headers=pexels_headers)
                     response.raise_for_status()
                     data = response.json()
                     videos = data.get("videos", [])

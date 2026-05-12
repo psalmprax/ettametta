@@ -35,7 +35,8 @@ mock_names = [
     "moviepy.video.io", "moviepy.video.io.VideoFileClip", "moviepy.video.compositing",
     "moviepy.audio.AudioClip", "moviepy.audio.fx", "moviepy.audio.fx.all", "moviepy.afx",
     "moviepy.audio.AudioClip.CompositeAudioClip",
-    "cv2", "numpy", "torch", "gtts", "easyocr", "PIL", "pil", "replicate", "fal_client", "remotion"
+    "cv2", "numpy", "torch", "gtts", "easyocr", "PIL", "pil", "replicate", "fal_client", "remotion",
+    "langsmith", "langsmith.testing", "langsmith.client"
 ]
 for name in mock_names:
     create_mock_module(name)

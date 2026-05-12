@@ -47,7 +47,7 @@ class TwitchPublisher(SocialPublisher):
 
         # Twitch clips are created from live streams, not uploaded
         # For now, we'll create a clip from an existing video URL
-        if not video_path.startswith(("http://", "https://")):
+        if not video_path or not video_path.startswith(("http://", "https://")):
             logger.error(
                 "[TwitchPublisher] Twitch requires video URLs for clip creation"
             )
@@ -126,7 +126,7 @@ class TwitchPublisher(SocialPublisher):
 
     async def _resolve_video_uri(self, video_path: str) -> str | None:
         """Resolve video path to URL"""
-        if video_path.startswith(("http://", "https://")):
+        if video_path and video_path.startswith(("http://", "https://")):
             return video_path
 
         # Twitch clips require live streams, so local files aren't supported

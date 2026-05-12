@@ -23,7 +23,7 @@ class MessageDispatcher:
         try:
             logger.info(f"Attempting broadcast to {identifier}")
 
-            is_whatsapp = identifier.startswith("whatsapp:") or (
+            is_whatsapp = (identifier and identifier.startswith("whatsapp:")) or (
                 platform_hint and platform_hint.lower() == "whatsapp"
             )
 
@@ -84,7 +84,7 @@ class MessageDispatcher:
                 from_num = f"whatsapp:{settings.TWILIO_WHATSAPP_NUMBER.replace('whatsapp:', '')}"
                 to_num = (
                     phone_number
-                    if phone_number.startswith("whatsapp:")
+                    if phone_number and phone_number.startswith("whatsapp:")
                     else f"whatsapp:{phone_number}"
                 )
 
