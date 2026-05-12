@@ -3,7 +3,7 @@
 import React, { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { CheckCircle2, MoreVertical, CreditCard, Trash2, RotateCcw, Share } from "lucide-react";
+import { CheckCircle2, MoreVertical, CreditCard, Trash2, RotateCcw, Share2, Activity, Zap } from "lucide-react";
 
 interface DesignCardProps {
   title: string;
@@ -32,7 +32,6 @@ export function DesignCard({
   footerInfo,
   toolsStatus = "Offline",
   onClick,
-  actions,
   onRefresh,
   onDelete,
   onShare,
@@ -41,50 +40,62 @@ export function DesignCard({
 }: DesignCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.98 }}
+      whileHover={{ y: -4 }}
       animate={{ opacity: 1, scale: 1 }}
       onClick={onClick}
       className={cn(
-        "group bg-[#0F0F11] border border-white/5 hover:border-cyan-500/30 rounded-[20px] p-4 sm:p-5 transition-all duration-300 relative overflow-hidden flex flex-col h-full",
+        "group bg-[#0B0B0D] border border-white/5 hover:border-cyan-500/30 rounded-[24px] p-5 transition-all duration-500 relative overflow-hidden flex flex-col h-full shadow-2xl",
         onClick && "cursor-pointer active:scale-95"
       )}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-[60px] -mr-16 -mt-16 group-hover:bg-cyan-500/10 transition-all duration-700" />
+      <div className="absolute bottom-0 left-0 w-24 h-24 bg-violet-500/5 blur-[50px] -ml-12 -mb-12 group-hover:bg-violet-500/10 transition-all duration-700" />
       
+      {/* Scanning Line Effect */}
+      <div className="absolute inset-0 bg-linear-to-b from-transparent via-cyan-500/[0.03] to-transparent h-[200%] -translate-y-full group-hover:animate-scan-slow pointer-events-none opacity-0 group-hover:opacity-100" />
+
       {/* Card Header */}
-      <div className="flex items-center justify-between mb-4 relative z-10 gap-2">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="h-5 w-5 bg-white/10 rounded flex items-center justify-center shrink-0">
-             <div className="h-2.5 w-2.5 border-2 border-white rounded-sm" />
+      <div className="flex items-start justify-between mb-6 relative z-10 gap-4">
+        <div className="flex items-start gap-4 min-w-0">
+          <div className="h-10 w-10 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center shrink-0 group-hover:border-cyan-500/30 transition-colors shadow-inner">
+             <Activity className="h-5 w-5 text-cyan-400 group-hover:scale-110 transition-transform" />
           </div>
-          <h3 className="text-xs sm:text-sm font-bold tracking-tight text-slate-200 truncate">
-            {title}
-          </h3>
+          <div className="flex flex-col min-w-0">
+            <h3 className="text-sm font-black tracking-tight text-white uppercase group-hover:text-cyan-400 transition-colors truncate">
+              {title}
+            </h3>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="h-1 w-1 rounded-full bg-cyan-500/50" />
+              <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{footerInfo || "Telemetry Stream Active"}</span>
+            </div>
+          </div>
         </div>
         
         <span className={cn(
-          "shrink-0 px-1.5 py-0.5 rounded-md text-[8px] sm:text-[9px] font-black uppercase tracking-[0.15em] leading-none",
-          (status === "Current" || status === "Active" || status === "Completed" || status === "Optimized" || status === "Story") ? "bg-emerald-500/10 text-emerald-500" :
-          (status === "Scheduled" || status === "Syncing" || status === "Live Polling" || status === "Nominal") ? "bg-amber-500/10 text-amber-500" :
-          (status === "Archived") ? "bg-slate-500/10 text-slate-500" :
-          "bg-slate-800 text-slate-400"
+          "shrink-0 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] leading-none border",
+          (status === "Current" || status === "Active" || status === "Completed" || status === "Optimized" || status === "Story") ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
+          (status === "Scheduled" || status === "Syncing" || status === "Live Polling" || status === "Nominal") ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+          (status === "Archived") ? "bg-zinc-800 text-zinc-500 border-zinc-700" :
+          "bg-rose-500/10 text-rose-500 border-rose-500/20"
         )}>
           {status}
         </span>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-2 gap-y-3 gap-x-3 mb-4 relative z-10 flex-grow">
+      {/* Metrics Grid - Tactical High Density */}
+      <div className="grid grid-cols-2 gap-4 mb-6 relative z-10 flex-grow">
         {metrics?.map((metric, i) => (
-          <div key={i} className="space-y-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
-              <span className="text-[9px] font-semibold text-slate-500 truncate">{metric.label}</span>
-              <span className={cn("text-[9px] font-black tracking-tight", metric.color || "text-emerald-500")}>
+          <div key={i} className="space-y-3 p-3 rounded-2xl bg-white/[0.02] border border-white/5 group-hover:bg-white/[0.04] transition-all">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">{metric.label}</span>
+              <span className={cn("text-lg font-black tabular-nums tracking-tighter", metric.color || "text-emerald-500")}>
                 {metric.value}
               </span>
             </div>
             {metric.progress !== undefined && (
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+              <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${metric.progress}%` }}
@@ -96,68 +107,67 @@ export function DesignCard({
         ))}
       </div>
 
-      {/* Credits/Value Section */}
-      <div className="bg-black/40 border border-white/5 rounded-lg p-1.5 flex items-center justify-between mb-2 relative z-10">
-        <div className="flex items-center gap-1.5">
-          <CreditCard className="h-2.5 w-2.5 text-amber-500" />
-          <span className="text-[8px] font-bold text-slate-500 uppercase">Credits</span>
+      {/* Action Overlay Hub */}
+      <div className="flex items-center gap-2 mb-6 relative z-10">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-1.5 flex items-center justify-between flex-1 mr-2 px-4 h-11">
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-3.5 w-3.5 text-amber-500" />
+            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Credits</span>
+          </div>
+          <span className="text-xs font-mono font-black text-white tracking-widest tabular-nums">{credits?.toLocaleString() || "0"}</span>
         </div>
-        <span className="text-[10px] font-mono font-black text-white tracking-widest">{credits?.toLocaleString() || "0"}</span>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {onShare && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onShare(); }}
+              className="h-11 w-11 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/10 text-zinc-400 hover:text-white group/btn"
+            >
+              <Share2 className="h-4 w-4 group-hover/btn:scale-110 transition-transform" />
+            </button>
+          )}
+          {onRefresh && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onRefresh(); }}
+              className="h-11 w-11 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center transition-all border border-white/10 text-zinc-400 hover:text-white group/btn"
+            >
+              <RotateCcw className="h-4 w-4 group-hover/btn:rotate-180 transition-transform duration-500" />
+            </button>
+          )}
+          {onMore && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onMore(); }}
+              className="h-11 w-11 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-2xl flex items-center justify-center transition-all border border-cyan-500/20 text-cyan-400 group/btn"
+            >
+              <MoreVertical className="h-4 w-4 group-hover/btn:scale-110 transition-transform" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Action Overlay */}
-      <div className="flex items-center gap-2 mt-auto mb-3 relative z-10">
-        {onMore && (
-          <button 
-            onClick={(e) => { e.stopPropagation(); onMore(); }}
-            className="h-8 w-8 bg-white/5 hover:bg-cyan-500/10 rounded-xl flex items-center justify-center transition-all border border-white/5 text-cyan-400 hover:text-cyan-300 hover:border-cyan-500/30 active:scale-90"
-          >
-            <motion.div whileHover={{ scale: 1.1 }}><MoreVertical className="h-3.5 w-3.5" /></motion.div>
-          </button>
-        )}
-        {onRefresh && (
-          <button 
-            onClick={(e) => { e.stopPropagation(); onRefresh(); }}
-            className="h-8 w-8 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-all border border-white/5 text-slate-400 hover:text-white hover:border-white/20 active:scale-90"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </button>
-        )}
-        {onShare && (
-          <button 
-            onClick={(e) => { e.stopPropagation(); onShare(); }}
-            className="h-8 w-8 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center transition-all border border-white/5 text-slate-400 hover:text-white hover:border-white/20 active:scale-90"
-          >
-            <Share className="h-3.5 w-3.5" />
-          </button>
-        )}
-        {onDelete && (
-          <button 
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="h-8 w-8 bg-rose-500/10 hover:bg-rose-500/20 rounded-xl flex items-center justify-center transition-all border border-rose-500/10 text-rose-400 hover:text-rose-300 active:scale-90 ml-auto"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-
-      {/* Footer Info */}
+      {/* Footer Status Engine */}
       <div className="flex items-center justify-between pt-4 border-t border-white/5 relative z-10">
-        <span className="text-[8px] font-mono text-slate-600 uppercase tracking-widest truncate mr-2">
-          {footerInfo || new Date().toLocaleString()}
-        </span>
+        <div className="flex items-center gap-2">
+          <Zap className="h-3 w-3 text-zinc-600" />
+          <span className="text-[8px] font-mono text-zinc-600 uppercase tracking-[0.2em] truncate">
+            {footerInfo || "NEURAL_LINK_STABLE"}
+          </span>
+        </div>
         
         <div className={cn(
-          "flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[8px] font-bold transition-all shrink-0",
+          "flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest transition-all shrink-0",
           (toolsStatus === "Online" || toolsStatus === "Live Polling") ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : 
           toolsStatus === "Syncing" ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
           toolsStatus === "Archived" ? "bg-zinc-800 border-zinc-700 text-zinc-500" :
           "bg-rose-500/10 border-rose-500/20 text-rose-500"
         )}>
-          <div className={cn("h-1.5 w-1.5 rounded-full", (toolsStatus === "Online" || toolsStatus === "Live Polling") ? "bg-emerald-500 animate-pulse" : toolsStatus === "Syncing" ? "bg-amber-500 animate-pulse" : toolsStatus === "Archived" ? "bg-zinc-600" : "bg-rose-500")} />
-          Tools: {toolsStatus}
+          <div className={cn("h-1.5 w-1.5 rounded-full", (toolsStatus === "Online" || toolsStatus === "Live Polling") ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" : toolsStatus === "Syncing" ? "bg-amber-500 animate-pulse shadow-[0_0_8px_#f59e0b]" : toolsStatus === "Archived" ? "bg-zinc-600" : "bg-rose-500 shadow-[0_0_8px_#ef4444]")} />
+          {toolsStatus}
         </div>
       </div>
+
+      {/* Decorative Corner Tab */}
+      <div className="absolute bottom-0 right-0 w-8 h-8 bg-white/2 translate-x-4 translate-y-4 rotate-45 group-hover:bg-cyan-500/20 transition-all duration-700" />
     </motion.div>
   );
 }

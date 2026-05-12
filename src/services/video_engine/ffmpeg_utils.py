@@ -133,8 +133,9 @@ class FFmpegTransformer:
         
         for i in range(count):
             thumb_path = f"{output_dir}/thumb_{i}.jpg"
-            # Extract frame at different percentages
-            time_at = f"{i * 20}%"
+            # Extract frame at safe intervals (seconds)
+            # Default to 2s, 4s, 6s... for short clips, or use absolute time
+            time_at = str(i * 2 + 1) # 1s, 3s, 5s...
             cmd = [
                 "ffmpeg", "-y", "-ss", time_at, "-i", input_path,
                 "-vframes", "1", "-q:v", "2", thumb_path
@@ -196,18 +197,25 @@ class FFmpegTransformer:
         except:
             return False
 
-    def mix_production_audio(self, video_path: str, voiceover_path: str, music_path: str, output_path: str, music_volume: float = 0.15) -> bool:
+    def mix_production_audio_with_ducking(self, video_path: str, voiceover_path: str, music_path: str, output_path: str, music_volume: float = 0.25) -> bool:
         """
-        Elite Production Mix: Combines visuals with Voiceover and Background Music.
-        Discards existing segment audio to ensure professional narration clarity.
+        Elite Production Mix: Voiceover + Background Music with SMART DUCKING.
+        Uses sidechain compression to automatically lower music when the VO is active.
         """
+        # sidechaincompress filter:
+        # threshold=0.1: Music level at which compression starts
+        # ratio=4: How much to lower the music
+        # attack=20: How fast the music lowers
+        # release=200: How fast the music returns
         cmd = [
             "ffmpeg", "-y",
-            "-i", video_path,
             "-i", voiceover_path,
             "-i", music_path,
             "-filter_complex",
-            f"[1:a]volume=1.0[vo];[2:a]volume={music_volume}[bg];[vo][bg]amix=inputs=2:duration=first",
+            f"[1:a]volume={music_volume}[bg];"
+            "[bg][0:a]sidechaincompress=threshold=0.1:ratio=4:attack=20:release=200[mixed_audio]",
+            "-i", video_path,
+            "-map", "2:v", "-map", "[mixed_audio]",
             "-c:v", "copy",
             "-c:a", "aac", "-b:a", "192k", "-shortest",
             output_path
@@ -337,13 +345,19 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         ]
         return self._run_cmd(cmd)
 
-    def apply_fast_transform(self, input_path: str, output_path: str) -> bool:
-        """Rapid transform for fast-track production."""
+    def apply_fast_transform(self, input_path: str, output_path: str, width: int = 1080, height: int = 1920) -> bool:
+        """
+        Rapid transform for fast-track production. 
+        Ensures exact resolution and aspect ratio alignment for seamless fusion.
+        """
+        # Smart crop: Scale to fill, then crop center
+        filter_str = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}"
+        
         cmd = [
             "ffmpeg", "-y", "-i", input_path,
-            "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
+            "-vf", filter_str,
             "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
-            "-c:a", "copy",
+            "-c:a", "aac", "-b:a", "128k", "-ac", "2", # Ensure consistent audio format too
             output_path
         ]
         return self._run_cmd(cmd)

@@ -120,7 +120,7 @@ class InstagramPublisher(SocialPublisher):
         """Resolve video path to URL - return if already URL, otherwise handle local file"""
         import os
 
-        if video_path.startswith(("http://", "https://")):
+        if video_path and video_path.startswith(("http://", "https://")):
             return video_path
 
         if os.path.isfile(video_path):

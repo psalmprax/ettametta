@@ -9,7 +9,7 @@ import json
 async def test_get_blueprints():
     # App routers are triple-prefixed: /api + /v1 + /nexus + router_prefix(/nexus)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        response = await ac.get("/api/v1/nexus/nexus/blueprints")
+        response = await ac.get("/api/v1/nexus/blueprints")
     # Real-First: Expect 200 or 401 if auth is strictly enforced
     assert response.status_code in [200, 401]
     if response.status_code == 200:
@@ -26,7 +26,7 @@ async def test_nexus_composition_route():
     }
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # Note: This might return 401 if auth is enforced, but we test the route logic
-        response = await ac.post("/api/v1/nexus/nexus/compose", json=payload)
+        response = await ac.post("/api/v1/nexus/compose", json=payload)
     
     assert response.status_code in [200, 401]
 
@@ -34,10 +34,10 @@ async def test_nexus_composition_route():
 async def test_trigger_scan_bridge_timeout():
     """Verify handling of Go service timeout."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        with patch("api.routes.discovery.httpx.AsyncClient.post", side_effect=httpx.ReadTimeout("Read timeout")):
+        with patch("src.api.routes.discovery.httpx.AsyncClient.post", side_effect=httpx.ReadTimeout("Read timeout")):
             with pytest.raises(httpx.ReadTimeout):
                 await ac.post(
-                    "/api/v1/discovery/discovery/scan",
+                    "/api/v1/discovery/scan",
                     json={"niches": ["Technology"]}
                 )
 
@@ -48,7 +48,7 @@ async def test_discovery_deep_scan_route():
         "deep": True
     }
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        response = await ac.post("/api/v1/discovery/discovery/scan", json=payload)
+        response = await ac.post("/api/v1/discovery/scan", json=payload)
     
     assert response.status_code in [200, 401]
 
@@ -68,9 +68,9 @@ async def test_trigger_scan_bridge_failure():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         # We expect the error to bubble up or return 500. 
         # In ASGITransport, it often bubbles up if not caught by middleware.
-        with patch("api.routes.discovery.httpx.AsyncClient.post", side_effect=httpx.ConnectError("Connection refused")):
+        with patch("src.api.routes.discovery.httpx.AsyncClient.post", side_effect=httpx.ConnectError("Connection refused")):
             with pytest.raises(httpx.ConnectError):
                 await ac.post(
-                    "/api/v1/discovery/discovery/scan",
+                    "/api/v1/discovery/scan",
                     json={"niches": ["Technology"]}
                 )

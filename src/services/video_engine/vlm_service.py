@@ -117,7 +117,7 @@ class VLMService:
 
     async def _analyze_local(self, frame_paths: list[str]) -> dict | None:
         """Analyzes using Moondream2 on the remote inference node."""
-        render_node_url = os.getenv("RENDER_NODE_URL")
+        render_node_url = settings.RENDER_NODE_URL
         if not render_node_url: return None
 
         try:
@@ -126,7 +126,7 @@ class VLMService:
             
             async with httpx.AsyncClient(timeout=30) as client:
                 resp = await client.post(
-                    f"{render_node_url}/vlm/analyze",
+                    f"{render_node_url.rstrip('/')}/vlm/analyze",
                     json={"image_base64": b64_img}
                 )
                 if resp.status_code == 200:

@@ -124,7 +124,7 @@ class SnapchatPublisher(SocialPublisher):
 
     async def _resolve_video_uri(self, video_path: str) -> str | None:
         """Resolve video path to URL - upload to Snapchat's media endpoint"""
-        if video_path.startswith(("http://", "https://")):
+        if video_path and video_path.startswith(("http://", "https://")):
             return video_path
 
         if os.path.isfile(video_path):

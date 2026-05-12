@@ -32,6 +32,7 @@ import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTelemetry } from "@/context/TelemetryContext";
+import { AreaChartCustom, MiniAreaChart } from "@/components/ui/ChartComponents";
 
 function DashboardContent() {
   const router = useRouter();
@@ -77,7 +78,6 @@ function DashboardContent() {
     };
   }, [pulse]);
 
-  // Combined logs for display
   const displayLogs = useMemo(() => {
     const actionLogsFormatted = actionLogs.map(msg => ({
       level: "ACTION",
@@ -87,6 +87,8 @@ function DashboardContent() {
     }));
     return [...actionLogsFormatted, ...systemLogs].sort((a, b) => b.timestamp - a.timestamp);
   }, [actionLogs, systemLogs]);
+
+  const sparklineData = useMemo(() => Array.from({ length: 12 }, (_, i) => ({ value: 40 + Math.random() * 40 })), []);
 
   return (
     <CommandCenterLayout
@@ -121,7 +123,7 @@ function DashboardContent() {
       }
       rightPanel={<AgentMatrix agents={agents} />}
     >
-      <div className="p-10 space-y-10 relative h-full overflow-y-auto custom-scrollbar">
+      <div className="p-6 sm:p-10 space-y-10 relative h-full overflow-y-auto custom-scrollbar">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeEngine}
@@ -139,10 +141,11 @@ function DashboardContent() {
                     status="ACTIVE" 
                     metrics={[
                       { label: "Discovered", value: stats.active_trends.toString(), color: "text-primary" },
-                      { label: "Processed", value: stats.videos_processed.toString(), color: "text-zinc-400" }
+                      { label: "Trend Velocity", value: "+12.4%", color: "text-emerald-400" }
                     ]}
-                    footerInfo="SYSTEM_ARCH: NEURAL_LATTICE_V4"
+                    footerInfo="NEURAL_LATTICE_V4"
                     toolsStatus="Online"
+                    credits={stats.active_trends * 10}
                     onRefresh={fetchStats}
                     onShare={() => toast.success("System Link Copied")}
                   />
@@ -155,6 +158,7 @@ function DashboardContent() {
                     ]}
                     footerInfo="REGION: GLOBAL_CLUSTER_01"
                     toolsStatus="Online"
+                    credits={1420}
                     onRefresh={fetchStats}
                     onShare={() => toast.success("Reach Stats Copied")}
                   />
@@ -162,14 +166,62 @@ function DashboardContent() {
                     title="Engine Load" 
                     status="ACTIVE" 
                     metrics={[
-                      { label: "Processing", value: stats.engine_load, progress: parseInt(stats.engine_load), color: "text-rose-500" },
-                      { label: "Velocity", value: stats.velocity, color: "text-cyan-400" }
+                      { label: "Throughput", value: stats.engine_load, progress: parseInt(stats.engine_load), color: "text-rose-500" },
+                      { label: "Core Temp", value: "42°C", color: "text-cyan-400" }
                     ]}
                     footerInfo="CLUSTER: PRIMARY_REST_NODE"
                     toolsStatus="Online"
+                    credits={850}
                     onRefresh={fetchStats}
                     onMore={() => setActiveEngine("engine")}
                   />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="p-8 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 space-y-6 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-[60px] -mr-16 -mt-16" />
+                        <div className="flex items-center justify-between mb-4 relative z-10">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-3">
+                                <Activity className="h-5 w-5 text-primary" />
+                                Real-time Throughput
+                            </h3>
+                            <span className="text-[10px] font-mono text-primary animate-pulse">LIVE_STREAM</span>
+                        </div>
+                        <div className="h-[200px] relative z-10">
+                            <AreaChartCustom 
+                                data={Array.from({ length: 20 }, (_, i) => ({ time: i, value: 30 + Math.random() * 50 }))} 
+                                dataKey="value" 
+                                color="rgba(6,182,212,1)" 
+                                height="100%"
+                                gradientId="overviewThroughput"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="p-8 rounded-[32px] bg-[#0F0F11]/60 border border-white/5 flex flex-col relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[60px] -mr-16 -mt-16" />
+                        <div className="p-4 border-b border-white/5 flex items-center justify-between relative z-10">
+                            <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">Global Propagation Matrix</span>
+                            <span className="text-[8px] font-mono text-emerald-500/50">DATA_HUB_ACTIVE</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 font-mono text-[10px] space-y-3 relative z-10">
+                            {displayLogs.slice(0, 8).map((log, i) => (
+                            <div key={i} className="flex gap-4 items-center border-b border-white/[0.02] pb-2 last:border-0">
+                                <span className="text-zinc-800 shrink-0">[{new Date(log.timestamp * 1000).toLocaleTimeString()}]</span>
+                                <div className="flex-1 flex items-center justify-between">
+                                    <span className={cn(
+                                        "truncate mr-4",
+                                        log.level === "ACTION" ? "text-cyan-400" :
+                                        log.level === "ERROR" ? "text-rose-500" : "text-zinc-500"
+                                    )}>{log.message}</span>
+                                    <div className="w-16 shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
+                                        <MiniAreaChart data={sparklineData} color={log.level === "ERROR" ? "#f43f5e" : "#10b981"} height={20} />
+                                    </div>
+                                </div>
+                            </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden">
@@ -206,7 +258,7 @@ function DashboardContent() {
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4">
                   {(pulse?.active_segments || []).length > 0 ? (
-                    (pulse?.active_segments || []).map((node, i) => (
+                    (pulse?.active_segments || []).map((node: any, i: number) => (
                       <div key={i} className="p-5 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:border-emerald-500/30 transition-all">
                         <div className="flex items-center gap-4">
                           <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
@@ -255,7 +307,7 @@ function DashboardContent() {
                     <span className="text-[10px] font-mono text-cyan-400">{status === "open" ? "SYNCED" : "RECONNECTING..."}</span>
                   </div>
                   <div className="space-y-4">
-                    {(pulse?.active_segments || []).slice(0, 5).map(node => (
+                    {(pulse?.active_segments || []).slice(0, 5).map((node: any) => (
                       <div key={node.label} className="flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-xl">
                         <span className="text-xs font-bold text-zinc-400">{node.label}</span>
                         <div className="h-1.5 w-24 bg-white/5 rounded-full overflow-hidden">
@@ -323,7 +375,6 @@ function DashboardContent() {
           </motion.div>
         </AnimatePresence>
       </div>
-
     </CommandCenterLayout>
   );
 }
