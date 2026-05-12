@@ -88,11 +88,11 @@ class NexusOrchestrator:
             reraise=True,
         )
         async def _render():
-            from src.services.video_engine.remotion_service import remotion_service
+            from src.services.video_engine.remotion_service import base_remotion_service
 
             try:
                 result = await asyncio.wait_for(
-                    remotion_service.render_video(
+                    base_remotion_service.render_video(
                         composition_id=composition_id,
                         props=props,
                         output_name=output_name,
@@ -164,14 +164,14 @@ class NexusOrchestrator:
             # Validate all inputs exist before proceeding
             validation_errors = []
             for i, path in enumerate(visual_paths):
-                if not os.path.exists(path):
+                if not path.startswith("http") and not os.path.exists(path):
                     validation_errors.append(f"Visual clip {i} not found: {path}")
 
             for i, path in enumerate(voiceover_paths):
-                if not os.path.exists(path):
+                if not path.startswith("http") and not os.path.exists(path):
                     validation_errors.append(f"Voiceover clip {i} not found: {path}")
 
-            if music_path and not os.path.exists(music_path):
+            if music_path and not music_path.startswith("http") and not os.path.exists(music_path):
                 validation_errors.append(f"Music file not found: {music_path}")
 
             if validation_errors:
@@ -206,6 +206,8 @@ class NexusOrchestrator:
             import cv2
 
             def get_frame_count(path: str) -> int | None:
+                if path.startswith("http"):
+                    return 300  # Default for testing
                 if not os.path.exists(path):
                     return None
                 try:

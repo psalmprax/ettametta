@@ -48,8 +48,14 @@ class Settings(BaseSettings):
     OLLAMA_URL: str = "http://ollama:11434"  # Local Ollama server (Docker service)
     OLLAMA_MODEL: str = "hermes3:latest"  # Verified model for production cluster
     LM_STUDIO_URL: str = "http://localhost:1234"  # Local LM Studio server
-    DEFAULT_LLM_PROVIDER: str = "ollama"  # groq, openai, xai, deepseek, anthropic, cohere, mistral, cerebras, cloudflare, huggingface, openrouter, nvidia, ollama_cloud, siliconflow, ollama, lm_studio
+    DEFAULT_LLM_PROVIDER: str = "ollama"  # groq, openai, xai, deepseek, anthropic, cohere, mistral, cerebras, cloudflare, huggingface, openrouter, nvidia, ollama_cloud, siliconflow, ollama, lm_studio, dify
     FALLBACK_LLM_PROVIDER: str = "openai"
+
+    # Dify AI Orchestration
+    DIFY_API_URL: str = "http://localhost:7200/api/v1"
+    DIFY_API_KEY: str | None = None
+    DIFY_DATASET_API_KEY: str | None = None
+    DIFY_TIMEOUT: int = 120
 
     USE_OS_MODELS: bool = True
 
@@ -101,8 +107,9 @@ class Settings(BaseSettings):
     SHOPIFY_ACCESS_TOKEN: str | None = None
 
     # Scraper Cookies (Bypass Bot Detection)
-    YOUTUBE_COOKIES_PATH: str | None = "cookies/youtube_cookies.txt"
-    TIKTOK_COOKIES_PATH: str | None = "cookies/tiktok_cookies.txt"
+    COOKIES_DIR: str = "data/storage/cookies"
+    YOUTUBE_COOKIES_PATH: str | None = "data/storage/cookies/youtube_cookies.txt"
+    TIKTOK_COOKIES_PATH: str | None = "data/storage/cookies/tiktok_cookies.txt"
 
     # Infrastructure
     PRODUCTION_DOMAIN: str = "http://localhost:8000"
@@ -345,9 +352,9 @@ class Settings(BaseSettings):
                     self.GOOGLE_API_KEY,
                 ]
             )
-            if not has_llm:
+            if not has_llm and not self.DIFY_API_KEY:
                 result["errors"].append(
-                    "At least one LLM API key required: GROQ_API_KEY, OPENAI_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY"
+                    "At least one LLM API key required: GROQ_API_KEY, OPENAI_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, or DIFY_API_KEY"
                 )
 
         # Development warnings (non-blocking)

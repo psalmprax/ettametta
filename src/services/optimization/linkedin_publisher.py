@@ -151,7 +151,7 @@ class LinkedInPublisher(SocialPublisher):
             with open(video_path, "rb") as f:
                 return f.read()
 
-        if video_path.startswith(("http://", "https://")):
+        if video_path and video_path.startswith(("http://", "https://")):
             dl_resp = await client.get(video_path)
             if dl_resp.status_code == 200:
                 return dl_resp.content

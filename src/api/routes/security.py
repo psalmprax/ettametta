@@ -5,7 +5,7 @@ import logging
 import datetime
 from src.api.routes.auth import get_current_user, admin_required
 from src.api.utils.user_models import UserDB, UserRole
-from src.services.security.service import base_security_sentinel
+from src.services.security.service import base_security_service
 
 router = APIRouter(prefix="/security", tags=["Security"])
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ async def get_security_status(current_user=Depends(get_current_user)):
     Requires authentication.
     """
     try:
-        return success_response(data=base_security_sentinel.get_security_status())
+        return success_response(data=base_security_service.get_security_status())
     except Exception as e:
         raise HTTPException(status_code=503, detail="Security service unavailable")
 
@@ -59,7 +59,7 @@ async def trigger_security_audit(current_user=Depends(admin_required)):
     Requires authentication (admin recommended).
     """
     try:
-        report = base_security_sentinel.audit_system_integrity()
+        report = base_security_service.audit_system_integrity()
         return success_response(data={"status": "Audit Complete", "report": report})
     except Exception as e:
         raise HTTPException(status_code=503, detail="Audit service unavailable")
@@ -71,7 +71,7 @@ async def get_security_events(current_user=Depends(get_current_user)):
     Returns the raw list of security events from the sentinel.
     Requires authentication.
     """
-    status = base_security_sentinel.get_security_status()
+    status = base_security_service.get_security_status()
     return success_response(data=status.get("recent_events", []))
 
 
@@ -83,7 +83,7 @@ async def trigger_bias_scan(current_user=Depends(get_current_user)):
     try:
         # For now, we reuse the vulnerability scan logic or implement a specific bias scan
         # Real-First: Implementation over simulation.
-        results = base_security_sentinel.scan_for_vulnerabilities()
+        results = base_security_service.scan_for_vulnerabilities()
         return success_response(data={
             "status": "NOMINAL",
             "bias_score": 94.5,

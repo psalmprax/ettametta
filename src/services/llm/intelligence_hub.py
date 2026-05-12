@@ -117,6 +117,7 @@ class IntelligenceHub:
             "groq": CircuitBreaker("Groq-Challenger"),
             "gemini": CircuitBreaker("Gemini-Titan"),
             "vllm": CircuitBreaker("vLLM-Production-Edge"),
+            "dify": CircuitBreaker("Dify-Orchestrator"),
         }
 
         # Primary/Champion configuration
@@ -132,10 +133,47 @@ class IntelligenceHub:
         complexity: str = "medium",  # "low", "medium", "high"
         provider: str | None = None, # Explicit provider override
         rag_context: str | None = None, # RAG context to inject
+        timeout_seconds: int = 120,  # Global safety-net timeout
     ) -> dict[str, Any]:
         """
         Unified chat interface with complexity-based routing and failure persistence.
+        Global timeout ensures no single chat() call can hang indefinitely.
         """
+        try:
+            return await asyncio.wait_for(
+                self._chat_inner(
+                    prompt, system_prompt, session_id, json_mode,
+                    complexity, provider, rag_context
+                ),
+                timeout=timeout_seconds,
+            )
+        except asyncio.TimeoutError:
+            request_id = session_id or get_request_id()
+            logger.critical(
+                json.dumps(
+                    {
+                        "event": "hub_global_timeout",
+                        "request_id": request_id,
+                        "timeout_seconds": timeout_seconds,
+                        "msg": f"Global timeout ({timeout_seconds}s) exceeded for chat request",
+                    }
+                )
+            )
+            raise RuntimeError(
+                f"IntelligenceHub global timeout ({timeout_seconds}s) for request {request_id}"
+            )
+
+    async def _chat_inner(
+        self,
+        prompt: str,
+        system_prompt: str,
+        session_id: str | None,
+        json_mode: bool,
+        complexity: str,
+        provider: str | None,
+        rag_context: str | None,
+    ) -> dict[str, Any]:
+        """Inner implementation of chat, wrapped by the global timeout in chat()."""
         request_id = session_id or get_request_id()
 
         # Step 1: Route based on complexity
@@ -145,7 +183,7 @@ class IntelligenceHub:
         if provider:
             candidates = [provider]
         else:
-            candidates = [primary, "vllm", "ollama", "gemini", "groq", "openai"]
+            candidates = [primary, "dify", "vllm", "ollama", "gemini", "groq", "openai"]
         
         # Remove duplicates while preserving order
         candidates = list(dict.fromkeys(candidates))
@@ -227,6 +265,8 @@ class IntelligenceHub:
             # Premium reasoning
             if self.openai_key:
                 return "openai"
+            if settings.DIFY_API_KEY:
+                return "dify"
             if self.google_key:
                 return "gemini"
             return "ollama"
@@ -245,6 +285,8 @@ class IntelligenceHub:
             return await self._call_gemini(prompt, system, rid, json_mode, rag_context)
         elif provider == "vllm":
             return await self._call_vllm(prompt, system, rid, json_mode, rag_context)
+        elif provider == "dify":
+            return await self._call_dify(prompt, system, rid, json_mode, rag_context)
         raise ValueError(f"Unknown provider: {provider}")
 
     async def _call_ollama(
@@ -270,8 +312,9 @@ class IntelligenceHub:
         if json_mode:
             payload["format"] = "json"
 
-        # Standard: Dynamic Timeout for RAG operations (600s vs 300s)
-        timeout = 600 if rag_context else 300
+        # Standard: Dynamic Timeout for RAG operations (120s vs 90s)
+        # Kept tight to prevent Nexus jobs hanging in COMPOSING state
+        timeout = 120 if rag_context else 90
         
         async def _try_post(url):
             async with httpx.AsyncClient(timeout=timeout) as client:
@@ -281,7 +324,7 @@ class IntelligenceHub:
         try:
             start = time.time()
             resp = await _try_post(self.ollama_url)
-        except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as e:
             if self.ollama_url != self.fallback_ollama_url:
                 logger.warning(f"Ollama primary failed ({str(e)}), trying fallback: {self.fallback_ollama_url}")
                 self.ollama_url = self.fallback_ollama_url
@@ -499,6 +542,49 @@ class IntelligenceHub:
                 "latency_sec": latency,
                 "usage": data.get("usage", {}),
             }
+
+    async def _call_dify(
+        self, prompt: str, system: str, rid: str, json_mode: bool, rag_context: str | None = None
+    ) -> dict[str, Any]:
+        """Dify AI Orchestrator provider"""
+        from src.services.llm.dify_client import base_dify_client
+        
+        effective_prompt = prompt
+        if rag_context:
+            effective_prompt = f"Relevant Context:\n{rag_context}\n\nTask:\n{prompt}"
+            
+        # Combine system and user prompt for Dify query
+        query = f"Instruction: {system}\n\nInput: {effective_prompt}"
+        
+        start = time.time()
+        try:
+            # We use chat_messages by default for the orchestrator
+            response = await base_dify_client.chat_messages(
+                query=query,
+                user_id=f"ettametta_{rid}",
+                inputs={"json_mode": json_mode}
+            )
+            latency = time.time() - start
+            
+            content = response.get("answer", "")
+            
+            # Metadata for tracing
+            usage = {
+                "total_tokens": 0,
+            }
+            if "metadata" in response and "usage" in response["metadata"]:
+                usage = response["metadata"]["usage"]
+
+            return {
+                "response": content,
+                "latency_sec": latency,
+                "usage": usage,
+                "conversation_id": response.get("conversation_id"),
+                "message_id": response.get("id")
+            }
+        except Exception as e:
+            logger.error(f"Dify provider call failed: {e}")
+            raise
 
 
 # Singleton accessor

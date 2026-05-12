@@ -110,6 +110,7 @@ const config: Config = {
                 "spin-slow": "spin 3s linear infinite",
                 "pulse-neon": "pulse-neon 4s ease-in-out infinite",
                 "float": "float 6s ease-in-out infinite",
+                "scan-slow": "scan 10s linear infinite",
             },
             keyframes: {
                 "pulse-neon": {
@@ -119,6 +120,10 @@ const config: Config = {
                 "float": {
                     "0%, 100%": { transform: "translateY(0px)" },
                     "50%": { transform: "translateY(-10px)" },
+                },
+                "scan": {
+                    "0%": { transform: "translateY(-100%)" },
+                    "100%": { transform: "translateY(100%)" },
                 },
             },
         },

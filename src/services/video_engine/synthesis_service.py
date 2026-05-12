@@ -271,6 +271,24 @@ class GenerativeService:
         self.model_manager = ModelManager()
         self.gpu_queue = GpuQueueManager()
         self.circuit_breaker = CircuitBreaker()
+        
+        # Check optional dependencies
+        self.dependencies_available = {
+            "torch": TORCH_AVAILABLE,
+            "cv2": CV2_AVAILABLE,
+            "moviepy": MOVIEPY_AVAILABLE,
+            "diffusers": DIFFUSERS_AVAILABLE,
+            "faster_whisper": FASTER_WHISPER_AVAILABLE,
+        }
+
+        self.logger = logging.getLogger(__name__)
+        if not all(self.dependencies_available.values()):
+            missing = [k for k, v in self.dependencies_available.items() if not v]
+            self.logger.warning(
+                f"GenerativeService: Missing dependencies: {missing}. Some features may not work."
+            )
+        else:
+            self.logger.info("GenerativeService: All dependencies available.")
 
     def get_dependency_report(self):
         """Aggregate reports from media drivers and internal GPU status."""
@@ -337,24 +355,6 @@ class GenerativeService:
             "engine_failures": self.circuit_breaker.engine_failures,
             "issues": issues,
         }
-
-        # Check optional dependencies
-        self.dependencies_available = {
-            "torch": TORCH_AVAILABLE,
-            "cv2": CV2_AVAILABLE,
-            "moviepy": MOVIEPY_AVAILABLE,
-            "diffusers": DIFFUSERS_AVAILABLE,
-            "faster_whisper": FASTER_WHISPER_AVAILABLE,
-        }
-
-        self.logger = logging.getLogger(__name__)
-        if not all(self.dependencies_available.values()):
-            missing = [k for k, v in self.dependencies_available.items() if not v]
-            self.logger.warning(
-                f"GenerativeService: Missing dependencies: {missing}. Some features may not work."
-            )
-        else:
-            self.logger.info("GenerativeService: All dependencies available.")
 
     def _get_engine_params(self, engine: str) -> dict:
         """
@@ -734,16 +734,23 @@ class GenerativeService:
         try:
             payload = {
                 "prompt": prompt,
-                "engine": engine,
-                "aspect_ratio": aspect_ratio,
-                "steps": params.get("steps", 30),
-                "cfg": params.get("cfg", 6.0),
-                "cluster_secret": settings.AI_CLUSTER_SECRET,
+                "frames": params.get("frames", 121),
+                "steps": params.get("steps", 35),
+                "upscale_factor": params.get("upscale_factor", 4),
+                "enhance_face": params.get("enhance_face", True),
+                "quantize": params.get("quantize", True),
+                "force_reload": params.get("force_reload", False)
+            }
+
+            headers = {
+                "x-worker-token": settings.AI_CLUSTER_SECRET
             }
 
             async with httpx.AsyncClient(timeout=600) as client:
                 response = await client.post(
-                    f"{remote_url.rstrip('/')}/synthesize", json=payload
+                    f"{remote_url.rstrip('/')}/generate", 
+                    json=payload,
+                    headers=headers
                 )
 
             if response.status_code == 200:
@@ -1000,7 +1007,7 @@ class GenerativeService:
                 logging.warning(f"[GenerativeService] Gemini API failed: {e}")
 
         # Try remote GPU node
-        render_node_url = os.getenv("RENDER_NODE_URL")
+        render_node_url = settings.RENDER_NODE_URL
         if render_node_url:
             try:
                 payload = {
@@ -1012,7 +1019,7 @@ class GenerativeService:
                 headers = {"x-worker-token": settings.AI_CLUSTER_SECRET}
                 async with httpx.AsyncClient(timeout=300) as client:
                     response = await client.post(
-                        f"{render_node_url}/generate", json=payload, headers=headers
+                        f"{render_node_url.rstrip('/')}/generate", json=payload, headers=headers
                     )
                 if response.status_code == 200:
                     data = response.json()
@@ -1068,7 +1075,7 @@ class GenerativeService:
                 logging.warning(f"[GenerativeService] SiliconFlow API failed: {e}")
 
         # Try remote GPU node
-        render_node_url = os.getenv("RENDER_NODE_URL")
+        render_node_url = settings.RENDER_NODE_URL
         if render_node_url:
             try:
                 payload = {
@@ -1079,7 +1086,7 @@ class GenerativeService:
                 headers = {"x-worker-token": settings.AI_CLUSTER_SECRET}
                 async with httpx.AsyncClient(timeout=300) as client:
                     response = await client.post(
-                        f"{render_node_url}/generate", json=payload, headers=headers
+                        f"{render_node_url.rstrip('/')}/generate", json=payload, headers=headers
                     )
                 if response.status_code == 200:
                     data = response.json()
@@ -1106,7 +1113,7 @@ class GenerativeService:
         """
         import os
 
-        render_node_url = os.getenv("RENDER_NODE_URL")
+        render_node_url = settings.RENDER_NODE_URL
 
         if render_node_url:
             logging.info(
@@ -1123,14 +1130,14 @@ class GenerativeService:
                 headers = {"x-worker-token": settings.AI_CLUSTER_SECRET}
                 async with httpx.AsyncClient(timeout=300) as client:
                     response = await client.post(
-                        f"{render_node_url}/generate", json=payload, headers=headers
+                        f"{render_node_url.rstrip('/')}/generate", json=payload, headers=headers
                     )
 
                 if response.status_code == 200:
                     data = response.json()
                     job_id = data.get("job_id")
                     if job_id:
-                        return f"{render_node_url}/download/{job_id}"
+                        return f"{render_node_url.rstrip('/')}/download/{job_id}"
                 raise RuntimeError(
                     f"Remote GPU node returned {response.status_code}: {response.text[:200]}"
                 )
@@ -1244,17 +1251,23 @@ class GenerativeService:
         from pathlib import Path
 
         try:
-            # Import enhancement libraries
-            if not check_module_available("realesrgan") or not check_module_available("basicsr"):
+            # 1. Import enhancement libraries
+            try:
+                if not CV2_AVAILABLE or not check_module_available("realesrgan") or not check_module_available("basicsr"):
+                    logging.warning(
+                        "[GenerativeService] CV2, Real-ESRGAN or BasicSR not available, skipping enhancement"
+                    )
+                    return video_path
+
+                from realesrgan import RealESRGANer
+                from basicsr.archs.rrdbnet_arch import RRDBNet
+            except (ImportError, ModuleNotFoundError) as e:
                 logging.warning(
-                    "[GenerativeService] Real-ESRGAN or BasicSR not available, skipping enhancement"
+                    f"[GenerativeService] Failed to import enhancement libraries: {e}. Skipping enhancement."
                 )
                 return video_path
 
-            from realesrgan import RealESRGANer
-            from basicsr.archs.rrdbnet_arch import RRDBNet
-
-            # Create enhanced output path
+            # 2. Create enhanced output path
             video_dir = Path(video_path).parent
             video_name = Path(video_path).stem
             enhanced_path = video_dir / f"{video_name}_enhanced.mp4"
@@ -1263,7 +1276,7 @@ class GenerativeService:
                 f"[GenerativeService] Enhancing video quality with Real-ESRGAN: {video_path}"
             )
 
-            # Initialize Real-ESRGAN model (x4 upscale for quality)
+            # 3. Initialize Real-ESRGAN model
             model = RRDBNet(
                 num_in_ch=3,
                 num_out_ch=3,
@@ -1279,19 +1292,15 @@ class GenerativeService:
                 tile=400,
                 tile_pad=10,
                 pre_pad=0,
-                half=True,  # Use FP16 for memory efficiency
+                half=True,
             )
 
-            # Extract frames from video
+            # 4. Process frames
             import cv2
-
             cap = cv2.VideoCapture(video_path)
             fps = cap.get(cv2.CAP_PROP_FPS)
             frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-            # Create temp directory for frames
+            
             temp_dir = video_dir / f"temp_enhance_{uuid.uuid4().hex[:8]}"
             temp_dir.mkdir(exist_ok=True)
 
@@ -1303,42 +1312,31 @@ class GenerativeService:
                 if not ret:
                     break
 
-                # Enhance frame with Real-ESRGAN
                 enhanced_frame, _ = upscaler.enhance(frame, outscale=4)
                 enhanced_frames.append(enhanced_frame)
 
                 frame_idx += 1
                 if frame_idx % 10 == 0:
-                    logging.info(
-                        f"[GenerativeService] Enhanced {frame_idx}/{frame_count} frames"
-                    )
+                    logging.info(f"[GenerativeService] Enhanced {frame_idx}/{frame_count} frames")
 
             cap.release()
 
-            # Write enhanced video
+            # 5. Write output
             if enhanced_frames:
-                first_frame = enhanced_frames[0]
-                h, w = first_frame.shape[:2]
-
+                h, w = enhanced_frames[0].shape[:2]
                 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
                 out = cv2.VideoWriter(str(enhanced_path), fourcc, fps, (w, h))
 
                 for frame in enhanced_frames:
                     out.write(frame)
-
                 out.release()
 
-                # Cleanup temp files
                 import shutil
-
                 shutil.rmtree(temp_dir, ignore_errors=True)
-
-                logging.info(
-                    f"[GenerativeService] Video quality enhancement completed: {enhanced_path}"
-                )
+                
+                logging.info(f"[GenerativeService] Enhancement completed: {enhanced_path}")
                 return str(enhanced_path)
             else:
-                logging.warning("[GenerativeService] No frames to enhance")
                 return video_path
 
         except Exception as e:

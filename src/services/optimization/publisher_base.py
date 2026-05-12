@@ -95,7 +95,7 @@ class SocialPublisher(ABC):
             return False, "Video path is empty"
 
         # Check if it's a URL (external) or local file
-        if video_path.startswith(("http://", "https://")):
+        if video_path and video_path.startswith(("http://", "https://")):
             return True, "External URL - will validate after download"
 
         # Local file validation
