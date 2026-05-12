@@ -98,14 +98,38 @@ class DefaultSynthesisHandler:
 class TopicFusionSynthesisHandler:
     async def execute(self, inputs: dict, previous_results: dict, job_id: str) -> dict:
         from src.services.video_engine.scene_orchestrator import base_scene_orchestrator_service
+        from src.services.video_engine.synthesis_service import base_generative_service
+        
         topic = inputs.get("topic") or inputs.get("niche")
         cognition_res = previous_results.get("cognition", {})
         scenes = cognition_res.get("scenes", [])
         
+        # 1. Try Scene-Based Fusion (Discovery + Pexels)
         fusion_result = await base_scene_orchestrator_service.produce_scene_based_video(
             scenes=scenes,
             niche=inputs.get("niche", topic)
         )
+        
+        # 2. AI Fallback: If fusion failed because no assets were found, generate using AI
+        if not fusion_result.get("success") and fusion_result.get("reason") == "No compatible video files found or processing failed":
+            logger.warning("🔄 [Blueprint] Discovery failed. Triggering AI Video Generation fallback...")
+            
+            # Use the first scene's prompt for a short AI video
+            fallback_prompt = scenes[0].get("visual_prompt", topic) if scenes else topic
+            video_path = await base_generative_service.synthesize_video(
+                prompt=fallback_prompt,
+                engine="hunyuan", # Default reliable internal engine
+                aspect_ratio="9:16"
+            )
+            
+            if video_path:
+                return {
+                    "output_generated": True,
+                    "video_path": video_path,
+                    "method": "ai_generation_fallback",
+                    "fusion_details": fusion_result
+                }
+
         return {
             "output_generated": fusion_result.get("success", False),
             "video_path": fusion_result.get("video_path"),

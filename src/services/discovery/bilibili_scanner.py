@@ -165,7 +165,7 @@ class BilibiliScanner:
             # Get thumbnail (Bilibili uses specific format)
             pic = item.get("pic", "")
             if pic:
-                thumbnail = f"https:{pic}" if not pic.startswith("http") else pic
+                thumbnail = f"https:{pic}" if not (isinstance(pic, str) and pic.startswith("http")) else pic
             else:
                 thumbnail = ""
             
@@ -249,7 +249,7 @@ class BilibiliScanner:
             # Get thumbnail
             pic = item.get("pic", "")
             if pic:
-                thumbnail = f"https:{pic}" if not pic.startswith("http") else pic
+                thumbnail = f"https:{pic}" if not (isinstance(pic, str) and pic.startswith("http")) else pic
             else:
                 thumbnail = ""
             

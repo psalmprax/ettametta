@@ -1,26 +1,97 @@
 import logging
-from typing import Dict, Any
+import httpx
+from typing import Dict, Any, List, Optional
+from src.api.config import settings
 
 logger = logging.getLogger(__name__)
 
 
 class KnowledgeService:
-    """Stub knowledge service - returns empty stats."""
+    """
+    Production-grade Knowledge Service powered by Dify Datasets (RAG).
+    """
     
-    async def ingest_text(self, text: str, metadata: Dict[str, Any] = None) -> str:
-        """Ingest text into the knowledge base."""
-        return "stub-doc-id"
-    
-    async def query(self, text: str, limit: int = 3) -> list:
-        """Query the knowledge base."""
-        return []
-    
-    def get_stats(self) -> Dict[str, Any]:
-        """Get knowledge base statistics."""
+    def __init__(self):
+        self.api_key = settings.DIFY_DATASET_API_KEY
+        self.base_url = settings.DIFY_API_URL.rstrip("/")
+        self.timeout = settings.DIFY_TIMEOUT
+
+    def _get_headers(self) -> Dict[str, str]:
+        if not self.api_key:
+            return {}
         return {
-            "total_documents": 0,
-            "total_queries": 0,
-            "storage_used_mb": 0.0,
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+    def is_enabled(self) -> bool:
+        return bool(self.api_key)
+
+    async def ingest_text(self, text: str, dataset_id: str, metadata: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Ingest text into a Dify dataset.
+        """
+        if not self.is_enabled():
+            logger.warning("KnowledgeService (Dify) is disabled. Set DIFY_DATASET_API_KEY.")
+            return "disabled-id"
+
+        url = f"{self.base_url}/datasets/{dataset_id}/document/create-by-text"
+        payload = {
+            "name": f"ingested_{metadata.get('source', 'unknown')}" if metadata else "ingested_text",
+            "text": text,
+            "indexing_technique": "high_quality",
+            "process_rule": {"mode": "automatic"}
+        }
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            try:
+                response = await client.post(url, headers=self._get_headers(), json=payload)
+                response.raise_for_status()
+                data = response.json()
+                return data.get("document", {}).get("id", "unknown-id")
+            except Exception as e:
+                logger.error(f"Dify ingestion failed: {e}")
+                return "error-id"
+    
+    async def query(self, text: str, dataset_id: str, limit: int = 3) -> List[Dict[str, Any]]:
+        """
+        Query the knowledge base using Dify's search API.
+        """
+        if not self.is_enabled():
+            return []
+
+        url = f"{self.base_url}/datasets/{dataset_id}/retrieve"
+        payload = {
+            "query": text,
+            "retrieval_model": {
+                "search_method": "hybrid_search",
+                "top_k": limit
+            }
+        }
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            try:
+                response = await client.post(url, headers=self._get_headers(), json=payload)
+                response.raise_for_status()
+                data = response.json()
+                return data.get("records", [])
+            except Exception as e:
+                logger.error(f"Dify query failed: {e}")
+                return []
+    
+    async def get_stats(self, dataset_id: str) -> Dict[str, Any]:
+        """
+        Get knowledge base statistics from Dify.
+        """
+        if not self.is_enabled():
+            return {"status": "disabled"}
+
+        # Dify doesn't have a direct "stats" endpoint for datasets in the public API yet,
+        # but we can return basic metadata if needed.
+        return {
+            "provider": "dify",
+            "dataset_id": dataset_id,
+            "enabled": True
         }
 
 

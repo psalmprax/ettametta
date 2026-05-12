@@ -8,14 +8,17 @@ services:
     environment:
       - DB_USERNAME=${POSTGRES_USER:-psalmprax}
       - DB_PASSWORD=${POSTGRES_PASSWORD:-ettametta_pass}
-      - DB_HOSTNAME=db
-      - DB_NAME=dify
-      - REDIS_HOST=redis
+      - DB_HOST=ettametta-db-1
+      - DB_DATABASE=dify
+      - REDIS_HOST=ettametta-redis-1
       - REDIS_PASSWORD=${REDIS_PASSWORD:-ettametta_redis_pass}
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/1
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@ettametta-redis-1:6379/1
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@ettametta-redis-1:6379/1
       - SECRET_KEY=${SECRET_KEY:-ettametta_dify_secret_key_v1}
-      - QDRANT_HOST=qdrant
+      - CONSOLE_CORS_ALLOW_ORIGIN=*
+      - WEB_API_CORS_ALLOW_ORIGIN=*
+      - CORS_ALLOW_ORIGINS=*
+      - QDRANT_HOST=ettametta-qdrant
       - QDRANT_PORT=6333
       - VECTOR_STORE=qdrant
     networks:
@@ -30,13 +33,18 @@ services:
     environment:
       - DB_USERNAME=${POSTGRES_USER:-psalmprax}
       - DB_PASSWORD=${POSTGRES_PASSWORD:-ettametta_pass}
-      - DB_HOSTNAME=db
-      - DB_NAME=dify
-      - REDIS_HOST=redis
+      - DB_HOST=ettametta-db-1
+      - DB_DATABASE=dify
+      - REDIS_HOST=ettametta-redis-1
       - REDIS_PASSWORD=${REDIS_PASSWORD:-ettametta_redis_pass}
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/1
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@ettametta-redis-1:6379/1
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@ettametta-redis-1:6379/1
       - SECRET_KEY=${SECRET_KEY:-ettametta_dify_secret_key_v1}
+      - CONSOLE_CORS_ALLOW_ORIGIN=*
+      - WEB_API_CORS_ALLOW_ORIGIN=*
+      - CORS_ALLOW_ORIGINS=*
+      - CONSOLE_CORS_ALLOW_ORIGIN=*
+      - WEB_API_CORS_ALLOW_ORIGIN=*
     networks:
       - ettametta
 
@@ -56,4 +64,4 @@ services:
 networks:
   ettametta:
     external: true
-    name: ettametta_ettametta
+    name: ettametta_default

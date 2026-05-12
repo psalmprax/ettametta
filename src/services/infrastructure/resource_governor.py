@@ -52,6 +52,18 @@ class ResourceGovernor:
 
         return mode
 
+    def should_throttle(self) -> bool:
+        """Determines if the system is too busy to start a new heavy production task."""
+        if not _PSUTIL_AVAILABLE:
+            return False
+        
+        mem_usage = psutil.virtual_memory().percent
+        # 95% is the 'Hard Stop' for new jobs
+        if mem_usage > 95.0:
+            logger.critical(f"🛑 [Governor] CRITICAL MEMORY SATURATION ({mem_usage}%). Throttling new jobs.")
+            return True
+        return False
+
     def get_ffmpeg_threads(self) -> int:
         """Adaptive thread count for FFmpeg to prevent system-wide lag."""
         mode = self.get_degradation_mode()

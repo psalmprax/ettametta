@@ -4,6 +4,7 @@ Handles video uploads to Facebook via Meta Graph API
 Features: Retry logic, rate limiting, file validation, proper logging
 """
 
+import asyncio
 import httpx
 import logging
 
@@ -147,7 +148,7 @@ class FacebookPublisher(SocialPublisher):
         """Resolve video path to URL"""
         import os
 
-        if video_path.startswith(("http://", "https://")):
+        if video_path and video_path.startswith(("http://", "https://")):
             return video_path
 
         if os.path.isfile(video_path):

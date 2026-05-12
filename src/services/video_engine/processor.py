@@ -95,8 +95,8 @@ class VideoProcessor:
         self.font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
         self.codec = "libx264"
 
-        # Dynamic Font Resolution
         self.font_path = settings.FONT_PATH
+        self.base_ffmpeg_service = base_ffmpeg_service
         if not os.path.exists(self.font_path):
             # Fallback for systems where the path differs
             fallbacks = [
