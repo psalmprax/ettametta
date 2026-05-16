@@ -52,6 +52,13 @@ htmlcov/
 venv/
 env/
 ENV/
+ai_venv/
+src/engines/remote_ai_setup/ai_venv/
+
+# --- Database State ---
+*.db
+!src/api/utils/migrations/
+gateway_state.db
 
 # --- Alembic ---
 # Keep migrations, ignore local state

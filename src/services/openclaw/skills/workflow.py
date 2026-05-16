@@ -132,21 +132,47 @@ class WorkflowSkill(OpenClawBaseSkill):
             logger.error(f"Workflow '{name}' failed: {e}")
 
     async def _execute_step(self, step: WorkflowStep) -> Any:
-        """Execute a single workflow step (placeholder)"""
-        # This would integrate with the actual tools
+        """
+        Execute a single workflow step. 
+        Hardened: Transitioned from placeholders to real service integrations.
+        """
         action = step.action
         params = step.params
 
-        # Simulate execution time
-        await asyncio.sleep(1)
+        logger.info(f"⚙️ [Workflow] Executing {action} with params: {params}")
 
         if action == "discovery":
-            return f"Discovered trends for {params.get('topic', 'general')}"
+            from src.services.discovery.service import base_discovery_service
+            # Trigger a focused scan for the topic
+            topic = params.get("topic", "AI Technology")
+            results = await base_discovery_service.discover_and_rank(niche=topic)
+            return f"✅ Discovered {len(results)} trending leads for {topic}"
+
         elif action == "content":
-            return f"Generated content for {params.get('niche', 'general')}"
+            from src.services.nexus_engine.orchestrator import base_nexus_service
+            # Trigger high-fidelity synthesis
+            topic = params.get("topic", "AI Technology")
+            result = await base_nexus_service.synthesize_cinema_package(
+                niche=topic,
+                style=params.get("style", "cinematic")
+            )
+            return f"✅ Generated cinema package for {topic}: {result.get('job_id')}"
+
         elif action == "publish":
-            return f"Published to {params.get('platform', 'YouTube')}"
+            from src.services.distribution.publisher import base_publisher
+            # Trigger multi-platform distribution
+            result = await base_publisher.publish_to_platform(
+                video_path=params.get("video_path"),
+                platform=params.get("platform", "youtube"),
+                caption=params.get("caption", "New viral drop! #ai"),
+                job_id=params.get("job_id")
+            )
+            return f"✅ Distribution result: {result.get('status')}"
+
         else:
+            # Fallback for unknown actions
+            logger.warning(f"Unknown action '{action}' in workflow. Executing as dummy.")
+            await asyncio.sleep(0.5)
             return f"Executed {action} with params {params}"
 
     async def get_workflow_status(self, name: str) -> str:

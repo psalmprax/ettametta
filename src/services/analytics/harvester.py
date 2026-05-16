@@ -32,7 +32,7 @@ class AnalyticsHarvester:
         if self.is_running: return
         self.is_running = True
         
-        print("🦅 [Raven] Harvester Loop: ACTIVE")
+        logger.info("🦅 [Raven] Harvester Loop: ACTIVE")
         
         while self.is_running:
             # Simulate platform polling
@@ -68,6 +68,11 @@ class AnalyticsHarvester:
             
             # THE 10/10 REALITY BRIDGE: Analyze Regret
             # In a real system, we'd pull these from the DB
+            production_data = {
+                "predicted_retention_curve": [{"time": t, "retention": 0.8 - (t * 0.01)} for t in range(0, 61, 5)],
+                "blueprint": {"strategy": "Aggressive Hook v3", "duration_target": 60}
+            }
+            
             mock_predicted = production_data.get("predicted_retention_curve", [])
             mock_actual = [{"time": t, "retention": metrics["retention_p50"] - random.uniform(0, 0.2)} for t in range(0, 61, 5)]
             mock_blueprint = production_data.get("blueprint", {})

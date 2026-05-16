@@ -1,5 +1,10 @@
-from celery import Celery
 import os
+from celery import Celery
+from src.shared.observability import setup_observability
+from opentelemetry.instrumentation.celery import CeleryInstrumentor
+
+setup_observability("ettametta-worker")
+CeleryInstrumentor().instrument()
 
 from src.api.config import settings
 
@@ -12,6 +17,7 @@ celery_app = Celery(
     backend=CELERY_RESULT_BACKEND,
     include=[
         "src.services.video_engine.tasks",
+        "src.services.nexus_engine.tasks",
         "src.services.discovery.tasks",
         "src.services.discovery.scanner_service",
         "src.services.optimization.scheduler_tasks",
@@ -60,6 +66,10 @@ celery_app.conf.update(
             "task": "optimization.viral_loop_compilation",
             "schedule": 43200.0,  # Every 12 hours
             "args": ("AI Technology",),
+        },
+        "autonomous-nexus-trigger-1h": {
+            "task": "discovery.process_high_potential",
+            "schedule": 3600.0,  # Every hour
         },
     },
 )

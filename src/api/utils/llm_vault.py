@@ -10,6 +10,7 @@ LLM_API_KEYS = {
     "xai": "xai_api_key",
     "deepseek": "deepseek_api_key",
     "gemini": "google_api_key",
+    "google": "google_api_key",
     "cohere": "cohere_api_key",
     "mistral": "mistral_api_key",
     "cerebras": "cerebras_api_key",

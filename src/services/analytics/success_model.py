@@ -77,4 +77,4 @@ class SuccessModel:
 
         # 2. Inform Downstream Engine
         logger.warning(f"🧬 [Hermes] Purging failed strategy branch: {strategy_name}")
-        print(f"📡 [SIGNAL] STRATEGY_KILL: {strategy_name}")
+        logger.info(f"📡 [SIGNAL] STRATEGY_KILL: {strategy_name}")

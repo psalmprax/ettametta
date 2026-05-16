@@ -77,7 +77,7 @@ class StreamProcessor:
     async def start_worker(self, handler_callback):
         """Continuous worker loop with fault recovery"""
         self.is_running = True
-        print("⚡ [Stream] Persistent Heartbeat: ACTIVE")
+        logger.info("⚡ [Stream] Persistent Heartbeat: ACTIVE")
         
         while self.is_running:
             item = self.queue.pop()

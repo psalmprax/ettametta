@@ -2,14 +2,21 @@
 Real Social Media Publishing Service
 ====================================
 Handles OAuth authentication and video uploading to major platforms.
+Hardened with Circuit Breakers and Retry logic for production reliability.
 """
 
 import logging
 import os
 import json
+import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any
 from datetime import datetime
+import tenacity
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+from src.api.config import settings
+from src.api.utils.resilience import CircuitBreaker
 
 # Google API imports (for YouTube)
 try:
@@ -31,13 +38,14 @@ logger = logging.getLogger(__name__)
 
 
 class YouTubePublisher:
-    """Handles real YouTube video uploads via Data API v3."""
+    """Handles real YouTube video uploads via Data API v3 with resilience."""
 
     def __init__(self):
         self.client_id = os.getenv('YOUTUBE_CLIENT_ID')
         self.client_secret = os.getenv('YOUTUBE_CLIENT_SECRET')
         self.token_dir = Path("data/storage/tokens")
         self.token_dir.mkdir(parents=True, exist_ok=True)
+        self.breaker = CircuitBreaker(name="YouTube-API", failure_threshold=2, recovery_timeout=600)
 
     def _get_credentials(self, user_id: str) -> Optional[Any]:
         """Load user credentials from disk."""
@@ -62,6 +70,12 @@ class YouTubePublisher:
             logger.error(f"Failed to load credentials: {e}")
             return None
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=2, min=10, max=60),
+        retry=retry_if_exception_type(Exception),
+        reraise=True
+    )
     async def upload_video(
         self, 
         user_id: str,
@@ -72,51 +86,52 @@ class YouTubePublisher:
         privacy_status: str = "private"
     ) -> dict[str, Any]:
         """
-        Upload a video to YouTube using real API.
+        Upload a video to YouTube using real API with retry and breaker protection.
         """
         if not GOOGLE_API_AVAILABLE:
-            raise Exception("Google API libraries not installed. Run: pip install google-api-python-client google-auth-oauthlib")
+            raise RuntimeError("Google API libraries not installed.")
         
+        if self.breaker.is_open():
+            raise RuntimeError("YouTube API is currently blocked by CircuitBreaker")
+
         creds = self._get_credentials(user_id)
         if not creds:
-            raise Exception("YouTube account not connected. Please authenticate first.")
+            raise RuntimeError(f"YouTube account not connected for user {user_id}")
 
         try:
-            youtube = build('youtube', 'v3', credentials=creds)
-            
-            body = {
-                'snippet': {
-                    'title': title[:100],  # YouTube limit
-                    'description': description[:5000],  # YouTube limit
-                    'tags': tags[:50],  # YouTube limit
-                    'categoryId': '28'  # Science & Technology (default)
-                },
-                'status': {
-                    'privacyStatus': privacy_status
+            # We use to_thread for blocking Google API calls to keep async loop free
+            def _sync_upload():
+                youtube = build('youtube', 'v3', credentials=creds)
+                body = {
+                    'snippet': {
+                        'title': title[:100],
+                        'description': description[:5000],
+                        'tags': tags[:50],
+                        'categoryId': '28'
+                    },
+                    'status': {
+                        'privacyStatus': privacy_status
+                    }
                 }
-            }
+                
+                if not Path(video_path).exists():
+                    raise FileNotFoundError(f"Video file not found: {video_path}")
 
-            # Check if file exists
-            if not Path(video_path).exists():
-                raise FileNotFoundError(f"Video file not found: {video_path}")
-
-            insert_request = youtube.videos().insert(
-                part=",".join(body.keys()),
-                body=body,
-                media_body=MediaFileUpload(
-                    video_path, 
-                    chunksize=-1, 
-                    resumable=True
+                insert_request = youtube.videos().insert(
+                    part=",".join(body.keys()),
+                    body=body,
+                    media_body=MediaFileUpload(video_path, chunksize=-1, resumable=True)
                 )
-            )
+                return insert_request.execute()
 
-            logger.info(f"Starting upload for {title}...")
-            response = insert_request.execute()
+            logger.info(f"[YouTube] Starting resilient upload for '{title}'...")
+            response = await asyncio.to_thread(_sync_upload)
             
             video_id = response['id']
             video_url = f"https://www.youtube.com/watch?v={video_id}"
             
-            logger.info(f"Successfully uploaded: {video_url}")
+            self.breaker.record_success()
+            logger.info(f"[YouTube] Successfully uploaded: {video_url}")
             
             return {
                 "platform": "youtube",
@@ -128,15 +143,18 @@ class YouTubePublisher:
             }
 
         except Exception as e:
-            logger.error(f"YouTube upload failed: {str(e)}")
-            raise Exception(f"YouTube upload failed: {str(e)}")
+            self.breaker.record_failure()
+            logger.error(f"[YouTube] Upload failed: {str(e)}")
+            raise
 
 
 class PublishingService:
-    """Unified service for multi-platform publishing."""
+    """Unified service for multi-platform publishing with resilience."""
 
     def __init__(self):
         self.youtube = YouTubePublisher()
+        # Circuit breaker for browser-based automation
+        self.automation_breaker = CircuitBreaker(name="Publish-Automation", failure_threshold=2)
 
     async def publish_to_platform(
         self, 
@@ -144,67 +162,63 @@ class PublishingService:
         platform: str, 
         video_path: str, 
         metadata: dict[str, Any],
-        use_automation: bool = False  # New flag for Playwright
+        use_automation: bool = False
     ) -> dict[str, Any]:
         """
-        Publish video to specified platform.
-        
-        Args:
-            use_automation: If True, uses Playwright for TikTok/Instagram.
-                           If False, returns Manual Publish Kit.
+        Publish video to specified platform with fallback logic.
         """
         if platform == "youtube":
-            return await self.youtube.upload_video(
-                user_id=user_id,
-                video_path=video_path,
-                title=metadata.get("title", "Untitled"),
-                description=metadata.get("description", ""),
-                tags=metadata.get("tags", []),
-                privacy_status=metadata.get("privacy", "private")
-            )
-        elif platform == "tiktok":
-            if use_automation and PLAYWRIGHT_AVAILABLE:
+            try:
+                return await self.youtube.upload_video(
+                    user_id=user_id,
+                    video_path=video_path,
+                    title=metadata.get("title", "Untitled"),
+                    description=metadata.get("description", ""),
+                    tags=metadata.get("tags", []),
+                    privacy_status=metadata.get("privacy", "private")
+                )
+            except Exception as e:
+                logger.error(f"[Publishing] YouTube publication failed: {e}")
+                return {
+                    "platform": "youtube",
+                    "status": "failed",
+                    "error": str(e),
+                    "instructions": "YouTube API failed. Please try again or download manually."
+                }
+
+        elif platform in ["tiktok", "instagram"]:
+            if use_automation and PLAYWRIGHT_AVAILABLE and not self.automation_breaker.is_open():
                 try:
-                    return await base_playwright_publisher.post_to_tiktok(
-                        user_id=user_id,
-                        video_path=video_path,
-                        description=metadata.get("description", ""),
-                        tags=metadata.get("tags", [])
-                    )
+                    logger.info(f"[Publishing] Attempting {platform} automation...")
+                    if platform == "tiktok":
+                        result = await base_playwright_publisher.post_to_tiktok(
+                            user_id=user_id,
+                            video_path=video_path,
+                            description=metadata.get("description", ""),
+                            tags=metadata.get("tags", [])
+                        )
+                    else:
+                        result = await base_playwright_publisher.post_to_instagram(
+                            user_id=user_id,
+                            video_path=video_path,
+                            description=metadata.get("description", ""),
+                            tags=metadata.get("tags", [])
+                        )
+                    self.automation_breaker.record_success()
+                    return result
                 except Exception as e:
-                    logger.warning(f"Playwright automation failed, falling back to manual kit: {e}")
+                    self.automation_breaker.record_failure()
+                    logger.warning(f"[Publishing] {platform} automation failed, falling back to manual: {e}")
             
             # Fallback to Manual Publish Kit
             return {
-                "platform": "tiktok",
+                "platform": platform,
                 "status": "manual_action_required",
-                "message": "TikTok requires manual upload via mobile or desktop studio.",
+                "message": f"{platform.capitalize()} requires manual action.",
                 "download_link": f"/api/v1/video/download/{os.path.basename(video_path)}",
                 "caption": metadata.get("description", ""),
                 "hashtags": " ".join(metadata.get("tags", [])),
-                "instructions": "1. Download the video. 2. Open TikTok. 3. Upload from gallery. 4. Paste caption."
-            }
-        elif platform == "instagram":
-            if use_automation and PLAYWRIGHT_AVAILABLE:
-                try:
-                    return await base_playwright_publisher.post_to_instagram(
-                        user_id=user_id,
-                        video_path=video_path,
-                        description=metadata.get("description", ""),
-                        tags=metadata.get("tags", [])
-                    )
-                except Exception as e:
-                    logger.warning(f"Playwright automation failed, falling back to manual kit: {e}")
-
-            # Fallback to Manual Publish Kit
-            return {
-                "platform": "instagram",
-                "status": "manual_action_required",
-                "message": "Instagram Reels require manual upload via mobile app.",
-                "download_link": f"/api/v1/video/download/{os.path.basename(video_path)}",
-                "caption": metadata.get("description", ""),
-                "hashtags": " ".join(metadata.get("tags", [])),
-                "instructions": "1. Download the video. 2. Open Instagram. 3. Select Reel. 4. Paste caption."
+                "instructions": f"1. Download video. 2. Open {platform.capitalize()}. 3. Upload with provided caption."
             }
         else:
             raise ValueError(f"Unsupported platform: {platform}")

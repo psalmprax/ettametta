@@ -9,11 +9,14 @@ import hmac
 import hashlib
 import base64
 import json
+import logging
 
 from src.api.utils.security import verify_password, get_password_hash, create_access_token, pwd_context, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 
 import redis.asyncio as redis_async
+
+logger = logging.getLogger(__name__)
 
 # Global Redis client for async operations
 redis_async_client = redis_async.from_url(settings.REDIS_URL, decode_responses=True)
@@ -27,13 +30,13 @@ async def decode_access_token(token: str):
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             return payload
         except JWTError as e:
-            print(f"DEBUG: JWT Decode Error for token {token[:10]}... : {str(e)}")
+            logger.warning(f"JWT decode error for token {token[:10]}...: {str(e)}")
             return None
         except Exception as e:
-            print(f"DEBUG: Internal Error during decode: {str(e)}")
+            logger.error(f"Internal error during JWT decode: {str(e)}")
             return None
     except Exception as e:
-        print(f"DEBUG: Redis Error during decode: {str(e)}")
+        logger.error(f"Redis error during token decode: {str(e)}")
         return None
 
 

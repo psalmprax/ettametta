@@ -94,7 +94,7 @@ class SelfImprovementSkill(OpenClawBaseSkill):
             return self.get_improvement_summary()
         return f"⚠️ Unknown action for SelfImprovement: {action}"
 
-    async def _load_log(self):
+    def _load_log(self):
         if SELF_IMPROVE_LOG.exists():
             try:
                 with open(SELF_IMPROVE_LOG, "r") as f:
@@ -102,7 +102,7 @@ class SelfImprovementSkill(OpenClawBaseSkill):
             except Exception:
                 self.improvement_log = []
 
-    async def _save_log(self):
+    def _save_log(self):
         with open(SELF_IMPROVE_LOG, "w") as f:
             json.dump(self.improvement_log[-200:], f, indent=2)
 

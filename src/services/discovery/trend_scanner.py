@@ -6,6 +6,7 @@ Scans for Social Velocity to detect emerging trends before
 they saturate the mainstream video platforms.
 """
 
+import asyncio
 import logging
 import random
 import time
@@ -22,7 +23,7 @@ class TrendScanner:
     def __init__(self):
         self.monitored_niches = ["AI", "Finance", "Health", "Productivity", "Tech"]
 
-    def calculate_velocity(self, niche: str, samples: list[int]) -> float:
+    def calculate_velocity(self, samples: list[int]) -> float:
         """Calculates growth rate of engagement over time"""
         if len(samples) < 2: return 0.0
         # Simplistic velocity: (Latest - Mean) / Mean
@@ -36,7 +37,8 @@ class TrendScanner:
         Simulates scanning Reddit/X for emergent niches.
         Identifies 'Velocity Spikes'.
         """
-        print("🔮 [Prophet] Scanning for emergent velocity spikes...")
+        await asyncio.sleep(0.1)  # Simulate network/IO delay for scanning
+        logger.info("🔮 [Prophet] Scanning for emergent velocity spikes...")
         
         opportunities = []
         

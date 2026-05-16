@@ -31,7 +31,7 @@ class ViralStrategist:
         Uses LLM context (simulated) to pick the framing with the 
         highest predicted viral ROI for the current trend velocity.
         """
-        print(f"♟️  [Strategist] Selecting viral framing for '{topic}'...")
+        logger.info(f"Selecting viral framing for '{topic}'...")
         
         # Logic: If 'velocity' is high, use 'The Warning' or 'the_secret'
         # If saturation is high, use 'the_contradiction' to cut through noise

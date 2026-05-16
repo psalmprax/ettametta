@@ -8,7 +8,7 @@ Finds trending videos, analyzes performance patterns, and identifies repurposing
 import logging
 import asyncio
 import httpx
-from typing import Any
+from typing import Any, Optional
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import re
@@ -17,8 +17,9 @@ import json
 from src.api.utils.vault import get_secret
 from src.api.config import settings
 from groq import Groq
-
 logger = logging.getLogger(__name__)
+
+DEFAULT_VIDEO_CODEC = "H.264/AAC"
 
 
 @dataclass
@@ -52,11 +53,18 @@ class VideoLeadScanner:
     def __init__(self):
         self.youtube_api_key = get_secret("youtube_api_key")
         self.tiktok_api_key = get_secret("tiktok_api_key")
-        self.groq_client = (
-            Groq(api_key=get_secret("groq_api_key"))
-            if get_secret("groq_api_key")
-            else None
-        )
+        groq_api_key = get_secret("groq_api_key")
+        if groq_api_key:
+            try:
+                import httpx
+                # Explicitly create client to avoid 'proxies' keyword bug in some groq/httpx versions
+                http_client = httpx.Client(timeout=60.0)
+                self.groq_client = Groq(api_key=groq_api_key, http_client=http_client)
+            except Exception as e:
+                logger.error(f"Failed to initialize Groq client: {e}")
+                self.groq_client = None
+        else:
+            self.groq_client = None
 
         # Platform-specific configurations
         self.platform_configs = {
@@ -94,88 +102,94 @@ class VideoLeadScanner:
     ) -> list[VideoLead]:
         """
         Discover high-performing video content leads across platforms.
-
-        Args:
-            niche: Content niche to search for
-            platforms: list of platforms to search (youtube, tiktok, instagram)
-            min_viral_score: Minimum viral score (0-10)
-            max_results: Maximum leads to return
-
-        Returns:
-            list of VideoLead objects sorted by viral score
         """
         if platforms is None:
             platforms = ["youtube", "tiktok"]
 
-        all_leads = []
+        # 1. Primary Concurrent Scan
+        all_leads = await self._gather_platform_leads(niche, platforms)
+        self.logger.info(f"Primary scan complete. Leads found: {len(all_leads)}")
 
-        # Search each platform concurrently
-        tasks = []
-        for platform in platforms:
-            if hasattr(self, f"_scan_{platform}"):
-                tasks.append(getattr(self, f"_scan_{platform}")(niche))
-
-        if tasks:
-            platform_results = await asyncio.gather(*tasks, return_exceptions=True)
-
-            for result in platform_results:
-                if isinstance(result, list):
-                    all_leads.extend(result)
-
-        self.logger.info(f"Scan complete. Leads found so far: {len(all_leads)}")
-
-        # ---------------------------------------------------------
-        # FALLBACK: If we have no leads (e.g. Quota Exceeded), try DuckDuckGo Scraping
-        # ---------------------------------------------------------
+        # 2. Fallback if primary scanners failed or returned nothing
         if not all_leads:
-            self.logger.info(
-                "NO LEADS FOUND. Failing back to DuckDuckGo search (Quota/Network issue)"
-            )
-            try:
-                from .duckduckgo_scanner import base_duckduckgo_service
+            all_leads = await self._run_fallback_scan(niche, niche)
 
-                ddg_candidates = await base_duckduckgo_service.scan_trends(niche)
-                self.logger.info(f"DuckDuckGo found {len(ddg_candidates)} candidates")
-
-                for c in ddg_candidates:
-                    if c.category == "video":
-                        lead = VideoLead(
-                            video_id=c.id,
-                            platform=c.platform.lower(),
-                            title=c.title,
-                            creator=c.creator_name or "Unknown",
-                            url=c.source_uri,
-                            view_count=c.view_count,
-                            like_count=0,
-                            comment_count=0,
-                            share_count=0,
-                            duration_seconds=30,
-                            published_at=c.discovery_date,
-                            thumbnail_uri="",
-                            description=c.description,
-                            tags=c.tags,
-                            engagement_score=c.engagement_score,
-                            viral_score=c.viral_score / 10.0
-                            if c.viral_score > 10
-                            else c.viral_score,
-                            niche=niche,
-                            content_type="general",
-                            monetization_potential="medium",
-                        )
-                        all_leads.append(lead)
-                        print(f"DEBUG: Added DDG lead: {lead.title}")
-            except Exception as fe:
-                self.logger.error(f"DuckDuckGo fallback failed: {fe}")
-
-        # Filter and rank leads
+        # 3. Filter and Rank
         filtered_leads = [
             lead for lead in all_leads if lead.viral_score >= min_viral_score
         ]
-
-        # Sort by viral score descending
         filtered_leads.sort(key=lambda x: x.viral_score, reverse=True)
 
         return filtered_leads[:max_results]
+
+    async def _gather_platform_leads(self, niche: str, platforms: list[str]) -> list[VideoLead]:
+        """Orchestrate concurrent scans across specified platforms."""
+        tasks = []
+        for platform in platforms:
+            method_name = f"_scan_{platform}"
+            if hasattr(self, method_name):
+                tasks.append(getattr(self, method_name)(niche))
+
+        if not tasks:
+            return []
+
+        platform_results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        all_leads = []
+        for result in platform_results:
+            if isinstance(result, list):
+                all_leads.extend(result)
+            elif isinstance(result, Exception):
+                self.logger.error(f"Platform scan task failed: {result}")
+        
+        return all_leads
+
+    async def _run_fallback_scan(self, query: str, niche: str) -> list[VideoLead]:
+        """DuckDuckGo scraping fallback for when primary APIs are down or capped."""
+        self.logger.info(f"Failing back to DuckDuckGo search for: {query}")
+        try:
+            from .duckduckgo_scanner import base_duckduckgo_service
+            ddg_candidates = await base_duckduckgo_service.scan_trends(query)
+            
+            leads = []
+            for c in ddg_candidates:
+                # Some scanners return 'general' category, we want videos
+                if getattr(c, "category", "video") == "video":
+                    lead = self._map_candidate_to_lead(c, niche)
+                    leads.append(lead)
+            
+            self.logger.info(f"DuckDuckGo fallback found {len(leads)} leads")
+            return leads
+        except Exception:
+            self.logger.exception("DuckDuckGo fallback failed")
+            return []
+
+    def _map_candidate_to_lead(self, c: Any, niche: str) -> VideoLead:
+        """Map a generic ContentCandidate to a specialized VideoLead."""
+        # Normalize viral score to 0-10 range if it comes in raw (0-100)
+        v_score = c.viral_score / 10.0 if c.viral_score > 10 else c.viral_score
+        
+        return VideoLead(
+            video_id=c.id,
+            platform=c.platform.lower(),
+            title=c.title,
+            creator=getattr(c, "creator_name", "Unknown"),
+            url=c.source_uri,
+            view_count=c.view_count,
+            like_count=0,
+            comment_count=0,
+            share_count=0,
+            duration_seconds=30,
+            published_at=c.discovery_date,
+            thumbnail_uri="",
+            description=c.description,
+            tags=c.tags,
+            engagement_score=c.engagement_score,
+            viral_score=v_score,
+            niche=niche,
+            content_type="general",
+            monetization_potential="medium",
+        )
 
     async def evaluate_video_performance(
         self, video_uri: str, niche: str
@@ -194,7 +208,7 @@ class VideoLeadScanner:
         platform, video_id = self._parse_video_uri(video_uri)
 
         # Get basic video data
-        video_data = await self._get_video_data(platform, video_id)
+        video_data = await self._get_video_data(platform)
 
         # Analyze engagement patterns
         engagement_analysis = self._analyze_engagement_patterns(video_data)
@@ -245,7 +259,7 @@ class VideoLeadScanner:
             "template_type": template_type,
             "sample_size": len(leads[:min_samples]),
             "common_patterns": patterns,
-            "success_factors": self._extract_success_factors(leads[:min_samples]),
+            "success_factors": self._extract_success_factors(),
             "recommended_structure": self._generate_recommended_structure(patterns),
         }
 
@@ -278,13 +292,13 @@ class VideoLeadScanner:
                     logger.error(
                         f"YouTube Search API Error {response.status_code}: {search_data}"
                     )
-                    print(
-                        f"DEBUG: YouTube API Error: {search_data.get('error', {}).get('message', 'Unknown')}. Falling back to scraper."
+                    self.logger.debug(
+                        f"YouTube API Error: {search_data.get('error', {}).get('message', 'Unknown')}. Falling back to scraper."
                     )
                     return await self._scan_youtube_scraper(niche)
                 else:
-                    print(
-                        f"DEBUG: YouTube Search found {len(search_data.get('items', []))} items"
+                    self.logger.debug(
+                        f"YouTube Search found {len(search_data.get('items', []))} items"
                     )
 
                 video_ids = [
@@ -306,12 +320,12 @@ class VideoLeadScanner:
                     stats_data = stats_response.json()
 
                     for item in stats_data.get("items", []):
-                        lead = await self._create_youtube_lead(item, niche)
+                        lead = self._create_youtube_lead(item, niche)
                         if lead:
                             leads.append(lead)
 
-        except Exception as e:
-            logger.error(f"YouTube scanning error: {e}")
+        except Exception:
+            self.logger.exception("YouTube scanning error")
 
         return leads
 
@@ -454,64 +468,18 @@ class VideoLeadScanner:
         self, keywords: list[str], platforms: list[str], min_quality: int = 7
     ) -> list[VideoLead]:
         """Find videos matching keywords across platforms"""
-        all_videos = []
-
         # Create search query from keywords
         search_query = " ".join(keywords[:3])  # Use top 3 keywords
+        niche = keywords[0] if keywords else "general"
 
-        # Search each platform
-        for platform in platforms:
-            if hasattr(self, f"_scan_{platform}"):
-                try:
-                    platform_videos = await getattr(self, f"_scan_{platform}")(
-                        search_query
-                    )
-                    all_videos.extend(platform_videos)
-                except Exception as e:
-                    self.logger.warning(f"Failed to search {platform}: {e}")
+        # 1. Primary Concurrent Scan
+        all_videos = await self._gather_platform_leads(search_query, platforms)
 
-        # ---------------------------------------------------------
-        # FALLBACK: If we have no videos (e.g. Quota Exceeded), try DuckDuckGo
-        # ---------------------------------------------------------
+        # 2. Fallback
         if not all_videos:
-            print(
-                f"DEBUG: Falling back to DuckDuckGo search for keywords: {search_query}"
-            )
-            from .duckduckgo_scanner import base_duckduckgo_service
+            all_videos = await self._run_fallback_scan(search_query, niche)
 
-            ddg_candidates = await base_duckduckgo_service.scan_trends(search_query)
-            print(f"DEBUG: DuckDuckGo found {len(ddg_candidates)} candidates")
-
-            for c in ddg_candidates:
-                if c.category == "video":
-                    print(f"DEBUG: Mapping DDG video: {c.title}")
-                    all_videos.append(
-                        VideoLead(
-                            video_id=c.id,
-                            platform=c.platform.lower(),
-                            title=c.title,
-                            creator=c.creator_name or "Unknown",
-                            url=c.source_uri,
-                            view_count=c.view_count,
-                            like_count=0,
-                            comment_count=0,
-                            share_count=0,
-                            duration_seconds=30,
-                            published_at=c.discovery_date,
-                            thumbnail_uri="",
-                            description=c.description,
-                            tags=c.tags,
-                            engagement_score=c.engagement_score,
-                            viral_score=c.viral_score / 10.0
-                            if c.viral_score > 10
-                            else c.viral_score,
-                            niche=keywords[0] if keywords else "general",
-                            content_type="general",
-                            monetization_potential="medium",
-                        )
-                    )
-
-        # Filter by quality
+        # 3. Filter by quality
         quality_videos = [
             video
             for video in all_videos
@@ -599,7 +567,7 @@ class VideoLeadScanner:
         audio_plan = self._create_audio_overlay_plan(audio_script, fusion_plan)
 
         # Create upload specifications
-        upload_specs = self._create_upload_specifications(fusion_plan, audio_plan)
+        upload_specs = self._create_upload_specifications()
 
         return {
             "scenes": scenes,
@@ -622,38 +590,19 @@ class VideoLeadScanner:
         total_duration = 0
         fusion_segments = []
 
+        num_scenes = len(scene_videos)
         for i, (scene_key, videos) in enumerate(scene_videos.items()):
             scene_data = scenes[i] if i < len(scenes) else {}
             
-            # Prioritize provided source_uri or video_path
-            source_uri = scene_data.get("source_uri")
-            video_path = scene_data.get("video_path")
-            
-            if video_path or source_uri or videos:
-                best_video = videos[0] if videos else None
+            # Skip if we have no media sources for this scene
+            if not (scene_data.get("video_path") or scene_data.get("source_uri") or videos):
+                continue
                 
-                segment_duration = scene_data.get("duration") or (
-                    best_video.duration_seconds if best_video else target_duration // len(scene_videos)
-                )
-
-                fusion_segments.append(
-                    {
-                        "scene": scene_key,
-                        "type": scene_data.get("type", "content"),
-                        "video_id": best_video.video_id if best_video else f"custom_{i}",
-                        "platform": best_video.platform if best_video else "custom",
-                        "url": source_uri or (best_video.url if best_video else None),
-                        "video_path": video_path,
-                        "duration": segment_duration,
-                        "start_time": total_duration,
-                        "visual_prompt": scene_data.get("visual_prompt"),
-                        "transition": self._get_transition_for_type(
-                            scene_data.get("type", "content")
-                        )
-                    }
-                )
-
-                total_duration += segment_duration
+            segment = self._create_fusion_segment(
+                i, scene_key, videos, scene_data, target_duration, num_scenes, total_duration
+            )
+            fusion_segments.append(segment)
+            total_duration += segment["duration"]
 
         return {
             "segments": fusion_segments,
@@ -663,6 +612,40 @@ class VideoLeadScanner:
             "output_format": "mp4",
             "resolution": "1920x1080",
             "frame_rate": 30,
+        }
+
+    def _create_fusion_segment(
+        self,
+        index: int,
+        scene_key: str,
+        videos: list[VideoLead],
+        scene_data: dict[str, Any],
+        target_duration: int,
+        num_scenes: int,
+        current_total_duration: int
+    ) -> dict[str, Any]:
+        """Create a single fusion segment with calculated timing and source data."""
+        best_video = videos[0] if videos else None
+        
+        # Determine segment duration
+        duration = scene_data.get("duration")
+        if not duration:
+            # Fallback: Use video duration or proportional split
+            duration = best_video.duration_seconds if best_video else target_duration // max(1, num_scenes)
+
+        return {
+            "scene": scene_key,
+            "type": scene_data.get("type", "content"),
+            "video_id": best_video.video_id if best_video else f"custom_{index}",
+            "platform": best_video.platform if best_video else "custom",
+            "url": scene_data.get("source_uri") or (best_video.url if best_video else None),
+            "video_path": scene_data.get("video_path"),
+            "duration": duration,
+            "start_time": current_total_duration,
+            "visual_prompt": scene_data.get("visual_prompt"),
+            "transition": self._get_transition_for_type(
+                scene_data.get("type", "content")
+            )
         }
 
     def _create_audio_overlay_plan(
@@ -688,7 +671,7 @@ class VideoLeadScanner:
                         "start_time": current_time,
                         "duration": segment_duration,
                         "text": audio_script[:segment_words]
-                        if len(audio_script.split()) > segment_words
+                        if script_words > segment_words
                         else audio_script,
                         "voice_type": "professional_female",
                         "background_music": "uplifting_corporate",
@@ -706,9 +689,7 @@ class VideoLeadScanner:
             "bitrate": "128k",
         }
 
-    def _create_upload_specifications(
-        self, fusion_plan: dict[str, Any], audio_plan: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _create_upload_specifications(self) -> dict[str, Any]:
         """Create upload specifications for various platforms"""
         return {
             "platforms": {
@@ -716,30 +697,30 @@ class VideoLeadScanner:
                     "format": "mp4",
                     "resolution": "1920x1080",
                     "max_size": "2GB",
-                    "codecs": "H.264/AAC",
+                    "codecs": DEFAULT_VIDEO_CODEC,
                     "aspect_ratio": "16:9",
                 },
                 "tiktok": {
                     "format": "mp4",
                     "resolution": "1080x1920",
                     "max_duration": "180s",
-                    "codecs": "H.264/AAC",
+                    "codecs": DEFAULT_VIDEO_CODEC,
                     "aspect_ratio": "9:16",
                 },
                 "instagram": {
                     "format": "mp4",
                     "resolution": "1080x1080",
                     "max_duration": "90s",
-                    "codecs": "H.264/AAC",
+                    "codecs": DEFAULT_VIDEO_CODEC,
                     "aspect_ratio": "1:1",
                 },
             },
-            "seo_tags": self._generate_seo_tags(fusion_plan),
+            "seo_tags": self._generate_seo_tags(),
             "thumbnails": {"count": 3, "specs": "1280x720, JPG, <2MB"},
             "metadata": {
                 "title_template": "{niche} - {key_benefits}",
                 "description_template": "Learn about {niche} with this comprehensive guide...",
-                "hashtags": self._generate_hashtags(fusion_plan),
+                "hashtags": self._generate_hashtags(),
             },
         }
 
@@ -777,18 +758,19 @@ class VideoLeadScanner:
 
         return min(overall_score, 10.0)
 
-    def _generate_seo_tags(self, fusion_plan: dict[str, Any]) -> list[str]:
+    def _generate_seo_tags(self) -> list[str]:
         """Generate SEO tags for the video"""
         return ["viral", "content", "tutorial", "guide", "tips", "howto"]
 
-    def _generate_hashtags(self, fusion_plan: dict[str, Any]) -> list[str]:
+    def _generate_hashtags(self) -> list[str]:
         """Generate relevant hashtags"""
         return ["#viral", "#content", "#tutorial", "#guide", "#tips"]
 
-    async def _scan_tiktok(self, niche: str) -> list[VideoLead]:
+    async def _scan_tiktok(self, _niche: str) -> list[VideoLead]:
         """Scan TikTok for video leads"""
         # TikTok scanning would require their API
         # For now, return empty list with note
+        await asyncio.sleep(0)
         logger.info("TikTok scanning requires API integration")
         return []
 
@@ -797,9 +779,25 @@ class VideoLeadScanner:
     ) -> list[VideoLead]:
         """Generic yt-dlp scraper for multi-platform support."""
         self.logger.info(f"Scraping {platform} for: {query}")
-        leads = []
+        sep = "##SEP##"
+        
+        cmd = self._build_ytdlp_command(query, platform, max_results, sep)
+        output = await self._execute_ytdlp_process(cmd, platform)
+        
+        if not output:
+            return []
 
-        # Mapping platforms to yt-dlp search prefixes
+        leads = []
+        for line in output.split("\n"):
+            lead = self._parse_ytdlp_output_line(line, sep, platform, query)
+            if lead:
+                leads.append(lead)
+        return leads
+
+    def _build_ytdlp_command(
+        self, query: str, platform: str, max_results: int, sep: str
+    ) -> list[str]:
+        """Build the yt-dlp command for searching"""
         search_prefixes = {
             "youtube": f"ytsearch{max_results}:",
             "tiktok": f"ytsearch{max_results}:tiktok ",
@@ -812,11 +810,9 @@ class VideoLeadScanner:
             "pinterest": f"ytsearch{max_results}:pinterest ",
             "trends": f"ytsearch{max_results}:trending {datetime.now().year} ",
         }
-
         prefix = search_prefixes.get(platform, f"ytsearch{max_results}:")
-        sep = "##SEP##"
-
-        cmd = [
+        
+        return [
             "yt-dlp",
             "--print",
             f"%(id)s{sep}%(title)s{sep}%(uploader)s{sep}%(view_count)s{sep}%(webpage_url)s{sep}%(duration)s{sep}%(upload_date)s{sep}%(description)s",
@@ -825,75 +821,71 @@ class VideoLeadScanner:
             f"{prefix}{query}",
         ]
 
+    async def _execute_ytdlp_process(self, cmd: list[str], platform: str) -> str:
+        """Execute yt-dlp command and return stdout"""
         try:
-            import asyncio
-
             process = await asyncio.create_subprocess_exec(
                 *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
             stdout, stderr = await process.communicate()
-
+            
             if process.returncode != 0:
                 self.logger.error(f"ytdlp {platform} search failed: {stderr.decode()}")
-                return []
+                return ""
+                
+            return stdout.decode().strip()
+        except Exception:
+            self.logger.exception(f"ytdlp {platform} execution failed")
+            return ""
 
-            output = stdout.decode().strip()
-            if not output:
-                return []
-
-            for line in output.split("\n"):
-                if sep not in line:
-                    continue
-                parts = line.split(sep)
-                if len(parts) >= 5:
-                    v_id, v_title, v_uploader, v_views, v_url = parts[:5]
-                    v_dur_val = parts[5].strip() if len(parts) > 5 else "30"
-                    v_dur = (
-                        float(v_dur_val) if v_dur_val and v_dur_val != "None" else 30.0
-                    )
-                    v_date_str = (
-                        parts[6].strip()
-                        if len(parts) > 6
-                        else datetime.now().strftime("%Y%m%d")
-                    )
-                    v_desc = parts[7] if len(parts) > 7 else ""
-
-                    try:
-                        v_date = datetime.strptime(v_date_str, "%Y%m%d")
-                    except:
-                        v_date = datetime.now()
-
-                    views = int(v_views) if v_views and v_views.isdigit() else 10000
-
-                    leads.append(
-                        VideoLead(
-                            video_id=v_id,
-                            platform=platform,
-                            title=v_title,
-                            creator=v_uploader or "Unknown",
-                            url=v_url,
-                            view_count=views,
-                            like_count=int(views * 0.05),
-                            comment_count=int(views * 0.01),
-                            share_count=int(views * 0.005),
-                            duration_seconds=int(v_dur),
-                            published_at=v_date,
-                            thumbnail_uri="",
-                            description=v_desc,
-                            tags=[],
-                            engagement_score=0.065,
-                            viral_score=float(
-                                self._calculate_viral_score(views, 0.065)
-                            ),
-                            niche=query,
-                            content_type="video",
-                            monetization_potential="high",
-                        )
-                    )
-        except Exception as e:
-            self.logger.error(f"ytdlp {platform} scraper exception: {e}")
-
-        return leads
+    def _parse_ytdlp_output_line(
+        self, line: str, sep: str, platform: str, query: str
+    ) -> Optional[VideoLead]:
+        """Parse a single line of yt-dlp output into a VideoLead"""
+        if sep not in line:
+            return None
+            
+        parts = line.split(sep)
+        if len(parts) < 5:
+            return None
+            
+        try:
+            v_id, v_title, v_uploader, v_views, v_url = parts[:5]
+            v_dur_val = parts[5].strip() if len(parts) > 5 else "30"
+            v_dur = float(v_dur_val) if v_dur_val and v_dur_val != "None" else 30.0
+            v_date_str = parts[6].strip() if len(parts) > 6 else datetime.now().strftime("%Y%m%d")
+            v_desc = parts[7] if len(parts) > 7 else ""
+            
+            try:
+                v_date = datetime.strptime(v_date_str, "%Y%m%d")
+            except Exception:
+                v_date = datetime.now()
+                
+            views = int(v_views) if v_views and v_views.isdigit() else 10000
+            
+            return VideoLead(
+                video_id=v_id,
+                platform=platform,
+                title=v_title,
+                creator=v_uploader or "Unknown",
+                url=v_url,
+                view_count=views,
+                like_count=int(views * 0.05),
+                comment_count=int(views * 0.01),
+                share_count=int(views * 0.005),
+                duration_seconds=int(v_dur),
+                published_at=v_date,
+                thumbnail_uri="",
+                description=v_desc,
+                tags=[],
+                engagement_score=0.065,
+                viral_score=float(self._calculate_viral_score(views, 0.065)),
+                niche=query,
+                content_type="video",
+                monetization_potential="high",
+            )
+        except Exception:
+            return None
 
     async def _scan_youtube_scraper(self, niche: str) -> list[VideoLead]:
         return await self._scan_with_ytdlp(niche, "youtube")
@@ -910,7 +902,7 @@ class VideoLeadScanner:
     async def _scan_instagram_scraper(self, niche: str) -> list[VideoLead]:
         return await self._scan_with_ytdlp(niche, "instagram")
 
-    async def _create_youtube_lead(
+    def _create_youtube_lead(
         self, video_data: dict, niche: str
     ) -> VideoLead | None:
         """Create VideoLead from YouTube API data"""
@@ -959,8 +951,8 @@ class VideoLeadScanner:
                 ),
             )
 
-        except Exception as e:
-            logger.error(f"Error creating YouTube lead: {e}")
+        except Exception:
+            logger.exception("Error creating YouTube lead")
             return None
 
     def _calculate_viral_score(self, views: int, engagement_score: float) -> float:
@@ -1016,6 +1008,7 @@ class VideoLeadScanner:
         self, leads: list[VideoLead]
     ) -> list[dict[str, Any]]:
         """Analyze common patterns in successful videos"""
+        await asyncio.sleep(0)
         if not leads:
             return {}
 
@@ -1050,8 +1043,8 @@ class VideoLeadScanner:
                 "avg_engagement_score": sum(l.engagement_score for l in leads) / len(leads),
                 "content_types": self._count_content_types(leads),
             }
-        except Exception as e:
-            logger.error(f"Pattern analysis error: {e}")
+        except Exception:
+            logger.exception("Pattern analysis error")
             return {}
 
     def _count_content_types(self, leads: list[VideoLead]) -> dict[str, int]:
@@ -1084,8 +1077,9 @@ class VideoLeadScanner:
 
         return "unknown", ""
 
-    async def _get_video_data(self, platform: str, video_id: str) -> dict[str, Any]:
+    async def _get_video_data(self, platform: str) -> dict[str, Any]:
         """Get detailed video data from platform API"""
+        await asyncio.sleep(0)
         # Implementation would call platform APIs
         return {}
 
@@ -1095,6 +1089,7 @@ class VideoLeadScanner:
 
     async def _identify_viral_factors(self, video_data: dict, niche: str) -> list[str]:
         """Identify factors that made this video viral"""
+        await asyncio.sleep(0)
         return []
 
     async def _generate_repurposing_suggestions(
@@ -1107,7 +1102,7 @@ class VideoLeadScanner:
         """Extract reusable content template"""
         return {}
 
-    def _extract_success_factors(self, leads: list[VideoLead]) -> list[str]:
+    def _extract_success_factors(self) -> list[str]:
         """Extract common success factors"""
         return []
 
@@ -1135,7 +1130,7 @@ class VideoLeadScanner:
         """Parse YouTube ISO date string"""
         try:
             return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-        except:
+        except Exception:
             return datetime.now()
 
 

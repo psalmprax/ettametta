@@ -1,10 +1,13 @@
 from .scanner_base import DiscoveryScannerBase
 from .models import ContentCandidate
 import random
+import logging
 from src.api.config import settings
 from googleapiclient.discovery import build
 import datetime
 import re
+
+logger = logging.getLogger(__name__)
 
 
 class YouTubeLongScanner(DiscoveryScannerBase):
@@ -93,7 +96,7 @@ class YouTubeLongScanner(DiscoveryScannerBase):
             return candidates
 
         except Exception as e:
-            print(f"[YouTubeLongScanner] ERROR: {str(e)}")
+            logger.exception(f"Error scanning YouTube trends: {str(e)}")
             return []
 
     def _calculate_engagement(self, stats: dict) -> float:
