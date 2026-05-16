@@ -1,0 +1,85 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Core
+psutil>=5.9.0
+fastapi>=0.110.0
+uvicorn[standard]
+pydantic>=2.0.0
+pydantic-settings
+python-jose[cryptography]
+bcrypt==4.0.1
+passlib[bcrypt]
+email-validator
+
+# Database
+SQLAlchemy>=2.0.0
+psycopg2-binary
+asyncpg
+aiosqlite
+alembic
+
+# Cache & Queue
+redis
+celery
+fastapi-cache2[redis]
+
+# HTTP & Clients
+httpx
+aiohttp
+groq
+openai
+anthropic>=0.20.0
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+google-generativeai
+authlib
+stripe
+boto3
+
+# Video & Media
+moviepy
+ffmpeg-python
+faster-whisper
+yt-dlp
+Pillow
+opencv-python
+easyocr
+
+# Scraping & Processing
+beautifulsoup4
+jinja2
+python-multipart
+python-dotenv
+cryptography
+tenacity>=8.2.3
+
+# Monitoring & Observability
+prometheus-fastapi-instrumentator
+slowapi
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-celery
+opentelemetry-instrumentation-requests
+opentelemetry-exporter-otlp
+python-json-logger
+qdrant-client
+
+# AI/ML
+diffusers
+realesrgan
+basicsr
+huggingface-hub
+
+# Agent Frameworks
+crewai
+langchain==0.1.20
+langchain-community==0.0.38
+langchain-core==0.1.52
+duckduckgo-search
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0

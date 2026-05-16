@@ -7,92 +7,15 @@ import httpx
 from typing import Any
 from uuid import uuid4
 from src.api.config import settings
-from src.api.utils.tracing import get_request_id, setup_tracing_logger
+from src.api.utils.tracing import get_request_id
+from src.api.utils.resilience import CircuitBreaker
+from opentelemetry import trace
+from src.shared.observability import get_logger
 
 # Configure Structured Logging (Standard 2.22)
-logger = setup_tracing_logger("IntelligenceHub")
+logger = get_logger("IntelligenceHub")
+tracer = trace.get_tracer(__name__)
 
-
-class CircuitBreaker:
-    """
-    Standard 1.14: Circuit Breaker with Exponential Backoff
-    """
-
-    def __init__(self, name: str, failure_threshold=3, recovery_timeout=30):
-        self.name = name
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.failure_count = 0
-        self.last_failure_time = 0
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        logger.warning(
-            json.dumps(
-                {
-                    "event": "circuit_breaker_failure",
-                    "name": self.name,
-                    "failure_count": self.failure_count,
-                    "threshold": self.failure_threshold,
-                    "state": self.state,
-                }
-            )
-        )
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
-            logger.error(
-                json.dumps(
-                    {
-                        "event": "circuit_breaker_open",
-                        "name": self.name,
-                        "msg": f"Circuit breaker {self.name} is now OPEN",
-                    }
-                )
-            )
-
-    def record_success(self):
-        if self.state != "CLOSED":
-            logger.info(
-                json.dumps(
-                    {
-                        "event": "circuit_breaker_closed",
-                        "name": self.name,
-                        "msg": f"Circuit breaker {self.name} is now CLOSED",
-                    }
-                )
-            )
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def reset(self):
-        """Manually reset the circuit breaker to CLOSED state."""
-        if self.state != "CLOSED":
-            logger.info(
-                json.dumps(
-                    {
-                        "event": "circuit_breaker_manual_reset",
-                        "name": self.name,
-                        "msg": f"Circuit breaker {self.name} manually reset",
-                    }
-                )
-            )
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def can_attempt(self) -> bool:
-        """Check if circuit breaker allows requests."""
-        if self.state == "CLOSED":
-            return True
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return True
-            return False  # OPEN and still recovering
-        if self.state == "HALF_OPEN":
-            return True  # Allow test request
-        return False  # Unknown state
 
 
 class IntelligenceHub:
@@ -110,14 +33,20 @@ class IntelligenceHub:
         self.fallback_ollama_url = "http://localhost:11434/api/chat"
         self.ollama_url = self.primary_ollama_url
 
+        # Dynamic Load Balancer: Track health per provider
+        self.provider_health = {
+            p: {"errors": 0, "last_error": 0, "status": "healthy"}
+            for p in ["ollama", "openai", "groq", "gemini", "vllm", "dify"]
+        }
+
         # Hardening: Dedicated Circuit Breakers per provider
         self.breakers = {
-            "ollama": CircuitBreaker("Ollama-Local-Edge"),
-            "openai": CircuitBreaker("OpenAI-Champion"),
-            "groq": CircuitBreaker("Groq-Challenger"),
-            "gemini": CircuitBreaker("Gemini-Titan"),
-            "vllm": CircuitBreaker("vLLM-Production-Edge"),
-            "dify": CircuitBreaker("Dify-Orchestrator"),
+            "ollama": CircuitBreaker(name="Ollama-Local-Edge"),
+            "openai": CircuitBreaker(name="OpenAI-Champion"),
+            "groq": CircuitBreaker(name="Groq-Challenger"),
+            "gemini": CircuitBreaker(name="Gemini-Titan"),
+            "vllm": CircuitBreaker(name="vLLM-Production-Edge"),
+            "dify": CircuitBreaker(name="Dify-Orchestrator"),
         }
 
         # Primary/Champion configuration
@@ -133,35 +62,47 @@ class IntelligenceHub:
         complexity: str = "medium",  # "low", "medium", "high"
         provider: str | None = None, # Explicit provider override
         rag_context: str | None = None, # RAG context to inject
-        timeout_seconds: int = 120,  # Global safety-net timeout
+        timeout_seconds: int | None = None,  # Global safety-net timeout (None uses settings)
     ) -> dict[str, Any]:
         """
         Unified chat interface with complexity-based routing and failure persistence.
-        Global timeout ensures no single chat() call can hang indefinitely.
+        Instrumented with OpenTelemetry for end-to-end tracing.
         """
-        try:
-            return await asyncio.wait_for(
-                self._chat_inner(
-                    prompt, system_prompt, session_id, json_mode,
-                    complexity, provider, rag_context
-                ),
-                timeout=timeout_seconds,
-            )
-        except asyncio.TimeoutError:
-            request_id = session_id or get_request_id()
-            logger.critical(
-                json.dumps(
-                    {
-                        "event": "hub_global_timeout",
-                        "request_id": request_id,
-                        "timeout_seconds": timeout_seconds,
-                        "msg": f"Global timeout ({timeout_seconds}s) exceeded for chat request",
-                    }
+        with tracer.start_as_current_span("IntelligenceHub.chat") as span:
+            request_id = session_id or str(uuid4())
+            span.set_attribute("request_id", request_id)
+            span.set_attribute("complexity", complexity)
+            if provider:
+                span.set_attribute("provider_override", provider)
+
+            actual_timeout = timeout_seconds or settings.LLM_TIMEOUT * 10
+            try:
+                result = await asyncio.wait_for(
+                    self._chat_inner(
+                        prompt, system_prompt, request_id, json_mode,
+                        complexity, provider, rag_context
+                    ),
+                    timeout=actual_timeout,
                 )
-            )
-            raise RuntimeError(
-                f"IntelligenceHub global timeout ({timeout_seconds}s) for request {request_id}"
-            )
+                span.set_attribute("provider_used", result.get("provider", "unknown"))
+                return result
+            except asyncio.TimeoutError:
+                logger.critical(
+                    json.dumps(
+                        {
+                            "event": "hub_global_timeout",
+                            "request_id": request_id,
+                            "timeout_seconds": actual_timeout,
+                            "msg": f"Global timeout ({actual_timeout}s) exceeded",
+                        }
+                    )
+                )
+                span.set_status(trace.Status(trace.StatusCode.ERROR, "Global Timeout"))
+                raise RuntimeError(f"IntelligenceHub global timeout for request {request_id}")
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(trace.Status(trace.StatusCode.ERROR, str(e)))
+                raise
 
     async def _chat_inner(
         self,
@@ -181,18 +122,33 @@ class IntelligenceHub:
         
         # Step 2: Define candidates (Primary -> Fallbacks)
         if provider:
-            candidates = [provider]
+            p_norm = provider.lower()
+            if p_norm == "google":
+                p_norm = "gemini"
+            candidates = [p_norm]
         else:
-            candidates = [primary, "dify", "vllm", "ollama", "gemini", "groq", "openai"]
+            candidates = [primary, "ollama", "dify", "vllm", "gemini", "groq", "openai"]
         
         # Remove duplicates while preserving order
         candidates = list(dict.fromkeys(candidates))
+        logger.info(f"[{request_id}] LLM Candidates: {candidates}")
 
         for p in candidates:
             if p not in self.breakers:
                 logger.warning(f"Provider {p} not in breakers, skipping")
                 continue
-            if not self.breakers[p].can_attempt():
+            if self.provider_health[p]["status"] != "healthy":
+                last_error_time = self.provider_health[p]["last_error"]
+                # Auto-heal after 10 minutes
+                if time.time() - last_error_time > 600:
+                    self.provider_health[p]["status"] = "healthy"
+                    self.provider_health[p]["errors"] = 0
+                    logger.info(f"Provider {p} auto-healed after timeout")
+                else:
+                    logger.warning(f"Provider {p} is {self.provider_health[p]['status']}, skipping")
+                    continue
+
+            if self.breakers[p].is_open():
                 logger.warning(
                     json.dumps(
                         {
@@ -200,21 +156,35 @@ class IntelligenceHub:
                             "provider": p,
                             "request_id": request_id,
                             "msg": "Circuit is OPEN",
-                            "failures": self.breakers[p].failure_count,
-                            "last_failure": self.breakers[p].last_failure_time,
                         }
                     )
                 )
                 continue
 
             try:
-                result = await self._call_provider(
-                    p, prompt, system_prompt, request_id, json_mode, rag_context
-                )
-                self.breakers[p].record_success()
-                return {**result, "request_id": request_id, "provider": p}
+                logger.info(f"Attempting provider {p} for request {request_id}")
+                with tracer.start_as_current_span(f"IntelligenceHub._call_{p}") as subspan:
+                    subspan.set_attribute("provider", p)
+                    result = await self._call_provider(
+                        p, prompt, system_prompt, request_id, json_mode, rag_context
+                    )
+                    self.breakers[p].record_success()
+                    # Reset health on success
+                    self.provider_health[p]["errors"] = 0
+                    self.provider_health[p]["status"] = "healthy"
+                    return {**result, "request_id": request_id, "provider": p}
             except Exception as e:
+                logger.debug(f"Provider {p} failed: {e}")
                 self.breakers[p].record_failure()
+                
+                # Record health failure
+                self.provider_health[p]["errors"] += 1
+                self.provider_health[p]["last_error"] = time.time()
+                if "429" in str(e) or "quota" in str(e).lower():
+                    self.provider_health[p]["status"] = "rate_limited"
+                elif self.provider_health[p]["errors"] >= 3:
+                    self.provider_health[p]["status"] = "degraded"
+
                 logger.error(
                     json.dumps(
                         {
@@ -222,6 +192,7 @@ class IntelligenceHub:
                             "provider": p,
                             "error": str(e),
                             "request_id": request_id,
+                            "health_status": self.provider_health[p]["status"]
                         }
                     )
                 )
@@ -307,14 +278,14 @@ class IntelligenceHub:
                 {"role": "user", "content": effective_prompt},
             ],
             "stream": False,
-            "options": {"temperature": 0.7, "num_predict": 1000},
+            "options": {"temperature": 0.7, "num_predict": 4096},
         }
         if json_mode:
             payload["format"] = "json"
 
         # Standard: Dynamic Timeout for RAG operations (120s vs 90s)
         # Kept tight to prevent Nexus jobs hanging in COMPOSING state
-        timeout = 120 if rag_context else 90
+        timeout = settings.LLM_TIMEOUT * 2 # Standard: 2x base timeout for local Ollama
         
         async def _try_post(url):
             async with httpx.AsyncClient(timeout=timeout) as client:
@@ -322,6 +293,7 @@ class IntelligenceHub:
                 return await client.post(url, json=payload, headers=headers)
 
         try:
+            logger.info(f"[{rid}] Calling Ollama at {self.ollama_url} with model {settings.OLLAMA_MODEL}")
             start = time.time()
             resp = await _try_post(self.ollama_url)
         except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as e:
@@ -335,10 +307,13 @@ class IntelligenceHub:
 
         latency = time.time() - start
 
+        logger.debug(f"Ollama Status: {resp.status_code}")
         if resp.status_code != 200:
             raise RuntimeError(f"Ollama error {resp.status_code}: {resp.text}")
 
+        logger.debug("Parsing Ollama JSON body...")
         data = resp.json()
+        logger.debug("Ollama JSON parsed successfully.")
         content = data["message"]["content"]
 
         return {
@@ -380,7 +355,7 @@ class IntelligenceHub:
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
 
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=settings.LLM_TIMEOUT) as client:
             start = time.time()
             resp = await client.post(url, headers=headers, json=payload)
             latency = time.time() - start
@@ -429,7 +404,7 @@ class IntelligenceHub:
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
 
-        async with httpx.AsyncClient(timeout=20) as client:
+        async with httpx.AsyncClient(timeout=settings.LLM_TIMEOUT) as client:
             start = time.time()
             resp = await client.post(url, headers=headers, json=payload)
             latency = time.time() - start

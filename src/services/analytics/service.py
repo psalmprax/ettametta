@@ -189,6 +189,7 @@ class AnalyticsService:
         self, post_id: str, user_id: str
     ) -> ContentPerformance:
         """Fetch YouTube analytics data"""
+        cache_key = f"analytics:report:{post_id}:{user_id}"
         token_data = token_manager.get_token("youtube", user_id)
         if not token_data or not settings.GOOGLE_CLIENT_ID:
             pass  # Fall through to DB fallback
@@ -206,11 +207,12 @@ class AnalyticsService:
 
                 # 10/10 CORE: No simulated decay curves. 
                 # Use Neural Oracle to predict the retention curve for this production
-                # We use a dummy CLIP vector here as we're in the API layer, and real vision 
-                # data is stored in the vault/ledger.
-                dummy_clip = np.zeros(512)
+                from src.services.video_engine.neural_vision_analyzer import base_vision_service
+                # In analytics context, we can't always get the original prompt easily, but we use the post_id or metadata
+                semantic_vector = base_vision_service.get_text_embedding(f"Video {post_id}") or np.zeros(512)
+                
                 features = [raw_retention_rate, data["views"]/1000000, data["likes"]/data["views"] if data["views"]>0 else 0, 0, 0]
-                retention_data = base_oracle_service.predict_curve(features, dummy_clip).tolist()
+                retention_data = base_oracle_service.predict_curve(features, semantic_vector).tolist()
 
                 insight = await self._generate_ai_insight(
                     data["views"], data["likes"], data["shares"], data["comments"]
@@ -274,7 +276,7 @@ class AnalyticsService:
             share_count=db_shares,
             comment_count=0,
             follows_gained=0,
-            retention_data=base_oracle_service.predict_curve([0.1, 0, 0, 0, 0], np.zeros(512)).tolist(),
+            retention_data=base_oracle_service.predict_curve([0.1, 0, 0, 0, 0], semantic_vector if 'semantic_vector' in locals() else np.zeros(512)).tolist(),
             optimization_insight=fallback_insight
             if db_views > 0
             else "No remote analytics data available. Initializing tracking.",

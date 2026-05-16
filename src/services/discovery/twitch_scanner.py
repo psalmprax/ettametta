@@ -3,7 +3,6 @@ import logging
 import json
 import re
 import random
-from datetime import datetime
 from .models import ContentCandidate
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ class TwitchScanner:
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         ]
     
-    async def scan_trends(self, niche: str, published_after: datetime | None = None, **kwargs) -> list[ContentCandidate]:
+    async def scan_trends(self, niche: str, **kwargs) -> list[ContentCandidate]:
         """
         Scans Twitch for top clips in categories related to the niche.
         Uses the directory and search pages for discovery.
@@ -89,7 +88,7 @@ class TwitchScanner:
                         data = json.loads(json_str)
                         clips = self._extract_clips_from_json(data, niche)
                         candidates.extend(clips)
-                    except:
+                    except Exception:
                         pass
                         
         except Exception as e:
@@ -128,7 +127,7 @@ class TwitchScanner:
                         data = json.loads(json_str)
                         clips = self._extract_clips_from_json(data, niche)
                         candidates.extend(clips)
-                    except:
+                    except Exception:
                         pass
                         
         except Exception as e:
@@ -138,77 +137,80 @@ class TwitchScanner:
     
     def _extract_clips_from_json(self, data: dict, niche: str) -> list[ContentCandidate]:
         """Extract clip data from Twitch JSON."""
-        candidates = []
-        
         try:
-            # Navigate Twitch's complex JSON structure
-            props = data.get("props", {})
-            page_props = props.get("pageProps", {})
-            
-            # Try different paths
-            clips_data = page_props.get("clips", {})
-            if not clips_data:
-                clips_data = page_props.get("directory", {})
-            
-            edges = []
-            
-            # Path for clip edges
-            if "edges" in clips_data:
-                edges = clips_data.get("edges", [])
-            elif "clips" in clips_data:
-                edges = clips_data.get("clips", [])
-            
+            edges = self._find_clips_edges(data)
+            candidates = []
+
             for edge in edges:
-                # Handle different structures
                 node = edge.get("node", edge)
-                
-                clip_id = node.get("slug") or node.get("id", "")
-                if not clip_id:
-                    continue
-                
-                title = node.get("title", "Twitch Clip")
-                streamer = node.get("broadcaster", {}).get("displayName", "Unknown")
-                game = node.get("game", {}).get("displayName", niche)
-                
-                # Get metrics
-                views = node.get("viewCount", 0)
-                if not views:
-                    # Try alternate path
-                    view_count = node.get("view_count", 0)
-                    views = view_count if view_count else 0
-                
-                # Calculate engagement estimate
-                engagement_score = 0.05 if views > 1000 else 0.08
-                
-                # Get thumbnail
-                thumbnail = node.get("thumbnailURL", "") or node.get("thumbnail", {})
-                if isinstance(thumbnail, dict):
-                    thumbnail = thumbnail.get("url", "")
-                
-                # Get clip URL
-                slug = node.get("slug", "")
-                url = f"{self.base_url}/clip/{slug}" if slug else ""
-                
-                if url:
-                    candidates.append(ContentCandidate(
-                        id=f"twitch_{clip_id}",
-                        platform="Twitch Clips",
-                        source_uri=url,
-                        creator_name=streamer,
-                        title=title[:100],
-                        view_count=views,
-                        like_count=0,
-                        comment_count=0,
-                        share_count=0,
-                        engagement_score=engagement_score,
-                        thumbnail_uri=thumbnail,
-                        metadata={"game": game, "niche": niche}
-                    ))
-                    
+                candidate = self._parse_single_clip(node, niche)
+                if candidate:
+                    candidates.append(candidate)
+
+            return candidates
+
         except Exception as e:
             logger.debug(f"[TwitchScanner] Clip extraction error: {e}")
-        
-        return candidates
+            return []
+
+    def _find_clips_edges(self, data: dict) -> list:
+        """Navigate Twitch's complex JSON structure to find clip edges."""
+        props = data.get("props", {})
+        page_props = props.get("pageProps", {})
+
+        # Try different paths for clips data
+        clips_data = page_props.get("clips") or page_props.get("directory")
+        if not clips_data or not isinstance(clips_data, dict):
+            return []
+
+        # Return the first list found among common keys
+        for key in ["edges", "clips", "items"]:
+            if key in clips_data:
+                return clips_data.get(key, [])
+
+        return []
+
+    def _parse_single_clip(self, node: dict, niche: str) -> ContentCandidate | None:
+        """Parse a single Twitch clip node into a ContentCandidate."""
+        clip_id = node.get("slug") or node.get("id")
+        slug = node.get("slug", "")
+        if not clip_id or not slug:
+            return None
+
+        # Basic Info
+        title = node.get("title", "Twitch Clip")
+        streamer = node.get("broadcaster", {}).get("displayName", "Unknown")
+        game = node.get("game", {}).get("displayName", niche)
+
+        # Metrics & Engagement
+        views = node.get("viewCount") or node.get("view_count") or 0
+        engagement_score = 0.05 if views > 1000 else 0.08
+
+        # Image & URL
+        thumbnail = self._get_thumbnail_url(node)
+        url = f"{self.base_url}/clip/{slug}"
+
+        return ContentCandidate(
+            id=f"twitch_{clip_id}",
+            platform="Twitch Clips",
+            source_uri=url,
+            creator_name=streamer,
+            title=title[:100],
+            view_count=views,
+            like_count=0,
+            comment_count=0,
+            share_count=0,
+            engagement_score=engagement_score,
+            thumbnail_uri=thumbnail,
+            metadata={"game": game, "niche": niche}
+        )
+
+    def _get_thumbnail_url(self, node: dict) -> str:
+        """Handle different Twitch thumbnail data structures."""
+        thumb = node.get("thumbnailURL") or node.get("thumbnail")
+        if isinstance(thumb, dict):
+            return thumb.get("url", "")
+        return str(thumb) if thumb else ""
 
 
 base_twitch_service = TwitchScanner()

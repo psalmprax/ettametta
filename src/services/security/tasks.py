@@ -1,13 +1,16 @@
 from src.api.utils.celery import celery_app
 from src.services.security.service import base_security_service
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 @celery_app.task(name="security.system_audit")
 def system_audit_task():
     """
     Periodic background task to audit system integrity and security posture.
     """
-    print("[Sentinel Task] Running scheduled logic audit...")
+    logger.info("[Sentinel Task] Running scheduled logic audit...")
     report = base_security_service.audit_system_integrity()
     
     # Log audit event

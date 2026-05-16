@@ -12,7 +12,7 @@ from sqlalchemy import (
 )
 from .database import Base
 from .user_models import UserDB, UserRole, SubscriptionTier
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 import uuid
 from src.shared.enums import (
@@ -95,7 +95,7 @@ class ContentCandidateDB(Base):
     # Timing fields
     published_at = Column(DateTime, nullable=True)  # When content was published
     scanned_at = Column(
-        DateTime, default=lambda: datetime.utcnow()
+        DateTime, default=lambda: datetime.now(timezone.utc)
     )  # When content was discovered
 
     # Duration and metrics
@@ -126,6 +126,10 @@ class ContentCandidateDB(Base):
         JSON, nullable=True
     )  # topics, sentiment, viral_potential, keywords
     analyzed_at = Column(DateTime, nullable=True)  # When content was analyzed
+
+    # Nexus Integration
+    nexus_job_id = Column(String(36), ForeignKey("nexus_jobs.id"), nullable=True)
+    is_processed = Column(Boolean, default=False)
 
     # Legacy compatibility (kept for migration)
     discovery_date = Column(DateTime, default=lambda: datetime.utcnow())

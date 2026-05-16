@@ -2,7 +2,8 @@ services:
   traefik:
     image: traefik:v3.0
     command:
-      - "--api.insecure=true"
+      - "--api.insecure=false"
+      - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
@@ -10,7 +11,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "7216:8080"  # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:
@@ -18,13 +18,17 @@ services:
       - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.http.routers.traefik.middlewares=traefik-auth"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_USERS:-admin:$$2y$$10$$YourHashHere}"
   db:
     image: postgres:15-alpine
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-psalmprax}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ettametta_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required. Set in .env or environment}
       POSTGRES_DB: ettametta
+    ports:
+      - "7203:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -36,9 +40,11 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
-    command: redis-server --requirepass ${REDIS_PASSWORD:-ettametta_redis_pass}
+    ports:
+      - "7204:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required. Set in .env or environment}
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-ettametta_redis_pass}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -70,7 +76,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 4G
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
       interval: 30s
@@ -84,10 +90,10 @@ services:
     environment:
       - ENV=development
       - PYTHONPATH=/app
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:?}@db:5432/ettametta
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:?}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:?}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:?}@redis:6379/0
       # Pass-through credentials
       - GOOGLE_CLIENT_ID
       - GOOGLE_CLIENT_SECRET
@@ -107,7 +113,7 @@ services:
       - SECRET_KEY
       - INTERNAL_API_TOKEN
       - RENDER_NODE_URL
-      - AI_CLUSTER_SECRET=${AI_CLUSTER_SECRET:-psalm_cluster_v1}
+      - AI_CLUSTER_SECRET=${AI_CLUSTER_SECRET:?AI_CLUSTER_SECRET is required. Set in .env or environment}
       - CORS_ORIGINS
       - OLLAMA_MODEL
       - OLLAMA_URL=http://ollama:11434
@@ -126,7 +132,7 @@ services:
       dockerfile: ./infra/docker/api.Dockerfile
       args:
         - BASE_IMAGE=python:3.11-slim
-    command: celery -A src.api.utils.celery worker --loglevel=info --concurrency=1
+    command: celery -A src.api.utils.celery worker --loglevel=info --concurrency=${CELERY_CONCURRENCY:-2}
     restart: always
     env_file: .env
     volumes:
@@ -136,10 +142,10 @@ services:
       - redis
       - db
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:?}@db:5432/ettametta
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:?}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:?}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:?}@redis:6379/0
       - PYTHONPATH=/app
       - ENV=development
     deploy:
@@ -180,10 +186,10 @@ services:
     environment:
       - ENV=development
       - PYTHONPATH=/app
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@redis:6379/0
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:?}@db:5432/ettametta
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:?}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:?}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD:?}@redis:6379/0
       - SECRET_KEY
       - INTERNAL_API_TOKEN
     healthcheck:
@@ -222,7 +228,7 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:-ettametta_pass}@db:5432/ettametta
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-psalmprax}:${POSTGRES_PASSWORD:?}@db:5432/ettametta
       - API_URL=http://api:8000
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
       - PORT=3001
@@ -260,7 +266,7 @@ services:
     environment:
       - AI_NODES=${AI_NODES:-""}
       - INTERNAL_API_TOKEN=${INTERNAL_API_TOKEN}
-      - AI_CLUSTER_SECRET=${AI_CLUSTER_SECRET:-psalm_cluster_v1}
+      - AI_CLUSTER_SECRET=${AI_CLUSTER_SECRET:?AI_CLUSTER_SECRET is required. Set in .env or environment}
     volumes:
       - ./src/engines/remote_ai_setup:/app
       - gateway_data:/workspace
@@ -355,47 +361,47 @@ services:
     restart: unless-stopped
 
   # Monitoring Stack
-  prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-    ports:
-      - "7208:9090"
-    restart: unless-stopped
+#  prometheus:
+#    image: prom/prometheus:latest
+#    volumes:
+#      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+#      - prometheus_data:/prometheus
+#    command:
+#      - '--config.file=/etc/prometheus/prometheus.yml'
+#      - '--storage.tsdb.path=/prometheus'
+#      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+#      - '--web.console.templates=/usr/share/prometheus/consoles'
+#    ports:
+#      - "7208:9090"
+#    restart: unless-stopped
 
-  grafana:
-    image: grafana/grafana:latest
-    volumes:
-      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
-      - GF_USERS_ALLOW_SIGN_UP=false
-    ports:
-      - "7209:3000"
-    depends_on:
-      - prometheus
-    restart: unless-stopped
+#  grafana:
+#    image: grafana/grafana:latest
+#    volumes:
+#      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
+#      - grafana_data:/var/lib/grafana
+#    environment:
+#      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:?GRAFANA_PASSWORD is required. Set in .env or environment}
+#      - GF_USERS_ALLOW_SIGN_UP=false
+#    ports:
+#      - "7209:3000"
+#    depends_on:
+#      - prometheus
+#    restart: unless-stopped
 
-  node-exporter:
-    image: prom/node-exporter:latest
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
-    ports:
-      - "7210:9100"
-    restart: unless-stopped
+#  node-exporter:
+#    image: prom/node-exporter:latest
+#    volumes:
+#      - /proc:/host/proc:ro
+#      - /sys:/host/sys:ro
+#      - /:/rootfs:ro
+#    command:
+#      - '--path.procfs=/host/proc'
+#      - '--path.sysfs=/host/sys'
+#      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+#    ports:
+#      - "7210:9100"
+#    restart: unless-stopped
 
 #  gpu-exporter:
 #    image: utkuozdemir/nvidia_gpu_exporter:latest
@@ -420,25 +426,25 @@ services:
       - qdrant_data:/qdrant/storage
     restart: unless-stopped
 
-  loki:
-    image: grafana/loki:2.9.10
-    user: "0:0"
-    volumes:
-      - ./infra/monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml
-      - loki_data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
-    ports:
-      - "7212:3100"
-    restart: unless-stopped
+#  loki:
+#    image: grafana/loki:2.9.10
+#    user: "0:0"
+#    volumes:
+#      - ./infra/monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml
+#      - loki_data:/loki
+#    command: -config.file=/etc/loki/local-config.yaml
+#    ports:
+#      - "7212:3100"
+#    restart: unless-stopped
 
-  promtail:
-    image: grafana/promtail:latest
-    volumes:
-      - ./infra/monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
-      - /var/run/docker.sock:/var/run/docker.sock
-#      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    command: -config.file=/etc/promtail/config.yml
-    restart: unless-stopped
+#  promtail:
+#    image: grafana/promtail:latest
+#    volumes:
+#      - ./infra/monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
+#      - /var/run/docker.sock:/var/run/docker.sock
+##      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+#    command: -config.file=/etc/promtail/config.yml
+#    restart: unless-stopped
 
 volumes:
   postgres_data:

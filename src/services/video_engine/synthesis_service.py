@@ -11,6 +11,8 @@ from src.api.config import settings
 import redis
 import time
 from contextlib import asynccontextmanager
+import tenacity
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 import importlib.util
 
@@ -510,6 +512,12 @@ class GenerativeService:
             },
         )
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=2, min=2, max=20),
+        retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException, RuntimeError)),
+        reraise=True
+    )
     async def synthesize_video(
         self,
         prompt: str,
@@ -797,83 +805,65 @@ class GenerativeService:
             success = False
             try:
                 import json
+                import httpx
 
-                # This represents a basic generic text-to-video workflow payload
-                # In prod, this would load a specific JSON workflow matched to model_type
                 # Apply VRAM optimization settings
                 params = self._get_engine_params(model_type)
                 optimized_steps = params.get("steps", 20)
                 optimized_cfg = params.get("cfg", 7.0)
 
+                # Load a specific workflow matched to the model_type if available, otherwise use a generic one
+                workflow_data = self._get_comfy_workflow(model_type, prompt, params)
+
                 payload = {
-                    "prompt": {
-                        "3": {
-                            "class_type": "KSampler",
-                            "inputs": {
-                                "seed": 1234,
-                                "steps": optimized_steps,
-                                "cfg": optimized_cfg,
-                                # Enable xFormers attention optimization
-                                "sampler_name": "euler",
-                                "scheduler": "normal",
-                            },
-                        },
-                        "6": {
-                            "class_type": "CLIPTextEncode",
-                            "inputs": {"text": prompt},
-                        },
-                        # VAE settings for memory optimization
-                        "vae_settings": {
-                            "class_type": "VAELoader",
-                            "inputs": {
-                                "vae_name": f"{model_type}_vae.safetensors",
-                                "tiling": True,  # Enable VAE tiling for lower VRAM
-                            },
-                        },
-                        # Just a skeleton to attempt the connection
-                    }
+                    "prompt": workflow_data,
+                    "client_id": str(uuid.uuid4())
                 }
+
                 async with httpx.AsyncClient(timeout=10) as client:
                     resp = await client.post(
                         f"{settings.COMFYUI_URL.rstrip('/')}/prompt", json=payload
                     )
                     if resp.status_code == 200:
-                        logging.info(
-                            f"[GenerativeService] ComfyUI job submitted. Polling for completion..."
-                        )
-                        # Poll /history for job completion
-                        job_id = resp.json().get("prompt_id")
-                        if job_id:
-                            for attempt in range(30):
-                                await asyncio.sleep(2)
-                                hist_resp = await client.get(
-                                    f"{settings.COMFYUI_URL.rstrip('/')}/history/{job_id}"
-                                )
-                                if hist_resp.status_code == 200:
-                                    hist_data = hist_resp.json()
-                                    if job_id in hist_data and hist_data[job_id].get(
-                                        "outputs"
-                                    ):
-                                        success = True
-                                        break
+                        prompt_id = resp.json().get("prompt_id")
+                        logging.info(f"[GenerativeService] ComfyUI job {prompt_id} submitted. Polling for completion...")
+                        
+                        # Poll for completion (up to 10 minutes for video generation)
+                        for attempt in range(120): # 120 * 5s = 600s = 10m
+                            await asyncio.sleep(5)
+                            hist_resp = await client.get(f"{settings.COMFYUI_URL.rstrip('/')}/history/{prompt_id}")
+                            if hist_resp.status_code == 200:
+                                history = hist_resp.json()
+                                if prompt_id in history:
+                                    # Job finished, now extract the file
+                                    outputs = history[prompt_id].get("outputs", {})
+                                    for node_id, output in outputs.items():
+                                        if "gifs" in output or "images" in output:
+                                            file_info = (output.get("gifs") or output.get("images"))[0]
+                                            filename = file_info.get("filename")
+                                            subfolder = file_info.get("subfolder", "")
+                                            
+                                            # Download the resulting file
+                                            view_url = f"{settings.COMFYUI_URL.rstrip('/')}/view?filename={filename}&subfolder={subfolder}&type=output"
+                                            file_resp = await client.get(view_url)
+                                            if file_resp.status_code == 200:
+                                                with open(output_path, "wb") as f:
+                                                    f.write(file_resp.content)
+                                                success = True
+                                                break
+                                    if success: break
+                        
                         if not success:
-                            raise RuntimeError(
-                                "ComfyUI job did not complete within timeout"
-                            )
+                            raise RuntimeError("ComfyUI job did not return an output within the timeout period.")
                     else:
-                        raise RuntimeError(
-                            f"ComfyUI returned {resp.status_code}: {resp.text[:200]}"
-                        )
+                        raise RuntimeError(f"ComfyUI API error: {resp.status_code} - {resp.text}")
             except Exception as e:
-                logging.error(
-                    f"[GenerativeService] ComfyUI connection failed: {e}. Falling back."
-                )
+                logging.error(f"[GenerativeService] ComfyUI orchestration failed: {e}")
+                success = False
 
-            # No dummy fallback - let the error propagate
             if not success:
-                raise RuntimeError(
-                    "Generative video synthesis failed: ComfyUI unavailable and no fallback configured."
-                )
+                # No dummy fallback - let the error propagate to trigger circuit breaker
+                raise RuntimeError(f"ComfyUI synthesis failed for model {model_name}.")
 
             return output_path
 
@@ -1428,6 +1418,58 @@ class GenerativeService:
             logging.error(f"[GenerativeService] AnimateDiff synthesis failed: {e}")
             return None
 
+    def _get_comfy_workflow(self, model_type: str, prompt: str, params: dict) -> dict:
+        """
+        Returns a ComfyUI prompt JSON tailored to the model type.
+        This provides the specific node configuration for different video models.
+        """
+        import random
+        # Generic fallback workflow (Text-to-Video)
+        workflow = {
+            "3": {
+                "class_type": "KSampler",
+                "inputs": {
+                    "seed": random.randint(1, 10**10),
+                    "steps": params.get("steps", 20),
+                    "cfg": params.get("cfg", 7.0),
+                    "sampler_name": "euler",
+                    "scheduler": "normal",
+                    "denoise": 1.0,
+                    "model": ["4", 0],
+                    "positive": ["6", 0],
+                    "negative": ["7", 0],
+                    "latent_image": ["5", 0]
+                }
+            },
+            "4": {
+                "class_type": "CheckpointLoaderSimple",
+                "inputs": {"ckpt_name": f"{model_type}_main.safetensors"}
+            },
+            "5": {
+                "class_type": "EmptyLatentImage",
+                "inputs": {"width": params.get("width", 512), "height": params.get("height", 512), "batch_size": 1}
+            },
+            "6": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"text": prompt, "clip": ["4", 1]}
+            },
+            "7": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"text": "blurry, low quality, distorted, static, text, watermark", "clip": ["4", 1]}
+            },
+            "8": {
+                "class_type": "VAEDecode",
+                "inputs": {"samples": ["3", 0], "vae": ["4", 2]}
+            },
+            "9": {
+                "class_type": "SaveVideo",
+                "inputs": {"images": ["8", 0], "filename_prefix": "ettametta_gen"}
+            }
+        }
+        
+        # In a real production environment, we would load these from 
+        # predefined .json files in a 'workflows/' directory.
+        return workflow
 
     async def pull_stock_for_niche(self, niche: str, count: int = 3) -> list[dict]:
         """

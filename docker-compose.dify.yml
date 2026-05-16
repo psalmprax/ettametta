@@ -6,21 +6,22 @@ services:
     container_name: ettametta-dify-api
     restart: always
     environment:
-      - DB_USERNAME=${POSTGRES_USER:-psalmprax}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-ettametta_pass}
-      - DB_HOST=ettametta-db-1
+      - DB_USERNAME=${POSTGRES_USER:?}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?}
+      - DB_HOST=db
       - DB_DATABASE=dify
-      - REDIS_HOST=ettametta-redis-1
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-ettametta_redis_pass}
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@ettametta-redis-1:6379/1
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@ettametta-redis-1:6379/1
-      - SECRET_KEY=${SECRET_KEY:-ettametta_dify_secret_key_v1}
-      - CONSOLE_CORS_ALLOW_ORIGIN=*
-      - WEB_API_CORS_ALLOW_ORIGIN=*
-      - CORS_ALLOW_ORIGINS=*
-      - QDRANT_HOST=ettametta-qdrant
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?}
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:?}@redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:?}@redis:6379/1
+      - SECRET_KEY=${DIFY_INNER_SECRET_KEY:?}
+      - CONSOLE_CORS_ALLOW_ORIGIN=${DIFY_CORS_ORIGIN}
+      - WEB_API_CORS_ALLOW_ORIGIN=${DIFY_CORS_ORIGIN}
+      - CORS_ALLOW_ORIGINS=${DIFY_CORS_ORIGIN}
+      - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - VECTOR_STORE=qdrant
+      - GUNICORN_TIMEOUT=600
     networks:
       - ettametta
 
@@ -31,20 +32,19 @@ services:
     restart: always
     command: /usr/bin/supervisord
     environment:
-      - DB_USERNAME=${POSTGRES_USER:-psalmprax}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-ettametta_pass}
-      - DB_HOST=ettametta-db-1
+      - DB_USERNAME=${POSTGRES_USER:?}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?}
+      - DB_HOST=db
       - DB_DATABASE=dify
-      - REDIS_HOST=ettametta-redis-1
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-ettametta_redis_pass}
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@ettametta-redis-1:6379/1
-      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:-ettametta_redis_pass}@ettametta-redis-1:6379/1
-      - SECRET_KEY=${SECRET_KEY:-ettametta_dify_secret_key_v1}
-      - CONSOLE_CORS_ALLOW_ORIGIN=*
-      - WEB_API_CORS_ALLOW_ORIGIN=*
-      - CORS_ALLOW_ORIGINS=*
-      - CONSOLE_CORS_ALLOW_ORIGIN=*
-      - WEB_API_CORS_ALLOW_ORIGIN=*
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?}
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD:?}@redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD:?}@redis:6379/1
+      - SECRET_KEY=${DIFY_INNER_SECRET_KEY:?}
+      - CONSOLE_CORS_ALLOW_ORIGIN=${DIFY_CORS_ORIGIN}
+      - WEB_API_CORS_ALLOW_ORIGIN=${DIFY_CORS_ORIGIN}
+      - CORS_ALLOW_ORIGINS=${DIFY_CORS_ORIGIN}
+      - GUNICORN_TIMEOUT=600
     networks:
       - ettametta
 
@@ -56,8 +56,8 @@ services:
     ports:
       - "8081:3000"
     environment:
-      - CONSOLE_API_URL=http://149.104.110.122.sslip.io:7200/api/v1/dify
-      - APP_API_URL=http://149.104.110.122.sslip.io:7200/api/v1/dify
+      - CONSOLE_API_URL=${DIFY_CONSOLE_API_URL}
+      - APP_API_URL=${DIFY_APP_API_URL}
     networks:
       - ettametta
 

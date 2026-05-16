@@ -10,11 +10,7 @@ import {
     Play,
     RefreshCw,
     Download,
-    Eye,
-    ChevronRight,
     Terminal,
-    Target,
-    Cpu,
     CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";

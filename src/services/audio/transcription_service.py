@@ -2,6 +2,8 @@ import os
 import logging
 import asyncio
 import httpx
+import tenacity
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from typing import Any, List, Dict
 from src.api.config import settings
 
@@ -15,9 +17,10 @@ class TranscriptionService:
     """
 
     def __init__(self):
-        self.model_size = os.getenv("WHISPER_MODEL_SIZE", "base")
-        self.device = os.getenv("WHISPER_DEVICE", "cpu")  # cpu, cuda
-        self.compute_type = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
+        self.model_size = settings.WHISPER_MODEL_SIZE
+        self.device = settings.WHISPER_DEVICE
+        self.compute_type = settings.WHISPER_COMPUTE_TYPE
+        self.timeout = settings.TRANSCRIPTION_TIMEOUT
         self._model = None
         
         # Remote offloading configuration
@@ -25,24 +28,33 @@ class TranscriptionService:
         if self.remote_url:
             self.remote_url = self.remote_url.rstrip("/") + "/transcribe"
 
-    def _get_model(self):
-        """Lazy loading of the Faster-Whisper model."""
-        if self._model is None:
-            try:
-                from faster_whisper import WhisperModel
-                logger.info(f"🚀 [TranscriptionService] Loading Faster-Whisper model ({self.model_size}) on {self.device}")
-                self._model = WhisperModel(
-                    self.model_size, 
-                    device=self.device, 
-                    compute_type=self.compute_type
-                )
-            except ImportError:
-                logger.error("[TranscriptionService] faster-whisper not installed. Local transcription disabled.")
-                return None
-            except Exception as e:
-                logger.error(f"[TranscriptionService] Failed to load model: {e}")
-                return None
-        return self._model
+    def _get_model(self, force_size: str | None = None):
+        """Lazy loading of the Faster-Whisper model with fallback support."""
+        size = force_size or self.model_size
+        
+        # If we already have a model and it's the right size, return it
+        if self._model is not None and getattr(self, "_current_size", None) == size:
+            return self._model
+
+        try:
+            from faster_whisper import WhisperModel
+            logger.info(f"🚀 [TranscriptionService] Loading Faster-Whisper model ({size}) on {self.device}")
+            self._model = WhisperModel(
+                size, 
+                device=self.device, 
+                compute_type=self.compute_type
+            )
+            self._current_size = size
+            return self._model
+        except ImportError:
+            logger.error("[TranscriptionService] faster-whisper not installed. Local transcription disabled.")
+            return None
+        except Exception as e:
+            logger.error(f"[TranscriptionService] Failed to load model {size}: {e}")
+            if size != "tiny":
+                logger.warning("[TranscriptionService] Attempting fallback to 'tiny' model...")
+                return self._get_model(force_size="tiny")
+            return None
 
     async def transcribe(self, audio_path: str, language: str | None = None) -> Dict[str, Any]:
         """
@@ -78,47 +90,67 @@ class TranscriptionService:
                 else:
                     raise RuntimeError(f"Remote transcription error {resp.status_code}: {resp.text}")
 
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=2, min=4, max=10),
+        retry=retry_if_exception_type((asyncio.TimeoutError, RuntimeError, Exception)),
+        reraise=True
+    )
     async def _transcribe_local(self, audio_path: str, language: str | None = None) -> Dict[str, Any]:
-        """Runs transcription locally using Faster-Whisper."""
+        """Runs transcription locally with timeout and retry protection."""
         model = self._get_model()
         if not model:
             return {"error": "Transcription model not available"}
 
-        logger.info(f"🎙️ [TranscriptionService] Transcribing locally: {audio_path}")
+        logger.info(f"🎙️ [TranscriptionService] Transcribing locally: {audio_path} (Timeout: {self.timeout}s)")
         
-        # Run in a thread to avoid blocking the event loop
-        loop = asyncio.get_event_loop()
-        segments, info = await loop.run_in_executor(
-            None, 
-            lambda: model.transcribe(
-                audio_path, 
-                beam_size=5, 
-                language=language,
-                word_timestamps=True
-            )
-        )
+        try:
+            # Run in a thread with a hard timeout to prevent job stalls
+            loop = asyncio.get_event_loop()
+            
+            async def _do_transcribe():
+                return await loop.run_in_executor(
+                    None, 
+                    lambda: list(model.transcribe(
+                        audio_path, 
+                        beam_size=5, 
+                        language=language,
+                        word_timestamps=True
+                    ))
+                )
 
-        full_text = ""
-        words_data = []
-        
-        for segment in segments:
-            full_text += segment.text + " "
-            if segment.words:
-                for word in segment.words:
-                    words_data.append({
-                        "word": word.word,
-                        "start": word.start,
-                        "end": word.end,
-                        "probability": word.probability
-                    })
+            # model.transcribe returns a generator (segments) and info
+            # We need to exhaust the generator inside the executor or it will block here
+            result = await asyncio.wait_for(_do_transcribe(), timeout=self.timeout)
+            segments, info = result[0], result[1]
 
-        return {
-            "text": full_text.strip(),
-            "language": info.language,
-            "language_probability": info.language_probability,
-            "duration": info.duration,
-            "words": words_data
-        }
+            full_text = ""
+            words_data = []
+            
+            for segment in segments:
+                full_text += segment.text + " "
+                if segment.words:
+                    for word in segment.words:
+                        words_data.append({
+                            "word": word.word,
+                            "start": word.start,
+                            "end": word.end,
+                            "probability": word.probability
+                        })
+
+            return {
+                "text": full_text.strip(),
+                "language": info.language,
+                "language_probability": info.language_probability,
+                "duration": info.duration,
+                "words": words_data
+            }
+        except asyncio.TimeoutError:
+            logger.error(f"⏱️ [TranscriptionService] Transcription timed out for {audio_path}")
+            raise
+        except Exception as e:
+            logger.error(f"❌ [TranscriptionService] Local transcription failed: {e}")
+            raise
 
 # Singleton accessor
 base_transcription_service = TranscriptionService()
