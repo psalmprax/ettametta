@@ -26,13 +26,13 @@ jobs:
           
       - name: Install dependencies
         run: |
-          cd api
+          cd src/api
           pip install -r requirements.txt
           pip install pytest pytest-asyncio pytest-mock
           
       - name: Run all tests
         run: |
-          cd api
+          cd src/api
           pytest tests/ -v --tb=short
         env:
           GROQ_API_KEY: test_key
@@ -51,7 +51,7 @@ jobs:
       - name: Run security scan
         run: |
           pip install safety bandit
-          cd api
+          cd src/api
           safety check --json > security_report.json || true
           bandit -r . -f json -o bandit_report.json || true
           
