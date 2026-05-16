@@ -37,7 +37,7 @@ export const RemotionRoot: React.FC = () => {
             <Composition
                 id="ViralClip"
                 component={ViralClip}
-                durationInFrames={300}
+                durationInFrames={18000}
                 fps={30}
                 width={1080}
                 height={1920}
@@ -45,10 +45,54 @@ export const RemotionRoot: React.FC = () => {
                 defaultProps={jobData || {
                     title: 'Your Viral Hook Here',
                     subtitle: 'Captivating content follows...',
-                    video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                    audio_url: undefined,
+                    show_cta_overlay: true,
+                    cta_type: 'engagement',
+                    cta_text: 'Like & Subscribe for more!',
+                    words: [],
+                    clips: [],
+                    trademark_url: undefined,
+                    brand_name: 'ettametta',
+                    primary_color: '#8b5cf6',
+                    vignette_intensity: 0.5,
+                    grain_opacity: 0.08,
+                    style: 'CINEMATIC_DOC',
+                    job_metadata: {}
                 }}
             />
-            {/* ... other compositions ... */}
+            <Composition
+                id="CinematicMinimal"
+                component={CinematicMinimal}
+                durationInFrames={18000}
+                fps={30}
+                width={1080}
+                height={1920}
+                schema={cinematicMinimalSchema}
+                defaultProps={{
+                    title: 'Your Title Here',
+                    subtitle: 'Captivating Subtitle',
+                    primary_color: '#00F2FE',
+                    show_cta_overlay: true,
+                    cta_type: 'engagement',
+                    cta_text: 'Like & Subscribe'
+                }}
+            />
+            <Composition
+                id="HormoziStyle"
+                component={HormoziStyle}
+                durationInFrames={18000}
+                fps={30}
+                width={1080}
+                height={1920}
+                schema={hormoziStyleSchema}
+                defaultProps={{
+                    text: 'Results Discipline Money Freedom Legacy',
+                    highlight_color: '#00ff00',
+                    show_cta_overlay: true,
+                    cta_type: 'cta',
+                    cta_text: 'Link in bio'
+                }}
+            />
         </>
     );
 };

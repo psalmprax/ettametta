@@ -61,21 +61,24 @@ class BaseEttamettaAgent:
     def _init_groq(self):
         if hasattr(settings, "GROQ_API_KEY") and settings.GROQ_API_KEY:
             try:
+                import httpx
                 from groq import Groq, AsyncGroq
 
-                self.clients["groq"] = Groq(api_key=settings.GROQ_API_KEY)
-                self.clients["groq_async"] = AsyncGroq(api_key=settings.GROQ_API_KEY)
+                self.clients["groq"] = Groq(api_key=settings.GROQ_API_KEY, http_client=httpx.Client())
+                self.clients["groq_async"] = AsyncGroq(api_key=settings.GROQ_API_KEY, http_client=httpx.AsyncClient())
             except ImportError:
                 logger.warning(f"[{self.agent_name}] Groq package not installed")
 
     def _init_openai(self):
         if hasattr(settings, "OPENAI_API_KEY") and settings.OPENAI_API_KEY:
             try:
+                import httpx
                 from openai import OpenAI, AsyncOpenAI
 
-                self.clients["openai"] = OpenAI(api_key=settings.OPENAI_API_KEY)
+                self.clients["openai"] = OpenAI(api_key=settings.OPENAI_API_KEY, http_client=httpx.Client())
                 self.clients["openai_async"] = AsyncOpenAI(
-                    api_key=settings.OPENAI_API_KEY
+                    api_key=settings.OPENAI_API_KEY,
+                    http_client=httpx.AsyncClient()
                 )
             except ImportError:
                 logger.warning(f"[{self.agent_name}] OpenAI package not installed")
@@ -83,13 +86,16 @@ class BaseEttamettaAgent:
     def _init_anthropic(self):
         if hasattr(settings, "ANTHROPIC_API_KEY") and settings.ANTHROPIC_API_KEY:
             try:
+                import httpx
                 from anthropic import Anthropic, AsyncAnthropic
 
                 self.clients["anthropic"] = Anthropic(
-                    api_key=settings.ANTHROPIC_API_KEY
+                    api_key=settings.ANTHROPIC_API_KEY,
+                    http_client=httpx.Client()
                 )
                 self.clients["anthropic_async"] = AsyncAnthropic(
-                    api_key=settings.ANTHROPIC_API_KEY
+                    api_key=settings.ANTHROPIC_API_KEY,
+                    http_client=httpx.AsyncClient()
                 )
             except ImportError:
                 logger.warning(f"[{self.agent_name}] Anthropic package not installed")

@@ -8,6 +8,8 @@ class SystemJobStatus(str, Enum):
     """Unified job status enum for all ettametta services."""
 
     # Discovery & Ingestion
+    # Lifecycle
+    CREATED = "CREATED"
     QUEUED = "QUEUED"
     SCANNING = "SCANNING"
     ANALYZING = "ANALYZING"

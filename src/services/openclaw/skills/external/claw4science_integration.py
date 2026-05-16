@@ -1,6 +1,7 @@
 import logging
 import requests
 from typing import Any
+import httpx
 from groq import Groq
 from src.api.config import settings
 
@@ -16,7 +17,8 @@ class Claw4ScienceSkill(OpenClawBaseSkill):
     
     def __init__(self):
         super().__init__()
-        self.groq_client = Groq(api_key=settings.GROQ_API_KEY)
+        # Fix: Inject explicit httpx.Client to resolve 'proxies' keyword argument bug
+        self.groq_client = Groq(api_key=settings.GROQ_API_KEY, http_client=httpx.Client())
         # Use LANGCHAIN_MODEL as default or fallback to llama3-8b
         self.model = getattr(settings, "LANGCHAIN_MODEL", "llama-3.1-8b-instant")
 

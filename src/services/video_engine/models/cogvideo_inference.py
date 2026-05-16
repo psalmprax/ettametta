@@ -14,7 +14,13 @@ import torch
 import os
 import time
 import requests
+import json
 from src.api.config import settings
+from opentelemetry import trace
+from src.shared.observability import get_logger
+
+logger = get_logger(__name__)
+tracer = trace.get_tracer(__name__)
 
 # Model cache
 _cogvideo_pipe = None
@@ -81,43 +87,48 @@ def generate_cogvideo(
     height = min(height, 480)
     width = min(width, 720)
 
-    print(f"🎬 CogVideoX (480p): '{prompt[:50]}...'", flush=True)
-    start_time = time.time()
+    with tracer.start_as_current_span("generate_cogvideo") as span:
+        span.set_attribute("model", "cogvideo-2b")
+        span.set_attribute("resolution", f"{width}x{height}")
+        
+        logger.info(f"🎬 [CogVideoX] Synthesis started: '{prompt[:50]}...'")
+        start_time = time.time()
 
-    # Real-First: Attempt Remote GPU Node Call
-    if settings.RENDER_NODE_URL:
-        try:
-            return generate_cogvideo_api(prompt, output_dir, height, width, model_size)
-        except Exception as e:
-            print(f"⚠️ CogVideoX Remote GPU failed ({e}). Falling back...", flush=True)
+        # Real-First: Attempt Remote GPU Node Call
+        if settings.RENDER_NODE_URL:
+            try:
+                return generate_cogvideo_api(prompt, output_dir, height, width, model_size)
+            except Exception as e:
+                logger.warning(f"⚠️ CogVideoX Remote GPU failed ({e}). Falling back...")
 
-    # Local Fallback
-    pipe = load_cogvideo_model(model_size)
+        # Local Fallback
+        pipe = load_cogvideo_model(model_size)
 
-    if pipe is None:
-        return generate_cogvideo_dummy(output_dir)
+        if pipe is None:
+            return generate_cogvideo_dummy(output_dir)
 
-    with torch.inference_mode():
-        result = pipe(
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            num_inference_steps=num_inference_steps,
-            num_frames=num_frames,
-            guidance_scale=guidance_scale,
-        ).frames[0]
+        with torch.inference_mode():
+            result = pipe(
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                num_inference_steps=num_inference_steps,
+                num_frames=num_frames,
+                guidance_scale=guidance_scale,
+            ).frames[0]
 
-    job_id = f"cogx_{model_size}_{int(time.time())}"
-    output_path = os.path.join(output_dir, f"{job_id}.mp4")
-    os.makedirs(output_dir, exist_ok=True)
+        job_id = f"cogx_{model_size}_{int(time.time())}"
+        output_path = os.path.join(output_dir, f"{job_id}.mp4")
+        os.makedirs(output_dir, exist_ok=True)
 
-    from diffusers.utils import export_to_video
+        from diffusers.utils import export_to_video
 
-    export_to_video(result, output_video_path=output_path, fps=8)
+        export_to_video(result, output_video_path=output_path, fps=8)
 
-    elapsed = time.time() - start_time
-    print(f"✅ Generated {job_id}.mp4 in {elapsed:.1f}s", flush=True)
+        elapsed = time.time() - start_time
+        span.set_attribute("elapsed_sec", elapsed)
+        logger.info(f"✅ Generated {job_id}.mp4 in {elapsed:.1f}s")
 
-    return job_id, output_path
+        return job_id, output_path
 
 
 def generate_cogvideo_api(

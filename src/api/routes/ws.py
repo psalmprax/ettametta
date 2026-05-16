@@ -38,10 +38,25 @@ class ConnectionManager:
                 f"Client disconnected. Total connections: {len(self.active_connections)}"
             )
 
+    async def _broadcast_event_bus(self, payload: dict):
+        """Callback for the DistributedEventBus to broadcast events to WS clients"""
+        message = json.dumps({
+            "type": "job_update", 
+            "data": payload,
+            "source": "event_bus"
+        })
+        await self.broadcast(message)
+
     async def _listen_to_redis(self):
         """
-        Listens to continuous Redis channels and broadcasts messages to all connected clients.
+        Listens to both legacy PubSub and modern Redis Streams (Event Bus).
         """
+        from src.services.infrastructure.event_bus import base_event_service
+        
+        # 1. Start Event Bus Bridge (Modern)
+        asyncio.create_task(base_event_service.subscribe("*", self._broadcast_event_bus))
+        
+        # 2. Start Legacy PubSub Bridge
         pubsub = self.redis_client.pubsub()
         await pubsub.subscribe("job_updates", "system_logs")
         logging.info("Subscribed to Redis channels: job_updates, system_logs")
@@ -85,8 +100,16 @@ manager = ConnectionManager()
 @router.websocket("/jobs")
 async def websocket_jobs_endpoint(websocket: WebSocket):
     logging.info("[WS] Jobs Handshake Attempt Received")
-    await manager.city_connect(websocket)
-    logging.info("[WS] Jobs Connection Accepted")
+    try:
+        await manager.city_connect(websocket)
+        logging.info("[WS] Jobs Connection Accepted")
+    except Exception as conn_err:
+        logging.error(f"[WS] Jobs Connection Failed: {conn_err}", exc_info=True)
+        try:
+            await websocket.close(code=1011)
+        except Exception:
+            pass
+        return
     try:
         while True:
             # Send keep-alive ping every 30 seconds
@@ -110,8 +133,16 @@ async def websocket_logs_endpoint(websocket: WebSocket):
     WebSocket endpoint for real-time system logs (e.g., Agent Zero, Discovery Scans).
     """
     logging.info("[WS] Logs Handshake Attempt Received")
-    await manager.city_connect(websocket)
-    logging.info("[WS] Logs Connection Accepted")
+    try:
+        await manager.city_connect(websocket)
+        logging.info("[WS] Logs Connection Accepted")
+    except Exception as conn_err:
+        logging.error(f"[WS] Logs Connection Failed: {conn_err}", exc_info=True)
+        try:
+            await websocket.close(code=1011)
+        except Exception:
+            pass
+        return
     try:
         # Initial greeting
         await websocket.send_text(
@@ -138,6 +169,18 @@ async def websocket_logs_endpoint(websocket: WebSocket):
 
 @router.websocket("/telemetry")
 async def websocket_telemetry_endpoint(websocket: WebSocket):
+    logging.info("[WS] Telemetry Handshake Attempt Received")
+    try:
+        await manager.city_connect(websocket)
+        logging.info("[WS] Telemetry Connection Accepted")
+    except Exception as conn_err:
+        logging.error(f"[WS] Telemetry Connection Failed: {conn_err}", exc_info=True)
+        try:
+            await websocket.close(code=1011)
+        except Exception:
+            pass
+        return
+
     from src.shared.enums import SystemJobStatus
     from src.api.utils.models import (
         VideoJobDB,
@@ -149,10 +192,6 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
     from src.services.analytics.drift_monitor import base_monitor_service
     from src.services.analytics.signal_bus import base_signal_bus
     import psutil
-
-    logging.info("[WS] Telemetry Handshake Attempt Received")
-    await manager.city_connect(websocket)
-    logging.info("[WS] Telemetry Connection Accepted")
 
     try:
         while True:

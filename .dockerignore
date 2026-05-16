@@ -60,9 +60,10 @@ logs/
 temp/
 tmp/
 tmp_verify/
-outputs/
-output/
-local_downloads/
+**/outputs/**
+**/output/**
+**/data/**
+**/local_downloads/**
 src/tests/e2e/node_modules/
 curl_error.log
 curl_success.log

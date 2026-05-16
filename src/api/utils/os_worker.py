@@ -52,7 +52,12 @@ class AIWorker:
         if not self.whisper_model:
             from faster_whisper import WhisperModel
             logger.info(f"[OS-Worker] Loading Whisper ({self.whisper_model_size})...")
-            self.whisper_model = WhisperModel(self.whisper_model_size, device="cpu", compute_type="int8")
+            try:
+                # Add a timeout/safety for model loading on weak CPUs
+                self.whisper_model = WhisperModel(self.whisper_model_size, device="cpu", compute_type="int8")
+            except Exception as e:
+                logger.error(f"[OS-Worker] Failed to load Whisper model: {e}")
+                return []
             
         segments, info = self.whisper_model.transcribe(audio_path, beam_size=5)
         

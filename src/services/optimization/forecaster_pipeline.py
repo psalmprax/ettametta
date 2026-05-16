@@ -64,9 +64,13 @@ class ForecasterPipeline:
             return {"probability": 0.5, "confidence": "low"}
         
         # Neural Inference
-        # Padding to match 520 input (Numerical + CLIP)
-        dummy_clip = np.zeros(512)
-        curve = base_oracle_service.predict_curve(features + [0]*5, dummy_clip) # Simplified pad
+        # Standard: Semantic Pattern Extraction via CLIP
+        from src.services.video_engine.neural_vision_analyzer import base_vision_service
+        semantic_vector = base_vision_service.get_text_embedding(niche)
+        if semantic_vector is None:
+            semantic_vector = np.zeros(512)
+
+        curve = base_oracle_service.predict_curve(features + [0]*5, semantic_vector) # Simplified pad
         
         return {
             "probability": float(curve[0]), # 3s Hook prediction

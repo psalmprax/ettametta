@@ -1,8 +1,11 @@
 import httpx
 import logging
 import json
+import tenacity
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from typing import Any, Dict, List, Optional
 from src.api.config import settings
+from src.api.utils.resilience import CircuitBreaker
 
 logger = logging.getLogger("DifyClient")
 
@@ -10,12 +13,14 @@ class DifyClient:
     """
     Client for Dify.ai Application API.
     Supports Chat, Completion, and Workflow execution.
+    Hardened with Circuit Breaker and Exponential Backoff.
     """
     
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
         self.api_key = api_key or settings.DIFY_API_KEY
         self.base_url = (base_url or settings.DIFY_API_URL).rstrip("/")
         self.timeout = settings.DIFY_TIMEOUT
+        self.breaker = CircuitBreaker(name="Dify")
 
     def _get_headers(self) -> Dict[str, str]:
         if not self.api_key:
@@ -25,6 +30,16 @@ class DifyClient:
             "Content-Type": "application/json"
         }
 
+    @retry(
+        stop=stop_after_attempt(settings.DEFAULT_RETRY_COUNT),
+        wait=wait_exponential(
+            multiplier=settings.RETRY_MULTIPLIER, 
+            min=settings.RETRY_MIN_WAIT, 
+            max=settings.RETRY_MAX_WAIT
+        ),
+        retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException, RuntimeError)),
+        reraise=True
+    )
     async def chat_messages(
         self,
         query: str,
@@ -34,9 +49,10 @@ class DifyClient:
         response_mode: str = "blocking",
         files: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
-        """
-        Send a message to a Chatbot app.
-        """
+        """Send a message to a Chatbot app."""
+        if self.breaker.is_open():
+            raise RuntimeError("Dify circuit breaker is OPEN")
+
         url = f"{self.base_url}/chat-messages"
         payload = {
             "query": query,
@@ -47,18 +63,38 @@ class DifyClient:
             "files": files or []
         }
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        logger.debug(f"Dify POST to {url} for user {user_id}")
+        async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
             try:
                 response = await client.post(url, headers=self._get_headers(), json=payload)
                 response.raise_for_status()
-                return response.json()
+                data = response.json()
+                self.breaker.record_success()
+                return data
             except httpx.HTTPStatusError as e:
-                logger.error(f"Dify Chat API error: {e.response.status_code} - {e.response.text}")
+                error_body = ""
+                try:
+                    error_body = e.response.text
+                except:
+                    pass
+                logger.error(f"Dify Chat API Status Error: {e.response.status_code} - Body: {error_body}")
+                self.breaker.record_failure()
                 raise
             except Exception as e:
-                logger.error(f"Dify Chat API unexpected error: {e}")
+                logger.error(f"Dify Chat API error: {e}")
+                self.breaker.record_failure()
                 raise
 
+    @retry(
+        stop=stop_after_attempt(settings.DEFAULT_RETRY_COUNT),
+        wait=wait_exponential(
+            multiplier=settings.RETRY_MULTIPLIER, 
+            min=settings.RETRY_MIN_WAIT, 
+            max=settings.RETRY_MAX_WAIT
+        ),
+        retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException, RuntimeError)),
+        reraise=True
+    )
     async def completion_messages(
         self,
         inputs: Dict[str, Any],
@@ -66,9 +102,10 @@ class DifyClient:
         response_mode: str = "blocking",
         files: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
-        """
-        Send inputs to a Completion (Text Generator) app.
-        """
+        """Send inputs to a Completion (Text Generator) app."""
+        if self.breaker.is_open():
+            raise RuntimeError("Dify circuit breaker is OPEN")
+
         url = f"{self.base_url}/completion-messages"
         payload = {
             "inputs": inputs,
@@ -81,23 +118,34 @@ class DifyClient:
             try:
                 response = await client.post(url, headers=self._get_headers(), json=payload)
                 response.raise_for_status()
-                return response.json()
-            except httpx.HTTPStatusError as e:
-                logger.error(f"Dify Completion API error: {e.response.status_code} - {e.response.text}")
-                raise
+                data = response.json()
+                self.breaker.record_success()
+                return data
             except Exception as e:
-                logger.error(f"Dify Completion API unexpected error: {e}")
+                logger.error(f"Dify Completion API error: {e}")
+                self.breaker.record_failure()
                 raise
 
+    @retry(
+        stop=stop_after_attempt(settings.DEFAULT_RETRY_COUNT),
+        wait=wait_exponential(
+            multiplier=settings.RETRY_MULTIPLIER, 
+            min=settings.RETRY_MIN_WAIT, 
+            max=settings.RETRY_MAX_WAIT
+        ),
+        retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException, RuntimeError)),
+        reraise=True
+    )
     async def run_workflow(
         self,
         inputs: Dict[str, Any],
         user_id: str,
         response_mode: str = "blocking"
     ) -> Dict[str, Any]:
-        """
-        Execute a Dify Workflow.
-        """
+        """Execute a Dify Workflow."""
+        if self.breaker.is_open():
+            raise RuntimeError("Dify circuit breaker is OPEN")
+
         url = f"{self.base_url}/workflows/run"
         payload = {
             "inputs": inputs,
@@ -109,12 +157,12 @@ class DifyClient:
             try:
                 response = await client.post(url, headers=self._get_headers(), json=payload)
                 response.raise_for_status()
-                return response.json()
-            except httpx.HTTPStatusError as e:
-                logger.error(f"Dify Workflow API error: {e.response.status_code} - {e.response.text}")
-                raise
+                data = response.json()
+                self.breaker.record_success()
+                return data
             except Exception as e:
-                logger.error(f"Dify Workflow API unexpected error: {e}")
+                logger.error(f"Dify Workflow API error: {e}")
+                self.breaker.record_failure()
                 raise
 
 # Singleton accessor

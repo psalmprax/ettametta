@@ -22,3 +22,7 @@ celery
 pyyaml
 imageio_ffmpeg
 httpx
+langchain>=0.1.0
+langchain-groq
+crewai
+open-interpreter

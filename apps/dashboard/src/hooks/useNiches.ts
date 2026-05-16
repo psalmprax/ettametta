@@ -27,7 +27,7 @@ export function useNiches() {
                     // Extract niche names if data contains objects, or use as is if strings
                     const nicheNames = data.map(n => typeof n === 'object' ? n.niche : n);
                     // Filter out any empty strings or duplicates
-                    let validNiches = Array.from(new Set(nicheNames.filter(n => n && n.trim() !== "")));
+                    const validNiches = Array.from(new Set(nicheNames.filter(n => n && n.trim() !== "")));
                     setNiches(validNiches);
                 }
             }
