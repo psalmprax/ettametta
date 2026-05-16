@@ -57,6 +57,15 @@ langchain-community==0.0.38
 langchain-core==0.1.52
 duckduckgo-search
 
+# Observability
+python-json-logger
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-otlp
+opentelemetry-instrumentation
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-celery
+
 # Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0

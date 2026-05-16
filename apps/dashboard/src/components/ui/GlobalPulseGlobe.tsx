@@ -1,11 +1,45 @@
 "use client";
 
-import React, { useRef, useMemo, useState, useLayoutEffect } from 'react';
+import React, { useRef, useMemo, useLayoutEffect, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Sphere, MeshDistortMaterial, Float, Stars, PerspectiveCamera, MeshTransmissionMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
-function NeuralWeb({ pulseIntensity = 1 }: { pulseIntensity?: number }) {
+type WebglState = 'loading' | 'supported' | 'unsupported';
+
+function GlobeFallback() {
+    return (
+        <div className="h-[600px] w-full relative flex items-center justify-center bg-zinc-950/30 rounded-lg">
+            <div className="text-center space-y-2">
+                <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 animate-pulse" />
+                <p className="text-zinc-400 text-sm">Neural Globe</p>
+            </div>
+        </div>
+    );
+}
+
+function GlobalPulseGlobeInner({ pulseIntensity }: { pulseIntensity?: number }) {
+    const [webglState, setWebglState] = useState<WebglState>('loading');
+
+    useEffect(() => {
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            setWebglState(gl ? 'supported' : 'unsupported');
+        } catch {
+            setWebglState('unsupported');
+        }
+    }, []);
+
+    if (webglState !== 'supported') {
+        return <GlobeFallback />;
+    }
+
+    return <Globe3DRenderer pulseIntensity={pulseIntensity} />;
+}
+
+// The actual Three.js rendering
+function Globe3DRenderer({ pulseIntensity = 1 }: { pulseIntensity?: number }) {
     const groupRef = useRef<THREE.Group>(null);
     const geoRef = useRef<THREE.BufferGeometry>(null);
     const { mouse } = useThree();
@@ -102,21 +136,7 @@ function NeuralWeb({ pulseIntensity = 1 }: { pulseIntensity?: number }) {
     );
 }
 
+
 export default React.memo(function GlobalPulseGlobe({ pulseIntensity }: { pulseIntensity?: number }) {
-    return (
-        <div
-            className="h-[600px] w-full relative"
-            role="img"
-            aria-label="Premium 3D neural globe visualization"
-        >
-            <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-zinc-950/80 z-10 pointer-events-none" />
-            <Canvas shadows gl={{ antialias: true }}>
-                <PerspectiveCamera makeDefault position={[0, 0, 8]} />
-                <Stars radius={100} depth={50} count={3000} factor={2} saturation={0} fade speed={1} />
-                <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
-                    <NeuralWeb pulseIntensity={pulseIntensity} />
-                </Float>
-            </Canvas>
-        </div>
-    );
+    return <GlobalPulseGlobeInner pulseIntensity={pulseIntensity} />;
 });

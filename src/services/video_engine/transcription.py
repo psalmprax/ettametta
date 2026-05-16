@@ -1,7 +1,10 @@
 import os
 import asyncio
+import logging
 from src.api.utils.os_worker import ai_worker
 from .ffmpeg_utils import base_ffmpeg_service
+
+logger = logging.getLogger(__name__)
 
 
 class TranscriptionService:
@@ -24,7 +27,7 @@ class TranscriptionService:
                 base_ffmpeg_service.extract_audio, video_path, audio_path
             )
             if not success:
-                print(f"[OS-Transcription] Audio extraction failed for {video_path}")
+                logger.error(f"Audio extraction failed for {video_path}")
                 return []
 
             # 2. Transcribe the extracted audio
@@ -36,7 +39,7 @@ class TranscriptionService:
 
             return result
         except Exception as e:
-            print(f"[OS-Transcription] ERROR: {e}. No transcript available.")
+            logger.exception(f"Transcription error: {e}. No transcript available.")
             if os.path.exists(audio_path):
                 try:
                     os.remove(audio_path)

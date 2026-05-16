@@ -56,27 +56,35 @@ async def get_trends(
 ):
     try:
         if niche and niche.strip():
-            trends = await base_discovery_service.find_trending_content(
-                niche,
-                horizon=horizon,
-                tier=get_subscription_tier_value(current_user),
-                min_viral_score=min_viral_score,
-                exclude_shorts=exclude_shorts,
-                region=region,
-            )
+            try:
+                trends = await base_discovery_service.find_trending_content(
+                    niche,
+                    horizon=horizon,
+                    tier=get_subscription_tier_value(current_user),
+                    min_viral_score=min_viral_score,
+                    exclude_shorts=exclude_shorts,
+                    region=region,
+                )
+            except Exception as scan_err:
+                logger.error(f"Scanner error for niche '{niche}': {scan_err}", exc_info=True)
+                # Graceful degradation: return empty results instead of 500
+                return success_response(data={"trends": [], "page": page, "page_size": limit, "total": 0, "total_pages": 0})
         else:
-            # Fallback to global trending if no niche specified or empty
-            trends = await base_discovery_service.get_global_trending(
-                limit=limit * page, 
-                min_viral_score=float(min_viral_score),
-                region=region
-            )
+            try:
+                trends = await base_discovery_service.get_global_trending(
+                    limit=limit * page, 
+                    min_viral_score=float(min_viral_score),
+                    region=region
+                )
+            except Exception as scan_err:
+                logger.error(f"Global trending scan error: {scan_err}", exc_info=True)
+                return success_response(data={"trends": [], "page": page, "page_size": limit, "total": 0, "total_pages": 0})
 
         paginated = paginate_list(trends, page=page, page_size=limit)
         paginated["trends"] = paginated["items"]
         return success_response(data=paginated)
     except Exception as e:
-        logger.error(f"Discovery trends failed: {e}")
+        logger.error(f"Discovery trends failed: {e}", exc_info=True)
         return handle_exception(e)
 
 

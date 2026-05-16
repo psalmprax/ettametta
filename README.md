@@ -6,7 +6,7 @@ Autonomous multi-platform viral content discovery, transformation, optimization,
 
 ```
 ettametta/
-├── api/                  # FastAPI backend
+├── src/api/               # FastAPI backend
 ├── apps/dashboard/       # Next.js 14 frontend
 ├── services/
 │   ├── discovery/        # Multi-platform trend scanners
@@ -23,14 +23,14 @@ ettametta/
 
 | Layer | Technology |
 |---|---|
-| **Backend** | Python 3.10+, FastAPI, Uvicorn |
+| **Backend** | Python 3.11+, FastAPI, Uvicorn |
 | **Frontend** | Next.js 14, Tailwind CSS, Lucide Icons |
-| **AI / LLM** | Groq (`llama-3.3-70b`), AIWorker Consolidation |
-| **Video** | FFmpeg, MoviePy, Fast-Whisper |
+| **AI / LLM** | Groq, OpenAI, Anthropic, DeepSeek, xAI, and 10+ more providers |
+| **Video** | FFmpeg, MoviePy, Remotion, ComfyUI |
 | **Queue** | Celery + Redis |
-| **Database** | PostgreSQL (primary), Redis (cache) |
-| **Agent** | OpenClaw + Telegram (`@Psalmpraxbot`) |
-| **Infra** | Oracle Cloud (Always-Free ARM), Terraform |
+| **Database** | PostgreSQL (primary), Redis (cache), Qdrant (vector) |
+| **Agent** | OpenClaw + Telegram, Dify AI orchestration |
+| **Infra** | Oracle Cloud (Always-Free ARM), Terraform, Docker Compose |
 | **CI/CD** | Jenkins + GitHub Actions |
 
 ## 🚀 Quick Start
@@ -54,9 +54,9 @@ docker-compose up -d --build
 
 | Service | URL |
 |---|---|
-| API | http://localhost:8000 |
-| API Docs | http://localhost:8000/docs |
-| Dashboard | http://localhost:3000 |
+| API | http://localhost:7201 |
+| API Docs | http://localhost:7201/docs |
+| Dashboard | http://localhost:7200 |
 
 ## 🔐 Environment Variables
 

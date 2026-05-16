@@ -2,91 +2,145 @@ import httpx
 import os
 import logging
 import random
+import tenacity
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from src.api.utils.vault import get_secret
+from src.api.config import settings
+from src.api.utils.resilience import CircuitBreaker
+
+logger = logging.getLogger(__name__)
 
 class StockService:
     def __init__(self):
-        self.pexels_api_key = get_secret("pexels_api_key")
+        self.pexels_api_key = get_secret("pexels_api_key") or settings.PEXELS_API_KEY
         self.pexels_base_url = "https://api.pexels.com/videos"
-        self.pexels_headers = {"Authorization": self.pexels_api_key} if self.pexels_api_key else {}
         
         # Free fallback APIs (No Key Required)
         self.mixkit_base_url = "https://api.mixkit.co/videos/preview/"
         self.coverr_base_url = "https://coverr.co/api/videos"
+        
+        self.breakers = {
+            "pexels": CircuitBreaker(name="Pexels"),
+            "coverr": CircuitBreaker(name="Coverr")
+        }
 
+    @retry(
+        stop=stop_after_attempt(settings.DEFAULT_RETRY_COUNT),
+        wait=wait_exponential(
+            multiplier=settings.RETRY_MULTIPLIER, 
+            min=settings.RETRY_MIN_WAIT, 
+            max=settings.RETRY_MAX_WAIT
+        ),
+        retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
+        reraise=True
+    )
     async def fetch_b_roll(self, keyword: str, count: int = 1) -> list[str]:
         """
         Searches for videos matching the keyword.
-        Priority: Pexels (High Quality) -> Mixkit/Coverr (Free Fallback)
+        Priority: Pexels (High Quality) -> Coverr (Free Fallback)
+        Hardened with Circuit Breakers and global settings.
         """
         # Re-read key each call to pick up late-set env vars
-        pexels_key = self.pexels_api_key or get_secret("pexels_api_key")
+        pexels_key = self.pexels_api_key or get_secret("pexels_api_key") or settings.PEXELS_API_KEY
         pexels_headers = {"Authorization": pexels_key} if pexels_key else {}
         
         urls = []
+        search_keywords = [keyword]
+        if len(keyword.split()) > 2:
+            parts = keyword.split()
+            search_keywords.append(" ".join(parts[1:]))
+            search_keywords.append(parts[-1])
 
-        # 1. Try Pexels First
-        if pexels_key and pexels_key != "your_key_here":
-            try:
-                async with httpx.AsyncClient() as client:
-                    params = {"query": keyword, "per_page": 5, "orientation": "portrait"}
-                    response = await client.get(f"{self.pexels_base_url}/search", params=params, headers=pexels_headers)
-                    response.raise_for_status()
-                    data = response.json()
-                    videos = data.get("videos", [])
-                    if videos:
-                        for video in videos[:count]:
-                            video_files = video.get("video_files", [])
-                            best_file = next((f for f in video_files if f.get("quality") == "hd"), video_files[0] if video_files else None)
-                            if best_file:
-                                urls.append(best_file["link"])
-                        if len(urls) >= count:
-                            return urls
-            except Exception as e:
-                logging.warning(f"[StockService] Pexels failed: {e}. Falling back to free sources.")
+        for kw in search_keywords:
+            # 1. Try Pexels
+            if pexels_key and not self.breakers["pexels"].is_open():
+                try:
+                    async with httpx.AsyncClient(timeout=settings.STOCK_TIMEOUT) as client:
+                        params = {"query": kw, "per_page": 5, "orientation": "portrait"}
+                        response = await client.get(f"{self.pexels_base_url}/search", params=params, headers=pexels_headers)
+                        response.raise_for_status()
+                        
+                        data = response.json()
+                        videos = data.get("videos", [])
+                        if videos:
+                            for video in videos[:count]:
+                                video_files = video.get("video_files", [])
+                                if not video_files:
+                                    continue
+                                
+                                # Sort by width descending to get highest resolution (preferring 1080p+)
+                                sorted_files = sorted(
+                                    video_files, 
+                                    key=lambda x: (x.get("width", 0) or 0), 
+                                    reverse=True
+                                )
+                                
+                                # Prefer HD/UHD but anything > 720p is good
+                                best_file = next(
+                                    (f for f in sorted_files if (f.get("width") or 0) >= 720), 
+                                    sorted_files[0]
+                                )
+                                
+                                if best_file:
+                                    urls.append(best_file["link"])
+                            
+                            if len(urls) >= count:
+                                self.breakers["pexels"].record_success()
+                                return urls[:count]
+                        self.breakers["pexels"].record_success() # Found nothing, but API worked
+                except Exception as e:
+                    logger.warning(f"[StockService] Pexels failed for '{kw}': {e}")
+                    self.breakers["pexels"].record_failure()
 
-        # 2. Fallback to Mixkit (Curated Free Stock Video)
-        # Mixkit doesn't have a public search API, so we use curated categories/keywords mapping
-        # Or we can use Coverr which has a simple JSON endpoint
-        try:
-            async with httpx.AsyncClient() as client:
-                # Coverr API Example: https://coverr.co/api/videos?query={keyword}
-                response = await client.get(f"{self.coverr_base_url}", params={"query": keyword})
-                response.raise_for_status()
-                data = response.json()
-                results = data.get("results", [])
-                
-                for item in results[:count]:
-                    # Coverr returns direct MP4 links in 'videos' array
-                    mp4_links = [v['url'] for v in item.get('videos', []) if v['format'] == 'mp4']
-                    if mp4_links:
-                        urls.append(mp4_links[0])
-                
-                if len(urls) >= count:
-                    return urls
-                    
-        except Exception as e:
-            logging.warning(f"[StockService] Coverr failed: {e}")
+            # 2. Try Coverr
+            if not self.breakers["coverr"].is_open():
+                try:
+                    async with httpx.AsyncClient(timeout=settings.STOCK_TIMEOUT) as client:
+                        response = await client.get(f"{self.coverr_base_url}", params={"query": kw})
+                        response.raise_for_status()
+                        
+                        data = response.json()
+                        results = data.get("results", [])
+                        if results:
+                            for item in results[:count]:
+                                videos = item.get('videos', [])
+                                if not videos:
+                                    continue
+                                
+                                # Prefer 1080p, then 720p
+                                best_v = next((v for v in videos if v.get('width') == 1920), 
+                                         next((v for v in videos if v.get('width') == 1280), videos[0]))
+                                
+                                urls.append(best_v['url'])
+                            
+                            if len(urls) >= count:
+                                self.breakers["coverr"].record_success()
+                                return urls[:count]
+                        self.breakers["coverr"].record_success()
+                except Exception as e:
+                    logger.warning(f"[StockService] Coverr failed for '{kw}': {e}")
+                    self.breakers["coverr"].record_failure()
 
         # 3. Last Resort: High-Quality Public Domain Samples
-        # These are real, working URLs from Pexels/Mixkit that are free to use
         fallback_db = {
             "tech": ["https://cdn.coverr.co/videos/coverr-robot-hand-shaking-8766/1080p.mp4"],
             "nature": ["https://cdn.coverr.co/videos/coverr-waterfall-in-forest-2765/1080p.mp4"],
             "city": ["https://cdn.coverr.co/videos/coverr-night-traffic-in-tokyo-1593/1080p.mp4"],
-            "abstract": ["https://cdn.coverr.co/videos/coverr-blue-particles-2529/1080p.mp4"]
+            "abstract": ["https://cdn.coverr.co/videos/coverr-blue-particles-2529/1080p.mp4"],
+            "business": ["https://cdn.coverr.co/videos/coverr-typing-on-a-keyboard-5178/1080p.mp4"]
         }
         
-        for key, links in fallback_db.items():
-            if key in keyword.lower():
-                return random.sample(links, min(count, len(links)))
+        for kw_check in search_keywords:
+            for key, links in fallback_db.items():
+                if key in kw_check.lower():
+                    return random.sample(links, min(count, len(links)))
         
         # Global Fallback
         return ["https://cdn.coverr.co/videos/coverr-blue-particles-2529/1080p.mp4"]
 
     async def download_stock_video(self, url: str, output_dir: str = "temp") -> str | None:
         """
-        Downloads a stock video file to a local path.
+        Downloads a stock video file to a local path with retries.
         """
         os.makedirs(output_dir, exist_ok=True)
         filename = f"stock_{os.path.basename(url.split('?')[0])}.mp4"
@@ -95,19 +149,28 @@ class StockService:
             
         filepath = os.path.join(output_dir, filename)
         
-        try:
+        @retry(
+            stop=stop_after_attempt(settings.DEFAULT_RETRY_COUNT),
+            wait=wait_exponential(multiplier=1, min=2, max=10),
+            retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
+            reraise=True
+        )
+        async def _do_download():
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 "Referer": "https://coverr.co/"
             }
-            async with httpx.AsyncClient(headers=headers) as client:
+            async with httpx.AsyncClient(headers=headers, timeout=settings.STOCK_TIMEOUT * 4) as client:
                 response = await client.get(url, follow_redirects=True)
                 response.raise_for_status()
                 with open(filepath, "wb") as f:
                     f.write(response.content)
                 return filepath
+
+        try:
+            return await _do_download()
         except Exception as e:
-            logging.error(f"[StockService] Error downloading {url}: {e}")
+            logger.error(f"[StockService] Error downloading {url}: {e}")
             return None
 
 base_stock_service = StockService()

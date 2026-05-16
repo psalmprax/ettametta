@@ -37,7 +37,7 @@ class SecuritySentinel:
         self.redis_client.lpush(self.log_key, json.dumps(event))
         self.redis_client.ltrim(self.log_key, 0, 999)  # Keep last 1000 events
 
-        print(f"[Sentinel] [{severity.upper()}] {event_type}: {details}")
+        logger.info(f"[Sentinel] [{severity.upper()}] {event_type}: {details}")
 
     def audit_system_integrity(self) -> dict:
         """

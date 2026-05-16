@@ -73,13 +73,12 @@ export const CinematicMinimal: React.FC<z.infer<typeof cinematicMinimalSchema>> 
                         </h1>
 
                         <p style={{
-                            color: 'rgba(255,255,255,0.8)',
+                            color: '#8E2DE2',
                             fontSize: '28px',
                             fontFamily: 'Inter, sans-serif',
                             textTransform: 'uppercase',
                             letterSpacing: '0.4em',
-                            fontWeight: 500,
-                            color: '#8E2DE2'
+                            fontWeight: 500
                         }}>
                             {subtitle}
                         </p>

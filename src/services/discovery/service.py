@@ -10,6 +10,9 @@ import logging
 from sqlalchemy import select, and_, or_
 from typing import Any
 from .models import ContentCandidate, ViralPattern
+from opentelemetry import trace
+from src.shared.observability import get_logger
+from src.shared.state_machine import base_state_machine, JobState
 
 # Graceful imports for optional dependencies
 try:
@@ -51,7 +54,8 @@ from src.api.utils.celery import celery_app
 from groq import Groq
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+tracer = trace.get_tracer(__name__)
 
 
 class DiscoveryService:
@@ -90,32 +94,31 @@ class DiscoveryService:
         # Video lead discovery capabilities
         self.video_lead_scanner = video_lead_scanner
 
-    async def _log(self, message: str, level: str = "INFO"):
-        """Broadcasts a discovery log message."""
+    async def _log(self, message: str, level: str = "INFO", job_id: str | None = None):
+        """Broadcasts a discovery log message with JSON formatting and OTEL support."""
         from src.api.routes.ws import notify_system_log_async
 
-        await notify_system_log_async(message, level=level, module="DISCOVERY")
-        # Send log via Redis to avoid circular import
-        import json
-        import redis
-        import datetime
-        from src.api.config import settings
+        log_data = {
+            "message": message,
+            "level": level,
+            "module": "DISCOVERY",
+            "job_id": job_id,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+        
+        # OTEL: Add event to current span
+        span = trace.get_current_span()
+        if span.is_recording():
+            span.add_event("discovery_log", log_data)
 
-        try:
-            r = redis.from_url(settings.REDIS_URL)
-            r.publish(
-                "system_logs",
-                json.dumps(
-                    {
-                        "message": message,
-                        "level": level,
-                        "module": "DISCOVERY",
-                        "timestamp": str(datetime.datetime.now()),
-                    }
-                ),
-            )
-        except Exception as e:
-            logger.error(f"[Discovery] Failed to send log: {e}")
+        # Standard JSON Log
+        if level == "ERROR":
+            logger.error(json.dumps(log_data))
+        else:
+            logger.info(json.dumps(log_data))
+
+        # Broadcast via Redis PubSub for UI
+        await notify_system_log_async(message, level=level, module="DISCOVERY")
 
     async def find_trending_content(
         self,
@@ -126,10 +129,20 @@ class DiscoveryService:
         exclude_shorts: bool = False,
         deep_scan: bool = False,
         region: str | None = "US",
+        job_id: str | None = None,
     ) -> list[ContentCandidate]:
-        import json
-        import redis
-        from src.api.config import settings
+        with tracer.start_as_current_span("Discovery.find_trending_content") as span:
+            span.set_attribute("niche", niche)
+            span.set_attribute("deep_scan", deep_scan)
+            span.set_attribute("region", region or "US")
+            
+            if job_id:
+                span.set_attribute("job_id", job_id)
+                await base_state_machine.transition_to(job_id, JobState.QUEUED, JobState.PENDING)
+
+            import json
+            import redis
+            from src.api.config import settings
 
         try:
             # 1. Check Cache (Skip if deep scan)
@@ -188,17 +201,10 @@ class DiscoveryService:
                     region=region,
                 )
 
-                import random
                 for res in intelligent_results:
-                    # 10/10 Resilience: Standardize mapping and fallback for data-starved scrapers
+                    # 10/10 Resilience: Standardize mapping without generating fake metrics
                     vc = res.get("view_count") or res.get("views") or 0
-                    if vc == 0:
-                        # stochastic generation for trending content without metrics
-                        vc = random.randint(5000, 15000)
-                
                     vs = res.get("viral_score") or 0
-                    if vs == 0:
-                        vs = random.randint(65, 85) # "Trending" range
 
                     all_candidates.append(
                         ContentCandidate(
@@ -407,7 +413,7 @@ class DiscoveryService:
                         for c in all_candidates
                         if (getattr(c, "viral_score", 0) or 0) >= min_viral_score
                     ]
-                    print(
+                    logger.info(
                         f"[Discovery] Filtered by Min Viral Score: {original_count} -> {len(all_candidates)} (Threshold: {min_viral_score})"
                     )
 
@@ -418,7 +424,7 @@ class DiscoveryService:
                         for c in all_candidates
                         if "short" not in (c.platform or "").lower()
                     ]
-                    print(
+                    logger.info(
                         f"[Discovery] Exclude Shorts: Filtered {original_count} -> {len(all_candidates)}"
                     )
 

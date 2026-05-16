@@ -1,0 +1,208 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0
+rootdir: /home/psalmprax/ALL_PROJECTS/ettametta
+plugins: asyncio-1.3.0, cov-7.0.0, anyio-4.12.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 718 items / 7 errors
+
+==================================== ERRORS ====================================
+___________ ERROR collecting scripts/test_discovery_intelligence.py ____________
+ImportError while importing test module '/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_discovery_intelligence.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/test_discovery_intelligence.py:3: in <module>
+    from services.discovery.service import base_discovery_service
+E   ModuleNotFoundError: No module named 'services.discovery'
+______________ ERROR collecting scripts/test_discovery_search.py _______________
+ImportError while importing test module '/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_discovery_search.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/test_discovery_search.py:2: in <module>
+    from services.discovery.service import base_discovery_service
+E   ModuleNotFoundError: No module named 'services.discovery'
+_________ ERROR collecting src/tests/unit/test_production_pipeline.py __________
+../../.local/lib/python3.12/site-packages/_pytest/python.py:507: in importtestmodule
+    mod = import_path(
+../../.local/lib/python3.12/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../.local/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:357: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/ast.py:52: in parse
+    return compile(source, filename, mode, flags,
+E     File "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_production_pipeline.py", line 340
+E       print("
+E             ^
+E   SyntaxError: unterminated string literal (detected at line 340)
+____________ ERROR collecting src/tests/unit/test_skills_direct.py _____________
+src/tests/unit/test_skills_direct.py:11: in <module>
+    os.chdir("/app")
+E   FileNotFoundError: [Errno 2] No such file or directory: '/app'
+__________ ERROR collecting src/tests/unit/test_video_editor_demo.py ___________
+../../.local/lib/python3.12/site-packages/_pytest/python.py:507: in importtestmodule
+    mod = import_path(
+../../.local/lib/python3.12/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../.local/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:188: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:357: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/ast.py:52: in parse
+    return compile(source, filename, mode, flags,
+E     File "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_video_editor_demo.py", line 56
+E       print(".1f"
+E             ^
+E   SyntaxError: invalid syntax. Perhaps you forgot a comma?
+_____________ ERROR collecting tests/test_consistency_sentinel.py ______________
+ImportError while importing test module '/home/psalmprax/ALL_PROJECTS/ettametta/tests/test_consistency_sentinel.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_consistency_sentinel.py:26: in <module>
+    from services.analytics.consistency_sentinel import (
+E   ModuleNotFoundError: No module named 'services.analytics'
+______________ ERROR collecting tests/test_resilience_metrics.py _______________
+ImportError while importing test module '/home/psalmprax/ALL_PROJECTS/ettametta/tests/test_resilience_metrics.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_resilience_metrics.py:8: in <module>
+    from services.infrastructure.resilience_metrics import (
+E   ModuleNotFoundError: No module named 'services.infrastructure'
+=============================== warnings summary ===============================
+../../.local/lib/python3.12/site-packages/pydantic/_internal/_config.py:323
+../../.local/lib/python3.12/site-packages/pydantic/_internal/_config.py:323
+../../.local/lib/python3.12/site-packages/pydantic/_internal/_config.py:323
+../../.local/lib/python3.12/site-packages/pydantic/_internal/_config.py:323
+  /home/psalmprax/.local/lib/python3.12/site-packages/pydantic/_internal/_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+../../.local/lib/python3.12/site-packages/pydantic/_internal/_config.py:373
+  /home/psalmprax/.local/lib/python3.12/site-packages/pydantic/_internal/_config.py:373: UserWarning: Valid config keys have changed in V2:
+  * 'fields' has been removed
+    warnings.warn(message, UserWarning)
+
+src/api/utils/database.py:41
+  /home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/database.py:41: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: DeprecationWarning: builtin type SwigPyPacked has no __module__ attribute
+
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: DeprecationWarning: builtin type SwigPyObject has no __module__ attribute
+
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: DeprecationWarning: builtin type swigvarlink has no __module__ attribute
+
+src/services/base_agent.py:100
+  /home/psalmprax/ALL_PROJECTS/ettametta/src/services/base_agent.py:100: FutureWarning: 
+  
+  All support for the `google.generativeai` package has ended. It will no longer be receiving 
+  updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+  See README for more details:
+  
+  https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+  
+    import google.generativeai as genai
+
+../../.local/lib/python3.12/site-packages/passlib/utils/__init__.py:854
+  /home/psalmprax/.local/lib/python3.12/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+    from crypt import crypt as _crypt
+
+src/services/analytics/models.py:15
+  /home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/models.py:15: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    timestamp: datetime = datetime.utcnow()
+
+src/services/openclaw/skills/self_improve.py:82
+  /home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/self_improve.py:82: RuntimeWarning: coroutine 'SelfImprovementSkill._load_log' was never awaited
+    self._load_log()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+src/api/main.py:363
+  /home/psalmprax/ALL_PROJECTS/ettametta/src/api/main.py:363: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+../../.local/lib/python3.12/site-packages/fastapi/applications.py:4599
+  /home/psalmprax/.local/lib/python3.12/site-packages/fastapi/applications.py:4599: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+src/api/tests/test_automation.py:14
+  /home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_automation.py:14: PytestUnknownMarkWarning: Unknown pytest.mark.e2e - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.e2e
+
+src/api/tests/test_automation.py:15
+  /home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_automation.py:15: PytestUnknownMarkWarning: Unknown pytest.mark.requires_api - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.requires_api
+
+src/api/tests/test_integration_discovery.py:8
+  /home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_integration_discovery.py:8: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+src/api/tests/test_integration_video.py:12
+  /home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_integration_video.py:12: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+src/api/tests/test_integration_video.py:76
+  /home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_integration_video.py:76: PytestUnknownMarkWarning: Unknown pytest.mark.integration - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.integration
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR scripts/test_discovery_intelligence.py
+ERROR scripts/test_discovery_search.py
+ERROR src/tests/unit/test_production_pipeline.py
+ERROR src/tests/unit/test_skills_direct.py - FileNotFoundError: [Errno 2] No ...
+ERROR src/tests/unit/test_video_editor_demo.py
+ERROR tests/test_consistency_sentinel.py
+ERROR tests/test_resilience_metrics.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 7 errors during collection !!!!!!!!!!!!!!!!!!!!
+================== 20 warnings, 7 errors in 171.85s (0:02:51) ==================
