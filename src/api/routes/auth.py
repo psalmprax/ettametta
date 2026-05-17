@@ -161,19 +161,48 @@ async def register(user: UserCreate, db=Depends(get_db)):
     )
 
 
+class LoginRequest(BaseModel):
+    """Login request supporting both username and email."""
+    username: str | None = None
+    email: str | None = None
+    password: str
+
+
 @router.post("/login")
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    form_data: Optional[OAuth2PasswordRequestForm] = Depends(),
+    json_body: Optional[LoginRequest] = None,
     db=Depends(get_db),
 ):
+    # Support both form-encoded (OAuth2) and JSON login requests
+    if json_body:
+        # JSON request from frontend
+        identifier = json_body.username or json_body.email
+        password = json_body.password
+    elif form_data:
+        # Form-encoded request (OAuth2 standard)
+        identifier = form_data.username
+        password = form_data.password
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing login credentials"
+        )
+    
+    if not identifier or not password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username/email and password are required"
+        )
+
     # Support login with either username OR email
     stmt = select(UserDB).where(
-        (UserDB.email == form_data.username) | (UserDB.username == form_data.username)
+        (UserDB.email == identifier) | (UserDB.username == identifier)
     )
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username/email or password",
