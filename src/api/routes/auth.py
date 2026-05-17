@@ -200,6 +200,14 @@ async def login(
             detail="Username/email and password are required"
         )
 
+    # Debug: Log password length for troubleshooting
+    import logging
+    logger = logging.getLogger(__name__)
+    if isinstance(password, str):
+        logger.info(f"[LOGIN] Password length: {len(password)} chars, {len(password.encode('utf-8'))} bytes")
+    elif isinstance(password, bytes):
+        logger.info(f"[LOGIN] Password length: {len(password)} bytes")
+
     # Support login with either username OR email
     stmt = select(UserDB).where(
         (UserDB.email == identifier) | (UserDB.username == identifier)
@@ -207,7 +215,22 @@ async def login(
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(password, user.hashed_password):
+    if not user:
+        logger.warning(f"[LOGIN] User not found: {identifier}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username/email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    logger.info(f"[LOGIN] Verifying password for user: {user.email}")
+    try:
+        password_valid = verify_password(password, user.hashed_password)
+    except Exception as e:
+        logger.error(f"[LOGIN] Password verification error: {type(e).__name__}: {e}")
+        raise
+    
+    if not password_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username/email or password",
