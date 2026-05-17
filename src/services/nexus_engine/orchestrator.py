@@ -177,7 +177,7 @@ class NexusOrchestrator:
                 notify_nexus_job_update_sync(payload)
 
             # 1. Ingress Node - Validate inputs
-            with tracer.start_as_current_span("Nexus.Node.Ingress") as node_span:
+            with tracer.start_as_current_span("Nexus.Node.Ingress"):
                 await update_node("ingress", "ACTIVE", 20)
 
                 # Validate all inputs exist before proceeding
@@ -201,7 +201,7 @@ class NexusOrchestrator:
                 await update_node("ingress", "COMPLETED", 30)
 
             # 2. Cognition Node - Extract metadata and prepare clips
-            with tracer.start_as_current_span("Nexus.Node.Cognition") as node_span:
+            with tracer.start_as_current_span("Nexus.Node.Cognition"):
                 await update_node("cognition", "ACTIVE", 40)
 
                 # Cognitive Vibe Check (Dify + LangChain Integration)
@@ -292,7 +292,7 @@ class NexusOrchestrator:
                 await update_node("cognition", "COMPLETED", 50)
 
             # 2.6 Vision Audit Node (Free Tier - Gemini Flash)
-            with tracer.start_as_current_span("Nexus.Node.VisionAudit") as node_span:
+            with tracer.start_as_current_span("Nexus.Node.VisionAudit"):
                 await update_node("vision_audit", "ACTIVE", 55)
                 self.logger.info(f"[Nexus] Auditing {len(remotion_clips)} clips for relevance...")
                 
@@ -350,7 +350,7 @@ class NexusOrchestrator:
                 await update_node("vision_audit", "COMPLETED", 60)
 
             # 3. Synthesis Node - Render with Remotion
-            with tracer.start_as_current_span("Nexus.Node.Synthesis") as node_span:
+            with tracer.start_as_current_span("Nexus.Node.Synthesis"):
                 await update_node("synthesis", "ACTIVE", 70)
             
             # Fetch style config once for all downstream usage
@@ -499,7 +499,7 @@ class NexusOrchestrator:
             await update_node("synthesis", "COMPLETED", 90)
 
             # 4. Egress Node - Automated Publishing & Final Stats
-            with tracer.start_as_current_span("Nexus.Node.Egress") as node_span:
+            with tracer.start_as_current_span("Nexus.Node.Egress"):
                 await update_node("egress", "ACTIVE", 95)
                 publish_results = []
                 
