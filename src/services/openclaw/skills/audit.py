@@ -103,9 +103,10 @@ class AuditSkill(OpenClawBaseSkill):
     def _get_user_token(self, platform: str, user_id: str) -> str | None:
         """Get user's OAuth token for specified platform."""
         try:
+            import asyncio
             from src.services.optimization.auth import token_manager
 
-            token = token_manager.get_token(platform, user_id=user_id)
+            token = asyncio.run(token_manager.get_token(platform, user_id=user_id))
             return token
         except Exception as e:
             logger.error(f"Error getting {platform} token: {e}")

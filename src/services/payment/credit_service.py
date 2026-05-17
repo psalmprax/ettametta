@@ -103,6 +103,7 @@ class CreditService:
         db: AsyncSession,
         reference_id: str | None = None,
         auto_commit: bool = True,
+        description: str | None = None,
     ) -> tuple[bool, str]:
         """
         Attempt to consume credits for an action.
@@ -139,7 +140,7 @@ class CreditService:
                 amount=-amount,
                 balance_after=user_credits.balance,
                 transaction_type="spent",
-                description=f"Action: {action}",
+                description=description or f"Action: {action}",
                 reference_id=reference_id,
             )
             db.add(transaction)

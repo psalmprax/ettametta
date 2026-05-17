@@ -22,6 +22,11 @@ from unittest.mock import patch, MagicMock
 import types
 
 class MockModule(types.ModuleType):
+    def __init__(self, name):
+        super().__init__(name)
+        import importlib.machinery
+        self.__spec__ = importlib.machinery.ModuleSpec(name, None)
+
     def __getattr__(self, name):
         return MagicMock()
 
@@ -56,7 +61,7 @@ os.environ["GROQ_API_KEY"] = "test_groq_key"
 def test_db():
     """Create a test database."""
     from src.api.utils.database import Base, engine
-    from src.api.utils import models, user_models  # Ensure models are registered
+    from src.api.utils import models, user_models, credit_models  # Ensure models are registered
     
     # Create tables
     Base.metadata.create_all(bind=engine)

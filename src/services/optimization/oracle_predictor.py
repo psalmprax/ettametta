@@ -24,6 +24,8 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
+    import sys
+    sys.modules.pop("torch", None)
     torch = None
     nn = None
     optim = None
@@ -114,7 +116,7 @@ class NeuralOracle:
             curve = self.model(x_tensor).cpu().numpy()[0]
         return curve
 
-    def train_cycle(self, train_loader: torch.utils.data.DataLoader, epochs: int = 5):
+    def train_cycle(self, train_loader: "torch.utils.data.DataLoader", epochs: int = 5):
         self.model.train()
         optimizer = optim.Adam(self.model.parameters(), lr=0.001)
         criterion = nn.MSELoss()

@@ -69,14 +69,14 @@ async def generate_single_video(
         # Logic for engine-to-action mapping
         # Since engine_config is missing, we implement a resilient fallback here
         ENGINE_TO_ACTION = {
-            "veo3": CreditAction.VIDEO_GENERATE,
-            "flux": CreditAction.IMAGE_GENERATE,
-            "kling": CreditAction.VIDEO_GENERATE_PREMIUM,
-            "luma": CreditAction.VIDEO_GENERATE_PREMIUM,
+            "veo3": CreditAction.VIDEO_GENERATION,
+            "flux": CreditAction.VIDEO_GENERATION,
+            "kling": CreditAction.VIDEO_GENERATION,
+            "luma": CreditAction.VIDEO_GENERATION,
         }
         
         def get_credit_action(engine_name: str) -> CreditAction:
-            return ENGINE_TO_ACTION.get(engine_name, CreditAction.VIDEO_GENERATE)
+            return ENGINE_TO_ACTION.get(engine_name, CreditAction.VIDEO_GENERATION)
             
         action = get_credit_action(body.engine)
         credits_cost = await credits_required(action)(current_user, db)
