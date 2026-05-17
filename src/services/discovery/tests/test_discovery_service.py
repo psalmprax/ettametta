@@ -12,8 +12,8 @@ from src.services.discovery.models import ContentCandidate
 @pytest.fixture
 def discovery_service():
     """Create a DiscoveryService instance with mocked dependencies."""
-    with patch('src.services.discovery.service.redis') as mock_redis:
-        with patch('src.services.discovery.service.async_session_factory') as mock_db:
+    with patch('src.services.discovery.service.redis') as mock_redis, \
+         patch('src.services.discovery.service.async_session_factory') as mock_db:
             # Mock Redis
             mock_redis_instance = MagicMock()
             mock_redis.from_url.return_value = mock_redis_instance
@@ -22,11 +22,14 @@ def discovery_service():
             # Mock DB session
             mock_session = AsyncMock()
             mock_db.return_value.__aenter__.return_value = mock_session
-            mock_session.execute = AsyncMock()
+            
+            mock_result = MagicMock()
+            mock_result.scalars.return_value.all.return_value = []
+            mock_session.execute = AsyncMock(return_value=mock_result)
             mock_session.scalar_one_or_none = AsyncMock(return_value=None)
             
             service = DiscoveryService()
-            return service
+            yield service
 
 
 class TestDiscoveryServiceInitialization:
@@ -129,9 +132,13 @@ class TestDiscoveryServiceFindTrendingContent:
         discovery_service.global_scanners = []
         
         # Mock DB to return results
-        from unittest.mock import AsyncMock
         mock_result = AsyncMock()
         mock_result.scalars.return_value.all.return_value = []
+        
+        # Mock video lead scanner
+        mock_lead = AsyncMock()
+        mock_lead.scan_for_video_leads.return_value = []
+        discovery_service.video_lead_scanner = mock_lead
         
         with patch.object(discovery_service, '_log'):
             result = await discovery_service.find_trending_content(
@@ -304,7 +311,7 @@ class TestDiscoveryServiceQualityAuditing:
         ]
         
         # Mock audit function
-        with patch('src.services.discovery.service.audit_content_quality') as mock_audit:
+        with patch('src.services.discovery.eligibility.audit_content_quality') as mock_audit:
             mock_audit.return_value = {
                 'score': 85,
                 'flags': [],
