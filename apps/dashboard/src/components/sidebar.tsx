@@ -101,6 +101,9 @@ const intelligenceItems = [
     { name: "Knowledge Base", href: "/knowledge", icon: Brain },
     { name: "Intel Core", href: "/analytics", icon: BarChart3 },
     { name: "Security Audit", href: "/admin/audits", icon: ShieldCheck },
+    { name: "Security Sentinel", href: "/security", icon: Lock },
+    { name: "Agent Interface", href: "/agent", icon: Brain },
+    { name: "Persona Lab", href: "/persona", icon: User },
 ];
 
 const studioItems = [

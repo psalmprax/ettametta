@@ -31,6 +31,7 @@ async def ingest_knowledge(
     try:
         doc_id = await base_knowledge_service.ingest_text(
             text=body.text,
+            dataset_id="default",
             metadata=body.metadata or {}
         )
         return success_response(data={"document_id": doc_id, "status": "ingested"})
@@ -49,6 +50,7 @@ async def query_knowledge(
     try:
         results = await base_knowledge_service.query(
             text=body.text,
+            dataset_id="default",
             limit=body.limit
         )
         return success_response(data={"results": results})
@@ -64,7 +66,7 @@ async def get_knowledge_stats(
     Get knowledge base statistics.
     """
     try:
-        stats = base_knowledge_service.get_stats()
+        stats = await base_knowledge_service.get_stats(dataset_id="default")
         return success_response(data=stats)
     except Exception as e:
         logger.error(f"[Knowledge] Stats retrieval failed: {e}")
@@ -84,6 +86,7 @@ async def upload_document(
         
         doc_id = await base_knowledge_service.ingest_text(
             text=text,
+            dataset_id="default",
             metadata={"filename": file.filename}
         )
         

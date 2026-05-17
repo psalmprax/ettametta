@@ -280,7 +280,7 @@ async def google_auth_callback(
         # Exchange authorization code for tokens
         flow = create_google_flow()
 
-        await flow.fetch_token(code=code)
+        flow.fetch_token(code=code)
         credentials = flow.credentials
 
         # Verify ID token

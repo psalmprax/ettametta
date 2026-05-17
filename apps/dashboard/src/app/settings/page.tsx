@@ -107,7 +107,7 @@ export default function SettingsPage() {
         }));
 
         await withRealFallback(
-            () => fetch(`${API_BASE}/settings/bulk`, {
+            () => fetch(`${API_BASE}/settings/user`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify(payload)

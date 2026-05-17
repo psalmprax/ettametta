@@ -21,7 +21,7 @@ redis>=5.0.0
 celery
 pyyaml
 imageio_ffmpeg
-httpx
+httpx<0.28.0
 langchain>=0.1.0
 langchain-groq
 crewai

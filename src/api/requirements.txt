@@ -13,7 +13,7 @@ psycopg2-binary
 redis
 asyncpg
 aiosqlite
-httpx
+httpx<0.28.0
 qdrant-client
 moviepy
 ffmpeg-python
