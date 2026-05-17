@@ -232,7 +232,7 @@ class NexusOrchestrator:
                                     end = answer.rfind("}") + 1
                                     vibe_data = json_lib.loads(answer[start:end])
                                     self.logger.info(f"[Nexus] Dify suggested vibe: {vibe_data.get('vibe')}")
-                                except:
+                                except Exception:
                                     self.logger.warning("[Nexus] Dify returned non-JSON answer, using as 'explanation'")
                                     vibe_data = {"vibe": "Cinematic", "explanation": answer}
                     except Exception as e:
