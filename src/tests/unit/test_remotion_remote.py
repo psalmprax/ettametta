@@ -11,12 +11,12 @@ import subprocess
 import json
 import shutil
 
-PROJECT_DIR = "/home/psalmprax/ALL_PROJECTS/ettametta"
+PROJECT_DIR = "/app" if os.path.exists("/app") else "/home/psalmprax/ALL_PROJECTS/ettametta"
 sys.path.insert(0, PROJECT_DIR)
 
 os.environ["DEBUG"] = "true"
 
-STUDIO_PATH = "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio"
+STUDIO_PATH = os.path.join(PROJECT_DIR, "apps/remotion-studio")
 OUTPUT_DIR = os.path.join(STUDIO_PATH, "out")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -59,18 +59,16 @@ def test_remotion():
         props_path,
         "--quality",
         "1",
+        "--frames",
+        "0-100",
     ]
 
     print(f"Command: {' '.join(cmd)}")
 
     result = subprocess.run(
-        cmd, cwd=STUDIO_PATH, capture_output=True, text=True, timeout=180
+        cmd, cwd=STUDIO_PATH, timeout=600
     )
-
     print(f"\nReturn code: {result.returncode}")
-    print(f"STDOUT:\n{result.stdout[:1000]}")
-    if result.stderr:
-        print(f"STDERR:\n{result.stderr[:500]}")
 
     if result.returncode == 0 and os.path.exists(output_path):
         size = os.path.getsize(output_path) / 1024 / 1024

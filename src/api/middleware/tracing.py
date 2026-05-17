@@ -43,6 +43,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
+        if request.scope["type"] == "websocket":
+            return await call_next(request)
         response = await call_next(request)
         if settings.ENV == "production":
             response.headers["X-Content-Type-Options"] = "nosniff"

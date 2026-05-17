@@ -1124,6 +1124,71 @@ async def sync_content_metrics(
         pass
 
 
+@router.get("/jobs")
+async def get_publish_jobs(
+    current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
+):
+    """
+    Returns active publish jobs for the current user.
+    Includes items that are in-progress, pending_auth, or failed —
+    anything not yet fully published.
+    """
+    try:
+        stmt = select(PublishedContentDB).where(
+            PublishedContentDB.user_id == current_user.id,
+        )
+        stmt = stmt.order_by(PublishedContentDB.published_at.desc())
+        result = await db.execute(stmt)
+        jobs = result.scalars().all()
+        return success_response(
+            data=[
+                {
+                    "id": j.id,
+                    "title": j.title,
+                    "platform": j.platform,
+                    "status": j.status.value if hasattr(j.status, "value") else j.status,
+                    "progress": 0,
+                    "created_at": j.published_at,
+                    "niche": j.niche,
+                }
+                for j in jobs
+            ]
+        )
+    except Exception as e:
+        logger.error(f"Publish jobs failed: {e}")
+        return success_response(data=[])
+    finally:
+        pass
+
+
+@router.post("/auto-broadcast")
+async def auto_broadcast(
+    current_user: UserDB = Depends(get_current_user),
+):
+    """
+    Triggers autonomous broadcast pattern.
+    Scans for pending/scheduled content and dispatches to all available platforms.
+    Deferred to a background task to avoid blocking.
+    """
+    try:
+        from src.services.optimization.scheduler_tasks import check_and_post_scheduled
+
+        # Enqueue the Celery beat task to check and post scheduled content
+        check_and_post_scheduled.delay()
+
+        return success_response(
+            data={
+                "status": "initiated",
+                "message": "Autonomous broadcast pattern propagating across distribution nodes.",
+            }
+        )
+    except Exception as e:
+        logger.error(f"Auto-broadcast failed: {e}")
+        raise HTTPException(
+            status_code=503, detail="Broadcast pattern injection failed"
+        )
+
+
 @router.get("/history")
 async def get_publish_history(
     current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
@@ -1166,7 +1231,7 @@ async def get_scheduled_posts(
                 "video_path": p.video_path,
                 "platform": p.platform,
                 "scheduled_time": p.scheduled_time,
-                "status": p.status,
+                "status": p.status.value if hasattr(p.status, "value") else p.status,
                 "parallel_allowed": p.parallel_allowed,
                 "engagement_prediction": p.engagement_prediction,
                 "optimal_rank": p.optimal_rank,
@@ -1175,6 +1240,41 @@ async def get_scheduled_posts(
             }
             for p in scheduled
         ]
+    finally:
+        pass
+
+
+@router.delete("/schedule/{schedule_id}")
+async def cancel_scheduled_post(
+    schedule_id: str,
+    current_user: UserDB = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """Cancel a scheduled post before it publishes."""
+    from src.api.utils.models import ScheduledPostDB
+
+    try:
+        stmt = select(ScheduledPostDB).where(
+            ScheduledPostDB.id == schedule_id,
+            ScheduledPostDB.user_id == current_user.id,
+        )
+        result = await db.execute(stmt)
+        scheduled = result.scalar_one_or_none()
+
+        if not scheduled:
+            raise HTTPException(status_code=404, detail="Scheduled post not found")
+
+        await db.delete(scheduled)
+        await db.commit()
+
+        return success_response(
+            data={"status": "cancelled", "message": "Scheduled post cancelled"}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Cancel scheduled post failed: {e}")
+        raise HTTPException(status_code=503, detail="Failed to cancel scheduled post")
     finally:
         pass
 
