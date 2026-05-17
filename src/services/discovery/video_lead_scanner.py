@@ -48,6 +48,7 @@ class VideoLead:
     niche: str
     content_type: str  # 'educational', 'entertainment', 'tutorial', etc.
     monetization_potential: str  # 'high', 'medium', 'low'
+    relevance_score: float = 0.0
 
 
 class VideoLeadScanner:
@@ -90,6 +91,8 @@ class VideoLeadScanner:
         # Check available capabilities
         self.ai_available = self.groq_client is not None
         self.logger = logging.getLogger(__name__)
+        self.process_semaphore = asyncio.Semaphore(5)
+        self._last_request_time = 0.0
 
         if not self.ai_available:
             self.logger.info(
@@ -109,21 +112,46 @@ class VideoLeadScanner:
         if platforms is None:
             platforms = ["youtube", "tiktok"]
 
-        # 1. Primary Concurrent Scan
-        all_leads = await self._gather_platform_leads(niche, platforms)
-        self.logger.info(f"Primary scan complete. Leads found: {len(all_leads)}")
+        try:
+            # 1. Primary Concurrent Scan
+            all_leads = await self._gather_platform_leads(niche, platforms)
+            self.logger.info(f"Primary scan complete. Leads found: {len(all_leads)}")
 
-        # 2. Fallback if primary scanners failed or returned nothing
-        if not all_leads:
-            all_leads = await self._run_fallback_scan(niche, niche)
+            # 2. Fallback if primary scanners failed or returned nothing
+            if not all_leads:
+                all_leads = await self._run_fallback_scan(niche, niche)
 
-        # 3. Filter and Rank
-        filtered_leads = [
-            lead for lead in all_leads if lead.viral_score >= min_viral_score
-        ]
-        filtered_leads.sort(key=lambda x: x.viral_score, reverse=True)
+            # 2.5 Canonical Deduplication
+            all_leads = self._deduplicate_leads(all_leads)
 
-        return filtered_leads[:max_results]
+            # 3. Filter and Rank
+            filtered_leads = [
+                lead for lead in all_leads if lead.viral_score >= min_viral_score
+            ]
+            filtered_leads.sort(key=lambda x: x.viral_score, reverse=True)
+
+            return filtered_leads[:max_results]
+        except asyncio.CancelledError:
+            self.logger.warning("scan_for_video_leads execution cancelled")
+            raise
+
+    def _deduplicate_leads(self, leads: list[VideoLead]) -> list[VideoLead]:
+        """Deduplicate gathered platform leads based on canonical video ID and URL keys."""
+        seen_ids = set()
+        seen_urls = set()
+        deduped = []
+        for lead in leads:
+            clean_url = lead.url.strip().lower() if lead.url else ""
+            if lead.video_id and lead.video_id in seen_ids:
+                continue
+            if clean_url and clean_url in seen_urls:
+                continue
+            if lead.video_id:
+                seen_ids.add(lead.video_id)
+            if clean_url:
+                seen_urls.add(clean_url)
+            deduped.append(lead)
+        return deduped
 
     async def _gather_platform_leads(self, niche: str, platforms: list[str]) -> list[VideoLead]:
         """Orchestrate concurrent scans across specified platforms."""
@@ -434,14 +462,17 @@ class VideoLeadScanner:
             if keyword in description or keyword in visual_prompt:
                 keywords.append(keyword)
 
-        # Extract specific terms (nouns, proper names)
-        text = f"{description} {visual_prompt}"
+        # Extract specific terms (nouns, proper names) from raw (non-lowercased) text
+        raw_description = scene.get("description", "")
+        raw_visual_prompt = scene.get("visual_prompt", "")
+        text = f"{raw_description} {raw_visual_prompt}"
         words = text.split()
 
         # Look for capitalized words (potential proper names)
         for word in words:
-            if len(word) > 3 and word[0].isupper():
-                keywords.append(word.lower())
+            word_clean = re.sub(r"[^\w]", "", word)
+            if len(word_clean) > 3 and word_clean[0].isupper():
+                keywords.append(word_clean.lower())
 
         # Add visual keywords
         visual_keywords = [
@@ -781,10 +812,11 @@ class VideoLeadScanner:
         self, query: str, platform: str, max_results: int = 5
     ) -> list[VideoLead]:
         """Generic yt-dlp scraper for multi-platform support."""
-        self.logger.info(f"Scraping {platform} for: {query}")
-        sep = "##SEP##"
+        # 1. Sanitize query to prevent command injection / shell exploits
+        clean_query = re.sub(r"[^a-zA-Z0-9\s\-_.,!?]", "", query)[:200]
+        self.logger.info(f"Scraping {platform} for: {clean_query}")
         
-        cmd = self._build_ytdlp_command(query, platform, max_results, sep)
+        cmd = self._build_ytdlp_command(clean_query, platform, max_results)
         output = await self._execute_ytdlp_process(cmd, platform)
         
         if not output:
@@ -792,15 +824,15 @@ class VideoLeadScanner:
 
         leads = []
         for line in output.split("\n"):
-            lead = self._parse_ytdlp_output_line(line, sep, platform, query)
+            lead = self._parse_ytdlp_output_line(line, platform, clean_query)
             if lead:
                 leads.append(lead)
         return leads
 
     def _build_ytdlp_command(
-        self, query: str, platform: str, max_results: int, sep: str
+        self, query: str, platform: str, max_results: int
     ) -> list[str]:
-        """Build the yt-dlp command for searching"""
+        """Build the yt-dlp command for searching with structured JSON output"""
         search_prefixes = {
             "youtube": f"ytsearch{max_results}:",
             "tiktok": f"ytsearch{max_results}:tiktok ",
@@ -817,60 +849,81 @@ class VideoLeadScanner:
         
         return [
             "yt-dlp",
-            "--print",
-            f"%(id)s{sep}%(title)s{sep}%(uploader)s{sep}%(view_count)s{sep}%(webpage_url)s{sep}%(duration)s{sep}%(upload_date)s{sep}%(description)s",
+            "-j",
             "--flat-playlist",
             "--no-download",
             f"{prefix}{query}",
         ]
 
     async def _execute_ytdlp_process(self, cmd: list[str], platform: str) -> str:
-        """Execute yt-dlp command and return stdout"""
-        try:
-            process = await asyncio.create_subprocess_exec(
-                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-            )
-            stdout, stderr = await process.communicate()
-            
-            if process.returncode != 0:
-                self.logger.error(f"ytdlp {platform} search failed: {stderr.decode()}")
-                return ""
+        """Execute yt-dlp command and return stdout with leaky bucket rate limiting"""
+        # Leaky bucket rate limiter: sleep if requests are too frequent
+        now = asyncio.get_event_loop().time()
+        delay = 2.0 - (now - self._last_request_time)
+        if delay > 0:
+            self.logger.info(f"Rate limiting query interval: sleeping for {delay:.2f}s")
+            await asyncio.sleep(delay)
+        self._last_request_time = asyncio.get_event_loop().time()
+
+        async with self.process_semaphore:
+            try:
+                process = await asyncio.create_subprocess_exec(
+                    *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                )
+                try:
+                    stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=30.0)
+                except asyncio.TimeoutError:
+                    process.kill()
+                    await process.wait()
+                    self.logger.error(f"ytdlp {platform} process timed out after 30s")
+                    return ""
                 
-            return stdout.decode().strip()
-        except Exception:
-            self.logger.exception(f"ytdlp {platform} execution failed")
-            return ""
+                if process.returncode != 0:
+                    self.logger.error(f"ytdlp {platform} search failed: {stderr.decode()}")
+                    return ""
+                    
+                return stdout.decode().strip()
+            except OSError as e:
+                self.logger.error(f"ytdlp system execution error: {e}")
+                return ""
+            except Exception:
+                self.logger.exception(f"ytdlp {platform} execution failed due to an unexpected error")
+                return ""
 
     def _parse_ytdlp_output_line(
-        self, line: str, sep: str, platform: str, query: str
+        self, line: str, platform: str, query: str
     ) -> Optional[VideoLead]:
-        """Parse a single line of yt-dlp output into a VideoLead"""
-        if sep not in line:
-            return None
-            
-        parts = line.split(sep)
-        if len(parts) < 5:
+        """Parse a single line of structured JSON yt-dlp output into a VideoLead"""
+        if not line or not line.strip():
             return None
             
         try:
-            v_id, v_title, v_uploader, v_views, v_url = parts[:5]
-            v_dur_val = parts[5].strip() if len(parts) > 5 else "30"
-            v_dur = float(v_dur_val) if v_dur_val and v_dur_val != "None" else 30.0
-            v_date_str = parts[6].strip() if len(parts) > 6 else datetime.now().strftime("%Y%m%d")
-            v_desc = parts[7] if len(parts) > 7 else ""
+            data = json.loads(line)
+            v_id = data.get("id") or ""
+            v_title = data.get("title") or "Unknown Title"
+            v_uploader = data.get("uploader") or "Unknown"
+            v_views = data.get("view_count")
+            v_url = data.get("webpage_url") or data.get("url") or f"https://www.youtube.com/watch?v={v_id}"
             
+            # Duration parsing
+            v_dur_val = data.get("duration")
+            v_dur = float(v_dur_val) if v_dur_val is not None else 30.0
+            
+            # Upload date extraction
+            v_date_str = data.get("upload_date")
             try:
-                v_date = datetime.strptime(v_date_str, "%Y%m%d")
+                v_date = datetime.strptime(v_date_str, "%Y%m%d") if v_date_str else datetime.now()
             except Exception:
                 v_date = datetime.now()
                 
-            views = int(v_views) if v_views and v_views.isdigit() else 10000
+            v_desc = data.get("description") or ""
+            views = int(v_views) if v_views is not None else 10000
             
             return VideoLead(
                 video_id=v_id,
                 platform=platform,
                 title=v_title,
-                creator=v_uploader or "Unknown",
+                creator=v_uploader,
                 url=v_url,
                 view_count=views,
                 like_count=int(views * 0.05),
@@ -887,7 +940,8 @@ class VideoLeadScanner:
                 content_type="video",
                 monetization_potential="high",
             )
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Failed to parse structured JSON yt-dlp line: {e}")
             return None
 
     async def _scan_youtube_scraper(self, niche: str) -> list[VideoLead]:
@@ -959,14 +1013,28 @@ class VideoLeadScanner:
             return None
 
     def _calculate_viral_score(self, views: int, engagement_score: float) -> float:
-        """Calculate viral potential score (0-10)"""
-        # Base score from views (logarithmic scaling)
-        view_score = min(10, (views / 1000000) * 5)  # 1M views = 5 points
+        """
+        Calculate viral potential score (0-10) using robust logarithmic view scaling
+        and engagement-to-views ratio weights to give credit to highly engaging small creators.
+        """
+        import math
+        if views <= 0:
+            return 0.0
 
-        # Engagement bonus
-        engagement_bonus = min(5, engagement_score / 2)  # 10% engagement = 5 points
+        # Logarithmic view score (e.g. log10(10k) = 4.0, log10(10M) = 7.0)
+        # Scale views between 1k (score=0) to 10M (score=5)
+        log_views = math.log10(views)
+        view_score = min(5.0, max(0.0, (log_views - 3.0) * 1.25))
 
-        return view_score + engagement_bonus
+        # Standardize engagement_score to ratio (e.g. 0.065 or 6.5)
+        raw_engagement = engagement_score / 100.0 if engagement_score > 1.0 else engagement_score
+        
+        # High engagement bonus (up to 5.0 points)
+        # Gives substantial weight to engagement ratios (e.g. 10% = 2.5 points, 20%+ = 5 points)
+        engagement_bonus = min(5.0, raw_engagement * 25.0)
+
+        # Final score, capped at 10.0
+        return min(10.0, view_score + engagement_bonus)
 
     def _classify_content_type(self, title: str) -> str:
         """Classify video content type based on title"""
@@ -1038,11 +1106,13 @@ class VideoLeadScanner:
         """
 
         try:
-            response = self.groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=500,
-            )
+            async with asyncio.timeout(30.0):
+                response = await asyncio.to_thread(
+                    self.groq_client.chat.completions.create,
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=500,
+                )
 
             return {
                 "ai_analysis": response.choices[0].message.content,
@@ -1050,6 +1120,9 @@ class VideoLeadScanner:
                 "avg_engagement_score": sum(l.engagement_score for l in leads) / len(leads),
                 "content_types": self._count_content_types(leads),
             }
+        except asyncio.TimeoutError:
+            self.logger.error("Groq AI pattern analysis timed out after 30s")
+            return {}
         except Exception:
             logger.exception("Pattern analysis error")
             return {}
@@ -1189,6 +1262,55 @@ class VideoLeadScanner:
             "comments_density": comments_density
         }
 
+    def _parse_list(self, text: str) -> Optional[list[str]]:
+        """Helper to safely decode a JSON array of strings."""
+        try:
+            data = json.loads(text)
+            if isinstance(data, list):
+                return [str(item) for item in data]
+        except json.JSONDecodeError:
+            pass
+        return None
+
+    def _extract_json_array(self, content: str) -> list[str]:
+        """
+        Robustly extracts a JSON array of strings from a string.
+        Handles markdown blocks, malformed wrapping, conversational prefixes, and bullet points.
+        """
+        content = content.strip()
+        
+        # Try direct parsing first
+        parsed = self._parse_list(content)
+        if parsed is not None:
+            return parsed
+
+        # Try matching ```json ... ``` blocks
+        json_block_match = re.search(r"```(?:json)?\s*(\[[^\]]*\])\s*```", content, re.DOTALL)
+        if json_block_match:
+            parsed = self._parse_list(json_block_match.group(1))
+            if parsed is not None:
+                return parsed
+
+        # Try searching for any array-like structure [ ... ] in the text
+        array_match = re.search(r"(\[[^\]]*\])", content, re.DOTALL)
+        if array_match:
+            parsed = self._parse_list(array_match.group(1))
+            if parsed is not None:
+                return parsed
+
+        # Last resort fallback: split by lines and clean up bullet point markings
+        lines = content.split('\n')
+        cleaned_items = []
+        for line in lines:
+            cleaned = re.sub(r"^[\s\-\*\d\.\"\']+", "", line).strip()
+            cleaned = re.sub(r"[\"\',\]\[]+$", "", cleaned).strip()
+            if cleaned:
+                cleaned_items.append(cleaned)
+        if cleaned_items:
+            return cleaned_items
+
+        raise ValueError("Could not extract a valid list from LLM response")
+
     async def _identify_viral_factors(self, video_data: dict, _niche: str) -> list[str]:
         """Identify factors that made this video viral using LLM or rule-based analysis"""
         title = video_data.get("title", "")
@@ -1208,23 +1330,21 @@ class VideoLeadScanner:
                     f"Respond with a plain JSON list of strings."
                 )
                 
-                chat_completion = await asyncio.to_thread(
-                    self.groq_client.chat.completions.create,
-                    messages=[
-                        {"role": "system", "content": "You are a social media viral expert. Return only a JSON array of strings."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    model="llama3-8b-8192",
-                    temperature=0.2
-                )
+                async with asyncio.timeout(30.0):
+                    chat_completion = await asyncio.to_thread(
+                        self.groq_client.chat.completions.create,
+                        messages=[
+                            {"role": "system", "content": "You are a social media viral expert. Return only a JSON array of strings."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        model="llama3-8b-8192",
+                        temperature=0.2
+                    )
                 
                 content = chat_completion.choices[0].message.content
-                import json
-                if JSON_MARKDOWN_BLOCK in content:
-                    content = content.split(JSON_MARKDOWN_BLOCK)[1].split(MARKDOWN_BLOCK)[0]
-                elif MARKDOWN_BLOCK in content:
-                    content = content.split(MARKDOWN_BLOCK)[1].split(MARKDOWN_BLOCK)[0]
-                return json.loads(content.strip())
+                return self._extract_json_array(content)
+            except asyncio.TimeoutError:
+                self.logger.error("Groq AI identify viral factors analysis timed out after 30s")
             except Exception:
                 logger.exception("Failed to analyze viral factors via LLM, falling back to rule-based analysis")
 
@@ -1257,23 +1377,21 @@ class VideoLeadScanner:
                     f"Respond with a plain JSON list of strings."
                 )
                 
-                chat_completion = await asyncio.to_thread(
-                    self.groq_client.chat.completions.create,
-                    messages=[
-                        {"role": "system", "content": "You are a content strategy consultant. Return only a JSON array of strings."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    model="llama3-8b-8192",
-                    temperature=0.7
-                )
+                async with asyncio.timeout(30.0):
+                    chat_completion = await asyncio.to_thread(
+                        self.groq_client.chat.completions.create,
+                        messages=[
+                            {"role": "system", "content": "You are a content strategy consultant. Return only a JSON array of strings."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        model="llama3-8b-8192",
+                        temperature=0.7
+                    )
                 
                 content = chat_completion.choices[0].message.content
-                import json
-                if JSON_MARKDOWN_BLOCK in content:
-                    content = content.split(JSON_MARKDOWN_BLOCK)[1].split(MARKDOWN_BLOCK)[0]
-                elif MARKDOWN_BLOCK in content:
-                    content = content.split(MARKDOWN_BLOCK)[1].split(MARKDOWN_BLOCK)[0]
-                return json.loads(content.strip())
+                return self._extract_json_array(content)
+            except asyncio.TimeoutError:
+                self.logger.error("Groq AI generate repurposing suggestions timed out after 30s")
             except Exception:
                 logger.exception("Failed to generate repurposing suggestions via LLM, falling back")
 

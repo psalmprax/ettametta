@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from typing import Any
 
@@ -10,6 +10,7 @@ class ContentCandidate(BaseModel):
     Note: Uses 'metadata' as alias for 'metadata_json' to maintain consistency
     with ContentCandidateDB field name via model_config.
     """
+    model_config = ConfigDict(populate_by_name=True)
 
     id: str
     platform: str
@@ -49,13 +50,7 @@ class ContentCandidate(BaseModel):
     external_id: str | None = None
     discovery_date: datetime = Field(default_factory=datetime.utcnow)
     # Use metadata_json to match DB field name, with 'metadata' as alias for convenience
-    metadata_json: dict = Field(default_factory=dict)
-
-    class Config:
-        populate_by_name = True
-        fields = {
-            "metadata_json": "metadata",
-        }
+    metadata_json: dict = Field(default_factory=dict, alias="metadata")
 
 
 class ViralPattern(BaseModel):

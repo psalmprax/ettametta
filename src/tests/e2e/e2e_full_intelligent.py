@@ -271,6 +271,7 @@ print(result)
         final = (
             "/home/psalmprax/ALL_PROJECTS/ettametta/downloads/e2e_full_pipeline.mp4"
         )
+        os.makedirs(os.path.dirname(final), exist_ok=True)
         shutil.copy(video, final)
         print(f"\n  ✅ OUTPUT: {final}")
 

@@ -112,11 +112,13 @@ class TestDiscoveryServiceFindTrendingContent:
         discovery_service.scanners = [mock_scanner]
         discovery_service.global_scanners = []
         
-        result = await discovery_service.find_trending_content(
-            niche='tech',
-            horizon='30d',
-            deep_scan=True  # Should skip cache
-        )
+        with patch('src.engines.intelligent_video_workflow.discover_multi_platform', new_callable=AsyncMock) as mock_discover:
+            mock_discover.return_value = []
+            result = await discovery_service.find_trending_content(
+                niche='tech',
+                horizon='30d',
+                deep_scan=True  # Should skip cache
+            )
         
         # Verify scanners were called
         mock_scanner.scan_trends.assert_called()
