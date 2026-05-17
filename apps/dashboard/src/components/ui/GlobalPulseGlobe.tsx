@@ -35,7 +35,11 @@ function GlobalPulseGlobeInner({ pulseIntensity }: { pulseIntensity?: number }) 
         return <GlobeFallback />;
     }
 
-    return <Globe3DRenderer pulseIntensity={pulseIntensity} />;
+    return (
+        <Canvas camera={{ position: [0, 0, 6], fov: 50 }}>
+            <Globe3DRenderer pulseIntensity={pulseIntensity} />
+        </Canvas>
+    );
 }
 
 // The actual Three.js rendering

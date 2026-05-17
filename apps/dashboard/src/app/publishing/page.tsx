@@ -29,7 +29,11 @@ import {
     Unlink,
     Radar,
     Cpu,
-    Target
+    Target,
+    Loader2,
+    Clock,
+    Calendar,
+    Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API_BASE, WS_BASE } from "@/lib/config";
@@ -44,6 +48,7 @@ import { DesignCard } from "@/components/ui/DesignCard";
 import { Button } from "@/components/ui/Button";
 import { PlatformLinkModal } from "@/components/ui/PlatformLinkModal";
 import { ManualBroadcastModal } from "@/components/ui/ManualBroadcastModal";
+import { MultiPublishModal } from "@/components/ui/MultiPublishModal";
 import { useTelemetry } from "@/context/TelemetryContext";
 
 const getPlatformIcon = (platform: string) => {
@@ -61,8 +66,13 @@ export default function PublishingPage() {
     const [jobs, setJobs] = useState<any[]>([]);
     const [isPlatformModalOpen, setIsPlatformModalOpen] = useState(false);
     const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
+    const [isMultiPublishModalOpen, setIsMultiPublishModalOpen] = useState(false);
     const [isDeploying, setIsDeploying] = useState(false);
     const [accountToUnlink, setAccountToUnlink] = useState<any | null>(null);
+    const [isRetrying, setIsRetrying] = useState(false);
+    const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
+    const [suggestedTimes, setSuggestedTimes] = useState<any[]>([]);
+    const [isCancellingSchedule, setIsCancellingSchedule] = useState<string | null>(null);
     const [actionLogs, setActionLogs] = useState<string[]>(["EGRESS_INITIALIZED", "SYNCHRONIZING_DISTRIBUTION_NODES"]);
 
     const handleUnlink = async (id: string) => {
@@ -87,6 +97,62 @@ export default function PublishingPage() {
         );
         setIsDeploying(false);
         setAccountToUnlink(null);
+    };
+
+    const handleRetryPublish = async (contentId: string) => {
+        setIsRetrying(true);
+        const token = await getAuthToken();
+        if (!token) { setIsRetrying(false); return; }
+
+        setActionLogs((prev: string[]) => [`[RETRY] Attempting to republish: ${contentId}...`, ...prev]);
+
+        await withRealFallback(
+            () => fetch(`${API_BASE}/publish/retry/${contentId}`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: null,
+                onSuccess: () => {
+                    toast.success("Retry initiated — refreshing jobs");
+                    setActionLogs((prev: string[]) => [`[SUCCESS] Retry dispatched for: ${contentId}`, ...prev]);
+                    fetchData();
+                },
+                onFallback: (err) => {
+                    toast.error(`Retry failed: ${err.message}`);
+                    setActionLogs((prev: string[]) => [`[ERROR] Retry failed for ${contentId}: ${err.message}`, ...prev]);
+                }
+            }
+        );
+        setIsRetrying(false);
+    };
+
+    const handleCancelSchedule = async (scheduleId: string) => {
+        setIsCancellingSchedule(scheduleId);
+        const token = await getAuthToken();
+        if (!token) { setIsCancellingSchedule(null); return; }
+
+        setActionLogs((prev: string[]) => [`[SCHEDULE] Cancelling scheduled post: ${scheduleId}...`, ...prev]);
+
+        await withRealFallback(
+            () => fetch(`${API_BASE}/publish/schedule/${scheduleId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            }),
+            {
+                fallback: null,
+                onSuccess: () => {
+                    setScheduledPosts(prev => prev.filter(p => p.id !== scheduleId));
+                    toast.success("Scheduled post cancelled");
+                    setActionLogs((prev: string[]) => [`[SCHEDULE] Post cancelled: ${scheduleId}`, ...prev]);
+                },
+                onFallback: (err) => {
+                    toast.error(`Cancel failed: ${err.message}`);
+                    setActionLogs((prev: string[]) => [`[ERROR] Cancel failed: ${scheduleId}: ${err.message}`, ...prev]);
+                }
+            }
+        );
+        setIsCancellingSchedule(null);
     };
 
     const handleAutoBroadcast = async () => {
@@ -126,7 +192,15 @@ export default function PublishingPage() {
             withRealFallback<any>(
                 () => fetch(`${API_BASE}/publish/jobs`, { headers }),
                 { fallback: [], onSuccess: (data) => setJobs(data) }
-            )
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/publish/scheduled`, { headers }),
+                { fallback: [], onSuccess: (data) => setScheduledPosts(data) }
+            ),
+            withRealFallback<any>(
+                () => fetch(`${API_BASE}/publish/schedule/suggested-times?count=5`, { headers }),
+                { fallback: [], onSuccess: (data) => setSuggestedTimes(data?.suggestions || []) }
+            ),
         ]);
     }, []);
 
@@ -140,6 +214,7 @@ export default function PublishingPage() {
                         { id: "nodes", label: "Egress Nodes", icon: Share2 },
                         { id: "jobs", label: "Egress Jobs", icon: Database },
                         { id: "matrix", label: "Global Matrix", icon: Globe },
+                        { id: "scheduled", label: "Scheduled Posts", icon: Clock },
                         { id: "broadcast", label: "Manual Egress", icon: Radio },
                         { id: "logs", label: "Engine Logs", icon: Terminal },
                     ].map((item) => (
@@ -242,6 +317,15 @@ export default function PublishingPage() {
                                                     <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">Progress</span>
                                                     <span className="text-xl font-bold text-white">{job.progress || 0}%</span>
                                                 </div>
+                                                {(job.status === "FAILED" || job.status === "PENDING_AUTH") && (
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => handleRetryPublish(job.id)}
+                                                        className="border-amber-500/20 hover:bg-amber-500/10 hover:text-amber-400"
+                                                    >
+                                                        <RefreshCw className="h-4 w-4" />
+                                                    </Button>
+                                                )}
                                                 <Button variant="outline" className="border-white/5 hover:bg-rose-500/10 hover:text-rose-500">
                                                     <X className="h-4 w-4" />
                                                 </Button>
@@ -271,6 +355,14 @@ export default function PublishingPage() {
                                         >
                                             <Zap className="h-6 w-6" />
                                             Auto-Inject Pattern
+                                        </Button>
+                                        <hr className="border-white/5" />
+                                        <Button 
+                                            onClick={() => setIsMultiPublishModalOpen(true)}
+                                            className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold h-16 rounded-2xl gap-3 text-lg"
+                                        >
+                                            <Globe className="h-6 w-6" />
+                                            Publish to All Platforms
                                         </Button>
                                     </div>
                                     <p className="text-[10px] text-zinc-600 leading-relaxed font-bold uppercase tracking-widest italic">
@@ -304,6 +396,90 @@ export default function PublishingPage() {
                             </div>
                         )}
 
+                        {activeEngine === "scheduled" && (
+                            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 overflow-y-auto custom-scrollbar flex-1 p-1">
+                                <div className="xl:col-span-2 space-y-6">
+                                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Upcoming Posts</h4>
+                                    {scheduledPosts.length === 0 ? (
+                                        <div className="py-24 flex flex-col items-center justify-center space-y-4 opacity-30 grayscale">
+                                            <Clock className="h-16 w-16" />
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.5em]">No scheduled posts</p>
+                                        </div>
+                                    ) : (
+                                        scheduledPosts.map((post) => (
+                                            <div key={post.id} className="p-6 rounded-[32px] bg-[#0F0F11] border border-white/5 flex items-center justify-between group hover:border-blue-500/20 transition-all">
+                                                <div className="flex items-center gap-6">
+                                                    <div className="h-14 w-14 rounded-2xl bg-cyan-500/10 flex items-center justify-center">
+                                                        <Calendar className="h-6 w-6 text-cyan-400" />
+                                                    </div>
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="text-sm font-bold text-white uppercase tracking-tight">{post.platform}</span>
+                                                        <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
+                                                            {new Date(post.scheduled_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                            {post.engagement_prediction && (
+                                                                <span className="ml-3 text-emerald-500">Predicted: {Math.round(post.engagement_prediction * 100)}%</span>
+                                                            )}
+                                                        </span>
+                                                        <span className="text-[8px] text-zinc-600 font-mono">{post.video_path?.split('/').pop()}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className={cn(
+                                                        "text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full",
+                                                        post.status === "PENDING" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
+                                                        "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                                    )}>
+                                                        {post.status}
+                                                    </span>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => handleCancelSchedule(post.id)}
+                                                        disabled={isCancellingSchedule === post.id}
+                                                        className="h-9 border-rose-500/20 text-rose-400 hover:bg-rose-500/10 text-[10px]"
+                                                    >
+                                                        {isCancellingSchedule === post.id ? (
+                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="h-3 w-3 mr-1" />
+                                                        )}
+                                                        Cancel
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                <div className="xl:col-span-1 space-y-6">
+                                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">AI Suggested Times</h4>
+                                    {suggestedTimes.length === 0 ? (
+                                        <div className="p-6 rounded-[32px] bg-[#0F0F11] border border-white/5 flex flex-col items-center justify-center py-16 opacity-30 grayscale">
+                                            <Calendar className="h-10 w-10 mb-3" />
+                                            <p className="text-[8px] font-bold uppercase tracking-[0.4em]">No suggestions yet</p>
+                                        </div>
+                                    ) : (
+                                        suggestedTimes.map((time: any, i: number) => (
+                                            <div key={i} className="p-6 rounded-[32px] bg-[#0F0F11] border border-white/5 flex items-center gap-4 group hover:border-emerald-500/20 transition-all">
+                                                <div className="h-12 w-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                                                    <Zap className="h-5 w-5 text-emerald-400" />
+                                                </div>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="text-xs font-bold text-white uppercase tracking-tight">
+                                                        {time.day || `Window ${i + 1}`}
+                                                    </span>
+                                                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                                                        {time.time || time.suggested_time || "Optimal window"}
+                                                    </span>
+                                                    {time.score && (
+                                                        <span className="text-[8px] text-emerald-500 font-mono">Score: {Math.round(time.score * 100)}%</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {activeEngine === "matrix" && (
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 overflow-y-auto custom-scrollbar flex-1 p-1">
                                 {history.length === 0 ? (
@@ -313,17 +489,29 @@ export default function PublishingPage() {
                                     </div>
                                 ) : (
                                     history.map((post) => (
-                                        <DesignCard 
-                                            key={post.id}
-                                            title={post.title}
-                                            status={post.platform}
-                                            metrics={[
-                                                { label: "Views", value: post.view_count || 0, progress: 85, color: "text-emerald-400" },
-                                                { label: "Shares", value: post.shares || 0, progress: 60, color: "text-blue-400" }
-                                            ]}
-                                            footerInfo={`Published: ${new Date(post.published_at).toLocaleDateString()}`}
-                                            toolsStatus="Live Feed"
-                                        />
+                                        <div key={post.id} className="relative">
+                                            <DesignCard 
+                                                title={post.title}
+                                                status={post.platform}
+                                                metrics={[
+                                                    { label: "Views", value: post.view_count || 0, progress: 85, color: "text-emerald-400" },
+                                                    { label: "Shares", value: post.shares || 0, progress: 60, color: "text-blue-400" }
+                                                ]}
+                                                footerInfo={`Published: ${new Date(post.published_at).toLocaleDateString()}`}
+                                                toolsStatus="Live Feed"
+                                            />
+                                            {post.status === "PENDING_AUTH" && (
+                                                <div className="absolute top-4 right-4 flex gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => handleRetryPublish(post.id)}
+                                                        className="h-8 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 text-[8px]"
+                                                    >
+                                                        <RefreshCw className="h-3 w-3 mr-1" /> Retry
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
                                     ))
                                 )}
                             </div>
@@ -364,6 +552,12 @@ export default function PublishingPage() {
                 onClose={() => setIsDeployModalOpen(false)}
                 accounts={accounts}
                 onSuccess={fetchData}
+            />
+
+            <MultiPublishModal 
+                isOpen={isMultiPublishModalOpen}
+                onClose={() => setIsMultiPublishModalOpen(false)}
+                onSuccess={() => { fetchData(); toast.success("Multi-platform publish initiated"); }}
             />
 
             <ConfirmModal 

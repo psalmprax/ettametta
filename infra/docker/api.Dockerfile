@@ -27,6 +27,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrandr2 \
     libgbm1 \
     libasound2t64 \
+    libnspr4 \
+    libnss3 \
     unzip \
     && rm -rf /var/lib/apt/lists/* && \
     curl -fsSL https://deno.land/install.sh | sh

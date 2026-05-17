@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import dynamic from "next/dynamic";
-import { 
+import {
     Search, 
     Activity, 
     Zap, 
@@ -18,7 +18,12 @@ import {
     Target,
     Radar,
     Loader2,
-    Terminal
+    Terminal,
+    Brain,
+    Film,
+    CheckCircle2,
+    Clock,
+    XCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, copyToClipboard } from "@/lib/utils";
@@ -59,6 +64,130 @@ function DiscoveryContent() {
     const [actionLogs, setActionLogs] = useState<string[]>([]);
     const [alerts, setAlerts] = useState<any[]>([]);
     const [intelData, setIntelData] = useState<any>(null);
+    const [analysisTasks, setAnalysisTasks] = useState<Record<string, { task_id: string; status: string; result?: any; niche: string }>>({});
+    const pollingRefs = useRef<Record<string, NodeJS.Timeout>>({});
+
+    const handleAnalyze = async (candidate: ContentCandidate) => {
+        const token = await getAuthToken();
+        if (!token) return;
+        
+        setActionLogs((prev: string[]) => [`[ANALYSIS] Initiating deep analysis: ${candidate.title.slice(0, 30)}...`, ...prev]);
+        
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/discovery/analyze`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    url: `https://ettametta.ai/discovery/${candidate.id}`,
+                    niche: activeNiche,
+                })
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    const taskId = data?.task_id;
+                    if (taskId) {
+                        setAnalysisTasks(prev => ({ ...prev, [candidate.id]: { task_id: taskId, status: "QUEUED", niche: activeNiche } }));
+                        setActionLogs((prev: string[]) => [`[ANALYSIS] Task ${taskId} queued. Polling for results...`, ...prev]);
+                        toast.success(`Analysis queued for ${candidate.title.slice(0, 20)}...`);
+                        
+                        // Start polling
+                        pollAnalysisTask(candidate.id, taskId);
+                    }
+                },
+                onFallback: (err) => {
+                    setActionLogs((prev: string[]) => [`[ANALYSIS] Failed: ${err.message}`, ...prev]);
+                    toast.error(`Analysis failed: ${err.message}`);
+                }
+            }
+        );
+    };
+
+    const pollAnalysisTask = async (candidateId: string, taskId: string) => {
+        const token = await getAuthToken();
+        if (!token) return;
+        
+        const poll = async () => {
+            try {
+                const response = await fetch(`${API_BASE}/discovery/analyze/${taskId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const status = data?.data?.status || data?.status;
+                    
+                    if (status === "COMPLETED") {
+                        setAnalysisTasks(prev => ({ ...prev, [candidateId]: { ...prev[candidateId], status: "COMPLETED", result: data?.data?.result || data?.result } }));
+                        setActionLogs((prev: string[]) => [`[ANALYSIS] ✅ Analysis complete for task ${taskId}`, ...prev]);
+                        toast.success("AI Deconstruction complete!");
+                        if (pollingRefs.current[candidateId]) {
+                            clearInterval(pollingRefs.current[candidateId]);
+                            delete pollingRefs.current[candidateId];
+                        }
+                    } else if (status === "FAILED") {
+                        setAnalysisTasks(prev => ({ ...prev, [candidateId]: { ...prev[candidateId], status: "FAILED" } }));
+                        setActionLogs((prev: string[]) => [`[ANALYSIS] ❌ Analysis failed for task ${taskId}`, ...prev]);
+                        toast.error("Analysis failed");
+                        if (pollingRefs.current[candidateId]) {
+                            clearInterval(pollingRefs.current[candidateId]);
+                            delete pollingRefs.current[candidateId];
+                        }
+                    } else {
+                        // Still pending - update status
+                        setAnalysisTasks(prev => ({ ...prev, [candidateId]: { ...prev[candidateId], status: status || "PENDING" } }));
+                    }
+                }
+            } catch (error) {
+                console.error("Polling error:", error);
+            }
+        };
+        
+        // Poll every 3 seconds
+        pollingRefs.current[candidateId] = setInterval(poll, 3000);
+        // Initial poll
+        await poll();
+    };
+
+    const handleCreateFromAnalysis = async (taskId: string, candidateId: string, niche: string) => {
+        const token = await getAuthToken();
+        if (!token) return;
+        
+        setActionLogs((prev: string[]) => [`[CREATE] Creating video from analysis task ${taskId}...`, ...prev]);
+        
+        await withRealFallback<any>(
+            () => fetch(`${API_BASE}/discovery/analyze/${taskId}/create-video`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    task_id: taskId,
+                    niche: niche,
+                    platform: "YouTube Shorts",
+                })
+            }),
+            {
+                fallback: null,
+                onSuccess: (data) => {
+                    const videoTaskId = data?.data?.task_id || data?.task_id;
+                    setActionLogs((prev: string[]) => [`[CREATE] ✅ Video transformation started. Task: ${videoTaskId}`, ...prev]);
+                    toast.success("Video creation started!");
+                    // Navigate to creation page to track progress
+                    router.push(`/creation?job=${videoTaskId}`);
+                },
+                onFallback: (err) => {
+                    setActionLogs((prev: string[]) => [`[CREATE] Failed: ${err.message}`, ...prev]);
+                    toast.error(`Video creation failed: ${err.message}`);
+                }
+            }
+        );
+    };
+
+    // Cleanup polling on unmount
+    useEffect(() => {
+        return () => {
+            Object.values(pollingRefs.current).forEach(clearInterval);
+        };
+    }, []);
 
     useEffect(() => {
         const engine = searchParams.get("engine");
@@ -273,6 +402,39 @@ function DiscoveryContent() {
                                     </Button>
                                 </div>
 
+                                {/* Analysis status bar */}
+                                {Object.keys(analysisTasks).length > 0 && (
+                                    <div className="shrink-0 rounded-2xl bg-[#0F0F11]/60 border border-white/5 p-4 space-y-2">
+                                        <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Active Analysis Tasks</span>
+                                        {Object.entries(analysisTasks).map(([id, task]) => (
+                                            <div key={id} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 text-[10px]">
+                                                <span className="text-zinc-300 font-mono truncate flex-1">{id}</span>
+                                                <div className="flex items-center gap-3">
+                                                    <span className={cn("px-2 py-0.5 rounded text-[8px] font-bold uppercase",
+                                                        task.status === "COMPLETED" ? "bg-emerald-500/20 text-emerald-400" :
+                                                        task.status === "FAILED" ? "bg-rose-500/20 text-rose-400" :
+                                                        "bg-amber-500/20 text-amber-400"
+                                                    )}>{task.status}</span>
+                                                    {task.status === "COMPLETED" && (
+                                                        <button
+                                                            onClick={() => handleCreateFromAnalysis(task.task_id, id, task.niche)}
+                                                            className="px-3 py-1.5 bg-violet-500 hover:bg-violet-400 text-black font-bold text-[8px] uppercase rounded-lg tracking-widest"
+                                                        >
+                                                            Create Video
+                                                        </button>
+                                                    )}
+                                                    {task.status === "FAILED" && (
+                                                        <XCircle className="h-3.5 w-3.5 text-rose-500" />
+                                                    )}
+                                                    {(task.status === "PENDING" || task.status === "QUEUED") && (
+                                                        <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
                                 <div className="flex items-center gap-2 overflow-x-auto pb-2 shrink-0">
                                     {[
                                         { id: "US", label: "USA", flag: "🇺🇸" },
@@ -318,8 +480,7 @@ function DiscoveryContent() {
                                             toolsStatus="Live"
                                             credits={pulse?.credits || 0}
                                             onRefresh={() => {
-                                                fetchTrends();
-                                                toast.info(`Scanning: ${c.title}`);
+                                                handleAnalyze(c);
                                             }}
                                             onDelete={() => {
                                                 setCandidates(prev => prev.filter(cand => cand.id !== c.id));

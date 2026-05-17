@@ -79,3 +79,21 @@ event_bus_dlq_total = Counter(
     "Messages sent to the Dead Letter Queue after max retries",
     ["stream"],
 )
+
+# ─── Remotion Rendering Engine ─────────────────────────────────────
+remotion_render_duration = Histogram(
+    "ettametta_remotion_render_duration_seconds",
+    "Time taken for a video render job",
+    ["composition_id"],
+    buckets=[1.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0],
+)
+remotion_renders = Counter(
+    "ettametta_remotion_renders_total",
+    "Total video render attempts by status and composition",
+    ["composition_id", "status"],  # status: "success", "transient_failure", "fatal_failure", "cancelled"
+)
+remotion_circuit_breaker_state = Gauge(
+    "ettametta_remotion_circuit_breaker_state",
+    "Current state of the Remotion circuit breaker (0=Closed, 1=Half-Open, 2=Open)",
+)
+
