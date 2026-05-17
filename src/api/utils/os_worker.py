@@ -12,7 +12,7 @@ def check_whisper_available():
     global _whisper_available
     if _whisper_available is None:
         try:
-            from faster_whisper import WhisperModel
+            from faster_whisper import WhisperModel  # type: ignore
             _whisper_available = True
         except ImportError:
             _whisper_available = False
@@ -50,21 +50,25 @@ class AIWorker:
             return []
 
         if not self.whisper_model:
-            from faster_whisper import WhisperModel
+            from faster_whisper import WhisperModel  # type: ignore
             logger.info(f"[OS-Worker] Loading Whisper ({self.whisper_model_size})...")
             try:
                 # Add a timeout/safety for model loading on weak CPUs
-                self.whisper_model = WhisperModel(self.whisper_model_size, device="cpu", compute_type="int8")
-            except Exception as e:
-                logger.error(f"[OS-Worker] Failed to load Whisper model: {e}")
+                self.whisper_model = await asyncio.to_thread(
+                    WhisperModel, self.whisper_model_size, device="cpu", compute_type="int8"
+                )
+            except Exception:
+                logger.exception("[OS-Worker] Failed to load Whisper model")
                 return []
             
-        segments, info = self.whisper_model.transcribe(audio_path, beam_size=5)
-        
-        words = []
-        for segment in segments:
-            words.append({"text": segment.text, "start": segment.start, "end": segment.end})
-        return words
+        def _run_transcribe():
+            segments, _ = self.whisper_model.transcribe(audio_path, beam_size=5)
+            words = []
+            for segment in segments:
+                words.append({"text": segment.text, "start": segment.start, "end": segment.end})
+            return words
+
+        return await asyncio.to_thread(_run_transcribe)
 
     async def analyze_viral_pattern(self, prompt: str):
         """Analyze content using Groq's high-speed Llama-3."""
