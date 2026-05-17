@@ -383,9 +383,13 @@ class NexusOrchestrator:
             if len(voiceover_paths) > 1:
                 self.logger.info(f"[Nexus] Stitching {len(voiceover_paths)} voiceovers...")
                 list_path = f"temp/voice/list_{job_id}.txt"
-                with open(list_path, "w") as f:
-                    for vp in voiceover_paths:
-                        f.write(f"file '{os.path.abspath(vp)}'\n")
+                
+                def write_voiceover_list():
+                    with open(list_path, "w") as f:
+                        for vp in voiceover_paths:
+                            f.write(f"file '{os.path.abspath(vp)}'\n")
+                
+                await asyncio.to_thread(write_voiceover_list)
                 
                 await asyncio.to_thread(subprocess.run, ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_path, "-c", "copy", master_voiceover], capture_output=True)
                 audio_uri = master_voiceover
