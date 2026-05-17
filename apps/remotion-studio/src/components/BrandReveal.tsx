@@ -1,11 +1,9 @@
 import React from 'react';
 import { 
-    AbsoluteFill, 
     interpolate, 
     spring, 
     useCurrentFrame, 
-    useVideoConfig,
-    staticFile
+    useVideoConfig
 } from 'remotion';
 
 interface BrandRevealProps {
@@ -22,7 +20,7 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();
 
-    const [imageError, setImageError] = React.useState(false);
+
 
     const logoSpring = spring({
         frame,
@@ -43,7 +41,14 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
     const textOpacity = interpolate(textSpring, [0, 1], [0, 1]);
 
     return (
-        <AbsoluteFill style={{
+        <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100%',
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
@@ -103,7 +108,11 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
                     position: 'relative'
                 }}>
                     {logoUrl ? (
-                        <img src={logoUrl} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        <img 
+                            src={logoUrl} 
+                            alt={`${brandName} Logo`}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                        />
                     ) : (
                         <div style={{
                             width: '100%',
@@ -156,6 +165,6 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
                     </p>
                 </div>
             </div>
-        </AbsoluteFill>
+        </div>
     );
 };

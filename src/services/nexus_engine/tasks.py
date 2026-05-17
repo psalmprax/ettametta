@@ -23,18 +23,18 @@ def create_cinema_video_task(
     """
     Celery task wrapper for AutoCreator.create_cinema_video.
     """
+    _ = user_id
     logger.info(f"[Nexus Task] Starting cinema video generation for job {job_id}")
     try:
         result = run_async(base_creator_service.create_cinema_video(
             job_id=job_id,
             topic=topic,
             niche=niche,
-            user_id=user_id,
             style=style,
             duration_seconds=duration_seconds
         ))
         logger.info(f"[Nexus Task] Completed job {job_id}. Output: {result}")
         return {"status": "success", "output_path": result}
     except Exception as e:
-        logger.error(f"[Nexus Task] Job {job_id} FAILED: {e}")
+        logger.exception(f"[Nexus Task] Job {job_id} FAILED")
         return {"status": "error", "error": str(e)}

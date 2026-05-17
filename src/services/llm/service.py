@@ -19,6 +19,8 @@ from src.api.utils.resilience import CircuitBreaker
 
 logger = logging.getLogger(__name__)
 
+CONTENT_TYPE_JSON = "application/json"
+
 
 class LLMProvider(str, Enum):
     GROQ = "groq"
@@ -252,7 +254,7 @@ class UnifiedLLMService:
         headers = {
             "x-api-key": api_key,
             "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
+            "content-type": CONTENT_TYPE_JSON,
         }
         payload = {
             "model": model,
@@ -296,6 +298,7 @@ class UnifiedLLMService:
 
     async def analyze_image(self, image_path, prompt, provider=LLMProvider.GEMINI, model=None):
         import base64
+        import aiofiles
         from pathlib import Path
         if not self.is_available(provider):
             return {"error": "Provider not available"}
@@ -310,8 +313,9 @@ class UnifiedLLMService:
                     image_data = base64.b64encode(resp.content).decode("utf-8")
                     mime_type = resp.headers.get("Content-Type", "image/jpeg")
             else:
-                with open(image_path, "rb") as f:
-                    image_data = base64.b64encode(f.read()).decode("utf-8")
+                async with aiofiles.open(image_path, "rb") as f:
+                    file_content = await f.read()
+                    image_data = base64.b64encode(file_content).decode("utf-8")
                 mime_type = f"image/{Path(image_path).suffix.lstrip('.')}".replace("jpg", "jpeg")
         except Exception as e:
             return {"error": f"Image load failed: {e}"}
@@ -333,7 +337,7 @@ class UnifiedLLMService:
             url = "https://api.openai.com/v1/chat/completions"
             headers = {
                 "Authorization": f"Bearer {self._api_keys[provider]}",
-                "Content-Type": "application/json"
+                "Content-Type": CONTENT_TYPE_JSON
             }
             payload = {
                 "model": model,
@@ -360,7 +364,7 @@ class UnifiedLLMService:
                 base_url = f"{base_url}/v1"
             url = f"{base_url}/chat/completions"
             
-            headers = {"Content-Type": "application/json"}
+            headers = {"Content-Type": CONTENT_TYPE_JSON}
             payload = {
                 "model": model or "llama3.2-vision",
                 "messages": [

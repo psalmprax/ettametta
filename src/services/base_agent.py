@@ -278,95 +278,13 @@ class BaseEttamettaAgent:
                     "ollama",
                     "ollama_cloud",
                 ]:
-                    # map common model names to provider-specific ones
-                    actual_model = target_model
-                    if provider == "groq":
-                        actual_model = "llama-3.3-70b-versatile"
-                    elif provider == "ollama":
-                        actual_model = getattr(settings, "OLLAMA_MODEL", "llama3")
-                    elif provider == "ollama_cloud":
-                        actual_model = getattr(
-                            settings, "OLLAMA_CLOUD_MODEL", "qwen2.5:72b"
-                        )
-                    elif provider == "cerebras":
-                        actual_model = "llama3.1-70b"
-                    elif provider == "openai" and "llama" in target_model.lower():
-                        actual_model = (
-                            "gpt-4o"  # Fallback for OpenAI if llama requested
-                        )
-
-                    messages = []
-                    if system_prompt:
-                        messages.append({"role": "system", "content": system_prompt})
-                    messages.append({"role": "user", "content": prompt})
-
-                    kwargs = {"model": actual_model, "messages": messages}
-                    if response_format == "json_object":
-                        kwargs["response_format"] = {"type": "json_object"}
-
-                    # Use async client if available
-                    async_client = self.clients.get(f"{provider}_async")
-                    client = self.clients.get(provider)
-                    # Use direct httpx for local proxy to avoid library deadlocks/formatting issues
-                    import httpx
-                    from types import SimpleNamespace
-                    
-                    # Determine the target endpoint
-                    target_url = f"{self.clients[provider].base_url}/chat/completions"
-                    
-                    try:
-                        async with httpx.AsyncClient() as h_client:
-                            h_resp = await h_client.post(
-                                target_url,
-                                json=kwargs,
-                                timeout=600.0
-                            )
-                            
-                            if h_resp.status_code != 200:
-                                logger.error(f"❌ [{self.agent_name}] Proxy error {h_resp.status_code}: {h_resp.text}")
-                                raise ValueError(f"Proxy returned {h_resp.status_code}")
-                            
-                            raw_data = h_resp.json()
-                            resp = SimpleNamespace(
-                                choices=[
-                                    SimpleNamespace(
-                                        message=SimpleNamespace(
-                                            content=raw_data['choices'][0]['message']['content']
-                                        )
-                                    )
-                                ]
-                            )
-                    except Exception as call_err:
-                        logger.error(f"❌ [{self.agent_name}] {provider} call failed: {call_err}")
-                        raise call_err
-
-                    return resp.choices[0].message.content
-
-                elif provider == "gemini":
-                    # Google Gemini interface
-                    resp = await client.generate_content_async(
-                        f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+                    return await self._execute_openai_compatible(
+                        provider, target_model, prompt, system_prompt, response_format
                     )
-                    return resp.text
-
+                elif provider == "gemini":
+                    return await self._execute_gemini(client, prompt, system_prompt)
                 elif provider == "anthropic":
-                    # Anthropic Claude interface
-                    messages = [{"role": "user", "content": prompt}]
-                    kwargs = {
-                        "model": "claude-3-5-sonnet-20240620",
-                        "max_tokens": 1024,
-                        "messages": messages,
-                    }
-                    if system_prompt:
-                        kwargs["system"] = system_prompt
-
-                    # Use async client if available
-                    async_client = self.clients.get(f"{provider}_async")
-                    if async_client:
-                        resp = await async_client.messages.create(**kwargs)
-                    else:
-                        resp = client.messages.create(**kwargs)
-                    return resp.content[0].text
+                    return await self._execute_anthropic(provider, client, prompt, system_prompt)
             except Exception as e:
                 logger.warning(
                     f"[{self.agent_name}] LLM provider {provider} failed: {e}"
@@ -374,3 +292,94 @@ class BaseEttamettaAgent:
                 continue
 
         return "⚠️ All LLM providers exhausted. Execution failed."
+
+    async def _execute_openai_compatible(
+        self,
+        provider: str,
+        target_model: str,
+        prompt: str,
+        system_prompt: str,
+        response_format: str,
+    ) -> str:
+        # map common model names to provider-specific ones
+        actual_model = target_model
+        if provider == "groq":
+            actual_model = "llama-3.3-70b-versatile"
+        elif provider == "ollama":
+            actual_model = getattr(settings, "OLLAMA_MODEL", "llama3")
+        elif provider == "ollama_cloud":
+            actual_model = getattr(
+                settings, "OLLAMA_CLOUD_MODEL", "qwen2.5:72b"
+            )
+        elif provider == "cerebras":
+            actual_model = "llama3.1-70b"
+        elif provider == "openai" and "llama" in target_model.lower():
+            actual_model = "gpt-4o"  # Fallback for OpenAI if llama requested
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        kwargs = {"model": actual_model, "messages": messages}
+        if response_format == "json_object":
+            kwargs["response_format"] = {"type": "json_object"}
+
+        # Use direct httpx for local proxy to avoid library deadlocks/formatting issues
+        import httpx
+        from types import SimpleNamespace
+        
+        # Determine the target endpoint
+        target_url = f"{self.clients[provider].base_url}/chat/completions"
+        
+        try:
+            async with httpx.AsyncClient() as h_client:
+                h_resp = await h_client.post(
+                    target_url,
+                    json=kwargs,
+                    timeout=600.0
+                )
+                
+                if h_resp.status_code != 200:
+                    logger.error(f"❌ [{self.agent_name}] Proxy error {h_resp.status_code}: {h_resp.text}")
+                    raise ValueError(f"Proxy returned {h_resp.status_code}")
+                
+                raw_data = h_resp.json()
+                resp = SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(
+                                content=raw_data['choices'][0]['message']['content']
+                            )
+                        )
+                    ]
+                )
+        except Exception as call_err:
+            logger.exception(f"❌ [{self.agent_name}] {provider} call failed")
+            raise call_err
+
+        return resp.choices[0].message.content
+
+    async def _execute_gemini(self, client, prompt: str, system_prompt: str) -> str:
+        resp = await client.generate_content_async(
+            f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+        )
+        return resp.text
+
+    async def _execute_anthropic(self, provider: str, client, prompt: str, system_prompt: str) -> str:
+        messages = [{"role": "user", "content": prompt}]
+        kwargs = {
+            "model": "claude-3-5-sonnet-20240620",
+            "max_tokens": 1024,
+            "messages": messages,
+        }
+        if system_prompt:
+            kwargs["system"] = system_prompt
+
+        # Use async client if available
+        async_client = self.clients.get(f"{provider}_async")
+        if async_client:
+            resp = await async_client.messages.create(**kwargs)
+        else:
+            resp = client.messages.create(**kwargs)
+        return resp.content[0].text

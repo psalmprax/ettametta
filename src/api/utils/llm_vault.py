@@ -26,7 +26,7 @@ LLM_API_KEYS = {
 }
 
 
-def get_llm_api_key(provider: str, user_id: str = None) -> str:
+def get_llm_api_key(provider: str, user_id: str | None = None) -> str | None:
     """
     Get LLM API key from vault with priority:
     1. User-specific override (UserSetting)

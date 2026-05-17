@@ -23,12 +23,12 @@ export const KenBurns: React.FC<KenBurnsProps> = ({ children, durationInFrames, 
     const safeDuration = Math.max(1, durationInFrames);
     
     const scale = interpolate(frame, [0, safeDuration], dir.scale, { extrapolateRight: 'clamp' });
-    const translateX = interpolate(frame, [0, safeDuration], dir.x.map(v => `${v}%`), { extrapolateRight: 'clamp' });
-    const translateY = interpolate(frame, [0, safeDuration], dir.y.map(v => `${v}%`), { extrapolateRight: 'clamp' });
+    const translateX = interpolate(frame, [0, safeDuration], dir.x, { extrapolateRight: 'clamp' });
+    const translateY = interpolate(frame, [0, safeDuration], dir.y, { extrapolateRight: 'clamp' });
 
     return (
         <AbsoluteFill style={{
-            transform: `scale(${scale}) translateX(${translateX}) translateY(${translateY})`,
+            transform: `scale(${scale}) translateX(${translateX}%) translateY(${translateY}%)`,
             overflow: 'hidden'
         }}>
             {children}
