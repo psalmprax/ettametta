@@ -7,7 +7,7 @@ when async resources (imported lazily during test execution) hold
 references to the previous test's now-closed event loop.
 """
 import asyncio
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 import pytest
 
 
@@ -47,9 +47,23 @@ def _prevent_redis_connections():
     ``redis.asyncio.Redis`` (async) so that ``from_url`` returns
     a lightweight mock instead of a real client.
     """
+    # Patch both CLASS-level and MODULE-level entry points.
+    # In redis-py, ``redis.asyncio.from_url`` is a module-level name
+    # (``from_url = Redis.from_url``) — a separate name from the class.
+    # Patching ``redis.asyncio.Redis`` alone does NOT intercept calls
+    # to ``redis.asyncio.from_url()``, which would create a real client.
+    #
+    # ``redis.asyncio.from_url`` returns an ``AsyncMock`` so that
+    # async methods called on the returned client (e.g.
+    # ``await client.xgroup_create(...)``) work correctly.
+    # ``AsyncMock`` isawaitable in Python 3.12; ``MagicMock`` is not.
+    async_redis_client = AsyncMock()
+
     patches = [
-        patch("redis.Redis", autospec=True),
-        patch("redis.asyncio.Redis", autospec=True),
+        patch("redis.Redis"),
+        patch("redis.from_url"),
+        patch("redis.asyncio.Redis"),
+        patch("redis.asyncio.from_url", return_value=async_redis_client),
     ]
     for p in patches:
         p.start()

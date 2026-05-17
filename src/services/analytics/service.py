@@ -190,7 +190,7 @@ class AnalyticsService:
     ) -> ContentPerformance:
         """Fetch YouTube analytics data"""
         cache_key = f"analytics:report:{post_id}:{user_id}"
-        token_data = token_manager.get_token("youtube", user_id)
+        token_data = await token_manager.get_token_data("youtube", user_id)
         if not token_data or not settings.GOOGLE_CLIENT_ID:
             pass  # Fall through to DB fallback
         else:

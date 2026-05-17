@@ -103,10 +103,16 @@ class TestResolveMode:
         class EmptySettings:
             pass
 
-        mode = resolve_mode(EmptySettings(), job_override=None)
-        # Falls through to app config, which has AUTOMATION_MODE="partial"
-        assert mode is not None
-        assert mode.value == "partial"
+        mock_settings = MagicMock()
+        mock_settings.AUTOMATION_MODE = "partial"
+
+        with patch("src.api.config.settings", mock_settings):
+            mode = resolve_mode(EmptySettings(), job_override=None)
+            # Falls through to app config, which has AUTOMATION_MODE="partial"
+            assert mode is not None
+            assert mode.value == "partial"
+
+
 
 
 # =============================================================================
