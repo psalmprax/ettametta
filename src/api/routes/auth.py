@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from src.api.utils.database import get_db
@@ -170,24 +171,28 @@ class LoginRequest(BaseModel):
 
 @router.post("/login")
 async def login(
-    form_data: Optional[OAuth2PasswordRequestForm] = Depends(),
-    json_body: Optional[LoginRequest] = None,
+    request: Request,
     db=Depends(get_db),
 ):
-    # Support both form-encoded (OAuth2) and JSON login requests
-    if json_body:
+    # Detect content type and parse accordingly
+    content_type = request.headers.get("content-type", "")
+    
+    if "application/json" in content_type:
         # JSON request from frontend
-        identifier = json_body.username or json_body.email
-        password = json_body.password
-    elif form_data:
-        # Form-encoded request (OAuth2 standard)
-        identifier = form_data.username
-        password = form_data.password
+        try:
+            body = await request.json()
+            identifier = body.get("username") or body.get("email")
+            password = body.get("password")
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid JSON body"
+            )
     else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing login credentials"
-        )
+        # Form-encoded request (OAuth2 standard)
+        form_data = await request.form()
+        identifier = form_data.get("username")
+        password = form_data.get("password")
     
     if not identifier or not password:
         raise HTTPException(
