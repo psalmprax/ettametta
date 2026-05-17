@@ -145,16 +145,6 @@ class NexusOrchestrator:
             async def update_node(
                 node_type: str, status: str, progress: int, error: str | None = None, extra: dict | None = None
             ):
-                # Hardened: State Machine Transition + OTEL Attribute
-                state_map = {
-                    "ingress": JobState.INGRESSING,
-                    "cognition": JobState.COGNITION,
-                    "vision_audit": JobState.COGNITION,
-                    "synthesis": JobState.SYNTHESIZING,
-                    "egress": JobState.PUBLISHING
-                }
-                
-                target_state = state_map.get(node_type, JobState.RENDERING)
                 if status == "FAILED":
                     await base_state_machine.transition_to(job_id, None, JobState.FAILED, {"node": node_type, "error": error})
                 elif status == "ACTIVE":
