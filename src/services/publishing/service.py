@@ -223,6 +223,66 @@ class PublishingService:
         else:
             raise ValueError(f"Unsupported platform: {platform}")
 
+    async def publish_to_multiple(
+        self,
+        user_id: str,
+        platforms: list[str],
+        video_path: str,
+        metadata: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        Publish to multiple platforms in parallel with isolated error handling.
+
+        Each platform is published independently via publish_to_platform. If one
+        platform fails, the others continue unaffected. Results include a summary
+        of published/failed counts and per-platform details.
+
+        Args:
+            user_id: The user's identifier for credential lookup.
+            platforms: List of platform names (e.g., ["youtube", "tiktok"]).
+            video_path: Path to the video file to publish.
+            metadata: Dict with title, description, tags, etc.
+
+        Returns:
+            Dict with keys: published, failed, total, results (per-platform list).
+        """
+        tasks = [
+            self.publish_to_platform(
+                user_id=user_id,
+                platform=p,
+                video_path=video_path,
+                metadata=metadata,
+            )
+            for p in platforms
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        published = 0
+        failed = 0
+        processed: list[dict[str, Any]] = []
+
+        for platform, result in zip(platforms, results):
+            if isinstance(result, Exception):
+                failed += 1
+                processed.append({
+                    "platform": platform,
+                    "status": "failed",
+                    "error": str(result),
+                })
+            else:
+                if result.get("status") in ("failed", "manual_action_required"):
+                    failed += 1
+                else:
+                    published += 1
+                processed.append(result)
+
+        return {
+            "published": published,
+            "failed": failed,
+            "total": len(platforms),
+            "results": processed,
+        }
+
 
 # Singleton instance
 base_publishing_service = PublishingService()

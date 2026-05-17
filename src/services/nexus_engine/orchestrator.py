@@ -300,7 +300,8 @@ class NexusOrchestrator:
 
                         # Use CV2 to extract one frame
                         cap = cv2.VideoCapture(v_path)
-                        frame_idx = count // 2 if count else 0
+                        clip_frames = clip.get("duration_in_frames", 0)
+                        frame_idx = clip_frames // 2 if clip_frames else 0
                         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
                         ret, frame_img = cap.read()
                         cap.release()

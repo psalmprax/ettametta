@@ -26,6 +26,7 @@ class NexusComposeRequest(BaseModel):
     voiceover_paths: list[str] | None = None
     music_path: str | None = None
     script_segments: list[dict] | None = None
+    automation_mode: str = Field("manual", description="Automation level: manual, partial, or full")
     generate_thumbnail: bool = False
     cinema_mode: bool = False
     blueprint_id: str | None = Field("viral-reskin", description="The Nexus blueprint to execute.")

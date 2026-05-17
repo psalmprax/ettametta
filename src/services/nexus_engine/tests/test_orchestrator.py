@@ -6,6 +6,31 @@ import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 
 
+@pytest.fixture(autouse=True)
+def patch_asyncio_to_thread():
+    """
+    Replace asyncio.to_thread with a synchronous executor that runs the
+    function directly in the current event loop.
+
+    This prevents "Event loop is closed" / "different loop" errors caused
+    when threads created by ``asyncio.to_thread`` try to access the
+    test-scoped event loop (e.g., via ``cv2.VideoCapture`` or
+    ``subprocess.run`` callbacks).
+
+    We use ``new=`` (not ``side_effect`` on a MagicMock) because MagicMock
+    doesn't properly support ``await`` — ``await MagicMock()`` returns
+    another MagicMock instead of executing the side_effect.
+    """
+    async def _fake_to_thread(func, *args, **kwargs):
+        return func(*args, **kwargs)
+
+    with patch(
+        "src.services.nexus_engine.orchestrator.asyncio.to_thread",
+        new=_fake_to_thread,
+    ):
+        yield
+
+
 @pytest.fixture
 def mock_notify():
     """Fixture to mock notify_nexus_job_update_sync at its source module."""
