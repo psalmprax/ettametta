@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from typing import Any
 import os
 import logging
@@ -121,6 +122,16 @@ class Settings(BaseSettings):
     # Telegram Configuration
     TELEGRAM_BOT_TOKEN: str | None = None
     TELEGRAM_ADMIN_ID: int = 0
+
+    @field_validator("TELEGRAM_ADMIN_ID", mode="before")
+    @classmethod
+    def parse_admin_id(cls, v: Any) -> int:
+        if isinstance(v, str) and v.strip() == "":
+            return 0
+        try:
+            return int(v) if v else 0
+        except (ValueError, TypeError):
+            return 0
 
     # Shopify Configuration
     SHOPIFY_SHOP_URL: str | None = None
