@@ -46,7 +46,7 @@ export const viralClipSchema = z.object({
     vignette_intensity: z.number().optional(),
     grain_opacity: z.number().optional(),
     style: z.string().optional(),
-    job_metadata: z.record(z.any()).optional()
+    job_metadata: z.record(z.string(), z.any()).optional()
 });
 
 export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({ 
@@ -116,7 +116,7 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
         }}>
             {/* --- FEATURE: Shader-based Color Grading --- */}
             <ColorGrade type={colorGrade} intensity={0.8} />
-            <VFXShader type={job_metadata?.vfx || 'default'} />
+            <VFXShader type={(job_metadata?.vfx as string) || 'default'} />
 
             {!isReddit && !isNews && (
                 <CinematicOverlay 
@@ -159,7 +159,7 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
                         );
                     }
                     return acc;
-                }, { elements: [] as JSX.Element[], totalFrames: 0 }).elements
+                }, { elements: [] as React.JSX.Element[], totalFrames: 0 }).elements
             ) : resolvedVideoUrl ? (
                 <Video src={resolvedVideoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : null}
@@ -168,15 +168,18 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
             {resolvedAudioUrl && <Audio src={resolvedAudioUrl} />}
 
             {/* --- FEATURE: Automated SFX Sync --- */}
-            {resolvedClips?.map((_, index) => {
-                const startFrame = resolvedClips.slice(0, index).reduce((acc, c) => acc + c.duration_in_frames, 0);
-                return (
-                    <React.Fragment key={`sfx-${index}`}>
-                        {index > 0 && <Sequence from={startFrame - 5} durationInFrames={15}><Audio src={staticFile('sfx/whoosh.mp3')} volume={0.4} /></Sequence>}
-                        {isListicle && <Sequence from={startFrame} durationInFrames={20}><Audio src={staticFile('sfx/impact.mp3')} volume={0.3} /></Sequence>}
-                    </React.Fragment>
-                );
-            })}
+            {(() => {
+                const clips = resolvedClips || [];
+                return clips.map((_, index) => {
+                    const startFrame = clips.slice(0, index).reduce((acc, c) => acc + c.duration_in_frames, 0);
+                    return (
+                        <React.Fragment key={`sfx-${index}`}>
+                            {index > 0 && <Sequence from={startFrame - 5} durationInFrames={15}><Audio src={staticFile('sfx/whoosh.mp3')} volume={0.4} /></Sequence>}
+                            {isListicle && <Sequence from={startFrame} durationInFrames={20}><Audio src={staticFile('sfx/impact.mp3')} volume={0.3} /></Sequence>}
+                        </React.Fragment>
+                    );
+                });
+            })()}
 
             {/* --- FEATURE: Chapter & Progress Overlays --- */}
             {!isReddit && <ProgressTracker primaryColor={primary_color} />}
@@ -198,7 +201,7 @@ export const ViralClip: React.FC<z.infer<typeof viralClipSchema>> = ({
             {/* Style-Specific Components */}
             {isReddit && job_metadata?.reddit_data && (
                 <Sequence from={0} durationInFrames={fps * 3}>
-                    <RedditHook {...job_metadata.reddit_data} />
+                    <RedditHook {...(job_metadata.reddit_data as any)} />
                 </Sequence>
             )}
 

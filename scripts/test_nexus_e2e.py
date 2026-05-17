@@ -191,9 +191,7 @@ async def main():
             print(f"RESULT: FAILED | JOB_ID: {job_id}")
             
     except Exception as e:
-        logger.error(f"💥 CRITICAL ERROR during E2E test: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
+        logger.exception("💥 CRITICAL ERROR during E2E test")
         print(f"RESULT: CRASHED | ERROR: {str(e)}")
 
 if __name__ == "__main__":

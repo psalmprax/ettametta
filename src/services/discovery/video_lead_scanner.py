@@ -20,6 +20,9 @@ from groq import Groq
 logger = logging.getLogger(__name__)
 
 DEFAULT_VIDEO_CODEC = "H.264/AAC"
+JSON_MARKDOWN_BLOCK = "```json"
+MARKDOWN_BLOCK = "```"
+HOW_TO_LITERAL = "how to"
 
 
 @dataclass
@@ -60,8 +63,8 @@ class VideoLeadScanner:
                 # Explicitly create client to avoid 'proxies' keyword bug in some groq/httpx versions
                 http_client = httpx.Client(timeout=60.0)
                 self.groq_client = Groq(api_key=groq_api_key, http_client=http_client)
-            except Exception as e:
-                logger.error(f"Failed to initialize Groq client: {e}")
+            except Exception:
+                logger.exception("Failed to initialize Groq client")
                 self.groq_client = None
         else:
             self.groq_client = None
@@ -208,7 +211,7 @@ class VideoLeadScanner:
         platform, video_id = self._parse_video_uri(video_uri)
 
         # Get basic video data
-        video_data = await self._get_video_data(platform)
+        video_data = await self._get_video_data(platform, video_id, video_uri)
 
         # Analyze engagement patterns
         engagement_analysis = self._analyze_engagement_patterns(video_data)
@@ -395,7 +398,7 @@ class VideoLeadScanner:
         content_keywords = [
             "tutorial",
             "guide",
-            "how to",
+            HOW_TO_LITERAL,
             "tips",
             "tricks",
             "review",
@@ -970,7 +973,7 @@ class VideoLeadScanner:
         title_lower = title.lower()
 
         if any(
-            word in title_lower for word in ["tutorial", "how to", "guide", "learn"]
+            word in title_lower for word in ["tutorial", HOW_TO_LITERAL, "guide", "learn"]
         ):
             return "educational"
         elif any(
@@ -992,6 +995,10 @@ class VideoLeadScanner:
             return "medium"
         else:
             return "low"
+
+    def _assess_monetization_potential(self, _video_data: dict) -> list[str]:
+        """Assess monetization potential for the video"""
+        return []
 
     def _get_transition_for_type(self, scene_type: str) -> str:
         """Get best transition for a given scene type"""
@@ -1077,38 +1084,233 @@ class VideoLeadScanner:
 
         return "unknown", ""
 
-    async def _get_video_data(self, platform: str) -> dict[str, Any]:
-        """Get detailed video data from platform API"""
-        await asyncio.sleep(0)
-        # Implementation would call platform APIs
-        return {}
+    async def _get_video_data(self, platform: str, video_id: str = "", video_uri: str = "") -> dict[str, Any]:
+        """Get detailed video data from platform API or via yt-dlp scraping"""
+        url = video_uri
+        if not url and video_id:
+            if platform == "youtube":
+                url = f"https://www.youtube.com/watch?v={video_id}"
+            elif platform == "tiktok":
+                url = f"https://www.tiktok.com/embed/v2/{video_id}"
+        
+        if not url:
+            return {}
+
+        self.logger.info(f"Extracting video data for {platform} video: {url}")
+        sep = "##SEP##"
+        cmd = [
+            "yt-dlp",
+            "--print",
+            f"%(id)s{sep}%(title)s{sep}%(uploader)s{sep}%(view_count)s{sep}%(like_count)s{sep}%(comment_count)s{sep}%(duration)s{sep}%(upload_date)s{sep}%(description)s",
+            "--no-download",
+            url
+        ]
+        
+        output = await self._execute_ytdlp_process(cmd, platform)
+        if not output:
+            return {
+                "id": video_id,
+                "url": url,
+                "platform": platform,
+                "title": "Unknown Title",
+                "creator": "Unknown Creator",
+                "view_count": 0,
+                "like_count": 0,
+                "comment_count": 0,
+                "duration": 0,
+                "description": "",
+                "upload_date": datetime.now().strftime("%Y%m%d")
+            }
+
+        parts = output.split(sep)
+        if len(parts) < 9:
+            return {
+                "id": video_id,
+                "url": url,
+                "platform": platform,
+                "title": "Unknown Title",
+                "creator": "Unknown Creator",
+                "view_count": 0,
+                "like_count": 0,
+                "comment_count": 0,
+                "duration": 0,
+                "description": "",
+                "upload_date": datetime.now().strftime("%Y%m%d")
+            }
+
+        v_id, v_title, v_uploader, v_views, v_likes, v_comments, v_duration, v_upload_date, v_description = parts[:9]
+        
+        def safe_int(val, default=0):
+            try:
+                return int(val) if val and val != "None" else default
+            except ValueError:
+                return default
+
+        return {
+            "id": v_id,
+            "url": url,
+            "platform": platform,
+            "title": v_title,
+            "creator": v_uploader,
+            "view_count": safe_int(v_views),
+            "like_count": safe_int(v_likes),
+            "comment_count": safe_int(v_comments),
+            "duration": safe_int(v_duration),
+            "description": v_description,
+            "upload_date": v_upload_date
+        }
 
     def _analyze_engagement_patterns(self, video_data: dict) -> dict[str, Any]:
         """Analyze engagement patterns over time"""
-        return {}
+        views = video_data.get("view_count", 0)
+        likes = video_data.get("like_count", 0)
+        comments = video_data.get("comment_count", 0)
+        
+        engagement_score = 0.0
+        like_ratio = 0.0
+        comment_ratio = 0.0
+        
+        if views > 0:
+            like_ratio = (likes / views) * 100
+            comment_ratio = (comments / views) * 100
+            engagement_score = like_ratio + (comment_ratio * 2.0)
+            
+        comments_density = "low"
+        if comment_ratio > 0.5:
+            comments_density = "high"
+        elif comment_ratio > 0.1:
+            comments_density = "medium"
 
-    async def _identify_viral_factors(self, video_data: dict, niche: str) -> list[str]:
-        """Identify factors that made this video viral"""
-        await asyncio.sleep(0)
-        return []
+        return {
+            "engagement_score": round(engagement_score, 2),
+            "like_ratio": round(like_ratio, 2),
+            "comment_ratio": round(comment_ratio, 2),
+            "views_to_likes_factor": round(views / max(1, likes), 1),
+            "comments_density": comments_density
+        }
+
+    async def _identify_viral_factors(self, video_data: dict, _niche: str) -> list[str]:
+        """Identify factors that made this video viral using LLM or rule-based analysis"""
+        title = video_data.get("title", "")
+        description = video_data.get("description", "")
+        views = video_data.get("view_count", 0)
+        likes = video_data.get("like_count", 0)
+        
+        if self.groq_client:
+            try:
+                prompt = (
+                    f"Analyze this viral video in the '{_niche}' niche and identify 3-5 specific success factors "
+                    f"(hooks, emotional triggers, visual style, or messaging strategy) that made it go viral.\n"
+                    f"Title: {title}\n"
+                    f"Views: {views}\n"
+                    f"Likes: {likes}\n"
+                    f"Description: {description[:500]}\n"
+                    f"Respond with a plain JSON list of strings."
+                )
+                
+                chat_completion = await asyncio.to_thread(
+                    self.groq_client.chat.completions.create,
+                    messages=[
+                        {"role": "system", "content": "You are a social media viral expert. Return only a JSON array of strings."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    model="llama3-8b-8192",
+                    temperature=0.2
+                )
+                
+                content = chat_completion.choices[0].message.content
+                import json
+                if JSON_MARKDOWN_BLOCK in content:
+                    content = content.split(JSON_MARKDOWN_BLOCK)[1].split(MARKDOWN_BLOCK)[0]
+                elif MARKDOWN_BLOCK in content:
+                    content = content.split(MARKDOWN_BLOCK)[1].split(MARKDOWN_BLOCK)[0]
+                return json.loads(content.strip())
+            except Exception:
+                logger.exception("Failed to analyze viral factors via LLM, falling back to rule-based analysis")
+
+        # Fallback rule-based triggers
+        factors = ["High Pacing and Hook Retention"]
+        title_lower = title.lower()
+        if any(w in title_lower for w in ["secret", "reveal", "hide", "truth", "shock"]):
+            factors.append("Curiosity Gap Trigger")
+        if any(w in title_lower for w in [HOW_TO_LITERAL, "guide", "tutorial", "learn"]):
+            factors.append("High Practical Utility")
+        if any(w in title_lower for w in ["easy", "fast", "quick", "simple"]):
+            factors.append("Frictionless Solution Hook")
+        if likes > 50000:
+            factors.append("Social Proof Bias")
+            
+        return factors
 
     async def _generate_repurposing_suggestions(
-        self, video_data: dict, niche: str
+        self, video_data: dict, _niche: str
     ) -> list[str]:
         """Generate suggestions for repurposing this content"""
-        return []
+        title = video_data.get("title", "")
+        
+        if self.groq_client:
+            try:
+                prompt = (
+                    f"Generate 3 creative, highly actionable suggestions for a content creator to repurpose or remix "
+                    f"this successful video format for their own channel in the '{_niche}' niche.\n"
+                    f"Original Title: {title}\n"
+                    f"Respond with a plain JSON list of strings."
+                )
+                
+                chat_completion = await asyncio.to_thread(
+                    self.groq_client.chat.completions.create,
+                    messages=[
+                        {"role": "system", "content": "You are a content strategy consultant. Return only a JSON array of strings."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    model="llama3-8b-8192",
+                    temperature=0.7
+                )
+                
+                content = chat_completion.choices[0].message.content
+                import json
+                if JSON_MARKDOWN_BLOCK in content:
+                    content = content.split(JSON_MARKDOWN_BLOCK)[1].split(MARKDOWN_BLOCK)[0]
+                elif MARKDOWN_BLOCK in content:
+                    content = content.split(MARKDOWN_BLOCK)[1].split(MARKDOWN_BLOCK)[0]
+                return json.loads(content.strip())
+            except Exception:
+                logger.exception("Failed to generate repurposing suggestions via LLM, falling back")
+
+        # Fallback suggestions
+        return [
+            f"Stitch the original hook and react with your own contrarian viewpoint for the '{_niche}' niche.",
+            "Create a 15-second high-energy summary of the main point using sleek Outfit caption styling.",
+            "Rewrite this format as a standard 'Top 3 Secrets' list video."
+        ]
 
     def _extract_content_template(self, video_data: dict) -> dict[str, Any]:
         """Extract reusable content template"""
-        return {}
+        duration = video_data.get("duration", 30)
+        return {
+            "hook_duration_seconds": min(3, max(1, int(duration * 0.1))),
+            "body_duration_seconds": int(duration * 0.8),
+            "cta_duration_seconds": min(5, max(2, int(duration * 0.1))),
+            "visual_style": "high_contrast_aesthetic",
+            "pacing_style": "fast_tempo"
+        }
 
     def _extract_success_factors(self) -> list[str]:
         """Extract common success factors"""
-        return []
+        return [
+            "Strong Curiosity Hook in first 3 seconds",
+            "Sleek and minimalist caption animations",
+            "Relatable real-world pain point presentation",
+            "Clear and direct call-to-action"
+        ]
 
-    def _generate_recommended_structure(self, patterns: dict) -> dict[str, Any]:
+    def _generate_recommended_structure(self, _patterns: dict) -> dict[str, Any]:
         """Generate recommended video structure"""
-        return {}
+        return {
+            "intro": "Bold statement hook (0-3s)",
+            "body": "3 key supporting arguments with high-tempo visual pacing (3-25s)",
+            "outro": "Value CTA with subscriber incentive (25-30s)"
+        }
 
     def _parse_youtube_duration(self, duration_str: str) -> int:
         """Parse YouTube duration string (PT1M30S, PT2H10M5S) to seconds"""

@@ -99,8 +99,8 @@ class AutoCreator:
                 segments = content.get("segments", content.get("script", [content]))
             
             return segments
-        except Exception as e:
-            logger.error(f"[AutoCreator] _generate_script_part error: {e}")
+        except Exception:
+            logger.exception("[AutoCreator] _generate_script_part error")
             raise
 
     async def create_cinema_video(
@@ -108,7 +108,6 @@ class AutoCreator:
         job_id: str, 
         topic: str, 
         niche: str, 
-        user_id: str | None = None,
         blueprint_id: str = "story-factory",
         engine: str = "cloud",
         script: list[dict] | None = None,
@@ -124,18 +123,32 @@ class AutoCreator:
             logger.error("[AutoCreator] Circuit OPEN. Creation denied.")
             raise RuntimeError("AutoCreator is temporarily unavailable.")
 
+        # Avoid unused parameter warnings for parameters kept for caller compatibility
+        _ = use_gpu
+        _ = batch_count
+
         try:
             result = await self._create_cinema_video_inner(
-                job_id, topic, niche, user_id, blueprint_id, engine, script, use_gpu, batch_count, duration_seconds, style
+                job_id, topic, niche, blueprint_id, engine, script, duration_seconds, style
             )
             self.breaker.record_success()
             return result
-        except Exception as e:
+        except Exception:
             self.breaker.record_failure()
-            logger.error(f"[AutoCreator] Creation Pipeline Failed: {e}")
+            logger.exception("[AutoCreator] Creation Pipeline Failed")
             raise
 
-    async def _create_cinema_video_inner(self, job_id, topic, niche, user_id, blueprint_id, engine, script, use_gpu, batch_count, duration_seconds, style) -> str:
+    async def _create_cinema_video_inner(
+        self,
+        job_id,
+        topic,
+        niche,
+        blueprint_id,
+        engine,
+        script,
+        duration_seconds,
+        style
+    ) -> str:
         from src.api.routes.ws import notify_nexus_job_update_sync
         from src.api.utils.database import async_session_factory
         from src.api.utils.models import NexusJobDB
@@ -154,8 +167,8 @@ class AutoCreator:
                         job.node_status = current_status
                         job.progress = progress
                         await db.commit()
-            except Exception as e:
-                logger.error(f"[AutoCreator] DB notify error: {e}")
+            except Exception:
+                logger.exception("[AutoCreator] DB notify error")
 
             notify_nexus_job_update_sync({
                 "id": str(job_id),
@@ -176,7 +189,7 @@ class AutoCreator:
         # 2. Cognition
         await notify("cognition", "ACTIVE", 30)
         visual_paths = await self._source_visual_assets(segments, job_id, niche, engine=engine, style=style)
-        voice_paths = await self._generate_voiceovers(segments, job_id, style=style)
+        voice_paths = await self._generate_voiceovers(segments, job_id)
         
         if not visual_paths or not voice_paths:
             raise ValueError("Asset sourcing failed.")
@@ -261,51 +274,62 @@ class AutoCreator:
             await db.commit()
             return publish_results
 
-    # Keep helper methods but ensure they use logging
     async def _source_visual_assets(self, segments, job_id, niche, engine, style):
-        from src.services.video_engine.stock_service import base_stock_service
-        from src.services.llm.service import unified_llm_service
-        
+        # Avoid unused warnings but keep in signature for compatibility
+        _ = engine
+        _ = style
         visual_paths = []
         for i, seg in enumerate(segments):
-            prompt = seg.get("visual_prompt", niche)
-            logger.info(f"[AutoCreator] Sourcing visual for segment {i}: {prompt}")
-            
-            # Fetch up to 3 candidates for re-roll
-            urls = await base_stock_service.fetch_b_roll(prompt, count=3)
-            if not urls:
-                logger.warning(f"[AutoCreator] No stock found for: {prompt}. Using fallback.")
-                urls = await base_stock_service.fetch_b_roll(niche, count=1)
-            
-            best_path = None
-            for attempt, url in enumerate(urls):
-                path = await base_stock_service.download_stock_video(url)
-                if not path:
-                    continue
-                
-                # Perform Hard Vision Audit
-                is_relevant = await self._vision_audit(path, seg.get("visual_prompt", niche), job_id, i)
-                if is_relevant:
-                    logger.info(f"[AutoCreator] Segment {i} passed audit on attempt {attempt+1}")
-                    best_path = path
-                    break
-                else:
-                    logger.warning(f"[AutoCreator] Segment {i} failed audit on attempt {attempt+1}. Re-rolling...")
-                    # Clean up the failed clip to save space
-                    if os.path.exists(path):
-                        os.remove(path)
-            
+            best_path = await self._source_single_visual_asset(seg, i, job_id, niche)
             if best_path:
                 visual_paths.append(best_path)
-            else:
-                # If all 3 fail, try one last time with generic niche prompt and skip audit
-                logger.error(f"[AutoCreator] Segment {i} exhausted re-rolls. Falling back to generic.")
-                fallback_urls = await base_stock_service.fetch_b_roll(niche, count=1)
-                if fallback_urls:
-                    f_path = await base_stock_service.download_stock_video(fallback_urls[0])
-                    if f_path: visual_paths.append(f_path)
-        
         return visual_paths
+
+    async def _source_single_visual_asset(self, seg, i, job_id, niche):
+        from src.services.video_engine.stock_service import base_stock_service
+
+        prompt = seg.get("visual_prompt", niche)
+        logger.info(f"[AutoCreator] Sourcing visual for segment {i}: {prompt}")
+        
+        # Fetch up to 3 candidates for re-roll
+        urls = await base_stock_service.fetch_b_roll(prompt, count=3)
+        if not urls:
+            logger.warning(f"[AutoCreator] No stock found for: {prompt}. Using fallback.")
+            urls = await base_stock_service.fetch_b_roll(niche, count=1)
+        
+        best_path = await self._download_and_audit_visual_asset(urls, seg, i, job_id, niche)
+        if best_path:
+            return best_path
+        
+        # If all 3 fail, try one last time with generic niche prompt and skip audit
+        logger.error(f"[AutoCreator] Segment {i} exhausted re-rolls. Falling back to generic.")
+        fallback_urls = await base_stock_service.fetch_b_roll(niche, count=1)
+        if fallback_urls:
+            f_path = await base_stock_service.download_stock_video(fallback_urls[0])
+            if f_path:
+                return f_path
+        
+        return None
+
+    async def _download_and_audit_visual_asset(self, urls, seg, i, job_id, niche):
+        from src.services.video_engine.stock_service import base_stock_service
+
+        for attempt, url in enumerate(urls):
+            path = await base_stock_service.download_stock_video(url)
+            if not path:
+                continue
+            
+            # Perform Hard Vision Audit
+            is_relevant = await self._vision_audit(path, seg.get("visual_prompt", niche), job_id, i)
+            if is_relevant:
+                logger.info(f"[AutoCreator] Segment {i} passed audit on attempt {attempt+1}")
+                return path
+            
+            logger.warning(f"[AutoCreator] Segment {i} failed audit on attempt {attempt+1}. Re-rolling...")
+            # Clean up the failed clip to save space
+            if os.path.exists(path):
+                os.remove(path)
+        return None
 
     async def _vision_audit(self, video_path: str, visual_prompt: str, job_id: str, segment_idx: int) -> bool:
         """
@@ -350,11 +374,11 @@ class AutoCreator:
                 os.remove(frame_path)
                 
             return "YES" in content
-        except Exception as e:
-            logger.error(f"[AutoCreator] Vision audit error: {e}")
+        except Exception:
+            logger.exception("[AutoCreator] Vision audit error")
             return True # Bypassed on error
 
-    async def _generate_voiceovers(self, segments, job_id, style):
+    async def _generate_voiceovers(self, segments, job_id):
         from src.services.voiceover.service import base_voiceover_service
         voice_paths = []
         for i, seg in enumerate(segments):

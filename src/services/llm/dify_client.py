@@ -9,6 +9,8 @@ from src.api.utils.resilience import CircuitBreaker
 
 logger = logging.getLogger("DifyClient")
 
+BREAKER_OPEN_ERR = "Dify circuit breaker is OPEN"
+
 class DifyClient:
     """
     Client for Dify.ai Application API.
@@ -51,7 +53,7 @@ class DifyClient:
     ) -> Dict[str, Any]:
         """Send a message to a Chatbot app."""
         if self.breaker.is_open():
-            raise RuntimeError("Dify circuit breaker is OPEN")
+            raise RuntimeError(BREAKER_OPEN_ERR)
 
         url = f"{self.base_url}/chat-messages"
         payload = {
@@ -75,13 +77,13 @@ class DifyClient:
                 error_body = ""
                 try:
                     error_body = e.response.text
-                except:
+                except Exception:
                     pass
-                logger.error(f"Dify Chat API Status Error: {e.response.status_code} - Body: {error_body}")
+                logger.exception(f"Dify Chat API Status Error: {e.response.status_code} - Body: {error_body}")
                 self.breaker.record_failure()
                 raise
-            except Exception as e:
-                logger.error(f"Dify Chat API error: {e}")
+            except Exception:
+                logger.exception("Dify Chat API error")
                 self.breaker.record_failure()
                 raise
 
@@ -104,7 +106,7 @@ class DifyClient:
     ) -> Dict[str, Any]:
         """Send inputs to a Completion (Text Generator) app."""
         if self.breaker.is_open():
-            raise RuntimeError("Dify circuit breaker is OPEN")
+            raise RuntimeError(BREAKER_OPEN_ERR)
 
         url = f"{self.base_url}/completion-messages"
         payload = {
@@ -121,8 +123,8 @@ class DifyClient:
                 data = response.json()
                 self.breaker.record_success()
                 return data
-            except Exception as e:
-                logger.error(f"Dify Completion API error: {e}")
+            except Exception:
+                logger.exception("Dify Completion API error")
                 self.breaker.record_failure()
                 raise
 
@@ -144,7 +146,7 @@ class DifyClient:
     ) -> Dict[str, Any]:
         """Execute a Dify Workflow."""
         if self.breaker.is_open():
-            raise RuntimeError("Dify circuit breaker is OPEN")
+            raise RuntimeError(BREAKER_OPEN_ERR)
 
         url = f"{self.base_url}/workflows/run"
         payload = {
@@ -160,8 +162,8 @@ class DifyClient:
                 data = response.json()
                 self.breaker.record_success()
                 return data
-            except Exception as e:
-                logger.error(f"Dify Workflow API error: {e}")
+            except Exception:
+                logger.exception("Dify Workflow API error")
                 self.breaker.record_failure()
                 raise
 

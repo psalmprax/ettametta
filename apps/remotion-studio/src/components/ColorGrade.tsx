@@ -23,9 +23,9 @@ export const ColorGrade: React.FC<ColorGradeProps> = ({ type, intensity = 1 }) =
                         0   0   0   1   0" 
                     />
                     <feComponentTransfer>
-                        <feRed type="gamma" exponent="0.9" />
-                        <feGreen type="gamma" exponent="1.0" />
-                        <feBlue type="gamma" exponent="1.1" />
+                        <feFuncR type="gamma" exponent="0.9" />
+                        <feFuncG type="gamma" exponent="1.0" />
+                        <feFuncB type="gamma" exponent="1.1" />
                     </feComponentTransfer>
                 </filter>
 
@@ -38,8 +38,8 @@ export const ColorGrade: React.FC<ColorGradeProps> = ({ type, intensity = 1 }) =
                         0   0   0   1   0" 
                     />
                     <feComponentTransfer>
-                        <feRed type="table" tableValues="0 0.1 0.4 0.8 1" />
-                        <feBlue type="table" tableValues="0 0.2 0.5 0.9 1" />
+                        <feFuncR type="table" tableValues="0 0.1 0.4 0.8 1" />
+                        <feFuncB type="table" tableValues="0 0.2 0.5 0.9 1" />
                     </feComponentTransfer>
                 </filter>
 
@@ -61,8 +61,8 @@ export const ColorGrade: React.FC<ColorGradeProps> = ({ type, intensity = 1 }) =
                         0   0   0   1   0" 
                     />
                     <feComponentTransfer>
-                        <feRed type="gamma" exponent="0.8" />
-                        <feBlue type="gamma" exponent="0.8" />
+                        <feFuncR type="gamma" exponent="0.8" />
+                        <feFuncB type="gamma" exponent="0.8" />
                     </feComponentTransfer>
                 </filter>
 
@@ -70,9 +70,9 @@ export const ColorGrade: React.FC<ColorGradeProps> = ({ type, intensity = 1 }) =
                     {/* Black & White conversion */}
                     <feColorMatrix type="saturate" values="0" />
                     <feComponentTransfer>
-                        <feRed type="gamma" exponent="1.2" />
-                        <feGreen type="gamma" exponent="1.2" />
-                        <feBlue type="gamma" exponent="1.2" />
+                        <feFuncR type="gamma" exponent="1.2" />
+                        <feFuncG type="gamma" exponent="1.2" />
+                        <feFuncB type="gamma" exponent="1.2" />
                     </feComponentTransfer>
                 </filter>
             </svg>
