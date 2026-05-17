@@ -25,6 +25,7 @@ except ImportError:
 from .youtube_scanner import YouTubeShortsScanner
 from .youtube_long_scanner import YouTubeLongScanner
 from .tiktok_scanner import TikTokScanner
+from .cloak_scanner import CloakBrowserScanner
 from .reddit_scanner import base_reddit_service
 from .x_scanner import base_x_service
 from .public_domain_scanner import base_public_domain_service
@@ -70,6 +71,7 @@ class DiscoveryService:
         self.scanners = [
             YouTubeShortsScanner(),  # Real API ✓
             YouTubeLongScanner(),  # Real API ✓
+            CloakBrowserScanner(scraper_url=os.environ.get('DISCOVERY_SCRAPER_URL', 'http://discovery-scraper:8010')),
             TikTokScanner(),  # Web scrape ✓
             base_duckduckgo_service,  # Free fallback ✓
         ]
@@ -140,9 +142,6 @@ class DiscoveryService:
                 span.set_attribute("job_id", job_id)
                 await base_state_machine.transition_to(job_id, JobState.QUEUED, JobState.PENDING)
 
-            import json
-            import redis
-            from src.api.config import settings
 
         try:
             # 1. Check Cache (Skip if deep scan)
@@ -358,10 +357,10 @@ class DiscoveryService:
                             engagement_score=l.engagement_score or 0.0,
                             viral_score=l.viral_score or 0,
                             duration_seconds=l.duration_seconds or 0.0,
-                            category=l.category or "video",
+                            category=l.content_type or "video",
                             niche=l.niche,
                             metadata={
-                                **(l.metadata_json or {}),
+                                **(getattr(l, "metadata_json", None) or {}),
                                 "is_reupload": True,
                             },
                         )
