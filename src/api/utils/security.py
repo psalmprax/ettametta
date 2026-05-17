@@ -16,9 +16,19 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 24 hours
 
 def verify_password(plain_password, hashed_password):
+    # Bcrypt has a 72-byte limit - truncate if necessary
+    if isinstance(plain_password, str):
+        plain_password = plain_password[:72]
+    elif isinstance(plain_password, bytes):
+        plain_password = plain_password[:72]
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
+    # Bcrypt has a 72-byte limit - truncate if necessary
+    if isinstance(password, str):
+        password = password[:72]
+    elif isinstance(password, bytes):
+        password = password[:72]
     return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
