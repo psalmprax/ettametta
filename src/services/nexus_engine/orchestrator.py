@@ -264,7 +264,6 @@ class NexusOrchestrator:
                     try:
                         cap = cv2.VideoCapture(path)
                         count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                        fps = cap.get(cv2.CAP_PROP_FPS)
                         cap.release()
                         return count if count > 0 else None
                     except Exception as e:
