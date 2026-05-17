@@ -5,6 +5,14 @@ import json
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock, PropertyMock
 
+pytestmark = pytest.mark.filterwarnings(
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+    "ignore::FutureWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::sqlalchemy.exc.MovedIn20Warning"
+)
+
 
 class TestGenerateViralScript:
     """Tests for AutoCreator.generate_viral_script — script generation with retries."""
@@ -583,7 +591,7 @@ class TestHelperMethods:
                 "/tmp/voice_2.mp3",
             ])
 
-            paths = await creator._generate_voiceovers(segments, "job-001", style="CINEMATIC_DOC")
+            paths = await creator._generate_voiceovers(segments, "job-001")
 
             assert len(paths) == 2
             assert paths[0] == "/tmp/voice_1.mp3"
@@ -604,7 +612,7 @@ class TestHelperMethods:
         with patch("src.services.voiceover.service.base_voiceover_service") as mock_voice:
             mock_voice.generate_voiceover = AsyncMock(return_value="/tmp/voice.mp3")
 
-            paths = await creator._generate_voiceovers(segments, "job-001", style="CINEMATIC_DOC")
+            paths = await creator._generate_voiceovers(segments, "job-001")
 
             assert len(paths) == 1  # Only the segment with text
 

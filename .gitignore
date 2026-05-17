@@ -132,3 +132,5 @@ Thumbs.db
 coverage/
 .nyc_output/
 jenkins_casc_credentials.yaml
+
+apps/remotion-studio/build

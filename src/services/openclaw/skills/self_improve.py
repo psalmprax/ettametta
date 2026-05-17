@@ -19,8 +19,25 @@ except (ImportError, ValueError):
 logger = logging.getLogger(__name__)
 
 SKILLS_DIR = Path(__file__).parent
-SELF_IMPROVE_LOG = Path("/tmp/ettametta_memory/self_improve_log.json")
-SKILL_BACKUP_DIR = Path("/tmp/ettametta_memory/skill_backups")
+
+# Securely resolve memory directory to avoid public-write temp directory vulnerabilities (symlink attacks, local file disclosures)
+import tempfile
+import getpass
+
+try:
+    _username = getpass.getuser()
+except Exception:
+    _username = "default"
+
+_memory_dir = Path.home() / ".ettametta_memory"
+try:
+    _memory_dir.mkdir(parents=True, exist_ok=True)
+except Exception:
+    _memory_dir = Path(tempfile.gettempdir()) / f"ettametta_memory_{_username}"
+    _memory_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+
+SELF_IMPROVE_LOG = _memory_dir / "self_improve_log.json"
+SKILL_BACKUP_DIR = _memory_dir / "skill_backups"
 SKILL_BACKUP_DIR.mkdir(exist_ok=True)
 
 
@@ -38,7 +55,7 @@ class SkillCritic:
             r"__import__",
         ]
 
-    async def verify_syntax(self, code: str) -> str | None:
+    def verify_syntax(self, code: str) -> str | None:
         """Check if the provided code is syntactically valid Python."""
         try:
             compile(code, "<string>", "exec")
@@ -48,15 +65,15 @@ class SkillCritic:
         except Exception as e:
             return f"Validation Error: {str(e)}"
 
-    async def verify_safety(self, code: str) -> str | None:
+    def verify_safety(self, code: str) -> str | None:
         """Simple heuristic-based safety check for malicious patterns."""
         for pattern in self.unsafe_patterns:
             if re.search(pattern, code):
                 return f"Safety Violation: Detected unsafe pattern '{pattern}'"
         return None
 
-    async def analyze_improvement(
-        self, tool_name: str, code: str, issue: str
+    def analyze_improvement(
+        self, _tool_name: str, code: str, _issue: str
     ) -> dict[str, Any]:
         """
         Critical verification loop: Validates that the code actually addresses the issue
@@ -170,7 +187,14 @@ class SelfImprovementSkill(OpenClawBaseSkill):
         ):
             success_rate = stats["successes"] / max(stats["calls"], 1)
             avg_latency = sum(stats["latencies"]) / max(len(stats["latencies"]), 1)
-            status = "✅" if success_rate > 0.8 else "⚠️" if success_rate > 0.5 else "❌"
+            
+            if success_rate > 0.8:
+                status = "✅"
+            elif success_rate > 0.5:
+                status = "⚠️"
+            else:
+                status = "❌"
+                
             lines.append(
                 f"{status} **{tool}**: {stats['calls']} calls, {success_rate:.0%} success, {avg_latency:.0f}ms avg"
             )
@@ -218,14 +242,14 @@ class SelfImprovementSkill(OpenClawBaseSkill):
         memory_skill.record_event("skill_improvement_proposed", improvement)
 
         lines = [
-            f"💡 **Skill Improvement Proposed**",
+            "💡 **Skill Improvement Proposed**",
             f"• Tool: `{tool_name}`",
             f"• Issue: {issue_description}",
             f"• Backup: {backup_path}"
             if backup_path
             else "• No existing skill to backup",
-            f"• Status: Pending review",
-            f"",
+            "• Status: Pending review",
+            "",
             f"Use `/self-improve apply {tool_name}` to review and apply changes.",
         ]
         return "\n".join(lines)
@@ -243,7 +267,7 @@ class SelfImprovementSkill(OpenClawBaseSkill):
                 pass
 
         # Phase 1: Critic Verification Loop
-        verification = await self.critic.analyze_improvement(
+        verification = self.critic.analyze_improvement(
             tool_name, improvement_code, "Self-healing update"
         )
         if not verification["valid"]:
@@ -285,19 +309,19 @@ class SelfImprovementSkill(OpenClawBaseSkill):
             tool = entry.get("tool", "unknown")
             status = entry.get("status", "unknown")
             issue = entry.get("issue", "")[:80]
-            icon = (
-                "✅"
-                if status == "applied"
-                else "💡"
-                if status == "pending_review"
-                else "❌"
-            )
+            if status == "applied":
+                icon = "✅"
+            elif status == "pending_review":
+                icon = "💡"
+            else:
+                icon = "❌"
+                
             lines.append(f"{icon} [{ts}] `{tool}` ({status}): {issue}")
         return "\n".join(lines)
 
     async def auto_detect_and_suggest(self) -> str:
-        failures_report = self.detect_failures(hours=24)
-        performance_report = self.analyze_skill_performance()
+        await self.detect_failures(hours=24)
+        await self.analyze_skill_performance()
 
         all_events = memory_skill.episodic.search(
             event_type="tool_error", since_hours=24
@@ -315,7 +339,7 @@ class SelfImprovementSkill(OpenClawBaseSkill):
                 )
 
         if not suggestions:
-            return f"✅ **Auto-Diagnosis Complete**\n\nNo recurring issues detected. All skills performing within normal parameters."
+            return "✅ **Auto-Diagnosis Complete**\n\nNo recurring issues detected. All skills performing within normal parameters."
 
         lines = ["🤖 **Auto-Diagnosis Report**", ""]
         lines.extend(suggestions)
@@ -358,7 +382,7 @@ class SelfImprovementSkill(OpenClawBaseSkill):
             f"• Errors found: {len(tool_errors)}",
             f"• Most common: {most_common[:120]}",
             f"• Suggested fix: {suggestion}",
-            f"",
+            "",
             f"Use `/self-improve generate {tool_name}` to create the fix.",
         ]
         return "\n".join(lines)
