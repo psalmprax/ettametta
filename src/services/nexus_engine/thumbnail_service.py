@@ -1,3 +1,4 @@
+import asyncio
 import httpx
 import logging
 import os
@@ -36,8 +37,11 @@ class ThumbnailGenerator:
                 filename = f"thumb_{uuid.uuid4().hex[:8]}.jpg"
                 temp_path = os.path.join(self.output_dir, filename)
                 
-                with open(temp_path, "wb") as f:
-                    f.write(response.content)
+                def write_thumb():
+                    with open(temp_path, "wb") as f:
+                        f.write(response.content)
+                
+                await asyncio.to_thread(write_thumb)
                 
                 # 3. Upload to official storage
                 storage_path = base_storage_service.upload_file(temp_path)
