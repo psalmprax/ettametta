@@ -185,7 +185,8 @@ async def auth_youtube_callback(
         raise HTTPException(status_code=400, detail="Missing OAuth code from Google")
 
     try:
-        state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+        state_padded = state + '=' * (-len(state) % 4)
+        state_data = json.loads(base64.urlsafe_b64decode(state_padded.encode()).decode())
         user_id = state_data.get("user_id")
         code_verifier = state_data.get("code_verifier")
         logger.info(
@@ -499,7 +500,8 @@ async def auth_tiktok_callback(code: str, state: str):
     import base64
 
     try:
-        state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+        state_padded = state + '=' * (-len(state) % 4)
+        state_data = json.loads(base64.urlsafe_b64decode(state_padded.encode()).decode())
         user_id = state_data.get("user_id")
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
@@ -600,7 +602,8 @@ async def auth_instagram_callback(code: str, state: str):
     import base64
 
     try:
-        state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+        state_padded = state + '=' * (-len(state) % 4)
+        state_data = json.loads(base64.urlsafe_b64decode(state_padded.encode()).decode())
         user_id = state_data.get("user_id")
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
@@ -695,7 +698,8 @@ async def auth_x_callback(code: str, state: str):
     import base64
 
     try:
-        state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+        state_padded = state + '=' * (-len(state) % 4)
+        state_data = json.loads(base64.urlsafe_b64decode(state_padded.encode()).decode())
         user_id = state_data.get("user_id")
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
@@ -791,7 +795,8 @@ async def auth_linkedin_callback(code: str, state: str):
     import base64
 
     try:
-        state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+        state_padded = state + '=' * (-len(state) % 4)
+        state_data = json.loads(base64.urlsafe_b64decode(state_padded.encode()).decode())
         user_id = state_data.get("user_id")
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
