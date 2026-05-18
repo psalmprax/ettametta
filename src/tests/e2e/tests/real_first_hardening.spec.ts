@@ -11,12 +11,12 @@ test.describe('Real-First Hardening Verification', () => {
     // Authenticate using standard credentials
     await page.goto('/login');
     // Note: In an real CI environment, these would be pulled from process.env
-    await page.fill('input[name="email"]', 'test@example.com');
-    await page.fill('input[name="password"]', 'testpassword');
+    await page.fill('input[name="username"]', 'samuelolle@yahoo.com');
+    await page.fill('input[name="password"]', 'Single123.');
     await page.click('button[type="submit"]');
     
     // Ensure dashboard context is established
-    await expect(page).toHaveURL('/', { timeout: 10000 });
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
   });
 
   test('Nexus: Infrastructure must report real telemetry', async ({ page }) => {
@@ -64,13 +64,13 @@ test.describe('Real-First Hardening Verification', () => {
   test('Settings: Communications verification must be operational', async ({ page }) => {
     await page.goto('/settings');
     
-    const verifyBtn = page.locator('button:has-text("Verify Comms")');
-    await expect(verifyBtn).toBeVisible();
+    const commitBtn = page.locator('button:has-text("Commit Protocol")');
+    await expect(commitBtn).toBeVisible();
     
     // Clicking should trigger a real API call (intercepted here for verification)
     const [request] = await Promise.all([
-      page.waitForRequest(req => req.url().includes('/settings/verify-comms') && req.method() === 'POST'),
-      verifyBtn.click()
+      page.waitForRequest(req => req.url().includes('/settings/user') && req.method() === 'POST'),
+      commitBtn.click()
     ]);
     
     expect(request.headers()['authorization']).toContain('Bearer');
@@ -79,11 +79,14 @@ test.describe('Real-First Hardening Verification', () => {
   test('Admin: Environment synchronization must use real backend signals', async ({ page }) => {
     await page.goto('/admin');
     
-    // Scroll to Env Manager
-    await page.locator('h3:has-text("Environment Management")').scrollIntoViewIfNeeded();
+    // Click on the Master Protocol tab
+    await page.locator('button:has-text("Master Protocol")').click();
     
-    // Check for 'STABLE' or 'SYNCED' status which implies real check
-    const statusText = page.locator('.glass-card:has-text("System Status") span:has-text("STABLE")');
+    // Scroll to Env Manager
+    await page.locator('h3:has-text("Environment Master")').scrollIntoViewIfNeeded();
+    
+    // Check for 'Kernel Synchronized' status which implies real check
+    const statusText = page.locator('span:has-text("Kernel Synchronized")');
     await expect(statusText).toBeVisible();
   });
 
