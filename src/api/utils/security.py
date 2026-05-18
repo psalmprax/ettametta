@@ -1,10 +1,28 @@
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from src.api.config import settings
 
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+class DirectBcryptWrapper:
+    def verify(self, plain_password: str | bytes, hashed_password: str | bytes) -> bool:
+        if isinstance(plain_password, str):
+            plain_password = plain_password.encode('utf-8')
+        if isinstance(hashed_password, str):
+            hashed_password = hashed_password.encode('utf-8')
+        try:
+            return bcrypt.checkpw(plain_password[:72], hashed_password)
+        except Exception:
+            return False
+
+    def hash(self, password: str | bytes) -> str:
+        if isinstance(password, str):
+            password = password.encode('utf-8')
+        # Generate a standard salt and hash the password
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password[:72], salt)
+        return hashed.decode('utf-8')
+
+pwd_context = DirectBcryptWrapper()
 
 if settings.ENV == "production" and (not settings.SECRET_KEY or settings.SECRET_KEY == "dev_secret_key_change_me_in_production" or settings.SECRET_KEY == "dev_secret_key_vforge_2026_change_in_prod"):
     raise RuntimeError("SECRET_KEY must be set to a secure value in production environment.")
