@@ -244,6 +244,10 @@ export default function AdminSettingsPage() {
                        </div>
                     </div>
                   )}
+
+                  {activeEngine === "Environment" && (
+                    <EnvManager />
+                  )}
                 </div>
 
                 <div className="mt-8 flex-1 min-h-0 flex flex-col bg-[#0F0F11]/40 rounded-[32px] border border-white/5 overflow-hidden shrink-0">
