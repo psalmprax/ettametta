@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     VOICEOVER_TIMEOUT: int = 30
     SEARCH_TIMEOUT: int = 30
     STOCK_TIMEOUT: int = 30
+    REMOTION_TIMEOUT_SECONDS: int = 900
     DEFAULT_RETRY_COUNT: int = 3
     RETRY_MULTIPLIER: int = 1
     RETRY_MIN_WAIT: int = 2

@@ -481,7 +481,7 @@ class RemotionService:
         stderr_task = asyncio.create_task(self._drain_stderr(process.stderr, stderr_accumulator, log))
 
         # Decouple rendering timeout from LLM configuration parameters
-        timeout = getattr(settings, "REMOTION_TIMEOUT_SECONDS", 300)
+        timeout = getattr(settings, "REMOTION_TIMEOUT_SECONDS", 900)
 
         try:
             async with asyncio.timeout(timeout):
