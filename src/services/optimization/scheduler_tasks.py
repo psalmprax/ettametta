@@ -128,7 +128,7 @@ async def _check_and_post_scheduled_internal(task_self):
                             title=metadata.title,
                             platform=post.platform,
                             status=ContentPublishStatus.PUBLISHED,
-                            url=url,
+                            source_uri=url,
                             account_id=post.account_id,
                             user_id=post.user_id,
                             niche=getattr(metadata, "niche", None),

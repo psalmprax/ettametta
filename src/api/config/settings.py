@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     INTERNAL_API_TOKEN: str | None = None  # Master token for internal services
-    AI_CLUSTER_SECRET: str | None = "psalm_cluster_v1"  # Default cluster secret
+    AI_CLUSTER_SECRET: str | None = None  # Must be set for cluster/gateway operations
     PORT: int = 8000  # API port
 
     # Lean Infrastructure (CPU-First Hardening)
@@ -152,7 +152,7 @@ class Settings(BaseSettings):
     RENDER_NODE_URL: str | None = None  # Colab/Remote GPU Node URL
 
     # ComfyUI Self-Hosting
-    COMFYUI_URL: str = "http://220.135.0.171:8188"
+    COMFYUI_URL: str = "http://localhost:8188"
     COMFYUI_WORKFLOWS_DIR: str = "services/video_engine/workflows"
     COMFYUI_MODELS_DIR: str = "services/video_engine/models"
     STORAGE_OUTPUT_DIR: str = "data/storage/outputs"
@@ -219,7 +219,10 @@ class Settings(BaseSettings):
     @property
     def GOOGLE_OAUTH_REDIRECT_URI(self) -> str:
         """Google OAuth callback for general authentication (standard account login)."""
-        return f"{self.PRODUCTION_DOMAIN.rstrip('/')}/auth/callback/google"
+        base = self.PRODUCTION_DOMAIN.rstrip('/')
+        if base.endswith("/api/v1"):
+            return f"{base}/auth/callback/google"
+        return f"{base}/api/v1/auth/callback/google"
 
     @property
     def GOOGLE_YOUTUBE_REDIRECT_URI(self) -> str:
