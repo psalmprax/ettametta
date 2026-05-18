@@ -1,20 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
     Cpu, 
     Plus, 
     Trash2, 
-    Activity, 
     ShieldCheck, 
     Server, 
     Loader2, 
     X, 
     CheckCircle2, 
     AlertCircle,
-    Key
 } from "lucide-react";
-import { AI_GATEWAY_URL, INTERNAL_API_TOKEN } from "@/lib/config";
+import { AI_GATEWAY_URL } from "@/lib/config";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,37 +24,42 @@ interface Node {
     last_seen: string | null;
 }
 
+interface GatewayHealth {
+    nodes?: Node[];
+    telemetry?: Node[];
+}
+
+const getErrorMessage = (err: unknown) => err instanceof Error ? err.message : "Unknown error";
+
 export function ClusterManager({ onClose }: { onClose: () => void }) {
     const [nodes, setNodes] = useState<Node[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [newNodeUrl, setNewNodeUrl] = useState("");
     const [provisioningNode, setProvisioningNode] = useState<string | null>(null);
-    const [sshKey, setSshKey] = useState("");
-    const [sshPort, setSshPort] = useState("22");
-    const [isAdminToken, setAdminToken] = useState(INTERNAL_API_TOKEN);
+    const [isAdminToken, setAdminToken] = useState("");
 
-    const fetchNodes = async () => {
+    const fetchNodes = useCallback(async () => {
         await withRealFallback(
             async () => {
                 return fetch(`${AI_GATEWAY_URL}/health`);
             },
             {
-                fallback: nodes,
-                onSuccess: (data: any) => {
+                fallback: { nodes: [] } as GatewayHealth,
+                onSuccess: (data: GatewayHealth) => {
                     const nodeData = data.nodes || data.telemetry || [];
                     setNodes(Array.isArray(nodeData) ? nodeData : []);
                 }
             }
         );
         setIsLoading(false);
-    };
+    }, []);
 
     useEffect(() => {
-        fetchNodes();
+        void Promise.resolve().then(fetchNodes);
         const interval = setInterval(fetchNodes, 5000);
         return () => clearInterval(interval);
-    }, []);
+    }, [fetchNodes]);
 
     const handleAddNode = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -82,9 +85,9 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                     fetchNodes();
                     setProvisioningNode(addedUrl);
                 },
-                onFallback: (err: any) => {
+                onFallback: (err: unknown) => {
                     toast.error("Registration Failed", {
-                        description: err.message || "Unauthorized: Please provide Admin Token"
+                        description: getErrorMessage(err) || "Unauthorized: Please provide Admin Token"
                     });
                 }
             }
@@ -105,49 +108,14 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                     toast.success("Node removed from cluster");
                     fetchNodes();
                 },
-                onFallback: (err: any) => {
-                    toast.error("Removal Failed", { description: err.message });
+                onFallback: (err: unknown) => {
+                    toast.error("Removal Failed", { description: getErrorMessage(err) });
                 }
             }
         );
     };
 
-    const handleProvision = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!provisioningNode || !sshKey) return;
-        
-        const ipMatch = provisioningNode.match(/h?t?t?p?s?:\/\/(.*?):/);
-        const ip = ipMatch ? ipMatch[1] : provisioningNode;
-
-        await withRealFallback(
-            async () => {
-                return fetch(`${AI_GATEWAY_URL}/nodes/provision`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-Admin-Token': isAdminToken 
-                    },
-                    body: JSON.stringify({
-                        ip: ip,
-                        ssh_key: sshKey,
-                        port: parseInt(sshPort) || 22
-                    })
-                });
-            },
-            {
-                fallback: null,
-                onSuccess: () => {
-                    toast.success("Provisioning started in background");
-                    setProvisioningNode(null);
-                    setSshKey("");
-                    fetchNodes();
-                },
-                onFallback: (err: any) => {
-                    toast.error("Provisioning failed", { description: err.message });
-                }
-            }
-        );
-    };
+    const closeProvisioningNotice = () => setProvisioningNode(null);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -341,89 +309,44 @@ export function ClusterManager({ onClose }: { onClose: () => void }) {
                             exit={{ opacity: 0 }}
                             className="absolute inset-0 z-[60] bg-black/95 backdrop-blur-xl p-8 flex flex-col items-center justify-center overflow-y-auto"
                         >
-                            <motion.form 
+                            <motion.div 
                                 initial={{ y: 40, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
-                                onSubmit={handleProvision} 
                                 className="w-full max-w-2xl space-y-8"
                             >
                                 <div className="text-center">
-                                    <div className="inline-block p-5 bg-neon-cyan/10 rounded-[40px] mb-8 animate-pulse-slow">
-                                        <Key className="h-12 w-12 text-neon-cyan" />
+                                    <div className="inline-block p-5 bg-amber-500/10 rounded-[40px] mb-8">
+                                        <AlertCircle className="h-12 w-12 text-amber-400" />
                                     </div>
-                                    <h4 className="text-5xl font-bold text-white uppercase tracking-tighter leading-tight">Hardened Provisioning</h4>
+                                    <h4 className="text-5xl font-bold text-white uppercase tracking-tighter leading-tight">Provisioning Disabled</h4>
                                     <p className="text-xs font-bold text-zinc-500 uppercase tracking-[0.5em] mt-3">{provisioningNode.replace('http://', '')}</p>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-4">
-                                        <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] px-4">SSH Deployment Port</label>
-                                        <input 
-                                            placeholder="22"
-                                            value={sshPort}
-                                            onChange={(e) => setSshPort(e.target.value)}
-                                            className="w-full p-6 bg-zinc-900 border border-white/5 rounded-3xl text-sm font-bold text-white placeholder:text-zinc-800 tracking-widest focus:border-neon-cyan/40 outline-none"
-                                        />
-                                    </div>
-                                    <div className="space-y-4">
-                                        <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] px-4">Active User</label>
-                                        <div className="w-full p-6 bg-zinc-800/30 border border-white/5 rounded-3xl text-sm font-bold text-white/30 tracking-widest cursor-not-allowed">
-                                            ROOT (DEFAULT)
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div className="p-8 bg-red-950/20 border-2 border-red-500/20 rounded-[48px] relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-full h-1 bg-red-500/30" />
+                                <div className="p-8 bg-amber-950/20 border-2 border-amber-500/20 rounded-[48px] relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-full h-1 bg-amber-500/30" />
                                     <div className="flex gap-6 items-start">
-                                        <div className="p-3 bg-red-500/10 rounded-2xl">
-                                            <AlertCircle className="h-8 w-8 text-red-500" />
+                                        <div className="p-3 bg-amber-500/10 rounded-2xl">
+                                            <ShieldCheck className="h-8 w-8 text-amber-400" />
                                         </div>
                                         <div>
-                                            <h5 className="text-[10px] font-bold text-red-500 uppercase tracking-[0.2em] mb-2">Zero-Storage Handshake Protocol</h5>
+                                            <h5 className="text-[10px] font-bold text-amber-400 uppercase tracking-[0.2em] mb-2">Server-Side Credential Required</h5>
                                             <p className="text-[9px] font-bold text-red-100/50 leading-relaxed uppercase tracking-widest">
-                                                This private key is held strictly in volatile RAM. It is never saved to disk 
-                                                and is purged immediately upon task resolution. Architecture confirms 
-                                                ephemeral usage–zero persistence.
+                                                Browser-based SSH private key submission is disabled. Provisioning must run through a backend-only workflow that references credentials stored in a server-side secret manager.
                                             </p>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex justify-between px-4">
-                                        <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em]">Neural Access Credentials (Ephemeral)</label>
-                                        <span className="text-[8px] font-bold text-neon-cyan/50 uppercase tracking-[0.3em] font-mono">ONE-TIME DEPLOYMENT KEY</span>
-                                    </div>
-                                    <textarea 
-                                        autoFocus
-                                        data-gramm="false"
-                                        data-gramm_editor="false"
-                                        data-enable-grammarly="false"
-                                        placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
-                                        rows={10}
-                                        value={sshKey}
-                                        onChange={(e) => setSshKey(e.target.value)}
-                                        className="w-full p-8 bg-zinc-950/50 border border-white/5 rounded-[40px] text-[10px] font-mono text-neon-cyan focus:border-neon-cyan/40 outline-none leading-relaxed shadow-inner"
-                                    />
                                 </div>
                                 
                                 <div className="flex gap-6 pb-8">
                                     <button 
                                         type="button"
-                                        onClick={() => { setProvisioningNode(null); setSshKey(""); }}
-                                        className="flex-1 py-6 bg-zinc-900/50 border border-white/5 text-white text-[12px] font-bold uppercase tracking-widest rounded-3xl hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-500 transition-all transform hover:-translate-y-1"
+                                        onClick={closeProvisioningNotice}
+                                        className="flex-1 py-6 bg-zinc-900/50 border border-white/5 text-white text-[12px] font-bold uppercase tracking-widest rounded-3xl hover:bg-amber-500/10 hover:border-amber-500/20 hover:text-amber-400 transition-all transform hover:-translate-y-1"
                                     >
-                                        Disengage
-                                    </button>
-                                    <button 
-                                        type="submit"
-                                        className="flex-[2] py-6 bg-[#22d3ee] text-black text-[12px] font-bold uppercase tracking-[0.2em] rounded-3xl hover:bg-white transition-all transform hover:-translate-y-1 shadow-[0_20px_50px_rgba(0,255,255,0.2)]"
-                                    >
-                                        Confirm & Deploy
+                                        Close
                                     </button>
                                 </div>
-                            </motion.form>
+                            </motion.div>
                         </motion.div>
                     )}
                 </AnimatePresence>

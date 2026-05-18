@@ -13,6 +13,35 @@ import asyncio
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
+REDACTED_SECRET = "********"
+SENSITIVE_SETTING_MARKERS = (
+    "secret",
+    "token",
+    "api_key",
+    "apikey",
+    "password",
+    "private_key",
+    "access_key",
+    "auth_token",
+    "client_secret",
+)
+
+
+def _is_sensitive_key(key: str) -> bool:
+    normalized = key.lower()
+    return any(marker in normalized for marker in SENSITIVE_SETTING_MARKERS)
+
+
+def _redact_settings(values: dict) -> dict:
+    return {
+        key: REDACTED_SECRET if _is_sensitive_key(str(key)) and value else value
+        for key, value in values.items()
+    }
+
+
+def _is_redacted_placeholder(value) -> bool:
+    return isinstance(value, str) and value.strip() in {REDACTED_SECRET, "***REDACTED***"}
+
 
 class SettingUpdateRequest(BaseModel):
     key: str
@@ -175,8 +204,8 @@ async def get_settings(
         "digital_product_url": "",
     }
 
-    # Cascade: Config -> System -> User (User wins)
-    merged = {**config_dict, **system_dict, **user_dict}
+    # Cascade: Config -> System -> User (User wins). Never send raw secrets to the browser.
+    merged = _redact_settings({**config_dict, **system_dict, **user_dict})
     return success_response(data=merged)
 
 
@@ -187,6 +216,12 @@ async def update_setting(
     current_user: UserDB = Depends(get_current_user),
 ):
     from src.api.utils.models import UserSetting
+
+    if _is_redacted_placeholder(request.value):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Redacted secret placeholders cannot be saved as setting values",
+        )
 
     # Non-admins can only update their own UserSetting overrides
     # Adms can update SystemSettings via /admin routes, but we'll allow them to have personal overrides too if they use this route.
@@ -306,7 +341,7 @@ async def get_system_settings(
     result = await db.execute(stmt)
     db_items = result.scalars().all()
     system_dict = {s.key: s.value for s in db_items}
-    return success_response(data=system_dict)
+    return success_response(data=_redact_settings(system_dict))
 
 
 @router.post("/system")
@@ -316,6 +351,8 @@ async def update_system_settings(
     """Update system-wide settings (admin only)"""
     for key, value in settings_dict.items():
         if key in ("id", "created_at", "updated_at"):
+            continue
+        if _is_redacted_placeholder(value):
             continue
         stmt = select(SystemSettings).where(SystemSettings.key == key)
         result = await db.execute(stmt)
@@ -347,6 +384,8 @@ async def bulk_update_settings(
     _admin=Depends(admin_required),
 ):
     for req in settings_list:
+        if _is_redacted_placeholder(req.value):
+            continue
         stmt = select(SystemSettings).where(SystemSettings.key == req.key)
         result = await db.execute(stmt)
         setting = result.scalar_one_or_none()
@@ -373,6 +412,8 @@ async def bulk_update_user_settings(
     from src.api.utils.models import UserSetting
 
     for req in settings_list:
+        if _is_redacted_placeholder(req.value):
+            continue
         stmt = select(UserSetting).where(
             UserSetting.user_id == current_user.id,
             UserSetting.key == req.key.lower(),
@@ -400,6 +441,7 @@ async def toggle_filter(
     filter_id: str,
     db=Depends(get_db),
     current_user: UserDB = Depends(get_current_user),
+    _admin=Depends(admin_required),
 ):
     # Handle service-level filters (Sound Design, Motion Graphics)
     if filter_id in ("sound_design", "motion_graphics"):

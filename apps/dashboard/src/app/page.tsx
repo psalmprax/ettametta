@@ -197,7 +197,7 @@ export default function LandingPage() {
             <Card variant="elevated" className="p-3 rounded-3xl relative overflow-hidden">
               <div className="bg-slate-50 rounded-2xl aspect-video flex items-center justify-center overflow-hidden relative">
                 <img 
-                    src="/_next/image?url=%2Fhome%2Fpsalmprax%2F.gemini%2Fantigravity%2Fbrain%2F0062f090-f109-43f9-bcae-caf9a3b45531%2Fviral_content_gallery_mockup_1777245002910.png&w=1080&q=75" 
+                    src="/globe.svg" 
                     alt="Content Dashboard" 
                     className="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-700"
                 />

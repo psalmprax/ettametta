@@ -45,5 +45,3 @@ export const WS_BASE = getWsBase();
 // AI Gateway should point to the Nginx proxy path by default
 export const AI_GATEWAY_URL = process.env.NEXT_PUBLIC_AI_GATEWAY_URL || 
     (typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host}/ai-gateway` : "http://ai-gateway:8133");
-
-export const INTERNAL_API_TOKEN = process.env.NEXT_PUBLIC_INTERNAL_API_TOKEN || "";

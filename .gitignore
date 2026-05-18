@@ -13,6 +13,9 @@
 token.json
 credentials.json
 service_account.json
+deploy_key
+deploy_key.pub
+key_raw.txt
 
 # --- SSH/Server Scripts (contains credentials) ---
 .ssh_scripts/
@@ -134,3 +137,7 @@ coverage/
 jenkins_casc_credentials.yaml
 
 apps/remotion-studio/build
+playwright-report/
+test-results/
+graphify-out/
+*.tar.gz

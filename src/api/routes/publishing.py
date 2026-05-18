@@ -4,7 +4,7 @@ Publishing API Routes
 Endpoints for publishing videos to social media platforms.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Any
 
@@ -12,6 +12,7 @@ from src.api.routes.auth import get_current_user
 from src.api.utils.models import UserDB
 from src.api.utils.api_responses import success_response
 from src.services.publishing.service import base_publishing_service
+from src.services.optimization.auth import token_manager
 
 router = APIRouter(prefix="/publish", tags=["Publishing"])
 
@@ -64,11 +65,8 @@ async def get_publishing_status(
     """
     Check if a platform is connected and ready for publishing by verifying stored tokens.
     """
-    from pathlib import Path
-    token_file = Path(f"data/storage/tokens/{platform}_{current_user.id}.json")
-    
-    # Check for real token file
-    is_connected = token_file.exists()
+    platform_key = platform.lower()
+    is_connected = await token_manager.get_token(platform_key, user_id=current_user.id) is not None
     
     return success_response(data={
         "platform": platform,
@@ -88,59 +86,14 @@ async def test_login(
     Opens a browser window for the user to log in once.
     After successful login, cookies are saved for future automated posts.
     """
-    if platform not in ["tiktok", "instagram"]:
-        raise HTTPException(status_code=400, detail="Test login only supported for tiktok and instagram")
-    
-    if not PLAYWRIGHT_AVAILABLE:
-        raise HTTPException(status_code=503, detail="Playwright automation not available")
-    
-    try:
-        # Import the publisher skill
-        from src.services.openclaw.skills.social_publisher import base_playwright_publisher
-        
-        # Start browser and navigate to login page
-        browser = await base_playwright_publisher._start_browser()
-        context = await browser.new_context(
-            viewport={'width': 1080, 'height': 1920},
-            user_agent='Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15A372 Safari/604.1'
-        )
-        page = await context.new_page()
-        
-        if platform == "tiktok":
-            await page.goto('https://www.tiktok.com/login')
-        elif platform == "instagram":
-            await page.goto('https://www.instagram.com/accounts/login/')
-        
-        # Wait for user to log in manually (max 2 minutes)
-        await page.wait_for_timeout(120000)
-        
-        # Check if logged in by looking for profile elements
-        is_logged_in = False
-        if platform == "tiktok":
-            # Check for profile avatar or upload button
-            is_logged_in = await page.query_selector('div[data-e2e="user-profile"]') is not None
-        elif platform == "instagram":
-            # Check for home icon or profile picture
-            is_logged_in = await page.query_selector('svg[aria-label="Home"]') is not None
-        
-        if is_logged_in:
-            # Save cookies
-            cookies = await context.cookies()
-            await base_playwright_publisher._save_session(platform, current_user.id, cookies)
-            await context.close()
-            
-            return success_response(data={
-                "platform": platform,
-                "status": "success",
-                "message": f"Successfully logged in to {platform}. Session saved for automated posting."
-            })
-        else:
-            await context.close()
-            raise HTTPException(status_code=400, detail=f"Login not detected. Please ensure you are fully logged in.")
-            
-    except Exception as e:
-        logger.error(f"Test login failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Test login failed: {str(e)}")
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "Browser-based login capture is disabled because it required handling "
+            "session cookies in an unsafe server-side browser flow. Use the OAuth "
+            "routes under /api/v1/publish/auth/{platform} instead."
+        ),
+    )
 
 
 @router.get("/auth/{platform}")
@@ -152,18 +105,14 @@ async def init_oauth_auth(
     Initiate OAuth flow for connecting social media accounts.
     Supported platforms: instagram, x (twitter), linkedin, facebook
     """
-    # For now, return a placeholder response indicating manual setup is required
-    # In a full implementation, this would redirect to the OAuth authorization URL
-    
-    supported_platforms = ["instagram", "x", "twitter", "linkedin", "facebook"]
+    supported_platforms = ["youtube", "tiktok", "instagram", "x", "twitter", "linkedin", "facebook"]
     
     if platform.lower() not in supported_platforms:
         raise HTTPException(status_code=400, detail=f"Platform '{platform}' not supported for OAuth")
     
-    # Return instructions for manual connection since full OAuth requires app registration
     return success_response(data={
         "platform": platform,
-        "status": "manual_setup_required",
-        "message": f"OAuth setup for {platform} requires app registration. Please use the Playwright 'test-login' method for now.",
-        "alternative": f"Use POST /api/v1/publish/test-login?platform={platform} for cookie-based authentication"
+        "status": "oauth_required",
+        "auth_url": f"/api/v1/publish/auth/{platform.lower()}",
+        "message": f"Start the OAuth flow at /api/v1/publish/auth/{platform.lower()}.",
     })

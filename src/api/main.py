@@ -89,7 +89,6 @@ from src.api.routes import (
     internal,
     video_transform,
     content_editor,
-    publish,
     analytics,
     monetization,
     billing,
@@ -117,6 +116,7 @@ from src.api.routes import (
     llm,
     reasoning,
 )
+from src.api.routes.publish import router as publish_router
 
 from fastapi.staticfiles import StaticFiles
 
@@ -207,7 +207,7 @@ v1_router.include_router(video_transform.router, tags=["Video Engine"])
 v1_router.include_router(video_generate.router, tags=["Video Engine"])
 v1_router.include_router(content_editor.router, tags=["Content Editor"])
 v1_router.include_router(video_jobs.router, tags=["Video Engine"])
-v1_router.include_router(publish.router, tags=["Publishing"])
+v1_router.include_router(publish_router, tags=["Publishing"])
 v1_router.include_router(analytics.router, tags=["Analytics"])
 v1_router.include_router(monetization.router, tags=["Monetization"])
 v1_router.include_router(billing.router, tags=["Billing"])
