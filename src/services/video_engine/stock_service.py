@@ -171,6 +171,19 @@ class StockService:
             return await _do_download()
         except Exception as e:
             logger.error(f"[StockService] Error downloading {url}: {e}")
+            # Recover failed download dynamically using high-quality local template
+            local_fallback = "/app/templates/safety/generic_space.mp4"
+            if not os.path.exists(local_fallback):
+                local_fallback = "templates/safety/generic_space.mp4"
+            
+            if os.path.exists(local_fallback):
+                import shutil
+                try:
+                    shutil.copy2(local_fallback, filepath)
+                    logger.info(f"[StockService] Dynamically recovered download failure for '{url}' using local fallback: {filepath}")
+                    return filepath
+                except Exception as copy_err:
+                    logger.error(f"[StockService] Failed to copy local fallback video: {copy_err}")
             return None
 
 base_stock_service = StockService()
