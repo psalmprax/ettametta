@@ -393,6 +393,13 @@ function NexusContent() {
             }
             rightPanel={
                 <>
+                    <div className="p-4 rounded-2xl border border-white/5 bg-[#0F0F11]/60 space-y-2 mb-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Node_ID</span>
+                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        </div>
+                        <h4 className="text-xs font-mono font-bold text-white uppercase tracking-tight">{pulse?.cluster_node || "NODE-LOCAL-01"}</h4>
+                    </div>
                     <AgentMatrix agents={agents} />
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">

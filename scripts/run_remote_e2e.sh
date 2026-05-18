@@ -124,7 +124,7 @@ echo ""
 echo "Step 3: Running E2E tests..."
 
 # Build playwright command
-PLAYWRIGHT_CMD="BASE_URL=$REMOTE_BASE_URL npx playwright test"
+PLAYWRIGHT_CMD="SKIP_WEB_SERVER=1 BASE_URL=$REMOTE_BASE_URL npx playwright test"
 
 # Add specific test files
 if [ "$SCENARIO" != "all" ]; then
