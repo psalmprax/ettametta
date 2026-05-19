@@ -7,8 +7,13 @@ import asyncio
 import sys
 import os
 
-sys.path.insert(0, "/app")
-os.chdir("/app")
+from pathlib import Path
+if os.path.exists("/app"):
+    sys.path.insert(0, "/app")
+    os.chdir("/app")
+else:
+    project_root = str(Path(__file__).parent.parent.parent.parent)
+    sys.path.insert(0, project_root)
 
 
 async def test_discovery_skill():

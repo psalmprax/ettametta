@@ -9,19 +9,22 @@ Tests video fusion capabilities without full API dependencies.
 import os
 import sys
 from pathlib import Path
+import pytest
 
 # Minimal imports to avoid database dependencies
 try:
     import moviepy as mpy
-
+    HAS_MOVIEPY = True
     print("✅ MoviePy available")
 except ImportError as e:
+    HAS_MOVIEPY = False
     print(f"❌ MoviePy not available: {e}")
-    sys.exit(1)
 
 
 def test_video_fusion():
     """Test basic video fusion with existing files"""
+    if not HAS_MOVIEPY:
+        pytest.skip("MoviePy not available")
 
     # Check for video files
     video_files = ["gen_1775226095.mp4", "gen_1775213381.mp4"]
