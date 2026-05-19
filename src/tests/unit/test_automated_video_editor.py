@@ -547,7 +547,7 @@ async def main():
 
     summary = results["test_summary"]
     print(f"📊 OVERALL RESULT: {summary['overall_result']}")
-    print(f"Success rate: {summary["success_rate"]:.1f}%")
+    print(f"Success rate: {summary['success_rate']:.1f}%")
     print(f"✅ Capabilities Demonstrated: {len(results['capabilities_demonstrated'])}")
 
     print("\n🏆 DEMONSTRATED CAPABILITIES:")

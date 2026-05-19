@@ -76,12 +76,13 @@ sys.modules["torch.nn"] = MockTorch.nn
 sys.modules["torch.optim"] = MockTorch.optim
 sys.modules["cv2"] = MockCV2()
 
-# Mock Database and Vault
-sys.modules["api.utils.vault"] = MagicMock()
-sys.modules["api.utils.db"] = MagicMock()
-sys.modules["sqlalchemy"] = MagicMock()
-sys.modules["sqlalchemy.ext.asyncio"] = MagicMock()
-sys.modules["psycopg2"] = MagicMock()
+# Mock Database and Vault if needed, but avoid mocking core sqlalchemy in general test suites
+# to prevent poisoning of other tests in the same session.
+# sys.modules["api.utils.vault"] = MagicMock()
+# sys.modules["api.utils.db"] = MagicMock()
+# sys.modules["sqlalchemy"] = MagicMock()
+# sys.modules["sqlalchemy.ext.asyncio"] = MagicMock()
+# sys.modules["psycopg2"] = MagicMock()
 
 
 async def test_video_editor_quality():
