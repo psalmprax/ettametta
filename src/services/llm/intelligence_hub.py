@@ -292,16 +292,17 @@ class IntelligenceHub:
                 headers = {"X-Request-ID": rid}
                 return await client.post(url, json=payload, headers=headers)
 
+        current_url = self.ollama_url
         try:
-            logger.info(f"[{rid}] Calling Ollama at {self.ollama_url} with model {settings.OLLAMA_MODEL}")
+            logger.info(f"[{rid}] Calling Ollama at {current_url} with model {settings.OLLAMA_MODEL}")
             start = time.time()
-            resp = await _try_post(self.ollama_url)
+            resp = await _try_post(current_url)
         except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as e:
-            if self.ollama_url != self.fallback_ollama_url:
+            if current_url != self.fallback_ollama_url:
                 logger.warning(f"Ollama primary failed ({str(e)}), trying fallback: {self.fallback_ollama_url}")
-                self.ollama_url = self.fallback_ollama_url
+                current_url = self.fallback_ollama_url
                 start = time.time()
-                resp = await _try_post(self.ollama_url)
+                resp = await _try_post(current_url)
             else:
                 raise
 

@@ -95,7 +95,7 @@ class ContentCandidateDB(Base):
     # Timing fields
     published_at = Column(DateTime, nullable=True)  # When content was published
     scanned_at = Column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.utcnow()
     )  # When content was discovered
 
     # Duration and metrics

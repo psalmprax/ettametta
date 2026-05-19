@@ -168,7 +168,7 @@ class VideoDownloader:
     def _build_ydl_opts(self, url: str, output_path: str, max_filesize_mb: int = 100) -> dict:
         """Build yt-dlp options with platform-aware cookie injection."""
         opts = {
-            "format": "bestvideo[height<=720][filesize<100M]+bestaudio/best[height<=720][filesize<100M]/best[height<=720]/best",
+            "format": "bestvideo[height<=1080][filesize<150M]+bestaudio/best[height<=1080][filesize<150M]/best[height<=1080]/best",
             "outtmpl": output_path,
             "merge_output_format": "mp4",
             "quiet": True,
