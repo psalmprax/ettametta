@@ -86,7 +86,10 @@ class PersonaService:
 
             if response.status_code == 200:
                 data = response.json()
-                return f"{self.render_node_url}/download/{data.get('job_id')}"
+                job_id = data.get("job_id")
+                if not job_id:
+                    raise RuntimeError("Render node response missing job_id")
+                return f"{self.render_node_url}/download/{job_id}"
             else:
                 logger.error(f"Render node failed: {response.text}")
                 raise RuntimeError(

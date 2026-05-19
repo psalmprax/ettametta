@@ -153,6 +153,19 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                     music_path=request.music_path,
                 )
 
+            if not output_path:
+                job.status = SystemJobStatus.FAILED
+                job.error_log = "Pipeline completed but produced no output file"
+                await db.commit()
+                notify_nexus_job_update_sync({
+                    "id": str(job.id),
+                    "status": job.status,
+                    "progress": 0,
+                    "error": job.error_log,
+                    "niche": job.niche,
+                })
+                return
+
             job.status = SystemJobStatus.COMPLETED
             job.output_path = output_path
             job.progress = 100

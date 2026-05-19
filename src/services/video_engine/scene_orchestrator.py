@@ -60,7 +60,7 @@ class SceneBasedVideoOrchestrator:
                 ["ffmpeg", "-version"], capture_output=True, text=True
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
 
     async def produce_scene_based_video(
@@ -335,7 +335,7 @@ class SceneBasedVideoOrchestrator:
                             font_size = 32
                             try:
                                 font = ImageFont.truetype(self.video_processor.font_path, font_size)
-                            except:
+                            except Exception:
                                 font = ImageFont.load_default()
                             
                             # Measure text
@@ -626,7 +626,7 @@ class SceneBasedVideoOrchestrator:
                 # Try to load a bold font
                 font_size = h // 25
                 font = ImageFont.truetype(self.video_processor.font_path, font_size)
-            except:
+            except Exception:
                 font = ImageFont.load_default()
 
             cta_lines = [

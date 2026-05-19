@@ -45,6 +45,14 @@ try:
     CV2_AVAILABLE = True
 except ImportError:
     CV2_AVAILABLE = False
+    cv2 = None
+
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    Image = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -98,10 +106,17 @@ class SemanticStockMatcher:
 
         # Guard: CLIP model must be available (probed once, then cached)
         if self._clip_available is None:
-            probe = await asyncio.to_thread(base_vision_service.get_text_embedding, "test")
-            self._clip_available = probe is not None and not (
-                isinstance(probe, np.ndarray) and probe.size == 0
-            )
+            try:
+                probe = await asyncio.wait_for(
+                    asyncio.to_thread(base_vision_service.get_text_embedding, "test"),
+                    timeout=30.0,
+                )
+                self._clip_available = probe is not None and not (
+                    isinstance(probe, np.ndarray) and probe.size == 0
+                )
+            except Exception as exc:
+                logger.warning("[SemanticStock] CLIP probe timed out or failed: %s", exc)
+                self._clip_available = False
         if not self._clip_available:
             logger.warning("[SemanticStock] CLIP model unavailable, falling back to keyword search")
             return await self._keyword_fallback(query, niche, count)
@@ -193,19 +208,10 @@ class SemanticStockMatcher:
 
         tasks = [_download_one(url) for url in urls]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        downloaded = []
         for r in results:
             if isinstance(r, dict) and r is not None:
-                # Get frame count for metadata
-                if CV2_AVAILABLE and os.path.exists(r["path"]):
-                    try:
-                        cap = cv2.VideoCapture(r["path"])
-                        r["frame_count"] = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                        cap.release()
-                    except Exception:
-                        r["frame_count"] = 0
                 downloaded.append(r)
+            # isinstance(r, Exception) is silently dropped; _download_one logged the failure already
 
         logger.info("[SemanticStock] Downloaded %d/%d candidates", len(downloaded), len(urls))
         return downloaded
@@ -221,7 +227,7 @@ class SemanticStockMatcher:
         Takes the max score across 3 frames (first, middle, last) to be
         robust to different shot compositions within a single clip.
         """
-        if not CV2_AVAILABLE or not os.path.exists(path):
+        if not CV2_AVAILABLE or not PIL_AVAILABLE or not os.path.exists(path):
             return None
 
         try:
@@ -240,7 +246,6 @@ class SemanticStockMatcher:
                 if ret:
                     # Convert BGR to RGB
                     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    from PIL import Image
                     pil_img = Image.fromarray(rgb)
                     frames.append(pil_img)
             cap.release()
