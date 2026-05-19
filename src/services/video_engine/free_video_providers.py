@@ -386,7 +386,7 @@ class FreeVideoProviderService:
             "runway": self.runway_key,
             "pika": self.pika_key,
         }
-        return key_map.get(provider)
+        return key_map.get(provider, "")
 
     def _get_all_providers(self) -> list[str]:
         """Get ordered list of all available providers"""

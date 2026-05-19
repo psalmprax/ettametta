@@ -450,8 +450,10 @@ class RemotionService:
         try:
             process.kill()
             await process.wait()
-        except Exception:
-            log.exception("Failed to kill cancelled process")
+        except ProcessLookupError:
+            pass  # Process already exited; nothing to clean up
+        except OSError:
+            log.warning("OS error while killing cancelled process")
 
     def _check_process_returncode(self, returncode: int, stderr_accumulator: list[str], log: logging.LoggerAdapter) -> None:
         """Helper to raise an error if the subprocess failed."""

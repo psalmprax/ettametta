@@ -4,6 +4,7 @@ import json
 import asyncio
 import time
 import random
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Dict
@@ -33,7 +34,25 @@ from src.shared.observability import get_logger
 from src.shared.state_machine import base_state_machine, JobState
 
 logger = get_logger(__name__)
-tracer = trace.get_tracer(__name__)
+
+
+def _run_subprocess(
+    args: list[str],
+    *,
+    capture_output: bool = True,
+    text: bool = False,
+    check: bool = True,
+    cwd: str | None = None,
+) -> subprocess.CompletedProcess:  # type: ignore[type-arg]
+    """Run a subprocess command. Raises subprocess.CalledProcessError on non-zero exit."""
+    return subprocess.run(
+        args,
+        capture_output=capture_output,
+        text=text,
+        check=check,
+        cwd=cwd,
+    )
+
 
 class NexusOrchestrator:
     """
@@ -251,14 +270,17 @@ class NexusOrchestrator:
                         return 300  # Default for testing
                     if not os.path.exists(path):
                         return None
+                    cap = None
                     try:
                         cap = cv2.VideoCapture(path)
                         count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                        cap.release()
                         return count if count > 0 else None
                     except Exception as e:
                         self.logger.warning(f"Failed to get frame count for {path}: {e}")
                         return None
+                    finally:
+                        if cap is not None:
+                            cap.release()
 
                 # Parallelize metadata extraction via threads to avoid blocking the event loop
                 counts = await asyncio.gather(
@@ -300,11 +322,13 @@ class NexusOrchestrator:
 
                         # Use CV2 to extract one frame
                         cap = cv2.VideoCapture(v_path)
-                        clip_frames = clip.get("duration_in_frames", 0)
-                        frame_idx = clip_frames // 2 if clip_frames else 0
-                        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-                        ret, frame_img = cap.read()
-                        cap.release()
+                        try:
+                            clip_frames = clip.get("duration_in_frames", 0)
+                            frame_idx = clip_frames // 2 if clip_frames else 0
+                            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                            ret, frame_img = cap.read()
+                        finally:
+                            cap.release()
 
                         if ret:
                             frame_path = f"temp/audit/frame_{job_id}_{i}.jpg"
@@ -392,7 +416,7 @@ class NexusOrchestrator:
                 
                 await asyncio.to_thread(write_voiceover_list)
                 
-                await asyncio.to_thread(subprocess.run, ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_path, "-c", "copy", master_voiceover], capture_output=True)
+                await asyncio.to_thread(_run_subprocess, ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_path, "-c", "copy", master_voiceover])
                 audio_uri = master_voiceover
             else:
                 audio_uri = voiceover_paths[0] if voiceover_paths else music_path
@@ -402,7 +426,7 @@ class NexusOrchestrator:
             try:
                 probe_target = audio_uri if audio_uri and os.path.exists(audio_uri) else None
                 if probe_target:
-                    res = await asyncio.to_thread(subprocess.run, ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", probe_target], capture_output=True, text=True)
+                    res = await asyncio.to_thread(_run_subprocess, ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", probe_target], text=True)
                     total_duration_sec = float(res.stdout.strip())
                     # Add 2 seconds buffer for the Outtro to prevent sudden cutoff
                     total_frames = int((total_duration_sec + 2.0) * 30)
@@ -432,10 +456,10 @@ class NexusOrchestrator:
             if visual_paths and os.path.exists(visual_paths[0]):
                 try:
                     self.logger.info(f"[Nexus] Extracting thumbnail from first clip...")
-                    await asyncio.to_thread(subprocess.run, [
+                    await asyncio.to_thread(_run_subprocess, [
                         "ffmpeg", "-y", "-ss", "00:00:01.500", "-i", visual_paths[0],
                         "-frames:v", "1", "-q:v", "2", thumbnail_path
-                    ], capture_output=True)
+                    ])
                 except Exception as e:
                     self.logger.error(f"[Nexus] Thumbnail extraction failed: {e}")
 
@@ -500,11 +524,13 @@ class NexusOrchestrator:
                 # Extract final metadata for reporting
                 try:
                     cap = cv2.VideoCapture(rendered_path)
-                    final_fps = cap.get(cv2.CAP_PROP_FPS)
-                    final_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    final_duration = final_frames / final_fps if final_fps > 0 else 0
-                    cap.release()
-                    self.logger.info(f"[Nexus] Final video stats: {final_duration:.1f}s, {final_fps:.1f} fps")
+                    try:
+                        final_fps = cap.get(cv2.CAP_PROP_FPS)
+                        final_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                        final_duration = final_frames / final_fps if final_fps > 0 else 0
+                        self.logger.info(f"[Nexus] Final video stats: {final_duration:.1f}s, {final_fps:.1f} fps")
+                    finally:
+                        cap.release()
                 except Exception as e:
                     self.logger.warning(f"Failed to extract final video metadata: {e}")
                     final_duration = 0
@@ -535,8 +561,9 @@ class NexusOrchestrator:
 
                 # Temp Cleanup: Remove intermediate files
                 try:
-                    import shutil
-                    for temp_dir in ["temp/voice", "temp/audit", "temp/thumbnails"]:
+                    cwd = Path.cwd()
+                    for rel_dir in ["temp/voice", "temp/audit", "temp/thumbnails"]:
+                        temp_dir = str(cwd / rel_dir)
                         if os.path.exists(temp_dir):
                             shutil.rmtree(temp_dir, ignore_errors=True)
                 except Exception as e:
