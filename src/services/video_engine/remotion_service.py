@@ -81,6 +81,8 @@ class RemotionService:
             self._normalize_and_resolve_path(tempfile.gettempdir()),
             self._normalize_and_resolve_path("/app/temp"),
             self._normalize_and_resolve_path("/app/downloads"),
+            self._normalize_and_resolve_path("/app/local_downloads"),
+            self._normalize_and_resolve_path("local_downloads"),
         ]
         
         # Initialize Prometheus circuit breaker state

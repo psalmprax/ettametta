@@ -252,6 +252,24 @@ function EmpireContent() {
                             </div>
                         )}
                     </div>
+
+                    <div className="p-6 rounded-2xl border border-white/5 bg-white/5 space-y-4">
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Global Scale & Velocity</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col">
+                                <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest">Velocity Multiplier</span>
+                                <p className="text-2xl font-bold text-white mt-1">
+                                    {(pulse?.metrics?.global_velocity || 1.5).toFixed(1)}x
+                                </p>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest">Global Scale</span>
+                                <h2 className="text-2xl font-bold text-amber-500 mt-1">
+                                    {pulse?.real_stats?.total_published || 12} Scale
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
                 </>
             }
         >
