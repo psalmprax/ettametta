@@ -248,16 +248,20 @@ class SemanticStockMatcher:
             if not frames:
                 return None
 
-            # Compute CLIP embeddings for each frame (lightweight — no DB write or FAISS rebuild)
-            best_score = 0.0
-            for frame_img in frames:
-                frame_embedding = await asyncio.to_thread(vision_service.get_image_embedding, frame_img)
-                if frame_embedding is None:
-                    continue
+            # Compute CLIP embeddings for each frame concurrently
+            tasks = [
+                asyncio.to_thread(vision_service.get_image_embedding, frame_img)
+                for frame_img in frames
+            ]
+            embeddings = await asyncio.gather(*tasks)
+            valid_embeddings = [emb for emb in embeddings if emb is not None]
+            if not valid_embeddings:
+                return None
 
-                # Cosine similarity (both embeddings are already L2-normalized)
-                sim = float(np.dot(query_embedding, frame_embedding))
-                best_score = max(best_score, sim)
+            # Cosine similarity (both embeddings are already L2-normalized)
+            stacked_embeddings = np.stack(valid_embeddings)
+            sims = stacked_embeddings @ query_embedding
+            best_score = float(np.max(sims))
 
             return best_score if best_score > 0 else None
 

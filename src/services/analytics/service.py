@@ -466,13 +466,9 @@ class AnalyticsService:
         if not retention_data or len(retention_data) < 2:
             return "Insufficient telemetry for retention analysis."
 
-        max_drop = 0
-        drop_index = 0
-        for i in range(len(retention_data) - 1):
-            drop = retention_data[i] - retention_data[i + 1]
-            if drop > max_drop:
-                max_drop = drop
-                drop_index = i
+        diffs = -np.diff(np.asarray(retention_data, dtype=float))
+        drop_index = int(np.argmax(diffs))
+        max_drop = float(diffs[drop_index])
 
         # Each index is roughly 5 seconds (computed from 12 points over 60s)
         time_sec = drop_index * 5
