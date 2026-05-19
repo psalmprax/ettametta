@@ -91,12 +91,11 @@ class NeuralVisionAnalyzer:
         embeddings = []
         for i, row in enumerate(rows):
             clip_id, emb_json = row
-            emb = np.array(json.loads(emb_json)).astype('float32')
-            embeddings.append(emb)
+            embeddings.append(json.loads(emb_json))
             self.id_to_metadata[i] = clip_id
 
         # Normalize and build index
-        embeddings = np.array(embeddings)
+        embeddings = np.array(embeddings, dtype='float32')
         if FAISS_AVAILABLE:
             faiss.normalize_L2(embeddings)
             self.faiss_index = faiss.IndexFlatIP(512) # Inner product on normalized vectors = Cosine sim
