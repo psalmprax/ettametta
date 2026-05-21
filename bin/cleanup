@@ -1,0 +1,207 @@
+#!/usr/bin/env bash
+# ============================================================
+# ettametta cleanup script
+# Removes generated artifacts, caches, and dependencies
+# Usage: ./bin/cleanup [--deps] [--artifacts] [--all] [--dry-run]
+# ============================================================
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log()  { echo -e "${GREEN}[cleanup]${NC} $*"; }
+warn() { echo -e "${YELLOW}[cleanup]${NC} $*"; }
+err()  { echo -e "${RED}[cleanup]${NC} $*" >&2; }
+
+DRY_RUN=false
+
+run() {
+    if $DRY_RUN; then
+        echo -e "${BLUE}[dry-run]${NC} $*"
+    else
+        eval "$@"
+    fi
+}
+
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Remove generated artifacts and caches from ettametta.
+
+Options:
+  --deps        Remove installed dependencies (venv, node_modules)
+  --artifacts   Remove generated outputs, temp files, caches
+  --caches      Remove Python caches (__pycache__, .ruff_cache, .pytest_cache)
+  --dbs         Remove local SQLite databases
+  --all         Remove everything (deps + artifacts + caches + dbs)
+  --dry-run     Show what would be deleted without deleting
+  --help        Show this message
+
+Examples:
+  ./bin/cleanup --artifacts          # Clean generated files only
+  ./bin/cleanup --deps               # Remove venv and node_modules
+  ./bin/cleanup --all --dry-run      # Preview full cleanup
+  ./bin/cleanup --all                # Nuclear option
+EOF
+}
+
+get_size() {
+    du -sh "$1" 2>/dev/null | awk '{print $1}' || echo "0B"
+}
+
+clean_deps() {
+    log "Removing installed dependencies..."
+
+    local targets=(
+        ".venv"
+        "venv"
+        "apps/dashboard/node_modules"
+        "apps/remotion-studio/node_modules"
+        "node_modules"
+    )
+
+    for target in "${targets[@]}"; do
+        local path="$PROJECT_ROOT/$target"
+        if [ -d "$path" ]; then
+            local size
+            size=$(get_size "$path")
+            log "  Removing $target ($size)"
+            run "rm -rf '$path'"
+        fi
+    done
+}
+
+clean_artifacts() {
+    log "Removing generated artifacts..."
+
+    local targets=(
+        "outputs"
+        "output"
+        "temp"
+        "temp_frames"
+        "local_downloads"
+        "graphify-out"
+        "apps/dashboard/.next"
+        "apps/remotion-studio/build"
+        "apps/remotion-studio/out"
+        "apps/dashboard/playwright-report"
+        "apps/dashboard/test-results"
+        "apps/remotion-studio/.remotion"
+    )
+
+    for target in "${targets[@]}"; do
+        local path="$PROJECT_ROOT/$target"
+        if [ -d "$path" ]; then
+            local size
+            size=$(get_size "$path")
+            log "  Removing $target ($size)"
+            run "rm -rf '$path'"
+        fi
+    done
+
+    # Tar.gz patches
+    local tar_count
+    tar_count=$(find "$PROJECT_ROOT" -maxdepth 1 -name "*.tar.gz" | wc -l)
+    if [ "$tar_count" -gt 0 ]; then
+        local tar_size
+        tar_size=$(find "$PROJECT_ROOT" -maxdepth 1 -name "*.tar.gz" -exec du -ch {} + 2>/dev/null | tail -1 | awk '{print $1}')
+        log "  Removing $tar_count patch archives ($tar_size)"
+        run "find '$PROJECT_ROOT' -maxdepth 1 -name '*.tar.gz' -delete"
+    fi
+}
+
+clean_caches() {
+    log "Removing Python caches..."
+
+    local pycache_count
+    pycache_count=$(find "$PROJECT_ROOT" -name "__pycache__" -not -path "*/.git/*" | wc -l)
+    if [ "$pycache_count" -gt 0 ]; then
+        log "  Removing $pycache_count __pycache__ directories"
+        run "find '$PROJECT_ROOT' -name '__pycache__' -not -path '*/.git/*' -exec rm -rf {} + 2>/dev/null || true"
+    fi
+
+    local cache_dirs=(
+        ".ruff_cache"
+        ".pytest_cache"
+        ".mypy_cache"
+        ".coverage"
+        "htmlcov"
+    )
+
+    for target in "${cache_dirs[@]}"; do
+        local path="$PROJECT_ROOT/$target"
+        if [ -e "$path" ]; then
+            local size
+            size=$(get_size "$path")
+            log "  Removing $target ($size)"
+            run "rm -rf '$path'"
+        fi
+    done
+}
+
+clean_dbs() {
+    log "Removing local SQLite databases..."
+
+    local db_count
+    db_count=$(find "$PROJECT_ROOT" -name "*.db" -not -path "*/.git/*" -not -path "*/node_modules/*" | wc -l)
+    if [ "$db_count" -gt 0 ]; then
+        log "  Removing $db_count .db files"
+        run "find '$PROJECT_ROOT' -name '*.db' -not -path '*/.git/*' -not -path '*/node_modules/*' -delete"
+    fi
+}
+
+# --- Main ---
+main() {
+    local do_deps=false
+    local do_artifacts=false
+    local do_caches=false
+    local do_dbs=false
+
+    if [ $# -eq 0 ]; then
+        usage
+        exit 0
+    fi
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --deps)      do_deps=true ;;
+            --artifacts) do_artifacts=true ;;
+            --caches)    do_caches=true ;;
+            --dbs)       do_dbs=true ;;
+            --all)       do_deps=true; do_artifacts=true; do_caches=true; do_dbs=true ;;
+            --dry-run)   DRY_RUN=true ;;
+            --help|-h)   usage; exit 0 ;;
+            *)           err "Unknown option: $1"; usage; exit 1 ;;
+        esac
+        shift
+    done
+
+    cd "$PROJECT_ROOT"
+
+    if $DRY_RUN; then
+        warn "DRY RUN — nothing will be deleted"
+        echo ""
+    fi
+
+    if $do_artifacts; then clean_artifacts; fi
+    if $do_caches; then clean_caches; fi
+    if $do_dbs; then clean_dbs; fi
+    if $do_deps; then clean_deps; fi
+
+    echo ""
+    log "Cleanup complete!"
+    if $DRY_RUN; then
+        warn "This was a dry run. Re-run without --dry-run to apply."
+    else
+        echo "  Run ./bin/setup to reinstall dependencies."
+    fi
+}
+
+main "$@"
