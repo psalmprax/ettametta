@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 import logging
 import uuid
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.api_responses import success_response
 from src.services.knowledge.service import base_knowledge_service

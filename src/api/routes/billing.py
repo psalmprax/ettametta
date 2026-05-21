@@ -5,7 +5,7 @@ Billing API Routes for ettametta
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from src.api.utils.user_models import UserDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.database import get_db
 from src.api.utils.subscription import get_subscription_tier_value
 from sqlalchemy.ext.asyncio import AsyncSession

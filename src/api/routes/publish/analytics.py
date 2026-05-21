@@ -10,7 +10,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select
 
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB, UserRole
 from src.api.utils.database import get_db
 from src.api.utils.models import PublishedContentDB, ABTestDB

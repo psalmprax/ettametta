@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.auth import admin_required
 from src.services.infrastructure.chaos_utility import base_chaos_service
 from src.services.analytics.consistency_sentinel import base_consistency_sentinel

@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from src.services.analytics.service import base_analytics_service
 from src.services.analytics.service_extended import AnalyticsServiceExtended
 from src.services.analytics.models import ContentPerformance
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB, UserRole
 import datetime
 from fastapi_cache.decorator import cache

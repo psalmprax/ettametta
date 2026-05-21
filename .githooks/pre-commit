@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# =========================================================================
+# Pre-commit hook: Validate test patch targets
+# =========================================================================
+# Runs scripts/validate_patch_targets.py --staged to ensure all staged
+# test files use correct base_* singleton naming in their patch() calls.
+#
+# If the validation finds mismatches in staged test files, the commit
+# is blocked with details on what needs to be fixed.
+# =========================================================================
+
+set -o errexit
+set -o nounset
+
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$REPO_ROOT" ]; then
+    echo "⚠  Not a git repository. Skipping patch-target validation."
+    exit 0
+fi
+
+VALIDATE_SCRIPT="$REPO_ROOT/scripts/validate_patch_targets.py"
+
+if [ ! -f "$VALIDATE_SCRIPT" ]; then
+    echo "⚠  validate_patch_targets.py not found. Skipping check."
+    exit 0
+fi
+
+cd "$REPO_ROOT"
+
+# Run validation on staged files only
+python3 "$VALIDATE_SCRIPT" --staged
+exit $?

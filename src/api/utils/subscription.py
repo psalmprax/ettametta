@@ -10,7 +10,7 @@ def subscription_required(required_tier: SubscriptionTier):
     """
     Dependency to enforce a minimum subscription tier.
     """
-    from src.api.routes.auth import get_current_user
+    from src.api.utils.auth import get_current_user
 
     async def dependency(current_user: UserDB = Depends(get_current_user)):
         # Tier hierarchy check
@@ -81,7 +81,7 @@ def daily_limit_reached():
     """
     FastAPI dependency to enforce daily limits.
     """
-    from src.api.routes.auth import get_current_user
+    from src.api.utils.auth import get_current_user
 
     async def dependency(
         current_user: UserDB = Depends(get_current_user),
@@ -97,7 +97,7 @@ def engine_access_required(engine: str):
     """
     Dependency to check if a user has access to a specific AI engine.
     """
-    from src.api.routes.auth import get_current_user
+    from src.api.utils.auth import get_current_user
 
     async def dependency(current_user: UserDB = Depends(get_current_user)):
         tier_values = {
@@ -163,7 +163,7 @@ def credits_required(action: CreditAction | str):
     Dependency to check and consume credits for an action.
     Accepts CreditAction enum or string for backward compatibility.
     """
-    from src.api.routes.auth import get_current_user
+    from src.api.utils.auth import get_current_user
 
     async def dependency(
         current_user: UserDB = Depends(get_current_user),

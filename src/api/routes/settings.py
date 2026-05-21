@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.api.utils.models import SystemSettings, BotCodeDB, UserSetting, VideoFilterDB
-from src.api.routes.auth import get_current_user, admin_required
+from src.api.utils.auth import get_current_user, admin_required
 from src.api.utils.user_models import UserDB, UserRole
 from src.api.utils.notifications import configure_telegram_bot, configure_whatsapp_bot
 from src.api.utils.api_responses import success_response

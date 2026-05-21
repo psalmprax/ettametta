@@ -20,7 +20,7 @@ from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 
 from src.api.config import settings
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.vault import get_secret, get_secret_async
 from src.api.utils.user_models import UserDB
 from src.api.utils.api_responses import success_response
