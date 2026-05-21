@@ -67,7 +67,8 @@
 **Requirements**: VIDEO-03
 **Success Criteria** (what must be TRUE):
   1. User can generate videos with multi-scene narratives
-**Plans**: TBD
+**Plans**: 1 plans
+- [ ] 04-01-PLAN.md — Verify multi-scene storytelling video generation
 
 ### Phase 5: Multi-Platform Publishing
 **Goal**: Users can publish content to social media platforms
@@ -75,8 +76,9 @@
 **Requirements**: PUBLISH-01
 **Success Criteria** (what must be TRUE):
   1. User can publish videos to YouTube, TikTok, Facebook, and Instagram
-**Plans**: 1 plans
+**Plans**: 2 plans
 - [x] 05-01-PLAN.md — Implement multi-platform publishing drivers
+- [ ] 05-02-PLAN.md — Verify multi-platform publishing capabilities
 
 ### Phase 6: Automated Scheduling Publishing
 **Goal**: Users can automate publishing campaigns
@@ -97,8 +99,9 @@
   1. User can automatically insert affiliate links into video content
   2. User can track affiliate revenue and manage referral programs
   3. User can purchase and consume credits for AI services and features
-**Plans**: 1 plans
+**Plans**: 2 plans
 - [x] 07-01-PLAN.md — Implement affiliate links and revenue tracking
+- [ ] 07-02-PLAN.md — Verify monetization and credit system
 
 ### Phase 8: Analytics
 **Goal**: Users can view content performance metrics
@@ -106,8 +109,9 @@
 **Requirements**: ANALYTICS-01
 **Success Criteria** (what must be TRUE):
   1. User can view performance analytics and content metrics
-**Plans**: 1 plans
+**Plans**: 2 plans
 - [x] 08-01-PLAN.md — Implement performance analytics and content metrics
+- [ ] 08-02-PLAN.md — Verify analytics and reporting capabilities
 
 ### Phase 9: Enterprise Hardening
 **Goal**: Transition to an enterprise-grade, high-availability platform
@@ -119,21 +123,23 @@
   3. Unified Observability (Traces/Structured Logs)
   4. Unified LLM Proxy with Cost-Aware Routing
   5. EU AI Act compliant automated governance
-**Plans**: See HARDENING_ROADMAP.md
+**Plans**: 2 plans
+- [x] 09-01-PLAN.md — Unified Observability and Request Tracing
+- [ ] 09-02-PLAN.md — Verify enterprise infrastructure capabilities
 
 **UI hint**: yes
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. User Authentication and Settings | 6/6 | Complete    | 2026-04-17 |
+| 1. User Authentication and Settings | 5/6 | In Progress | - |
 | 2. Content Discovery | 3/3 | Complete    | 2026-04-17 |
-| 3. Basic Video Generation | 5/5 | Completed | 2026-04-15 |
-| 4. Advanced Video Generation | 1/1 | Completed | 2026-04-17 |
-| 5. Multi-Platform Publishing | 1/1 | Completed | 2026-04-17 |
-| 6. Automated Scheduling Publishing | 3/3 | Completed | - |
-| 7. Monetization | 1/1 | Completed | 2026-04-17 |
-| 8. Analytics | 1/1 | Completed | 2026-04-17 |
-| 9. Enterprise Hardening | 0/1 | In Progress | - |
+| 3. Basic Video Generation | 5/5 | Complete | 2026-04-15 |
+| 4. Advanced Video Generation | 0/1 | In Progress | - |
+| 5. Multi-Platform Publishing | 1/2 | In Progress | - |
+| 6. Automated Scheduling Publishing | 3/3 | Complete | - |
+| 7. Monetization | 1/2 | In Progress | - |
+| 8. Analytics | 1/2 | In Progress | - |
+| 9. Enterprise Hardening | 1/2 | In Progress | - |
 
 ---
 *Roadmap created: 2026-04-08*
