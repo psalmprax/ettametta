@@ -6,8 +6,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Any
-from src.api.routes.auth import get_current_user
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.services.llm.intelligence_hub import base_intelligence_service
 from src.api.utils.user_models import UserDB
 

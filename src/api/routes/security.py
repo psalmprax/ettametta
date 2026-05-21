@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from src.api.utils.api_responses import success_response
 import logging
 import datetime
-from src.api.routes.auth import get_current_user, admin_required
+from src.api.utils.auth import get_current_user, admin_required
 from src.api.utils.user_models import UserDB, UserRole
 from src.services.security.service import base_security_service
 

@@ -4,7 +4,7 @@ from sqlalchemy import select, func
 from src.api.utils.database import get_db
 from src.shared.enums import SystemJobStatus, CreditAction
 from src.api.utils.models import VideoJobDB, AuditLogDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB, UserRole
 from src.api.utils.audit_service import audit_service
 from src.services.payment.credit_service import credit_service

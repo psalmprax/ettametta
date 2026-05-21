@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from src.services.llm.mythos_agent import MythosReasoningAgent
 from src.api.utils.api_responses import success_response
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.models import UserDB
 
 router = APIRouter(prefix="/reason", tags=["Reasoning"])

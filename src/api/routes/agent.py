@@ -4,7 +4,7 @@ from typing import Any
 import asyncio
 import logging
 import uuid
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.limiter import limiter
 from src.api.utils.database import get_db

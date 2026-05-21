@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.api.utils.models import AffiliateLinkDB, RevenueLogDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.api_responses import success_response
 from src.services.monetization.service import base_monetization_service
 from src.services.monetization.promo_generator import base_promo_service

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.api.utils.models import PersonaDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 import uuid
 import os
 import requests

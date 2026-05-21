@@ -5,7 +5,7 @@ from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.shared.enums import SystemJobStatus
 from src.api.utils.models import VideoJobDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.subscription import check_daily_limit, credits_required
 from src.services.video_engine.tasks import download_and_process_task

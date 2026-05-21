@@ -7,7 +7,7 @@ import logging
 # Backward compatibility
 base_remotion_service = RemotionService()
 import uuid
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 
 from src.shared.enums import SystemJobStatus
 

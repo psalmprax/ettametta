@@ -12,7 +12,7 @@ from src.services.visual_generator.service import base_visual_generator_service
 from src.services.multiplatform.translator import base_multiplatform_service
 from src.services.scheduler.empire_mode import base_scheduler_service
 from src.services.sentinel.algorithm_tracker import base_algorithm_service
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/no-face", tags=["Automation"])

@@ -9,6 +9,9 @@ from src.api.utils.auth import (
     decode_access_token,
     sign_oauth_state,
     verify_oauth_state,
+    get_current_user,
+    admin_required,
+    oauth2_scheme,
 )
 from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
 from src.api.config import settings
@@ -32,8 +35,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 def create_google_flow():
@@ -231,41 +232,6 @@ async def login(
     access_token = create_access_token(data={"sub": user.email})
 
     return success_response(data={"access_token": access_token, "token_type": "bearer"})
-
-
-async def get_current_user(
-    token: str = Depends(oauth2_scheme), db=Depends(get_db)
-):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    payload = await decode_access_token(token)
-    if payload is None:
-        raise credentials_exception
-    email: str = payload.get("sub")
-    if email is None:
-        raise credentials_exception
-
-    stmt = select(UserDB).where(UserDB.email == email)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-
-    if user is None:
-        raise credentials_exception
-    return user
-
-
-def admin_required(current_user: UserDB = Depends(get_current_user)) -> UserDB:
-    from src.api.utils.user_models import UserRole
-
-    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Administrative privileges required for this operation.",
-        )
-    return current_user
 
 
 @router.get("/me")

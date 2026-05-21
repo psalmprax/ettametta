@@ -7,7 +7,7 @@ from src.api.main import app
 from src.api.utils.database import SessionLocal, get_db
 from src.api.utils.models import UserDB, VideoJobDB, SubscriptionTier, UserRole
 from src.api.utils.credit_models import UserCreditDB, CreditTransactionDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from sqlalchemy import select
 import uuid
 import json

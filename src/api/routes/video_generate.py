@@ -5,7 +5,7 @@ from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.shared.enums import SystemJobStatus, CreditAction
 from src.api.utils.models import VideoJobDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB, SubscriptionTier
 from src.api.utils.subscription import (
     subscription_required,

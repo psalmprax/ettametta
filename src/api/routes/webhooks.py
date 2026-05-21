@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from src.api.utils.models import PublishedContentDB, WebhookEventDB
 from src.shared.enums import ContentPublishStatus
-from src.api.routes.auth import admin_required
+from src.api.utils.auth import admin_required
 from datetime import datetime, timezone
 import hashlib
 import hmac

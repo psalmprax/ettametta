@@ -9,7 +9,7 @@ from sqlalchemy import select, func
 from src.api.utils.database import get_db, async_session_factory
 from src.shared.enums import SystemJobStatus
 from src.api.utils.models import NexusJobDB, BlueprintDB, VideoJobDB
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.services.nexus_engine.orchestrator import base_nexus_service
 from pydantic import BaseModel, Field

@@ -22,7 +22,7 @@ from src.api.utils.api_responses import (
     handle_exception,
 )
 
-from src.api.routes.auth import get_current_user
+from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.database import get_db
 from src.services.discovery.service_extended import DiscoveryServiceExtended, get_discovery_service_extended
