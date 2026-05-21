@@ -824,8 +824,8 @@ class VideoProcessor:
         )
 
         # 1. Download base image
-        temp_image = os.path.join("temp", f"lite4k_base_{uuid.uuid4()}.jpg")
-        os.makedirs("temp", exist_ok=True)
+        temp_image = os.path.join("/tmp/ettametta", f"lite4k_base_{uuid.uuid4()}.jpg")
+        os.makedirs("/tmp/ettametta", exist_ok=True)
         async with httpx.AsyncClient() as client:
             resp = await client.get(image_uri, follow_redirects=True)
             with open(temp_image, "wb") as f:
@@ -879,7 +879,7 @@ class VideoProcessor:
 
         processing_scenes = []
         temp_files = []
-        os.makedirs("temp", exist_ok=True)
+        os.makedirs("/tmp/ettametta", exist_ok=True)
 
         async def _download_media(url: str, ext: str) -> str:
             if not url:

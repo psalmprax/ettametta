@@ -253,7 +253,7 @@ def download_and_process_task(
             from src.services.video_engine.ffmpeg_utils import base_ffmpeg_service
             
             # Ensure temp dir exists
-            thumb_dir = f"temp/thumbnails/{task_id}"
+            thumb_dir = f"/tmp/ettametta/thumbnails/{task_id}"
             os.makedirs(thumb_dir, exist_ok=True)
             
             thumbs = base_ffmpeg_service.generate_thumbnails(processed_path, thumb_dir, count=1)
