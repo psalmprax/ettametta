@@ -554,3 +554,192 @@ async def auth_linkedin_callback(code: str, state: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Token exchange failed: {str(e)}")
+
+
+# ─── Snapchat OAuth ─────────────────────────────────────────────────
+
+
+@router.get("/auth/snapchat")
+async def auth_snapchat(current_user: UserDB = Depends(get_current_user)):
+    """
+    Starts the Snapchat OAuth flow for Snap Kit / Snapchat Marketing API.
+    """
+    client_id = await get_secret_async("snapchat_client_id")
+    redirect_uri = settings.SNAPCHAT_REDIRECT_URI
+
+    if not client_id:
+        raise HTTPException(
+            status_code=400, detail="Snapchat Client ID not configured in Vault."
+        )
+
+    state_data = {"user_id": current_user.id, "csrf": secrets.token_urlsafe(16)}
+    state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+
+    scope = "snapchat-marketing-api"
+
+    params = {
+        "client_id": client_id,
+        "scope": scope,
+        "response_type": "code",
+        "redirect_uri": redirect_uri,
+        "state": state,
+    }
+
+    query_string = urllib.parse.urlencode(params)
+    auth_url = f"https://accounts.snapchat.com/accounts/oauth2/auth?{query_string}"
+    return success_response(data={"url": auth_url})
+
+
+@router.get("/auth/snapchat/callback")
+async def auth_snapchat_callback(code: str, state: str):
+    """Handles the Snapchat OAuth callback"""
+
+    try:
+        state_padded = state + '=' * (-len(state) % 4)
+        state_data = json.loads(base64.urlsafe_b64decode(state_padded.encode()).decode())
+        user_id = state_data.get("user_id")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+
+    client_id = await get_secret_async("snapchat_client_id")
+    client_secret = await get_secret_async("snapchat_client_secret")
+    redirect_uri = settings.SNAPCHAT_REDIRECT_URI
+
+    url = "https://accounts.snapchat.com/accounts/oauth2/token"
+    data = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": redirect_uri,
+        "client_id": client_id,
+        "client_secret": client_secret,
+    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=data, headers=headers)
+            token_data = response.json()
+
+            if response.status_code != 200 or "access_token" not in token_data:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Snapchat Auth Failed: {token_data.get('error_description', 'Unknown error')}",
+                )
+
+            await token_manager.store_token(
+                "snapchat",
+                user_id,
+                {
+                    "access_token": token_data["access_token"],
+                    "refresh_token": token_data.get("refresh_token"),
+                    "expires_in": token_data.get("expires_in", 3600),
+                    "scope": token_data.get("scope"),
+                },
+            )
+
+            return success_response(
+                data={
+                    "status": "success",
+                    "message": "Snapchat authenticated successfully",
+                    "user_id": user_id,
+                }
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Token exchange failed: {str(e)}")
+
+
+# ─── Twitch OAuth ────────────────────────────────────────────────────
+
+
+@router.get("/auth/twitch")
+async def auth_twitch(current_user: UserDB = Depends(get_current_user)):
+    """
+    Starts the Twitch OAuth flow for video upload and channel management.
+    """
+    client_id = await get_secret_async("twitch_client_id")
+    redirect_uri = settings.TWITCH_REDIRECT_URI
+
+    if not client_id:
+        raise HTTPException(
+            status_code=400, detail="Twitch Client ID not configured in Vault."
+        )
+
+    state_data = {"user_id": current_user.id, "csrf": secrets.token_urlsafe(16)}
+    state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+
+    scope = "channel:manage:videos user:edit:broadcast"
+
+    params = {
+        "client_id": client_id,
+        "scope": scope,
+        "response_type": "code",
+        "redirect_uri": redirect_uri,
+        "state": state,
+    }
+
+    query_string = urllib.parse.urlencode(params)
+    auth_url = f"https://id.twitch.tv/oauth2/authorize?{query_string}"
+    return success_response(data={"url": auth_url})
+
+
+@router.get("/auth/twitch/callback")
+async def auth_twitch_callback(code: str, state: str):
+    """Handles the Twitch OAuth callback"""
+
+    try:
+        state_padded = state + '=' * (-len(state) % 4)
+        state_data = json.loads(base64.urlsafe_b64decode(state_padded.encode()).decode())
+        user_id = state_data.get("user_id")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+
+    client_id = await get_secret_async("twitch_client_id")
+    client_secret = await get_secret_async("twitch_client_secret")
+    redirect_uri = settings.TWITCH_REDIRECT_URI
+
+    url = "https://id.twitch.tv/oauth2/token"
+    data = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": redirect_uri,
+        "client_id": client_id,
+        "client_secret": client_secret,
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=data)
+            token_data = response.json()
+
+            if response.status_code != 200 or "access_token" not in token_data:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Twitch Auth Failed: {token_data.get('message', 'Unknown error')}",
+                )
+
+            await token_manager.store_token(
+                "twitch",
+                user_id,
+                {
+                    "access_token": token_data["access_token"],
+                    "refresh_token": token_data.get("refresh_token"),
+                    "expires_in": token_data.get("expires_in", 3600),
+                    "scope": token_data.get("scope"),
+                },
+            )
+
+            return success_response(
+                data={
+                    "status": "success",
+                    "message": "Twitch authenticated successfully",
+                    "user_id": user_id,
+                }
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Token exchange failed: {str(e)}")
