@@ -12,7 +12,7 @@ from src.shared.enums import ABTestStatus
 from src.api.routes.auth import get_current_user
 from src.api.utils.user_models import UserDB, UserRole
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 import math
 from src.api.utils.api_responses import success_response
 
@@ -354,7 +354,7 @@ async def determine_winner(
         test.confidence_level = stats.confidence_level
         test.p_value = stats.p_value
         test.status = ABTestStatus.COMPLETED
-        test.completed_at = datetime.utcnow()
+        test.completed_at = datetime.now(timezone.utc)
         winner_title = (
             test.variant_a_title if stats.winner == "A" else test.variant_b_title
         )
@@ -583,5 +583,5 @@ async def trigger_global_evolution(
     return success_response(data={
         "status": "global_evolution_initiated",
         "summary": summary,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     })

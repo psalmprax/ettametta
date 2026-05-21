@@ -15,7 +15,7 @@ export const hormoziStyleSchema = z.object({
 
 export const HormoziStyle: React.FC<z.infer<typeof hormoziStyleSchema>> = ({ text, video_url, audio_url, highlight_color = '#00ff00', show_cta_overlay, cta_type, cta_text }) => {
     const frame = useCurrentFrame();
-    const { fps, durationInFrames } = useVideoConfig();
+    const { width, height, fps, durationInFrames } = useVideoConfig();
 
     const words = text.split(' ');
     // Show CTA in last 2 seconds
@@ -28,6 +28,11 @@ export const HormoziStyle: React.FC<z.infer<typeof hormoziStyleSchema>> = ({ tex
         fps,
         config: { stiffness: 100 }
     });
+
+    const baseFontSize = `${Math.min(width * 0.09, 100)}px`;
+    const containerRadius = `${Math.min(width * 0.03, 20)}px`;
+    const containerPadding = `${Math.min(width * 0.02, 20)}px ${Math.min(width * 0.06, 50)}px`;
+    const outerPadding = `${Math.min(width * 0.05, 40)}px`;
 
     return (
         <AbsoluteFill style={{ backgroundColor: 'black' }}>
@@ -45,24 +50,31 @@ export const HormoziStyle: React.FC<z.infer<typeof hormoziStyleSchema>> = ({ tex
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    padding: '40px'
+                    padding: outerPadding,
+                    boxSizing: 'border-box'
                 }}>
                     <div style={{
                         backgroundColor: 'rgba(0,0,0,0.85)',
-                        padding: '20px 60px',
-                        borderRadius: '20px',
+                        padding: containerPadding,
+                        borderRadius: containerRadius,
                         border: `4px solid ${highlight_color}`,
                         transform: `scale(${interpolate(springValue, [0, 1], [0.9, 1.2])})`,
-                        boxShadow: `0 0 50px ${highlight_color}44`
+                        boxShadow: `0 0 50px ${highlight_color}44`,
+                        maxWidth: '90%',
+                        boxSizing: 'border-box',
+                        overflow: 'hidden'
                     }}>
                         <h1 style={{
                             color: 'white',
-                            fontSize: '120px',
+                            fontSize: baseFontSize,
                             fontFamily: '"Arial Black", sans-serif',
                             textTransform: 'uppercase',
                             textAlign: 'center',
                             margin: 0,
-                            lineHeight: 1
+                            lineHeight: 1,
+                            wordBreak: 'break-word',
+                            whiteSpace: 'normal',
+                            maxWidth: '100%'
                         }}>
                             {words[currentWordIndex]}
                         </h1>

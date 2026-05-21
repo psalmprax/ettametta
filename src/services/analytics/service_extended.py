@@ -221,7 +221,7 @@ class AnalyticsServiceExtended:
         active_trends_count = result.scalar() or 0
         
         # Calculate velocity (recent trends)
-        yesterday = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+        yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)
         result = await self.db.execute(
             select(func.count(NicheTrendDB.id)).where(
                 NicheTrendDB.last_updated >= yesterday

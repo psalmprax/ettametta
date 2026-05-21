@@ -24,13 +24,13 @@ def test_db():
     # Cleanup
     Base.metadata.drop_all(bind=engine)
 
-@pytest.fixture(autouse=True)
-async def cleanup_after_test():
+@pytest.fixture(scope="session")
+async def cleanup_after_session():
+    """Dispose the async engine once after the entire test session."""
     yield
-    from src.api.utils.database import async_engine
-    await async_engine.dispose()
     try:
-        from src.services.distribution.experiment_batcher import base_experiment_service
-        base_experiment_service.active_batches = []
+        from src.api.utils.database import async_engine
+        await async_engine.dispose()
     except Exception:
         pass
+

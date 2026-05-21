@@ -2,8 +2,8 @@ import logging
 import sys
 import os
 try:
-    from pythonjsonlogger import jsonlogger
-    HAS_JSON_LOGGER = True
+    from pythonjsonlogger import json as jsonlogger
+    HAS_JSON_LOGGER = True  # alias: pythonjsonlogger.json is the new path
 except ImportError:
     HAS_JSON_LOGGER = False
 from opentelemetry import trace

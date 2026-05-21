@@ -12,7 +12,7 @@ from src.api.utils.subscription import credits_required
 from src.services.payment.credit_service import credit_service
 from pydantic import BaseModel
 from typing import Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter(prefix="/monetization", tags=["Monetization"])
 
@@ -128,7 +128,7 @@ async def get_empire_metrics(
     from sqlalchemy import select, func, desc
     from src.api.utils.models import PublishedContentDB, SocialAccount, VideoJobDB
 
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(timezone.utc)
     last_week = now - datetime.timedelta(days=7)
 
     # Total connected accounts
@@ -440,6 +440,6 @@ async def trigger_evolution(current_user=Depends(get_current_user)):
             "status": "initiated",
             "message": "Global Flywheel Evolution sequence activated.",
             "optimization_target": "70% pruning threshold",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     )

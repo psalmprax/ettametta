@@ -155,7 +155,7 @@ async def retry_publish(
             ContentPublishStatus.PUBLISHED if url else ContentPublishStatus.FAILED
         )
         content.source_uri = url
-        content.published_at = datetime.datetime.utcnow() if url else None
+        content.published_at = datetime.datetime.now(datetime.timezone.utc) if url else None
 
         metadata_dict.pop("delete_at", None)
         metadata_dict.pop("retention_hours", None)
@@ -283,7 +283,7 @@ async def publish_video(
         if not has_auth:
             if request.inject_monetization:
                 from datetime import datetime, timedelta
-                delete_at = datetime.utcnow() + timedelta(hours=retention_hours)
+                delete_at = datetime.datetime.now(datetime.timezone.utc) + timedelta(hours=retention_hours)
 
                 new_post = PublishedContentDB(
                     title=metadata.title or "Viral Post",
@@ -487,7 +487,7 @@ async def publish_multi_platform(
                         )
                 else:
                     from datetime import datetime, timedelta
-                    delete_at = datetime.utcnow() + timedelta(hours=retention_hours)
+                    delete_at = datetime.datetime.now(datetime.timezone.utc) + timedelta(hours=retention_hours)
 
                     if request.inject_monetization and not platform_info.get("monetization", False):
                         results["failed"].append(

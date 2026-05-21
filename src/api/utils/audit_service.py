@@ -30,7 +30,7 @@ class AuditService:
             details=details,
             ip_address=ip_address,
             user_agent=user_agent,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         if db:

@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def utc_now():
     """Get current UTC datetime (naive for PostgreSQL compatibility)"""
-    return datetime.utcnow()
+    return datetime.now(timezone.utc)
 
 
 class CreditService:
@@ -80,7 +80,7 @@ class CreditService:
                 lifetime_spent=0,
             )
             db.add(user_credits)
-            await db.commit()
+            await db.flush()
             await db.refresh(user_credits)
 
         return user_credits

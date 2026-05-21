@@ -9,7 +9,7 @@ import uuid
 import os
 import requests
 from src.api.config import settings
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from src.api.utils.api_responses import success_response
 
 router = APIRouter(prefix="/persona", tags=["Persona Engine"])
@@ -21,8 +21,7 @@ class PersonaResponse(BaseModel):
     reference_image_uri: str | None = None
     voice_clone_id: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PersonaGenerateRequest(BaseModel):

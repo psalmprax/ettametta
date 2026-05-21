@@ -22,7 +22,6 @@ from src.api.utils.api_responses import (
     handle_exception,
 )
 
-from src.services.payment.credit_service import credit_service
 from src.api.routes.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.database import get_db
@@ -324,7 +323,7 @@ async def analyze_candidate(
         candidate = request.candidate
     elif request.url:
         candidate = ContentCandidate(
-            id=f"ext_{int(datetime.utcnow().timestamp())}",
+            id=f"ext_{int(datetime.datetime.now(datetime.timezone.utc).timestamp())}",
             platform="youtube",  # Default to youtube if unknown
             source_uri=request.url,
             niche=request.niche or "General",
@@ -336,6 +335,7 @@ async def analyze_candidate(
         raise HTTPException(status_code=400, detail="Missing URL or candidate data")
 
     # Consume credits
+    from src.services.payment.credit_service import credit_service
     await credit_service.consume_credits(
         user_id=current_user.id,
         amount=credits_cost,
@@ -530,6 +530,7 @@ async def create_video_from_analysis(
             raise HTTPException(status_code=503, detail="Task queue unavailable")
 
         # Consume credits
+        from src.services.payment.credit_service import credit_service
         success, msg = await credit_service.consume_credits(
             user_id=current_user.id,
             amount=credits_cost,
@@ -896,7 +897,7 @@ async def record_interaction(
                 "niche": request.niche,
                 "platform": request.platform,
                 "content_url": request.content_url,
-                "timestamp": datetime.datetime.utcnow().isoformat(),
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             },
         )
         db.add(new_interaction)

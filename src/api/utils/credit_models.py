@@ -51,9 +51,9 @@ class UserCreditDB(Base):
     )  # Total credits earned (referrals, etc.)
     lifetime_spent = Column(Integer, default=0)  # Total credits spent
     stripe_customer_id = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
-        DateTime, default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow()
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
     )
 
 
@@ -76,7 +76,7 @@ class CreditTransactionDB(Base):
     stripe_subscription_id = Column(String, nullable=True)  # For subscription credits
     reference_id = Column(String, nullable=True)  # For linking to related entities
     # Use naive datetime for PostgreSQL compatibility
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class ReferralDB(Base):
@@ -95,7 +95,7 @@ class ReferralDB(Base):
     status = Column(String, default="PENDING")  # PENDING, COMPLETED, REWARD_CLAIMED
     reward_credits = Column(Integer, default=0)
     reward_claimed_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class CreditUsageRuleDB(Base):

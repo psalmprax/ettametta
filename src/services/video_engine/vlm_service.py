@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import cv2
 import os
 import logging
@@ -16,8 +16,7 @@ class VLMService:
         
         # Initialize Gemini if key exists
         if self.google_key:
-            genai.configure(api_key=self.google_key)
-            self.gemini_model = genai.GenerativeModel(model_name=self.model_name)
+            self.gemini_client = genai.Client(api_key=self.google_key)
             logging.info(f"[VLMService] Gemini Initialized: {self.model_name}")
         else:
             self.gemini_model = None
@@ -147,7 +146,7 @@ class VLMService:
             from PIL import Image
             images = [Image.open(p) for p in frame_paths]
             prompt = "Analyze these video frames. Output JSON with: visual_mood, detected_subjects, lighting_quality, dominant_colors, edit_direction, aesthetic_rating (1-10)."
-            response = self.gemini_model.generate_content([prompt] + images)
+            response = self.gemini_client.models.generate_content(model=self.model_name, contents=[prompt] + images)
             
             text = response.text
             if "```json" in text:

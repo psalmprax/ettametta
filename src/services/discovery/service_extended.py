@@ -61,7 +61,7 @@ class DiscoveryServiceExtended:
                 "total_candidates": total_count,
                 "high_velocity_candidates": high_count,
                 "platform_distribution": platform_dist,
-                "last_scan": datetime.datetime.utcnow().isoformat(),
+                "last_scan": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             }
         except Exception as e:
             logger.error(f"Discovery summary service failed: {e}")

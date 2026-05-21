@@ -34,6 +34,7 @@ from src.shared.observability import get_logger
 from src.shared.state_machine import base_state_machine, JobState
 
 logger = get_logger(__name__)
+tracer = trace.get_tracer(__name__)
 
 
 def _run_subprocess(
@@ -369,6 +370,15 @@ class NexusOrchestrator:
             
             # Fetch style config once for all downstream usage
             style_config = get_style(style)
+            
+            try:
+                from src.services.video_engine.stochastic_modulator import modulate_style
+                theme_preset = (job_metadata or {}).get("theme_preset")
+                style_config = modulate_style(style_config, seed=str(job_id), theme_preset=theme_preset)
+                self.logger.info(f"[Nexus] Stochastic modulation applied successfully for style: {style}")
+            except Exception as e:
+                self.logger.warning(f"[Nexus] Stochastic modulation failed: {e}")
+
             music_keywords = style_config.get("music_keywords", [])
             remotion_flags = style_config.get("remotion_flags", {})
 

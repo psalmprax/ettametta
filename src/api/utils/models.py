@@ -38,8 +38,8 @@ class SystemSettings(Base):
     description = Column(String, nullable=True)
     updated_at = Column(
         DateTime,
-        default=lambda: datetime.utcnow(),
-        onupdate=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
 
@@ -55,8 +55,8 @@ class UserSetting(Base):
     category = Column(String, default="general")
     updated_at = Column(
         DateTime,
-        default=lambda: datetime.utcnow(),
-        onupdate=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
 
@@ -95,7 +95,7 @@ class ContentCandidateDB(Base):
     # Timing fields
     published_at = Column(DateTime, nullable=True)  # When content was published
     scanned_at = Column(
-        DateTime, default=lambda: datetime.utcnow()
+        DateTime, default=lambda: datetime.now(timezone.utc)
     )  # When content was discovered
 
     # Duration and metrics
@@ -132,7 +132,7 @@ class ContentCandidateDB(Base):
     is_processed = Column(Boolean, default=False)
 
     # Legacy compatibility (kept for migration)
-    discovery_date = Column(DateTime, default=lambda: datetime.utcnow())
+    discovery_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class ViralPatternDB(Base):
@@ -145,7 +145,7 @@ class ViralPatternDB(Base):
     pacing_bpm = Column(Integer, nullable=True)
     style_keywords = Column(JSON)
     emotional_triggers = Column(JSON)
-    analyzed_at = Column(DateTime, default=lambda: datetime.utcnow())
+    analyzed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class SocialAccount(Base):
@@ -164,8 +164,8 @@ class SocialAccount(Base):
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
     updated_at = Column(
         DateTime,
-        default=lambda: datetime.utcnow(),
-        onupdate=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
 
@@ -182,8 +182,8 @@ class NicheTrendDB(Base):
     viral_pattern_ids = Column(JSON)  # Reference to ViralPatternDB IDs
     last_updated = Column(
         DateTime,
-        default=lambda: datetime.utcnow(),
-        onupdate=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
 
@@ -201,7 +201,7 @@ class PublishedContentDB(Base):
         nullable=False,
     )
     source_uri = Column(String, nullable=True)
-    published_at = Column(DateTime, default=lambda: datetime.utcnow())
+    published_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     account_id = Column(String(36), ForeignKey("social_accounts.id"), index=True)
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
     niche = Column(String, index=True, nullable=True)
@@ -233,11 +233,11 @@ class VideoJobDB(Base):
     )  # Stores original generation parameters and other metadata for retry
     error_message = Column(String, nullable=True)  # Detailed error information
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
-        default=lambda: datetime.utcnow(),
-        onupdate=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
 
@@ -251,7 +251,7 @@ class MonitoredNiche(Base):
     niche = Column(String, index=True)
     is_active = Column(Boolean, default=True)
     last_scanned_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     __table_args__ = (UniqueConstraint("user_id", "niche", name="uix_user_niche"),)
 
 
@@ -265,7 +265,7 @@ class DiscoveryAlertDB(Base):
     niche = Column(String, index=True, nullable=False)
     threshold = Column(Integer, default=7)  # viral_score threshold
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     __table_args__ = (
         UniqueConstraint("user_id", "niche", name="uix_user_niche_alert"),
     )
@@ -280,7 +280,7 @@ class DiscoveryFavoriteDB(Base):
         String(36), primary_key=True, index=True, default=lambda: str(uuid.uuid4())
     )
     user_id = Column(String(36), ForeignKey("users.id"), index=True, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     __table_args__ = (UniqueConstraint("user_id", "id", name="uix_user_favorite"),)
 
 
@@ -298,7 +298,7 @@ class ScanHistoryDB(Base):
         nullable=False,
     )
     results_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class AffiliateLinkDB(Base):
@@ -312,7 +312,7 @@ class AffiliateLinkDB(Base):
     niche = Column(String, index=True)
     link = Column(String)
     cta_text = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class RevenueLogDB(Base):
@@ -325,7 +325,7 @@ class RevenueLogDB(Base):
     niche = Column(String, index=True)
     amount = Column(Float, default=0.0)
     view_count = Column(Integer, default=0)
-    date = Column(DateTime, default=lambda: datetime.utcnow())
+    date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
 
 
@@ -340,7 +340,7 @@ class PersonaDB(Base):
     reference_video_uri = Column(String, nullable=True)
     voice_clone_id = Column(String, nullable=True)  # Reference to XTTS or ElevenLabs ID
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class NexusJobDB(Base):
@@ -361,11 +361,11 @@ class NexusJobDB(Base):
     node_status = Column(JSON, default=dict)
     job_metadata = Column(JSON, default=dict)
     error_log = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
-        default=lambda: datetime.utcnow(),
-        onupdate=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
     user_id = Column(String(36), ForeignKey("users.id"), index=True)
 
@@ -378,7 +378,7 @@ class BlueprintDB(Base):
     description = Column(String)
     nodes = Column(JSON)  # list of node dictionaries
     composition_id = Column(String, default="ViralClip")
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class ABTestDB(Base):
@@ -408,7 +408,7 @@ class ABTestDB(Base):
     winner_variant = Column(String, nullable=True)  # 'A' or 'B'
     confidence_level = Column(Float, nullable=True)
     p_value = Column(Float, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at = Column(DateTime, nullable=True)
 
 
@@ -432,7 +432,7 @@ class ScheduledPostDB(Base):
     retry_count = Column(Integer, default=0)  # Number of retry attempts
     error_message = Column(String, nullable=True)  # Last error message
     published_at = Column(DateTime, nullable=True)  # When actually published
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Multi-window scheduling support
     parallel_allowed = Column(Boolean, default=False)  # Allow parallel posts
@@ -459,7 +459,7 @@ class AuditLogDB(Base):
     details = Column(JSON, nullable=True)  # Additional context
     ip_address = Column(String, nullable=True)
     user_agent = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class SelfHealingAuditDB(Base):
@@ -480,7 +480,7 @@ class SelfHealingAuditDB(Base):
     traceback = Column(String)
     resolved = Column(Boolean, default=False)
     resolution_notes = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class SystemActivityDB(Base):
@@ -492,7 +492,7 @@ class SystemActivityDB(Base):
     level = Column(String, default="INFO")  # INFO, WARNING, ERROR, SYSTEM, SUCCESS
     module = Column(String, index=True)  # AGENT_ZERO, DISCOVERY, NEXUS, etc.
     message = Column(String)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class OpenCLISessionDB(Base):
@@ -522,11 +522,11 @@ class OpenCLISessionDB(Base):
         JSON, default=list
     )  # ["search", "feed", "post", "comment", "like"]
     error_message = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
-        default=lambda: datetime.utcnow(),
-        onupdate=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
 
@@ -540,7 +540,7 @@ class DiscoveryInteractionDB(Base):
     action = Column(String)  # handshake, negotiate, bookmark, ignore
     status = Column(Integer, default=0)  # 0: pending, 1: established, 2: failed
     details = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class WebhookEventDB(Base):
@@ -553,7 +553,7 @@ class WebhookEventDB(Base):
     external_id = Column(String, index=True)
     payload_json = Column(JSON, nullable=True)
     processed_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class BotCodeDB(Base):
@@ -566,7 +566,7 @@ class BotCodeDB(Base):
     platform = Column(String)  # telegram, whatsapp
     code = Column(String, unique=True)
     used = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class DigitalProductDB(Base):
@@ -582,7 +582,7 @@ class DigitalProductDB(Base):
     price = Column(Float)
     purchase_uri = Column(String)
     cta_text = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class MembershipPlanDB(Base):
@@ -599,7 +599,7 @@ class MembershipPlanDB(Base):
     sign_up_uri = Column(String)
     cta_text = Column(String, nullable=True)
     benefits = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class LeadGenDB(Base):
@@ -613,7 +613,7 @@ class LeadGenDB(Base):
     niche = Column(String, index=True)
     form_uri = Column(String)
     cta_text = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class PerformanceSnapshotDB(Base):
@@ -634,7 +634,7 @@ class PerformanceSnapshotDB(Base):
     comment_count = Column(Integer, default=0)
     retention_rate = Column(Float, default=0.0)
     avg_duration = Column(Float, default=0.0)
-    snapshot_at = Column(DateTime, default=lambda: datetime.utcnow())
+    snapshot_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class DriftHistoryDB(Base):
@@ -651,7 +651,7 @@ class DriftHistoryDB(Base):
     predicted_retention = Column(Float)
     actual_retention = Column(Float)
     delta = Column(Float)
-    recorded_at = Column(DateTime, default=lambda: datetime.utcnow())
+    recorded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class ExperimentCohortDB(Base):
@@ -673,7 +673,7 @@ class ExperimentCohortDB(Base):
         nullable=False,
     )
     participants = Column(JSON, default=list)  # list of video IDs
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class StrategyRegistryDB(Base):
@@ -695,11 +695,11 @@ class StrategyRegistryDB(Base):
     )
     avg_score = Column(Float, nullable=True)
     failure_reason = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
-        default=lambda: datetime.utcnow(),
-        onupdate=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
 
@@ -719,7 +719,7 @@ class IncidentWebhookDB(Base):
     secret = Column(String, nullable=True)  # HMAC secret for signing
     is_active = Column(Boolean, default=True)
     last_triggered_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class AgentZeroState(Base):
@@ -729,6 +729,6 @@ class AgentZeroState(Base):
     value = Column(JSON, nullable=False)
     updated_at = Column(
         DateTime,
-        default=lambda: datetime.utcnow(),
-        onupdate=lambda: datetime.utcnow(),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )

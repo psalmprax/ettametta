@@ -25,33 +25,7 @@ import json
 
 logger = logging.getLogger(__name__)
 
-class CircuitBreaker:
-    """Simple circuit breaker to prevent cascading failures"""
-    def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 300):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"
-
-    def is_open(self) -> bool:
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return False
-            return True
-        return False
-
-    def record_success(self):
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
-            logger.warning("[FreeVideoProvider] Circuit opened due to API/Browser failures")
+from src.api.utils.resilience import CircuitBreaker
 
 
 # Lazy check for browser automation
@@ -317,7 +291,7 @@ class FreeVideoProviderService:
         # Get primary provider from env
         self.primary_provider = os.getenv("AI_VIDEO_PROVIDER", "none").lower()
         self.enabled = self.primary_provider != "none"
-        self.circuit_breaker = CircuitBreaker()
+        self.circuit_breaker = CircuitBreaker(recovery_timeout=300, name="FreeVideoProvider")
 
         # Also check for fallback providers (comma-separated list)
         fallback_str = os.getenv("AI_VIDEO_FALLBACKS", "")

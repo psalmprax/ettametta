@@ -11,6 +11,7 @@ import asyncio
 import sys
 import os
 from pathlib import Path
+import pytest
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -85,6 +86,7 @@ sys.modules["cv2"] = MockCV2()
 # sys.modules["psycopg2"] = MagicMock()
 
 
+@pytest.mark.asyncio
 async def test_video_editor_quality():
     """Comprehensive test of video editor capabilities"""
 
@@ -288,7 +290,7 @@ async def test_video_editor_quality():
         ]
 
         # Test pattern analysis
-        patterns = scanner._analyze_video_patterns(mock_leads)
+        patterns = await scanner._analyze_video_patterns(mock_leads)
         assert isinstance(patterns, dict)
 
         # Test content type counting
@@ -316,7 +318,7 @@ async def test_video_editor_quality():
 
     for test_name, passed in results.items():
         status = "✅ PASSED" if passed else "❌ FAILED"
-        print("12")
+        print(f"  {status}: {test_name}")
 
     print(
         f"\n📊 OVERALL SCORE: {passed_tests}/{total_tests} ({passed_tests / total_tests * 100:.1f}%)"

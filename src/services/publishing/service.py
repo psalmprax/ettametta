@@ -11,7 +11,7 @@ import json
 import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import tenacity
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
@@ -139,7 +139,7 @@ class YouTubePublisher:
                 "url": video_url,
                 "status": "published",
                 "privacy": privacy_status,
-                "published_at": datetime.utcnow().isoformat()
+                "published_at": datetime.now(timezone.utc).isoformat()
             }
 
         except Exception as e:

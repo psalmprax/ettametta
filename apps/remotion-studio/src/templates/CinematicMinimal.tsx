@@ -16,7 +16,7 @@ export const cinematicMinimalSchema = z.object({
 
 export const CinematicMinimal: React.FC<z.infer<typeof cinematicMinimalSchema>> = ({ title, subtitle, video_url, audio_url, primary_color = '#00F2FE', show_cta_overlay, cta_type, cta_text }) => {
     const frame = useCurrentFrame();
-    const { fps, durationInFrames } = useVideoConfig();
+    const { width, height, fps, durationInFrames } = useVideoConfig();
 
     // Show CTA in last 2 seconds
     const showCtaNow = show_cta_overlay && frame > durationInFrames - (fps * 2);
@@ -28,6 +28,12 @@ export const CinematicMinimal: React.FC<z.infer<typeof cinematicMinimalSchema>> 
     const scale = interpolate(frame, [0, 120], [1, 1.1], {
         extrapolateRight: 'clamp',
     });
+
+    const containerPadding = `${Math.min(width * 0.05, 50)}px`;
+    const lineMarginBottom = `${Math.min(width * 0.05, 30)}px`;
+    const titleFontSize = `${Math.min(width * 0.08, 80)}px`;
+    const subtitleFontSize = `${Math.min(width * 0.035, 22)}px`;
+    const subtitleLetterSpacing = `${Math.min(width * 0.02, 8)}px`;
 
     return (
         <AbsoluteFill style={{ backgroundColor: '#0A0A0B' }}>
@@ -46,39 +52,55 @@ export const CinematicMinimal: React.FC<z.infer<typeof cinematicMinimalSchema>> 
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    padding: '80px',
-                    background: 'radial-gradient(circle, transparent 20%, rgba(10,10,11,0.8) 100%)'
+                    padding: containerPadding,
+                    background: 'radial-gradient(circle, transparent 20%, rgba(10,10,11,0.8) 100%)',
+                    boxSizing: 'border-box'
                 }}>
-                    <div style={{ textAlign: 'center', opacity }}>
+                    <div style={{ 
+                        textAlign: 'center', 
+                        opacity, 
+                        maxWidth: '90%', 
+                        boxSizing: 'border-box',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center'
+                    }}>
                         <div style={{
                             height: '4px',
                             width: '120px',
-                            background: 'linear-gradient(to right, #00F2FE, #4ADE80)',
+                            background: `linear-gradient(to right, ${primary_color}, #4ADE80)`,
                             borderRadius: '2px',
-                            margin: '0 auto 40px',
+                            margin: `0 auto ${lineMarginBottom}`,
                             transform: `scaleX(${interpolate(frame, [0, 60], [0, 1], { extrapolateRight: 'clamp' })})`
                         }} />
 
                         <h1 style={{
                             color: 'white',
-                            fontSize: '90px',
+                            fontSize: titleFontSize,
                             fontFamily: 'Inter, sans-serif',
                             fontWeight: 800,
-                            letterSpacing: '-0.04em',
+                            letterSpacing: '-0.03em',
                             lineHeight: 1.1,
                             marginBottom: '24px',
-                            textShadow: '0 0 30px rgba(0, 242, 254, 0.3)'
+                            textShadow: `0 0 30px ${primary_color}4d`,
+                            wordBreak: 'break-word',
+                            whiteSpace: 'normal',
+                            maxWidth: '100%'
                         }}>
                             {title}
                         </h1>
 
                         <p style={{
                             color: '#8E2DE2',
-                            fontSize: '28px',
+                            fontSize: subtitleFontSize,
                             fontFamily: 'Inter, sans-serif',
                             textTransform: 'uppercase',
-                            letterSpacing: '0.4em',
-                            fontWeight: 500
+                            letterSpacing: subtitleLetterSpacing,
+                            fontWeight: 500,
+                            margin: 0,
+                            wordBreak: 'break-word',
+                            whiteSpace: 'normal',
+                            maxWidth: '100%'
                         }}>
                             {subtitle}
                         </p>

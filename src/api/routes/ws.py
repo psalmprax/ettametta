@@ -4,7 +4,7 @@ import asyncio
 import logging
 import random
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import redis.asyncio as redis
 import redis as redis_sync
 from src.api.config import settings
@@ -223,7 +223,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     res_completed = await db.execute(stmt_completed)
                     completed_jobs = res_completed.scalar() or 0
 
-                    recent_cutoff = datetime.utcnow() - timedelta(hours=24)
+                    recent_cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
                     stmt_recent = select(func.count(PublishedContentDB.id)).where(
                         PublishedContentDB.published_at >= recent_cutoff
                     )

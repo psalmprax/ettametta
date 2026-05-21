@@ -10,7 +10,7 @@ from src.api.utils.auth import (
     sign_oauth_state,
     verify_oauth_state,
 )
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
 from src.api.config import settings
 from src.api.utils.api_responses import (
     success_response,
@@ -95,8 +95,7 @@ class UserResponse(BaseModel):
     role: str
     subscription: SubscriptionTier | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Token(BaseModel):

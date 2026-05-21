@@ -12,7 +12,7 @@ class EmpireService:
         """
         import datetime
 
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         last_week = now - datetime.timedelta(days=7)
         prev_week = now - datetime.timedelta(days=14)
 

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.database import async_session_factory
@@ -132,7 +132,7 @@ class FlywheelService:
         
         async with async_session_factory() as db:
             # 1. Identify all parent jobs from the last 7 days
-            seven_days_ago = datetime.utcnow() - timedelta(days=7)
+            seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
             stmt = select(VideoJobDB.job_metadata["parent_id"].astext).where(
                 VideoJobDB.created_at >= seven_days_ago,
                 VideoJobDB.job_metadata["parent_id"].astext != None
