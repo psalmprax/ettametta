@@ -41,9 +41,13 @@ class JobStateMachine:
         Validates and publishes a state transition event.
         """
         if next_state not in cls._TRANSITIONS.get(current_state, []):
-            logger.warning(f"⚠️ Illegal transition attempt for job {job_id}: {current_state} -> {next_state}")
-            # We still permit it in 'relaxed' hardening phase but log it
-        
+            logger.error(f"Illegal transition attempt for job {job_id}: {current_state} -> {next_state}")
+            raise ValueError(
+                f"Illegal state transition for job {job_id}: "
+                f"{current_state} -> {next_state}. "
+                f"Allowed: {cls._TRANSITIONS.get(current_state, [])}"
+            )
+
         event_payload = {
             "job_id": job_id,
             "previous_state": current_state,
