@@ -141,3 +141,23 @@ playwright-report/
 test-results/
 graphify-out/
 *.tar.gz
+
+# --- Runtime Outputs ---
+output/
+outputs/
+local_downloads/
+temp_frames/
+
+# --- AI Tool State (not source code) ---
+.kilo/
+.kilocode/
+.dag_cache/
+Gemini/
+GitNexus/
+
+# --- Browser/Crawler State ---
+cookies/
+certs/
+certs_fixed/
+sessions/
+tokens/

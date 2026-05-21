@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+# ============================================================
+# ettametta size report
+# Shows what's consuming disk space in the project
+# Usage: ./bin/size-report [--detail] [--git]
+# ============================================================
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+NC='\033[0m'
+BOLD='\033[1m'
+
+hr() { echo -e "${CYAN}$(printf '=%.0s' {1..60})${NC}"; }
+
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Analyze disk space usage in the ettametta project.
+
+Options:
+  --detail    Show per-directory breakdown
+  --git       Show git-tracked vs untracked size
+  --help      Show this message
+EOF
+}
+
+show_overview() {
+    hr
+    echo -e "${BOLD}ettametta Size Report${NC}"
+    hr
+    echo ""
+
+    local total
+    total=$(du -sh "$PROJECT_ROOT" 2>/dev/null | awk '{print $1}')
+    local git_size
+    git_size=$(du -sh "$PROJECT_ROOT/.git" 2>/dev/null | awk '{print $1}')
+    local working
+    working=$(du -sh --exclude=.git "$PROJECT_ROOT" 2>/dev/null | awk '{print $1}')
+
+    echo -e "  Total size:         ${RED}${total}${NC}"
+    echo -e "  Git history:        ${git_size}"
+    echo -e "  Working directory:  ${working}"
+    echo ""
+
+    hr
+    echo -e "${BOLD}Top Space Consumers${NC}"
+    hr
+    echo ""
+
+    printf "  %-8s  %-40s  %s\n" "SIZE" "DIRECTORY" "STATUS"
+    printf "  %-8s  %-40s  %s\n" "--------" "----------------------------------------" "----------"
+
+    # Dependencies
+    local venv_size node_size remotion_size
+    venv_size=$(du -sh "$PROJECT_ROOT/.venv" 2>/dev/null | awk '{print $1}' || echo "0B")
+    node_size=$(du -sh "$PROJECT_ROOT/node_modules" 2>/dev/null | awk '{print $1}' || echo "0B")
+    remotion_size=$(du -sh "$PROJECT_ROOT/apps/remotion-studio/node_modules" 2>/dev/null | awk '{print $1}' || echo "0B")
+
+    printf "  %-8s  %-40s  ${YELLOW}%-10s${NC}\n" "$venv_size" ".venv/" "reinstallable"
+    printf "  %-8s  %-40s  ${YELLOW}%-10s${NC}\n" "$node_size" "node_modules/" "reinstallable"
+    printf "  %-8s  %-40s  ${YELLOW}%-10s${NC}\n" "$remotion_size" "apps/remotion-studio/node_modules/" "reinstallable"
+
+    # Generated outputs
+    for dir in outputs output temp graphify-out local_downloads; do
+        local size
+        size=$(du -sh "$PROJECT_ROOT/$dir" 2>/dev/null | awk '{print $1}' || echo "0B")
+        if [ "$size" != "0B" ]; then
+            printf "  %-8s  %-40s  ${RED}%-10s${NC}\n" "$size" "$dir/" "generated"
+        fi
+    done
+
+    # Tool caches / worktrees
+    for dir in .kilo .kilocode GitNexus; do
+        local size
+        size=$(du -sh "$PROJECT_ROOT/$dir" 2>/dev/null | awk '{print $1}' || echo "0B")
+        if [ "$size" != "0B" ]; then
+            printf "  %-8s  %-40s  ${RED}%-10s${NC}\n" "$size" "$dir/" "tool state"
+        fi
+    done
+
+    # Caches
+    local cache_size
+    cache_size=$(find "$PROJECT_ROOT" -name "__pycache__" -not -path "*/.git/*" -exec du -ch {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo "0B")
+    printf "  %-8s  %-40s  ${YELLOW}%-10s${NC}\n" "${cache_size:-0B}" "__pycache__ (2134 dirs)" "cache"
+
+    # Databases
+    local db_size
+    db_size=$(find "$PROJECT_ROOT" -name "*.db" -not -path "*/.git/*" -not -path "*/node_modules/*" -exec du -ch {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo "0B")
+    printf "  %-8s  %-40s  ${YELLOW}%-10s${NC}\n" "${db_size:-0B}" "*.db files" "runtime"
+
+    # Tar archives
+    local tar_size
+    tar_size=$(find "$PROJECT_ROOT" -maxdepth 1 -name "*.tar.gz" -exec du -ch {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo "0B")
+    if [ "${tar_size:-0B}" != "0B" ]; then
+        printf "  %-8s  %-40s  ${RED}%-10s${NC}\n" "$tar_size" "*.tar.gz patches" "disposable"
+    fi
+
+    # Source code
+    local src_size
+    src_size=$(du -sh "$PROJECT_ROOT/src" 2>/dev/null | awk '{print $1}')
+    printf "  %-8s  %-40s  ${GREEN}%-10s${NC}\n" "$src_size" "src/" "source code"
+
+    local apps_size
+    apps_size=$(du -sh --exclude=node_modules --exclude=.next --exclude=build "$PROJECT_ROOT/apps" 2>/dev/null | awk '{print $1}')
+    printf "  %-8s  %-40s  ${GREEN}%-10s${NC}\n" "$apps_size" "apps/ (excl. deps)" "source code"
+
+    echo ""
+    hr
+    echo -e "${BOLD}Potential Savings${NC}"
+    hr
+    echo ""
+
+    local savings=0
+    local savings_human=""
+
+    # Calculate savings from cleanup
+    for dir in .venv venv node_modules apps/remotion-studio/node_modules outputs output temp .kilo .kilocode; do
+        local size_bytes
+        size_bytes=$(du -sb "$PROJECT_ROOT/$dir" 2>/dev/null | awk '{print $1}' || echo "0")
+        savings=$((savings + size_bytes))
+    done
+
+    # Add pycache
+    local cache_bytes
+    cache_bytes=$(find "$PROJECT_ROOT" -name "__pycache__" -not -path "*/.git/*" -exec du -sb {} + 2>/dev/null | awk '{sum+=$1} END{print sum+0}')
+    savings=$((savings + cache_bytes))
+
+    if [ "$savings" -gt 1073741824 ]; then
+        savings_human="$(echo "scale=1; $savings / 1073741824" | bc)G"
+    else
+        savings_human="$(echo "scale=0; $savings / 1048576" | bc)M"
+    fi
+
+    echo -e "  Run ${GREEN}./bin/cleanup --all --dry-run${NC} to preview cleanup"
+    echo -e "  Estimated recoverable space: ${RED}${savings_human}${NC}"
+    echo ""
+    echo -e "  ${BOLD}Quick wins:${NC}"
+    echo -e "    ./bin/cleanup --caches        # Remove __pycache__ (~$(echo "scale=0; $cache_bytes / 1048576" | bc)M)"
+    echo -e "    ./bin/cleanup --artifacts      # Remove generated outputs"
+    echo -e "    ./bin/cleanup --deps           # Remove all dependencies (reinstall with ./bin/setup)"
+    echo ""
+}
+
+show_detail() {
+    hr
+    echo -e "${BOLD}Detailed Breakdown${NC}"
+    hr
+    echo ""
+
+    echo -e "${BLUE}src/services/ (by service):${NC}"
+    find "$PROJECT_ROOT/src/services" -maxdepth 1 -type d | tail -n +2 | while read -r d; do
+        local size
+        size=$(du -sh "$d" 2>/dev/null | awk '{print $1}')
+        local name
+        name=$(basename "$d")
+        printf "  %-8s  %s\n" "$size" "$name"
+    done | sort -rh
+
+    echo ""
+    echo -e "${BLUE}apps/ breakdown:${NC}"
+    du -sh "$PROJECT_ROOT"/apps/*/ 2>/dev/null | sort -rh | while read -r line; do
+        echo "  $line"
+    done
+
+    echo ""
+    echo -e "${BLUE}data/ breakdown:${NC}"
+    du -sh "$PROJECT_ROOT"/data/*/ 2>/dev/null | sort -rh | while read -r line; do
+        echo "  $line"
+    done
+}
+
+show_git() {
+    hr
+    echo -e "${BOLD}Git Analysis${NC}"
+    hr
+    echo ""
+
+    local git_total
+    git_total=$(du -sh "$PROJECT_ROOT/.git" | awk '{print $1}')
+    echo -e "  Git directory: ${git_total}"
+
+    local tracked
+    tracked=$(git -C "$PROJECT_ROOT" ls-files | xargs -I{} du -sb "$PROJECT_ROOT/{}" 2>/dev/null | awk '{sum+=$1} END{printf "%.1fM\n", sum/1048576}')
+    echo -e "  Tracked files: ${tracked}"
+
+    local tracked_count
+    tracked_count=$(git -C "$PROJECT_ROOT" ls-files | wc -l)
+    echo -e "  Tracked file count: ${tracked_count}"
+
+    echo ""
+    echo -e "${YELLOW}Tracked files that should NOT be in git:${NC}"
+    git -C "$PROJECT_ROOT" ls-files | grep -E '\.(db|tar\.gz)$|key_raw|\.kilo|\.kilocode' | head -20
+}
+
+# --- Main ---
+main() {
+    local do_detail=false
+    local do_git=false
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --detail) do_detail=true ;;
+            --git)    do_git=true ;;
+            --help|-h) usage; exit 0 ;;
+            *)        echo "Unknown option: $1"; usage; exit 1 ;;
+        esac
+        shift
+    done
+
+    cd "$PROJECT_ROOT"
+    show_overview
+
+    if $do_detail; then
+        show_detail
+    fi
+
+    if $do_git; then
+        show_git
+    fi
+}
+
+main "$@"
