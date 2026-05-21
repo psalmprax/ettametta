@@ -3,7 +3,7 @@ import hmac
 import hashlib
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from sqlalchemy import select
 from src.api.utils.database import AsyncSessionLocal
@@ -24,7 +24,7 @@ class IncidentReportingService:
         """
         payload = {
             "version": "1.0",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "incident_type": incident_type,
             "severity": severity,
             "platform_id": settings.APP_NAME,
@@ -57,7 +57,7 @@ class IncidentReportingService:
                         resp = await client.post(webhook.url, json=payload, headers=headers)
                         
                         if resp.status_code < 300:
-                            webhook.last_triggered_at = datetime.utcnow()
+                            webhook.last_triggered_at = datetime.now(timezone.utc)
                             await db.commit()
                             logger.info(f"Incident report sent to {webhook.url}")
                         else:

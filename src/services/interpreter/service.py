@@ -18,7 +18,7 @@ import tempfile
 import asyncio
 import json
 from typing import Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +128,7 @@ class InterpreterService:
                     "output": "",
                 }
 
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         try:
             if language == "python":
@@ -146,7 +146,7 @@ class InterpreterService:
                 "success": True,
                 "output": result.get("output", ""),
                 "error": result.get("error", ""),
-                "execution_time": (datetime.utcnow() - start_time).total_seconds(),
+                "execution_time": (datetime.now(timezone.utc) - start_time).total_seconds(),
             }
 
         except Exception as e:
@@ -155,7 +155,7 @@ class InterpreterService:
                 "success": False,
                 "error": str(e),
                 "output": "",
-                "execution_time": (datetime.utcnow() - start_time).total_seconds(),
+                "execution_time": (datetime.now(timezone.utc) - start_time).total_seconds(),
             }
 
     async def _execute_python_sandboxed(self, code: str) -> dict[str, Any]:

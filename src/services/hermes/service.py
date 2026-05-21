@@ -11,7 +11,7 @@ from src.api.config import settings
 logger = logging.getLogger(__name__)
 
 from src.services.base_agent import BaseEttamettaAgent
-from datetime import datetime
+from datetime import datetime, timezone
 
 class HermesSkillService(BaseEttamettaAgent):
     """
@@ -145,7 +145,7 @@ class HermesSkillService(BaseEttamettaAgent):
             skill.update({
                 "job_id": job_id,
                 "niche": niche,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "performance": metrics
             })
             

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Any
 import asyncio
 import logging
@@ -251,8 +251,7 @@ async def list_agent_personas(
         reference_image_uri: str | None = None
         voice_clone_id: str | None = None
 
-        class Config:
-            from_attributes = True
+        model_config = ConfigDict(from_attributes=True)
     
     stmt = select(PersonaDB).where(PersonaDB.user_id == current_user.id)
     result = await db.execute(stmt)

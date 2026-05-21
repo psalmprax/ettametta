@@ -164,6 +164,50 @@ ettametta is an autonomous multi-platform viral content discovery, transformatio
 ## Cross-Cutting Concerns
 <!-- GSD:architecture-end -->
 
+## Dependency Source Inspection
+
+`opensrc` is installed globally and caches npm package source at the exact installed version.
+
+```bash
+# Get cached source path for any npm package
+opensrc path <package-name>
+
+# Search inside cached source
+rg "pattern" "$(opensrc path <package-name>)"
+
+# Read a specific file
+cat "$(opensrc path <package-name>)/path/to/file"
+```
+
+**Workflow: use `opensrc` instead of guessing at dependency internals.**
+
+```bash
+# Debug a type error — read the actual type definition
+rg "export interface" "$(opensrc path react)/"
+
+# Understand a Remotion internals question
+rg "AbsoluteFill" "$(opensrc path remotion)/"
+
+# Read zod schema compile logic for a PR
+rg "def _parse" "$(opensrc path zod)/"
+
+# Pin to a specific version first if needed
+npm ls <package> | grep <package>
+```
+
+The first run fetches and caches the source; subsequent calls return the path instantly from `~/.opensrc/`.  
+For Python packages, only those whose `pyproject.toml` or `setup.cfg` declare a GitHub repository URL are supported — SQLAlchemy and asyncpg are examples that do **not** work this way; inspect their GitHub repos manually instead.
+
+Prefer `opensrc` over relying on `.d.ts` stubs, online docs, or type inference when touching Remotion (SceneTransition, BrandReveal, CTAOverlay, MultiVideoLayout), React (useCurrentFrame, interpolate), or Zod (schema validation in Composition.tsx) code.
+
+When `opensrc` fails for a Python dependency, fall back to:
+```bash
+# npm packages whose package.json has a "repository" field (e.g. psf/requests works)
+opensrc path requests
+
+# Python packages with unknown or missing GitHub links — search registry metadata
+pip show <package> | grep -i home-page
+```
 <!-- GSD:skills-start source:skills/ -->
 ## Project Skills
 

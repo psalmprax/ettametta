@@ -38,7 +38,7 @@ async def get_scheduled_posts(
     try:
         stmt = select(ScheduledPostDB).where(
             ScheduledPostDB.user_id == current_user.id,
-            ScheduledPostDB.scheduled_time > datetime.datetime.utcnow(),
+            ScheduledPostDB.scheduled_time > datetime.datetime.now(datetime.timezone.utc),
         )
         stmt = stmt.order_by(ScheduledPostDB.scheduled_time.asc())
         result = await db.execute(stmt)

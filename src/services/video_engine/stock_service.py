@@ -1,4 +1,5 @@
 import httpx
+import aiofiles
 import os
 import logging
 import random
@@ -34,9 +35,7 @@ class StockService:
 
     def _find_best_file(self, sorted_files: list) -> dict | None:
         for f in sorted_files:
-            width = f.get("width") or 0
-            height = f.get("height") or 0
-            if width >= 1080 or height >= 1080:
+            if (f.get("width") or 0) >= 1080:
                 return f
         return sorted_files[0] if sorted_files else None
 
@@ -184,7 +183,6 @@ class StockService:
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 "Referer": "https://coverr.co/"
             }
-            import aiofiles
             async with httpx.AsyncClient(headers=headers, timeout=settings.STOCK_TIMEOUT * 4) as client:
                 response = await client.get(url, follow_redirects=True)
                 response.raise_for_status()

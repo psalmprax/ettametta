@@ -168,55 +168,7 @@ class ModelManager:
                 del self.active_usage[model_name]
 
 
-class CircuitBreaker:
-    """Enhanced circuit breaker to prevent cascading failures with engine-specific tracking"""
-
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 120):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-        self.engine_failures = {}  # Track failures per engine
-
-    def is_open(self, engine: str = None) -> bool:
-        # Global circuit breaker check
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                logging.info("[CircuitBreaker] Circuit entering half-open state")
-                return False
-            return True
-
-        # Engine-specific check
-        if engine and self.engine_failures.get(engine, 0) >= self.failure_threshold:
-            logging.warning(
-                f"[CircuitBreaker] Engine {engine} temporarily disabled due to failures"
-            )
-            return True
-
-        return False
-
-    def record_success(self, engine: str = None):
-        self.failure_count = 0
-        self.state = "CLOSED"
-        if engine:
-            self.engine_failures[engine] = 0  # Reset engine-specific failures
-
-    def record_failure(self, engine: str = None):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
-            logging.warning("[CircuitBreaker] Global circuit opened due to failures")
-
-        # Track engine-specific failures
-        if engine:
-            self.engine_failures[engine] = self.engine_failures.get(engine, 0) + 1
-            if self.engine_failures[engine] >= self.failure_threshold:
-                logging.warning(
-                    f"[CircuitBreaker] Engine {engine} disabled due to repeated failures"
-                )
+from src.api.utils.resilience import CircuitBreaker
 
 
 class GpuQueueManager:
@@ -982,13 +934,13 @@ class GenerativeService:
         # Try Gemini API if key is available
         if self.gemini_api_key:
             try:
-                import google.generativeai as genai
+                from google import genai
 
-                genai.configure(api_key=self.gemini_api_key)
-                model = genai.GenerativeModel("gemini-1.5-pro")
-                response = model.generate_content(
-                    f"Generate a detailed video scene description for: {prompt}. "
-                    f"Aspect ratio: {aspect_ratio}. Return a vivid visual description only."
+                gemini_client = genai.Client(api_key=self.gemini_api_key)
+                response = gemini_client.models.generate_content(
+                    model="gemini-1.5-pro",
+                    contents=f"Generate a detailed video scene description for: {prompt}. "
+                    f"Aspect ratio: {aspect_ratio}. Return a vivid visual description only.",
                 )
                 logging.info(
                     f"[GenerativeService] Veo3 Gemini prompt optimized: {response.text[:100]}"

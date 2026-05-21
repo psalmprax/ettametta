@@ -5,7 +5,7 @@ Handles automatic winner determination and optimization
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from src.api.utils.database import async_session_factory
 from sqlalchemy import select
@@ -118,7 +118,7 @@ class ABTestingAutomation:
                 test.confidence_level = stats.confidence_level
                 test.p_value = stats.p_value
                 test.status = ABTestStatus.COMPLETED
-                test.completed_at = datetime.utcnow()
+                test.completed_at = datetime.now(timezone.utc)
 
                 await db.commit()
 
@@ -140,7 +140,7 @@ class ABTestingAutomation:
             elif total_views >= 1000:  # Maximum sample size reached
                 # Call it a draw if no clear winner after max samples
                 test.status = ABTestStatus.COMPLETED
-                test.completed_at = datetime.utcnow()
+                test.completed_at = datetime.now(timezone.utc)
                 test.winner_variant = "DRAW"
 
                 await db.commit()

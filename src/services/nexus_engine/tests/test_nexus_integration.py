@@ -7,7 +7,7 @@ to publication, with mocking at external boundaries (database, file system).
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.api.routes.nexus import NexusComposeRequest
 from src.shared.enums import SystemJobStatus
@@ -175,7 +175,7 @@ class TestPublishingService:
             "status": "published",
             "video_id": "vid1",
             "url": "https://youtube.com/watch?v=vid1",
-            "published_at": datetime.utcnow().isoformat(),
+            "published_at": datetime.now(timezone.utc).isoformat(),
         }
 
         with patch.object(
@@ -222,7 +222,7 @@ class TestPublishingService:
                     "status": "published",
                     "video_id": "mock123",
                     "url": "https://mock.example/video",
-                    "published_at": datetime.utcnow().isoformat(),
+                    "published_at": datetime.now(timezone.utc).isoformat(),
                 },
             ),
         ):
@@ -251,7 +251,7 @@ class TestPublishingService:
                 "status": "published",
                 "video_id": "mock123",
                 "url": f"https://{platform}.example/video",
-                "published_at": datetime.utcnow().isoformat(),
+                "published_at": datetime.now(timezone.utc).isoformat(),
             }
 
         with (

@@ -27,7 +27,9 @@ export const WordCaptions: React.FC<KineticCaptionsProps> = ({
     style: nexusStyle 
 }) => {
     const frame = useCurrentFrame();
-    const { fps } = useVideoConfig();
+    const { width, fps } = useVideoConfig();
+    const baseFontSize = Math.min(width * 0.08, 100);
+    const emojiSize = baseFontSize * 0.9;
 
     // Find active word
     const activeIndex = words.findIndex(w => frame >= w.start * fps && frame <= w.end * fps);
@@ -46,13 +48,19 @@ export const WordCaptions: React.FC<KineticCaptionsProps> = ({
             justifyContent: 'center',
             alignItems: 'center',
             paddingBottom: '20%',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            boxSizing: 'border-box'
         }}>
             <div style={{
                 display: 'flex',
-                gap: '20px',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: `${Math.min(width * 0.02, 20)}px`,
                 alignItems: 'center',
-                perspective: '1000px'
+                perspective: '1000px',
+                width: '90%',
+                maxWidth: '90%',
+                boxSizing: 'border-box'
             }}>
                 {visibleWords.map((wordObj, i) => {
                     const isPrimary = i === 0 && activeIndex !== -1;
@@ -80,19 +88,21 @@ export const WordCaptions: React.FC<KineticCaptionsProps> = ({
                             transform: `scale(${scale}) rotate(${rotate}deg)`,
                             opacity,
                             filter: `blur(${blur}px)`,
-                            transition: 'all 0.1s ease-out'
+                            transition: 'all 0.1s ease-out',
+                            boxSizing: 'border-box',
+                            maxWidth: '100%'
                         }}>
                             {isPrimary && emoji && (
                                 <div style={{ 
-                                    fontSize: '100px', 
-                                    marginBottom: '-20px',
+                                    fontSize: `${emojiSize}px`, 
+                                    marginBottom: '-10px',
                                     filter: 'drop-shadow(0 0 20px rgba(0,0,0,0.5))'
                                 }}>
                                     {emoji}
                                 </div>
                             )}
                             <h1 style={{
-                                fontSize: '120px',
+                                fontSize: `${baseFontSize}px`,
                                 fontWeight: 900,
                                 color,
                                 textTransform: 'uppercase',
@@ -102,7 +112,9 @@ export const WordCaptions: React.FC<KineticCaptionsProps> = ({
                                 textShadow: isPrimary ? '8px 8px 0px rgba(0,0,0,1)' : '4px 4px 0px rgba(0,0,0,0.8)',
                                 fontFamily: nexusStyle === 'HEARTFELT_NARRATIVE' ? 'Georgia, serif' : 'Inter, sans-serif',
                                 fontStyle: nexusStyle === 'HEARTFELT_NARRATIVE' ? 'italic' : 'normal',
-                                letterSpacing: '-4px'
+                                letterSpacing: '-2px',
+                                wordBreak: 'break-word',
+                                whiteSpace: 'normal'
                             }}>
                                 {wordObj.word}
                             </h1>

@@ -3,11 +3,16 @@
 Direct test of OpenCLAW skills - runs inside the openclaw container
 """
 
+import pytest
 import asyncio
 import sys
 import os
 
 from pathlib import Path
+
+# Skip if not running in Docker environment (/app is container path)
+_HAS_DOCKER_ENV = os.path.exists("/app")
+
 if os.path.exists("/app"):
     sys.path.insert(0, "/app")
     os.chdir("/app")
@@ -16,6 +21,7 @@ else:
     sys.path.insert(0, project_root)
 
 
+@pytest.mark.skipif(not _HAS_DOCKER_ENV, reason="requires Docker environment (/app)")
 async def test_discovery_skill():
     """Test Discovery skill"""
     print("\n" + "=" * 50)
@@ -28,13 +34,12 @@ async def test_discovery_skill():
         # Test search trends
         result = discovery_skill.search_trends("motivation", limit=3, analyze=False)
         print(f"Search result: {result[:200]}...")
-
-        return True
     except Exception as e:
         print(f"❌ Discovery skill error: {e}")
-        return False
+        assert False, f"Discovery skill failed: {e}"
 
 
+@pytest.mark.skipif(not _HAS_DOCKER_ENV, reason="requires Docker environment (/app)")
 async def test_content_editor_skill():
     """Test Content Editor skill"""
     print("\n" + "=" * 50)
@@ -50,14 +55,12 @@ async def test_content_editor_skill():
         )
         print(f"Find content result: {result.get('status')}")
         print(f"Videos found: {len(result.get('videos', []))}")
-
-        return True
     except Exception as e:
         print(f"❌ Content Editor skill error: {e}")
         import traceback
 
         traceback.print_exc()
-        return False
+        assert False, f"Content Editor skill failed: {e}"
 
 
 def test_skills_loaded():
@@ -78,8 +81,6 @@ def test_skills_loaded():
             print(f"  - {s}")
     else:
         print("Skills directory not found")
-
-    return True
 
 
 def test_video_skills():
@@ -126,8 +127,6 @@ def test_video_skills():
         print(f"Available providers: {len(providers)}")
         for p in providers:
             print(f"  - {p}")
-
-    return True
 
 
 async def main():

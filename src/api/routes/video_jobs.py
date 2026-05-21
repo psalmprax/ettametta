@@ -9,7 +9,7 @@ from src.api.utils.user_models import UserDB, UserRole
 from src.api.utils.audit_service import audit_service
 from src.services.payment.credit_service import credit_service
 from src.services.video_engine.job_service import get_video_job_service, VideoJobService
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from src.api.utils.api_responses import success_response
 import logging
 
@@ -273,7 +273,7 @@ async def get_video_quotas(
 
     try:
         tier = await get_user_subscription_tier(current_user, db)
-        today_start = datetime.combine(datetime.utcnow().date(), datetime.min.time())
+        today_start = datetime.combine(datetime.now(timezone.utc).date(), datetime.min.time())
 
         stmt = select(func.count(VideoJobDB.id)).where(
             VideoJobDB.user_id == current_user.id,

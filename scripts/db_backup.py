@@ -14,7 +14,7 @@ import sys
 import subprocess
 import logging
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
 import gzip
@@ -150,7 +150,7 @@ def upload_to_s3(s3_client, bucket: str, file_path: str, key: str) -> bool:
 
 def list_old_backups(s3_client, bucket: str, prefix: str, retention_days: int) -> list:
     """List backups older than retention period."""
-    cutoff = datetime.utcnow() - timedelta(days=retention_days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
     old_backups = []
 
     try:
@@ -188,7 +188,7 @@ def main():
         logger.error("STORAGE_BUCKET environment variable not set")
         sys.exit(1)
 
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     filename = f"ettametta_db_{timestamp}.dump"
     compressed_filename = f"{filename}.gz"
 

@@ -7,7 +7,7 @@ and integrating with external platform APIs where available.
 
 import logging
 from typing import Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, func
 from src.api.utils.database import async_session_factory
 from src.api.utils.models import PublishedContentDB, UserDB
@@ -29,7 +29,7 @@ class MonetizationService:
         """
         async with async_session_factory() as db:
             # Calculate date range
-            start_date = datetime.utcnow() - timedelta(days=days)
+            start_date = datetime.now(timezone.utc) - timedelta(days=days)
             
             # Fetch published content for this user within the date range
             stmt = select(PublishedContentDB).where(
@@ -49,7 +49,7 @@ class MonetizationService:
             
             for content in contents:
                 platform = content.platform or "Unknown"
-                pub_date = content.published_at.date() if content.published_at else datetime.utcnow().date()
+                pub_date = content.published_at.date() if content.published_at else datetime.now(timezone.utc).date()
                 date_str = pub_date.isoformat()
                 
                 # Initialize stats
@@ -147,7 +147,7 @@ class MonetizationService:
         current_progress = summary["total_revenue"]
         
         # Calculate projected end of month
-        days_remaining = 30 - (datetime.utcnow().day)
+        days_remaining = 30 - (datetime.now(timezone.utc).day)
         daily_avg = summary["daily_average"]
         projected_end = current_progress + (daily_avg * days_remaining)
         

@@ -89,34 +89,7 @@ from src.services.openclaw.skills import (
 )
 
 
-class CircuitBreaker:
-    """Simple circuit breaker to prevent cascading failures"""
-
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 60):
-        self.failure_count = 0
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.last_failure_time = 0
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-
-    def is_open(self) -> bool:
-        if self.state == "OPEN":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "HALF_OPEN"
-                return False
-            return True
-        return False
-
-    def record_success(self):
-        self.failure_count = 0
-        self.state = "CLOSED"
-
-    def record_failure(self):
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.failure_count >= self.failure_threshold:
-            self.state = "OPEN"
-            logger.warning("[OpenClaw] Circuit opened due to failures")
+from src.api.utils.resilience import CircuitBreaker
 
 
 from src.services.base_agent import BaseEttamettaAgent
@@ -400,10 +373,10 @@ class OpenClawAgent(BaseEttamettaAgent):
         api_key = self._get_api_key("google")
         if api_key:
             try:
-                import google.generativeai as genai
+                from google import genai
 
-                genai.configure(api_key=api_key)
-                self.clients["gemini"] = genai.GenerativeModel("gemini-pro")
+                self.clients["gemini"] = genai.Client(api_key=api_key)
+                self._gemini_model_name = "gemini-pro"
             except ImportError:
                 logger.warning("[OpenClaw] Google Generative AI package not installed")
 

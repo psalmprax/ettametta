@@ -18,7 +18,7 @@ from src.api.utils.models import OpenCLISessionDB
 from src.shared.enums import SessionStatus
 from src.api.config import settings
 from src.services.opencli.service import opencli_service
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -143,8 +143,8 @@ async def connect_platform(
         db_session.status = verification["status"]
         db_session.capabilities = verification.get("capabilities", [])
         db_session.error_message = verification.get("message")
-        db_session.last_verified = datetime.utcnow()
-        db_session.updated_at = datetime.utcnow()
+        db_session.last_verified = datetime.now(timezone.utc)
+        db_session.updated_at = datetime.now(timezone.utc)
         await db.commit()
     finally:
         pass
@@ -180,7 +180,7 @@ async def disconnect_platform(
         db_session = result.scalar_one_or_none()
         if db_session:
             db_session.status = SessionStatus.DISCONNECTED
-            db_session.updated_at = datetime.utcnow()
+            db_session.updated_at = datetime.now(timezone.utc)
             await db.commit()
     finally:
         pass
@@ -211,9 +211,9 @@ async def verify_platform_session(
         db_session = result.scalar_one_or_none()
         if db_session:
             db_session.status = verification["status"]
-            db_session.last_verified = datetime.utcnow()
+            db_session.last_verified = datetime.now(timezone.utc)
             db_session.error_message = verification.get("message")
-            db_session.updated_at = datetime.utcnow()
+            db_session.updated_at = datetime.now(timezone.utc)
             await db.commit()
     finally:
         pass
@@ -248,7 +248,7 @@ async def search_platform(
         result = await db.execute(stmt)
         db_session = result.scalar_one_or_none()
         if db_session:
-            db_session.last_used = datetime.utcnow()
+            db_session.last_used = datetime.now(timezone.utc)
             await db.commit()
     finally:
         pass
@@ -285,7 +285,7 @@ async def get_platform_feed(
         result = await db.execute(stmt)
         db_session = result.scalar_one_or_none()
         if db_session:
-            db_session.last_used = datetime.utcnow()
+            db_session.last_used = datetime.now(timezone.utc)
             await db.commit()
     finally:
         pass
@@ -335,7 +335,7 @@ async def post_to_platform(
         result = await db.execute(stmt)
         db_session = result.scalar_one_or_none()
         if db_session:
-            db_session.last_used = datetime.utcnow()
+            db_session.last_used = datetime.now(timezone.utc)
             await db.commit()
     finally:
         pass

@@ -1,6 +1,3 @@
-# Databricks notebook source
-
-# COMMAND ----------
 from enum import Enum
 
 

@@ -104,44 +104,33 @@ async def generate_single_video(
         # Ensure we have a parent ID for grouping
         parent_job_id = str(uuid.uuid4())
         task_ids = []
+        variant_info = []
 
-        # 1. Dispatch Tasks for each variant
-        for i, variant in enumerate(variant_prompts):
-            try:
-                task = generate_video_task.delay(
-                    prompt=variant.get("modified_prompt", body.prompt),
-                    engine=body.engine,
-                    style=variant.get("suggested_style", body.style),
-                    aspect_ratio=body.aspect_ratio,
-                    user_id=current_user.id,
-                    custom_image_uri=body.custom_image_uri,
-                    parent_id=parent_job_id,
-                    variant_index=i,
-                    request_id=get_request_id(),
-                )
-                task_ids.append(task.id)
-
-                # 2. Consume Credits for each variant
+        # 1. Consume credits and create job entries first in a single transaction
+        try:
+            for i, variant in enumerate(variant_prompts):
+                task_id = str(uuid.uuid4())
+                
+                # Consume Credits with auto_commit=False (flushes to session)
                 success, msg = await credit_service.consume_credits(
                     user_id=current_user.id,
                     amount=credits_cost,
                     action=action,
                     db=db,
-                    reference_id=task.id,
+                    reference_id=task_id,
+                    auto_commit=False,
                 )
 
                 if not success:
-                    # Partial failure - stop and revoke
-                    from src.api.utils.celery import celery_app
+                    raise HTTPException(
+                        status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                        detail=f"Credit failure for variant {i}: {msg}"
+                    )
 
-                    celery_app.control.revoke(task.id, terminate=True)
-                    logger.warning(f"Credit failure for variant {i}: {msg}")
-                    break
-
-                # 3. Create Job for each variant
+                # Create Job for each variant
                 new_job = VideoJobDB(
-                    id=task.id,
-                    title=f"Variant {i}: {variant.get('variant_name', 'Default')}",
+                    id=task_id,
+                    title=f"Variant {i}: {variant.get('variant_name', 'Original')}",
                     status=SystemJobStatus.QUEUED,
                     progress=0,
                     source_uri="Generation Prompt",
@@ -157,11 +146,56 @@ async def generate_single_video(
                     user_id=current_user.id,
                 )
                 db.add(new_job)
+                variant_info.append((task_id, variant, i))
 
+            await db.commit()
+
+        except Exception as e:
+            await db.rollback()
+            raise e
+
+        # 2. Dispatch Tasks for each variant only after DB commit succeeded
+        for task_id, variant, i in variant_info:
+            try:
+                generate_video_task.apply_async(
+                    kwargs={
+                        "prompt": variant.get("modified_prompt", body.prompt),
+                        "engine": body.engine,
+                        "style": variant.get("suggested_style", body.style),
+                        "aspect_ratio": body.aspect_ratio,
+                        "user_id": current_user.id,
+                        "custom_image_uri": body.custom_image_uri,
+                        "parent_id": parent_job_id,
+                        "variant_index": i,
+                        "request_id": get_request_id(),
+                    },
+                    task_id=task_id,
+                )
+                task_ids.append(task_id)
             except Exception as task_err:
-                logger.error(f"Variant generation task failure: {task_err}")
+                logger.error(f"Failed to dispatch variant {i} Celery task: {task_err}")
+                # Compensation workflow: mark job as failed and refund credits
+                try:
+                    stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
+                    res = await db.execute(stmt)
+                    job_to_fail = res.scalar_one_or_none()
+                    if job_to_fail:
+                        job_to_fail.status = SystemJobStatus.FAILED
+                        job_to_fail.error_message = f"Enqueuing failed: {task_err}"
 
-        await db.commit()
+                    await credit_service.add_credits(
+                        user_id=current_user.id,
+                        amount=credits_cost,
+                        transaction_type="refund",
+                        db=db,
+                        description=f"Refund: Failed to queue variant {i}",
+                        reference_id=task_id,
+                        auto_commit=False,
+                    )
+                    await db.commit()
+                except Exception as refund_err:
+                    await db.rollback()
+                    logger.error(f"Refund/fail update failed for variant {i}: {refund_err}")
 
         await audit_service.log(
             action=CreditAction.VIDEO_GENERATE_VARIANTS_START,
@@ -207,55 +241,92 @@ async def start_story_generation(
         await subscription_required(SubscriptionTier.BASIC)(current_user)
         # daily_limit_reached dependency already checked via Depends
 
-        # 1. Dispatch Task
-        task = generate_story_task.delay(
-            prompt=body.prompt,
-            engine=body.engine,
-            style=body.style,
-            user_id=current_user.id,
-            request_id=get_request_id(),
-        )
+        task_id = str(uuid.uuid4())
 
-        # 2. Consume Credits (Hardened: await and reference_id)
-        success, msg = await credit_service.consume_credits(
-            user_id=current_user.id,
-            amount=credits_cost,
-            action=CreditAction.STORYTELLING,
-            db=db,
-            reference_id=task.id,
-        )
+        # 1. Consume Credits and save to DB in a single transaction first
+        try:
+            success, msg = await credit_service.consume_credits(
+                user_id=current_user.id,
+                amount=credits_cost,
+                action=CreditAction.STORYTELLING,
+                db=db,
+                reference_id=task_id,
+                auto_commit=False,
+            )
 
-        if not success:
-            from src.api.utils.celery import celery_app
+            if not success:
+                raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
 
-            celery_app.control.revoke(task.id, terminate=True)
-            raise HTTPException(status_code=402, detail=f"Credit failure: {msg}")
+            # 2. Job Entry
+            new_job = VideoJobDB(
+                id=task_id,
+                title=f"Storytelling - {body.style}",
+                status=SystemJobStatus.QUEUED,
+                job_metadata={
+                    "prompt": body.prompt,
+                    "engine": body.engine,
+                    "style": body.style,
+                },
+                user_id=current_user.id,
+            )
+            db.add(new_job)
+            await db.commit()
 
-        # 3. Job Entry
-        new_job = VideoJobDB(
-            id=task.id,
-            title=f"Storytelling - {body.style}",
-            status=SystemJobStatus.QUEUED,
-            job_metadata={
-                "prompt": body.prompt,
-                "engine": body.engine,
-                "style": body.style,
-            },
-            user_id=current_user.id,
-        )
-        db.add(new_job)
-        await db.commit()
+        except Exception as e:
+            await db.rollback()
+            raise e
+
+        # 3. Dispatch Task only after DB commit succeeded
+        try:
+            generate_story_task.apply_async(
+                kwargs={
+                    "prompt": body.prompt,
+                    "engine": body.engine,
+                    "style": body.style,
+                    "user_id": current_user.id,
+                    "request_id": get_request_id(),
+                },
+                task_id=task_id,
+            )
+        except Exception as task_err:
+            logger.error(f"Failed to dispatch storytelling Celery task: {task_err}")
+            # Compensation workflow: mark job as failed and refund credits
+            try:
+                stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
+                res = await db.execute(stmt)
+                job_to_fail = res.scalar_one_or_none()
+                if job_to_fail:
+                    job_to_fail.status = SystemJobStatus.FAILED
+                    job_to_fail.error_message = f"Enqueuing failed: {task_err}"
+
+                await credit_service.add_credits(
+                    user_id=current_user.id,
+                    amount=credits_cost,
+                    transaction_type="refund",
+                    db=db,
+                    description="Refund: Failed to queue storytelling task",
+                    reference_id=task_id,
+                    auto_commit=False,
+                )
+                await db.commit()
+            except Exception as refund_err:
+                await db.rollback()
+                logger.error(f"Refund/fail update failed for storytelling task: {refund_err}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Task queue unavailable. Please try again later.",
+            )
 
         await audit_service.log(
             action=CreditAction.STORY_GENERATE_START,
             user_id=current_user.id,
             resource_type="VIDEO",
-            resource_id=task.id,
+            resource_id=task_id,
             db=db,
         )
 
         return success_response(
-            data={"message": "Storytelling started", "task_id": task.id}
+            data={"message": "Storytelling started", "task_id": task_id}
         )
     except HTTPException:
         raise

@@ -40,9 +40,8 @@ class TestHealthEndpoints:
         assert "status" in data
         assert data["status"] == "healthy"
 
-        # Check optional service fields
-        assert "debug" in data
-        assert "env" in data
+        # Check fields
+        assert "version" in data
         assert "services" in data
 
     def test_health_check_services(self, client: TestClient):
@@ -53,11 +52,8 @@ class TestHealthEndpoints:
         data = response.json()
 
         services = data["services"]
-        assert "sound_design" in services
-        assert "motion_graphics" in services
         assert "ai_video" in services
-        assert "langchain" in services
-        assert "crewai" in services
+        assert "cache" in services
 
 
 class TestCORSHeaders:

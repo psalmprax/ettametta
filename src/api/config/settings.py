@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
+from pydantic import field_validator, ConfigDict
 from typing import Any
 import os
 import logging
@@ -338,10 +338,7 @@ class Settings(BaseSettings):
         """Delegate to standalone validation logging function."""
         return print_validation_report(self)
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
-        case_sensitive = True
+    model_config = ConfigDict(env_file=".env", extra="ignore", case_sensitive=True)
 
 
 settings = Settings()

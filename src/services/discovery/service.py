@@ -1,6 +1,3 @@
-# Databricks notebook source
-
-# COMMAND ----------
 import json
 import redis
 import asyncio
@@ -243,7 +240,7 @@ class DiscoveryService:
                 return datetime.timedelta(days=int(h[:-1]))
             return datetime.timedelta(days=30)
 
-        published_after = datetime.datetime.utcnow() - parse_horizon(horizon)
+        published_after = datetime.datetime.now(datetime.timezone.utc) - parse_horizon(horizon)
 
         if deep_scan:
             await self._log(
@@ -839,7 +836,7 @@ class DiscoveryService:
                 "top_keywords": top_keywords,
                 "avg_engagement_score": avg_engagement_score,
                 "candidate_count": len(candidates),
-                "generated_at": datetime.utcnow().isoformat() + "Z",
+                "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z",
             }
 
     async def search_content(

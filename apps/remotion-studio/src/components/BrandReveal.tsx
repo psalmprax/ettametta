@@ -18,9 +18,15 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
     primaryColor = "#00D4FF"
 }) => {
     const frame = useCurrentFrame();
-    const { fps } = useVideoConfig();
+    const { width, height, fps } = useVideoConfig();
 
-
+    const containerPadding = `${Math.min(width * 0.05, 45)}px ${Math.min(width * 0.08, 65)}px`;
+    const containerRadius = `${Math.min(width * 0.08, 50)}px`;
+    const logoDimension = `${Math.min(width * 0.25, 140)}px`;
+    const brandFontSize = `${Math.min(width * 0.08, 70)}px`;
+    const subtitleFontSize = `${Math.min(width * 0.03, 22)}px`;
+    const brandLetterSpacing = `${Math.min(width * 0.015, 10)}px`;
+    const subtitleLetterSpacing = `${Math.min(width * 0.01, 5)}px`;
 
     const logoSpring = spring({
         frame,
@@ -53,15 +59,14 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            // Remove solid background to allow video to show through
-            zIndex: 2000
+            zIndex: 2000,
+            boxSizing: 'border-box'
         }}>
             {/* Background Glow */}
             <div style={{
                 position: 'absolute',
-                width: '1000px',
-                height: '1000px',
-                borderRadius: '50%',
+                width: '100%',
+                height: '100%',
                 background: `radial-gradient(circle, ${primaryColor}11 0%, transparent 70%)`,
                 filter: 'blur(150px)',
                 opacity: logoOpacity
@@ -71,8 +76,8 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
             <div style={{
                 background: 'rgba(255, 255, 255, 0.03)',
                 backdropFilter: 'blur(32px) saturate(200%)',
-                padding: '80px 120px',
-                borderRadius: '80px',
+                padding: containerPadding,
+                borderRadius: containerRadius,
                 border: '1px solid rgba(255, 255, 255, 0.15)',
                 boxShadow: '0 50px 100px rgba(0,0,0,0.5), inset 0 0 40px rgba(255,255,255,0.05)',
                 transform: `scale(${logoScale})`,
@@ -82,13 +87,15 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
                 justifyContent: 'center',
                 alignItems: 'center',
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                maxWidth: '90%',
+                boxSizing: 'border-box'
             }}>
                 {/* High-Fidelity Animated Border (Match Outro) */}
                 <div style={{
                     position: 'absolute',
                     inset: 0,
-                    borderRadius: '80px',
+                    borderRadius: containerRadius,
                     padding: '3px',
                     background: `linear-gradient(135deg, ${primaryColor}99, #8E2DE299, ${primaryColor}99)`,
                     WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
@@ -99,9 +106,9 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
 
                 {/* Logo Placeholder / Image */}
                 <div style={{
-                    width: '180px',
-                    height: '180px',
-                    marginBottom: '40px',
+                    width: logoDimension,
+                    height: logoDimension,
+                    marginBottom: '25px',
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
@@ -117,7 +124,7 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
                         <div style={{
                             width: '100%',
                             height: '100%',
-                            borderRadius: '40px',
+                            borderRadius: '25%',
                             background: `linear-gradient(135deg, ${primaryColor}, #8E2DE2)`,
                             boxShadow: `0 20px 40px ${primaryColor}44`
                         }}>
@@ -127,7 +134,7 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
                                 alignItems: 'center',
                                 height: '100%',
                                 color: 'white',
-                                fontSize: '80px',
+                                fontSize: `calc(${logoDimension} * 0.45)`,
                                 fontWeight: 900
                             }}>
                                 {brandName.charAt(0)}
@@ -140,26 +147,32 @@ export const BrandReveal: React.FC<BrandRevealProps> = ({
                 <div style={{
                     transform: `translateY(${textTranslateY}px)`,
                     opacity: textOpacity,
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box'
                 }}>
                     <h1 style={{
                         color: 'white',
-                        fontSize: '100px',
+                        fontSize: brandFontSize,
                         fontWeight: 900,
                         margin: 0,
-                        letterSpacing: '15px',
+                        letterSpacing: brandLetterSpacing,
                         textTransform: 'uppercase',
-                        textShadow: `0 0 30px ${primaryColor}66`
+                        textShadow: `0 0 30px ${primaryColor}66`,
+                        wordBreak: 'break-word',
+                        whiteSpace: 'normal'
                     }}>
                         {brandName}
                     </h1>
                     <p style={{
                         color: 'rgba(255,255,255,0.6)',
-                        fontSize: '28px',
+                        fontSize: subtitleFontSize,
                         fontWeight: 600,
                         margin: '15px 0 0',
-                        letterSpacing: '8px',
-                        textTransform: 'uppercase'
+                        letterSpacing: subtitleLetterSpacing,
+                        textTransform: 'uppercase',
+                        wordBreak: 'break-word',
+                        whiteSpace: 'normal'
                     }}>
                         {brandName === "ETTAMETTA" ? "AI Documentary Engine" : "Powered by EttaMetta"}
                     </p>

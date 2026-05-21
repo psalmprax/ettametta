@@ -3,12 +3,13 @@ Content analysis service for viral pattern detection.
 Provides AI-powered analysis of content to extract topics, sentiment, viral potential, and keywords.
 """
 
-from datetime import datetime
-from typing import Any
+from datetime import datetime, timezone
+from typing import Any, Dict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.utils.models import ContentCandidateDB
+from src.services.llm.service import unified_llm_service
 
 
 async def extract_content_patterns(
@@ -17,7 +18,7 @@ async def extract_content_patterns(
     force: bool = False,
 ) -> dict[str, Any]:
     """
-    Analyze content for viral patterns and insights.
+    Analyze content for viral patterns and insights using AI/NLP service.
 
     Args:
         content_id: The ID of the content to analyze
@@ -46,13 +47,12 @@ async def extract_content_patterns(
     if content.description:
         text_to_analyze += content.description
 
-    # Basic text analysis (placeholder for full AI integration)
-    # In production, this would call an LLM or NLP service
-    analysis_results = _perform_pattern_analysis(text_to_analyze, content)
+    # Perform AI-powered analysis
+    analysis_results = await _perform_ai_pattern_analysis(text_to_analyze, content)
 
     # Update content with analysis results
     content.analysis_results = analysis_results
-    content.analyzed_at = datetime.utcnow()
+    content.analyzed_at = datetime.now(timezone.utc)
 
     await db.commit()
     await db.refresh(content)
@@ -60,15 +60,92 @@ async def extract_content_patterns(
     return analysis_results
 
 
+async def _perform_ai_pattern_analysis(text: str, content: ContentCandidateDB) -> dict[str, Any]:
+    """
+    Perform AI-powered text analysis to extract niches, sentiment, viral potential, and keywords.
+    
+    Uses LLM service for intelligent content analysis instead of basic keyword matching.
+    """
+    if not text.strip():
+        # Fallback to basic analysis for empty text
+        return _perform_pattern_analysis(text, content)
+    
+    try:
+        # Construct analysis prompt for LLM
+        analysis_prompt = f"""
+        Analyze this content for viral potential and extract key insights:
+        
+        Title: {content.title or 'N/A'}
+        Description: {content.description or 'N/A'}
+        Platform: {content.platform}
+        View Count: {content.view_count or 0}
+        Engagement Score: {content.engagement_score or 0.0}
+        
+        Provide a JSON response with:
+        {{
+            "niches": ["list of relevant content niches like entertainment, education, motivation, tech, gaming, etc."],
+            "sentiment": "positive/negative/neutral",
+            "viral_potential": "high/medium/low",
+            "keywords": ["list of 5-10 key viral/potential keywords"],
+            "summary": "brief one-sentence summary of content essence",
+            "target_audience": "likely target demographic",
+            "content_type": "tutorial/review/news/entertainment/etc."
+        }}
+        
+        Base niches on: entertainment, education, motivation, tech, gaming, music, sports, fashion, food, news, business, lifestyle, health, travel, finance, politics, science, art, animals, comedy, diy, cooking, fitness, beauty, gaming, anime, manga, crypto, investing, real_estate, parenting, pets, books, movies, tv_shows, podcasts.
+        
+        Consider viral indicators like: controversy, relatability, usefulness, emotion, uniqueness, timeliness, visual appeal, shareability.
+        """
+        
+        # Call LLM service for analysis
+        llm_response = await unified_llm_service.complete(
+            prompt=analysis_prompt,
+            system_message="You are an expert content analyst specializing in viral content detection and social media trends. Always respond with valid JSON only.",
+            temperature=0.3,  # Lower temperature for more consistent analysis
+            max_tokens=1024
+        )
+        
+        # Parse LLM response
+        import json
+        try:
+            # Extract JSON from response (handle potential markdown formatting)
+            response_text = llm_response.strip()
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            
+            analysis_data = json.loads(response_text.strip())
+            
+            # Validate and structure the response
+            return {
+                "niches": analysis_data.get("niches", ["entertainment"]) if isinstance(analysis_data.get("niches"), list) else ["entertainment"],
+                "sentiment": analysis_data.get("sentiment", "neutral") if analysis_data.get("sentiment") in ["positive", "negative", "neutral"] else "neutral",
+                "viral_potential": analysis_data.get("viral_potential", "medium") if analysis_data.get("viral_potential") in ["high", "medium", "low"] else "medium",
+                "keywords": analysis_data.get("keywords", ["viral", "content"]) if isinstance(analysis_data.get("keywords"), list) else ["viral", "content"],
+                "summary": analysis_data.get("summary", ""),
+                "target_audience": analysis_data.get("target_audience", ""),
+                "content_type": analysis_data.get("content_type", "")
+            }
+        except (json.JSONDecodeError, AttributeError) as e:
+            # Fallback to basic analysis if LLM response parsing fails
+            print(f"LLM analysis parsing failed, falling back to basic: {e}")
+            return _perform_pattern_analysis(text, content)
+            
+    except Exception as e:
+        # Fallback to basic analysis if LLM service fails
+        print(f"LLM analysis service failed, falling back to basic: {e}")
+        return _perform_pattern_analysis(text, content)
+
+
 def _perform_pattern_analysis(text: str, content: ContentCandidateDB) -> dict[str, Any]:
     """
-    Perform text analysis to extract niches, sentiment, viral potential, and keywords.
-
-    This is a basic implementation. In production, replace with actual AI/NLP service.
+    Basic fallback pattern analysis (keyword-based) for when AI service is unavailable.
+    Kept for backward compatibility and fallback scenarios.
     """
     text_lower = text.lower()
 
-    # Basic keyword extraction (in production, use NLP/embedding-based extraction)
+    # Basic keyword extraction
     all_keywords = []
 
     # Common viral content keywords

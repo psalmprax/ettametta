@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 
 class ContentPerformance(BaseModel):
     post_id: str
@@ -12,4 +12,4 @@ class ContentPerformance(BaseModel):
     follows_gained: int
     retention_data: list[int] = []
     optimization_insight: str | None = None
-    timestamp: datetime = datetime.utcnow()
+    timestamp: datetime = datetime.now(timezone.utc)
