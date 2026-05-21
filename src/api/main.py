@@ -268,13 +268,12 @@ async def report_frontend_error(request: Request):
     return {"status": "logged"}
 
 
+# Health endpoint is now in routes/health.py with DB/Redis dependency checks
+# Keep /health for Docker healthcheck compatibility
 @app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "version": "v1",
-        "services": {"ai_video": settings.AI_VIDEO_PROVIDER, "cache": "redis"},
-    }
+async def health_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/api/v1/health")
 
 
 # Chaos Engineering endpoints (extracted to routes/chaos.py)
