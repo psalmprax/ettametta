@@ -655,10 +655,6 @@ class OpenClawAgent(BaseEttamettaAgent):
                 logger.error(f"[OpenClaw] Skill execution failed for {tool}: {e}")
                 return f"⚠️ Skill {tool} execution error: {str(e)}"
 
-        # Final Legacy Fallbacks (for tools not in registry but handled manually)
-        if tool == "LEGACY_FALLBACK_EXAMPLE":
-            pass
-
         return f"❓ Unknown or unhandled tool: {tool}"
 
     async def _process_hierarchical(self, message: str, metrics: str) -> str:
@@ -695,4 +691,4 @@ class OpenClawAgent(BaseEttamettaAgent):
 
 # Global singleton for unified status and health reporting
 # This orchestrator manages discovery and reasoning across all sectors.
-openclaw_agent = OpenClawAgent()
+base_openclaw_agent_service = OpenClawAgent()

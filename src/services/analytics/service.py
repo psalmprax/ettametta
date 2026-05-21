@@ -370,10 +370,10 @@ class AnalyticsService:
 
     async def _get_x_metrics(self, post_id: str, user_id: str) -> dict:
         """Get X/Twitter metrics"""
-        from src.services.optimization.x_publisher import base_x_service
+        from src.services.optimization.x_publisher import base_x_publisher_service
 
         try:
-            metrics = await base_x_service.get_metrics(post_id, user_id)
+            metrics = await base_x_publisher_service.get_metrics(post_id, user_id)
             return {
                 "views": metrics.get("views", 0),
                 "likes": metrics.get("likes", 0),

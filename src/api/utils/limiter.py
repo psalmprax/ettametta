@@ -27,5 +27,5 @@ def get_user_rate_limit(request: Request) -> str:
     else:
         return f"{settings.LIMIT_FREE}/hour"
 
-# Initialize global limiter
-limiter = Limiter(key_func=get_remote_address)
+# Initialize global limiter with user-based rate limiting
+limiter = Limiter(key_func=get_user_rate_limit)

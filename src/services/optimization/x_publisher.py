@@ -228,4 +228,4 @@ class XPublisher(SocialPublisher):
         return await token_manager.get_token("x", user_id=user_id) is not None
 
 
-base_x_service = XPublisher()
+base_x_publisher_service = XPublisher()

@@ -163,4 +163,4 @@ class MonetizationService:
 
 
 # Singleton instance
-base_monetization_service = MonetizationService()
+base_revenue_service = MonetizationService()

@@ -201,4 +201,4 @@ class FacebookPublisher(SocialPublisher):
         return await token_manager.get_token("facebook", user_id=user_id) is not None
 
 
-base_facebook_service = FacebookPublisher()
+base_facebook_publisher_service = FacebookPublisher()

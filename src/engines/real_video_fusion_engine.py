@@ -24,7 +24,7 @@ from src.services.audio.rhythm_engine import base_rhythm_service
 from src.services.video_engine.neural_vision_analyzer import base_vision_service
 from src.services.analytics.bridge import base_bridge_service
 from src.services.optimization.oracle_predictor import base_oracle_service
-from src.services.distribution.publisher import base_publisher
+from src.services.distribution.publisher import base_publisher_service
 from src.services.analytics.training_pipeline import base_training_pipeline
 from src.services.analytics.ledger import base_ledger_service
 from src.services.video_engine.production_batch import base_batch_service

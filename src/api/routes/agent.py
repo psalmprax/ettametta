@@ -76,13 +76,13 @@ async def chat_with_agent(
     Unified agent chat endpoint with video generation intent detection.
     """
     try:
-        from src.services.openclaw.agent import openclaw_agent
+        from src.services.openclaw.agent import base_openclaw_agent_service
         
         # Determine user identifier (prefer username/id for skill tracking)
         identifier = current_user.username or str(current_user.id)
         
         # Use OpenClawAgent for full skill integration (PAPERCLIP, SCIENTIFIC, etc.)
-        response_text = await openclaw_agent.process_message(
+        response_text = await base_openclaw_agent_service.process_message(
             identifier=identifier,
             message=body.message
         )
@@ -173,11 +173,11 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
     Get available agent capabilities with real status.
     """
     from src.api.config import settings
-    from src.services.openclaw.agent import openclaw_agent
+    from src.services.openclaw.agent import base_openclaw_agent_service
 
-    report = openclaw_agent.get_dependency_report()
+    report = base_openclaw_agent_service.get_dependency_report()
     cb_status = (
-        openclaw_agent.circuit_breaker.state
+        base_openclaw_agent_service.circuit_breaker.state
     )  # Returns "CLOSED", "OPEN", or "HALF_OPEN"
 
     # Dynamic worker generation from skill registry
@@ -191,7 +191,7 @@ async def get_agent_capabilities(current_user: UserDB = Depends(get_current_user
     OPS = ["SECURITY", "SYSTEM", "MEMORY", "NOTIFICATIONS", "SELF_IMPROVE", "SELF_HEALING", "BROWSER", "DOCUMENT", "ZERO", "PAPERCLIP", "SCIENTIFIC"]
     BUSINESS = ["REPUTATION", "CHAT_SALES", "SEO_AUDIT", "ACCOUNT_AUDIT", "OUTREACH"]
 
-    for key, skill in openclaw_agent.skill_registry.items():
+    for key, skill in base_openclaw_agent_service.skill_registry.items():
         # Extract metadata from skill instance if available, otherwise use defaults
         metadata = getattr(skill, "metadata", {})
         
@@ -316,9 +316,9 @@ async def sandbox_execute(
     try:
         # Real-First: In a production environment, this would spawn a Docker container or Firecracker VM.
         # For this version, we use the OpenClaw agent to "simulate" the execution results or use Open Interpreter.
-        from src.services.openclaw.agent import openclaw_agent
+        from src.services.openclaw.agent import base_openclaw_agent_service
         
-        result = await openclaw_agent.process_message(
+        result = await base_openclaw_agent_service.process_message(
             identifier=str(current_user.id),
             message=f"Execute this code in the sandbox and return the logs: \n\n```javascript\n{code}\n```"
         )

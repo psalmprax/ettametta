@@ -272,22 +272,6 @@ services:
       - gateway_data:/workspace
     restart: always
 
-  voiceover:
-    profiles:
-      - optional
-    build:
-      context: .
-      dockerfile: ./infra/docker/voiceover.Dockerfile
-    ports:
-      - "7207:8080"
-    environment:
-      - DEVICE=cpu
-    volumes:
-      - ./src/services/voiceover:/app
-      - voiceover_cache:/app/cache
-    deploy:
-      replicas: 0
-
   video_processor:
     profiles:
       - video  # Enable with: docker-compose --profile video up

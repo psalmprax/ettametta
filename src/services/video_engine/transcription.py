@@ -48,4 +48,4 @@ class TranscriptionService:
             return []
 
 
-base_transcription_service = TranscriptionService()
+base_video_transcription_service = TranscriptionService()

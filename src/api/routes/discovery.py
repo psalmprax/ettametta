@@ -569,9 +569,9 @@ async def create_video_from_analysis(
 
         # Agentic Intelligence Injection (Official Skill Integration)
         try:
-            from src.services.openclaw.agent import openclaw_agent
+            from src.services.openclaw.agent import base_openclaw_agent_service
             # Trigger Competitor Analysis for the niche
-            asyncio.create_task(openclaw_agent.process_message(
+            asyncio.create_task(base_openclaw_agent_service.process_message(
                 identifier=str(current_user.id),
                 message=f"Perform a deep competitor strategy analysis for the '{request.niche}' niche on {request.platform}. Identify top 3 viral hooks currently working."
             ))
