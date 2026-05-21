@@ -88,7 +88,7 @@ class VideoContentAnalyzer:
     async def _extract_key_frames(self, video_source: str) -> list[str]:
         """Extract 5 key frames at 10%, 30%, 50%, 70%, 90% of video"""
 
-        frames_dir = Path("temp/video_frames")
+        frames_dir = Path("/tmp/ettametta/video_frames")
         frames_dir.mkdir(parents=True, exist_ok=True)
 
         # Get video duration

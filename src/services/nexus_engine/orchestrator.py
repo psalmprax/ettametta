@@ -332,8 +332,8 @@ class NexusOrchestrator:
                             cap.release()
 
                         if ret:
-                            frame_path = f"temp/audit/frame_{job_id}_{i}.jpg"
-                            os.makedirs("temp/audit", exist_ok=True)
+                            frame_path = f"/tmp/ettametta/audit/frame_{job_id}_{i}.jpg"
+                            os.makedirs("/tmp/ettametta/audit", exist_ok=True)
                             cv2.imwrite(frame_path, frame_img)
                             
                             # Call Gemini Vision (Free Tier)
@@ -412,12 +412,12 @@ class NexusOrchestrator:
                             self.logger.info(f"[Nexus] Auto-sourced music: {music_path}")
 
             # Concatenate all voiceovers into a single master file
-            master_voiceover = f"temp/voice/master_{job_id}.mp3"
-            os.makedirs("temp/voice", exist_ok=True)
+            master_voiceover = f"/tmp/ettametta/voice/master_{job_id}.mp3"
+            os.makedirs("/tmp/ettametta/voice", exist_ok=True)
             
             if len(voiceover_paths) > 1:
                 self.logger.info(f"[Nexus] Stitching {len(voiceover_paths)} voiceovers...")
-                list_path = f"temp/voice/list_{job_id}.txt"
+                list_path = f"/tmp/ettametta/voice/list_{job_id}.txt"
                 
                 def write_voiceover_list():
                     with open(list_path, "w") as f:
@@ -461,8 +461,8 @@ class NexusOrchestrator:
                     self.logger.error(f"[Nexus] Transcription failed: {e}")
 
             # 2.7 Thumbnail Extraction Node
-            thumbnail_path = f"temp/thumbnails/{job_id}.jpg"
-            os.makedirs("temp/thumbnails", exist_ok=True)
+            thumbnail_path = f"/tmp/ettametta/thumbnails/{job_id}.jpg"
+            os.makedirs("/tmp/ettametta/thumbnails", exist_ok=True)
             if visual_paths and os.path.exists(visual_paths[0]):
                 try:
                     self.logger.info(f"[Nexus] Extracting thumbnail from first clip...")
@@ -572,7 +572,7 @@ class NexusOrchestrator:
                 # Temp Cleanup: Remove intermediate files
                 try:
                     cwd = Path.cwd()
-                    for rel_dir in ["temp/voice", "temp/audit", "temp/thumbnails"]:
+                    for rel_dir in ["/tmp/ettametta/voice", "/tmp/ettametta/audit", "/tmp/ettametta/thumbnails"]:
                         temp_dir = str(cwd / rel_dir)
                         if os.path.exists(temp_dir):
                             shutil.rmtree(temp_dir, ignore_errors=True)

@@ -736,7 +736,7 @@ class AutoCreator:
         """
         from src.services.llm.service import unified_llm_service
         
-        audit_frame_dir = "temp/audit_source"
+        audit_frame_dir = "/tmp/ettametta/audit_source"
         os.makedirs(audit_frame_dir, exist_ok=True)
         frame_path = f"{audit_frame_dir}/audit_{job_id}_{segment_idx}.jpg"
         

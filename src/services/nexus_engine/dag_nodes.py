@@ -415,7 +415,7 @@ class VisionAuditNode(BaseNode):
         if not ret:
             return {"passed": True, "reason": "frame_extraction_failed", "video_path": video_path}
 
-        frame_dir = "temp/dag_audit"
+        frame_dir = "/tmp/ettametta/dag_audit"
         os.makedirs(frame_dir, exist_ok=True)
         frame_path = os.path.join(frame_dir, f"audit_{job_id}_{self.id}.jpg")
         cv2.imwrite(frame_path, frame)

@@ -248,7 +248,7 @@ class SceneBasedVideoOrchestrator:
                     stock_urls = await base_stock_service.fetch_b_roll(search_query, count=1)
                     if stock_urls:
                         stock_path = await base_stock_service.download_stock_video(
-                            stock_urls[0], output_dir=f"temp/stock_scene_{idx}"
+                            stock_urls[0], output_dir=f"/tmp/ettametta/stock_scene_{idx}"
                         )
                         if stock_path and Path(stock_path).exists():
                             logger.info(f"[Scene {idx+1}] Pexels stock acquired: {stock_path}")
@@ -262,7 +262,7 @@ class SceneBasedVideoOrchestrator:
                     fallback_urls = await base_stock_service.fetch_b_roll(f"{niche_keyword} video", count=1)
                     if fallback_urls:
                         fallback_path = await base_stock_service.download_stock_video(
-                            fallback_urls[0], output_dir=f"temp/stock_fallback_{idx}"
+                            fallback_urls[0], output_dir=f"/tmp/ettametta/stock_fallback_{idx}"
                         )
                         if fallback_path and Path(fallback_path).exists():
                             logger.info(f"[Scene {idx+1}] Last resort stock acquired: {fallback_path}")
