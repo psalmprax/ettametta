@@ -72,5 +72,8 @@ ENV PYTHONPATH=/app:/app/src
 # Expose port for health checks/webhooks
 EXPOSE 3001
 
+RUN useradd -m -r appuser && chown -R appuser:appuser /app
+USER appuser
+
 # Command to run the service
 CMD ["python", "-m", "services.openclaw.main"]

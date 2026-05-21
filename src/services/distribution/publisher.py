@@ -141,4 +141,4 @@ class Publisher:
         return [f["video_id"] for f in self.flight_plan]
 
 # Singleton Instance
-base_publisher = Publisher()
+base_publisher_service = Publisher()

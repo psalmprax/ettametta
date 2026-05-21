@@ -70,5 +70,8 @@ ENV PYTHONPATH=/app
 ENV TORCH_USE_CUDA_DSA=1
 ENV CUDA_VISIBLE_DEVICES=all
 
+RUN useradd -m -r appuser && chown -R appuser:appuser /app
+USER appuser
+
 # Default command
 CMD ["python", "-c", "print('Video Processor Container Ready')"]

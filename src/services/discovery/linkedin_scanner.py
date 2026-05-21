@@ -272,4 +272,4 @@ class LinkedInScanner:
         return None
 
 
-base_linkedin_service = LinkedInScanner()
+base_linkedin_scanner_service = LinkedInScanner()

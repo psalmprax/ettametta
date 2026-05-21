@@ -199,14 +199,6 @@ async def login(
             detail="Username/email and password are required"
         )
 
-    # Debug: Log password length for troubleshooting
-    import logging
-    logger = logging.getLogger(__name__)
-    if isinstance(password, str):
-        logger.info(f"[LOGIN] Password length: {len(password)} chars, {len(password.encode('utf-8'))} bytes")
-    elif isinstance(password, bytes):
-        logger.info(f"[LOGIN] Password length: {len(password)} bytes")
-
     # Support login with either username OR email
     stmt = select(UserDB).where(
         (UserDB.email == identifier) | (UserDB.username == identifier)

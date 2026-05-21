@@ -1,7 +1,10 @@
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 import bcrypt
+import logging
 from src.api.config import settings
+
+logger = logging.getLogger(__name__)
 
 class DirectBcryptWrapper:
     def verify(self, plain_password: str | bytes, hashed_password: str | bytes) -> bool:
@@ -36,16 +39,24 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 24 hours
 def verify_password(plain_password, hashed_password):
     # Bcrypt has a 72-byte limit - truncate if necessary
     if isinstance(plain_password, str):
+        if len(plain_password) > 72:
+            logger.warning("Password exceeds 72 bytes, truncating for bcrypt compatibility")
         plain_password = plain_password[:72]
     elif isinstance(plain_password, bytes):
+        if len(plain_password) > 72:
+            logger.warning("Password exceeds 72 bytes, truncating for bcrypt compatibility")
         plain_password = plain_password[:72]
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
     # Bcrypt has a 72-byte limit - truncate if necessary
     if isinstance(password, str):
+        if len(password) > 72:
+            logger.warning("Password exceeds 72 bytes, truncating for bcrypt compatibility")
         password = password[:72]
     elif isinstance(password, bytes):
+        if len(password) > 72:
+            logger.warning("Password exceeds 72 bytes, truncating for bcrypt compatibility")
         password = password[:72]
     return pwd_context.hash(password)
 

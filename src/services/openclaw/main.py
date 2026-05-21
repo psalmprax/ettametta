@@ -11,7 +11,7 @@ from telegram.ext import (
 )
 from src.api.config import settings
 from .agent import OpenClawAgent
-from .dispatcher import dispatcher
+from .dispatcher import base_dispatcher_service
 import uvicorn
 from fastapi import FastAPI, BackgroundTasks, Request, Response
 from pydantic import BaseModel
@@ -280,7 +280,7 @@ async def broadcast_message(
             # We fire these off in the background to avoid blocking the API response
             # In a heavy environment, we'd use Celery for this.
             background_tasks.add_task(
-                dispatcher.broadcast_to_user,
+                base_dispatcher_service.broadcast_to_user,
                 uid,
                 request.message,
                 request.platform_hint,

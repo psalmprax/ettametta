@@ -57,8 +57,7 @@ class ErrorResponse(BaseModel):
     details: dict[str, Any] | None = None
     request_id: str | None = None
     
-    model_config = ConfigDict()
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class ValidationErrorResponse(ErrorResponse):

@@ -25,8 +25,8 @@ from .stock_service import StockService
 from .ffmpeg_utils import FFmpegTransformer
 from src.api.config import settings
 
-# Backward compatibility aliases
-base_transcription_service = TranscriptionService()
+# Import canonical singletons from their authoritative modules
+from src.services.audio.transcription_service import base_transcription_service
 base_stock_service = StockService()
 base_ffmpeg_service = FFmpegTransformer()
 

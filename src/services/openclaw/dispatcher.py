@@ -107,4 +107,4 @@ class MessageDispatcher:
                 ) from e
 
 
-dispatcher = MessageDispatcher()
+base_dispatcher_service = MessageDispatcher()

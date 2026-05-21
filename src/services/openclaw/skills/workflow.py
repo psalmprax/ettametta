@@ -159,9 +159,9 @@ class WorkflowSkill(OpenClawBaseSkill):
             return f"✅ Generated cinema package for {topic}: {result.get('job_id')}"
 
         elif action == "publish":
-            from src.services.distribution.publisher import base_publisher
+            from src.services.distribution.publisher import base_publisher_service_service
             # Trigger multi-platform distribution
-            result = await base_publisher.publish_to_platform(
+            result = await base_publisher_service.publish_to_platform(
                 video_path=params.get("video_path"),
                 platform=params.get("platform", "youtube"),
                 caption=params.get("caption", "New viral drop! #ai"),

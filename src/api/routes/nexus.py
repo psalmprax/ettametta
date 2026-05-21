@@ -444,7 +444,7 @@ async def get_nexus_job(
     current_user=Depends(get_current_user),
     db=Depends(get_db),
 ):
-    stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
+    stmt = select(NexusJobDB).where(NexusJobDB.id == job_id, NexusJobDB.user_id == current_user.id)
     result = await db.execute(stmt)
     job = result.scalar_one_or_none()
 

@@ -157,9 +157,9 @@ def download_and_process_task(
         from src.services.decision_engine.service import base_strategy_service
 
         # Extract transcript from video if available
-        from .transcription import base_transcription_service
+        from .transcription import base_video_transcription_service
 
-        transcript_segments = await base_transcription_service.transcribe_video(video_path)
+        transcript_segments = await base_video_transcription_service.transcribe_video(video_path)
         transcript = (
             " ".join(seg.get("text", "") for seg in transcript_segments)
             if transcript_segments
@@ -305,14 +305,14 @@ def download_and_process_task(
 
         # 4.5 Post-Processing Agentic Loop (Official Skill Integration)
         try:
-            from src.services.openclaw.agent import openclaw_agent
+            from src.services.openclaw.agent import base_openclaw_agent_service
             # Trigger SEO Auditor
-            run_async(openclaw_agent.process_message(
+            run_async(base_openclaw_agent_service.process_message(
                 identifier=user_id or "system",
                 message=f"Analyze the SEO potential of this viral video: {public_url}. Niche: {niche}. Keywords: {metadata.get('tags', '')}. Provide a high-impact title upgrade."
             ))
             # Trigger Reputation Manager
-            run_async(openclaw_agent.process_message(
+            run_async(base_openclaw_agent_service.process_message(
                 identifier=user_id or "system",
                 message=f"Initialize reputation monitoring for video: {public_url}. Platform: {platform}. Expected status: VIRAL_CANDIDATE."
             ))

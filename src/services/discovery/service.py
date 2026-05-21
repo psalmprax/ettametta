@@ -24,16 +24,16 @@ from .youtube_long_scanner import YouTubeLongScanner
 from .tiktok_scanner import TikTokScanner
 from .cloak_scanner import CloakBrowserScanner
 from .reddit_scanner import base_reddit_service
-from .x_scanner import base_x_service
+from .x_scanner import base_x_scanner_service
 from .public_domain_scanner import base_public_domain_service
 from .metasearch_scanner import base_metasearch_service
 from .rumble_scanner import base_rumble_service
 from .instagram_scanner import base_instagram_service
-from .facebook_scanner import base_facebook_service
+from .facebook_scanner import base_facebook_scanner_service
 from .twitch_scanner import base_twitch_service
 from .snapchat_scanner import base_snapchat_service
 from .pinterest_scanner import base_pinterest_service
-from .linkedin_scanner import base_linkedin_service
+from .linkedin_scanner import base_linkedin_scanner_service
 from .bilibili_scanner import base_bilibili_service
 from .skool_scanner import base_skool_service
 from .duckduckgo_scanner import base_duckduckgo_service
@@ -76,12 +76,12 @@ class DiscoveryService:
         # Now all implemented with web scraping (no API keys needed)
         self.global_scanners = [
             base_reddit_service,  # Real API (JSON) ✓
-            base_x_service,  # Web scrape
+            base_x_scanner_service,  # Web scrape
             base_instagram_service,  # Web scrape
-            base_facebook_service,  # Web scrape
+            base_facebook_scanner_service,  # Web scrape
             base_twitch_service,  # Web scrape (NEW)
             base_pinterest_service,  # Web scrape (NEW)
-            base_linkedin_service,  # Web scrape (NEW)
+            base_linkedin_scanner_service,  # Web scrape (NEW)
             base_snapchat_service,  # Web scrape (NEW)
             base_bilibili_service,  # Web scrape (NEW)
             base_rumble_service,  # Web scrape (NEW)
@@ -305,9 +305,9 @@ class DiscoveryService:
             self.global_scanners
             if deep_scan or tier != "free"
             else [
-                base_x_service,
+                base_x_scanner_service,
                 base_instagram_service,
-                base_facebook_service,
+                base_facebook_scanner_service,
                 base_twitch_service,
                 base_bilibili_service,
                 base_rumble_service,

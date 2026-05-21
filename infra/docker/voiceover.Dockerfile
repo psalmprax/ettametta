@@ -25,5 +25,8 @@ ENV DEVICE=cpu
 
 EXPOSE 8080
 
+RUN useradd -m -r appuser && chown -R appuser:appuser /app
+USER appuser
+
 # Auto-download models then start the app
 CMD ["sh", "-c", "python download_models.py && python main.py"]
