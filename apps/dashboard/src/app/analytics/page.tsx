@@ -290,7 +290,7 @@ export default function AnalyticsPage() {
 
                         {activeEngine === "propagation" && (
                             <div className="flex-1 rounded-[24px] bg-[#0F0F11]/60 border border-white/5 overflow-hidden relative">
-                                <GlobalPulseGlobe pulseIntensity={1} />
+                                <GlobalPulseGlobe pulseIntensity={pulse?.metrics?.global_velocity ?? 1} telemetry={pulse} />
                                 <div className="absolute bottom-10 left-10 p-8 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl max-w-sm space-y-2">
                                     <h4 className="text-white font-bold uppercase tracking-widest text-xs">Global Propagation Matrix</h4>
                                     <p className="text-zinc-500 text-[10px] leading-relaxed italic">Mapping the trajectory of neural propagation across global platform clusters.</p>
