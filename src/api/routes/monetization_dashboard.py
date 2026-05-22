@@ -12,7 +12,6 @@ from src.api.utils.auth import get_current_user
 from src.api.utils.models import UserDB
 from src.api.utils.api_responses import success_response
 from src.services.monetization.revenue_service import base_revenue_service
-from src.services.monetization.service import base_monetization_service
 
 router = APIRouter(prefix="/monetization", tags=["Monetization"])
 
@@ -27,7 +26,7 @@ async def get_revenue_summary(
     Includes platform breakdown and daily trends.
     """
     try:
-        summary = await base_monetization_service.get_revenue_summary(
+        summary = await base_revenue_service.get_revenue_summary(
             user_id=current_user.id,
             days=days
         )
@@ -44,7 +43,7 @@ async def get_monetization_goals(
     Get current monetization goals and progress tracking.
     """
     try:
-        goals = await base_monetization_service.get_monetization_goals(
+        goals = await base_revenue_service.get_monetization_goals(
             user_id=current_user.id
         )
         return success_response(data=goals)
