@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { 
     Cpu, 
@@ -53,7 +53,9 @@ export default function CommandCenterLayout({
 
             {/* Main Side Nav (The global one) */}
             <div className="hidden lg:block">
-                <Sidebar />
+                <Suspense fallback={null}>
+                    <Sidebar />
+                </Suspense>
             </div>
 
             {/* Left Engine Navigation (260px) */}
