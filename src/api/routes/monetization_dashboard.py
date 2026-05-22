@@ -12,6 +12,7 @@ from src.api.utils.auth import get_current_user
 from src.api.utils.models import UserDB
 from src.api.utils.api_responses import success_response
 from src.services.monetization.revenue_service import base_revenue_service
+from src.services.monetization.service import base_monetization_service
 
 router = APIRouter(prefix="/monetization", tags=["Monetization"])
 
