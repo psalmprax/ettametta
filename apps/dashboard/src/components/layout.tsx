@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { Sidebar, MobileNav, MobileHeader } from "@/components/sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -65,7 +65,9 @@ function LegacyLayout({ children }: { children: React.ReactNode }) {
                                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
                                 className="fixed top-0 left-0 bottom-0 w-64 bg-black z-50 md:hidden border-r border-white/5 shadow-2xl"
                             >
-                                <Sidebar collapsed={false} onToggle={() => setMobileMenuOpen(false)} />
+                                <Suspense fallback={null}>
+                                    <Sidebar collapsed={false} onToggle={() => setMobileMenuOpen(false)} />
+                                </Suspense>
                             </motion.div>
                         </>
                     )}
@@ -76,7 +78,9 @@ function LegacyLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="flex h-screen bg-black text-white font-sans">
-            <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+            <Suspense fallback={null}>
+                <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+            </Suspense>
 
             <div className="flex flex-col flex-1 relative">
                 <header className="h-16 border-b border-white/5 bg-black/50 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-30">
