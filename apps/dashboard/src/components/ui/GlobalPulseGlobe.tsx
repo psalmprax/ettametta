@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useMemo, useState, useCallback } from "react";
+import React, { useRef, useEffect, useMemo, useState } from "react";
 
 interface GeoHotspot {
     name: string;
@@ -63,23 +63,21 @@ export default React.memo(function GlobalPulseGlobe({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const frameRef = useRef<number>(0);
     const [hovered, setHovered] = useState(false);
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
     const particlesRef = useRef<Particle[]>([]);
     const pulseWaveRef = useRef(0);
-    const prefersReducedMotion = useRef(false);
 
-    // Detect prefers-reduced-motion
+    // Detect prefers-reduced-motion with reactive state
     useEffect(() => {
         if (typeof window === "undefined") return;
         const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-        prefersReducedMotion.current = mq.matches;
-        const handler = (e: MediaQueryListEvent) => {
-            prefersReducedMotion.current = e.matches;
-        };
+        setPrefersReducedMotion(mq.matches);
+        const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
         mq.addEventListener("change", handler);
         return () => mq.removeEventListener("change", handler);
     }, []);
 
-    const effectiveReducedMotion = reducedMotion || prefersReducedMotion.current;
+    const effectiveReducedMotion = reducedMotion || prefersReducedMotion;
 
     // Compute telemetry-driven intensity
     const computedIntensity = useMemo(() => {
@@ -107,6 +105,30 @@ export default React.memo(function GlobalPulseGlobe({
 
     // City 3D positions
     const cityPoints = useMemo(() => CITIES.map((c) => latLngToPoint(c.lat, c.lng)), []);
+
+    // Pre-compute region arc geometry (avoid nested loops per frame)
+    const regionArcPaths = useMemo(() => {
+        return REGION_ARCS.map((region) => {
+            const centerRad = ((region.centerLng + 180) * Math.PI) / 180;
+            const arcSpan = 40 * (Math.PI / 180);
+            const lines: { x: number; y: number; z: number }[][] = [];
+
+            for (let latStep = -50; latStep <= 50; latStep += 10) {
+                const latRad = (latStep * Math.PI) / 180;
+                const pts: { x: number; y: number; z: number }[] = [];
+                for (let t = -arcSpan; t <= arcSpan; t += 0.08) {
+                    const lon = centerRad + t;
+                    pts.push({
+                        x: Math.cos(latRad) * Math.cos(lon),
+                        y: Math.sin(latRad),
+                        z: Math.cos(latRad) * Math.sin(lon),
+                    });
+                }
+                lines.push(pts);
+            }
+            return { ...region, lines };
+        });
+    }, []);
 
     // Connections between nearby nodes
     const connections = useMemo(() => {
@@ -172,10 +194,26 @@ export default React.memo(function GlobalPulseGlobe({
             }));
         }
 
+        let currentDPR = 1;
+
+        const resizeCanvas = () => {
+            const rect = canvas.parentElement?.getBoundingClientRect();
+            if (!rect) return;
+            const dpr = window.devicePixelRatio || 1;
+            currentDPR = dpr;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            // Reset transform before applying new DPR scale
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+
         const draw = () => {
             if (!canvas || !ctx) return;
-            const w = canvas.width;
-            const h = canvas.height;
+            // Reset transform each frame to avoid accumulation
+            ctx.setTransform(currentDPR, 0, 0, currentDPR, 0, 0);
+
+            const w = canvas.width / currentDPR;
+            const h = canvas.height / currentDPR;
             const cx = w / 2;
             const cy = h / 2;
             const r = Math.min(w, h) * 0.38;
@@ -207,32 +245,27 @@ export default React.memo(function GlobalPulseGlobe({
                 ctx.stroke();
             }
 
-            // Region arcs with varying brightness
-            for (const region of REGION_ARCS) {
+            // Region arcs with varying brightness (pre-computed geometry)
+            const now = Date.now();
+            for (const region of regionArcPaths) {
                 const brightnessOscillation = effectiveReducedMotion
                     ? region.baseBrightness
-                    : region.baseBrightness * (0.7 + 0.3 * Math.sin(Date.now() * 0.001 + region.centerLng * 0.1));
+                    : region.baseBrightness * (0.7 + 0.3 * Math.sin(now * 0.001 + region.centerLng * 0.1));
 
                 const alpha = brightnessOscillation * computedIntensity * 0.15;
-                const centerRad = ((region.centerLng + 180) * Math.PI) / 180;
-                const arcSpan = 40 * (Math.PI / 180);
 
-                ctx.beginPath();
-                for (let t = -arcSpan; t <= arcSpan; t += 0.05) {
-                    const lon = centerRad + t;
-                    for (let latStep = -50; latStep <= 50; latStep += 2) {
-                        const latRad = (latStep * Math.PI) / 180;
-                        const x = Math.cos(latRad) * Math.cos(lon);
-                        const y = Math.sin(latRad);
-                        const z = Math.cos(latRad) * Math.sin(lon);
-                        const p = project(x, y, z, cx, cy, r * 1.01);
-                        if (latStep === -50 && t === -arcSpan) ctx.moveTo(p.px, p.py);
-                        else ctx.lineTo(p.px, p.py);
-                    }
-                }
                 ctx.strokeStyle = `rgba(${region.color}, ${Math.min(0.6, alpha)})`;
                 ctx.lineWidth = 2;
-                ctx.stroke();
+
+                for (const line of region.lines) {
+                    ctx.beginPath();
+                    for (let k = 0; k < line.length; k++) {
+                        const p = project(line[k].x, line[k].y, line[k].z, cx, cy, r * 1.01);
+                        if (k === 0) ctx.moveTo(p.px, p.py);
+                        else ctx.lineTo(p.px, p.py);
+                    }
+                    ctx.stroke();
+                }
             }
 
             // Pulse waves radiating from center
@@ -304,7 +337,7 @@ export default React.memo(function GlobalPulseGlobe({
                     const fromPt = cityPoints[particle.fromIdx];
                     const toPt = cityPoints[particle.toIdx];
 
-                    // Interpolate along great circle (simplified as linear in 3D then normalize)
+                    // Interpolate along great circle (slerp approximation)
                     const t = particle.progress;
                     const ix = fromPt.x * (1 - t) + toPt.x * t;
                     const iy = fromPt.y * (1 - t) + toPt.y * t;
@@ -346,18 +379,18 @@ export default React.memo(function GlobalPulseGlobe({
                     const geoMatch = telemetry?.geo_activity?.find(
                         (g) => Math.abs(g.lat - CITIES[i].lat) < 10 && Math.abs(g.lng - CITIES[i].lng) < 15
                     );
-                    const cityIntensity = geoMatch ? geoMatch.intensity : 0.5 + 0.3 * Math.sin(Date.now() * 0.002 + i);
+                    const cityIntensity = geoMatch ? geoMatch.intensity : 0.5 + 0.3 * Math.sin(now * 0.002 + i);
 
                     const pulseSize = effectiveReducedMotion
                         ? 4 * p.scale
-                        : (4 + 2 * Math.sin(Date.now() * 0.003 + i * 1.5)) * p.scale;
+                        : (4 + 2 * Math.sin(now * 0.003 + i * 1.5)) * p.scale;
 
                     const outerSize = pulseSize * (2 + cityIntensity);
                     const alpha = (0.3 + cityIntensity * 0.5) * p.depth;
 
                     // Outer pulse ring
                     if (!effectiveReducedMotion) {
-                        const ringPhase = (Date.now() * 0.002 + i * 0.8) % 1;
+                        const ringPhase = (now * 0.002 + i * 0.8) % 1;
                         const ringR = outerSize * (1 + ringPhase * 2);
                         const ringAlpha = (1 - ringPhase) * 0.3 * computedIntensity;
                         ctx.beginPath();
@@ -399,15 +432,6 @@ export default React.memo(function GlobalPulseGlobe({
             frameRef.current = requestAnimationFrame(draw);
         };
 
-        const resizeCanvas = () => {
-            const rect = canvas.parentElement?.getBoundingClientRect();
-            if (rect) {
-                canvas.width = rect.width * window.devicePixelRatio;
-                canvas.height = rect.height * window.devicePixelRatio;
-                ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            }
-        };
-
         resizeCanvas();
         draw();
 
@@ -418,7 +442,7 @@ export default React.memo(function GlobalPulseGlobe({
             cancelAnimationFrame(frameRef.current);
             ro.disconnect();
         };
-    }, [nodes, connections, cityPoints, cityConnections, computedIntensity, hovered, effectiveReducedMotion, telemetry]);
+    }, [nodes, connections, cityPoints, cityConnections, regionArcPaths, computedIntensity, hovered, effectiveReducedMotion, telemetry]);
 
     return (
         <div
