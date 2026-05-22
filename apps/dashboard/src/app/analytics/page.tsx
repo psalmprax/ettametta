@@ -24,7 +24,7 @@ import {
     LineChart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import { API_BASE, WS_BASE } from "@/lib/config";
 import { withRealFallback } from "@/lib/real_first_utils";
 import { getAuthToken } from "@/lib/auth_utils";
@@ -37,7 +37,7 @@ import { Button } from "@/components/ui/Button";
 import { useTelemetry } from "@/context/TelemetryContext";
 import { AreaChartCustom } from "@/components/ui/ChartComponents";
 
-const GlobalPulseGlobe = dynamic(() => import("@/components/ui/GlobalPulseGlobe"), { ssr: false });
+const GlobalPulseGlobe = nextDynamic(() => import("@/components/ui/GlobalPulseGlobe"), { ssr: false });
 
 interface AnalyticsMetrics {
     views: number;
