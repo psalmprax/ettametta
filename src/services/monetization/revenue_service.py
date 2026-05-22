@@ -29,7 +29,7 @@ class MonetizationService:
         """
         async with async_session_factory() as db:
             # Calculate date range
-            start_date = datetime.now(timezone.utc) - timedelta(days=days)
+            start_date = datetime.utcnow() - timedelta(days=days)
             
             # Fetch published content for this user within the date range
             stmt = select(PublishedContentDB).where(
