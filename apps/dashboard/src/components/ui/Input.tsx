@@ -29,16 +29,20 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       className
     );
 
+    const generatedId = React.useId();
+    const id = props.id || generatedId;
+
     return (
       <div className={containerStyles}>
         {label && (
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
+          <label htmlFor={id} className="block text-sm font-semibold text-slate-700 mb-2">
             {label}
           </label>
         )}
         <div className="relative">
           <input
             ref={ref}
+            id={id}
             className={cn(
               baseStyles,
               variants[variant],
