@@ -32,7 +32,7 @@ class CreditPackageDB(Base):
     stripe_price_id = Column(String, nullable=True)  # Stripe price ID
     is_active = Column(Boolean, default=True)
     features = Column(JSON, default=[])  # Bonus features
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 class UserCreditDB(Base):
@@ -51,9 +51,9 @@ class UserCreditDB(Base):
     )  # Total credits earned (referrals, etc.)
     lifetime_spent = Column(Integer, default=0)  # Total credits spent
     stripe_customer_id = Column(String, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     updated_at = Column(
-        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
     )
 
 
@@ -76,7 +76,7 @@ class CreditTransactionDB(Base):
     stripe_subscription_id = Column(String, nullable=True)  # For subscription credits
     reference_id = Column(String, nullable=True)  # For linking to related entities
     # Use naive datetime for PostgreSQL compatibility
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 class ReferralDB(Base):
@@ -95,7 +95,7 @@ class ReferralDB(Base):
     status = Column(String, default="PENDING")  # PENDING, COMPLETED, REWARD_CLAIMED
     reward_credits = Column(Integer, default=0)
     reward_claimed_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 class CreditUsageRuleDB(Base):
@@ -129,4 +129,4 @@ class SubscriptionCreditDB(Base):
     monthly_credits = Column(Integer)
     rollover_enabled = Column(Boolean, default=False)
     max_rollover = Column(Integer, default=0)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
