@@ -14,8 +14,8 @@ test.describe('Accessibility Tests', () => {
     await page.goto('/login');
     
     // Check for form labels
-    const emailInput = page.locator('input[name="email"]');
-    await expect(emailInput).toBeVisible();
+    const usernameInput = page.locator('input[name="username"]');
+    await expect(usernameInput).toBeVisible();
     
     const passwordInput = page.locator('input[name="password"]');
     await expect(passwordInput).toBeVisible();
@@ -54,7 +54,7 @@ test.describe('Accessibility Tests', () => {
 
   test('Dashboard has keyboard navigation', async ({ page }) => {
     await page.goto('/login');
-    await page.fill('input[name="email"]', 'test@example.com');
+    await page.fill('input[name="username"]', 'test@example.com');
     await page.fill('input[name="password"]', 'testpassword');
     await page.click('button[type="submit"]');
     await page.waitForURL('/');
@@ -70,7 +70,7 @@ test.describe('Accessibility Tests', () => {
 
   test('No focus traps in modal dialogs', async ({ page }) => {
     await page.goto('/login');
-    await page.fill('input[name="email"]', 'test@example.com');
+    await page.fill('input[name="username"]', 'test@example.com');
     await page.fill('input[name="password"]', 'testpassword');
     await page.click('button[type="submit"]');
     await page.waitForURL('/');
@@ -143,7 +143,7 @@ test.describe('Accessibility Tests', () => {
 
   test('Headings follow proper hierarchy', async ({ page }) => {
     await page.goto('/login');
-    await page.fill('input[name="email"]', 'test@example.com');
+    await page.fill('input[name="username"]', 'test@example.com');
     await page.fill('input[name="password"]', 'testpassword');
     await page.click('button[type="submit"]');
     await page.waitForURL('/');

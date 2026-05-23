@@ -1,7 +1,7 @@
 'use client';
 
+import '@/lib/react-polyfill';
 import React from 'react';
-import dynamic from 'next/dynamic';
 import { AuthProvider } from '@/context/AuthContext';
 import { UIProvider } from '@/context/UIContext';
 import { UIThemeProvider } from '@/context/UIThemeContext';
@@ -10,7 +10,7 @@ import GlobalErrorBoundary from '@/components/GlobalErrorBoundary';
 import { TelemetryProvider } from '@/context/TelemetryContext';
 import { Toaster } from 'sonner';
 
-export default function RootClientContext({ children }: { children: React.ReactNode }) {
+export default function RootClientContext({ children }: { readonly children: React.ReactNode }) {
   return (
     <QueryProvider>
       <UIThemeProvider>
