@@ -112,6 +112,7 @@ tmp_verify/
 outputs/
 *.mp4
 *.mp3
+!apps/remotion-studio/public/sfx/*.mp3
 *.wav
 *.webm
 TEMP_MPY_wvf_snd.*
