@@ -3,6 +3,7 @@ import os
 import sys
 import uuid
 import shutil
+from datetime import datetime
 from sqlalchemy import select
 
 # Override environment variables before importing settings
@@ -73,7 +74,9 @@ async def run_single_production(
                 email="test_user@example.com",
                 hashed_password="mock_password",
                 role="user",
-                is_active=True
+                is_active=True,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
             )
             db.add(user)
             await db.commit()
@@ -97,7 +100,9 @@ async def run_single_production(
                 "vfx": "default",
                 "brand_name": brand_name,
                 "primary_color": primary_color
-            }
+            },
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
         db.add(job)
         await db.commit()

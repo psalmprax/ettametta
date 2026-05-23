@@ -6,6 +6,7 @@ from src.services.infrastructure.event_bus import base_event_service
 logger = logging.getLogger("StateMachine")
 
 class JobState(str, Enum):
+    QUEUED = "queued"
     PENDING = "pending"
     DISCOVERING = "discovery_active"
     INGRESSING = "ingress_active"
@@ -24,6 +25,8 @@ class JobStateMachine:
     
     # Valid transitions: Current State -> List of Allowed Next States
     _TRANSITIONS = {
+        None: [JobState.FAILED, JobState.QUEUED, JobState.PENDING],
+        JobState.QUEUED: [JobState.PENDING, JobState.FAILED],
         JobState.PENDING: [JobState.DISCOVERING, JobState.INGRESSING, JobState.FAILED],
         JobState.DISCOVERING: [JobState.INGRESSING, JobState.FAILED],
         JobState.INGRESSING: [JobState.COGNITION, JobState.FAILED],
@@ -36,7 +39,7 @@ class JobStateMachine:
     }
 
     @classmethod
-    async def transition_to(cls, job_id: str, current_state: JobState, next_state: JobState, metadata: dict[str, Any] | None = None):
+    async def transition_to(cls, job_id: str, current_state: JobState | None, next_state: JobState, metadata: dict[str, Any] | None = None):
         """
         Validates and publishes a state transition event.
         """
