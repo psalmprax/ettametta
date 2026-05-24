@@ -115,7 +115,7 @@ async def websocket_jobs_endpoint(websocket: WebSocket):
             # Send keep-alive ping every 30 seconds
             await websocket.send_text(
                 json.dumps(
-                    {"type": "ping", "timestamp": asyncio.get_event_loop().time()}
+                    {"type": "ping", "timestamp": asyncio.get_running_loop().time()}
                 )
             )
             await asyncio.sleep(30)

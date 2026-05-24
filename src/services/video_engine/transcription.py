@@ -43,7 +43,7 @@ class TranscriptionService:
             if os.path.exists(audio_path):
                 try:
                     os.remove(audio_path)
-                except:
+                except Exception:
                     pass
             return []
 

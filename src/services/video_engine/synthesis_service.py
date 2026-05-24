@@ -50,6 +50,8 @@ if FASTER_WHISPER_AVAILABLE:
 else:
     faster_whisper = None
 
+WAN_MODEL_NAME = "Wan-2.2-V2V"
+
 
 class ModelManager:
     """
@@ -128,7 +130,7 @@ class ModelManager:
                 local_dir_use_symlinks=False,
             )
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         with concurrent.futures.ThreadPoolExecutor() as executor:
             downloaded_path = await loop.run_in_executor(executor, download_sync)
 
@@ -576,14 +578,14 @@ class GenerativeService:
         try:
             module = importlib.import_module(f".models.{module_name}", package=__package__)
             generate_func = getattr(module, func_name)
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             _, path = await loop.run_in_executor(None, generate_func, prompt)
             return path
-        except ImportError as e:
-            logging.error(f"[GenerativeService] {engine_name} model not available: {e}")
+        except ImportError:
+            logging.exception(f"[GenerativeService] {engine_name} model not available")
             return None
-        except Exception as e:
-            logging.error(f"[GenerativeService] {engine_name} synthesis failed: {e}")
+        except Exception:
+            logging.exception(f"[GenerativeService] {engine_name} synthesis failed")
             return None
 
     async def _execute_synthesis(
@@ -640,19 +642,19 @@ class GenerativeService:
             remote_url = settings.RENDER_NODE_URL
             if remote_url and engine in ["hunyuan", "mochi", "cogvideo", "wan", "ltx-video"]:
                 logging.info(f"[GenerativeService] Dispatching {engine} synthesis to remote node: {remote_url}")
-                return await self._dispatch_remote_synthesis(remote_url, prompt, engine, aspect_ratio, params)
+                return await self._dispatch_remote_synthesis(remote_url, prompt, params)
 
             # Local engine dispatch
             return await self._execute_synthesis(engine, prompt, aspect_ratio, params, custom_image_uri)
 
-        except Exception as e:
-            logging.error(
-                f"[GenerativeService] Dispatch failed for engine {engine}: {e}"
+        except Exception:
+            logging.exception(
+                f"[GenerativeService] Dispatch failed for engine {engine}"
             )
             return None
 
     async def _dispatch_remote_synthesis(
-        self, remote_url: str, prompt: str, engine: str, aspect_ratio: str, params: dict
+        self, remote_url: str, prompt: str, params: dict
     ) -> str | None:
         """Dispatches synthesis task to a remote Colab/GPU node."""
         import httpx
@@ -687,12 +689,12 @@ class GenerativeService:
             else:
                 logging.error(f"[GenerativeService] Remote node failed: {response.text}")
                 return None
-        except Exception as e:
-            logging.error(f"[GenerativeService] Failed to connect to remote node: {e}")
+        except Exception:
+            logging.exception("[GenerativeService] Failed to connect to remote node")
             return None
 
     async def _synthesize_comfy(
-        self, prompt: str, model_type: str, aspect_ratio: str
+        self, prompt: str, model_type: str
     ) -> str | None:
         """
         ComfyUI Self-Hosted Stack: Downloads model, runs workflow, cleans up.
@@ -701,11 +703,11 @@ class GenerativeService:
             "hunyuan": "HunyuanVideo-1.5",
             "mochi": "Mochi-1",
             "cogvideo": "CogVideoX-5b",
-            "wan": "Wan-2.2-V2V",
+            "wan": WAN_MODEL_NAME,
             "ltx-video": "LTX-Video",
             "zeroscope": "Zeroscope_v2_XL",
         }
-        model_name = model_name_map.get(model_type, "Wan-2.2-V2V")
+        model_name = model_name_map.get(model_type, WAN_MODEL_NAME)
 
         try:
             # 1. Acquire Model (Reference Counted)
@@ -719,83 +721,77 @@ class GenerativeService:
             output_path = f"{settings.STORAGE_OUTPUT_DIR}/comfy_{uuid.uuid4()}.mp4"
             os.makedirs(settings.STORAGE_OUTPUT_DIR, exist_ok=True)
 
-            # Actual ComfyUI execution logic
-            success = False
-            try:
-                import json
-                import httpx
-
-                # Apply VRAM optimization settings
-                params = self._get_engine_params(model_type)
-                optimized_steps = params.get("steps", 20)
-                optimized_cfg = params.get("cfg", 7.0)
-
-                # Load a specific workflow matched to the model_type if available, otherwise use a generic one
-                workflow_data = self._get_comfy_workflow(model_type, prompt, params)
-
-                payload = {
-                    "prompt": workflow_data,
-                    "client_id": str(uuid.uuid4())
-                }
-
-                async with httpx.AsyncClient(timeout=10) as client:
-                    resp = await client.post(
-                        f"{settings.COMFYUI_URL.rstrip('/')}/prompt", json=payload
-                    )
-                    if resp.status_code == 200:
-                        prompt_id = resp.json().get("prompt_id")
-                        logging.info(f"[GenerativeService] ComfyUI job {prompt_id} submitted. Polling for completion...")
-                        
-                        # Poll for completion (up to 10 minutes for video generation)
-                        for attempt in range(120): # 120 * 5s = 600s = 10m
-                            await asyncio.sleep(5)
-                            hist_resp = await client.get(f"{settings.COMFYUI_URL.rstrip('/')}/history/{prompt_id}")
-                            if hist_resp.status_code == 200:
-                                history = hist_resp.json()
-                                if prompt_id in history:
-                                    # Job finished, now extract the file
-                                    outputs = history[prompt_id].get("outputs", {})
-                                    for node_id, output in outputs.items():
-                                        if "gifs" in output or "images" in output:
-                                            file_info = (output.get("gifs") or output.get("images"))[0]
-                                            filename = file_info.get("filename")
-                                            subfolder = file_info.get("subfolder", "")
-                                            
-                                            # Download the resulting file
-                                            view_url = f"{settings.COMFYUI_URL.rstrip('/')}/view?filename={filename}&subfolder={subfolder}&type=output"
-                                            file_resp = await client.get(view_url)
-                                            if file_resp.status_code == 200:
-                                                with open(output_path, "wb") as f:
-                                                    f.write(file_resp.content)
-                                                success = True
-                                                break
-                                    if success: break
-                        
-                        if not success:
-                            raise RuntimeError("ComfyUI job did not return an output within the timeout period.")
-                    else:
-                        raise RuntimeError(f"ComfyUI API error: {resp.status_code} - {resp.text}")
-            except Exception as e:
-                logging.error(f"[GenerativeService] ComfyUI orchestration failed: {e}")
-                success = False
+            success = await self._run_comfy_workflow(model_type, prompt, output_path)
 
             if not success:
-                # No dummy fallback - let the error propagate to trigger circuit breaker
                 raise RuntimeError(f"ComfyUI synthesis failed for model {model_name}.")
 
             return output_path
 
-        except Exception as e:
-            logging.error(f"[GenerativeService] Synthesis orchestrator failed: {e}")
+        except Exception:
+            logging.exception("[GenerativeService] Synthesis orchestrator failed")
             raise
         finally:
             # 3. Release Model (Cleans up only if count is 0)
             await self.model_manager.release_model(model_name)
 
+    async def _run_comfy_workflow(self, model_type: str, prompt: str, output_path: str) -> bool:
+        """Triggers the ComfyUI workflow request."""
+        import httpx
+        params = self._get_engine_params(model_type)
+        workflow_data = self._get_comfy_workflow(model_type, prompt, params)
+        payload = {
+            "prompt": workflow_data,
+            "client_id": str(uuid.uuid4())
+        }
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.post(
+                    f"{settings.COMFYUI_URL.rstrip('/')}/prompt",
+                    json=payload
+                )
+                if resp.status_code != 200:
+                    raise RuntimeError(f"ComfyUI API error: {resp.status_code} - {resp.text}")
+                prompt_id = resp.json().get("prompt_id")
+                logging.info(f"[GenerativeService] ComfyUI job {prompt_id} submitted. Polling...")
+                return await self._poll_comfy_job(client, prompt_id, output_path)
+        except Exception:
+            logging.exception("[GenerativeService] ComfyUI orchestration failed")
+            return False
+
+    async def _poll_comfy_job(self, client, prompt_id: str, output_path: str) -> bool:
+        """Polls ComfyUI for job history/completion status."""
+        for _ in range(120):  # 120 * 5s = 10m
+            await asyncio.sleep(5)
+            hist_resp = await client.get(
+                f"{settings.COMFYUI_URL.rstrip('/')}/history/{prompt_id}"
+            )
+            if hist_resp.status_code != 200:
+                continue
+            history = hist_resp.json()
+            if prompt_id in history:
+                outputs = history[prompt_id].get("outputs", {})
+                return await self._download_comfy_outputs(client, outputs, output_path)
+        raise RuntimeError("ComfyUI job did not return an output within the timeout period.")
+
+    async def _download_comfy_outputs(self, client, outputs: dict, output_path: str) -> bool:
+        """Parses output files and downloads them from ComfyUI."""
+        for _, output in outputs.items():
+            if "gifs" in output or "images" in output:
+                file_info = (output.get("gifs") or output.get("images"))[0]
+                filename = file_info.get("filename")
+                subfolder = file_info.get("subfolder", "")
+                view_url = f"{settings.COMFYUI_URL.rstrip('/')}/view?filename={filename}&subfolder={subfolder}&type=output"
+                file_resp = await client.get(view_url)
+                if file_resp.status_code == 200:
+                    with open(output_path, "wb") as f:
+                        f.write(file_resp.content)
+                    return True
+        return False
+
     async def _synthesize_lite_4k(
         self, prompt: str, aspect_ratio: str, custom_image_uri: str = None
     ) -> str | None:
-        # ... (rest of the code stays same)
         """
         4K Lite Orchestrator: High-res image generation + Cinematic Parallax.
         Uses Pollinations.ai for zero-cost high-quality assets.
@@ -852,9 +848,9 @@ class GenerativeService:
                 "hunyuan": "HunyuanVideo-1.5",
                 "mochi": "Mochi-1",
                 "cogvideo": "CogVideoX-5b",
-                "wan": "Wan-2.2-V2V",
+                "wan": WAN_MODEL_NAME,
             }
-            model_name = model_name_map.get(engine, "Wan-2.2-V2V")
+            model_name = model_name_map.get(engine, WAN_MODEL_NAME)
 
             # Acquire model ONCE for the whole batch
             await self.model_manager.acquire_model(model_name)
@@ -929,14 +925,14 @@ class GenerativeService:
                     response = await client.post(
                         f"{render_node_url.rstrip('/')}/generate", json=payload, headers=headers
                     )
-                if response.status_code == 200:
-                    data = response.json()
-                    dl_url = data.get("download_url") or data.get("url")
-                    if dl_url:
-                        dl_resp = await client.get(dl_url, timeout=120)
-                        with open(output_path, "wb") as f:
-                            f.write(dl_resp.content)
-                        return output_path
+                    if response.status_code == 200:
+                        data = response.json()
+                        dl_url = data.get("download_url") or data.get("url")
+                        if dl_url:
+                            dl_resp = await client.get(dl_url, timeout=120)
+                            with open(output_path, "wb") as f:
+                                f.write(dl_resp.content)
+                            return output_path
             except Exception as e:
                 logging.warning(
                     f"[GenerativeService] Remote GPU node failed for Veo3: {e}"
@@ -970,15 +966,14 @@ class GenerativeService:
                             "prompt": prompt,
                         },
                     )
-                if response.status_code == 200:
-                    data = response.json()
-                    dl_url = data.get("video", {}).get("url") or data.get("url")
-                    if dl_url:
-                        async with httpx.AsyncClient(timeout=120) as client:
-                            dl_resp = await client.get(dl_url)
-                        with open(output_path, "wb") as f:
-                            f.write(dl_resp.content)
-                        return output_path
+                    if response.status_code == 200:
+                        data = response.json()
+                        dl_url = data.get("video", {}).get("url") or data.get("url")
+                        if dl_url:
+                            dl_resp = await client.get(dl_url, timeout=120)
+                            with open(output_path, "wb") as f:
+                                f.write(dl_resp.content)
+                            return output_path
             except Exception as e:
                 logging.warning(f"[GenerativeService] SiliconFlow API failed: {e}")
 
@@ -996,14 +991,14 @@ class GenerativeService:
                     response = await client.post(
                         f"{render_node_url.rstrip('/')}/generate", json=payload, headers=headers
                     )
-                if response.status_code == 200:
-                    data = response.json()
-                    dl_url = data.get("download_url") or data.get("url")
-                    if dl_url:
-                        dl_resp = await client.get(dl_url, timeout=120)
-                        with open(output_path, "wb") as f:
-                            f.write(dl_resp.content)
-                        return output_path
+                    if response.status_code == 200:
+                        data = response.json()
+                        dl_url = data.get("download_url") or data.get("url")
+                        if dl_url:
+                            dl_resp = await client.get(dl_url, timeout=120)
+                            with open(output_path, "wb") as f:
+                                f.write(dl_resp.content)
+                            return output_path
             except Exception as e:
                 logging.warning(
                     f"[GenerativeService] Remote GPU node failed for Wan: {e}"
@@ -1283,49 +1278,49 @@ class GenerativeService:
                         f"{render_node_url}/generate_animatediff", json=payload
                     )
 
-                if response.status_code == 200:
-                    data = response.json()
-                    job_id = data.get("job_id")
-                    if job_id:
-                        # Poll for completion
-                        for attempt in range(60):  # 10 minutes max
-                            await asyncio.sleep(10)
-                            status_resp = await client.get(
-                                f"{render_node_url}/status/{job_id}"
-                            )
-                            if status_resp.status_code == 200:
-                                status_data = status_resp.json()
-                                if status_data.get("status") == "completed":
-                                    # Download the result
-                                    dl_resp = await client.get(
-                                        f"{render_node_url}/download/{job_id}"
-                                    )
-                                    if dl_resp.status_code == 200:
-                                        output_path = f"{settings.STORAGE_OUTPUT_DIR}/animatediff_{uuid.uuid4().hex[:8]}.mp4"
-                                        os.makedirs(
-                                            settings.STORAGE_OUTPUT_DIR, exist_ok=True
+                    if response.status_code == 200:
+                        data = response.json()
+                        job_id = data.get("job_id")
+                        if job_id:
+                            # Poll for completion
+                            for attempt in range(60):  # 10 minutes max
+                                await asyncio.sleep(10)
+                                status_resp = await client.get(
+                                    f"{render_node_url}/status/{job_id}"
+                                )
+                                if status_resp.status_code == 200:
+                                    status_data = status_resp.json()
+                                    if status_data.get("status") == "completed":
+                                        # Download the result
+                                        dl_resp = await client.get(
+                                            f"{render_node_url}/download/{job_id}"
                                         )
-                                        with open(output_path, "wb") as f:
-                                            f.write(dl_resp.content)
-                                        return output_path
-                                elif status_data.get("status") == "failed":
-                                    logging.error(
-                                        f"[GenerativeService] AnimateDiff job failed: {status_data}"
-                                    )
-                                    break
+                                        if dl_resp.status_code == 200:
+                                            output_path = f"{settings.STORAGE_OUTPUT_DIR}/animatediff_{uuid.uuid4().hex[:8]}.mp4"
+                                            os.makedirs(
+                                                settings.STORAGE_OUTPUT_DIR, exist_ok=True
+                                            )
+                                            with open(output_path, "wb") as f:
+                                                f.write(dl_resp.content)
+                                            return output_path
+                                    elif status_data.get("status") == "failed":
+                                        logging.error(
+                                            f"[GenerativeService] AnimateDiff job failed: {status_data}"
+                                        )
+                                        break
 
-                        logging.warning("[GenerativeService] AnimateDiff job timeout")
-                        return None
+                            logging.warning("[GenerativeService] AnimateDiff job timeout")
+                            return None
+                        else:
+                            logging.error(
+                                "[GenerativeService] No job_id returned from AnimateDiff"
+                            )
+                            return None
                     else:
                         logging.error(
-                            f"[GenerativeService] No job_id returned from AnimateDiff"
+                            f"[GenerativeService] AnimateDiff API error: {response.status_code}"
                         )
                         return None
-                else:
-                    logging.error(
-                        f"[GenerativeService] AnimateDiff API error: {response.status_code}"
-                    )
-                    return None
             else:
                 logging.warning(
                     "[GenerativeService] No RENDER_NODE_URL configured for AnimateDiff"

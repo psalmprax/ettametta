@@ -122,7 +122,7 @@ def demonstrate_cpu_video_editor():
         total_time += avg_time
         print()
 
-    print(".1f"
+    print(f"   • Total estimated time: {total_time:.1f} seconds")
     print("   • Infrastructure: CPU-based servers only")
     print("   • No GPU required for any phase")
     # Capabilities Summary

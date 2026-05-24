@@ -110,7 +110,7 @@ class VideoContentAnalyzer:
             stdout, _ = await proc.communicate()
             if proc.returncode == 0:
                 duration = float(stdout.decode().strip() or "60")
-        except:
+        except Exception:
             pass
 
         # Extract frames at key timestamps
@@ -366,7 +366,7 @@ Answer in JSON:
 
                 if response.status_code == 200:
                     return response.json()["choices"][0]["message"]["content"]
-        except:
+        except Exception:
             pass
 
         return {"can_proceed": True, "coherence_score": 0.8}
@@ -551,7 +551,7 @@ Return as JSON array with these fields."""
                     )
                     age_days = (dt.datetime.now() - pub_date.replace(tzinfo=None)).days
                     freshness = max(0, 1 - (age_days / 365))  # Decay over 1 year
-                except:
+                except Exception:
                     pass
             total_score += freshness * criteria["freshness"] * 10
 
@@ -670,7 +670,7 @@ JSON format:
 
                 if response.status_code == 200:
                     return response.json()["choices"][0]["message"]["content"]
-        except:
+        except Exception:
             pass
 
         return {
@@ -734,7 +734,7 @@ Give practical advice a professional editor would appreciate."""
 
                 if response.status_code == 200:
                     return response.json()["choices"][0]["message"]["content"]
-        except:
+        except Exception:
             pass
 
         return {
@@ -1009,7 +1009,7 @@ class ProfessionalVideoEditor:
         production_notes = self._generate_production_notes(editing_plan, audio_script)
 
         # Save production file
-        timestamp = int(asyncio.get_event_loop().time())
+        timestamp = int(asyncio.get_running_loop().time())
         output_file = self.output_dir / f"professional_edit_{timestamp}.mp4"
 
         with open(output_file.with_suffix(".txt"), "w") as f:

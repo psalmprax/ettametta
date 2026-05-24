@@ -122,7 +122,7 @@ class HardwareDetector:
                         "multiprocessors": props.multi_processor_count,
                     }
                 )
-            except:
+            except Exception:
                 pass
 
         return info

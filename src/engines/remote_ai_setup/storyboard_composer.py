@@ -82,7 +82,7 @@ def fetch_likeness_image(character_name):
             r = requests.get(search_url, headers=headers, timeout=5)
             # Defaulting to fallback if DDG is tricky to parse without BS4 (which we have in the venv but let's keep it simple)
             img_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Davido_2022.jpg/800px-Davido_2022.jpg"
-        except:
+        except Exception:
             pass
 
     print(f"   => Downloading portrait: {img_url}")
@@ -90,7 +90,7 @@ def fetch_likeness_image(character_name):
         r = requests.get(img_url, timeout=10)
         if r.status_code == 200:
             return base64.b64encode(r.content).decode('utf-8')
-    except:
+    except Exception:
         pass
     return ""
 
@@ -120,7 +120,7 @@ def ensure_tunnel():
             if r.status_code == 200:
                 print("✅ Tunnel established successfully!")
                 return True
-        except:
+        except Exception:
             pass
         time.sleep(2)
         print(".", end="", flush=True)
@@ -242,7 +242,7 @@ def main():
             if r.status_code == 200:
                 print("✅ Engine Ready!")
                 break
-        except:
+        except Exception:
             pass
         time.sleep(10)
         

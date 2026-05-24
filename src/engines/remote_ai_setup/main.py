@@ -786,7 +786,7 @@ def push_heartbeat_loop():
             hostname = socket.gethostname()
             ip_addr = socket.gethostbyname(hostname)
             my_public_url = f"http://{ip_addr}:19675"
-        except:
+        except Exception:
             my_public_url = "http://175.155.64.174:19675"
 
     print(
@@ -842,7 +842,7 @@ async def health_check():
         # This is a lightweight check - don't load models just for health
         current_model = getattr(model_manager, "current_model", None) or "none"
         busy = getattr(orchestrator, "busy", False)
-    except:
+    except Exception:
         current_model = "initializing"
         busy = False
 

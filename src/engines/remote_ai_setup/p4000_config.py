@@ -117,5 +117,4 @@ def get_p4000_recommendations() -> dict[str, Any]:
             "Limit to 12 frames maximum",
             "Restart PC if VRAM issues persist"
         ]
-    }</content>
-<parameter name="filePath">remote_ai_setup/animatediff_laptop_inference.py
+    }

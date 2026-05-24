@@ -106,7 +106,7 @@ class TranscriptionService:
         
         try:
             # Run in a thread with a hard timeout to prevent job stalls
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             
             async def _do_transcribe():
                 return await loop.run_in_executor(

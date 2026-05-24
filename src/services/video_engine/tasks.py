@@ -265,7 +265,7 @@ def download_and_process_task(
                 cleanup_local_files(thumbs[0])
                 try:
                     os.removedirs(thumb_dir)
-                except:
+                except Exception:
                     pass
 
         if preview_only:

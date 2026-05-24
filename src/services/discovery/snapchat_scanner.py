@@ -91,7 +91,7 @@ class SnapchatScanner:
                         data = json.loads(json_str)
                         snaps = self._extract_snaps_from_json(data, niche)
                         candidates.extend(snaps)
-                    except:
+                    except Exception:
                         pass
                         
         except Exception as e:
@@ -130,7 +130,7 @@ class SnapchatScanner:
                         data = json.loads(json_str)
                         snaps = self._extract_snaps_from_json(data, "")
                         candidates.extend(snaps)
-                    except:
+                    except Exception:
                         pass
                         
         except Exception as e:

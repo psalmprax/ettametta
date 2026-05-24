@@ -105,7 +105,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         try:
             cta = await ai_worker.generate_text(prompt)
             if cta: return cta.strip()
-        except:
+        except Exception:
             pass
             
         return f"Download our FREE {niche} guide! Link in bio 🚀"

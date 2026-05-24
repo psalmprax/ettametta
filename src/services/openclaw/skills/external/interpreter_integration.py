@@ -106,7 +106,7 @@ class OpenInterpreterService:
         finally:
             try:
                 os.unlink(temp_file)
-            except:
+            except Exception:
                 pass
 
     def _run_javascript(self, code: str, timeout: int) -> dict[str, Any]:
@@ -139,7 +139,7 @@ class OpenInterpreterService:
         finally:
             try:
                 os.unlink(temp_file)
-            except:
+            except Exception:
                 pass
 
     def generate_video_script(self, topic: str) -> dict[str, Any]:

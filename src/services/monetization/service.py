@@ -218,7 +218,7 @@ class MonetizationEngine:
                     if insertion["timing"] != "end":
                         try:
                             start_time = float(insertion["timing"].split("-")[0])
-                        except:
+                        except Exception:
                             pass
                     else:
                         start_time = 55.0 # Fallback for end of a 60s video

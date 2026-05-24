@@ -166,7 +166,7 @@ async def test_scene_based_video_production():
             # Create mock production result
             production_result = {
                 "success": True,
-                "video_path": f"outputs/scene_based_videos/scene_video_{int(asyncio.get_event_loop().time())}.mp4",
+                "video_path": f"outputs/scene_based_videos/scene_video_{int(asyncio.get_running_loop().time())}.mp4",
                 "duration": 60,
                 "file_size": 15728640,  # 15MB
                 "quality_score": 8.5,

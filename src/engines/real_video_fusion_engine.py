@@ -320,7 +320,7 @@ class RealVideoFusionEngine:
             if not processed_clips: return {"success": False, "error": "Parallel Render Failure"}
 
         # 1. ELITE Visual Assembly with Transitions
-        ts = int(asyncio.get_event_loop().time())
+        ts = int(asyncio.get_running_loop().time())
         intermediate_video = self.output_dir / f"visual_elite_{ts}.mp4"
         success = base_ffmpeg_service.xfade_concatenate(processed_clips, str(intermediate_video), transition="random")
         if not success:
@@ -349,7 +349,7 @@ class RealVideoFusionEngine:
         }
         # In a full cycle, voiceover_path would be passed in. 
         # For standalone hardening, we mix BG Music if no VO is provided.
-        final_output = self.output_dir / f"neural_{int(asyncio.get_event_loop().time())}.mp4"
+        final_output = self.output_dir / f"neural_{int(asyncio.get_running_loop().time())}.mp4"
         
         if os.path.exists(bg_music_path):
             success = base_ffmpeg_service.add_background_music(
@@ -364,7 +364,7 @@ class RealVideoFusionEngine:
         package = await base_gateway_service.generate_production_package({
             "title": fusion_plan["title"],
             "video_path": str(final_output),
-            "variant_id": f"neural_{int(asyncio.get_event_loop().time())}"
+            "variant_id": f"neural_{int(asyncio.get_running_loop().time())}"
         })
         
         return {

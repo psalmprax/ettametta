@@ -22,7 +22,7 @@ class DiscoverySkill(OpenClawBaseSkill):
             from groq import Groq
 
             self.groq_client = Groq(api_key=settings.GROQ_API_KEY)
-        except:
+        except Exception:
             logger.warning("Groq client not available for discovery analysis")
 
     def execute(

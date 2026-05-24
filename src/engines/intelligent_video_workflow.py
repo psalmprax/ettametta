@@ -862,9 +862,9 @@ def check_content_freshness(video: dict, max_days: int = 30) -> dict:
                     "within_range": within_range,
                     "upload_date": upload_date,
                 }
-            except:
+            except Exception:
                 pass
-    except:
+    except Exception:
         pass
 
     return {"fresh": True, "age_days": -1, "within_range": True}

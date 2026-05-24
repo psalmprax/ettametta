@@ -138,7 +138,7 @@ class YouTubeShortsScanner(DiscoveryScannerBase):
             # Viral score = base velocity weight + engagement bonus
             score = int((velocity / 100) * (1 + engagement_score * 10))
             return min(max(score, 1), 99)  # Keep it in 1-99 range for UI aesthetics
-        except:
+        except Exception:
             return 0
 
     def _parse_duration(self, duration_str: str) -> int:

@@ -194,7 +194,7 @@ class FFmpegTransformer:
         try:
             result = subprocess.run(cmd, capture_output=True, text=True)
             return "audio" in result.stdout
-        except:
+        except Exception:
             return False
 
     def mix_production_audio_with_ducking(self, video_path: str, voiceover_path: str, music_path: str, output_path: str, music_volume: float = 0.25) -> bool:
@@ -450,7 +450,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             stdout, _ = await proc.communicate()
             if b"drawtext" in stdout:
                 drawtext_available = True
-        except:
+        except Exception:
             pass
 
         if drawtext_available:
