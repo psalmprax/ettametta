@@ -1,8 +1,6 @@
 import logging
 import requests
-from typing import Any
-import httpx
-from groq import Groq
+from typing import Any, Optional
 from src.api.config import settings
 
 from ..base_skill import OpenClawBaseSkill
@@ -17,10 +15,23 @@ class Claw4ScienceSkill(OpenClawBaseSkill):
     
     def __init__(self):
         super().__init__()
-        # Fix: Inject explicit httpx.Client to resolve 'proxies' keyword argument bug
-        self.groq_client = Groq(api_key=settings.GROQ_API_KEY, http_client=httpx.Client())
+        self._groq_client: Optional[Any] = None
         # Use LANGCHAIN_MODEL as default or fallback to llama3-8b
         self.model = getattr(settings, "LANGCHAIN_MODEL", "llama-3.1-8b-instant")
+
+    @property
+    def groq_client(self):
+        """Lazy-initialize the Groq client — avoids crashing on import when GROQ_API_KEY is missing."""
+        if self._groq_client is None:
+            if not settings.GROQ_API_KEY:
+                raise RuntimeError(
+                    "GROQ_API_KEY not configured — Claw4ScienceSkill requires a valid Groq key"
+                )
+            import httpx
+            from groq import Groq
+            # Fix: Inject explicit httpx.Client to resolve 'proxies' keyword argument bug
+            self._groq_client = Groq(api_key=settings.GROQ_API_KEY, http_client=httpx.Client())
+        return self._groq_client
 
     def execute(self, action: str = "convert", topic: str = "", raw_data: str = "", **kwargs) -> str:
         """

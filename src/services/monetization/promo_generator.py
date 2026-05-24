@@ -1,7 +1,6 @@
 import logging
 import json
-from typing import Any
-from groq import AsyncGroq
+from typing import Any, Optional
 from src.api.config import settings
 from src.api.utils.vault import get_secret
 from .commerce_service import base_commerce_service
@@ -9,9 +8,21 @@ from .commerce_service import base_commerce_service
 class PromoGenerator:
     def __init__(self):
         self.api_key = get_secret("groq_api_key")
-        self.client = AsyncGroq(api_key=self.api_key)
+        self._client: Optional[Any] = None
         self.commerce = base_commerce_service
         self.model = "llama-3.3-70b-versatile"
+
+    @property
+    def client(self):
+        """Lazy-initialize the Groq client — avoids crashing on import when GROQ_API_KEY is missing."""
+        if self._client is None:
+            if not self.api_key:
+                raise RuntimeError(
+                    "GROQ_API_KEY not configured — PromoGenerator requires a valid Groq key"
+                )
+            from groq import AsyncGroq
+            self._client = AsyncGroq(api_key=self.api_key)
+        return self._client
 
     async def generate_promo_script(self, product_name: str, niche: str, duration_sec: int = 30) -> dict[str, Any]:
         """

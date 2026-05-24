@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     VOICEOVER_TIMEOUT: int = 30
     SEARCH_TIMEOUT: int = 30
     STOCK_TIMEOUT: int = 30
+    REMOTION_TIMEOUT_SECONDS: int = 900
+    NEXUS_COMPOSE_TIMEOUT: int = 600  # 10 min global timeout for compose background task
     DEFAULT_RETRY_COUNT: int = 3
     RETRY_MULTIPLIER: int = 1
     RETRY_MIN_WAIT: int = 2

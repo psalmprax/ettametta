@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.0
+    image: traefik:v3.7
     command:
       - "--api.insecure=false"
       - "--api.dashboard=true"
@@ -8,11 +8,15 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--log.level=DEBUG"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - default
+      - ag-network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
@@ -457,3 +461,9 @@ volumes:
   gateway_data:
   ollama_data:
   qdrant_data:
+
+networks:
+  default:
+  ag-network:
+    name: ag-network
+    external: true

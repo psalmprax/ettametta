@@ -54,25 +54,25 @@ class DefaultIngressHandler:
 
 class DefaultCognitionHandler:
     async def execute(self, inputs: dict, previous_results: dict, job_id: str) -> dict:
-        from src.api.config import settings
-        if not settings.GROQ_API_KEY:
-             return {"ai_processed": False, "fallback": "AI unavailable"}
-        
-        from groq import Groq
-        client = Groq(api_key=settings.GROQ_API_KEY)
-        prompt = f"Analyze and process the following content: {inputs.get('content', '')[:500]}..."
-        
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=500,
-        )
-        return {
-            "ai_processed": True,
-            "analysis": response.choices[0].message.content,
-            "confidence": 0.85,
-        }
+        from src.services.llm.intelligence_hub import base_intelligence_service
+
+        content = inputs.get("content", "")
+        prompt = f"Analyze and process the following content: {str(content)[:500]}..."
+
+        try:
+            response = await base_intelligence_service.chat(
+                prompt=prompt,
+                system_prompt="You are a content analyst. Analyze the given content and provide insights.",
+                complexity="low",
+            )
+            return {
+                "ai_processed": True,
+                "analysis": response.get("response", ""),
+                "confidence": 0.85,
+            }
+        except Exception as e:
+            logger.warning(f"[DefaultCognitionHandler] IntelligenceHub call failed: {e}")
+            return {"ai_processed": False, "fallback": "AI unavailable", "error": str(e)}
 
 class TopicFusionCognitionHandler:
     async def execute(self, inputs: dict, previous_results: dict, job_id: str) -> dict:

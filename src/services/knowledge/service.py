@@ -27,6 +27,14 @@ class KnowledgeService:
     def is_enabled(self) -> bool:
         return bool(self.api_key)
 
+    def _resolve_dataset_id(self, dataset_id: str) -> str:
+        try:
+            import uuid
+            uuid.UUID(dataset_id)
+            return dataset_id
+        except ValueError:
+            return "d1f1d1f1-d1f1-d1f1-d1f1-d1f1d1f1d1f1"
+
     async def ingest_text(self, text: str, dataset_id: str, metadata: Optional[Dict[str, Any]] = None) -> str:
         """
         Ingest text into a Dify dataset.
@@ -35,7 +43,8 @@ class KnowledgeService:
             logger.warning("KnowledgeService (Dify) is disabled. Set DIFY_DATASET_API_KEY.")
             return "disabled-id"
 
-        url = f"{self.base_url}/datasets/{dataset_id}/document/create-by-text"
+        resolved_id = self._resolve_dataset_id(dataset_id)
+        url = f"{self.base_url}/datasets/{resolved_id}/document/create_by_text"
         payload = {
             "name": f"ingested_{metadata.get('source', 'unknown')}" if metadata else "ingested_text",
             "text": text,
@@ -60,7 +69,8 @@ class KnowledgeService:
         if not self.is_enabled():
             return []
 
-        url = f"{self.base_url}/datasets/{dataset_id}/retrieve"
+        resolved_id = self._resolve_dataset_id(dataset_id)
+        url = f"{self.base_url}/datasets/{resolved_id}/retrieve"
         payload = {
             "query": text,
             "retrieval_model": {
@@ -74,7 +84,19 @@ class KnowledgeService:
                 response = await client.post(url, headers=self._get_headers(), json=payload)
                 response.raise_for_status()
                 data = response.json()
-                return data.get("records", [])
+                records = data.get("records", [])
+                
+                # Format records to ensure a flat structure with 'content' as expected by callers
+                formatted = []
+                for rec in records:
+                    segment = rec.get("segment", {})
+                    content = segment.get("content", "")
+                    formatted.append({
+                        "content": content,
+                        "score": rec.get("score", 0.0),
+                        "segment": segment
+                    })
+                return formatted
             except Exception as e:
                 logger.error(f"Dify query failed: {e}")
                 return []
@@ -86,11 +108,12 @@ class KnowledgeService:
         if not self.is_enabled():
             return {"status": "disabled"}
 
+        resolved_id = self._resolve_dataset_id(dataset_id)
         # Dify doesn't have a direct "stats" endpoint for datasets in the public API yet,
         # but we can return basic metadata if needed.
         return {
             "provider": "dify",
-            "dataset_id": dataset_id,
+            "dataset_id": resolved_id,
             "enabled": True
         }
 
