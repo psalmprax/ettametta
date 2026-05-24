@@ -1,4 +1,5 @@
 from typing import Any
+import asyncio
 import logging
 import socket
 import os
@@ -6,6 +7,7 @@ import time
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from src.api.config import settings
 from src.api.utils.database import get_db, async_session_factory
 from src.shared.enums import SystemJobStatus
 from src.api.utils.models import NexusJobDB, BlueprintDB, VideoJobDB
@@ -33,14 +35,197 @@ class NexusComposeRequest(BaseModel):
     job_metadata: dict | None = None
 
 
-async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
+# ── Progress Tracking Helper ────────────────────────────────────────────────
+
+async def _update_job_progress(
+    job_id: str,
+    status: str,
+    progress: int,
+    niche: str = "",
+    error: str | None = None,
+    output_path: str | None = None,
+) -> None:
+    """
+    Update Nexus job progress in both the database and via WebSocket.
+
+    Opens its own DB session so it can be safely called from anywhere
+    in the pipeline without worrying about session reuse or commit state.
+    Failures are logged but never raised — progress tracking should
+    never crash the compose pipeline.
+    """
+    from src.api.routes.ws import notify_nexus_job_update_sync
+    try:
+        async with async_session_factory() as db:
+            stmt = select(NexusJobDB).where(NexusJobDB.id == job_id)
+            result = await db.execute(stmt)
+            job = result.scalar_one_or_none()
+            if job:
+                job.progress = progress
+                if status:
+                    job.status = status
+                if error:
+                    job.error_log = error
+                if output_path:
+                    job.output_path = output_path
+                await db.commit()
+
+            notify_nexus_job_update_sync(
+                {
+                    "id": str(job_id),
+                    "status": status or (job.status if job else "UNKNOWN"),
+                    "progress": progress,
+                    "niche": niche or (job.niche if job else ""),
+                    **({} if error is None else {"error": error}),
+                    **({} if output_path is None else {"output_path": output_path}),
+                }
+            )
+    except Exception as exc:
+        logging.warning(
+            "[Nexus] _update_job_progress failed (non-blocking): %s", exc
+        )
+
+
+# ── Core compose logic (extracted for asyncio.wait_for wrapping) ──────────
+
+async def _compose_core(
+    job: NexusJobDB,
+    request: NexusComposeRequest,
+    db: AsyncSession,
+) -> None:
+    """
+    Execute the actual compose pipeline — blueprint, cinema mode, or manual assembly.
+
+    This is extracted from ``run_nexus_composition`` so it can be wrapped
+    in ``asyncio.wait_for()`` with a configurable global timeout.
+    Progress is reported via ``_update_job_progress()`` at each major stage.
+    """
     from src.services.nexus_engine.thumbnail_service import base_thumbnail_service
     from src.services.nexus_engine.auto_creator import base_creator_service
     from src.services.nexus_engine.blueprints import (
         execute_blueprint,
         get_blueprint_by_id,
     )
+
+    job_id = str(job.id)
+    niche = request.niche
+
+    # Check if this is a blueprint execution
+    if hasattr(request, "blueprint_id") and request.blueprint_id:
+        blueprint = await get_blueprint_by_id(db, request.blueprint_id)
+        if blueprint:
+            nodes = blueprint.get("nodes", [])
+            total_nodes = len(nodes) if nodes else 4
+
+            blueprint_inputs = {
+                "niche": request.niche,
+                "topic": getattr(request, "topic", None),
+                "visual_paths": getattr(request, "visual_paths", []),
+                "voiceover_paths": getattr(request, "voiceover_paths", []),
+                "music_path": getattr(request, "music_path", None),
+                "script_segments": getattr(request, "script_segments", []),
+                "job_id": job_id,
+            }
+
+            # Progress: ingress (20%)
+            await _update_job_progress(
+                job_id, SystemJobStatus.COMPOSING, 20, niche=niche,
+            )
+
+            execution_result = await execute_blueprint(
+                blueprint, blueprint_inputs, job_id,
+                automation_mode=request.automation_mode,
+            )
+
+            if execution_result["status"] == "success":
+                output_path = (
+                    execution_result.get("results", {})
+                    .get("egress", {})
+                    .get("output_path")
+                )
+                await _update_job_progress(
+                    job_id, SystemJobStatus.COMPLETED, 100,
+                    niche=niche, output_path=output_path,
+                )
+            else:
+                error = execution_result.get("error", "Blueprint execution failed")
+                await _update_job_progress(
+                    job_id, SystemJobStatus.FAILED, 0,
+                    niche=niche, error=error,
+                )
+            return
+
+    output_path = None
+
+    if request.cinema_mode:
+        # 1. Autonomous Cinema Mode (progress 20→90)
+        await _update_job_progress(
+            job_id, SystemJobStatus.COMPOSING, 20, niche=niche,
+        )
+        target_topic = request.topic or f"Viral trends in {niche}"
+        output_path = await base_creator_service.create_cinema_video(
+            job_id=job_id, topic=target_topic, niche=niche
+        )
+        await _update_job_progress(
+            job_id, SystemJobStatus.COMPOSING, 90, niche=niche,
+        )
+    elif request.blueprint_id == "story-factory":
+        # 2. Storytelling Blueprint (progress 20→90)
+        await _update_job_progress(
+            job_id, SystemJobStatus.COMPOSING, 20, niche=niche,
+        )
+        target_topic = request.topic or f"Viral trends in {niche}"
+        output_path = await base_creator_service.create_cinema_video(
+            job_id=job_id, topic=target_topic, niche=niche
+        )
+        await _update_job_progress(
+            job_id, SystemJobStatus.COMPOSING, 90, niche=niche,
+        )
+    else:
+        # 3. Manual Nexus Assembly or Viral Reskin (Default)
+        await _update_job_progress(
+            job_id, SystemJobStatus.COMPOSING, 25, niche=niche,
+        )
+        if getattr(request, "generate_thumbnail", False):
+            script_text = " ".join(
+                [s.get("text", "") for s in request.script_segments]
+            )
+            thumbnail_uri = await base_thumbnail_service.generate_thumbnail(
+                script_text
+            )
+            logging.info(f"[Nexus] Generated Thumbnail: {thumbnail_uri}")
+
+        await _update_job_progress(
+            job_id, SystemJobStatus.COMPOSING, 50, niche=niche,
+        )
+        output_path = await base_nexus_service.assemble_video(
+            job_id=job_id,
+            niche=niche,
+            script_segments=request.script_segments,
+            voiceover_paths=request.voiceover_paths,
+            visual_paths=request.visual_paths,
+            music_path=request.music_path,
+        )
+        await _update_job_progress(
+            job_id, SystemJobStatus.COMPOSING, 90, niche=niche,
+        )
+
+    if not output_path:
+        await _update_job_progress(
+            job_id, SystemJobStatus.FAILED, 0,
+            niche=niche, error="Pipeline completed but produced no output file",
+        )
+        return
+
+    await _update_job_progress(
+        job_id, SystemJobStatus.COMPLETED, 100,
+        niche=niche, output_path=output_path,
+    )
+
+
+async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
     from src.api.routes.ws import notify_nexus_job_update_sync
+
+    COMPOSE_TIMEOUT = settings.NEXUS_COMPOSE_TIMEOUT
 
     async with async_session_factory() as db:
         try:
@@ -65,120 +250,29 @@ async def run_nexus_composition(job_id: str, request: NexusComposeRequest):
                 }
             )
 
-            # Check if this is a blueprint execution
-            if hasattr(request, "blueprint_id") and request.blueprint_id:
-                blueprint = await get_blueprint_by_id(db, request.blueprint_id)
-                if blueprint:
-                    # Execute custom blueprint
-                    blueprint_inputs = {
-                        "niche": request.niche,
-                        "topic": getattr(request, "topic", None),
-                        "visual_paths": getattr(request, "visual_paths", []),
-                        "voiceover_paths": getattr(request, "voiceover_paths", []),
-                        "music_path": getattr(request, "music_path", None),
-                        "script_segments": getattr(request, "script_segments", []),
-                        "job_id": job_id,
-                    }
-
-                    execution_result = await execute_blueprint(
-                        blueprint, blueprint_inputs, job_id
-                    )
-
-                    if execution_result["status"] == "success":
-                        job.status = SystemJobStatus.COMPLETED
-                        job.output_path = (
-                            execution_result.get("results", {})
-                            .get("egress", {})
-                            .get("output_path")
-                        )
-                        await db.commit()
-                        notify_nexus_job_update_sync(
-                            {
-                                "id": str(job.id),
-                                "status": job.status,
-                                "progress": 100,
-                                "output_path": job.output_path,
-                                "niche": job.niche,
-                            }
-                        )
-                        return
-                    else:
-                        job.status = SystemJobStatus.FAILED
-                        job.error_log = execution_result.get(
-                            "error", "Blueprint execution failed"
-                        )
-                        await db.commit()
-                        notify_nexus_job_update_sync(
-                            {
-                                "id": str(job.id),
-                                "status": job.status,
-                                "progress": 0,
-                                "error": job.error_log,
-                                "niche": job.niche,
-                            }
-                        )
-                        return
-
-            output_path = None
-
-            if request.cinema_mode:
-                # 1. Autonomous Cinema Mode
-                target_topic = request.topic or f"Viral trends in {request.niche}"
-                output_path = await base_creator_service.create_cinema_video(
-                    job_id=job_id, topic=target_topic, niche=request.niche
+            # ── Global timeout: prevents jobs from hanging forever ──
+            try:
+                await asyncio.wait_for(
+                    _compose_core(job, request, db),
+                    timeout=COMPOSE_TIMEOUT,
                 )
-            elif request.blueprint_id == "story-factory":
-                # 2. Strategy for Storytelling Blueprint
-                target_topic = request.topic or f"Viral trends in {request.niche}"
-                output_path = await base_creator_service.create_cinema_video(
-                    job_id=job_id, topic=target_topic, niche=request.niche
+            except asyncio.TimeoutError:
+                logging.error(
+                    f"[Nexus] Job {job_id} timed out after {COMPOSE_TIMEOUT}s"
                 )
-            else:
-                # 3. Manual Nexus Assembly or Viral Reskin (Default)
-                if request.generate_thumbnail:
-                    script_text = " ".join(
-                        [s.get("text", "") for s in request.script_segments]
-                    )
-                    thumbnail_uri = await base_thumbnail_service.generate_thumbnail(
-                        script_text
-                    )
-                    logging.info(f"[Nexus] Generated Thumbnail: {thumbnail_uri}")
-
-                output_path = await base_nexus_service.assemble_video(
-                    job_id=job_id,
-                    niche=request.niche,
-                    script_segments=request.script_segments,
-                    voiceover_paths=request.voiceover_paths,
-                    visual_paths=request.visual_paths,
-                    music_path=request.music_path,
-                )
-
-            if not output_path:
                 job.status = SystemJobStatus.FAILED
-                job.error_log = "Pipeline completed but produced no output file"
+                job.error_log = f"Compose timed out after {COMPOSE_TIMEOUT}s"
                 await db.commit()
-                notify_nexus_job_update_sync({
-                    "id": str(job.id),
-                    "status": job.status,
-                    "progress": 0,
-                    "error": job.error_log,
-                    "niche": job.niche,
-                })
-                return
+                notify_nexus_job_update_sync(
+                    {
+                        "id": str(job.id),
+                        "status": SystemJobStatus.FAILED,
+                        "progress": 0,
+                        "niche": job.niche,
+                        "error": f"Compose timed out after {COMPOSE_TIMEOUT}s",
+                    }
+                )
 
-            job.status = SystemJobStatus.COMPLETED
-            job.output_path = output_path
-            job.progress = 100
-            await db.commit()
-
-            notify_nexus_job_update_sync(
-                {
-                    "id": str(job.id),
-                    "status": job.status,
-                    "progress": 100,
-                    "niche": job.niche,
-                }
-            )
         except Exception as e:
             import traceback
 

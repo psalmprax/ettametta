@@ -31,12 +31,13 @@ from src.services.video_engine.dag_executor import BaseNode, Cache
 
 # WebSocket notification helper for DAG progress reporting
 from src.api.routes.ws import notify_nexus_job_update_sync
+from src.shared.enums import NodeStatus
 
 
 def _dag_notify(
     job_id: str,
     node_type: str,
-    status: str,
+    status: NodeStatus,
     progress: int,
     niche: str = "",
     error: str | None = None,
@@ -50,9 +51,9 @@ def _dag_notify(
     try:
         payload = {
             "id": job_id,
-            "status": f"DAG_{node_type.upper()}_{status}",
+            "status": f"DAG_{node_type.upper()}_{status.value}",
             "current_node": node_type,
-            "node_status": status,
+            "node_status": status.value,
             "progress": progress,
             "niche": niche,
         }
@@ -92,7 +93,7 @@ class StockSearchNode(BaseNode):
     async def execute(self, ctx: dict[str, Any]) -> list[str]:
         job_id = str(self.params.get("job_id", f"dag_{self.id}"))
         niche = str(self.params.get("niche", ""))
-        _dag_notify(job_id, self.__class__.__name__, "ACTIVE", 10, niche=niche)
+        _dag_notify(job_id, self.__class__.__name__, NodeStatus.ACTIVE, 10, niche=niche)
         from src.services.video_engine.stock_service import base_stock_service
 
         keyword = str(self.params.get("keyword", ""))
@@ -109,7 +110,7 @@ class StockSearchNode(BaseNode):
                 count=count,
             )
             url_count = len(results)
-            _dag_notify(job_id, self.__class__.__name__, "COMPLETED", 50, niche=niche)
+            _dag_notify(job_id, self.__class__.__name__, NodeStatus.COMPLETED, 50, niche=niche)
             # Store both URLs and local paths so downstream nodes can reuse
             urls = [r["url"] for r in results]
             paths = [r["path"] for r in results if r.get("path")]
@@ -125,7 +126,7 @@ class StockSearchNode(BaseNode):
                 niche,
             )
             urls = await base_stock_service.fetch_b_roll(niche, count=count)
-        _dag_notify(job_id, self.__class__.__name__, "COMPLETED", 50, niche=niche)
+        _dag_notify(job_id, self.__class__.__name__, NodeStatus.COMPLETED, 50, niche=niche)
         return urls or []
 
 
@@ -156,7 +157,7 @@ class SemanticSearchNode(BaseNode):
     async def execute(self, ctx: dict[str, Any]) -> list[dict[str, Any]]:
         job_id = str(self.params.get("job_id", f"dag_{self.id}"))
         niche = str(self.params.get("niche", ""))
-        _dag_notify(job_id, self.__class__.__name__, "ACTIVE", 20, niche=niche)
+        _dag_notify(job_id, self.__class__.__name__, NodeStatus.ACTIVE, 20, niche=niche)
         from src.services.video_engine.semantic_stock import base_semantic_stock_matcher
 
         query = str(self.params.get("query", ""))
@@ -175,7 +176,7 @@ class SemanticSearchNode(BaseNode):
                 count=count,
             )
             
-            _dag_notify(job_id, self.__class__.__name__, "COMPLETED", 50, niche=niche)
+            _dag_notify(job_id, self.__class__.__name__, NodeStatus.COMPLETED, 50, niche=niche)
             
             # Store scores in context for downstream introspection
             scores = {os.path.basename(r["path"]): r["score"] for r in results}
@@ -248,7 +249,7 @@ class VideoDownloadNode(BaseNode):
                         return cached
 
         source_type = str(self.params.get("source_type", "stock"))
-        _dag_notify(job_id, self.__class__.__name__, "ACTIVE", 40, niche=niche)
+        _dag_notify(job_id, self.__class__.__name__, NodeStatus.ACTIVE, 40, niche=niche)
 
         result = None
         if source_type == "platform":
@@ -257,9 +258,9 @@ class VideoDownloadNode(BaseNode):
             result = await base_stock_service.download_stock_video(url)
 
         if result:
-            _dag_notify(job_id, self.__class__.__name__, "COMPLETED", 60, niche=niche)
+            _dag_notify(job_id, self.__class__.__name__, NodeStatus.COMPLETED, 60, niche=niche)
         else:
-            _dag_notify(job_id, self.__class__.__name__, "FAILED", 60, niche=niche, error="Download failed")
+            _dag_notify(job_id, self.__class__.__name__, NodeStatus.FAILED, 60, niche=niche, error="Download failed")
         return result
 
 
@@ -286,7 +287,7 @@ class ParallelAssetSourceNode(BaseNode):
     async def execute(self, ctx: dict[str, Any]) -> MediaIR | None:
         job_id = str(self.params.get("job_id", f"dag_{self.id}"))
         niche = str(self.params.get("niche", ""))
-        _dag_notify(job_id, self.__class__.__name__, "ACTIVE", 10, niche=niche)
+        _dag_notify(job_id, self.__class__.__name__, NodeStatus.ACTIVE, 10, niche=niche)
         from src.services.video_engine.stock_service import base_stock_service
         from src.services.video_engine.downloader import base_downloader_service
 
@@ -346,12 +347,12 @@ class ParallelAssetSourceNode(BaseNode):
                 logger.warning("[DAG:ParallelAsset] Strategy failed: %s", r)
                 continue
             if r and os.path.exists(r):
-                _dag_notify(job_id, self.__class__.__name__, "COMPLETED", 80, niche=niche)
+                _dag_notify(job_id, self.__class__.__name__, NodeStatus.COMPLETED, 80, niche=niche)
                 logger.info("[DAG:ParallelAsset] Acquired asset: %s", r)
                 return await MediaIR.from_video_path(r)
 
         _dag_notify(
-            job_id, self.__class__.__name__, "FAILED", 80,
+            job_id, self.__class__.__name__, NodeStatus.FAILED, 80,
             niche=niche, error="All sourcing strategies exhausted",
         )
         logger.warning(
@@ -577,7 +578,7 @@ class SceneRenderNode(BaseNode):
         job_id = str(self.params.get("job_id", "unknown"))
         niche = str(self.params.get("niche", ""))
         style = str(self.params.get("style", "CINEMATIC_DOC"))
-        _dag_notify(job_id, self.__class__.__name__, "ACTIVE", 70, niche=niche)
+        _dag_notify(job_id, self.__class__.__name__, NodeStatus.ACTIVE, 70, niche=niche)
         blueprint = dict(self.params.get("blueprint", {}))
         job_metadata = dict(self.params.get("job_metadata", {}))
         composition_id = str(self.params.get("composition_id", "ViralClip"))
@@ -604,7 +605,7 @@ class SceneRenderNode(BaseNode):
 
         if not visual_paths:
             _dag_notify(
-                job_id, self.__class__.__name__, "FAILED", 70,
+                job_id, self.__class__.__name__, NodeStatus.FAILED, 70,
                 niche=niche, error="No visual assets",
             )
             logger.error("[DAG:SceneRender] No visual paths available for '%s'", self.id)
@@ -626,7 +627,7 @@ class SceneRenderNode(BaseNode):
             )
         except Exception as e:
             _dag_notify(
-                job_id, self.__class__.__name__, "FAILED", 75,
+                job_id, self.__class__.__name__, NodeStatus.FAILED, 75,
                 niche=niche, error=f"Remotion failed: {e}",
             )
             logger.warning("[DAG:SceneRender] Remotion failed, falling back to FFmpeg: %s", e)
@@ -654,7 +655,7 @@ class SceneRenderNode(BaseNode):
 
             if not rendered or not os.path.exists(rendered):
                 _dag_notify(
-                    job_id, self.__class__.__name__, "FAILED", 90,
+                    job_id, self.__class__.__name__, NodeStatus.FAILED, 90,
                     niche=niche, error="All render methods failed",
                 )
                 return {"success": False, "error": "all_render_methods_failed", "output_path": None}
@@ -671,7 +672,7 @@ class SceneRenderNode(BaseNode):
                 if success:
                     os.replace(audio_mixed, rendered)
 
-        _dag_notify(job_id, self.__class__.__name__, "COMPLETED", 100, niche=niche)
+        _dag_notify(job_id, self.__class__.__name__, NodeStatus.COMPLETED, 100, niche=niche)
         return {
             "success": True,
             "output_path": rendered,

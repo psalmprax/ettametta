@@ -193,6 +193,8 @@ class SemanticStockMatcher:
         """Download multiple candidate videos in parallel with a semaphore."""
         from src.services.video_engine.stock_service import base_stock_service
 
+        downloaded = []
+
         async def _download_one(url: str) -> dict[str, Any] | None:
             async with self._download_semaphore:
                 try:

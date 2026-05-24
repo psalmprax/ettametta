@@ -29,6 +29,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
+            // Polyfill crypto.randomUUID for older browsers
             if (typeof crypto !== 'undefined' && !crypto.randomUUID) {
               crypto.randomUUID = function() {
                 return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -37,6 +38,40 @@ export default function RootLayout({
                 });
               };
             }
+
+            // Suppress known spurious console errors from third-party scripts
+            // (e.g., platform-injected push notification scripts, CDN scripts)
+            // Uses specific error message substrings to avoid hiding legitimate errors.
+            var KEYS = ['error subscribing to push notifications', 'err_connection_timed_out'];
+            var origError = console.error;
+            console.error = function() {
+              var msg = Array.prototype.join.call(arguments, ' ').toLowerCase();
+              for (var i = 0; i < KEYS.length; i++) {
+                if (msg.indexOf(KEYS[i]) !== -1) return;
+              }
+              return origError.apply(console, arguments);
+            };
+
+            // Catch unhandled promise rejections and error events from third-party scripts
+            window.addEventListener('unhandledrejection', function(e) {
+              var msg = String(e.reason).toLowerCase();
+              for (var i = 0; i < KEYS.length; i++) {
+                if (msg.indexOf(KEYS[i]) !== -1) {
+                  e.preventDefault();
+                  return;
+                }
+              }
+            });
+
+            window.addEventListener('error', function(e) {
+              var msg = String(e.error || e.message || '').toLowerCase();
+              for (var i = 0; i < KEYS.length; i++) {
+                if (msg.indexOf(KEYS[i]) !== -1) {
+                  e.preventDefault();
+                  return;
+                }
+              }
+            });
           })();
         ` }} />
       </head>

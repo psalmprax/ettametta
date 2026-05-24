@@ -2,6 +2,7 @@ import requests
 import logging
 from src.api.config import settings
 from .base_skill import OpenClawBaseSkill
+from src.shared.enums import SystemJobStatus
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +61,7 @@ class PublishingSkill(OpenClawBaseSkill):
             if not target_job:
                 return f"❌ **Job Not Found**: Could not find job with ID `{job_id}`."
 
-            if (
-                target_job["status"] != "Completed"
-                and target_job["status"] != "Published"
-            ):
-                # Allow publishing even if status is 'Published' (re-publish?) or just check for output
+            if target_job["status"] != SystemJobStatus.COMPLETED.value:
                 # If status is not completed, we might not have a video path.
                 # But let's check output_path presence.
                 if not target_job.get("output_path"):

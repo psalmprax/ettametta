@@ -1,8 +1,7 @@
 import json
 import logging
 import numpy as np
-from typing import Any
-from groq import AsyncGroq
+from typing import Any, Optional
 from src.api.config import settings
 
 logger = logging.getLogger("CausalAnalyst")
@@ -13,8 +12,20 @@ class CausalAnalyst:
     Analyzes the 'Regret' between prediction and reality.
     """
     def __init__(self):
-        self.client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+        self._client: Optional[Any] = None
         self.model = "llama-3.3-70b-versatile"
+
+    @property
+    def client(self):
+        """Lazy-initialize the Groq client — avoids crashing on import when GROQ_API_KEY is missing."""
+        if self._client is None:
+            if not settings.GROQ_API_KEY:
+                raise RuntimeError(
+                    "GROQ_API_KEY not configured — CausalAnalyst requires a valid Groq key"
+                )
+            from groq import AsyncGroq
+            self._client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+        return self._client
 
     async def analyze_regret(self, predicted_curve: list[dict], actual_curve: list[dict], blueprint: dict[str, Any]) -> dict[str, Any]:
         """Identifies the 'Why' behind prediction errors."""
