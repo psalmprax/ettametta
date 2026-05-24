@@ -1,19 +1,35 @@
 {
+  "/home/psalmprax/ALL_PROJECTS/ettametta/bulk_test_styles.py": {
+    "mtime": 1779043418.4551315,
+    "hash": "eb6f0891fd9c541a33b451063a7a7f75"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/run_single_style.py": {
+    "mtime": 1779214345.255827,
+    "hash": "f380b3aba083d1d232669e56caf60d3b"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/check_jobs.py": {
-    "mtime": 1777055607.9210737,
+    "mtime": 1779043418.4551315,
     "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/test_discovery.py": {
-    "mtime": 1776864169.2139673,
+    "mtime": 1779043418.4994771,
     "hash": "a25f1ad742ae0e153fb7ae50ce9e8e0a"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/test_style_thorough.py": {
+    "mtime": 1779043418.5054772,
+    "hash": "0d511e6c0adc0d994ac19a226d8c9653"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/remote_test.py": {
-    "mtime": 1778009816.4953601,
-    "hash": "a11bc9926173a9bcc197d5b2c941a563"
+    "mtime": 1779622463.8488266,
+    "hash": "51438407c76839a5659e4a8a021cbd45"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/debug_kb.py": {
-    "mtime": 1777979476.7326384,
+    "mtime": 1779043418.4554775,
     "hash": "56f47f8d25f7d9af6125dd20c80bde6e"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/demo_viral_content_pipeline.py": {
+    "mtime": 1779643790.2808197,
+    "hash": "37d41c46de7e948f3476b5b41698a59f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/alembic/env.py": {
     "mtime": 1777009419.9200315,
@@ -100,11 +116,11 @@
     "hash": "739c139544b442ecb930cc798f2205a0"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/check_nexus_jobs.py": {
-    "mtime": 1778203018.3538585,
+    "mtime": 1778971649.844352,
     "hash": "172a3ed25fdfe136f53e477cdb4b7a71"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/seed_links.py": {
-    "mtime": 1777883438.0910711,
+    "mtime": 1779365845.2204947,
     "hash": "5039b634ed93060b814d86888d48b57d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_viral_loop.py": {
@@ -119,16 +135,32 @@
     "mtime": 1777891262.6901274,
     "hash": "d616257f368486a0074a816ebcaee0ff"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_monkeypatch.py": {
+    "mtime": 1779567778.8578162,
+    "hash": "1367a4f169e6fc66e27dfd878c7b492d"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/debug_nexus_db.py": {
-    "mtime": 1778203078.0318742,
+    "mtime": 1778971649.8455784,
     "hash": "ac710d666e029b673976e599bcadd151"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_stubs_direct.py": {
+    "mtime": 1779031227.183823,
+    "hash": "e9435e4d4c4fa0f82054f810d20732cf"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/check_jobs.py": {
     "mtime": 1778091357.8089514,
     "hash": "7f12f520a86a8854e12b689f091b7e5a"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/fix_timezones.py": {
+    "mtime": 1779567738.9787009,
+    "hash": "e3d6e8a258b5cd56062449a5c74d9122"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_dag_pipeline.py": {
+    "mtime": 1779643790.2888196,
+    "hash": "49e95f86d6f740e177bfd550718d295b"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/trigger_fusion_test.py": {
-    "mtime": 1778533703.0539677,
+    "mtime": 1778971649.8465784,
     "hash": "53948251fa0e409b8b1c5f9c85db88bc"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_intelligent_production.py": {
@@ -148,15 +180,15 @@
     "hash": "34a2baf25613419c2bc83dc571069ff9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/run_nexus_tests.py": {
-    "mtime": 1778266425.8228881,
+    "mtime": 1778971649.8465784,
     "hash": "1f0a755396d658f6f4005a3beb42e8ed"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_imports.py": {
-    "mtime": 1778192567.4447112,
+    "mtime": 1778971649.8465784,
     "hash": "540e718e9af545cd2fce930b22289999"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/patch_remote.py": {
-    "mtime": 1778196010.2553854,
+    "mtime": 1778971649.8465784,
     "hash": "b7f12b416242e57de207d94d8a73a5d8"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_ollama_diagnostic.py": {
@@ -175,6 +207,10 @@
     "mtime": 1777898984.1293588,
     "hash": "f2fc49bb567488ffa1433d2b6f09dc4d"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_full_production.py": {
+    "mtime": 1779643790.2888196,
+    "hash": "6221c558ae725cec4b80845574761dfa"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_compilation_workflow.py": {
     "mtime": 1777897807.022332,
     "hash": "58604762290d4d0445a4a6add2ad44c7"
@@ -183,9 +219,13 @@
     "mtime": 1777891135.3068933,
     "hash": "36c6ed6d990b89e2ddb477514993d88e"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_nexus_exotic.py": {
+    "mtime": 1779643790.2898195,
+    "hash": "25f77e7f46b9e443a2e28958a494b1c2"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_ws.py": {
-    "mtime": 1777795061.1299543,
-    "hash": "14baab2758a518f9a6410a3d78fc406e"
+    "mtime": 1779568451.0210593,
+    "hash": "387e36feadf838d83de7f9b5e0774c7b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/list_routes.py": {
     "mtime": 1777058883.7842848,
@@ -195,8 +235,12 @@
     "mtime": 1777899676.2482731,
     "hash": "aaf284b9928a88d797433ac9f7ab286b"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/test_llm_connectivity.py": {
+    "mtime": 1778971649.8465784,
+    "hash": "da90d51c4cb4f42232f3ee964ea0f475"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/fix_orchestrator.py": {
-    "mtime": 1778689739.216462,
+    "mtime": 1778971649.8465784,
     "hash": "bf98cbd0d2f5dc38b448f710491b4a2e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/outputs/__init__.py": {
@@ -207,53 +251,69 @@
     "mtime": 1777396840.7649913,
     "hash": "89f3636e383c43bb846305d611c4465a"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/shared/state_machine.py": {
+    "mtime": 1779643790.3428197,
+    "hash": "b29e8d8573ed4a9d380d5255df6e8500"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/shared/observability.py": {
+    "mtime": 1779643790.3418198,
+    "hash": "83c04f145b0a91bc83b640c1ec88d92f"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/shared/internal_client.py": {
     "mtime": 1777396840.0415146,
     "hash": "f083948e4e33b25171a5bd7c31d25d9a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/shared/enums.py": {
-    "mtime": 1777881967.2712436,
-    "hash": "d71ae02d160dc791acc62e17bc38700c"
+    "mtime": 1779645554.7841523,
+    "hash": "ff9c6a1a3ae2f7e0a5d4e8153b8b596f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/shared/__init__.py": {
     "mtime": 1777396840.0423005,
     "hash": "a1c9dd29121a50292f8f159244e318c4"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/test_cinematic_intuition.py": {
-    "mtime": 1777556962.324487,
-    "hash": "4e65c97640848fc8cf2db4e4b72dc28c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/test_video_generation.py": {
     "mtime": 1777396840.042816,
     "hash": "b7d90a954b5d1c9d3ccaadeb445136a2"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/test_experiment_isolation.py": {
-    "mtime": 1777557069.5162115,
-    "hash": "3da2cf9826cbc04405e9609769a3fc87"
+    "mtime": 1779643790.3458197,
+    "hash": "b3dc9048592cd782d4fbb7d68e0813fd"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/test_stateful_analytics.py": {
-    "mtime": 1777557069.5177352,
-    "hash": "654625c8694caed1414391e467be6ce8"
+    "mtime": 1779643790.3468199,
+    "hash": "0cd5789dc7e977980af48a62734b1383"
   },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_automated_video_editor_fixed.py": {
-    "mtime": 1777396840.0454261,
-    "hash": "46ffc5de6c48f965eb48511aafe2b07c"
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/verify_cinematic_intuition.py": {
+    "mtime": 1779643790.3488197,
+    "hash": "4e65c97640848fc8cf2db4e4b72dc28c"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/conftest.py": {
+    "mtime": 1779643790.3428197,
+    "hash": "2739ed0f278c2efdb253570b3ea597dd"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_all_templates.py": {
+    "mtime": 1779643790.3468199,
+    "hash": "0e16e3432374f9b077e5f6e589b5ac28"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_openclaw_features.py": {
-    "mtime": 1777396840.0490272,
-    "hash": "2738ab34e445eb85c31538813cfb9d9f"
+    "mtime": 1779643790.3478198,
+    "hash": "e3fa992c315a79d808589de1fa8ad4c7"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_payment_credit.py": {
+    "mtime": 1779643790.3478198,
+    "hash": "f4751b11c2d9532211157ea477adbb49"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_video_editor_quality.py": {
-    "mtime": 1777396840.049537,
-    "hash": "d4c0db112286a14f81e169eb538950e7"
+    "mtime": 1779643790.3488197,
+    "hash": "2a451467f6ecc495f5345fe049064967"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_remotion_service_hardened.py": {
+    "mtime": 1779031227.2248235,
+    "hash": "f8c90602087b63326f99a2743f30dc91"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_scene_based_production.py": {
     "mtime": 1777396840.0503685,
     "hash": "d791e04463418318352ca988f7fa65ec"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_providers.py": {
-    "mtime": 1777396840.050875,
-    "hash": "3e1efcceb7d8e3f8300ba26f599751f3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_ffmpeg_overlay.py": {
     "mtime": 1777396840.051265,
@@ -263,57 +323,73 @@
     "mtime": 1777396840.0515544,
     "hash": "c1b1322b6d23bc4161e0604e4cf91f06"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_publishing_service.py": {
+    "mtime": 1779643790.3488197,
+    "hash": "58491a9bdc052eb054d2f386b8bb0cbb"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_dag_executor.py": {
+    "mtime": 1779643790.3478198,
+    "hash": "486e3bbb24253ec650e9edb41ee2ed0d"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_automated_video_editor.py": {
-    "mtime": 1777396840.0519094,
-    "hash": "a2b26a7340d3a34c006ff70bca23c2a1"
+    "mtime": 1779643790.3478198,
+    "hash": "430da671fc8f45b762d92914cfe8d821"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_e2e_video_processing.py": {
-    "mtime": 1777396840.0525534,
-    "hash": "0ce6cc34c3f9a3e361257c301d9cb576"
+    "mtime": 1779643790.3478198,
+    "hash": "efc4953a776ab5bba91e61610ba9c001"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_video_editor_demo.py": {
-    "mtime": 1777396840.0530355,
-    "hash": "dc4d16d1dac4bb9399e1d41afb760e0e"
+    "mtime": 1779643790.3488197,
+    "hash": "fe1397e50f51b9cca3d1157af2626e84"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_production_pipeline.py": {
-    "mtime": 1777396840.053478,
-    "hash": "092f27b756c76a9b4d0241fe52823993"
+    "mtime": 1779643790.3488197,
+    "hash": "1e3dece8e16fec37bbd4d9412c8cae34"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_state_machine.py": {
+    "mtime": 1779643790.3488197,
+    "hash": "850f0eeae7ab7d36d47e7937a4545252"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_skills_direct.py": {
-    "mtime": 1777396840.0541902,
-    "hash": "b3098e59262ec4eab930d4209942e209"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_video_editor_architecture.py": {
-    "mtime": 1777396840.0547006,
-    "hash": "c6fdd723f0ef5d53065a44e89759de4d"
+    "mtime": 1779643790.3488197,
+    "hash": "bc7fa13c75ce07104e71736ee151f287"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_leonardo.py": {
-    "mtime": 1777396840.055206,
-    "hash": "c7d1f5caf98dc010b93f2e6f7dd9b454"
+    "mtime": 1779643790.3478198,
+    "hash": "f66ad1d3b82e932e1571f3f905193d5c"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_optimization_circuit_breaker.py": {
+    "mtime": 1779643790.3478198,
+    "hash": "8546b8203d4a675d6a2217bf837a84e5"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_remotion_remote.py": {
-    "mtime": 1777396840.05616,
-    "hash": "c8f07aeb0845b46b21ee50a9878f5173"
+    "mtime": 1779031227.2248235,
+    "hash": "af5864c0060a2bd4f7e32a6c9e8762b0"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/unit/test_artistic_modulation.py": {
+    "mtime": 1779643790.3468199,
+    "hash": "ae32f0859d12accd9b3470582d99e3ac"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/load_tests/api_load_test.js": {
     "mtime": 1776430531.7494228,
     "hash": "1aa92cd1cec97bf1fff424cdb74b439c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/e2e_full_intelligent.py": {
-    "mtime": 1777396840.0566278,
-    "hash": "3eb6018411fbdaff2855183cd91a0dd0"
+    "mtime": 1779031227.2248235,
+    "hash": "18cb6220484d164131b2086494ee8a1d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/e2e_full_test.py": {
     "mtime": 1777556966.9525044,
     "hash": "d50924aa76e314575134ed4e89127100"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/remote_video_test.py": {
-    "mtime": 1777396840.078879,
-    "hash": "702772283ebeaad7e8e38f3e6692c048"
+    "mtime": 1779643790.3428197,
+    "hash": "38dd3f58ab8996cdcda43ba1d504a765"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/remote_e2e_test.py": {
-    "mtime": 1777396840.079215,
-    "hash": "edb6f76ba27e6bb4356699ab0757d305"
+    "mtime": 1779643790.3428197,
+    "hash": "2fa3afa9630ab37bbe00b0e7f305c082"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/playwright.config.ts": {
     "mtime": 1777421122.6859272,
@@ -328,8 +404,8 @@
     "hash": "8d6e44571f64158727328f1fc9320775"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/tests/real_first_hardening.spec.ts": {
-    "mtime": 1777396840.0582051,
-    "hash": "31bf33d4cd9b3988cb9b15b907497e37"
+    "mtime": 1779643790.3428197,
+    "hash": "836ef27fd1e6d9fea387d419aceb1d0e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/tests/auth_flow.spec.ts": {
     "mtime": 1777419228.834632,
@@ -356,8 +432,8 @@
     "hash": "2d8da4d8caa6fef926b8aaf4d9e7a1fb"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/tests/accessibility.spec.ts": {
-    "mtime": 1777396840.0660245,
-    "hash": "7fba4886f2ca39444822b544fe6924b6"
+    "mtime": 1779643790.3428197,
+    "hash": "654918f7a175fd3f7c4eae6979f89bd3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/tests/design_card_icons.spec.ts": {
     "mtime": 1777748408.98242,
@@ -443,8 +519,16 @@
     "mtime": 1777396840.078049,
     "hash": "4443546b9788732402ce18dbfba84c63"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/integration/test_discovery_analysis.py": {
+    "mtime": 1778971649.8775785,
+    "hash": "b3ee308083ab880adada12f667850b67"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/integration/test_autonomous_orchestration.py": {
+    "mtime": 1778971649.8765786,
+    "hash": "c413192cad18ee411a92a09d183c4eab"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/engines/intelligent_video_workflow.py": {
-    "mtime": 1777880233.415887,
+    "mtime": 1779214345.323827,
     "hash": "f1c08f7ea775105e0d7c93970b3aa561"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/engines/topic_fusion_orchestrator.py": {
@@ -452,16 +536,16 @@
     "hash": "e34636ac1facb606a9e3f23a508c5831"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/engines/real_video_fusion_engine.py": {
-    "mtime": 1777556969.5308716,
-    "hash": "58272dbf0bd7213d842f2e6e4fbc9668"
+    "mtime": 1779643790.3058197,
+    "hash": "fca96f95cddfc758f7a62df55392b043"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/engines/video_server.py": {
     "mtime": 1777396840.547114,
     "hash": "2f217ebfdb73602ab29916e1cafe4e9c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/engines/intelligent_video_discovery_edit.py": {
-    "mtime": 1777396840.5475729,
-    "hash": "3ad295b2b9eb30b754bbef849984626d"
+    "mtime": 1779643790.3058197,
+    "hash": "d07b798d6d5fcbf17bfbd37130a4ca69"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/engines/cpu_video_editor_final.py": {
     "mtime": 1777396840.5486293,
@@ -571,9 +655,13 @@
     "mtime": 1777557063.876689,
     "hash": "376ab144c815259d836fb22d565f3196"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/scripts/test_style_pipeline.py": {
+    "mtime": 1778971649.8595784,
+    "hash": "5a03c06fb1d30a00b53a91f48f9809f4"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/base_agent.py": {
-    "mtime": 1777994100.5216827,
-    "hash": "33c2cbe7a01c1732aded18ccf5cdf9d7"
+    "mtime": 1779643790.3079948,
+    "hash": "c1c33618db928f0b9356bb508ed6f42f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/__init__.py": {
     "mtime": 1777396840.6986108,
@@ -588,8 +676,8 @@
     "hash": "13f4da6d6758fc6d3fae1036f8e5eacc"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/hermes/service.py": {
-    "mtime": 1777396840.551286,
-    "hash": "d90243e08794eb300ce7c3b2402590a8"
+    "mtime": 1779643790.3174272,
+    "hash": "8c026e4a0edcce0c6f8eeb7e93c2b709"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/hermes/narrative_planner.py": {
     "mtime": 1777556960.2773397,
@@ -603,28 +691,32 @@
     "mtime": 1777396840.5523455,
     "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/media_ir.py": {
+    "mtime": 1779643790.3398197,
+    "hash": "9e7cbd2a6cdd9eaec55de94ff751aec2"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/stock_service.py": {
-    "mtime": 1778693477.0012903,
-    "hash": "94af632f0e37ad9a3f600976b6084420"
+    "mtime": 1779643790.3408198,
+    "hash": "022706060d1ba256164625fb5434f744"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/transcription.py": {
-    "mtime": 1777556966.5317633,
-    "hash": "6f36d902114a8dc4152cd3ff22af9973"
+    "mtime": 1779643790.3418198,
+    "hash": "1018d083244238ddece135d950e618c7"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/scene_orchestrator.py": {
-    "mtime": 1778537148.317993,
-    "hash": "e709fe1a70ee07bfe2d8b9bdbf1a1a84"
+    "mtime": 1779643790.3408198,
+    "hash": "5480239dc152f11097ec9c2284f34200"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/motion_graphics.py": {
     "mtime": 1777396840.5540493,
     "hash": "275b2a091a25967b9973e0f0894732ff"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/ffmpeg_utils.py": {
-    "mtime": 1778537142.9170005,
+    "mtime": 1779214345.386827,
     "hash": "4f3c2ed51e26d0c305db1eb8d1b1a65d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/job_service.py": {
-    "mtime": 1777763174.4722633,
+    "mtime": 1779214345.387827,
     "hash": "c42e9c0cda18185848b6f4a212a248be"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/storyboard_service.py": {
@@ -644,27 +736,31 @@
     "hash": "e878dff0b5561c1ce7e146cc55b0baef"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/synthesis_service.py": {
-    "mtime": 1778199202.1289456,
-    "hash": "c29c77908eaa0824314d880a14a783f1"
+    "mtime": 1779648972.6530492,
+    "hash": "f4f3f6a4e7c8cf541d052239894a89f8"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/ffmpeg_optimizer.py": {
+    "mtime": 1779643790.3388197,
+    "hash": "62f99a40019d9bffff416f51eddc9834"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/engine_config.py": {
     "mtime": 1777396840.562854,
     "hash": "b45ab180136b8d58ad16dbbf56c30593"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/persona_service.py": {
-    "mtime": 1777396840.564197,
-    "hash": "9ee893589b43d5aa810a744dfc811584"
+    "mtime": 1779643790.3398197,
+    "hash": "f17a52341bc76888f5d42f7950bfe7c6"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/neural_vision_analyzer.py": {
-    "mtime": 1777556782.4167264,
-    "hash": "48282ffb320678b714f7aeb1506ffd3b"
+    "mtime": 1779643790.3398197,
+    "hash": "7a1b74400a5b26f67af0b73172f0c1e8"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/tasks.py": {
-    "mtime": 1778136422.4008489,
-    "hash": "b3edb1c674269eba73126c02a1bf5ad1"
+    "mtime": 1779643790.3418198,
+    "hash": "0109187526aa0535dffe9a1865f25319"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/quality_control.py": {
-    "mtime": 1778536701.7271385,
+    "mtime": 1779043418.4924772,
     "hash": "bd5669a4976e70182679522f4d26901d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/production_batch.py": {
@@ -672,32 +768,40 @@
     "hash": "994e9076a1e927dff0c7637d5d25f2fd"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/downloader.py": {
-    "mtime": 1778533559.8682275,
-    "hash": "105c98277d40c895bec07a0d97293c00"
+    "mtime": 1779643790.3388197,
+    "hash": "3faad55cda3988c988151e3a4b7806e1"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/free_video_providers.py": {
-    "mtime": 1777396840.5767152,
-    "hash": "5da34c12f391552ec80eaedcad048966"
+    "mtime": 1779647206.3706157,
+    "hash": "09aa9da5cb0e4615b0f6b90290411d35"
   },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/mock_downloader.py": {
-    "mtime": 1778536620.3515081,
-    "hash": "0b131f02d7d3f5f80c0f33b9defd7f49"
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/semantic_stock.py": {
+    "mtime": 1779643754.4927049,
+    "hash": "a636e19fe848d794aa28ca3f6e920cd6"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/remotion_service.py": {
-    "mtime": 1778696111.1430752,
-    "hash": "e1ac94424803d21b553c1cb6954dfe80"
+    "mtime": 1779647177.4019232,
+    "hash": "30d71502559006e7a16b712977973fb0"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/processor.py": {
-    "mtime": 1778537008.0642288,
-    "hash": "36341c9cadd449e1991214daf11f54c2"
+    "mtime": 1779643790.3398197,
+    "hash": "d8cb9fb6afb4c5089a9669870742eb61"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/autonomous_editor.py": {
-    "mtime": 1778083600.1896904,
+    "mtime": 1779043418.4904773,
     "hash": "5137217afb3e9fc4f43d7129eeb8ae75"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/ocr_service.py": {
     "mtime": 1777396840.5784888,
     "hash": "bd8ee7c59e475e092ed15e2ba196628a"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/automation.py": {
+    "mtime": 1779643790.3388197,
+    "hash": "5b76fed9c63b3275b24ae74a5aa1cea3"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/stochastic_modulator.py": {
+    "mtime": 1779647154.0181844,
+    "hash": "1b64799a830871c954793310539e7355"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/video_production_assistant.py": {
     "mtime": 1777396840.578939,
@@ -716,8 +820,20 @@
     "hash": "4c3cbbe1189483716f8c0de65bf8ab16"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/vlm_service.py": {
-    "mtime": 1778199181.1149561,
-    "hash": "219abe65554b073d5dadfe4a04106c71"
+    "mtime": 1779643790.3418198,
+    "hash": "b9925c567b79512dddfbb602e3a01dec"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/dag_executor.py": {
+    "mtime": 1779643790.3388197,
+    "hash": "f0f6b66aeee04e0156414c03a61d990d"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/tests/test_generative_service.py": {
+    "mtime": 1778971649.8735785,
+    "hash": "1ff5be6bd68d389cd3001ae3c3abd476"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/tests/__init__.py": {
+    "mtime": 1778971649.8725784,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/models/hunyuan_inference.py": {
     "mtime": 1777396840.5657637,
@@ -732,16 +848,16 @@
     "hash": "e81fa9044e6f5f898028a4f69834abb3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/models/cogvideo_inference.py": {
-    "mtime": 1777396840.567621,
-    "hash": "734e84b68966331e83426a274ab3dc82"
+    "mtime": 1778971649.8715785,
+    "hash": "b1d563e93d7be0ad21a06331f5348f56"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/models/animatediff_inference.py": {
     "mtime": 1777396840.5681255,
     "hash": "3b19279eee6e3d238b8fc0948938d552"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/models/wan_inference.py": {
-    "mtime": 1777396840.5686057,
-    "hash": "edca6472025860a03c06afc8eedc77fb"
+    "mtime": 1778971649.8715785,
+    "hash": "8e779b0231f51f72a106dbf712c06e07"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/video_engine/models/__init__.py": {
     "mtime": 1777396840.5694876,
@@ -772,36 +888,40 @@
     "hash": "6d9b6e3eab0ca996bffdf16afc3137c6"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/infrastructure/event_bus.py": {
-    "mtime": 1777557043.31872,
-    "hash": "cf715321a92aa2b6c2c7232804b8757d"
+    "mtime": 1778971649.8645785,
+    "hash": "c2a93d9132abd4ffa091ee9c68a69449"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/infrastructure/resilience_metrics.py": {
-    "mtime": 1777396840.5831885,
-    "hash": "d2f130bd7c8d017a3f547728f3a047b8"
+    "mtime": 1779031227.2028232,
+    "hash": "f5cb00cdcf879ddbe4f620fdb4229b68"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/infrastructure/resource_governor.py": {
     "mtime": 1778536603.9945908,
     "hash": "49e24cecb9169d95acc827a722fe2f46"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/infrastructure/incident_reporting.py": {
-    "mtime": 1777396840.583902,
-    "hash": "4ad85ddf3f940cf5c58f929832ffdf99"
+    "mtime": 1779643790.3178196,
+    "hash": "bb473c05429dc1d7bffd02104550085c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/payment/paypal_service.py": {
-    "mtime": 1777396840.5843666,
+    "mtime": 1779214345.385827,
     "hash": "4ca21e8f26ffc4eda87ef67d8b3dd6b5"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/payment/stripe_service.py": {
-    "mtime": 1777396840.584996,
+    "mtime": 1779214345.385827,
     "hash": "467e65ff7cc026e76add8692e19f5fff"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/payment/credit_service.py": {
-    "mtime": 1777880225.576744,
-    "hash": "6c373f910842d8f1270ea6dc4143ff0d"
+    "mtime": 1779643790.3388197,
+    "hash": "f2e059af21a277d9b6736c529bbdf89d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/publishing/service.py": {
-    "mtime": 1778155193.2589679,
-    "hash": "f9905ded153ea51cd6517e7f13c6ff5b"
+    "mtime": 1779643790.3388197,
+    "hash": "fcb8a74e27d29fcf605dfffaa7efaa16"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/publishing/__init__.py": {
+    "mtime": 1779643790.3388197,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/agent_zero/agent.py": {
     "mtime": 1777838316.8745089,
@@ -824,7 +944,7 @@
     "hash": "eecfbae1648bf434e54ab6a767c47ae9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/agent_zero/tools/interpreter.py": {
-    "mtime": 1777396840.587354,
+    "mtime": 1779214345.323827,
     "hash": "1891af3a690243d23c731a9480dbdddb"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/agent_zero/tools/affiliate.py": {
@@ -848,11 +968,11 @@
     "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/distribution/publisher.py": {
-    "mtime": 1777396840.5930276,
-    "hash": "e336cf52220a717470648fe8a33368be"
+    "mtime": 1779643790.3158197,
+    "hash": "519816b9342b30e5b3d04349ff2b9695"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/distribution/experiment_batcher.py": {
-    "mtime": 1777557043.3382313,
+    "mtime": 1779214345.3458269,
     "hash": "0d338dff4c902fd317e3c00713dc5d4f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/distribution/deployment_gateway.py": {
@@ -872,8 +992,8 @@
     "hash": "30f400d5f9aa1ba856b5348ccb8be6b1"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/langchain/service.py": {
-    "mtime": 1777396840.5945532,
-    "hash": "4d071e8082c1ae97d544b2cb358fbbd0"
+    "mtime": 1779643790.3178196,
+    "hash": "8bd98ab37352720ac8348f855d7e2e86"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/langchain/__init__.py": {
     "mtime": 1777396840.5948904,
@@ -884,24 +1004,24 @@
     "hash": "c65be6e1a6e809b82e8b0b07ec063370"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/scheduler_tasks.py": {
-    "mtime": 1778137269.3686032,
-    "hash": "28b37eb48c64ab5b65e49f9cf03a5741"
+    "mtime": 1779643790.3378198,
+    "hash": "6009139fd8981d714c087e9969864169"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/flywheel.py": {
-    "mtime": 1777557114.0266795,
-    "hash": "6e506f201577ca1c9d29bafd54f07920"
+    "mtime": 1779643790.3368196,
+    "hash": "5e0cd9ca778c4955e394e199c7d6757e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/publisher_base.py": {
     "mtime": 1778198512.1910248,
     "hash": "7c1ff803e05c283faab7e1faaa43becc"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/forecaster_pipeline.py": {
-    "mtime": 1777556968.955206,
-    "hash": "a262286b8ec0fa350bc2725fe005e6fe"
+    "mtime": 1779043418.4834774,
+    "hash": "aeaf4afc31b797f4ff9e16a87aaf82d0"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/x_publisher.py": {
-    "mtime": 1777557107.781933,
-    "hash": "3cc10d30d76530058ccfcc80820217cd"
+    "mtime": 1779643790.3378198,
+    "hash": "cb300985be1c6ef5079b9d647413deb5"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/viral_loop.py": {
     "mtime": 1777900823.1623876,
@@ -912,28 +1032,28 @@
     "hash": "8b2ec5b8417ac922105b4b8568f34123"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/scheduler.py": {
-    "mtime": 1777396840.5978,
-    "hash": "101e6f3878bf9abce047207fb35c87b7"
+    "mtime": 1779643790.3378198,
+    "hash": "f3db01ac1d72355ab0f3ad9c36f7ce3d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/auth.py": {
     "mtime": 1777396840.598099,
     "hash": "0b4c8b067c51cca9a1853bace7a683f9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/linkedin_publisher.py": {
-    "mtime": 1778198479.7832606,
-    "hash": "1c82ad51fcf626e8134b3894902fe1dd"
+    "mtime": 1779643790.3368196,
+    "hash": "eee625f53c32b800cfbe6e86b88f1f6e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/service.py": {
-    "mtime": 1777557063.878074,
-    "hash": "edca2317c313f6bf3e04364a43f00c83"
+    "mtime": 1779643790.3378198,
+    "hash": "8ad7b927d4e84126c39ef7c53786615c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/twitch_publisher.py": {
     "mtime": 1778198473.7253067,
     "hash": "d962fd1534721f55e987ca7c2ef3bd38"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/strategy_generator.py": {
-    "mtime": 1777396840.5995798,
-    "hash": "6b4f66de80ec3668b0d9d6c54c51ea67"
+    "mtime": 1778971649.8705785,
+    "hash": "c6cefb0f8c4b3a767c56bb5dc9e006d3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/snapchat_publisher.py": {
     "mtime": 1778198486.375211,
@@ -944,12 +1064,12 @@
     "hash": "ebb362bf6e0526c0bdb83230ea7b36e2"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/ab_testing_automation.py": {
-    "mtime": 1777881757.3267238,
-    "hash": "becedbced8442e34fdc5e13a00f6dffc"
+    "mtime": 1779643790.3368196,
+    "hash": "413b504d1ed2932cf1daa9c79df84883"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/oracle_predictor.py": {
-    "mtime": 1777556968.5135102,
-    "hash": "e78a0d0425c23969229e2e6fb225b0bc"
+    "mtime": 1779643790.3378198,
+    "hash": "b84496d03eee9819adb178d284248368"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/model_registry.py": {
     "mtime": 1777556918.652317,
@@ -964,8 +1084,8 @@
     "hash": "496a1bed244e8c0092917437117abf03"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/facebook_publisher.py": {
-    "mtime": 1778198511.1170323,
-    "hash": "452f992c39b7d0ca5d434b75d7171ce8"
+    "mtime": 1779643790.3368196,
+    "hash": "c0951363431f4cd1776d6e0bf07b36a2"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/optimization/__init__.py": {
     "mtime": 1777396840.601968,
@@ -984,20 +1104,20 @@
     "hash": "c20602d1de34e9b4612a79dd5227248e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/harvester.py": {
-    "mtime": 1777556970.2362938,
-    "hash": "977ffda15ea0869a2db6946008202183"
+    "mtime": 1779214345.326827,
+    "hash": "49bfa73c024ef0b07ab8c510b6676b9e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/success_model.py": {
-    "mtime": 1777396840.6036015,
-    "hash": "14d5bee8ca4e47c3f237dafc09d3be03"
+    "mtime": 1779214345.3298268,
+    "hash": "099c769940a65cf8cc5a10c1cc7bbe81"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/models.py": {
-    "mtime": 1777396840.60385,
-    "hash": "40bc735352aac50ff047babf37d29bf8"
+    "mtime": 1779643790.3058197,
+    "hash": "a156c7a615fe00ec981276ac65d5a92c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/stream_processor.py": {
-    "mtime": 1777881782.71991,
-    "hash": "588db360fdfef125873b6daf37cbaf7b"
+    "mtime": 1778971649.8605783,
+    "hash": "b3e01a0ec37fb0d99d65cc800e8c76e9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/bridge.py": {
     "mtime": 1777556968.9562101,
@@ -1008,12 +1128,12 @@
     "hash": "27d93474eea236035c80eb3afffd2026"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/service.py": {
-    "mtime": 1777557116.0320234,
-    "hash": "ff19140b7cd6e80a275d3b1674abbc1a"
+    "mtime": 1779643790.3068197,
+    "hash": "e3dd02a1d7f4c3f0f51336574f5bb104"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/causal_analyst.py": {
-    "mtime": 1777556937.2943907,
-    "hash": "0c638d0a223ba5ac53d0fb555166aee6"
+    "mtime": 1779643754.4867048,
+    "hash": "4afe42e99f5be3f34bc16cd5344af252"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/signal_bus.py": {
     "mtime": 1777396840.6057236,
@@ -1024,7 +1144,7 @@
     "hash": "b4b89e197e82a6ece3ae3d3cb6c13415"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/consistency_sentinel.py": {
-    "mtime": 1777557069.5192852,
+    "mtime": 1779214345.325827,
     "hash": "4126b72e19e1398a9614edc14c1fc257"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/ledger.py": {
@@ -1040,40 +1160,96 @@
     "hash": "caaca694ca11a440476adcfd9dabea12"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/service_extended.py": {
-    "mtime": 1777553604.807659,
-    "hash": "e4a9eece7febdd2b447b3a09bb77d0c4"
+    "mtime": 1779643790.3068197,
+    "hash": "ec99e15eb54c7af92226bb89d95cdd5e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/drift_monitor.py": {
     "mtime": 1777556968.9581988,
     "hash": "7b0a419e1bf274654828119ca1b0aee7"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/tests/test_harvester.py": {
+    "mtime": 1779643790.3079948,
+    "hash": "63a2a241e51ab4eb93f136178ee5a5dd"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/analytics/tests/__init__.py": {
+    "mtime": 1779643790.3068197,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/blueprints.py": {
-    "mtime": 1778536723.9660485,
-    "hash": "f6d5c490c2d3a1b858917f6868bd5db4"
+    "mtime": 1779643790.3238196,
+    "hash": "b2412ccde90b6435c90bce7e65a928a6"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/orchestrator.py": {
-    "mtime": 1778704929.3307753,
-    "hash": "c1fe816a15e44e843544042b022298cf"
+    "mtime": 1779645545.460082,
+    "hash": "84bf4cb4b90e023696010af8d841dd78"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/tasks.py": {
+    "mtime": 1779031227.2128234,
+    "hash": "f6ca2eac566226d920c9bc2005e18687"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/audio_mixer.py": {
     "mtime": 1777396840.608168,
     "hash": "2118d0147a0fef97d008b658e82b3568"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/dag_nodes.py": {
+    "mtime": 1779643754.491738,
+    "hash": "cc5b1b998db664ee91cda3b481894187"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/style_library.py": {
+    "mtime": 1779043418.4814773,
+    "hash": "e919030d0a5d02c066763d2cc7760538"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/__init__.py": {
+    "mtime": 1779643790.3228197,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/thumbnail_service.py": {
-    "mtime": 1777557107.818997,
-    "hash": "35b7e2c3bb1dcb08cbf38620da5eef4a"
+    "mtime": 1779031532.816993,
+    "hash": "e24be5455077bcaf06e9351fd4845e67"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/auto_creator.py": {
-    "mtime": 1778701957.7424107,
-    "hash": "f3ea7a8ac23e3259ae4070af7069eca5"
+    "mtime": 1779643790.3228197,
+    "hash": "a2c8244291e6656e95806f0ca7385013"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/tests/test_semantic_stock.py": {
+    "mtime": 1779643790.3298197,
+    "hash": "4f3590d228d4b2ada26e2b28ae397dee"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/tests/test_orchestrator.py": {
+    "mtime": 1779643790.3298197,
+    "hash": "e90bcab08a21c74e7b69ad4a2deaf6f1"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/tests/test_nexus_integration.py": {
+    "mtime": 1779643790.3298197,
+    "hash": "0f7b72d02eb211062808a33d58dc6100"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/tests/test_auto_creator.py": {
+    "mtime": 1779031227.2178235,
+    "hash": "f533c83060ffd2ad572fefd46495b5bc"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/tests/test_blueprints.py": {
+    "mtime": 1778971649.8685784,
+    "hash": "aa2a3291850aea77bf55640d7a444ddd"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/tests/__init__.py": {
+    "mtime": 1778971649.8685784,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/tests/test_automation_modes.py": {
+    "mtime": 1779643790.3248198,
+    "hash": "d1eafc8814eb510336aadc316398630a"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/nexus_engine/tests/conftest.py": {
+    "mtime": 1779643790.3248198,
+    "hash": "95614fa17a4edc6403344c679a41fc70"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/script_generator/service.py": {
     "mtime": 1778083155.0022035,
     "hash": "2df86f0af95c6e4c0dfc93eefbb0298e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/scheduler/empire_mode.py": {
-    "mtime": 1777557043.0597796,
-    "hash": "48f2ae7ebf4e310a8652dd38faa9f29e"
+    "mtime": 1779643754.4927049,
+    "hash": "32c6bd91b1eda78edd3f74e6eaba9935"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/local_video_worker/generate.py": {
     "mtime": 1777396840.6096826,
@@ -1082,6 +1258,14 @@
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/db/deployment_schema.sql": {
     "mtime": 1776771697.1973965,
     "hash": "51d665adc6eb1f010f880adaf23cce9f"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/email/service.py": {
+    "mtime": 1779643790.3174272,
+    "hash": "83eac9de4ebefc57aac0a4590a28d749"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/email/__init__.py": {
+    "mtime": 1779643790.3168197,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery-go/main.go": {
     "mtime": 1777396690.4238963,
@@ -1116,28 +1300,28 @@
     "hash": "2e0363bb55442715ae1767d22fa71a83"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/affiliate/service.py": {
-    "mtime": 1777396840.6100473,
-    "hash": "c191ab71b2ee08e74e5f2a2790eadcf2"
+    "mtime": 1779643790.3058197,
+    "hash": "05fc643f10648d9fae0561e4fe427456"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/affiliate/__init__.py": {
     "mtime": 1777396840.6104944,
     "hash": "e4ff032f6bd05ff14df6361c12ca27d9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/security/service.py": {
-    "mtime": 1777557043.0713394,
-    "hash": "d29c0ccb49a3989c973e36f5322e936d"
+    "mtime": 1778971649.8705785,
+    "hash": "96bcaeedc0f24c0c64b2ece93620096e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/security/tasks.py": {
-    "mtime": 1777557053.6484392,
-    "hash": "90c836a93ddf62f5f5bd3a0284bacc65"
+    "mtime": 1778971649.8715785,
+    "hash": "ecd57f838e1d8c0feb33b75f42874676"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/interpreter/sandbox_entry.py": {
-    "mtime": 1777396840.6115286,
+    "mtime": 1779214345.346827,
     "hash": "ae8154e86a8a10528fa494bbb093ee61"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/interpreter/service.py": {
-    "mtime": 1777396840.6120656,
-    "hash": "25eb8a55eed3284e80fb1c9ef5b9292e"
+    "mtime": 1779643790.3178196,
+    "hash": "9ebd497f1b77522f580b12f2e23e8ae3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/interpreter/sandbox_runner.py": {
     "mtime": 1777396840.6124585,
@@ -1148,7 +1332,7 @@
     "hash": "d9478ba8eeeffbc091ee617c55190599"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/interpreter/tests/test_isolation.py": {
-    "mtime": 1777396840.6117902,
+    "mtime": 1779214345.355827,
     "hash": "8a40c3832ff1c98f8bc0bdf545419d4e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/branding/service.py": {
@@ -1156,36 +1340,36 @@
     "hash": "8e382183538b7b945e77977b7f765833"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/decision_engine/service.py": {
-    "mtime": 1777396840.6133971,
-    "hash": "b0bbffc1f1d5ebb19258333012f5af5e"
+    "mtime": 1779643754.4877048,
+    "hash": "3d166023344bffd03722b141aa6b1657"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/decision_engine/hook_validator.py": {
     "mtime": 1777556960.2861216,
     "hash": "5c76a68e6fdc033c4c115dc1e0458772"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/crewai/service.py": {
-    "mtime": 1777760065.7371886,
-    "hash": "02c5499836bb88a2f7f9e29a402f3893"
+    "mtime": 1779643790.3079948,
+    "hash": "06cd5167738b049511ddd93e23eb0086"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/crewai/__init__.py": {
     "mtime": 1777396840.6143527,
     "hash": "650657c6123f1993d74600a5650b9ce2"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/ui/command_center.py": {
-    "mtime": 1777882044.591794,
-    "hash": "1571501531ee275eb68a0a19d3a00775"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/voiceover/main.py": {
     "mtime": 1777396840.6152718,
     "hash": "e13518cb95dbe53d889a67ed46d25f8d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/voiceover/service.py": {
-    "mtime": 1778693807.0474243,
-    "hash": "bcb16bb973d9267e5cee6a3cb1912f88"
+    "mtime": 1779648058.9742997,
+    "hash": "22ec9ec98600b9d081303a5ebf477770"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/voiceover/download_models.py": {
-    "mtime": 1777396840.6158078,
-    "hash": "40776d40f3dd99a0aa1c561db25a8ac9"
+    "mtime": 1778971649.8735785,
+    "hash": "16039acdb2d5ae54b959abb5db513791"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/voiceover/__init__.py": {
+    "mtime": 1779643790.3418198,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/storage/service.py": {
     "mtime": 1778136027.461481,
@@ -1200,28 +1384,36 @@
     "hash": "fc6d0661371b65b3556163e301a70755"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/scanner_service.py": {
-    "mtime": 1777396840.6169705,
-    "hash": "6789548e88fac47ded64e173581c2149"
+    "mtime": 1779643790.3108196,
+    "hash": "803762baf9344bad0f1c973d69ef9cf4"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/video_lead_scanner.py": {
-    "mtime": 1777557055.9961488,
-    "hash": "c06d18ee595f3da455a4f1ce78d7166b"
+    "mtime": 1779031227.2028232,
+    "hash": "258d7c3299bf41dcdcbbfc4636c36362"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/models.py": {
-    "mtime": 1777827483.470438,
-    "hash": "4e52c189a65181a7ebe0e67f85f2745f"
+    "mtime": 1779643790.3108196,
+    "hash": "84e4baa7c853546d12b51c6891b1ad92"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/eligibility.py": {
     "mtime": 1777396840.6235309,
     "hash": "5fed74a6d5b8526ddd8f92ff2ac0efb6"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/test_video_content_pipeline.py": {
+    "mtime": 1779643790.3138196,
+    "hash": "725e095abbf3b61567cf446f4ab082ad"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/analysis_service.py": {
-    "mtime": 1777396840.6239526,
-    "hash": "6c18b5cca1fccc509ea658fb6359849b"
+    "mtime": 1779643790.3088195,
+    "hash": "6a73274983ccf71df1f350b768e57aac"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/scanner_base.py": {
     "mtime": 1777796144.867162,
     "hash": "ebee1713c7a61cb646b9ed65da03df58"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/cloak_scanner.py": {
+    "mtime": 1779031227.1988232,
+    "hash": "63e3bc00518760f2838ad34c293cb46f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/researcher_service.py": {
     "mtime": 1777999545.9087057,
@@ -1232,8 +1424,8 @@
     "hash": "cc2185fc8bec9a203468d6b8d69b96f3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/service.py": {
-    "mtime": 1777891141.088454,
-    "hash": "9446a896fdbb4c33374e5e2d42cfc423"
+    "mtime": 1779643790.3128197,
+    "hash": "7b3f1e3accf4b7755156d9064f7f441b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/pinterest_scanner.py": {
     "mtime": 1777891270.7102115,
@@ -1256,32 +1448,32 @@
     "hash": "a95377fa09ece088fe9ef43015643fff"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/youtube_long_scanner.py": {
-    "mtime": 1777891270.7376902,
-    "hash": "d1ea8fb87d17835aa1fbc80947be72c0"
+    "mtime": 1778971649.8635783,
+    "hash": "02fdd9b4656f92b6f7179a96d21ca429"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/linkedin_scanner.py": {
-    "mtime": 1777891270.7422414,
-    "hash": "c834b02b33d0d15c7e059a73d2b451b4"
+    "mtime": 1779643790.3098197,
+    "hash": "c1a40890662f1176fdd7b4fd23006b2c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/browser_agent_service.py": {
     "mtime": 1777927328.2771986,
     "hash": "d0db161e22d4d337456951d3011aa6e1"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/twitch_scanner.py": {
-    "mtime": 1777891270.7449858,
-    "hash": "c264f471b4bf3ff192ab9480e95bf51e"
+    "mtime": 1778971649.8635783,
+    "hash": "14a5d5c61273d205cc09283948d9a9a7"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/facebook_scanner.py": {
-    "mtime": 1777891270.7488801,
-    "hash": "0182119390e6ecd5837f5f94072dd106"
+    "mtime": 1779643790.3088195,
+    "hash": "e222edda2f7390efcab67fb0ecf16108"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/google_trends_scanner.py": {
     "mtime": 1777891270.7513075,
     "hash": "e4c8612a2d7ad0adb0efafdfa35eda84"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/tasks.py": {
-    "mtime": 1777396840.6369429,
-    "hash": "8543a2a1e3300ca659d428375bfc0b91"
+    "mtime": 1778971649.8625784,
+    "hash": "97e8225a7f5e332d5d0c1d9b1d19b01a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/deconstructor.py": {
     "mtime": 1777396840.6372867,
@@ -1292,16 +1484,16 @@
     "hash": "06a905f9306edf6e7f8d55d5dd7f4c18"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/tiktok_scanner.py": {
-    "mtime": 1777891270.7589145,
-    "hash": "d6011049c5b1f2ccd586d49af04aeebc"
+    "mtime": 1778971649.8625784,
+    "hash": "4832b03c67ec3f7d58a166fc80261963"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/reddit_scanner.py": {
     "mtime": 1778199016.458119,
     "hash": "72245eb77075ecd5af43e6c9515f93a6"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/trend_scanner.py": {
-    "mtime": 1777556762.8626328,
-    "hash": "6bcd1b68adac67f14e9495ab0a3a2ca3"
+    "mtime": 1778971649.8625784,
+    "hash": "4c2479248aec311618955a3cd59080e5"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/skool_scanner.py": {
     "mtime": 1777891270.7656674,
@@ -1316,60 +1508,88 @@
     "hash": "4944d0aa66ef8beb401114f451b1abdf"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/x_scanner.py": {
-    "mtime": 1777891270.7722905,
-    "hash": "627036fe2eb4cf08067f0d5fa332b0cc"
+    "mtime": 1779643790.3148196,
+    "hash": "1646e85820f78e2d0477fa10c24d1cc8"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/google_search_scanner.py": {
     "mtime": 1777891270.775632,
     "hash": "a1d2a7821f1223fa3ab6503fd584b071"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/__init__.py": {
-    "mtime": 1777396840.6412895,
-    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    "mtime": 1779643790.3079948,
+    "hash": "9dec1000393c9103a8ed4928936db504"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/video_content_pipeline.py": {
+    "mtime": 1779643790.3138196,
+    "hash": "e61b94021b28b34b74fd494bd7f6ca82"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/service_extended.py": {
-    "mtime": 1777556505.3694377,
-    "hash": "d1ed5ecddf8f12f65100bb2e3a6f7d41"
+    "mtime": 1779643790.3138196,
+    "hash": "b1dc32583b175e9ecca876d1eaf56ccb"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/tests/test_discovery_service.py": {
+    "mtime": 1779031227.2018232,
+    "hash": "69c79a70cbe4da6d2e97e2be58bdc830"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/tests/test_autonomous_trigger.py": {
+    "mtime": 1778971649.8625784,
+    "hash": "84349a5e53b03007108d7b5617695038"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/llm/service.py": {
-    "mtime": 1777396840.6417835,
-    "hash": "08f2d46662903a52a8312e0879e91906"
+    "mtime": 1779214345.3588269,
+    "hash": "24c32c2948e5f4b4ce2982d6e60f2feb"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/llm/dify_client.py": {
-    "mtime": 1778691875.421908,
-    "hash": "ea1d941bbbda5ceac9a37889e903c694"
+    "mtime": 1779031227.2048233,
+    "hash": "6ca95e8992464e11c97872210770e848"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/llm/mythos_agent.py": {
     "mtime": 1777396840.6422951,
     "hash": "2049830b69da2a3d79bf8bb5ca1d1ced"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/llm/intelligence_hub.py": {
-    "mtime": 1778694551.247495,
-    "hash": "2681eba928e6f0094eb2da70dfa657b7"
+    "mtime": 1779643790.3188198,
+    "hash": "a547fd57435e607344ea0456bd01dcb2"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/llm/__init__.py": {
+    "mtime": 1779643790.3178196,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/llm/tests/test_intelligence_hub.py": {
+    "mtime": 1778971649.8665783,
+    "hash": "810a58d2e1f79563f4d84a7879f61018"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/llm/tests/test_unified_llm_service.py": {
+    "mtime": 1779214345.367827,
+    "hash": "ce0d54446793b96dede370366f9a83e1"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/llm/tests/__init__.py": {
+    "mtime": 1778971649.8655784,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/sentinel/algorithm_tracker.py": {
-    "mtime": 1777972428.2351358,
-    "hash": "3c3f3fd132edec8a26baad4627c68217"
+    "mtime": 1779643790.3388197,
+    "hash": "3e83b2227ffaff5978ea1ae0cbb646e5"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/config.py": {
-    "mtime": 1777396840.6433585,
-    "hash": "d8166edd8c0cd5b5c8341268c49e3bf8"
+    "mtime": 1779643790.3308196,
+    "hash": "e810cfbcc9794693ed7c1076a876497e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/main.py": {
-    "mtime": 1777396840.6436398,
-    "hash": "e53c2420ee8f276c96c1ada2550a96d7"
+    "mtime": 1779643790.3318198,
+    "hash": "d2feee6de3d6421af494b5c3f69ffc04"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/dispatcher.py": {
-    "mtime": 1778198514.33001,
-    "hash": "72c2d33f8a55e54dacc678718c7e85dd"
+    "mtime": 1779643790.3318198,
+    "hash": "7e3bd299952c4ba02aafb7b26fd75819"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/tasks.py": {
     "mtime": 1777396840.6968634,
     "hash": "b7f8164a52641747cc5c0db6f280b880"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/agent.py": {
-    "mtime": 1777396840.6973572,
-    "hash": "306a6661ede3ce38b7e7b0b35761da7c"
+    "mtime": 1779643790.3308196,
+    "hash": "41795411bb32a562cdf9318cf188546c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/utils.py": {
     "mtime": 1777396840.6981726,
@@ -1380,16 +1600,20 @@
     "hash": "e8c507137850cfa562060339e8ff5802"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/vidu.py": {
-    "mtime": 1777396840.6440358,
-    "hash": "3256979fc92b87ba1049af5256afca9a"
+    "mtime": 1779643790.3358197,
+    "hash": "250709248e8781bc0d0ee879c02c547a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/landing_page.py": {
     "mtime": 1777396840.6443522,
     "hash": "fe5c4ad6ad741a3235cf8eb173e95493"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/workflow.py": {
-    "mtime": 1777881688.397215,
-    "hash": "662c15de539183dd80619918edba2329"
+    "mtime": 1779643790.3358197,
+    "hash": "1df35161013ecebfeca3e01b8e3a2e49"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/playwright_video_skill.py": {
+    "mtime": 1779643790.3358197,
+    "hash": "235aca56d2e1f8b2ce4ac349b6cd849b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/metrics.py": {
     "mtime": 1777396840.6449747,
@@ -1404,8 +1628,8 @@
     "hash": "94c0f68238695c77113fd915004a1087"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/agent_zero.py": {
-    "mtime": 1777557065.28472,
-    "hash": "c93a9653bbd6cd55757a469887fb61da"
+    "mtime": 1779643790.3328197,
+    "hash": "3577c52cbba49036ae8af653c1c60fc7"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/system.py": {
     "mtime": 1777396840.646325,
@@ -1416,52 +1640,52 @@
     "hash": "02f498a12298505874a5d29b28d3be1f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/genmo.py": {
-    "mtime": 1777396840.6469998,
-    "hash": "1f19b6c79428b296e4aa5009f8470b62"
+    "mtime": 1779643790.3338196,
+    "hash": "e8f7b26c5fb6bba41c404e6b523067ae"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/base_skill.py": {
     "mtime": 1777797099.6879997,
     "hash": "8a4251fdb89906fec7acc863c451f749"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/videoany.py": {
-    "mtime": 1777396840.6476457,
-    "hash": "37f69bb1838dce60cf4ba320d1116530"
+    "mtime": 1779643790.3358197,
+    "hash": "bf5c211a569720808d0d683d67658ca0"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/leiapix.py": {
-    "mtime": 1777396840.6480348,
-    "hash": "42a8750124b86a083728385787fdb186"
+    "mtime": 1779643790.3348198,
+    "hash": "6ccc93cc65286825d46d36b58a0a37de"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/self_healing.py": {
     "mtime": 1777396840.6483507,
     "hash": "58a3daa020617d518640e174feefbedc"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/haiper.py": {
-    "mtime": 1777396840.6487892,
-    "hash": "c3bcdd367e6a0ef4ad8daae31a566f86"
+    "mtime": 1779643790.3338196,
+    "hash": "db61377660d0b6c5d129a9e2744ef531"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/data_scraping.py": {
     "mtime": 1777396840.649062,
     "hash": "802e26ba906e69d3859c141ca1166bc9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/runway.py": {
-    "mtime": 1777396840.6493547,
-    "hash": "6f824ee6653b9c77c1e663279b181d7e"
+    "mtime": 1779643790.3358197,
+    "hash": "44e771b657650180ba0bfe84cacaedc9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/outreach.py": {
     "mtime": 1777396840.6496863,
     "hash": "7378240a5a4cc4d9937c93949befa43e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/ltx.py": {
-    "mtime": 1777396840.6500068,
-    "hash": "1755de5dc5832cfe2960e3c814fa2feb"
+    "mtime": 1779643790.3348198,
+    "hash": "004f47d2c02e548fa9d73bd29a69706e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/luma.py": {
     "mtime": 1777396840.6504297,
     "hash": "ea1dda953ee8cddfc280ea91f2a29606"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/pika.py": {
-    "mtime": 1777396840.6507673,
-    "hash": "e6695dc818e5deb2c5fe2203fb97ba81"
+    "mtime": 1779643790.3348198,
+    "hash": "72d16a1f9d6592c76907ae3c925e7a7a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/render.py": {
     "mtime": 1777396840.6510808,
@@ -1472,8 +1696,8 @@
     "hash": "c029bbf40120f01baed4cec27370eb3c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/heygen.py": {
-    "mtime": 1777396840.6516602,
-    "hash": "f3b198782a72ae5207b420b5b71eb77e"
+    "mtime": 1779643790.3338196,
+    "hash": "e36f78700a633f84bf36fe43dd46df0b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/notifications.py": {
     "mtime": 1777396840.6520474,
@@ -1492,8 +1716,8 @@
     "hash": "8e9e62d5b2f7bb8dd6e109b48e2e51d7"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/self_improve.py": {
-    "mtime": 1777396840.6554866,
-    "hash": "e6bd0f0fc93c91094069875c816168a1"
+    "mtime": 1779031227.2208235,
+    "hash": "77598a726225074997cb7c7e759b3f7f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/reputation_manager.py": {
     "mtime": 1777396840.658573,
@@ -1504,8 +1728,8 @@
     "hash": "df9500b96a5685b124fff69d0119e243"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/frameloop.py": {
-    "mtime": 1777396840.6611357,
-    "hash": "b4f3ac3626a68bcdb7999c9f17b51d39"
+    "mtime": 1779643790.3328197,
+    "hash": "01aa2a01e55e96a10a90454b5405d874"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/chat_sales.py": {
     "mtime": 1777396840.6616392,
@@ -1516,8 +1740,8 @@
     "hash": "05d12cda766b2073fef9159fbeb69f6a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/morph.py": {
-    "mtime": 1777396840.6622972,
-    "hash": "f568803ff9de25a6c7b59d2729362507"
+    "mtime": 1779643790.3348198,
+    "hash": "7c1d20f9c16a6d2c70f252e69ca4d5b6"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/ettametta.py": {
     "mtime": 1777396840.6626856,
@@ -1540,24 +1764,24 @@
     "hash": "1abebcff499baf90aaece2b86a6e7687"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/hailuo.py": {
-    "mtime": 1777396840.6671727,
-    "hash": "3542bc4d870597a42b3546bf4945e52b"
+    "mtime": 1779643790.3338196,
+    "hash": "3e51782d8f7fe15046d025dac66be4ff"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/audit.py": {
-    "mtime": 1777396840.6677132,
-    "hash": "2c9facd3c4000e92cdb3026de4840a7b"
+    "mtime": 1779643790.3328197,
+    "hash": "889fff5aace1108b4b460697f97cf8d8"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/wavespeed.py": {
-    "mtime": 1777396840.6699998,
-    "hash": "1d2a3a7e4aba2f2fed52c29e097704f4"
+    "mtime": 1779643790.3358197,
+    "hash": "061536976d217212503cf401601d43cc"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/seo_auditor.py": {
     "mtime": 1777396840.6704865,
     "hash": "afd39fb24024499742b7c853305ef4fa"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/invideo.py": {
-    "mtime": 1777396840.672413,
-    "hash": "3d8c31891b6b159938260fc29b832ccf"
+    "mtime": 1779643790.3338196,
+    "hash": "10e9fc79acf86d0fdac86725c2b5199d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/perchance.py": {
     "mtime": 1777396840.6737301,
@@ -1572,8 +1796,8 @@
     "hash": "c71099c4040687c4bafd6ae60bcfabc2"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/fliki.py": {
-    "mtime": 1777396840.6769273,
-    "hash": "73174c6fc07dbd2b962e04e5d5155e8d"
+    "mtime": 1779643790.3328197,
+    "hash": "2aae48822878be64e2f26a3a79c9f6bf"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/research.py": {
     "mtime": 1777396840.6773882,
@@ -1588,8 +1812,8 @@
     "hash": "1d60f24ddbd3d64e72fe747535b40013"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/seedance.py": {
-    "mtime": 1777396840.6784508,
-    "hash": "6c0c491313bcb2fe9b3ff9b9071ed084"
+    "mtime": 1779643790.3358197,
+    "hash": "7a9069858ba5838cdec73f8bd3f8bb5f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/competitor.py": {
     "mtime": 1777396840.6788306,
@@ -1604,8 +1828,8 @@
     "hash": "fd57f0bd12d9485cbcf758c4bd8d923e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/publishing.py": {
-    "mtime": 1777396840.6799693,
-    "hash": "d301b428ffee51c814ce708d14a83a45"
+    "mtime": 1779643754.4924896,
+    "hash": "1e7634ff4421fd47441fbf718c09f392"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/video_production_assistant.py": {
     "mtime": 1777396840.68032,
@@ -1620,16 +1844,16 @@
     "hash": "c83ce5e864a69bf73ccc54b7a76de5e1"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/leonardo.py": {
-    "mtime": 1777396840.682923,
-    "hash": "5cfdc029cabe220fe670508adb1afe31"
+    "mtime": 1779643790.3348198,
+    "hash": "0aca6985bb343a494d712dba24f923f1"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/__init__.py": {
-    "mtime": 1777396840.6833732,
-    "hash": "c82368f964d3f69de96e06beab047bae"
+    "mtime": 1779643754.4924896,
+    "hash": "88eb8b51950c4f4548be01d0dfb2bf7f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/kling.py": {
-    "mtime": 1777396840.6865952,
-    "hash": "6314643e3a7da37f6eda2645fa1b4b70"
+    "mtime": 1779643790.3348198,
+    "hash": "8363678d45262c6f2a6a25e6c0653fce"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/memory.py": {
     "mtime": 1777396840.693359,
@@ -1640,15 +1864,15 @@
     "hash": "276816a5e48502baf1a036f6fd1dd691"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/external/crewai_integration.py": {
-    "mtime": 1777396840.6874862,
+    "mtime": 1779214345.374827,
     "hash": "87fd47009fa5da2df5d3e673f49a0472"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/external/seo_integration.py": {
-    "mtime": 1777396840.6897397,
+    "mtime": 1779214345.375827,
     "hash": "384c8dbf3472958b26215623a799626a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/external/langchain_integration.py": {
-    "mtime": 1777396840.6909475,
+    "mtime": 1779214345.374827,
     "hash": "4bd3d3481380cdc9ff72aff169875a28"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/external/paperclip_integration.py": {
@@ -1660,27 +1884,27 @@
     "hash": "87c8827e1fd4be26c3300bf08be030ad"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/external/interpreter_integration.py": {
-    "mtime": 1777396840.692221,
+    "mtime": 1779214345.374827,
     "hash": "d9477db78d530e7cdd8e3acb0112e4f3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/external/__init__.py": {
-    "mtime": 1777396840.6925967,
+    "mtime": 1779214345.373827,
     "hash": "1cd7f1346e142044f13b596fa343913f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills/external/claw4science_integration.py": {
-    "mtime": 1777396840.6928837,
-    "hash": "80499b547c388299d2fa026fb7dd4f9c"
+    "mtime": 1779643754.4924896,
+    "hash": "78fe3f8a0854b61370f7b43dffc7943a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/opencli/scanner.py": {
-    "mtime": 1777396840.699135,
+    "mtime": 1779214345.382827,
     "hash": "b138ddd9dd630d6913f57274d78934c6"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/opencli/service.py": {
-    "mtime": 1777396840.69968,
-    "hash": "04fcee025f262a14ea220d3b93d825ae"
+    "mtime": 1779643790.3368196,
+    "hash": "5b8633a73d22fecdd0bae14c82ca5e2e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/opencli/__init__.py": {
-    "mtime": 1777396840.700294,
+    "mtime": 1779214345.380827,
     "hash": "7cf0e535e7609d2096bc144d7be1aa05"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/monetization/commerce_service.py": {
@@ -1688,16 +1912,16 @@
     "hash": "48673acde947e2f23e1b630973bb8a77"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/monetization/promo_generator.py": {
-    "mtime": 1777557043.2381063,
-    "hash": "d7acde64c9504c872eb536ee7acfa290"
+    "mtime": 1779643754.4877048,
+    "hash": "a4f5e8d914a75b6fc89d23b32c11aa3c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/monetization/service.py": {
-    "mtime": 1777557064.3138525,
-    "hash": "ce2f6d3f3ed89a4ce9f4278b2ba53163"
+    "mtime": 1779643790.3218198,
+    "hash": "b4c73cef628d1a51000cac6633cbfb9d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/monetization/revenue_service.py": {
-    "mtime": 1778141206.7034156,
-    "hash": "dceca1bb2570483f5cc1f795d2a47e2c"
+    "mtime": 1779643790.3218198,
+    "hash": "ed9d41feb6d3a9a5e8eff8ab192613ce"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/monetization/orchestrator.py": {
     "mtime": 1777617255.490219,
@@ -1712,8 +1936,12 @@
     "hash": "d21cc6564d958fe69ab180f75ce7fe94"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/monetization/empire_service.py": {
-    "mtime": 1777396840.7046404,
-    "hash": "e36f99d1f457b40fb1a3d8ad7787773e"
+    "mtime": 1779643790.3208196,
+    "hash": "89ce72ebf7b7d1aac359af9ae48a1cc4"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/monetization/__init__.py": {
+    "mtime": 1779643790.3198197,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/monetization/tests/test_failover.py": {
     "mtime": 1777396840.701325,
@@ -1740,8 +1968,8 @@
     "hash": "6c33ea83292e0ccfe85e60a4d435de9c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/monetization/strategies/base.py": {
-    "mtime": 1777396840.7066953,
-    "hash": "50d6ec5df70e5194ce7f0fa212906932"
+    "mtime": 1779643790.3228197,
+    "hash": "e3f8d07f69087db80161938b24a07709"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/monetization/strategies/digital_product.py": {
     "mtime": 1777396840.70694,
@@ -1760,44 +1988,68 @@
     "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/audio/rhythm_engine.py": {
-    "mtime": 1777556769.5689287,
-    "hash": "fedb768cae21465a5a8c00b480c8ffe5"
+    "mtime": 1779643790.3079948,
+    "hash": "354073bc83df690a02e3688c8dd76ac8"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/audio/transcription_service.py": {
-    "mtime": 1777927300.482733,
-    "hash": "137d51a03860d80d49745a376c0edf8d"
+    "mtime": 1778971649.8605783,
+    "hash": "dcb6aca82d41a1866c29ac736c1c2acb"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/audio/__init__.py": {
     "mtime": 1777396840.708279,
     "hash": "2d3967b3d05ec56fd9d42b36404c459c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/audio/sound_design.py": {
-    "mtime": 1777396840.7086794,
+    "mtime": 1779214345.334827,
     "hash": "3e3a83c192dc2f9b41e56232c197e989"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/knowledge/service.py": {
-    "mtime": 1778576081.3075817,
-    "hash": "b278cb33e1865ffabd6228fa4154e16d"
+    "mtime": 1779643754.4877048,
+    "hash": "81fa99bcaf20da34f0caf6d453ce209a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/knowledge/__init__.py": {
     "mtime": 1778074338.392727,
     "hash": "c32bdbc15505ffcc338a6e482fc55e2d"
   },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/config.py": {
-    "mtime": 1778692332.598028,
-    "hash": "624840d4c1c7d55237ddac9e694bf847"
-  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/main.py": {
-    "mtime": 1778140650.5636916,
-    "hash": "dc1f2cd73aba4b36445da157bd3b39c6"
+    "mtime": 1779643790.2908196,
+    "hash": "ff5740f9d950e1a92bc7c2367d236f6a"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/exception_handlers.py": {
+    "mtime": 1778971649.8515785,
+    "hash": "02dd6132c2085f1f16ee04396202384a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/__init__.py": {
     "mtime": 1777396840.764404,
     "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/middleware/tracing.py": {
+    "mtime": 1779031227.184823,
+    "hash": "fc062fee23e7a3105f75be317cebffcd"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/middleware/__init__.py": {
+    "mtime": 1778971649.8525784,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/scratch/reset_pass.py": {
     "mtime": 1777396840.7091398,
     "hash": "c9c0c2d63da8a217ef2d1abb2fdfd5a2"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/config/validation.py": {
+    "mtime": 1778971649.8515785,
+    "hash": "3dabf71987e4af01c149d8e235dfbf69"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/config/settings.py": {
+    "mtime": 1779647160.5481102,
+    "hash": "8ba74700f726f88be534d73654130992"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/config/__init__.py": {
+    "mtime": 1778971649.8505783,
+    "hash": "936f92427e7c7df029b194f0886bc3ce"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_service_resilience.py": {
+    "mtime": 1778971649.8575783,
+    "hash": "696b925fae283d31e7126d8f1b36b4c3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_integration_discovery.py": {
     "mtime": 1777396840.7101688,
@@ -1808,7 +2060,7 @@
     "hash": "006a92d96e0cb92ec69cdf8f4a7a103d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/verify_hardening_v2.py": {
-    "mtime": 1777396840.7109694,
+    "mtime": 1779214345.311827,
     "hash": "9b3296a61bd1b4a6273113fde94b8cc8"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_video_models_expanded.py": {
@@ -1816,19 +2068,19 @@
     "hash": "9daccf77411269bf3a4f6f57d46f84ba"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_automation.py": {
-    "mtime": 1777880253.4962473,
+    "mtime": 1779214345.298827,
     "hash": "a0bfee2cf6a68ffc5bc89cb2036b6b68"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_api_comprehensive.py": {
-    "mtime": 1777396840.711914,
-    "hash": "0faca3e976096c236e3cd06c8d95c2c2"
+    "mtime": 1779643790.3018196,
+    "hash": "bde5f2bf9bc41a9be4b0aefe6dfd6c05"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_config.py": {
-    "mtime": 1777396840.7122142,
+    "mtime": 1779214345.3008268,
     "hash": "051c1553d3daae2857f4d53ba3d88a0c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_backends.py": {
-    "mtime": 1777396840.7125473,
+    "mtime": 1779214345.2998269,
     "hash": "3f4c6c52e66d87cc9f5b41aa24059eea"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_hardened_video.py": {
@@ -1868,132 +2120,136 @@
     "hash": "02bbefd3e4084d041d2cbb9727b9aef0"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/conftest.py": {
-    "mtime": 1778266131.106395,
-    "hash": "040b98758e722699ebf72ad7d337ea17"
+    "mtime": 1779643790.3018196,
+    "hash": "91bf6ac44652f3c695df740afe5e1fd2"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_remote_e2e.py": {
-    "mtime": 1777396840.721759,
+    "mtime": 1779214345.3008268,
     "hash": "dfb74d7964a760964d022b16b113f140"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_cognitive_agentic.py": {
-    "mtime": 1777396840.7220383,
+    "mtime": 1779214345.2998269,
     "hash": "deb4155ecd76162a1a0106382deb4e82"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_routes/test_discovery.py": {
-    "mtime": 1777396840.7160468,
-    "hash": "a5661860bef5d96f011d1826cdae98c3"
+    "mtime": 1779643790.3018196,
+    "hash": "87cdd4ba2a1865ddc0e48751bff2398d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_routes/test_video.py": {
-    "mtime": 1777880248.2221534,
-    "hash": "232e01547096d73f34e83369bd33e4f7"
+    "mtime": 1779643790.3028197,
+    "hash": "b650fcdfe0cbd4dbb609a5b52f2e8686"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_routes/test_auth.py": {
-    "mtime": 1777396840.7177377,
-    "hash": "4fe03adc03f198414269ea73770a342f"
+    "mtime": 1779643790.3018196,
+    "hash": "c0b53fec61cdd681de5adf0bdfc2cc86"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_routes/__init__.py": {
     "mtime": 1777396840.7189062,
     "hash": "dfbd60fefa0fe4219fe6bd3da16324ef"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/tests/test_routes/test_health.py": {
-    "mtime": 1777396840.720851,
-    "hash": "cf2a22ed627b5520050c0cbb5345076f"
+    "mtime": 1779643790.3028197,
+    "hash": "5c8189f7d87af458e894fd2f3a751106"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/models.py": {
-    "mtime": 1777827491.3584452,
-    "hash": "538b4e1bd7c200ff9edfdb811ac0745d"
+    "mtime": 1779643790.3048196,
+    "hash": "c406c78537b1607155fc4dd092d1f812"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/audit_service.py": {
-    "mtime": 1777396840.7235339,
-    "hash": "ff9b41c0fd2a054eae5e327014da715a"
+    "mtime": 1779643790.3028197,
+    "hash": "5167d7a082d42bac39951ca7851cd785"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/tracing.py": {
     "mtime": 1777396840.7238188,
     "hash": "79292ffddf19e73ef29c18a90a80d28e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/hot_reload.py": {
-    "mtime": 1777396840.7242124,
+    "mtime": 1779214345.313827,
     "hash": "d36779ab2f81b7b345f02eb9399a9b60"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/api_responses.py": {
-    "mtime": 1777396840.7247128,
-    "hash": "bac9d41e56888fe5ac3865e06091ca23"
+    "mtime": 1779643790.3028197,
+    "hash": "e7cf98a26c8e6caef75dcdd71a66a7ca"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/credit_models.py": {
-    "mtime": 1777880195.4921823,
-    "hash": "3f9d9739918774882fbfd6b3f08f9bcb"
+    "mtime": 1779643790.3038197,
+    "hash": "8bb234de536a55cb2fac678595edb529"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/scheduler.py": {
     "mtime": 1777396840.7274687,
     "hash": "f4c9a83c71ad9800680423472c5b44c0"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/auth.py": {
-    "mtime": 1777396840.7286615,
-    "hash": "fea725cf9b893baa61b88681ed6a2554"
+    "mtime": 1779643790.3038197,
+    "hash": "9574191a975b3bd61ec832a2612ec5d8"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/storage.py": {
     "mtime": 1777396840.7290301,
     "hash": "a9d06c46e6e8ea3fa88c51c461ef6de9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/user_models.py": {
-    "mtime": 1777396840.7293568,
-    "hash": "65477188d117d6977916dd9b8d4b7e51"
+    "mtime": 1779643790.3048196,
+    "hash": "e22a8d3404c802760ea8659b784f10ff"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/limiter.py": {
-    "mtime": 1777396840.729613,
-    "hash": "b65d5aae8b39af1ab0515c3a2ad27665"
+    "mtime": 1779643790.3038197,
+    "hash": "250fd496ba06f106cf1073122b1cde7a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/notifications.py": {
     "mtime": 1777396840.729868,
     "hash": "626dc19ee5b94bf1e99d5692273be5c2"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/os_worker.py": {
-    "mtime": 1777396840.7301283,
-    "hash": "c397953114b91de2ce2190dfadbd7cb2"
+    "mtime": 1779214345.315827,
+    "hash": "cb05902286c6562e09d6f44374668ba0"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/hardware_detector.py": {
     "mtime": 1777396840.7307122,
     "hash": "bed0e69eaacc28226600ab232c43afce"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/database.py": {
-    "mtime": 1778137563.6435008,
-    "hash": "a736e04bbddad12d2e01084d0dcb3acd"
+    "mtime": 1779643790.3038197,
+    "hash": "aebd36e7e07d99d05ac9c1a024f52386"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/redis.py": {
-    "mtime": 1777396840.7324855,
-    "hash": "ccd4f5f87173cfc879f3cfd81f247735"
+    "mtime": 1779643790.3048196,
+    "hash": "d7391a4ef13c65ab5912450091ba3cf2"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/repair_session.py": {
     "mtime": 1777396840.7340102,
     "hash": "5e01960c33264dbea89ad704c7131acd"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/celery.py": {
-    "mtime": 1778136141.4829013,
-    "hash": "dbd3e005ed75d9e01744d0667d5926df"
+    "mtime": 1778971649.8575783,
+    "hash": "87037e7bc3854a42955a342ed7d20720"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/verify_schema.py": {
     "mtime": 1777396840.7350767,
     "hash": "1ede6cf3c978a32e89f5d383f476884e"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/resilience.py": {
+    "mtime": 1779643790.3048196,
+    "hash": "3f1f080411f1ce09566dd4740a9121b3"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/llm_vault.py": {
-    "mtime": 1777396840.735405,
-    "hash": "5267dfa9bc63b34196e5ad46c442b194"
+    "mtime": 1779031227.1898232,
+    "hash": "0a8e31493ac7840534576447dbc52988"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/subscription.py": {
-    "mtime": 1777396840.735815,
-    "hash": "db74913a797090274ba9754e78066633"
+    "mtime": 1779643790.3048196,
+    "hash": "482d3a962ff0f28fd65e1c03e16bf777"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/errors.py": {
-    "mtime": 1777396840.7362123,
-    "hash": "4d8971eb5bda129eb1e5ae3fdd19bebe"
+    "mtime": 1779643790.3038197,
+    "hash": "9ce8f3cc10f651353d2f3e8321dacad6"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/json_cleaner.py": {
     "mtime": 1777969247.9707499,
     "hash": "61b37691e2326c8e7a8bba29b6abc315"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/security.py": {
-    "mtime": 1777396840.7365847,
-    "hash": "a59ffaf92a35ce993d025acc2ff6bfc3"
+    "mtime": 1779643790.3048196,
+    "hash": "eaa6d9ece72fd66bbd66d5b29f4f988c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/utils/__init__.py": {
     "mtime": 1777396840.7365847,
@@ -2004,156 +2260,192 @@
     "hash": "b2af1e34a15b89b7c0796ed6bfb613c3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/billing.py": {
-    "mtime": 1777396840.7373257,
-    "hash": "a32e96d952cd0a7c0c3a0780ecf0b1b8"
+    "mtime": 1779643790.2938197,
+    "hash": "258fa0c7cd7fefb38b9126465ae18213"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/credits.py": {
-    "mtime": 1777396840.737686,
-    "hash": "1bf43c3fc4e44d10f7de4684ac360e66"
+    "mtime": 1779643790.2948196,
+    "hash": "14c1c2e63c566c98049a50030989c035"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/video_transform.py": {
-    "mtime": 1778097029.5042114,
-    "hash": "4116d368a73a856c607cd68d7bf4ef0b"
+    "mtime": 1779643790.3008196,
+    "hash": "57a5ec132482767d2bd58d6a5acff993"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/tools.py": {
-    "mtime": 1777827665.158608,
-    "hash": "16dcfbbb220d2be7096a1765023b7086"
+    "mtime": 1779643790.3008196,
+    "hash": "b1b7470315ecf2f1781c0e6380403e84"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/admin.py": {
-    "mtime": 1778067368.669278,
-    "hash": "bd820453193754c64d89f83b3697e87e"
+    "mtime": 1779643790.2918196,
+    "hash": "47f0003f29c6a3297ff0a5ef351935bd"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/auth.py": {
-    "mtime": 1777801720.3593853,
-    "hash": "e5a35d722ddfe8928f06b4d365d09f9c"
+    "mtime": 1779643790.2928195,
+    "hash": "4a87423b7f3528f9c28843e0e5803213"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/chaos.py": {
+    "mtime": 1779643790.2938197,
+    "hash": "517ff9e77114168cbca383abf2b3b6d0"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/remotion.py": {
-    "mtime": 1777880182.5729344,
-    "hash": "bab5f8bd699503d1816a90a47c76aa1e"
+    "mtime": 1779643790.2998197,
+    "hash": "0c3394fb7cc08ccf3aa912cdd63e4468"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/autonomous_remix.py": {
-    "mtime": 1778142843.9529712,
-    "hash": "787b3254caba72c888308d3abf6aad3b"
+    "mtime": 1779643790.2928195,
+    "hash": "26b5c93a77a34cfd75855c4bc22c61b3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/autonomous_leads.py": {
-    "mtime": 1778083961.6651251,
-    "hash": "f36168afaa6e612c007d5e14cd6917cf"
+    "mtime": 1779643790.2928195,
+    "hash": "2e66c0fdadd8e38432e682aacbd44626"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/notifications.py": {
+    "mtime": 1779643790.2968197,
+    "hash": "911702cdbf42ad91cd72f86ebc926f65"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/ab_testing.py": {
-    "mtime": 1777561434.4065855,
-    "hash": "6391f0a98bb00b2fb98b96043e3981b4"
+    "mtime": 1779643790.2908196,
+    "hash": "ac049eae2ca72664fa6193980179383b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/nexus.py": {
-    "mtime": 1778455721.7805493,
-    "hash": "f552e9616f5fb27d8f4f729d68b2d100"
+    "mtime": 1779645566.7192414,
+    "hash": "afb88fc9b3db85b764c339fa9c0b6884"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/ws.py": {
-    "mtime": 1777828163.6759791,
-    "hash": "713623829ff66fb3ac891a502a703b0c"
+    "mtime": 1779643790.3018196,
+    "hash": "e8838815c80f4d4b0d797e7c476e5a81"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/proxy.py": {
     "mtime": 1778004683.7931707,
     "hash": "335f3d4d6c816153417cfe2c066e817f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/llm.py": {
-    "mtime": 1777556960.2894793,
-    "hash": "dfec359cfe1f2c679a96b0075ac8bcf2"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/publish.py": {
-    "mtime": 1777557116.6990054,
-    "hash": "e98932f9e3c87b0502d2ed48a5688eed"
+    "mtime": 1779643790.2958195,
+    "hash": "247d7d09121103430fed85bf8910346b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/health.py": {
-    "mtime": 1777396840.7481327,
-    "hash": "2a5813197f2770687c8644332bbb1d67"
+    "mtime": 1779643790.2958195,
+    "hash": "efbee532f1ff13c9c0c911b7a1250b05"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/webhooks.py": {
-    "mtime": 1777396840.7485409,
-    "hash": "abf28f243f279efe5c6b5eac5c12f015"
+    "mtime": 1779643790.3018196,
+    "hash": "54e961dcbe2eef67580581d4d6731581"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/zero.py": {
-    "mtime": 1777557065.2870963,
-    "hash": "11f67f5986a7998ec2d1878df058b31f"
+    "mtime": 1779643790.3018196,
+    "hash": "243d2d10ee5738c5c96892183e39d8c0"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/no_face.py": {
-    "mtime": 1778083171.66722,
-    "hash": "a6fe0fc8025c130cf2f5da7a5eb0e4e8"
+    "mtime": 1779643790.2968197,
+    "hash": "c5878b0986e965d3de6b1d8eab75edfe"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/video_jobs.py": {
-    "mtime": 1777553968.2054307,
-    "hash": "7c94e9232e8fc85d1c4b9d98bc074cc6"
+    "mtime": 1779643790.3008196,
+    "hash": "9021ee394db66378cc87f53e2f504048"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/discovery.py": {
-    "mtime": 1777891042.101676,
-    "hash": "b62aae2a46a1b8aaf6cd2e9bd53288df"
+    "mtime": 1779643790.2948196,
+    "hash": "af476b0b8ba9908093346464ccc935b1"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/monetization_dashboard.py": {
-    "mtime": 1778140613.4685845,
-    "hash": "3ea3bf90fa50b2f184ea30500f1e2958"
+    "mtime": 1779643790.2968197,
+    "hash": "0f09fb024339450a402c160526ffcdaa"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/video_generate.py": {
-    "mtime": 1778078423.842543,
-    "hash": "b691cf4d7a8f4564ce840e3f33f0b91f"
+    "mtime": 1779643790.3008196,
+    "hash": "3fdfb86fea99436d5cb6fec6605fdeb7"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/monetization.py": {
-    "mtime": 1777557063.8827987,
-    "hash": "5f8679e50459ab4ae56bb208bfa8377e"
+    "mtime": 1779643790.2958195,
+    "hash": "2b7b9ab43d4fd34fc830d59c4f2d260b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/autonomous_video.py": {
-    "mtime": 1778083950.3141112,
-    "hash": "692b9d58aef9f26ea4d2a56fe1187402"
+    "mtime": 1779643790.2938197,
+    "hash": "6b205bbea84bdecc35ee9447965a2720"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/reasoning.py": {
-    "mtime": 1777396840.7587957,
-    "hash": "eae5490da226fda73a01558e150ec816"
+    "mtime": 1779643790.2998197,
+    "hash": "30833addc2312641ea2a85c8fd85cacf"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/opencli.py": {
-    "mtime": 1777396840.7591145,
-    "hash": "86d3cca2e1bb2bc65a16b73081ffad64"
+    "mtime": 1779643790.2978196,
+    "hash": "a267a6791f39797d6a26315ab7e2a6cf"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/video_preview.py": {
-    "mtime": 1778138391.4604228,
-    "hash": "3253b3ef62e4a93097687b88c3f04f03"
+    "mtime": 1779643790.3008196,
+    "hash": "f23e7a1110445a35f31f5644b1ac1408"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/agent.py": {
-    "mtime": 1778074247.667784,
-    "hash": "e251f170aa123321fa9435232bc2e783"
+    "mtime": 1779643790.2918196,
+    "hash": "0971a8ef5d68819b62e3720422efef5f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/knowledge_base.py": {
-    "mtime": 1777838076.351138,
-    "hash": "ef41697cbd63046d7e23cfdedf9cb22e"
+    "mtime": 1779643790.2958195,
+    "hash": "fa9309bd74d7e9027add2adf64e94eef"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/settings.py": {
-    "mtime": 1778067399.9273775,
-    "hash": "d19078bac026de53db55a3323bea82ef"
+    "mtime": 1779643790.2998197,
+    "hash": "7cf65a926f79f64cc2a71e01ff05971f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/persona.py": {
-    "mtime": 1777540110.917837,
-    "hash": "75a5a46d766be996576722c3b4c08d9b"
+    "mtime": 1779643790.2978196,
+    "hash": "134694a57ecaacb8080b1a6f195d646a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/internal.py": {
-    "mtime": 1777396840.7633593,
-    "hash": "f998911a25f8f0d12bfbda68fcfcd9e2"
+    "mtime": 1779645594.127444,
+    "hash": "03ca3412c9d187d2ec126fca85807f86"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/publishing.py": {
-    "mtime": 1778171353.7424376,
-    "hash": "397eebbfa02c8456c50bb3320eb5873f"
+    "mtime": 1779643790.2998197,
+    "hash": "78c6bc68dd761e6701a41390abe0c12c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/content_editor.py": {
-    "mtime": 1777396840.7636294,
-    "hash": "6d5672e904864ebe1ea1b4d6e93ed10b"
+    "mtime": 1779643790.2948196,
+    "hash": "8fed8f9ab8ea15b6cb77e96c275454c1"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/security.py": {
-    "mtime": 1778266240.3845704,
-    "hash": "639a34d4b935dc51e9b514751fa71af7"
+    "mtime": 1779643790.2998197,
+    "hash": "79206473c8cde26ceb2d10708962ac71"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/__init__.py": {
     "mtime": 1777838114.7857368,
     "hash": "10ce55c400e7af3fd088279e3b5d06bb"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/analytics.py": {
-    "mtime": 1777553925.9985447,
-    "hash": "9a1f6fa26f277008fe6529270a28f616"
+    "mtime": 1779643790.2928195,
+    "hash": "27f64dcdbdb815f2dcb8c85b0a64239f"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/publish/accounts.py": {
+    "mtime": 1779643790.2978196,
+    "hash": "aa548e723e31182bea81ab3d92f1d923"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/publish/scheduler.py": {
+    "mtime": 1779643790.2998197,
+    "hash": "7511cbc1099d883aa79b7fe661289e79"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/publish/oauth.py": {
+    "mtime": 1779643790.2988195,
+    "hash": "c289359aa4c7b4f53b1bce738ff1887d"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/publish/publisher.py": {
+    "mtime": 1779643790.2988195,
+    "hash": "abdb0ed711db19dbecba207391d418ae"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/publish/common.py": {
+    "mtime": 1779643790.2978196,
+    "hash": "038f4e22ccbc265bb50835d26e90405c"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/publish/opencli.py": {
+    "mtime": 1779643790.2988195,
+    "hash": "860b468f87ed1c7ec4e5857b69128b68"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/publish/__init__.py": {
+    "mtime": 1779643790.2978196,
+    "hash": "dac3823be57558cc05cb3217b39e358e"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/routes/publish/analytics.py": {
+    "mtime": 1779643790.2978196,
+    "hash": "809dc0e9660df4ce8187063d1d137bc4"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/tests/audit_parity.py": {
     "mtime": 1777654556.2226582,
@@ -2171,6 +2463,18 @@
     "mtime": 1776430531.2594206,
     "hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/bin/size-report": {
+    "mtime": 1779643790.2808197,
+    "hash": "3217ba4ee88654f5ff2a00612262a8b9"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/bin/setup": {
+    "mtime": 1779643790.2798195,
+    "hash": "b36a80c4c8defb17e2dced6eed79e1fb"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/bin/cleanup": {
+    "mtime": 1779643790.2798195,
+    "hash": "fd4c75286fa41caa673918b27c0b2c94"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/gap_analysis_script.py": {
     "mtime": 1776772288.9470525,
     "hash": "901a84b057aef3576ee4821c0d3d192c"
@@ -2179,6 +2483,14 @@
     "mtime": 1776772288.9553008,
     "hash": "708bfc2e2448a393d85e03b19e5e391f"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_ollama.py": {
+    "mtime": 1778971649.8505783,
+    "hash": "ce57180f9ead3aeabaf57da71f34bd42"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/db_backup.py": {
+    "mtime": 1779643790.2898195,
+    "hash": "cf8fca2d8097433aaac31442d78ea5cf"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/real_video_production_example.py": {
     "mtime": 1776772288.9557948,
     "hash": "48e514bd3c6ddaf96b3fffef3ec3f31b"
@@ -2186,6 +2498,14 @@
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/sync_code.py": {
     "mtime": 1776772288.9562912,
     "hash": "89826f8d161c91e000e0b4301c146674"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/validate_patch_targets.py": {
+    "mtime": 1779643790.2908196,
+    "hash": "f205a65f1ace34ea50418f1a345bd4ed"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_documentary_flow.py": {
+    "mtime": 1778971649.8485785,
+    "hash": "86d5ddcdecb75250af032a34472e9923"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/auto_discovery_video.py": {
     "mtime": 1776772288.9569812,
@@ -2215,6 +2535,10 @@
     "mtime": 1776772288.9693372,
     "hash": "066b8aa80319b83eeebcb45b7376d0cb"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/remote_kill_stuck_jobs.py": {
+    "mtime": 1779637736.1561131,
+    "hash": "22da2760dc8a02894f63b93d60a8c0ef"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/generate_suite.py": {
     "mtime": 1776772288.9697835,
     "hash": "b8ad5c9b3d9893b8816ae0b63ea5e886"
@@ -2235,12 +2559,20 @@
     "mtime": 1776772288.9726236,
     "hash": "3ec573970d11d463d9ccaf46642db00a"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/audit_styles.py": {
+    "mtime": 1778971649.8475783,
+    "hash": "432856f77d0ce38c1afff2663601bfe6"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/diagnostic.py": {
     "mtime": 1776772288.9739416,
     "hash": "5419b4ce659acb6df2f74755016042cf"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/check_latest_job.py": {
+    "mtime": 1778971649.8475783,
+    "hash": "b7311c6b8f31a22ea158b2b1cd25c5c3"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_discovery_search.py": {
-    "mtime": 1776772288.9774718,
+    "mtime": 1779214345.259827,
     "hash": "b9a6275a2163a44b6ce6b29d6fb4a428"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/create_tables.py": {
@@ -2268,23 +2600,31 @@
     "hash": "90b95ac06da04d725fe679d7969f4ce5"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_discovery_intelligence.py": {
-    "mtime": 1776772288.9907963,
+    "mtime": 1779214345.259827,
     "hash": "3010ad6d45e633ab7ad6eee848272926"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/intelligence_grounding.py": {
     "mtime": 1776772288.9913654,
     "hash": "56f760984c41de3e73ae7212c8ec7401"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_dify.py": {
+    "mtime": 1778971649.8485785,
+    "hash": "b0fefaf76398949a55025afaacb15974"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/verify_sentinel.py": {
     "mtime": 1776772288.9918883,
     "hash": "4ecf11ee849fd0ab194465a2ec632efc"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_lead_to_nexus.py": {
+    "mtime": 1778971649.8495784,
+    "hash": "8a90b83df2652f52647d1656a7e9b2f8"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/video_editor_output_summary.py": {
     "mtime": 1776772288.9931161,
     "hash": "016c42f94d7ba0f58ac54034d8012e3d"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_nexus_normal.py": {
-    "mtime": 1778536970.866307,
+    "mtime": 1778971649.8495784,
     "hash": "e985cc7a2a51f9cf2c557c4cdf16c20c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/demo_enhanced_video_editor.py": {
@@ -2311,12 +2651,16 @@
     "mtime": 1776772289.0021138,
     "hash": "68177070f8e0f0dad42f88b5f34b3fae"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_gemini.py": {
+    "mtime": 1778971649.8485785,
+    "hash": "7e21847f7e0bf34ab946780426320022"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/e2e_node_orchestrator.py": {
     "mtime": 1776772289.003472,
     "hash": "f18c20a4488ca2cee1af1d7728805164"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_dify_routing.py": {
-    "mtime": 1778577233.4118302,
+    "mtime": 1778971649.8485785,
     "hash": "60c7b9e4adbca4b290d2afc15b056e8e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/bootstrap_db.py": {
@@ -2328,8 +2672,16 @@
     "hash": "3c07d21225fd852c99265ba63c111da1"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_nexus_e2e.py": {
-    "mtime": 1778492969.8608615,
-    "hash": "d328aa6e8062f92aa5dc9a690a6bf908"
+    "mtime": 1779214345.2648268,
+    "hash": "cc92da679157a39ccdcac60c05a343bf"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_groq.py": {
+    "mtime": 1778971649.8485785,
+    "hash": "d0316e1962ab53edef4b00de705fe9c9"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_validate_patch_targets.py": {
+    "mtime": 1779643790.2908196,
+    "hash": "9958aa75145ca289cf94dbe08bc95d58"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/load_test.js": {
     "mtime": 1776772289.0070705,
@@ -2340,12 +2692,16 @@
     "hash": "b9db60a85148841060c2db5091b8f76a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/test_nexus_e2e_mock.py": {
-    "mtime": 1778536786.04482,
+    "mtime": 1778971649.8495784,
     "hash": "3ed9698d086776912d221d4f8d2f4606"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/__init__.py": {
     "mtime": 1776772289.0284724,
     "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/fix_deprecations.py": {
+    "mtime": 1779643790.2898195,
+    "hash": "fe15ec7eaaf988aaf0f17794468da2cb"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/verify_hardening.py": {
     "mtime": 1776772289.0325575,
@@ -2362,6 +2718,10 @@
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/optimized_render_node.py": {
     "mtime": 1776772289.0394726,
     "hash": "01100af074705be4578cddd568c2e9eb"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/hygiene/cleanup_disk.py": {
+    "mtime": 1778971649.8485785,
+    "hash": "ec0b88f9326101d0306d81b96eb8938f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scripts/templates/__init__.py": {
     "mtime": 1776772288.9705274,
@@ -2380,16 +2740,20 @@
     "hash": "863834d8b67e54622c74629a27814d03"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/next.config.ts": {
-    "mtime": 1777759055.65109,
-    "hash": "678455ceb9d50e4642309e556780ce0e"
+    "mtime": 1779643790.2708194,
+    "hash": "685bd887c18426461ff5c2f5ecbbb151"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/eslint.config.mjs": {
     "mtime": 1776430531.1654203,
     "hash": "dfa1f5f6a7037bf39dc510f30b180002"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/next-env.d.ts": {
-    "mtime": 1778537037.614528,
+    "mtime": 1779537491.3478599,
     "hash": "d0f8375ae1199dc7acd3977fc33b78b8"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/global.d.ts": {
+    "mtime": 1779643790.2708194,
+    "hash": "10bc762833a8b97fd7ee5f8c5a9bba73"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/context/UIContext.tsx": {
     "mtime": 1777396840.7652552,
@@ -2400,24 +2764,24 @@
     "hash": "474843b6a70950964a3be35c2d47c169"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/context/AuthContext.tsx": {
-    "mtime": 1777801761.833447,
-    "hash": "c80a1cdb6f43f12b744c2d836ae6b108"
+    "mtime": 1779643754.4802756,
+    "hash": "8c2bbe25c717eeb8a0ad1fd40aabe0bd"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/context/TelemetryContext.tsx": {
-    "mtime": 1777759003.335077,
-    "hash": "5f4167867360989ee0ea7ef348a14539"
+    "mtime": 1779643790.2768195,
+    "hash": "a9894730d67b7311f32ef4a56bf467a2"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/page.tsx": {
-    "mtime": 1777880313.5762744,
-    "hash": "a238a90c5212e5a8eb9488207d180afb"
+    "mtime": 1779643790.2748196,
+    "hash": "b2385f11d65b94af36b6034135abd2b3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/layout.tsx": {
-    "mtime": 1777660364.4975212,
-    "hash": "9aaa4a40aa8148eb6b0d555e421ef8cf"
+    "mtime": 1779643754.4802756,
+    "hash": "e766befa4fdebe3b3cfe3f59a44acc82"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/dashboard/page.tsx": {
-    "mtime": 1778192532.4779165,
-    "hash": "da77ae1c52c38137adb52629c20bb0d2"
+    "mtime": 1779643790.2728195,
+    "hash": "5bc68b5b41494b79a8a9dbb6b681fecb"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/dashboard/video-editor/page.tsx": {
     "mtime": 1777660364.4858696,
@@ -2440,20 +2804,20 @@
     "hash": "a13e6390a79c333d534a8bbd740440c2"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/settings/page.tsx": {
-    "mtime": 1777804933.1090605,
-    "hash": "100cffc6676733ee179d7bb4cf0d2e5c"
+    "mtime": 1779031227.1558228,
+    "hash": "cc3e0c9c003c6bfce0f9d8bd50edb4a1"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/publishing/page.tsx": {
-    "mtime": 1777797622.3180573,
-    "hash": "2d56efa2837b02d102b5c876dbdf1cbe"
+    "mtime": 1779031227.1550436,
+    "hash": "db41331d056fb334428c279a0cdf7a97"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/nexus/page.tsx": {
-    "mtime": 1778175618.9244657,
-    "hash": "2054e3e333610da73507f088c75d73af"
+    "mtime": 1779643790.2738194,
+    "hash": "bc5e45d11de6d0c426e3f98d97705d74"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/analytics/page.tsx": {
-    "mtime": 1778192488.6383052,
-    "hash": "a4b18194950b88e35e93ff9b6997787f"
+    "mtime": 1779643790.2718196,
+    "hash": "6259a01f22ee4d741ec1472948246c14"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/analytics/ab-testing/page.tsx": {
     "mtime": 1777804999.422331,
@@ -2464,48 +2828,64 @@
     "hash": "1158c8e91acfebcd8777c46eed2b9975"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/empire/page.tsx": {
-    "mtime": 1778140717.7588844,
-    "hash": "e15c5fb6761d3d046a6ca0a0a864e4d5"
+    "mtime": 1779643790.2728195,
+    "hash": "3ee3da868ead0cb4dc242cb9e3a482ae"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/creation/page.tsx": {
-    "mtime": 1778144091.2332354,
-    "hash": "dea18636da10774e7d36a880f3381862"
+    "mtime": 1779643790.2728195,
+    "hash": "df9ff2265de52d7964d2215acca2ecfc"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/persona/page.tsx": {
+    "mtime": 1779031227.1550436,
+    "hash": "1adf273ef6572b5ea1755be0d51c0cc9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/terms/page.tsx": {
     "mtime": 1777660364.5009315,
     "hash": "260650e59193d7c1fadbdfd3ea646e1f"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/security/page.tsx": {
+    "mtime": 1779031227.1558228,
+    "hash": "b7b1dc9bc3423e160052168f5481049b"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/login/page.tsx": {
-    "mtime": 1777801739.833414,
-    "hash": "17054f42c0db12044f01ae9b7a3f56e0"
+    "mtime": 1779643790.2738194,
+    "hash": "2ef39923a2e3b7f0bcbaa52c653a2962"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/transformation/page.tsx": {
     "mtime": 1778078658.2849193,
     "hash": "169c2f9e487dae797e1a618c91164eed"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/register/page.tsx": {
-    "mtime": 1777801751.821432,
-    "hash": "f20f4b67d041c11672e90be858c2c562"
+    "mtime": 1779643790.2748196,
+    "hash": "75d7998ba34d57ed68fe81cf71814515"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/agent/page.tsx": {
+    "mtime": 1779031227.1498227,
+    "hash": "cca20976830409b43c720f309036ff28"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/autonomous/page.tsx": {
     "mtime": 1777759031.0320835,
     "hash": "9896eca8a1d4a43e573a782cf6112309"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/discovery/page.tsx": {
-    "mtime": 1777828309.9322984,
-    "hash": "19b1a8749584a8d2d7c198100ab850d8"
+    "mtime": 1779031227.1518226,
+    "hash": "a031cb896749400fcf1418f5e234aa35"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/knowledge/page.tsx": {
     "mtime": 1777884699.4629192,
     "hash": "0dac48e177d8845a955611a14d1453ba"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/admin/page.tsx": {
-    "mtime": 1777804975.9992359,
-    "hash": "b5546fbbf28a4bfe0370786efe8fc653"
+    "mtime": 1779643790.2718196,
+    "hash": "9b8d518d7fad0aa6c1e57f0b738dd558"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/app/admin/audits/page.tsx": {
-    "mtime": 1777816176.853019,
-    "hash": "2fe146e99bb9396a288e6e98d440c4f5"
+    "mtime": 1778971649.5805771,
+    "hash": "7aa5d90850ce53e49f67f01206116d0f"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/lib/react-polyfill.ts": {
+    "mtime": 1779643790.2778196,
+    "hash": "e67c16632a25cb5b41307b7f8d8feb2e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/lib/i18n.tsx": {
     "mtime": 1777396840.7793925,
@@ -2516,12 +2896,12 @@
     "hash": "6302168c27c8b55eeff2beb90fa7cd83"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/lib/real_first_utils.ts": {
-    "mtime": 1777396840.7801495,
-    "hash": "369bb709c44249ea098410088aefa136"
+    "mtime": 1779643754.4807048,
+    "hash": "1156aa3ef1bc30d46780660692c4b3db"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/lib/config.ts": {
-    "mtime": 1777840853.7108989,
-    "hash": "7c422bafaf16b237df8f436c16d08a69"
+    "mtime": 1779643790.2768195,
+    "hash": "d291cd0004df52781fd7dd0fab0d9eca"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/lib/auth_utils.ts": {
     "mtime": 1777396840.780734,
@@ -2540,20 +2920,20 @@
     "hash": "5142dcfa8e4d083b50b2fd9f89f9c2b7"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/hooks/useNiches.ts": {
-    "mtime": 1777466853.3353586,
-    "hash": "898560b50de9aa675f35c00c636ddea0"
+    "mtime": 1778971649.5805771,
+    "hash": "3b9ac871a60d95229b3cfe2b22c8e0a9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/DashboardPageLayout.tsx": {
     "mtime": 1777661927.582972,
     "hash": "2f9afdc18eae8992bb4fc98fa9df6be9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/layout.tsx": {
-    "mtime": 1777420012.5647662,
-    "hash": "00f4f6230f4348cbe477e9b6c247a6dc"
+    "mtime": 1779643790.2758195,
+    "hash": "a5c2597c2005e810c38c370d036940fe"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/NotificationCenter.tsx": {
-    "mtime": 1777396840.7834773,
-    "hash": "fef3b27568470e7633e0b33a8fd02005"
+    "mtime": 1779643754.4802756,
+    "hash": "d6b5908c33ffc0ee2dce05e28da6b01b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/theme-toggle.tsx": {
     "mtime": 1777396840.7840776,
@@ -2568,16 +2948,16 @@
     "hash": "28d9ed8fad1ef17ad6789fa27bd95564"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/CommandCenterLayout.tsx": {
-    "mtime": 1778154507.6237323,
-    "hash": "1e755ac9413bde8b4fbac199d618eab4"
+    "mtime": 1779643790.2748196,
+    "hash": "ea15618b6ef2a5d8578206b5e89059bd"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/sidebar.tsx": {
-    "mtime": 1778154497.4827003,
-    "hash": "559d2e8831714e2d92068fc8ba84937c"
+    "mtime": 1779643790.2758195,
+    "hash": "64d6b6ede9e1884236f61628ad098bab"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/providers/RootClientContext.tsx": {
-    "mtime": 1777710333.444307,
-    "hash": "ec328e0898c8a70f7c4aa1f459457c01"
+    "mtime": 1779643790.2758195,
+    "hash": "818d42451e3a6a5351d841ccb2b94b22"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/providers/QueryProvider.tsx": {
     "mtime": 1777396840.7831676,
@@ -2598,6 +2978,14 @@
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/ui/HighVelocityTicker.tsx": {
     "mtime": 1777473224.8208637,
     "hash": "dd58d3b111252ebb8f65a2bce2abb7de"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/ui/NeuralCore.tsx": {
+    "mtime": 1779643790.2768195,
+    "hash": "39064a2645f98dc3231c1acc646f09b3"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/ui/MultiPublishModal.tsx": {
+    "mtime": 1779031227.1568227,
+    "hash": "52a4055f4170118c7d943d07c68a0cf8"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/ui/Geomap.tsx": {
     "mtime": 1777561522.018533,
@@ -2660,8 +3048,8 @@
     "hash": "3a2664257e60b60480a3e250ddb083eb"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/ui/GlobalPulseGlobe.tsx": {
-    "mtime": 1777469000.8674984,
-    "hash": "432a00f9c7cd6bdc98e2a1958a257a8a"
+    "mtime": 1779643790.2768195,
+    "hash": "5dafac3e28f843848434f70f323e13ec"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/ui/ConfirmModal.tsx": {
     "mtime": 1777396840.7899535,
@@ -2676,12 +3064,12 @@
     "hash": "7d69e9c8d4011a84b4e3d3b9d2449428"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/ui/ClusterManager.tsx": {
-    "mtime": 1777396840.7903502,
-    "hash": "c29bc013f13b696aace25c5bd888e5cb"
+    "mtime": 1779643790.2758195,
+    "hash": "ed2df0a359f5a03396a0fb8853898f04"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/ui/Input.tsx": {
-    "mtime": 1777565247.620439,
-    "hash": "b86c25be56eb8c2259140423dee2679b"
+    "mtime": 1779643790.2768195,
+    "hash": "63c5472bce45a9fefff81738806e063a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/discovery/NeuralConfig.tsx": {
     "mtime": 1777396840.791519,
@@ -2692,8 +3080,8 @@
     "hash": "8ed3b7ed627e089aec0bee7e4b93949f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/src/components/admin/EnvManager.tsx": {
-    "mtime": 1777396840.7935936,
-    "hash": "926a47b1a2cfd5f8b58f6d57588a8579"
+    "mtime": 1779643790.2748196,
+    "hash": "3240d983dbdc2f41699b9f802b430a27"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/render_node/main.py": {
     "mtime": 1776430531.2334206,
@@ -2704,32 +3092,76 @@
     "hash": "61a176b8fda058824812a8a14f3fc5db"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/Composition.tsx": {
-    "mtime": 1778704943.8778288,
-    "hash": "f22ef62abb7a27b4e2837b122f636ace"
+    "mtime": 1779214345.2298267,
+    "hash": "c636c1412d346a5ea36f7c17e096dc1c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/index.ts": {
     "mtime": 1777154050.276505,
     "hash": "1107133dba4e6f1b77ab1b64facdc8df"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/Root.tsx": {
-    "mtime": 1778694073.5828393,
-    "hash": "a0fec0891702c0ba790cb10db8c8beac"
+    "mtime": 1778971649.5815773,
+    "hash": "2fd8bb016bcad6a2aa599471b2ef05f6"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/templates/HormoziStyle.tsx": {
-    "mtime": 1776633698.2941654,
-    "hash": "90c032f5fc9e3c845bfabb03990c22ed"
+    "mtime": 1779643790.2798195,
+    "hash": "37d502053cb0286581b4d77b55b1925f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/templates/CinematicMinimal.tsx": {
-    "mtime": 1776948579.764888,
-    "hash": "8104dd65e9d9f29b7296d9b7c97469f3"
+    "mtime": 1779643790.2798195,
+    "hash": "54d5b1bff80ee6c9466bc84088f90760"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/RedditHook.tsx": {
+    "mtime": 1779643790.2790864,
+    "hash": "11872f8cbd6df61f700dfd52c7d83ec0"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/CTAOverlay.tsx": {
-    "mtime": 1778704913.9787183,
-    "hash": "a2706b56585107287fa9758ed9c7fa6e"
+    "mtime": 1779643790.2790864,
+    "hash": "e1993600492632f2652a9a287862625c"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/ChapterOverlay.tsx": {
+    "mtime": 1779643790.2790864,
+    "hash": "d409fcc53a26d96b1ae87fc610a4c3f7"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/NewsTicker.tsx": {
+    "mtime": 1779643790.2790864,
+    "hash": "1a533da4931e2a6d658bbd12ded1fcd9"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/KenBurns.tsx": {
+    "mtime": 1779031227.1648228,
+    "hash": "82385ce2611f9ec8ec03d39366fe5108"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/SceneTransition.tsx": {
+    "mtime": 1779214345.2448268,
+    "hash": "77fc493eee616c58093636e20721d55f"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/ProgressTracker.tsx": {
+    "mtime": 1778971649.5825772,
+    "hash": "e2ba97b786c761758a1535cb13eedc07"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/WordCaptions.tsx": {
+    "mtime": 1779643790.2790864,
+    "hash": "78d30f39a151efc497d90c449d9a0299"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/CinematicOverlay.tsx": {
-    "mtime": 1778704871.8905592,
-    "hash": "846554d962deaa1e86d60071b3361e37"
+    "mtime": 1778971649.5825772,
+    "hash": "0cd7e167d6af34b817e93695cca4c047"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/VFXShader.tsx": {
+    "mtime": 1778971649.5835772,
+    "hash": "b28d90e17b41170f296383faf325e5cd"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/MultiVideoLayout.tsx": {
+    "mtime": 1779643790.2790864,
+    "hash": "376bc32013c1b22fae60813bc35ae4e9"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/ColorGrade.tsx": {
+    "mtime": 1779031227.1628227,
+    "hash": "7d266768038f1343b877fd3f8eaa79ce"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/src/components/BrandReveal.tsx": {
+    "mtime": 1779643790.2790864,
+    "hash": "3888b496622b2135cb6cb317f452e984"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/graphify/worked/mixed-corpus/raw/analyze.py": {
     "mtime": 1777484620.8246787,
@@ -3000,8 +3432,8 @@
     "hash": "55144c02f06a65f3ed6d4dc27f368d64"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/graphify/graphify/llm.py": {
-    "mtime": 1777484620.7766778,
-    "hash": "21decd79cccc5270a49bb2ffd0769e08"
+    "mtime": 1778792897.2802436,
+    "hash": "9c0e93238d1a9b41bbd15f79342e8049"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/graphify/graphify/watch.py": {
     "mtime": 1777484620.786678,
@@ -3084,40 +3516,48 @@
     "hash": "304441e5a1a90f060bd1c533d910f2d5"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docker-compose.yml": {
-    "mtime": 1778098625.1152074,
-    "hash": "70424e1fc7f5a75d813278a2172f5f44"
+    "mtime": 1779643790.2818196,
+    "hash": "a1065b5f1d249f13de55a9fed108f372"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/bias_search.txt": {
-    "mtime": 1776633103.6597333,
+    "mtime": 1779043418.4548092,
     "hash": "a9d454ddcefd00b35b817749d5cfc970"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/SEMANTIC_FIXES_ACTION_PLAN.md": {
     "mtime": 1777472165.0240173,
     "hash": "a49f427e2e2874107795ef7127d2c77d"
   },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/key_raw.txt": {
-    "mtime": 1777541970.14284,
-    "hash": "a35f7e22a4a9187f917e212f85fafcf4"
-  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docker-compose.ollama.yml": {
     "mtime": 1776932188.834934,
     "hash": "e6617d02755cc61e4299c2911e97e774"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/CODE_OF_CONDUCT.md": {
+    "mtime": 1779031227.1408224,
+    "hash": "f2a1fea654cff6c7b09fe812ede3dfd4"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/FINAL_95_PERCENT_COVERAGE.md": {
-    "mtime": 1778140786.232079,
+    "mtime": 1779365844.884043,
     "hash": "5108aa7a6579585922b5ee731464b834"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/README.md": {
-    "mtime": 1777397915.141762,
-    "hash": "cd38cd456bef5cad9be120f68a96053c"
+    "mtime": 1778971649.5803676,
+    "hash": "6ed29b2107d982f219b3416eecf2f01f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/AGENTS.md": {
-    "mtime": 1777557184.0632355,
-    "hash": "16e888472c101c4e72c078ded73e597b"
+    "mtime": 1779643790.2688196,
+    "hash": "a5f058d4513c390ba9c60eeb16ab765a"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/requirements.txt": {
+    "mtime": 1779643790.2888196,
+    "hash": "8d36f82f6932cede5b246b59eb822d8b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/SEMANTICS_MISALIGNMENT_REPORT.md": {
     "mtime": 1777065817.4568398,
     "hash": "059ee6eb731da8c458b7634ffef8a574"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/test_out.txt": {
+    "mtime": 1778971649.8785784,
+    "hash": "d15c5bc4cdfb17718b63e216d3065403"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/HARDENING_ROADMAP.md": {
     "mtime": 1776934814.6336503,
@@ -3126,6 +3566,14 @@
   "/home/psalmprax/ALL_PROJECTS/ettametta/DEPLOYMENT_SUMMARY.md": {
     "mtime": 1777743797.885865,
     "hash": "545b3c90289f0fa82d81eea1293d7849"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/CONTRIBUTING.md": {
+    "mtime": 1779031227.1438227,
+    "hash": "ba3390e1f39dc4fe0d34936a208ed0e4"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/SECURITY.md": {
+    "mtime": 1779031227.1488225,
+    "hash": "7592cd8660860ef1776faa2e77771445"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/SEMANTICS_CURRENT_STATUS.md": {
     "mtime": 1777471900.4639354,
@@ -3136,20 +3584,24 @@
     "hash": "dad1e11de8986c98233a7eebedcb0f90"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docker-compose.dify.yml": {
-    "mtime": 1778665556.5934553,
-    "hash": "6b56217eafa236bee08c059b37205390"
+    "mtime": 1779643754.4807048,
+    "hash": "95efef4f463935bc0564e30a8ddcfc61"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/IMPLEMENTATION_COMPLETE.md": {
     "mtime": 1778138969.6324384,
     "hash": "b80ca5864ae88028719c94fe98cd8d57"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/coverage.txt": {
-    "mtime": 1778613450.6123078,
+    "mtime": 1779043418.4551315,
     "hash": "f74d4db15dcee83cad25e3a5c3ff030e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/SEMANTIC_SERVICE_LAYER_IMPLEMENTATION.md": {
     "mtime": 1777472190.9944232,
     "hash": "f1cdaa9450174d351a51b1f9c4d5b179"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/CHANGELOG.md": {
+    "mtime": 1779031227.1398225,
+    "hash": "b022b730670e89c4c8256d5d11453300"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/scratch/VIDEO_PIPELINE_TEST_REPORT.md": {
     "mtime": 1776772868.8648844,
@@ -3168,7 +3620,7 @@
     "hash": "d8191a22b581a0122d2c62f688721bf2"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/cookies/youtube_cookies.txt": {
-    "mtime": 1778537168.2376318,
+    "mtime": 1779214345.2548268,
     "hash": "556bdf7d0336a60426ab56c9fba09977"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/cookies/tiktok_cookies.txt": {
@@ -3199,9 +3651,33 @@
     "mtime": 1777026086.2051678,
     "hash": "fe747b021f5feae36499b09c0f0c069a"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/test-results/accessibility-Accessibilit-ddfdd-ocus-traps-in-modal-dialogs-chromium/error-context.md": {
+    "mtime": 1779537681.5839689,
+    "hash": "6b02c4d04ec937601208321bdcab8ef2"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/test-results/accessibility-Accessibilit-8af6a-ard-has-keyboard-navigation-chromium/error-context.md": {
+    "mtime": 1779537675.8169727,
+    "hash": "d9bac404abed206babcdc68f2d054e1a"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/test-results/accessibility-Accessibilit-432f6-ngs-follow-proper-hierarchy-chromium/error-context.md": {
+    "mtime": 1779537680.2319696,
+    "hash": "2c97deb4ad7f6e717bd2b1ba29ea1204"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/playwright-report/index.html": {
-    "mtime": 1778537144.5569983,
-    "hash": "b61054a4c0a5b26071c2b30db3bc90a7"
+    "mtime": 1779537681.8939686,
+    "hash": "198a89058fc96032d9d9949dde09ccf7"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/playwright-report/data/eaf36ecba517628f12cebef5db119fec5a3dcfac.md": {
+    "mtime": 1779537681.8599687,
+    "hash": "6b02c4d04ec937601208321bdcab8ef2"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/playwright-report/data/9cb0a2e1b2040ee94feec88cf5eb0b5caecb30d8.md": {
+    "mtime": 1779537681.8569686,
+    "hash": "d9bac404abed206babcdc68f2d054e1a"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/playwright-report/data/fd32b738212dbd1847ec0e7008d896783d7f8d7d.md": {
+    "mtime": 1779537681.8652027,
+    "hash": "2c97deb4ad7f6e717bd2b1ba29ea1204"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/engines/remote_ai_setup/VIDEO_MODELS_TESTING.md": {
     "mtime": 1776772782.3663018,
@@ -3227,10 +3703,6 @@
     "mtime": 1776772783.20184,
     "hash": "eeb56f2d065d7487d43feb8be88a83cb"
   },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/src/engines/remote_ai_setup/davido_b64.txt": {
-    "mtime": 1776772783.2060602,
-    "hash": "9966ab9c20c108c7fc2ffc1bfd597e91"
-  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/engines/remote_ai_setup/REMOTE_AI_DOCUMENTATION.md": {
     "mtime": 1776772783.2451122,
     "hash": "10d2c6efa88ea2932af82774f784e7bc"
@@ -3244,28 +3716,32 @@
     "hash": "9bfe0f843add8ab3eeaf3961ab1b1c9f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/README.md": {
-    "mtime": 1776770990.919364,
-    "hash": "12aa7f2b151046e59d62fc4dc91c955c"
+    "mtime": 1779643790.3058197,
+    "hash": "6de11416e343f2748366965041b8b6ab"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/voiceover/requirements.txt": {
     "mtime": 1776430531.7274227,
     "hash": "441c5b78b22cf6d568a6b431d821ba05"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/requirements.txt": {
-    "mtime": 1776615792.423785,
-    "hash": "337258945a64470652c77119aee2fbc2"
+    "mtime": 1779644652.6819289,
+    "hash": "ae3487a44cd15b4c19ffefc1b1666115"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/openclaw/skills.yaml": {
     "mtime": 1776825160.3740764,
     "hash": "46b25f3da41b2f1560b052dec4cb756d"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/requirements-locked.txt": {
+    "mtime": 1778971649.8555784,
+    "hash": "5cb18565a2b48f9a1bcda0b183c33847"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/requirements-agents.txt": {
     "mtime": 1777967632.7285187,
     "hash": "6b05e715540bf7d99d0bfd37f7fb3e18"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/api/requirements.txt": {
-    "mtime": 1777967616.8385031,
-    "hash": "58d6db95562b7ed679afd0033650f44d"
+    "mtime": 1779031227.185823,
+    "hash": "6f209fac9e0891817366e4940f766f33"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/jenkins_setup_guide.md": {
     "mtime": 1776430531.2664208,
@@ -3308,7 +3784,7 @@
     "hash": "d3c3850f56a2362e36d7a8d26ee03f44"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/gap_analysis_20260304.md": {
-    "mtime": 1776772868.9728029,
+    "mtime": 1779043418.4634774,
     "hash": "92a9f63a40f794c67e113a7b86a39218"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/missing_use_case_links.md": {
@@ -3320,7 +3796,7 @@
     "hash": "1d3e45c6e1196c604d931af30cdfede8"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/gap_analysis_april_2026.md": {
-    "mtime": 1776772868.9768028,
+    "mtime": 1779043418.4634774,
     "hash": "1d167df1da1c45dc4576bda041547386"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/ltx2_hunyuan_deployment_report.md": {
@@ -3328,23 +3804,31 @@
     "hash": "20a605aac6947247401d093cc3926968"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/UI_BUTTONS_USECASE_GAP_ANALYSIS_REAL_FIRST.md": {
-    "mtime": 1776430531.2584207,
+    "mtime": 1779043418.4594774,
     "hash": "68a375b648a9601db1d34ad1f0469f3b"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/docs/OPENCLAW_EXTRACTION.md": {
+    "mtime": 1779643790.2818196,
+    "hash": "ab6f86b73edcd1dab29d2d83d31756c5"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/docs/SECURITY_ROTATION_REQUIRED.md": {
+    "mtime": 1779643790.2818196,
+    "hash": "1915aba3dcfb3120abe4c9c87fd32872"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/ui_interactive_elements_gap_analysis.md": {
-    "mtime": 1776430531.272421,
+    "mtime": 1779043418.4654772,
     "hash": "593c2862a291c4a7807f4be012b03e29"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/ui_button_clickable_gap_analysis.md": {
-    "mtime": 1776430531.272421,
+    "mtime": 1779043418.4644773,
     "hash": "61939c205114f092f4cdf69ddb4e8674"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/ui_ux_gap_analysis_march_2026.md": {
-    "mtime": 1776430531.2734208,
+    "mtime": 1779043418.4654772,
     "hash": "78c28c20c37b41bb1c4abcef95f60874"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/100_percent_complete.md": {
-    "mtime": 1776430531.2574208,
+    "mtime": 1779043418.4584773,
     "hash": "755b8a062774dff12168c68f081505fb"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/gpu_infrastructure.md": {
@@ -3352,11 +3836,11 @@
     "hash": "d6e96b2bbf632018442a7bdf7cef1847"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/INFRA_DIFY.md": {
-    "mtime": 1778618092.7124147,
+    "mtime": 1778971649.5859647,
     "hash": "2ef767de4d9815c5368f43e432bdedd2"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/UI_BUTTONS_USECASE_GAP_ANALYSIS.md": {
-    "mtime": 1776430531.2584207,
+    "mtime": 1779043418.4594774,
     "hash": "83cd1c478105d6760d71d2c1ab3b8c79"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/testing.md": {
@@ -3374,6 +3858,10 @@
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/expansion_blueprint.md": {
     "mtime": 1776430531.2634208,
     "hash": "a40b6fffb9d8d4c858754cfe1f2dbb8c"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/docs/REPO_MANAGEMENT.md": {
+    "mtime": 1779643790.2818196,
+    "hash": "3d7962c621f8c91f254a2add3db2b62e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/agent_framework_hybrid_plan.md": {
     "mtime": 1776430531.2594206,
@@ -3416,7 +3904,7 @@
     "hash": "0b01b1d558b5dac8dfc793a467ece341"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/GAP_ANALYSIS_UI_BUTTONS_CLICKABLES_MENUS.md": {
-    "mtime": 1776430531.2574208,
+    "mtime": 1779043418.4594774,
     "hash": "a3607de2ac2c09db001dd906f392d805"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/implementation_plan.md": {
@@ -3432,7 +3920,7 @@
     "hash": "f58e5f1e3303ed056a6907293900e0b9"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/UI_BUTTONS_CLICKABLES_MENUS_GAP_ANALYSIS.md": {
-    "mtime": 1776430531.2584207,
+    "mtime": 1779043418.4594774,
     "hash": "f2b4789b7aa809467e62597833c8bf2b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/walkthrough.md": {
@@ -3440,7 +3928,7 @@
     "hash": "61e4cc37e47ab2b2856ec1733d0830c0"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/gap_analysis_viral_forge_comprehensive.md": {
-    "mtime": 1776430531.2654207,
+    "mtime": 1779043418.4644773,
     "hash": "6c08a00878487caed7f5719af6cb9f0f"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/video_models_installation_guide.md": {
@@ -3456,7 +3944,7 @@
     "hash": "c5462fb4a1dd96ebbabbc1092b33292c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/ui_gap_analysis.md": {
-    "mtime": 1776430531.272421,
+    "mtime": 1779043418.4644773,
     "hash": "70a5e72aeb906d0f4c6af689edd911d5"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/gpu_server_config.md": {
@@ -3464,11 +3952,11 @@
     "hash": "9cf604a904650b56a2c3675adeb51ad3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/DIFY_NEXUS_INTEGRATION.md": {
-    "mtime": 1778658479.6602714,
+    "mtime": 1778971649.5859647,
     "hash": "181ace59a38c3ceda0537ba1e1faa9cb"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/UI_USECASE_GAP_ANALYSIS.md": {
-    "mtime": 1776430531.2584207,
+    "mtime": 1779043418.4634774,
     "hash": "6167fda8cc30407358087fcc9ae75075"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/reports/CODE-QUALITY.md": {
@@ -3540,7 +4028,7 @@
     "hash": "1264727e8462ff3ba41e29a3d25a1a4b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/infra/docs/DIFY_DEPLOYMENT.md": {
-    "mtime": 1778539466.3343825,
+    "mtime": 1778971649.8435783,
     "hash": "69a495a71086733c96b40db8fae90504"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/infra/monitoring/promtail/promtail-config.yml": {
@@ -3600,15 +4088,15 @@
     "hash": "43f12875094a80a76384d2f9b42dd1ca"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/test-results/auth-flow-Ettametta-Auth-F-80472-d-navigate-to-register-page-chromium/error-context.md": {
-    "mtime": 1777392126.9679759,
+    "mtime": 1779365844.8954322,
     "hash": "cd79c94a2f392d9cbecda69aa26b954a"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/test-results/auth-flow-Ettametta-Auth-F-4f905-ould-navigate-to-login-page-chromium/error-context.md": {
-    "mtime": 1777392123.5449047,
+    "mtime": 1779365844.8952591,
     "hash": "5d22a9808ccb7578bed26535e4705d18"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/playwright-report/index.html": {
-    "mtime": 1777391322.9962478,
+    "mtime": 1779365844.8943639,
     "hash": "00dc76ee6634bcb6fe00af17e372a63c"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/graphify/ARCHITECTURE.md": {
@@ -3851,6 +4339,26 @@
     "mtime": 1778537176.984955,
     "hash": "659f6555e9e26c597447135522fbe673"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/test-results/accessibility-Accessibilit-ddfdd-ocus-traps-in-modal-dialogs-chromium/test-failed-1.png": {
+    "mtime": 1779537675.9149725,
+    "hash": "66a5fb94cbaa5c101f83f3169a02d425"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/test-results/accessibility-Accessibilit-8af6a-ard-has-keyboard-navigation-chromium/test-failed-1.png": {
+    "mtime": 1779537675.494973,
+    "hash": "b2e58f7c6fa58145bc09fd384d844b38"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/test-results/accessibility-Accessibilit-432f6-ngs-follow-proper-hierarchy-chromium/test-failed-1.png": {
+    "mtime": 1779537679.94097,
+    "hash": "b2e58f7c6fa58145bc09fd384d844b38"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/playwright-report/data/81d1ea5552c10ff102496abf556fe580745453fd.png": {
+    "mtime": 1779537681.8619688,
+    "hash": "b2e58f7c6fa58145bc09fd384d844b38"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/playwright-report/data/5f426f6c220e28aca9ffcc3780d7852615d9382b.png": {
+    "mtime": 1779537681.8579686,
+    "hash": "66a5fb94cbaa5c101f83f3169a02d425"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/docs/top_notch_design/ApySA.png": {
     "mtime": 1776430531.272421,
     "hash": "57a2e5da77ce2bc2e4472305e0a53b6e"
@@ -3883,17 +4391,9 @@
     "mtime": 1777214056.0,
     "hash": "2349389f731c3686e0d1de3567f84f93"
   },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/lite4k_base_d2884654-fe02-484b-bebe-8474343f88f0.jpg": {
-    "mtime": 1778136414.4234033,
-    "hash": "70906e60647b5164ec4e512d8d636cd6"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/lite4k_base_1d2c575f-375c-438c-8e2d-f213728795cf.jpg": {
-    "mtime": 1778136897.1681738,
-    "hash": "e16e6f5d0deaf7f12628b597861152b9"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/lite4k_base_498ebdf3-6ef3-464e-b67e-3a63a8b54b13.jpg": {
-    "mtime": 1778137248.0841854,
-    "hash": "e16e6f5d0deaf7f12628b597861152b9"
+  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/logo.png": {
+    "mtime": 1779540959.3320968,
+    "hash": "86c6ddf543c1bcda0efbfda9e69e061b"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/public/file.svg": {
     "mtime": 1776430531.1694202,
@@ -3916,11 +4416,11 @@
     "hash": "a2760511c65806022ad20adf74370ff3"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/test-results/auth-flow-Ettametta-Auth-F-80472-d-navigate-to-register-page-chromium/test-failed-1.png": {
-    "mtime": 1777392125.6259477,
+    "mtime": 1779365844.8957741,
     "hash": "b4d3eefbf7c5efc61cd6ced0edc44b17"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/test-results/auth-flow-Ettametta-Auth-F-4f905-ould-navigate-to-login-page-chromium/test-failed-1.png": {
-    "mtime": 1777392122.9328918,
+    "mtime": 1779365844.8954322,
     "hash": "9fde58d2803bf5357f40541cc5efa0df"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/graphify/docs/logo-icon.svg": {
@@ -3931,34 +4431,6 @@
     "mtime": 1777484620.7316768,
     "hash": "7dbb208e36d257cae7848dc804291733"
   },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/nexus_Technology_v2_Aesthetic.mp4": {
-    "mtime": 1778672157.7041113,
-    "hash": "a447716da8a852fe3a494b327bbb2898"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/pipeline_preview.mp4": {
-    "mtime": 1777900118.9384465,
-    "hash": "37596a4fe0e684b9ed05ee61a0e4fdcb"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/nexus_Technology_v3_FinalLayout.mp4": {
-    "mtime": 1778678175.1787562,
-    "hash": "d4584b969507e86eced16668a605c07e"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/nexus_Technology_v4_AestheticFinal.mp4": {
-    "mtime": 1778679107.0820782,
-    "hash": "a216cdc038fbb0b6e10b4080003d243a"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/nexus_Technology_v6_2MinEpic.mp4": {
-    "mtime": 1778688942.7021272,
-    "hash": "d1613d7880f5aad5e149bf65ffd16a0e"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/nexus_Technology_v1.mp4": {
-    "mtime": 1778670391.098903,
-    "hash": "e73d0670eba75ae82c553853154a764e"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/nexus_Technology_v5_StudioMaster.mp4": {
-    "mtime": 1778687552.8536325,
-    "hash": "37d54e643c80135eb5dea3b1c018b6c9"
-  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/5685fda7-6425-4f95-8eb5-cb021ffc30b1.mp4": {
     "mtime": 1778537024.0241973,
     "hash": "ff6a73856f224bdff7f9a29d8889b976"
@@ -3966,6 +4438,10 @@
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/0365d4d3-e0c8-4105-8b39-06d6bc9ea402.mp4_norm.mp4": {
     "mtime": 1778537175.2949572,
     "hash": "1cb74801ae5227bc7023170050128d70"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/32fbb756-12ea-4308-a37e-6bdeecab87bf.mp4": {
+    "mtime": 1779188963.7252233,
+    "hash": "42435f14b5c432b5f1f0a2131b5aa011"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/0d0ea29c-9329-4517-9da8-72a366d9df98.mp4": {
     "mtime": 1778536995.2082548,
@@ -3975,9 +4451,21 @@
     "mtime": 1778537023.9081974,
     "hash": "d3c426b7515f26f86a176e81394de02a"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/6e898e8c-3d63-43c6-9433-651a6d2b2094.mp4": {
+    "mtime": 1779188881.9131644,
+    "hash": "42435f14b5c432b5f1f0a2131b5aa011"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/5f5e368f-9c22-4322-97d6-1aa996da9427.mp4": {
     "mtime": 1778537167.100968,
     "hash": "d3c426b7515f26f86a176e81394de02a"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/5c954707-4d1f-4a26-8f27-1f087591fc59.mp4": {
+    "mtime": 1779189217.6105354,
+    "hash": "42435f14b5c432b5f1f0a2131b5aa011"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/e466010d-e70c-410e-9725-972f36af4ae0.mp4": {
+    "mtime": 1779188969.5842283,
+    "hash": "42435f14b5c432b5f1f0a2131b5aa011"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/a440cc2f-604d-47b9-b2ec-939e6d20c2b7.mp4_norm.mp4": {
     "mtime": 1778537027.1101913,
@@ -3987,9 +4475,33 @@
     "mtime": 1778537170.6859632,
     "hash": "be393485844a8ad27b4d2965665c7bc4"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/0d23a424-1316-432e-a651-539a321cf971.mp4": {
+    "mtime": 1779188613.372337,
+    "hash": "42435f14b5c432b5f1f0a2131b5aa011"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/9a1cbe8d-e046-4e0b-a39a-88861edccf63.mp4": {
+    "mtime": 1779188704.0366273,
+    "hash": "42435f14b5c432b5f1f0a2131b5aa011"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/c53027a9-0ef4-4355-8501-067553b786d7.mp4": {
+    "mtime": 1779188876.134161,
+    "hash": "42435f14b5c432b5f1f0a2131b5aa011"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/956ccf82-ce82-4962-88fc-d69481a6f6fa.mp4": {
     "mtime": 1778536994.7682557,
     "hash": "d3c426b7515f26f86a176e81394de02a"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/b9c28db0-5b15-4718-a8d7-9dd39597a9de.mp4": {
+    "mtime": 1779189223.6375446,
+    "hash": "42435f14b5c432b5f1f0a2131b5aa011"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/c1bf7215-aecd-46f5-ab6b-17076b53eaa8.mp4": {
+    "mtime": 1779188624.2523723,
+    "hash": "42435f14b5c432b5f1f0a2131b5aa011"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/cd974a57-3c97-42cb-b82c-dd5794f55874.mp4": {
+    "mtime": 1779188699.219612,
+    "hash": "42435f14b5c432b5f1f0a2131b5aa011"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/50d8f1c8-5b6b-4931-99eb-aed05b477ecb.mp4": {
     "mtime": 1777899697.9233289,
@@ -4002,38 +4514,6 @@
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/user_downloads/0365d4d3-e0c8-4105-8b39-06d6bc9ea402.mp4": {
     "mtime": 1778537168.2199664,
     "hash": "ff6a73856f224bdff7f9a29d8889b976"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/outputs/lead_norm_b4c21231.mp4": {
-    "mtime": 1777900022.0562418,
-    "hash": "e1a4af8bc526d443a345249424a76a22"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/outputs/norm_d9579ef9.mp4": {
-    "mtime": 1777898099.4254863,
-    "hash": "e7702d6c6d25e44abc6b3e2da1ee806f"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/outputs/lead_norm_46216f3c.mp4": {
-    "mtime": 1777899838.0439732,
-    "hash": "35c0f87b7ee4bbe453a98877ec7b233b"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/outputs/pipeline_final_ai_technology_e7ce41d8.mp4": {
-    "mtime": 1777900118.9384465,
-    "hash": "37596a4fe0e684b9ed05ee61a0e4fdcb"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/outputs/lead_norm_c5dee0aa.mp4": {
-    "mtime": 1777899790.3829486,
-    "hash": "4d3b18da46d2f6d59029a5ce78e88c2f"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/outputs/norm_2a106976.mp4": {
-    "mtime": 1777898634.6492863,
-    "hash": "544a5e9dad2197323498b33bbbc95ae5"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/outputs/lite4k_50bdfa4f-8e92-458b-a3eb-29606ccf4e2b.mp4": {
-    "mtime": 1778136391.075226,
-    "hash": "463b462e884b59dc661e965aa7a4a152"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/outputs/norm_0e59aded.mp4": {
-    "mtime": 1777898152.6176794,
-    "hash": "070e22ed461f1e59d96a29c620b9a99e"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/data/storage/outputs/intelligent_edits/temp_neural/seg_000.mp4": {
     "mtime": 1777908368.2602892,
@@ -4091,516 +4571,64 @@
     "mtime": 1778141774.4786282,
     "hash": "d3aec4d82acc25844cf6f06ccb0749d2"
   },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/test-results/accessibility-Accessibilit-ddfdd-ocus-traps-in-modal-dialogs-chromium/video.webm": {
+    "mtime": 1779537681.5811062,
+    "hash": "ebf233cc88258fda1723aee6153e15b9"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/test-results/accessibility-Accessibilit-8af6a-ard-has-keyboard-navigation-chromium/video.webm": {
+    "mtime": 1779537675.8074665,
+    "hash": "1d569a5e970baa799954454000de3c6c"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/test-results/accessibility-Accessibilit-432f6-ngs-follow-proper-hierarchy-chromium/video.webm": {
+    "mtime": 1779537680.2239697,
+    "hash": "27ee15ca73feb27f9cc41826b83b1c7e"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/playwright-report/data/95b794dbca7290f453f98933fb82c4a0e1240f15.webm": {
+    "mtime": 1779537681.8559687,
+    "hash": "1d569a5e970baa799954454000de3c6c"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/playwright-report/data/baa1f66d1d55784202ab9a25f54de09d13db880c.webm": {
+    "mtime": 1779537681.8599687,
+    "hash": "ebf233cc88258fda1723aee6153e15b9"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/src/tests/e2e/playwright-report/data/bb12eb0300383cdb19122e004ed578e79fbcac96.webm": {
+    "mtime": 1779537681.8639686,
+    "hash": "27ee15ca73feb27f9cc41826b83b1c7e"
+  },
   "/home/psalmprax/ALL_PROJECTS/ettametta/src/templates/audio/background/cinematic_energetic.mp3": {
     "mtime": 1776423359.8483553,
     "hash": "5e430a7f5d45f71ea8ce6681e80eca84"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/tests/assets/mock_pool/mock_2.mp4": {
+    "mtime": 1779141619.416802,
+    "hash": "354dfc8d3c72c50b386fdb0c93474c76"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/tests/assets/mock_pool/mock_1.mp4": {
+    "mtime": 1779141632.1779802,
+    "hash": "83737516dfb49ea6d371de0dbde61e6d"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/tests/assets/mock_pool/mock_5.mp4": {
+    "mtime": 1779141624.4188716,
+    "hash": "dc356388ae3ccddc2e868f3fe223b9d6"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/tests/assets/mock_pool/mock_4.mp4": {
+    "mtime": 1779141623.071853,
+    "hash": "fedfa4fb5c0c6380e43decf780289879"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/tests/assets/mock_pool/mock_3.mp4": {
+    "mtime": 1779141621.5188313,
+    "hash": "c4c500675076bed3285e7b1706309261"
   },
   "/home/psalmprax/ALL_PROJECTS/ettametta/templates/safety/generic_space.mp4": {
     "mtime": 1776404967.3157406,
     "hash": "713cd826e83a12138115a0caa7a11897"
   },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/stock/stock_853889-hd_1920_1080_25fps.mp4.mp4": {
-    "mtime": 1776949346.7450287,
-    "hash": "0574c053c8686c3f1dc0aa3743e45cb9"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/iIEprgPNxEE.mp4": {
-    "mtime": 1776949300.291782,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/fkyN4tsqRQQ.mp4": {
-    "mtime": 1776885723.782548,
-    "hash": "58da7b63d922fde8e10c8574b6789af7"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/tjMm2Iv6xfA.mp4": {
-    "mtime": 1777903542.7908063,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/fM97pBaqbDY.mp4": {
-    "mtime": 1777903886.797805,
-    "hash": "c6494d9a085f193951931a4c1ae914b4"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/piVwHO4esPg.mp4": {
-    "mtime": 1776670824.6586697,
-    "hash": "30911bf3401708c7a8e036d05dbb817b"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/Q3qX2bTm5Mg.mp4": {
-    "mtime": 1777906579.5671334,
-    "hash": "0a2cf89cc9662ccaab64bdcf87feafd7"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/tC9CaspEn1s.mp4": {
-    "mtime": 1776949305.1998081,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/X6Z1ebnYoK4.mp4": {
-    "mtime": 1777906393.8150694,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/YL_lSt6jJuQ.mp4": {
-    "mtime": 1776671175.6707823,
-    "hash": "4c371f9ecb3f6b56b654fe13f05ad5be"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/dwSF0_8GTFI.mp4": {
-    "mtime": 1776785702.8786318,
-    "hash": "d767be65bbc6cc206a6cb18b6e62426c"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/fa0kN9E2kyM.mp4": {
-    "mtime": 1777903543.2886844,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/ Unexplored | BBC Earth Science|WifP35fu6Xg.mp4": {
-    "mtime": 1777923397.895896,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/wh-k6dGvb7c.mp4": {
-    "mtime": 1776670739.3338838,
-    "hash": "dfacdbd91c48f1d08e16f4ccc997f916"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/ Nightly News Films|LzhTEEYY-rs.mp4": {
-    "mtime": 1777903585.4396968,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/3Clmf7zCy_0.mp4": {
-    "mtime": 1776949297.1557653,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/WaB2wMu_7Z8.mp4": {
-    "mtime": 1777903542.207698,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/rVwe3vae3Hk.mp4": {
-    "mtime": 1776670743.332871,
-    "hash": "5108eabfde8eecbd595f41a8da2644bb"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/TZe5UqlUg0c.mp4": {
-    "mtime": 1776949304.068802,
-    "hash": "c35accaec4926f5dae1926e9e808e4f7"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/ Melodie Yashar | TED|3CFyHtObLXk.mp4": {
-    "mtime": 1777903541.1457117,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/4rZ9o2YsE70.mp4": {
-    "mtime": 1777906400.315172,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/cLjSU3m0omg.mp4": {
-    "mtime": 1776949306.1688132,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/6cNutP0Wnr8.mp4": {
-    "mtime": 1777906399.33207,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/bztp53NFwxs.mp4": {
-    "mtime": 1776671178.960789,
-    "hash": "31afe6c322413ebc32a6abbb685d2234"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/faCHJQstleE.mp4": {
-    "mtime": 1777908027.6512446,
-    "hash": "a2ccdd281ffcbcf62e10d5045ea2ae2d"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/udBsTycIYh0.mp4": {
-    "mtime": 1777903541.0927122,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/0q_B5X7PBHA.mp4": {
-    "mtime": 1777903590.776117,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/NIfwO8vGF2s.mp4": {
-    "mtime": 1777908035.9113023,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/pdSeLr4A_mU.mp4": {
-    "mtime": 1777906392.3800695,
-    "hash": "b68a7f91f82ebb578af0e9525f6f29ac"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/NiwIFDxHaJE.mp4": {
-    "mtime": 1776949295.9737592,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/wixun0zYJOI.mp4": {
-    "mtime": 1776671183.8028963,
-    "hash": "0c0102fc42b47252e8b5355fc27163c2"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/_civVGc5WLc.mp4": {
-    "mtime": 1777923406.7777445,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/2Q_lHIX8ebs.mp4": {
-    "mtime": 1777903552.060024,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/pTdmggPXoYs.mp4": {
-    "mtime": 1777923405.9196632,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/lByMvKeg60o.mp4": {
-    "mtime": 1776670739.7638824,
-    "hash": "24270d547ceb16449c13b1ae7c191f1e"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/uxM_L7ZCLjc.mp4": {
-    "mtime": 1776670212.8026204,
-    "hash": "5b2f75aed2325799025366ec6ab4fe6e"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/OtLvAly7lD8.mp4": {
-    "mtime": 1777908031.3152702,
-    "hash": "3ebf9fe69348ceb9d4af63ee2407122b"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/imNtSPM3-r4.mp4": {
-    "mtime": 1777908032.2912772,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/srAAMhnVRlk.mp4": {
-    "mtime": 1776670825.6441956,
-    "hash": "97afa1945c1541505f70b146a6f14f8b"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/5AyK9sS1B0A.mp4": {
-    "mtime": 1777906400.6187925,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/ quanzi|NGOAJE44_14.mp4": {
-    "mtime": 1776949306.3980765,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/t01cbHtgjPk.mp4": {
-    "mtime": 1776671179.2567897,
-    "hash": "7bda4c4add4624a15907a755c8167ebd"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/ The best AI Reel Makers|Madce1pecEc.mp4": {
-    "mtime": 1776949294.068749,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/PQ23iZ0Bgvg.mp4": {
-    "mtime": 1777906394.7160697,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/cbRc8jiXDzQ.mp4": {
-    "mtime": 1777903541.5336974,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/rqXM-seVZlE.mp4": {
-    "mtime": 1776885315.5235012,
-    "hash": "6b138a3758922a2779fc73c01d590426"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/p7SRuKWZMvQ.mp4": {
-    "mtime": 1776949307.832822,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/8ztI-YwrPRQ.mp4": {
-    "mtime": 1776671177.8177867,
-    "hash": "607c7908ce618107f7f2936bd9d742e4"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/4BfxhXgB9sA.mp4": {
-    "mtime": 1776776952.0002673,
-    "hash": "c330e789aae78292c9414cc72f40440e"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/ The Future of Space Travel | When Will Humans Live on Mars?|3AKkScJAjmw.mp4": {
-    "mtime": 1777906399.4302142,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/kyU_YIddXXk.mp4": {
-    "mtime": 1776949326.6689222,
-    "hash": "df234ae84deb4d95f83ae8f84c153abb"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/zll-3uXtz2A.mp4": {
-    "mtime": 1776671175.1237812,
-    "hash": "4ec9eb80fa1eba06aaf6ea83606e8761"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/PhugQx4Pj9k.mp4": {
-    "mtime": 1776671175.5217822,
-    "hash": "102a1b81d8f693766099ac690eb73ed0"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/-3RknrhwXpk.mp4": {
-    "mtime": 1776671175.3677816,
-    "hash": "a6d2b789acfbaf17781befbe17e49ae9"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/local_downloads/raw/ Peter Diamandis|nPi2ZFOn3Y0.mp4": {
-    "mtime": 1777923402.1638944,
-    "hash": "713cd826e83a12138115a0caa7a11897"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/a475d265-2746-4baa-a62f-30c43b5886a8.mp4": {
-    "mtime": 1777039436.5337605,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/a3403422-83f0-445a-8711-23c84f0431d4.mp4": {
-    "mtime": 1777039145.5327048,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/a59b2aac-8157-4222-b3a0-774283a985ff.mp4": {
-    "mtime": 1777035851.6171174,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/b07dc378-7a1f-4007-9534-6acc8f652a22.mp4": {
-    "mtime": 1777036719.514163,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/975f5ddc-75c2-498b-ab99-8763a4f068a8.mp4": {
-    "mtime": 1777038894.2843122,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/040079cd-93f3-40db-9428-9111b971e4be.mp4": {
-    "mtime": 1777039033.42288,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/547da60d-d12f-4fed-9946-f523e3a182bf.mp4": {
-    "mtime": 1777039109.2407467,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/c97ddeed-891d-49c5-b679-5080d9160e35.mp4": {
-    "mtime": 1777038856.8404777,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/728ac536-c105-4198-99ee-25e0247112e0.mp4": {
-    "mtime": 1777037019.3652384,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/6f840920-fa52-4ab1-9cf2-718b6d8837c9.mp4": {
-    "mtime": 1777038671.304643,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/22117708-0af5-4329-8bf8-f74e06f0fe88.mp4": {
-    "mtime": 1777035815.4289486,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/adfd06ff-0150-4332-9bc9-d446466d7552.mp4": {
-    "mtime": 1777037610.9599748,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/e5b63128-784c-4103-b2c8-c2b2fc02ada4.mp4": {
-    "mtime": 1777038708.5218344,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/008c93a9-9ed1-405e-bdbd-ab5e79905d3b.mp4": {
-    "mtime": 1777035888.2382882,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/7ad652b9-66d4-4081-9a06-7ddd48e64607.mp4": {
-    "mtime": 1777039184.8546734,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/825061d8-260f-4d16-8c9c-67a1f9300817.mp4": {
-    "mtime": 1777037921.6577032,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/181a7cbe-5506-4f98-a519-4bfb32d1524b.mp4": {
-    "mtime": 1777038744.6900203,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/3e910f40-2daa-474b-9fc6-48bf225c935d.mp4": {
-    "mtime": 1777036862.3620553,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/e45f495c-860f-47f5-8a31-926fc4b29b09.mp4": {
-    "mtime": 1777037462.7921102,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/e9dbc026-1b83-44b3-9cc5-33c2a2451fd6.mp4": {
-    "mtime": 1777038820.8464112,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/a6d1dcef-91f5-4ad8-80d2-eac22c76d5f4.mp4": {
-    "mtime": 1777039362.13269,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/c35a9fa4-9a01-4485-8e1a-339921f85ea2.mp4": {
-    "mtime": 1777039398.11072,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/47166884-0bab-4e40-bb16-ccbe30da2c36.mp4": {
-    "mtime": 1777038961.0290716,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/temp/user_downloads/fd5c2497-edf1-43cd-a46f-e36ebf6d153e.mp4": {
-    "mtime": 1777038996.8069685,
-    "hash": "37a58811da7cce6f69bd6cbc97a7fd98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/test-results/auth-flow-Ettametta-Auth-F-80472-d-navigate-to-register-page-chromium/video.webm": {
-    "mtime": 1777392126.9487312,
-    "hash": "072c61fc1fe928d86aadfcb05bf5fc2d"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/dashboard/test-results/auth-flow-Ettametta-Auth-F-4f905-ould-navigate-to-login-page-chromium/video.webm": {
-    "mtime": 1777392123.5543587,
-    "hash": "274b7bcb167ce7950399d377aec72d1b"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/out.mp4": {
-    "mtime": 1776664047.2619123,
-    "hash": "59d0f98d5320c318f0033e5bccd10e35"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/nexus_final_cinematic_v41.mp4": {
-    "mtime": 1778697389.045359,
-    "hash": "afda55f0bad08f61ee105d6a83a61126"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/nexus_final_v51.mp4": {
-    "mtime": 1778702962.939608,
-    "hash": "ae9f59c8aa821cf106317674ca1acc40"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/nexus_final_v52.mp4": {
-    "mtime": 1778703853.649237,
-    "hash": "d8c808661c63865f05b4ebf5dec8fb2d"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/nexus_final_v53.mp4": {
-    "mtime": 1778705504.6416552,
-    "hash": "833c4e85cc75181412d8e4f51061a88f"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/nexus_final_v50.mp4": {
-    "mtime": 1778701927.7963402,
-    "hash": "425c3afde75f44829a9e467654af93da"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/nexus_final_with_outro_v44.mp4": {
-    "mtime": 1778698863.1250904,
-    "hash": "4a16ce85233faba2aa45a6a81caffd31"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/elite_tests/visual_elite_3823.mp4": {
-    "mtime": 1776672485.5797153,
-    "hash": "c5f4710966aedd83dce07a9443cf97e8"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/elite_tests/temp_neural/seg_000.mp4": {
-    "mtime": 1776671321.5541525,
-    "hash": "9f8fa0df9f89ac1419b177a3e4dc9bfa"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/elite_tests/temp_neural/seg_003.mp4": {
-    "mtime": 1776672476.8461685,
-    "hash": "d2ad6de0377cb7e2747a47cec9e13a42"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/elite_tests/temp_neural/seg_001.mp4": {
-    "mtime": 1776672021.3011868,
-    "hash": "d52bcb21e3af0c58038ce7877176dfa8"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/elite_tests/temp_neural/raw_seg_003.mp4": {
-    "mtime": 1776672255.9604394,
-    "hash": "f7d34a76e5004a986f127eba862ecbd7"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/elite_tests/temp_neural/raw_seg_002.mp4": {
-    "mtime": 1776672024.770205,
-    "hash": "b6624668caaba5039d649198ff1fb549"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/elite_tests/temp_neural/seg_002.mp4": {
-    "mtime": 1776672251.257234,
-    "hash": "1a9d7145cb02855667987b4bcdfc2d94"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/elite_tests/temp_neural/raw_seg_001.mp4": {
-    "mtime": 1776671328.0891762,
-    "hash": "06cc06ca7057e65e3aa5f12ef294768b"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/elite_tests/temp_neural/raw_seg_000.mp4": {
-    "mtime": 1776671214.571523,
-    "hash": "14b627a2c1b4e02039253e8d528387f0"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/scene_based_videos/scene_fusion_1776665224.mp4": {
-    "mtime": 1776665291.122415,
-    "hash": "d3469f927c07e8348c2e2d94428e41b3"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/ultimate_tests/visual_elite_7140.mp4": {
-    "mtime": 1776675794.443262,
-    "hash": "d41d8cd98f00b204e9800998ecf8427e"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/ultimate_tests/temp_neural/seg_000.mp4": {
-    "mtime": 1776674751.4729915,
-    "hash": "0cc872a2be7c4ee46996466259e83416"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/ultimate_tests/temp_neural/seg_003.mp4": {
-    "mtime": 1776675794.1252608,
-    "hash": "7c0c37e98de09ddd8fffea0bb22bcc9d"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/ultimate_tests/temp_neural/seg_001.mp4": {
-    "mtime": 1776675226.7082627,
-    "hash": "b13a4966b0f73323113e5663ea2f58e4"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/ultimate_tests/temp_neural/raw_seg_003.mp4": {
-    "mtime": 1776703182.1161366,
-    "hash": "9c8ef22ed07dc7f354d78c415f0377b2"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/ultimate_tests/temp_neural/raw_seg_002.mp4": {
-    "mtime": 1776703180.2781372,
-    "hash": "9c8ef22ed07dc7f354d78c415f0377b2"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/ultimate_tests/temp_neural/seg_002.mp4": {
-    "mtime": 1776675502.677188,
-    "hash": "7c0c37e98de09ddd8fffea0bb22bcc9d"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/ultimate_tests/temp_neural/raw_seg_001.mp4": {
-    "mtime": 1776703177.1881378,
-    "hash": "bf868caa53e43efa5f5cf07f683ba1ec"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/outputs/ultimate_tests/temp_neural/raw_seg_000.mp4": {
-    "mtime": 1776703136.1141493,
-    "hash": "014439313d0d49d7f07fcee2db7fd727"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/neural_326.mp4": {
-    "mtime": 1776895045.5224802,
-    "hash": "044d49b668a83178fabdd4c3eec1c601"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/visual_elite_35353.mp4": {
-    "mtime": 1776895032.9814067,
-    "hash": "6d0041d21a49cf09d9f4cb5fc45b1920"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/draft_35353.mp4": {
-    "mtime": 1776895033.9454124,
-    "hash": "127a3f54874ec0c77e5a886821b2b4a5"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/test_run/neural_6505.mp4": {
-    "mtime": 1776794000.4279182,
-    "hash": "d12dc70ca4e3dcb8bbdb742379af5a55"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/test_run/visual_elite_19075.mp4": {
-    "mtime": 1776793991.6587908,
-    "hash": "4a059a464a1adc5438f905fad6886b04"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/test_run/draft_19075.mp4": {
-    "mtime": 1776793993.143442,
-    "hash": "fe793364ec2e643e3ff2675128beb868"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/test_run/temp_neural/seg_000.mp4": {
-    "mtime": 1776786090.3341954,
-    "hash": "fc492e34cefa73a5f7b0fc3966662ab8"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/test_run/temp_neural/seg_001.mp4": {
-    "mtime": 1776786096.7039897,
-    "hash": "ecb2e9d4b16eb16127c9516dfd320d5d"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/test_run/temp_neural/raw_seg_003.mp4": {
-    "mtime": 1776793961.275154,
-    "hash": "5c660775c266b18782b75553cd930613"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/test_run/temp_neural/raw_seg_002.mp4": {
-    "mtime": 1776793982.2584105,
-    "hash": "08714000d8be3d077142d6b143d04b98"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/test_run/temp_neural/raw_seg_001.mp4": {
-    "mtime": 1776853885.1573613,
-    "hash": "1bf2c8c616116e6ca76bc908851709b4"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/test_run/temp_neural/raw_seg_000.mp4": {
-    "mtime": 1776853884.9343603,
-    "hash": "993e7b95c49bd7c98d592df2a83ffc38"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/temp_neural/seg_000.mp4": {
-    "mtime": 1776954809.7676804,
-    "hash": "42a769fdbb8d9593bed4f7666d655c54"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/temp_neural/seg_001.mp4": {
-    "mtime": 1776955052.2947643,
-    "hash": "a74ad2325d2df117e78706426828e122"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/temp_neural/raw_seg_003.mp4": {
-    "mtime": 1776900639.0024185,
-    "hash": "9c8ef22ed07dc7f354d78c415f0377b2"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/temp_neural/raw_seg_002.mp4": {
-    "mtime": 1776954837.2557845,
-    "hash": "00cb899fc170d5c5fcdbf5a10143e6a4"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/temp_neural/seg_002.mp4": {
-    "mtime": 1776955141.1651754,
-    "hash": "9c4f3ed1d96422140fd99b0cd03a65a3"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/temp_neural/raw_seg_001.mp4": {
-    "mtime": 1776949483.5957537,
-    "hash": "1075d0d5a4154f14cb801731e4cbf61c"
-  },
-  "/home/psalmprax/ALL_PROJECTS/ettametta/output/vids/temp_neural/raw_seg_000.mp4": {
-    "mtime": 1776949446.9125595,
-    "hash": "594fcffabd2b086eedc86f62b5f77f8c"
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/public/sfx/impact.mp3": {
+    "mtime": 1779643790.2778196,
+    "hash": "8d8e831fb9841f458bf8e7ceab615516"
+  },
+  "/home/psalmprax/ALL_PROJECTS/ettametta/apps/remotion-studio/public/sfx/whoosh.mp3": {
+    "mtime": 1779643790.2790864,
+    "hash": "8d8e831fb9841f458bf8e7ceab615516"
   }
 }

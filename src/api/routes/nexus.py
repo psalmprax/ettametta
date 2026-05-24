@@ -62,17 +62,38 @@ async def _update_job_progress(
             if job:
                 job.progress = progress
                 if status:
-                    job.status = status
+                    if isinstance(status, str):
+                        try:
+                            job.status = SystemJobStatus(status)
+                        except ValueError:
+                            try:
+                                job.status = SystemJobStatus[status.upper()]
+                            except KeyError:
+                                if status.upper() == "SYNTHESIS_ACTIVE":
+                                    job.status = SystemJobStatus.SYNTHESIS_ACTIVE
+                                elif status.upper() == "SYNTHESIZING":
+                                    job.status = SystemJobStatus.SYNTHESIZING
+                                else:
+                                    logging.error(f"[Nexus] _update_job_progress: Invalid status '{status}' ignored.")
+                    else:
+                        job.status = status
                 if error:
                     job.error_log = error
                 if output_path:
                     job.output_path = output_path
                 await db.commit()
 
+            # Safely determine status string for WebSocket notification
+            ws_status = status
+            if job and hasattr(job.status, "value"):
+                ws_status = job.status.value
+            elif job:
+                ws_status = str(job.status)
+
             notify_nexus_job_update_sync(
                 {
                     "id": str(job_id),
-                    "status": status or (job.status if job else "UNKNOWN"),
+                    "status": ws_status or "UNKNOWN",
                     "progress": progress,
                     "niche": niche or (job.niche if job else ""),
                     **({} if error is None else {"error": error}),

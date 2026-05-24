@@ -1,17 +1,18 @@
 import asyncio
 import websockets
-import sys
+import json
 
-async def test_ws():
-    uri = "ws://localhost:7201/api/v1/ws/telemetry"
+async def test_websocket():
+    uri = "ws://149.104.110.122:7200/ws/telemetry"
+    print(f"Connecting to {uri}...")
     try:
         async with websockets.connect(uri) as websocket:
-            print("Connected!")
-            # Wait for 1 message
-            response = await websocket.recv()
-            print(f"Received: {response}")
+            print("Connected successfully!")
+            message = await websocket.recv()
+            data = json.loads(message)
+            print(f"Received message type: {data.get('type')}")
+            print(f"Details: {data}")
     except Exception as e:
-        print(f"Failed: {e}")
+        print(f"Failed to connect/read: {e}")
 
-if __name__ == "__main__":
-    asyncio.run(test_ws())
+asyncio.run(test_websocket())

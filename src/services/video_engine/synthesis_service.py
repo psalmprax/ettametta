@@ -224,7 +224,7 @@ class GenerativeService:
         self.silicon_flow_key = get_secret("silicon_flow_key")
         self.model_manager = ModelManager()
         self.gpu_queue = GpuQueueManager()
-        self.circuit_breaker = CircuitBreaker()
+        self.circuit_breaker = CircuitBreaker(failure_threshold=3)
         
         # Check optional dependencies
         self.dependencies_available = {
@@ -293,13 +293,12 @@ class GenerativeService:
         dep_report = self.get_dependency_report()
         if not dep_report["healthy"]:
             status = "Degraded"
-            issues.extend(
-                [
-                    f"{driver['name']}: {driver['status']}"
-                    for driver in dep_report["drivers"]
-                    if driver["status"] != "Healthy"
-                ]
-            )
+            for driver in dep_report["drivers"]:
+                driver_status = driver.get("status")
+                if driver_status is None:
+                    driver_status = "Healthy" if driver.get("installed", True) else "Missing"
+                if driver_status != "Healthy":
+                    issues.append(f"{driver['name']}: {driver_status}")
 
         return {
             "service": "Synthesis Service",
@@ -549,10 +548,81 @@ class GenerativeService:
                 self.circuit_breaker.record_failure(engine)
                 return video_path
 
-        except Exception as e:
+        except Exception:
             self.circuit_breaker.record_failure(engine)
-            logging.error(f"[GenerativeService] Synthesis failed for {engine}: {e}")
+            logging.exception(f"[GenerativeService] Synthesis failed for {engine}")
             return None
+
+    def _resolve_params(self, engine: str, params: dict | None) -> dict:
+        """Resolves engine synthesis parameters or handles defaults gracefully."""
+        if params:
+            return params
+        try:
+            return self._get_engine_params(engine)
+        except Exception as e:
+            logging.warning(
+                f"[GenerativeService] Failed to get params for {engine}: {e}"
+            )
+            return {}
+
+    async def _run_local_inference(
+        self,
+        engine_name: str,
+        module_name: str,
+        func_name: str,
+        prompt: str,
+    ) -> str | None:
+        """Helper to dynamically import and run local video generation models in an executor."""
+        try:
+            module = importlib.import_module(f".models.{module_name}", package=__package__)
+            generate_func = getattr(module, func_name)
+            loop = asyncio.get_event_loop()
+            _, path = await loop.run_in_executor(None, generate_func, prompt)
+            return path
+        except ImportError as e:
+            logging.error(f"[GenerativeService] {engine_name} model not available: {e}")
+            return None
+        except Exception as e:
+            logging.error(f"[GenerativeService] {engine_name} synthesis failed: {e}")
+            return None
+
+    async def _execute_synthesis(
+        self,
+        engine: str,
+        prompt: str,
+        aspect_ratio: str,
+        params: dict,
+        custom_image_uri: str | None,
+    ) -> str | None:
+        """Executes the specific synthesis engine logic."""
+        if engine == "veo3":
+            return await self._synthesize_veo3(prompt, aspect_ratio)
+
+        # Handle local heavy ML inference engines with dynamic imports
+        local_ml_configs = {
+            "wan": ("wan_inference", "generate_wan_t2v"),
+            "wan2.2": ("wan_inference", "generate_wan_t2v"),
+            "hunyuan": ("hunyuan_inference", "generate_hunyuan"),
+            "ltx-video": ("ltx_video_inference", "generate_ltx"),
+            "mochi": ("mochi_inference", "generate_mochi"),
+            "cogvideo": ("cogvideo_inference", "generate_cogvideo"),
+        }
+        if engine in local_ml_configs:
+            module_name, func_name = local_ml_configs[engine]
+            return await self._run_local_inference(engine, module_name, func_name, prompt)
+
+        if engine == "animatediff":
+            return await self._synthesize_animatediff(prompt, aspect_ratio, params)
+
+        if engine == "lite4k":
+            return await self._synthesize_lite_4k(prompt, aspect_ratio, custom_image_uri)
+
+        free_providers = {"zsky", "kling", "pixverse", "replicate", "stability", "runway", "pika"}
+        if engine in free_providers:
+            return await self._synthesize_free_provider(engine, prompt, aspect_ratio)
+
+        logging.error(f"[GenerativeService] Unsupported engine: {engine}")
+        return None
 
     async def _dispatch_synthesis(
         self,
@@ -563,14 +633,7 @@ class GenerativeService:
         custom_image_uri: str = None,
     ) -> str | None:
         """Internal dispatcher for actual synthesis calls with comprehensive error handling."""
-        try:
-            if not params:
-                params = self._get_engine_params(engine)
-        except Exception as e:
-            logging.warning(
-                f"[GenerativeService] Failed to get params for {engine}: {e}"
-            )
-            params = {}
+        params = self._resolve_params(engine, params)
 
         try:
             # Check for remote GPU dispatch if local resources are constrained or explicitly configured
@@ -579,106 +642,9 @@ class GenerativeService:
                 logging.info(f"[GenerativeService] Dispatching {engine} synthesis to remote node: {remote_url}")
                 return await self._dispatch_remote_synthesis(remote_url, prompt, engine, aspect_ratio, params)
 
-            if engine == "veo3":
-                return await self._synthesize_veo3(prompt, aspect_ratio)
-            elif engine in ["wan2.2", "wan"]:
-                try:
-                    from .models.wan_inference import generate_wan_t2v
+            # Local engine dispatch
+            return await self._execute_synthesis(engine, prompt, aspect_ratio, params, custom_image_uri)
 
-                    loop = asyncio.get_event_loop()
-                    _, path = await loop.run_in_executor(None, generate_wan_t2v, prompt)
-                    return path
-                except ImportError as e:
-                    logging.error(f"[GenerativeService] Wan model not available: {e}")
-                    return None
-                except Exception as e:
-                    logging.error(f"[GenerativeService] Wan synthesis failed: {e}")
-                    return None
-            elif engine == "hunyuan":
-                try:
-                    from .models.hunyuan_inference import generate_hunyuan
-
-                    loop = asyncio.get_event_loop()
-                    _, path = await loop.run_in_executor(None, generate_hunyuan, prompt)
-                    return path
-                except ImportError as e:
-                    logging.error(
-                        f"[GenerativeService] Hunyuan model not available: {e}"
-                    )
-                    return None
-                except Exception as e:
-                    logging.error(f"[GenerativeService] Hunyuan synthesis failed: {e}")
-                    return None
-            elif engine == "ltx-video":
-                try:
-                    from .models.ltx_video_inference import generate_ltx
-
-                    loop = asyncio.get_event_loop()
-                    _, path = await loop.run_in_executor(None, generate_ltx, prompt)
-                    return path
-                except ImportError as e:
-                    logging.error(
-                        f"[GenerativeService] LTX-Video model not available: {e}"
-                    )
-                    return None
-                except Exception as e:
-                    logging.error(
-                        f"[GenerativeService] LTX-Video synthesis failed: {e}"
-                    )
-                    return None
-            elif engine == "mochi":
-                try:
-                    from .models.mochi_inference import generate_mochi
-
-                    loop = asyncio.get_event_loop()
-                    _, path = await loop.run_in_executor(None, generate_mochi, prompt)
-                    return path
-                except ImportError as e:
-                    logging.error(f"[GenerativeService] Mochi model not available: {e}")
-                    return None
-                except Exception as e:
-                    logging.error(f"[GenerativeService] Mochi synthesis failed: {e}")
-                    return None
-            elif engine == "cogvideo":
-                try:
-                    from .models.cogvideo_inference import generate_cogvideo
-
-                    loop = asyncio.get_event_loop()
-                    _, path = await loop.run_in_executor(
-                        None, generate_cogvideo, prompt
-                    )
-                    return path
-                except ImportError as e:
-                    logging.error(
-                        f"[GenerativeService] CogVideo model not available: {e}"
-                    )
-                    return None
-                except Exception as e:
-                    logging.error(f"[GenerativeService] CogVideo synthesis failed: {e}")
-                    return None
-            elif engine == "animatediff":
-                # Use remote AI service for AnimateDiff (most robust implementation)
-                return await self._synthesize_animatediff(prompt, aspect_ratio, params)
-            elif engine == "lite4k":
-                return await self._synthesize_lite_4k(
-                    prompt, aspect_ratio, custom_image_uri
-                )
-            # Free daily providers (external APIs)
-            elif engine in [
-                "zsky",
-                "kling",
-                "pixverse",
-                "replicate",
-                "stability",
-                "runway",
-                "pika",
-            ]:
-                return await self._synthesize_free_provider(
-                    engine, prompt, aspect_ratio
-                )
-            else:
-                logging.error(f"[GenerativeService] Unsupported engine: {engine}")
-                return None
         except Exception as e:
             logging.error(
                 f"[GenerativeService] Dispatch failed for engine {engine}: {e}"
@@ -1179,8 +1145,8 @@ class GenerativeService:
                 logging.warning(f"[GenerativeService] {provider} returned no result")
                 return None
 
-        except Exception as e:
-            logging.error(f"[GenerativeService] {provider} failed: {e}")
+        except Exception:
+            logging.exception(f"[GenerativeService] {provider} failed")
             return None
 
     async def _enhance_video_quality(self, video_path: str) -> str:
@@ -1281,8 +1247,8 @@ class GenerativeService:
             else:
                 return video_path
 
-        except Exception as e:
-            logging.error(f"[GenerativeService] Quality enhancement failed: {e}")
+        except Exception:
+            logging.exception("[GenerativeService] Quality enhancement failed")
             return video_path  # Return original if enhancement fails
 
     async def _synthesize_animatediff(

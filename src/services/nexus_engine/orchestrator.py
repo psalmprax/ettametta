@@ -523,7 +523,9 @@ class NexusOrchestrator:
                 await update_node(
                     "synthesis", NodeStatus.FAILED, 60, "Rendered file is invalid or empty"
                 )
-                raise RuntimeError("Rendered file is invalid")                await update_node("synthesis", NodeStatus.COMPLETED, 90)
+                raise RuntimeError("Rendered file is invalid")
+            
+            await update_node("synthesis", NodeStatus.COMPLETED, 90)
 
             # 4. Egress Node - Automated Publishing & Final Stats
             with tracer.start_as_current_span("Nexus.Node.Egress"):
