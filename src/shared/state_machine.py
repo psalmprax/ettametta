@@ -6,15 +6,16 @@ from src.services.infrastructure.event_bus import base_event_service
 logger = logging.getLogger("StateMachine")
 
 class JobState(str, Enum):
-    PENDING = "pending"
-    DISCOVERING = "discovery_active"
-    INGRESSING = "ingress_active"
-    COGNITION = "cognition_active"
-    SYNTHESIZING = "synthesis_active"
-    RENDERING = "rendering_active"
-    PUBLISHING = "publishing_active"
-    COMPLETED = "completed"
-    FAILED = "failed"
+    QUEUED = "QUEUED"
+    PENDING = "PENDING"
+    DISCOVERING = "DISCOVERY_ACTIVE"
+    INGRESSING = "INGRESS_ACTIVE"
+    COGNITION = "COGNITION_ACTIVE"
+    SYNTHESIZING = "SYNTHESIS_ACTIVE"
+    RENDERING = "RENDERING_ACTIVE"
+    PUBLISHING = "PUBLISHING_ACTIVE"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
 
 class JobStateMachine:
     """

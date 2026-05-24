@@ -24,10 +24,35 @@ class IntelligenceHub:
     Centralizes all LLM traffic with failover and hardening.
     """
 
+    PLACEHOLDER_PATTERNS = [
+        "your_", "placeholder", "CHANGE_ME", "set_me", "YOUR_",
+        "sk-your", "sk-placeholder", "change_me",
+    ]
+
+    @staticmethod
+    def _is_valid_key(key: str | None) -> bool:
+        """Return True if the key is set and is NOT a known placeholder value."""
+        if not key:
+            return False
+        key_lower = key.strip().lower()
+        for pattern in IntelligenceHub.PLACEHOLDER_PATTERNS:
+            if pattern.lower() in key_lower:
+                return False
+        return True
+
     def __init__(self):
-        self.openai_key = settings.OPENAI_API_KEY
-        self.groq_key = settings.GROQ_API_KEY
-        self.google_key = settings.GOOGLE_API_KEY
+        raw_openai = settings.OPENAI_API_KEY
+        raw_groq = settings.GROQ_API_KEY
+        raw_google = settings.GOOGLE_API_KEY
+        self.openai_key = raw_openai if self._is_valid_key(raw_openai) else None
+        self.groq_key = raw_groq if self._is_valid_key(raw_groq) else None
+        self.google_key = raw_google if self._is_valid_key(raw_google) else None
+        if raw_openai and not self.openai_key:
+            logger.warning("OPENAI_API_KEY detected as placeholder — ignoring")
+        if raw_groq and not self.groq_key:
+            logger.warning("GROQ_API_KEY detected as placeholder — ignoring")
+        if raw_google and not self.google_key:
+            logger.warning("GOOGLE_API_KEY detected as placeholder — ignoring")
         # Corrected: Use settings and ensure endpoint suffix
         self.primary_ollama_url = settings.OLLAMA_URL.rstrip("/") + "/api/chat"
         self.fallback_ollama_url = "http://localhost:11434/api/chat"

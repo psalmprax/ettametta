@@ -154,9 +154,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const fetchUser = async (authToken: string) => {
         await withRealFallback(
-            async () => {
+            async (signal) => {
                 return fetch(`${API_BASE}/auth/me`, {
                     headers: { Authorization: `Bearer ${authToken}` },
+                    signal,
                 });
             },
             {
@@ -180,9 +181,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const fetchCredits = async (authToken: string) => {
         await withRealFallback(
-            async () => {
+            async (signal) => {
                 return fetch(`${API_BASE}/credits/balance`, {
                     headers: { Authorization: `Bearer ${authToken}` },
+                    signal,
                 });
             },
             {

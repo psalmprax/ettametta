@@ -16,6 +16,7 @@ from sqlalchemy.orm import relationship
 from .database import Base
 from datetime import datetime, timezone
 import uuid
+from src.shared.enums import ReferralStatus
 
 
 class CreditPackageDB(Base):
@@ -92,7 +93,7 @@ class ReferralDB(Base):
         String(36), ForeignKey("users.id"), index=True
     )  # Who was referred
     referral_code = Column(String, unique=True, index=True)
-    status = Column(String, default="PENDING")  # PENDING, COMPLETED, REWARD_CLAIMED
+    status = Column(String, default=ReferralStatus.PENDING.value)  # PENDING, COMPLETED, REWARD_CLAIMED
     reward_credits = Column(Integer, default=0)
     reward_claimed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())

@@ -13,7 +13,7 @@ def safe_import_skill(module_path: str, skill_name: str):
         else:
             module = importlib.import_module(module_path)
         return getattr(module, skill_name)
-    except (ImportError, ModuleNotFoundError, AttributeError) as e:
+    except Exception as e:
         logger.warning(f"Skill '{skill_name}' at '{module_path}' disabled: {e}")
         return None
 
