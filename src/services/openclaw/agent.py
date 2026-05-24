@@ -571,7 +571,7 @@ class OpenClawAgent(BaseEttamettaAgent):
             recent_metrics = "No recent data"
             try:
                 recent_metrics = analytics_skill.get_system_stats()
-            except:
+            except Exception:
                 pass
 
             # 5-Star Upgrade: Hierarchical Negotiation (Workforce Council)

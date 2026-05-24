@@ -618,7 +618,7 @@ async def get_nexus_telemetry(
     # 2. System Load (Real OS load avg)
     try:
         load_1, _, _ = os.getloadavg()
-    except:
+    except Exception:
         load_1 = 0.0  # Fallback for non-unix or restricted envs
 
     # 3. Dynamic Hardware Signals (Live Reports)

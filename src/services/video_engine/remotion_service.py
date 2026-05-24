@@ -653,7 +653,7 @@ class RemotionService:
         # Concurrency queue gate
         async with self.render_semaphore:
             log.info(f"Acquired render slot for job {job_id} ({composition_id})")
-            start_time = asyncio.get_event_loop().time()
+            start_time = asyncio.get_running_loop().time()
             
             try:
                 # Safe isolated asset preparation (no file race conditions)
@@ -673,7 +673,7 @@ class RemotionService:
                 # Post-Render Output Validation
                 self._verify_render_output(output_path, log)
                 
-                duration = asyncio.get_event_loop().time() - start_time
+                duration = asyncio.get_running_loop().time() - start_time
                 log.info(f"[Telemetry] Render job completed successfully in {duration:.2f} seconds. Size: {os.path.getsize(output_path)} bytes")
                 
                 # Record metrics
@@ -684,24 +684,24 @@ class RemotionService:
                 return output_path
 
             except RemotionFatalError:
-                duration = asyncio.get_event_loop().time() - start_time
+                duration = asyncio.get_running_loop().time() - start_time
                 log.error(f"[Telemetry] Render job failed fatally in {duration:.2f} seconds.")
                 self._record_render_metrics(composition_id, "fatal_failure")
                 raise
             except RemotionTransientError:
                 self._breaker_record_failure()
-                duration = asyncio.get_event_loop().time() - start_time
+                duration = asyncio.get_running_loop().time() - start_time
                 log.error(f"[Telemetry] Render job failed transiently in {duration:.2f} seconds.")
                 self._record_render_metrics(composition_id, "transient_failure")
                 raise
             except asyncio.CancelledError:
-                duration = asyncio.get_event_loop().time() - start_time
+                duration = asyncio.get_running_loop().time() - start_time
                 log.warning(f"[Telemetry] Render job was cancelled after {duration:.2f} seconds.")
                 self._record_render_metrics(composition_id, "cancelled")
                 raise
             except Exception as e:
                 self._breaker_record_failure()
-                duration = asyncio.get_event_loop().time() - start_time
+                duration = asyncio.get_running_loop().time() - start_time
                 log.exception(f"[Telemetry] Unhandled system error during render for job {job_id} after {duration:.2f} seconds")
                 self._record_render_metrics(composition_id, "transient_failure")
                 raise RemotionTransientError(f"Unhandled render system crash: {e}") from e

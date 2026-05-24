@@ -231,5 +231,4 @@ def get_p4000_available_models() -> dict[str, dict[str, Any]]:
             "estimated_time": "3-5 min",
             "reliability": "Medium"
         }
-    }</content>
-<parameter name="filePath">remote_ai_setup/p4000_multi_model_inference.py
+    }

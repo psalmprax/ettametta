@@ -76,7 +76,7 @@ class VideoModelManager:
             for enc in ["h264_nvenc", "h264_amf", "h264_qsv", "h264_videotoolbox"]:
                 if enc in result.stdout: return enc
             return "libx264"
-        except: return "libx264"
+        except Exception: return "libx264"
 
     def unload_all(self):
         """Total eviction of all VRAM-occupying objects"""

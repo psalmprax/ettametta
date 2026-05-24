@@ -858,12 +858,12 @@ class VideoLeadScanner:
     async def _execute_ytdlp_process(self, cmd: list[str], platform: str) -> str:
         """Execute yt-dlp command and return stdout with leaky bucket rate limiting"""
         # Leaky bucket rate limiter: sleep if requests are too frequent
-        now = asyncio.get_event_loop().time()
+        now = asyncio.get_running_loop().time()
         delay = 2.0 - (now - self._last_request_time)
         if delay > 0:
             self.logger.info(f"Rate limiting query interval: sleeping for {delay:.2f}s")
             await asyncio.sleep(delay)
-        self._last_request_time = asyncio.get_event_loop().time()
+        self._last_request_time = asyncio.get_running_loop().time()
 
         async with self.process_semaphore:
             try:

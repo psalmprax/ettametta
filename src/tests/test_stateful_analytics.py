@@ -35,7 +35,7 @@ async def test_drift_detector_persistence(test_db):
 async def test_experiment_batcher_persistence(test_db):
     """Verify that experiment cohorts are persisted and assigned correctly."""
     # 1. Create a cohort
-    strategy = f"test_strat_{asyncio.get_event_loop().time()}"
+    strategy = f"test_strat_{asyncio.get_running_loop().time()}"
     batch = await base_experiment_service.create_cohort_batch(strategy, size=2)
     batch_id = batch["batch_id"]
     

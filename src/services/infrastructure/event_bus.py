@@ -112,7 +112,7 @@ class DistributedEventBus:
         await self.connect()
         try:
             return await self._redis.xlen(self.dlq_name)
-        except:
+        except Exception:
             return 0
 
     async def claim_stale_messages(self, min_idle_time: int = 60000):

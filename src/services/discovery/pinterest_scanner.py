@@ -91,7 +91,7 @@ class PinterestScanner:
                         data = json.loads(json_str)
                         pins = self._extract_pins_from_json(data)
                         candidates.extend(pins)
-                    except:
+                    except Exception:
                         pass
                 
                 # Try alternate data format

@@ -132,7 +132,7 @@ class SelfHealingSkill(OpenClawBaseSkill):
                 logger.warning(f"Failed to terminate '{name}': {e}")
                 try:
                     process.kill()
-                except:
+                except Exception:
                     pass
 
         # Restart

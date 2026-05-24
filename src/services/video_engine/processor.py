@@ -966,7 +966,7 @@ class VideoProcessor:
                 if os.path.exists(f):
                     try:
                         os.remove(f)
-                    except:
+                    except Exception:
                         pass
 
     async def process_full_pipeline(

@@ -706,7 +706,7 @@ async def verify_service(
 
                 client = groq.Groq(api_key=api_key)
                 # Simple test request
-                response = await asyncio.get_event_loop().run_in_executor(
+                response = await asyncio.get_running_loop().run_in_executor(
                     None,
                     lambda: client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
@@ -734,7 +734,7 @@ async def verify_service(
                 import openai
 
                 client = openai.OpenAI(api_key=api_key)
-                response = await asyncio.get_event_loop().run_in_executor(
+                response = await asyncio.get_running_loop().run_in_executor(
                     None,
                     lambda: client.chat.completions.create(
                         model="gpt-3.5-turbo",
@@ -819,7 +819,7 @@ async def verify_service(
                     region_name=region,
                 )
                 # Test with a simple list buckets call (will fail if no permissions but credentials are valid)
-                response = await asyncio.get_event_loop().run_in_executor(
+                response = await asyncio.get_running_loop().run_in_executor(
                     None, client.list_buckets
                 )
                 return {
@@ -849,7 +849,7 @@ async def verify_service(
 
                 stripe.api_key = secret_key
                 # Test with a simple balance call
-                balance = await asyncio.get_event_loop().run_in_executor(
+                balance = await asyncio.get_running_loop().run_in_executor(
                     None, stripe.Balance.retrieve
                 )
                 return {

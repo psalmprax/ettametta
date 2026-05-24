@@ -377,7 +377,7 @@ Return JSON:
                             "confidence": result.get("confidence", 0.8),
                             "reasoning": result.get("reasoning", "LLM detected"),
                         }
-        except:
+        except Exception:
             pass
 
         return self._simple_detect(video_title, video_description)

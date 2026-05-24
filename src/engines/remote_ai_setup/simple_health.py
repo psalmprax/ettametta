@@ -22,7 +22,7 @@ Content-Type: text/plain
 
 Not Found"""
         client_socket.send(response.encode())
-    except:
+    except Exception:
         pass
     finally:
         client_socket.close()

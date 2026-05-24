@@ -38,7 +38,7 @@ async def test_experiment_isolation_duplicates(test_db):
 @pytest.mark.asyncio
 async def test_killed_strategy_rejection(test_db):
     """Verify that 'Killed' strategies cannot spawn new cohorts."""
-    strat_name = f"dead_strat_{asyncio.get_event_loop().time()}"
+    strat_name = f"dead_strat_{asyncio.get_running_loop().time()}"
     
     # 1. Manually insert a KILLED strategy into the registry
     async with AsyncSessionLocal() as db:

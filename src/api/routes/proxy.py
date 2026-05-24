@@ -26,7 +26,7 @@ async def proxy_ollama(path: str, request: Request):
             if isinstance(body, str):
                 try:
                     body = json.loads(body)
-                except:
+                except Exception:
                     body = {"payload": body}
             else:
                 body = {"payload": body}

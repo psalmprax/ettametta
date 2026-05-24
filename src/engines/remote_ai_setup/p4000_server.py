@@ -157,5 +157,4 @@ if __name__ == "__main__":
     print(f"🧠 VRAM Usage: {config['animation']['estimated_vram_usage']}")
     print()
 
-    uvicorn.run(app, host="0.0.0.0", port=8122)</content>
-<parameter name="filePath">remote_ai_setup/update_windows_server.py
+    uvicorn.run(app, host="0.0.0.0", port=8122)
