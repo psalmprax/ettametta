@@ -67,7 +67,24 @@ async def update_internal_job(
         raise HTTPException(status_code=404, detail="Job not found")
         
     if body.status:
-        job.status = body.status
+        if isinstance(body.status, str):
+            try:
+                job.status = SystemJobStatus(body.status)
+            except ValueError:
+                try:
+                    job.status = SystemJobStatus[body.status.upper()]
+                except KeyError:
+                    if body.status.upper() == "SYNTHESIS_ACTIVE":
+                        job.status = SystemJobStatus.SYNTHESIS_ACTIVE
+                    elif body.status.upper() == "SYNTHESIZING":
+                        job.status = SystemJobStatus.SYNTHESIZING
+                    else:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Invalid job status: {body.status}"
+                        )
+        else:
+            job.status = body.status
     if body.progress is not None:
         job.progress = body.progress
     if body.output_path:
@@ -80,9 +97,14 @@ async def update_internal_job(
     # Trigger WebSocket notification if needed
     try:
         from src.api.routes.ws import notify_job_update_sync
+        
+        ws_status = job.status
+        if hasattr(job.status, "value"):
+            ws_status = job.status.value
+            
         notify_job_update_sync({
             "id": job_id,
-            "status": job.status,
+            "status": ws_status,
             "progress": job.progress,
             "output_path": job.output_path,
             "error_message": job.error_message

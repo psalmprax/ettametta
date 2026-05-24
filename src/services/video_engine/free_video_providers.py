@@ -27,6 +27,9 @@ logger = logging.getLogger(__name__)
 
 from src.api.utils.resilience import CircuitBreaker
 
+REPLICATE_API_URL = "https://api.replicate.com/v1"
+JSON_CONTENT_TYPE = "application/json"
+
 
 # Lazy check for browser automation
 _playwright_available = None
@@ -75,7 +78,7 @@ class FreeVideoProviderService:
             "supports_audio": False,
         },
         "replicate_wan": {
-            "api_url": "https://api.replicate.com/v1",
+            "api_url": REPLICATE_API_URL,
             "free_credits": 0,  # Paid only
             "max_duration": 5,
             "default_aspect": "16:9",
@@ -86,7 +89,7 @@ class FreeVideoProviderService:
             "replicate_model": "wan-video/wan-2.2-5b-fast",
         },
         "replicate_seedance": {
-            "api_url": "https://api.replicate.com/v1",
+            "api_url": REPLICATE_API_URL,
             "free_credits": 0,  # Paid only
             "max_duration": 10,
             "default_aspect": "16:9",
@@ -97,7 +100,7 @@ class FreeVideoProviderService:
             "replicate_model": "bytedance/seedance-1-lite",
         },
         "replicate_hailuo": {
-            "api_url": "https://api.replicate.com/v1",
+            "api_url": REPLICATE_API_URL,
             "free_credits": 0,  # Paid only
             "max_duration": 10,
             "default_aspect": "16:9",
@@ -108,7 +111,7 @@ class FreeVideoProviderService:
             "replicate_model": "minimax/hailuo-02-fast",
         },
         "replicate": {
-            "api_url": "https://api.replicate.com/v1",
+            "api_url": REPLICATE_API_URL,
             "free_credits": 10,  # One-time trial
             "max_duration": 10,
             "default_aspect": "16:9",
@@ -193,22 +196,6 @@ class FreeVideoProviderService:
             "api_url": "https://api.genmo.ai/v1",
             "free_credits": 15,  # Daily
             "max_duration": 8,
-            "default_aspect": "16:9",
-            "supports_image2video": True,
-            "supports_audio": False,
-        },
-        "kling": {
-            "api_url": "https://api.klingai.com/v1",
-            "free_credits": 66,  # Daily - most generous
-            "max_duration": 10,
-            "default_aspect": "9:16",
-            "supports_image2video": True,
-            "supports_audio": True,
-        },
-        "pika": {
-            "api_url": "https://api.pika.art/v1",
-            "free_credits": 150,  # Monthly
-            "max_duration": 4,
             "default_aspect": "16:9",
             "supports_image2video": True,
             "supports_audio": False,
@@ -414,7 +401,7 @@ class FreeVideoProviderService:
             # Fallback: Try browser automation (Playwright) when API keys are not available
             if check_playwright_available():
                 logger.info("[FreeVideoProvider] All API providers failed, trying browser automation...")
-                result = await self._generate_with_browser(prompt, duration, aspect_ratio)
+                result = await self._generate_with_browser(prompt, aspect_ratio)
                 if result:
                     self.circuit_breaker.record_success()
                     return result
@@ -423,13 +410,13 @@ class FreeVideoProviderService:
             logger.error("[FreeVideoProvider] All providers failed")
             return None
 
-        except Exception as e:
+        except Exception:
             self.circuit_breaker.record_failure()
-            logger.error(f"[FreeVideoProvider] Generation exploded: {e}")
+            logger.exception("[FreeVideoProvider] Generation exploded")
             return None
 
     async def _generate_with_browser(
-        self, prompt: str, duration: int, aspect_ratio: str
+        self, prompt: str, aspect_ratio: str
     ) -> dict[str, Any] | None:
         """
         Generate video using Playwright browser automation as fallback.
@@ -467,27 +454,28 @@ class FreeVideoProviderService:
             return None
 
         # Apply style to prompt if provided
-        enhanced_prompt = self._apply_style(prompt, style, provider)
+        enhanced_prompt = self._apply_style(prompt, style)
 
-        # Route to provider-specific generator
-        if provider == "zsky":
-            return await self._generate_zsky(
-                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
-            )
-        elif provider == "kling":
-            return await self._generate_kling(
-                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
-            )
-        elif provider == "pixverse":
-            return await self._generate_pixverse(
-                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
-            )
-        elif provider in [
-            "replicate",
-            "replicate_wan",
-            "replicate_seedance",
-            "replicate_hailuo",
-        ]:
+        # Map standard providers to their respective method names
+        standard_generators = {
+            "zsky": "_generate_zsky",
+            "kling": "_generate_kling",
+            "pixverse": "_generate_pixverse",
+            "stability": "_generate_stability",
+            "runway": "_generate_runway",
+            "pika": "_generate_pika",
+            "haiper": "_generate_haiper",
+            "luma": "_generate_luma",
+        }
+
+        if provider in standard_generators:
+            method_name = standard_generators[provider]
+            generator = getattr(self, method_name)
+            if provider in ["runway", "pika"]:
+                return await generator(enhanced_prompt, duration, aspect_ratio, api_key, config)
+            return await generator(enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config)
+
+        if provider in ["replicate", "replicate_wan", "replicate_seedance", "replicate_hailuo"]:
             return await self._generate_replicate(
                 provider,
                 enhanced_prompt,
@@ -497,94 +485,20 @@ class FreeVideoProviderService:
                 api_key,
                 config,
             )
-        elif provider == "stability":
-            return await self._generate_stability(
-                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
-            )
-        elif provider == "runway":
-            return await self._generate_runway(
-                enhanced_prompt, duration, aspect_ratio, api_key, config
-            )
-        elif provider == "pika":
-            return await self._generate_pika(
-                enhanced_prompt, duration, aspect_ratio, api_key, config
-            )
-        elif provider == "haiper":
-            return await self._generate_haiper(
-                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
-            )
-        elif provider == "luma":
-            return await self._generate_luma(
-                enhanced_prompt, duration, aspect_ratio, image_uri, api_key, config
-            )
-        elif provider == "kaiber":
+
+        browser_providers = {
+            "kaiber", "fliki", "invideo", "morph", "genmo",
+            "leonardo", "frameloop", "wavespeed", "ltx", "videoany",
+            "vidu", "hailuo", "seedance", "heygen"
+        }
+        if provider in browser_providers:
             return await self._generate_browser_automation(
-                "kaiber", prompt, aspect_ratio
-            )
-        elif provider == "fliki":
-            return await self._generate_browser_automation(
-                "fliki", prompt, aspect_ratio
-            )
-        elif provider == "invideo":
-            return await self._generate_browser_automation(
-                "invideo", prompt, aspect_ratio
-            )
-        elif provider == "morph":
-            return await self._generate_browser_automation(
-                "morph", prompt, aspect_ratio
-            )
-        elif provider == "genmo":
-            return await self._generate_browser_automation(
-                "genmo", prompt, aspect_ratio
-            )
-        elif provider == "kling":
-            return await self._generate_browser_automation(
-                "kling", prompt, aspect_ratio
-            )
-        elif provider == "pika":
-            return await self._generate_browser_automation(
-                "pika", prompt, aspect_ratio
-            )
-        elif provider == "leonardo":
-            return await self._generate_browser_automation(
-                "leonardo", prompt, aspect_ratio
-            )
-        elif provider == "frameloop":
-            return await self._generate_browser_automation(
-                "frameloop", prompt, aspect_ratio
-            )
-        elif provider == "wavespeed":
-            return await self._generate_browser_automation(
-                "wavespeed", prompt, aspect_ratio
-            )
-        elif provider == "ltx":
-            return await self._generate_browser_automation(
-                "ltx", prompt, aspect_ratio
-            )
-        elif provider == "videoany":
-            return await self._generate_browser_automation(
-                "videoany", prompt, aspect_ratio
-            )
-        elif provider == "vidu":
-            return await self._generate_browser_automation(
-                "vidu", prompt, aspect_ratio
-            )
-        elif provider == "hailuo":
-            return await self._generate_browser_automation(
-                "hailuo", prompt, aspect_ratio
-            )
-        elif provider == "seedance":
-            return await self._generate_browser_automation(
-                "seedance", prompt, aspect_ratio
-            )
-        elif provider == "heygen":
-            return await self._generate_browser_automation(
-                "heygen", prompt, aspect_ratio
+                provider, prompt, aspect_ratio
             )
 
         return None
 
-    def _apply_style(self, prompt: str, style: str | None, provider: str) -> str:
+    def _apply_style(self, prompt: str, style: str | None) -> str:
         """Apply style preset to prompt"""
         if not style:
             return prompt
@@ -618,7 +532,7 @@ class FreeVideoProviderService:
 
         headers = {
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
+            "Content-Type": JSON_CONTENT_TYPE,
         }
 
         payload = {
@@ -657,8 +571,8 @@ class FreeVideoProviderService:
 
                 return None
 
-        except Exception as e:
-            logger.error(f"[FreeVideoProvider] ZSky request failed: {e}")
+        except Exception:
+            logger.exception("[FreeVideoProvider] ZSky request failed")
             return None
 
     async def _poll_zsky_job(
@@ -675,7 +589,7 @@ class FreeVideoProviderService:
         headers = {"Authorization": f"Bearer {api_key}"}
 
         async with httpx.AsyncClient(timeout=30) as client:
-            for attempt in range(max_attempts):
+            for _ in range(max_attempts):
                 try:
                     response = await client.get(
                         f"{config['api_url']}/video/generation/{job_id}",
@@ -719,7 +633,7 @@ class FreeVideoProviderService:
 
         headers = {
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
+            "Content-Type": JSON_CONTENT_TYPE,
         }
 
         payload = {
@@ -763,14 +677,14 @@ class FreeVideoProviderService:
 
                 return None
 
-        except Exception as e:
-            logger.error(f"[FreeVideoProvider] Haiper request failed: {e}")
+        except Exception:
+            logger.exception("[FreeVideoProvider] Haiper request failed")
             logger.info("[Haiper] Falling back to browser automation")
             try:
                 from src.services.openclaw.skills.haiper import haiper_skill
                 return await haiper_skill.generate(prompt, aspect_ratio)
-            except Exception as browser_err:
-                logger.error(f"[FreeVideoProvider] Haiper browser fallback failed: {browser_err}")
+            except Exception:
+                logger.exception("[FreeVideoProvider] Haiper browser fallback failed")
                 return None
 
     async def _generate_luma(
@@ -787,7 +701,7 @@ class FreeVideoProviderService:
 
         headers = {
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
+            "Content-Type": JSON_CONTENT_TYPE,
         }
 
         payload = {
@@ -831,14 +745,14 @@ class FreeVideoProviderService:
 
                 return None
 
-        except Exception as e:
-            logger.error(f"[FreeVideoProvider] Luma request failed: {e}")
+        except Exception:
+            logger.exception("[FreeVideoProvider] Luma request failed")
             logger.info("[Luma] Falling back to browser automation")
             try:
                 from src.services.openclaw.skills.luma import luma_skill
                 return await luma_skill.generate(prompt, aspect_ratio)
-            except Exception as browser_err:
-                logger.error(f"[FreeVideoProvider] Luma browser fallback failed: {browser_err}")
+            except Exception:
+                logger.exception("[FreeVideoProvider] Luma browser fallback failed")
                 return None
 
     async def _generate_browser_automation(
@@ -883,8 +797,8 @@ class FreeVideoProviderService:
                 return result
             return None
 
-        except Exception as e:
-            logger.error(f"[FreeVideoProvider] Browser automation failed for {provider}: {e}")
+        except Exception:
+            logger.exception(f"[FreeVideoProvider] Browser automation failed for {provider}")
             return None
 
 

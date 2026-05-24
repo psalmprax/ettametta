@@ -21,8 +21,8 @@ from src.services.llm.intelligence_hub import base_intelligence_service
 async def test_knowledge_base():
     print("📥 Testing Knowledge Base (Qdrant)...")
     try:
-        await base_knowledge_service.ingest_text("Ettametta is an autonomous content engine.", metadata={"source": "test"})
-        results = await base_knowledge_service.query("What is Ettametta?")
+        await base_knowledge_service.ingest_text("Ettametta is an autonomous content engine.", dataset_id="test_dataset", metadata={"source": "test"})
+        results = await base_knowledge_service.query("What is Ettametta?", dataset_id="test_dataset")
         if results:
             print(f"✅ Knowledge retrieval successful: {results[0]['content']}")
         else:
@@ -99,13 +99,15 @@ async def test_cinema_launch():
             {"text": "Ettametta is scaling autonomously.", "visual_prompt": "Neural network", "mood": "Energetic"}
         ]
         
-        job_id = await base_creator_service.launch_automated_video(
-            user_id="test_user_remote",
+        import uuid
+        job_id = str(uuid.uuid4())
+        output_path = await base_creator_service.create_cinema_video(
+            job_id=job_id,
             topic="Remote Verification",
             niche="AI Technology",
             script=test_segments
         )
-        print(f"✅ Cinema job initiated: {job_id}")
+        print(f"✅ Cinema job initiated/successful: {output_path}")
         return True
     except Exception as e:
         print(f"❌ Cinema launch failed: {e}")

@@ -1,7 +1,7 @@
 import os
 import httpx
 import logging
-import importlib.util
+import importlib
 import tenacity
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from src.api.utils.vault import get_secret
@@ -11,7 +11,11 @@ from src.api.utils.resilience import CircuitBreaker
 logger = logging.getLogger(__name__)
 
 def check_module_available(module_name: str) -> bool:
-    return importlib.util.find_spec(module_name) is not None
+    try:
+        importlib.import_module(module_name)
+        return True
+    except ImportError:
+        return False
 
 class VoiceoverService:
     @property

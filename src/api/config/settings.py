@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     CPU_AUTODETECT_THREADS: bool = True
     RESOURCE_CONSTRAINED_MODE: bool = False  # Set to True for small VPS (e.g. 2GB RAM)
     REMOTION_STUDIO_PATH: str = "apps/remotion-studio"
+    REMOTION_CONCURRENCY_LIMIT: int = 2  # Max simultaneous rendering processes
     
     # Resilience Settings (Global Hardening)
     DEFAULT_TIMEOUT: int = 60

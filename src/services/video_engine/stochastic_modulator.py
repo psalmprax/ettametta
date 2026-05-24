@@ -75,37 +75,28 @@ class StochasticModulator:
         """Select a random ThemePreset from the available list."""
         return self.rng.choice(list(THEME_PRESETS.keys()))
 
-    def apply_modulation(self, style_config: Dict[str, Any], theme_preset_name: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Applies theme preset overrides and stochastically modulates color, timing, and zoom properties.
-        """
-        # Create a deep copy of style_config
-        config = {k: (v.copy() if isinstance(v, dict) else v) for k, v in style_config.items()}
+    def _apply_theme_preset(self, config: Dict[str, Any], theme_preset_name: Optional[str]) -> None:
+        """Apply theme preset overrides to config."""
+        if not theme_preset_name:
+            return
+        preset = THEME_PRESETS.get(theme_preset_name)
+        if not preset:
+            return
 
-        # 1. Apply theme preset if requested (or choose one deterministically if randomized)
-        if theme_preset_name:
-            preset = THEME_PRESETS.get(theme_preset_name)
-            if preset:
-                logger.info(f"[StochasticModulator] Applying ThemePreset: {theme_preset_name}")
-                if "color_profile" not in config:
-                    config["color_profile"] = {}
-                config["color_profile"].update(preset["color_profile"])
-                if "remotion_flags" not in config:
-                    config["remotion_flags"] = {}
-                config["remotion_flags"].update(preset["remotion_flags"])
-                if "music_keywords" in preset:
-                    config["music_keywords"] = preset["music_keywords"]
-
-        # Ensure dictionary structures exist
+        logger.info(f"[StochasticModulator] Applying ThemePreset: {theme_preset_name}")
         if "color_profile" not in config:
             config["color_profile"] = {}
+        config["color_profile"].update(preset["color_profile"])
+
         if "remotion_flags" not in config:
             config["remotion_flags"] = {}
+        config["remotion_flags"].update(preset["remotion_flags"])
 
-        color = config["color_profile"]
-        flags = config["remotion_flags"]
+        if "music_keywords" in preset:
+            config["music_keywords"] = preset["music_keywords"]
 
-        # 2. Modulate Color Grading properties stochastically
+    def _modulate_color_profile(self, color: Dict[str, Any]) -> None:
+        """Modulate Color Grading properties stochastically."""
         contrast = float(color.get("contrast", 1.2))
         color["contrast"] = round(self.modulate_value(contrast, variance=0.10, min_val=0.9, max_val=1.6), 2)
 
@@ -120,7 +111,8 @@ class StochasticModulator:
         color_temp = float(color.get("color_temp", 5500))
         color["color_temp"] = int(self.modulate_value(color_temp, variance=0.08, min_val=3500, max_val=9000))
 
-        # 3. Modulate timing and motion parameters
+    def _modulate_remotion_flags(self, flags: Dict[str, Any]) -> None:
+        """Modulate timing and motion parameters."""
         if "zoom_intensity" in flags:
             zoom = float(flags["zoom_intensity"])
             flags["zoom_intensity"] = round(self.modulate_value(zoom, variance=0.20, min_val=1.01, max_val=1.25), 3)
@@ -133,6 +125,24 @@ class StochasticModulator:
             flags["transition_duration_seconds"] = round(self.modulate_value(duration, variance=0.25, min_val=0.1, max_val=1.5), 2)
         else:
             flags["transition_duration_seconds"] = round(self.rng.uniform(0.2, 0.6), 2)
+
+    def apply_modulation(self, style_config: Dict[str, Any], theme_preset_name: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Applies theme preset overrides and stochastically modulates color, timing, and zoom properties.
+        """
+        # Create a deep copy of style_config
+        config = {k: (v.copy() if isinstance(v, dict) else v) for k, v in style_config.items()}
+
+        self._apply_theme_preset(config, theme_preset_name)
+
+        # Ensure dictionary structures exist
+        if "color_profile" not in config:
+            config["color_profile"] = {}
+        if "remotion_flags" not in config:
+            config["remotion_flags"] = {}
+
+        self._modulate_color_profile(config["color_profile"])
+        self._modulate_remotion_flags(config["remotion_flags"])
 
         logger.debug(f"[StochasticModulator] Modulated style config: {config}")
         return config
