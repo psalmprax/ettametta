@@ -91,7 +91,7 @@ class FacebookPublisher(SocialPublisher):
                 logger.error(f"[FacebookPublisher] Upload failed: {error_msg}")
                 return None
 
-            logger.info(f"[FacebookPublisher] Video uploaded successfully")
+            logger.info("[FacebookPublisher] Video uploaded successfully")
 
             # Step 3: Finalize upload
             finalize_url = f"https://graph.facebook.com/v20.0/{upload_session_id}"

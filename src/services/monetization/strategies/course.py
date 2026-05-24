@@ -59,7 +59,7 @@ class CourseStrategy(BaseMonetizationStrategy):
         assets = await self.get_assets(niche)
         
         if not assets:
-            logging.warning(f"[CourseStrategy] No course platform configured. Set 'course_platform_uri' in settings.")
+            logging.warning("[CourseStrategy] No course platform configured. Set 'course_platform_uri' in settings.")
             return ""
         
         platform_uri = assets[0].get("url", "")

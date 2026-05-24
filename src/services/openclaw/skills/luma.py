@@ -106,7 +106,7 @@ class LumaSkill(OpenClawBaseSkill):
             video_element = await page.query_selector("video[src]")
             video_uri = await video_element.get_attribute("src")
 
-            logger.info(f"[Luma] Video generated successfully")
+            logger.info("[Luma] Video generated successfully")
 
             await browser.close()
             await playwright.stop()

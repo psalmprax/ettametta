@@ -65,7 +65,7 @@ class DataIngestionSkill(OpenClawBaseSkill):
             if not items:
                 return "No items found in RSS feed."
 
-            summary = f"📰 **RSS Feed Results:**\n"
+            summary = "📰 **RSS Feed Results:**\n"
             for i, item in enumerate(items, 1):
                 summary += f"{i}. {item['title']}\n   🔗 {item['link']}\n"
             return summary
@@ -143,7 +143,7 @@ class DataIngestionSkill(OpenClawBaseSkill):
                 return "⚠️ No repositories found"
 
             repos = items[:limit]
-            summary = f"⭐ **GitHub Trending:**\n"
+            summary = "⭐ **GitHub Trending:**\n"
             for i, repo in enumerate(repos, 1):
                 name = repo.get("full_name", "Unknown")
                 stars = repo.get("stargazers_count", 0)

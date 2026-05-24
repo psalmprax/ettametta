@@ -74,7 +74,7 @@ async def complete(
         except ValueError:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid provider. Choose from: groq, openai, xai, deepseek, anthropic, gemini",
+                detail="Invalid provider. Choose from: groq, openai, xai, deepseek, anthropic, gemini",
             )
 
     try:
@@ -114,7 +114,7 @@ async def chat(request: ChatRequest, current_user=Depends(get_current_user)):
         except ValueError:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid provider. Choose from: groq, openai, xai, deepseek, anthropic, gemini",
+                detail="Invalid provider. Choose from: groq, openai, xai, deepseek, anthropic, gemini",
             )
 
     messages = [{"role": m.role, "content": m.content} for m in request.messages]

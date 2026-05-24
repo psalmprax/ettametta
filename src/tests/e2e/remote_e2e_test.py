@@ -52,7 +52,7 @@ async def run_vlm_analysis(video_path: str):
         result = await base_vlm_service.analyze_video_content(video_path)
 
         if result:
-            print(f"  ✅ VLM Analysis:")
+            print("  ✅ VLM Analysis:")
             print(f"    - Visual mood: {result.get('visual_mood', 'unknown')}")
             print(f"    - Content type: {result.get('content_type', 'unknown')}")
             print(f"    - Key moments: {len(result.get('key_moments', []))}")

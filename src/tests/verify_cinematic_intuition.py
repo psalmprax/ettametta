@@ -48,7 +48,7 @@ async def verify_cinematic_intuition():
         # total_time = sum(s['duration'] for s in plan['segments'][:i+1])
         # nearest_beat = base_rhythm_service.find_nearest_beat(total_time, rhythm['beats'])
         # if abs(total_time - nearest_beat) < 0.1:
-        #     print(f"  ✅ Beat-Synced!")
+        #     print("  ✅ Beat-Synced!")
 
     print("\n✅ Verification Script Complete")
 

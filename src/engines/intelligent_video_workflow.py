@@ -769,7 +769,7 @@ async def discover_multi_platform(query: str, max_per_platform: int = 2, session
 
     # Wave 3: Real-First Robustness - NO PLACEHOLDERS
     if not all_results:
-        print(f"  🛑 WARNING: No results found in primary swamp. Retrying with broad topic...")
+        print("  🛑 WARNING: No results found in primary swamp. Retrying with broad topic...")
         # Emergency broad search if specific queries fail (Real-First fallback)
         fallback_results = await search_youtube_api("top trending viral videos 2024", 5)
         if not fallback_results:

@@ -55,7 +55,7 @@ async def main():
     video_path = await test_download()
 
     if video_path:
-        print(f"\n✅ DOWNLOAD TEST PASSED")
+        print("\n✅ DOWNLOAD TEST PASSED")
         print(f"  Video saved to: {video_path}")
     else:
         print("\n❌ DOWNLOAD TEST FAILED")

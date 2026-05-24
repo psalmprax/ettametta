@@ -66,7 +66,7 @@ class StrategyService:
             except Exception as e:
                 logging.warning(f"[StrategyService] CrewAI failed, falling back to Groq: {e}")
 
-        system_prompt = f"You are an elite AI Screenwriter for ettametta. Break down narrative prompts into structured scenes. Output JSON."
+        system_prompt = "You are an elite AI Screenwriter for ettametta. Break down narrative prompts into structured scenes. Output JSON."
         user_prompt = f"""
         NARRATIVE IDEA: {prompt}
         STYLE OVERLAY: {style}

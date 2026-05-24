@@ -195,7 +195,7 @@ class MotionGraphicsService:
         if not self.enabled:
             return video_path  # Return original if disabled
 
-        logger.info(f"[MotionGraphics] Adding watermark")
+        logger.info("[MotionGraphics] Adding watermark")
 
         try:
             # Simple FFmpeg watermark implementation

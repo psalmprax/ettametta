@@ -179,7 +179,7 @@ def test_render_all():
                 print(f"  ❌ FAILED (Exit Code: {result.returncode})")
                 print(f"  Stderr: {result.stderr[-500:]}")
         except subprocess.TimeoutExpired:
-            print(f"  ❌ TIMEOUT")
+            print("  ❌ TIMEOUT")
             
     print(f"\n=== SUMMARY: {success_count}/{len(TEST_CASES)} CASES PASSED ===")
     return success_count == len(TEST_CASES)

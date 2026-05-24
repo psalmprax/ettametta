@@ -79,7 +79,7 @@ class LeadGenStrategy(BaseMonetizationStrategy):
         # 2. ConvertKit Integration
         if settings.CONVERTKIT_API_KEY:
             logger.info(f"[LeadGen] Subscribing {email} to ConvertKit")
-            url = f"https://api.convertkit.com/v3/forms/YOUR_FORM_ID/subscribe"
+            url = "https://api.convertkit.com/v3/forms/YOUR_FORM_ID/subscribe"
             data = {
                 "api_key": settings.CONVERTKIT_API_KEY,
                 "email": email,

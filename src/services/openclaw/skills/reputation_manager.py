@@ -32,7 +32,7 @@ class ReputationManagerSkill(OpenClawBaseSkill):
             elif action == "draft":
                 # Generate responses
                 return (
-                    f"📝 **Response Drafts Generated**\n"
+                    "📝 **Response Drafts Generated**\n"
                     "1. User @fan1: 'Hi! You can grab this directly at our link in bio!'\n"
                     "2. User @fan2: 'Thanks for the support! Check our store.'\n"
                 )

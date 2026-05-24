@@ -63,7 +63,7 @@ class VoiceoverService:
         # 1. Check Fish Speech (Local Infrastructure)
         if (self.engine == "fish_speech" or not self.elevenlabs_key) and not self.breakers["fish"].is_open():
             try:
-                logger.info(f"[VoiceoverService] Attempting Fish Speech...")
+                logger.info("[VoiceoverService] Attempting Fish Speech...")
                 async with httpx.AsyncClient() as client:
                     payload = {"text": text, "voice": voice_id or "default"}
                     logger.info(f"[VoiceoverService] POST {self.fish_endpoint}/generate")
@@ -95,7 +95,7 @@ class VoiceoverService:
 
         # 2. ElevenLabs (Cloud API)
         if self.elevenlabs_key and not self.breakers["elevenlabs"].is_open():
-            logger.info(f"[VoiceoverService] Attempting ElevenLabs...")
+            logger.info("[VoiceoverService] Attempting ElevenLabs...")
             voice_id = voice_id or self.default_voice_id
             url = f"{self.elevenlabs_url}/text-to-speech/{voice_id}"
             headers = {"xi-api-key": self.elevenlabs_key, "Content-Type": "application/json"}
@@ -120,7 +120,7 @@ class VoiceoverService:
                 self.breakers["elevenlabs"].record_failure()
 
         # 3. Fallback to gTTS (Free)
-        logger.info(f"[VoiceoverService] Attempting gTTS Fallback...")
+        logger.info("[VoiceoverService] Attempting gTTS Fallback...")
         if check_module_available("gtts"):
             try:
                 from gtts import gTTS

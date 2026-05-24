@@ -141,7 +141,7 @@ class FilterNode:
         filter_str = f"setpts=1/({speed_expr})*PTS"
         use_frame_blend = self.params.get("frame_blend", False)
         if use_frame_blend:
-            filter_str += f",minterpolate=fps=30:mi_mode=mci:mc_mode=aobmc:me_mode=bidir"
+            filter_str += ",minterpolate=fps=30:mi_mode=mci:mc_mode=aobmc:me_mode=bidir"
         return f"{inp}{filter_str}{out}"
 
     def _drawtext_filter(self, inp: str, out: str) -> str:
@@ -163,7 +163,7 @@ class FilterNode:
 
         filter_str = (
             f"drawtext=text='{text}':fontcolor={fontcolor}:fontsize={fontsize}:"
-            f"box=1:boxcolor=black@0.5:boxborderw=10:"
+            "box=1:boxcolor=black@0.5:boxborderw=10:"
             f"{pos}:enable='between(t,{start_time},{start_time + duration})'"
         )
         return f"{inp}{filter_str}{out}"

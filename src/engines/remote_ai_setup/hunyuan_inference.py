@@ -203,7 +203,7 @@ def generate_hunyuan_gguf(prompt: str, output_dir: str = "/workspace/remote_ai_g
     
     # Note: GGUF video generation requires specific implementation
     # The jayn7/HunyuanVideo-1.5_T2V_720p-GGUF model may need custom processing
-    print(f"⚠️ GGUF video generation is model-specific. Model: jayn7/HunyuanVideo-1.5_T2V_720p-GGUF", flush=True)
+    print("⚠️ GGUF video generation is model-specific. Model: jayn7/HunyuanVideo-1.5_T2V_720p-GGUF", flush=True)
     
     elapsed = time.time() - start_time
     print(f"✅ GGUF generation initiated in {elapsed:.1f}s", flush=True)

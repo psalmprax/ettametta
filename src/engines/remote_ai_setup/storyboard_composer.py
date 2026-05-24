@@ -125,7 +125,7 @@ def ensure_tunnel():
         time.sleep(2)
         print(".", end="", flush=True)
     
-    print(f"\n❌ Failed to connect to API via tunnel after multiple attempts.")
+    print("\n❌ Failed to connect to API via tunnel after multiple attempts.")
     return False
 
 def generate_shot(scene_data):
@@ -178,7 +178,7 @@ def assemble_master(video_files, final_output):
             f.write(f"file '{os.path.abspath(vf)}'\n")
     
     cmd = [
-        "/home/psalmprax/.local/bin/ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file, 
+        "/home/psalmprax/.local/bin/ffmpeg", "-y", "-", "concat", "-safe", "0", "-i", list_file, 
         "-c", "copy", final_output
     ]
     try:

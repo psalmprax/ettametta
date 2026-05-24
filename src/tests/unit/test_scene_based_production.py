@@ -68,7 +68,7 @@ async def test_scene_based_video_production():
     print("📋 TEST PARAMETERS:")
     print(f"   • Niche: {test_niche}")
     print(f"   • Scenes: {len(test_scenes)}")
-    print(f"   • Target Duration: 60 seconds")
+    print("   • Target Duration: 60 seconds")
     print(f"   • Audio Script: {len(test_audio_script.split())} words")
     print()
 

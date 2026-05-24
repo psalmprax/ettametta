@@ -66,7 +66,7 @@ class RecoveryService:
                     ex=86400,
                 )
             logger.info(
-                f"🧠 [Recovery] Redis Hot State reconstructed for "
+                "🧠 [Recovery] Redis Hot State reconstructed for "
                 f"{len(base_experiment_service.active_batches)} cohorts."
             )
         except Exception as e:

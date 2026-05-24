@@ -185,5 +185,5 @@ def generate_cogvideo_dummy(output_dir: str) -> tuple[str, str]:
     """Raise error instead of generating garbage output"""
     raise RuntimeError(
         "CogVideoX generation failed: neither remote GPU node nor local model available. "
-        f"Configure RENDER_NODE_URL or install diffusers + CogVideoX model locally."
+        "Configure RENDER_NODE_URL or install diffusers + CogVideoX model locally."
     )

@@ -217,7 +217,7 @@ def download_and_process_task(
             enhanced_path = await sound_design_service.add_background_music(processed_path, niche=niche)
             if enhanced_path:
                 processed_path = enhanced_path
-                logger.info(f"[Task] Sound design applied")
+                logger.info("[Task] Sound design applied")
 
         # Motion Graphics: enabled by explicit flag OR premium tier
         if motion_graphics or quality_tier == "premium":
@@ -232,7 +232,7 @@ def download_and_process_task(
             )
             if mg_path:
                 processed_path = mg_path
-                logger.info(f"[Task] Motion graphics applied")
+                logger.info("[Task] Motion graphics applied")
 
         # 3. Generate SEO metadata/package (USING REAL SERVICE)
         await update_job(status=SystemJobStatus.OPTIMIZING, progress=70)
@@ -478,7 +478,7 @@ def generate_video_task(
                 logger.warning(
                     f"[GenerateVideo] Synthesis failed permanently: {e}, using demo fallback"
                 )
-                video_uri = f"https://sample-videos.com/video123/mp4/720p/big_buck_bunny_720p_1mb.mp4"
+                video_uri = "https://sample-videos.com/video123/mp4/720p/big_buck_bunny_720p_1mb.mp4"
 
         if not video_uri:
             update_job(

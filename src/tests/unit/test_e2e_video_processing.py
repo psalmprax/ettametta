@@ -95,7 +95,7 @@ async def run_e2e_video_processing_test():
     print("📋 TEST CONFIGURATION:")
     print(f"   • Niche: {test_niche}")
     print(f"   • Scenes: {len(test_scenes)}")
-    print(f"   • Target Duration: 50 seconds")
+    print("   • Target Duration: 50 seconds")
     print()
 
     # Phase 1: Content Discovery

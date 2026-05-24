@@ -127,10 +127,10 @@ class ScriptGenerator:
         STYLE: {style}
         GUIDANCE: {style_guidance}
         
-        {f"⚡ WINNING PATTERNS (Crystallized from viral hits):" if hermes_context else ""}
+        {"⚡ WINNING PATTERNS (Crystallized from viral hits):" if hermes_context else ""}
         {hermes_context}
 
-        {f"🎬 ASSET CONTEXT (Available Clips):" if asset_context else ""}
+        {"🎬 ASSET CONTEXT (Available Clips):" if asset_context else ""}
         {asset_context}
 
         DYNAMISM REQUIREMENTS:

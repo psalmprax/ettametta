@@ -259,7 +259,7 @@ class ChaosUtility:
         )
 
         logger.error(
-            f"🌪️ [Chaos] CONTINUOUS CHAOS STARTED. "
+            "🌪️ [Chaos] CONTINUOUS CHAOS STARTED. "
             f"Intensity: {intensity}, Duration: {duration_minutes}min"
         )
         return {
@@ -301,7 +301,7 @@ class ChaosUtility:
             logger.info("🛑 [Chaos] Continuous loop cancelled.")
         finally:
             logger.info(
-                f"🏁 [Chaos] Continuous chaos loop ended after "
+                "🏁 [Chaos] Continuous chaos loop ended after "
                 f"{duration_minutes} minutes."
             )
 

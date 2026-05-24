@@ -86,7 +86,7 @@ class PaperclipOrganicSkill(OpenClawBaseSkill):
         
         for jid in high_performers[:3]:
             suggestion += f"- 🔄 Generate 3 variations of Job `{jid}` (Iterative Scaling).\n"
-            suggestion += f"- 🔗 Inject 'High-Intent' affiliate links for this specific hook.\n"
+            suggestion += "- 🔗 Inject 'High-Intent' affiliate links for this specific hook.\n"
             
         return suggestion
 

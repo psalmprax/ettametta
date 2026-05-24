@@ -80,12 +80,12 @@ if __name__ == "__main__":
         OUTPUT_VIDEO,
     ]
 
-    print(f"\nRunning ffmpeg overlay...")
+    print("\nRunning ffmpeg overlay...")
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
     if result.returncode == 0 and os.path.exists(OUTPUT_VIDEO):
         size = os.path.getsize(OUTPUT_VIDEO) / 1024 / 1024
         print(f"\n✅ SUCCESS: {OUTPUT_VIDEO} ({size:.2f} MB)")
     else:
-        print(f"❌ FAILED")
+        print("❌ FAILED")
         print(f"STDERR: {result.stderr[:500]}")

@@ -329,7 +329,7 @@ class DiscoveryService:
         # If Deep Scan: Automatically trigger analysis for top 5 candidates
         if deep_scan and all_candidates:
             logger.info(
-                f"[Discovery] Deep Scan: Auto-triggering analysis for top candidates."
+                "[Discovery] Deep Scan: Auto-triggering analysis for top candidates."
             )
             from src.services.discovery.tasks import analyze_viral_pattern_task
             for c in all_candidates[:5]:

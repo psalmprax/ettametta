@@ -40,7 +40,7 @@ class BrowserAgentService:
             llm = self._get_agent_llm()
             
             task = f"Go to {target_platform}.com and find the top 3 trending videos about '{topic}'. " \
-                   f"Extract the video titles, view counts, and a brief description of the 'hook' used."
+                   "Extract the video titles, view counts, and a brief description of the 'hook' used."
             
             agent = Agent(
                 task=task,

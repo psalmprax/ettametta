@@ -423,7 +423,7 @@ class VisionAuditNode(BaseNode):
 
         audit_prompt = (
             f"Does this video frame match the description: '{prompt}'? "
-            f"Answer with YES or NO followed by a brief reason."
+            "Answer with YES or NO followed by a brief reason."
         )
 
         try:
@@ -611,7 +611,7 @@ class SceneRenderNode(BaseNode):
             logger.error("[DAG:SceneRender] No visual paths available for '%s'", self.id)
             return {"success": False, "error": "no_visual_assets", "output_path": None}
 
-        render_dir = f"outputs/nexus"
+        render_dir = "outputs/nexus"
         os.makedirs(render_dir, exist_ok=True)
         output_filename = f"nexus_{job_id}_{niche.replace(' ', '_')}.mp4"
         fallback_output = os.path.join(render_dir, f"ffmpeg_{job_id}.mp4")

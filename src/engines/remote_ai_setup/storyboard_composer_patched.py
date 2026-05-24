@@ -99,7 +99,7 @@ def assemble_master(video_files, final_output):
     with open(list_file, "w") as f:
         for vf in video_files: f.write(f"file '{os.path.abspath(vf)}'\n")
     
-    cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file, "-c", "copy", final_output]
+    cmd = ["ffmpeg", "-y", "-", "concat", "-safe", "0", "-i", list_file, "-c", "copy", final_output]
     try:
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         print(f"🌟 Master Sequence Completed Successfully: {final_output}")

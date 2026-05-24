@@ -89,7 +89,7 @@ class NotificationSkill(OpenClawBaseSkill):
             )
 
             if resp.status_code == 200:
-                return f"✅ Telegram notification sent"
+                return "✅ Telegram notification sent"
             else:
                 return f"⚠️ Telegram failed: {resp.status_code}"
         except Exception as e:

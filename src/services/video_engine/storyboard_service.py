@@ -129,7 +129,7 @@ class StoryboardService:
                 f.write(f"file '{os.path.abspath(vf)}'\n")
         
         cmd = [
-            self.ffmpeg_path, "-y", "-f", "concat", "-safe", "0", "-i", str(list_file), 
+            self.ffmpeg_path, "-y", "-", "concat", "-safe", "0", "-i", str(list_file), 
             "-c", "copy", final_output
         ]
         try:

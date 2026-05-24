@@ -34,7 +34,7 @@ class TrainingPipeline:
         with open(self.data_path, "a") as f:
             f.write(json.dumps(sample) + "\n")
             
-        logger.info(f"💾 [Pipeline] New training sample recorded. Total samples check...")
+        logger.info("💾 [Pipeline] New training sample recorded. Total samples check...")
         
         # Check if we should retrain
         self._check_and_trigger_retraining()

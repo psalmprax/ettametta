@@ -108,7 +108,7 @@ class SocialMetricsSkill(OpenClawBaseSkill):
                 match = re.search(r"([\d,]+) Followers", response.text)
                 if match:
                     return f"@{username}: {match.group(1)} followers"
-                return f"Profile found but metrics unavailable"
+                return "Profile found but metrics unavailable"
             elif response.status_code == 404:
                 return f"User @{username} not found"
             else:
