@@ -32,6 +32,7 @@ from src.services.nexus_engine.audio_mixer import base_audio_mixer
 from src.services.nexus_engine.style_library import get_style
 from src.shared.observability import get_logger
 from src.shared.state_machine import base_state_machine, JobState
+from src.shared.enums import NodeStatus
 
 logger = get_logger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -163,20 +164,20 @@ class NexusOrchestrator:
             )
 
             async def update_node(
-                node_type: str, status: str, progress: int, error: str | None = None, extra: dict | None = None
+                node_type: str, status: NodeStatus, progress: int, error: str | None = None, extra: dict | None = None
             ):
-                if status == "FAILED":
+                if status == NodeStatus.FAILED:
                     await base_state_machine.transition_to(job_id, None, JobState.FAILED, {"node": node_type, "error": error})
-                elif status == "ACTIVE":
+                elif status == NodeStatus.ACTIVE:
                     # For rendering, we have a specific state
                     if node_type == "synthesis":
                         await base_state_machine.transition_to(job_id, JobState.COGNITION, JobState.SYNTHESIZING)
                 
                 payload = {
                     "id": str(job_id),
-                    "status": f"{node_type.upper()}_{status}",
+                    "status": f"{node_type.upper()}_{status.value}",
                     "current_node": node_type,
-                    "node_status": status,
+                    "node_status": status.value,
                     "progress": progress,
                     "niche": niche,
                 }
@@ -188,7 +189,7 @@ class NexusOrchestrator:
 
             # 1. Ingress Node - Validate inputs
             with tracer.start_as_current_span("Nexus.Node.Ingress"):
-                await update_node("ingress", "ACTIVE", 20)
+                await update_node("ingress", NodeStatus.ACTIVE, 20)
 
                 # Validate all inputs exist before proceeding
                 validation_errors = []
@@ -205,14 +206,14 @@ class NexusOrchestrator:
 
                 if validation_errors:
                     error_msg = "; ".join(validation_errors)
-                    await update_node("ingress", "FAILED", 20, error_msg)
+                    await update_node("ingress", NodeStatus.FAILED, 20, error_msg)
                     raise RuntimeError(f"Input validation failed: {error_msg}")
 
-                await update_node("ingress", "COMPLETED", 30)
+                await update_node("ingress", NodeStatus.COMPLETED, 30)
 
             # 2. Cognition Node - Extract metadata and prepare clips
             with tracer.start_as_current_span("Nexus.Node.Cognition"):
-                await update_node("cognition", "ACTIVE", 40)
+                await update_node("cognition", NodeStatus.ACTIVE, 40)
 
                 # Cognitive Vibe Check (Dify + LangChain Integration)
                 vibe_data = {}
@@ -298,14 +299,14 @@ class NexusOrchestrator:
                         self.logger.warning(f"Skipping invalid clip: {v_path}")
 
                 if valid_clip_count == 0:
-                    await update_node("cognition", "FAILED", 40, "No valid video clips found")
+                    await update_node("cognition", NodeStatus.FAILED, 40, "No valid video clips found")
                     raise RuntimeError("No valid video clips available for assembly")
 
-                await update_node("cognition", "COMPLETED", 50)
+                await update_node("cognition", NodeStatus.COMPLETED, 50)
 
             # 2.6 Vision Audit Node (Free Tier - Gemini Flash)
             with tracer.start_as_current_span("Nexus.Node.VisionAudit"):
-                await update_node("vision_audit", "ACTIVE", 55)
+                await update_node("vision_audit", NodeStatus.ACTIVE, 55)
                 self.logger.info(f"[Nexus] Auditing {len(remotion_clips)} clips for relevance...")
                 
                 from src.services.llm.service import unified_llm_service, LLMProvider
@@ -362,11 +363,11 @@ class NexusOrchestrator:
                         self.logger.warning(f"Vision audit failed for clip {i}: {e}")
                         audited_clips.append(clip)
 
-                await update_node("vision_audit", "COMPLETED", 60)
+                await update_node("vision_audit", NodeStatus.COMPLETED, 60)
 
             # 3. Synthesis Node - Render with Remotion
             with tracer.start_as_current_span("Nexus.Node.Synthesis"):
-                await update_node("synthesis", "ACTIVE", 70)
+                await update_node("synthesis", NodeStatus.ACTIVE, 70)
             
             # Fetch style config once for all downstream usage
             style_config = get_style(style)
@@ -510,7 +511,7 @@ class NexusOrchestrator:
 
             if not rendered_path:
                 await update_node(
-                    "synthesis", "FAILED", 60, "Remotion render returned no path"
+                    "synthesis", NodeStatus.FAILED, 60, "Remotion render returned no path"
                 )
                 raise RuntimeError("Remotion render failed after multiple attempts")
 
@@ -520,15 +521,13 @@ class NexusOrchestrator:
                 or os.path.getsize(rendered_path) < 1024
             ):
                 await update_node(
-                    "synthesis", "FAILED", 60, "Rendered file is invalid or empty"
+                    "synthesis", NodeStatus.FAILED, 60, "Rendered file is invalid or empty"
                 )
-                raise RuntimeError("Rendered file is invalid")
-
-            await update_node("synthesis", "COMPLETED", 90)
+                raise RuntimeError("Rendered file is invalid")                await update_node("synthesis", NodeStatus.COMPLETED, 90)
 
             # 4. Egress Node - Automated Publishing & Final Stats
             with tracer.start_as_current_span("Nexus.Node.Egress"):
-                await update_node("egress", "ACTIVE", 95)
+                await update_node("egress", NodeStatus.ACTIVE, 95)
                 publish_results = []
                 
                 # Extract final metadata for reporting
@@ -579,7 +578,7 @@ class NexusOrchestrator:
                 except Exception as e:
                     self.logger.warning(f"[Nexus] Temp cleanup failed: {e}")
 
-                await update_node("egress", "COMPLETED", 100, extra={
+                await update_node("egress", NodeStatus.COMPLETED, 100, extra={
                     "thumbnail": thumbnail_path, 
                     "output": rendered_path,
                     "duration": final_duration,
@@ -598,7 +597,7 @@ class NexusOrchestrator:
             notify_nexus_job_update_sync(
                 {
                     "id": str(job_id),
-                    "status": "FAILED",
+                    "status": NodeStatus.FAILED.value,
                     "progress": 0,
                     "error": str(e),
                     "timestamp": time.time(),

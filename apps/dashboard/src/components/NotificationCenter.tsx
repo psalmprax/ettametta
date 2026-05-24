@@ -36,8 +36,9 @@ export function NotificationCenter() {
         // In a real system, we'd have an /api/notifications endpoint.
         // For now, we'll derive some from /publish/history and /security/events
         await withRealFallback<any[]>(
-            () => fetch(`${API_BASE}/security/events`, {
-                headers: { Authorization: `Bearer ${token}` }
+            (signal) => fetch(`${API_BASE}/security/events`, {
+                headers: { Authorization: `Bearer ${token}` },
+                signal,
             }),
             {
                 fallback: [],

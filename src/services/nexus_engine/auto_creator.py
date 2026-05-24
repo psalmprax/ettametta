@@ -11,6 +11,7 @@ from src.api.config import settings
 from src.api.utils.resilience import CircuitBreaker
 from src.services.llm.service import LLMProvider
 from src.services.video_engine.automation import AutomationMode, is_at_least
+from src.shared.enums import NodeStatus
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +175,7 @@ class AutoCreator:
         from src.api.utils.models import NexusJobDB
         from sqlalchemy import select
 
-        async def notify(node: str, status: str, progress: int):
+        async def notify(node: str, status: NodeStatus, progress: int):
             try:
                 async with async_session_factory() as db:
                     stmt = select(NexusJobDB).where(NexusJobDB.id == str(job_id))
@@ -183,7 +184,7 @@ class AutoCreator:
                     if job:
                         job.current_node = node
                         current_status = dict(job.node_status or {})
-                        current_status[node] = status
+                        current_status[node] = status.value
                         job.node_status = current_status
                         job.progress = progress
                         await db.commit()
@@ -194,12 +195,12 @@ class AutoCreator:
                 "id": str(job_id),
                 "status": f"{node.upper()}_{status}",
                 "current_node": node,
-                "node_status": status,
+                "node_status": status.value,
                 "progress": progress
             })
 
         # 1. Ingress — Generate script
-        await notify("ingress", "ACTIVE", 10)
+        await notify("ingress", NodeStatus.ACTIVE, 10)
         if script:
             segments = script
         else:
@@ -212,10 +213,10 @@ class AutoCreator:
                 segments = await self.generate_viral_script(
                     topic, niche, duration_seconds=duration_seconds, style=style,
                 )
-        await notify("ingress", "COMPLETED", 20)
+        await notify("ingress", NodeStatus.COMPLETED, 20)
 
         # 2. Cognition — Source assets
-        await notify("cognition", "ACTIVE", 30)
+        await notify("cognition", NodeStatus.ACTIVE, 30)
         
         # For PARTIAL mode: wait for approval before executing
         # Only when AI actually generated a DAG (not when script was provided)
@@ -235,10 +236,10 @@ class AutoCreator:
         
         if not visual_paths or not voice_paths:
             raise ValueError("Asset sourcing failed.")
-        await notify("cognition", "COMPLETED", 50)
+        await notify("cognition", NodeStatus.COMPLETED, 50)
 
         # 3. Synthesis
-        await notify("synthesis", "ACTIVE", 60)
+        await notify("synthesis", NodeStatus.ACTIVE, 60)
         from src.services.nexus_engine.orchestrator import base_nexus_service
         
         from .style_library import get_style
@@ -260,10 +261,10 @@ class AutoCreator:
         if not output_path:
             raise RuntimeError("Assembly failed.")
             
-        await notify("synthesis", "COMPLETED", 90)
+        await notify("synthesis", NodeStatus.COMPLETED, 90)
         
         # 4. Egress
-        await notify("egress", "ACTIVE", 95)
+        await notify("egress", NodeStatus.ACTIVE, 95)
         # Final output path persistence
         async with async_session_factory() as db:
             stmt = select(NexusJobDB).where(NexusJobDB.id == str(job_id))
@@ -273,7 +274,7 @@ class AutoCreator:
                 job.job_metadata["output_path"] = output_path
                 await db.commit()
                 
-        await notify("egress", "COMPLETED", 100)
+        await notify("egress", NodeStatus.COMPLETED, 100)
         return output_path
 
     @retry(

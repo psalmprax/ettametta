@@ -1,7 +1,6 @@
 import json
 import logging
-from typing import Any
-from groq import AsyncGroq
+from typing import Any, Optional
 from src.api.config import settings
 from src.api.utils.vault import get_secret
 from pydantic import BaseModel
@@ -36,8 +35,20 @@ class StoryScript(BaseModel):
 class StrategyService:
     def __init__(self):
         self.api_key = get_secret("groq_api_key")
-        self.client = AsyncGroq(api_key=self.api_key)
+        self._client: Optional[Any] = None
         self.model = "llama-3.3-70b-versatile"
+
+    @property
+    def client(self):
+        """Lazy-initialize the Groq client — avoids crashing on import when GROQ_API_KEY is missing."""
+        if self._client is None:
+            if not self.api_key:
+                raise RuntimeError(
+                    "GROQ_API_KEY not configured — StrategyService requires a valid Groq key"
+                )
+            from groq import AsyncGroq
+            self._client = AsyncGroq(api_key=self.api_key)
+        return self._client
 
     async def generate_screenplay(
         self, prompt: str, style: str = "Cinematic"

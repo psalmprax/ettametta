@@ -20,8 +20,11 @@ services:
       - CORS_ALLOW_ORIGINS=${DIFY_CORS_ORIGIN}
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
+      - QDRANT_URL=http://qdrant:6333
       - VECTOR_STORE=qdrant
       - GUNICORN_TIMEOUT=600
+    volumes:
+      - dify_storage:/app/api/storage
     networks:
       - ettametta
 
@@ -32,6 +35,7 @@ services:
     restart: always
     command: /usr/bin/supervisord
     environment:
+      - MODE=worker
       - DB_USERNAME=${POSTGRES_USER:?}
       - DB_PASSWORD=${POSTGRES_PASSWORD:?}
       - DB_HOST=db
@@ -44,7 +48,13 @@ services:
       - CONSOLE_CORS_ALLOW_ORIGIN=${DIFY_CORS_ORIGIN}
       - WEB_API_CORS_ALLOW_ORIGIN=${DIFY_CORS_ORIGIN}
       - CORS_ALLOW_ORIGINS=${DIFY_CORS_ORIGIN}
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_URL=http://qdrant:6333
+      - VECTOR_STORE=qdrant
       - GUNICORN_TIMEOUT=600
+    volumes:
+      - dify_storage:/app/api/storage
     networks:
       - ettametta
 
@@ -65,3 +75,6 @@ networks:
   ettametta:
     external: true
     name: ettametta_default
+
+volumes:
+  dify_storage:

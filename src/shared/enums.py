@@ -114,6 +114,14 @@ class ReferralStatus(str, Enum):
     REWARD_CLAIMED = "REWARD_CLAIMED"
 
 
+class NodeStatus(str, Enum):
+    """Status enum for DAG pipeline node execution."""
+
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
 class CreditAction(str, Enum):
     """Credit action types for type-safe credit consumption."""
 

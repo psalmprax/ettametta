@@ -16,23 +16,42 @@ export interface RealFirstOptions<T> {
     retryCount?: number;
     silent?: boolean;
     errorMessage?: string;
+    timeoutMs?: number;
 }
+
+const DEFAULT_TIMEOUT_MS = 15_000;
 
 /**
  * Executes a real API call with a structured fallback.
  * Follows the "Real-First" mandate: implementation over simulation.
+ * 
+ * All fetch operations are wrapped with a configurable timeout (default 15s)
+ * to prevent hanging on unresponsive servers.
+ * 
+ * The operation function receives an optional AbortSignal that should be
+ * forwarded to fetch() or any other cancellable async operation.
  */
 export async function withRealFallback<T>(
-    operation: () => Promise<T | Response>,
+    operation: (signal?: AbortSignal) => Promise<T | Response>,
     options: RealFirstOptions<T>
 ): Promise<T> {
     let lastError: any;
-    const maxRetries = options.retryCount ?? 0;
+    const maxRetries = options.retryCount ?? 1;
+    const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
     for (let i = 0; i <= maxRetries; i++) {
         try {
-            const result = await operation();
-            
+            // Wrap the operation with a timeout using AbortController
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+            let result: T | Response;
+            try {
+                result = await operation(controller.signal);
+            } finally {
+                clearTimeout(timeoutId);
+            }
+
             if (result instanceof Response) {
                 // Handle authentication errors globally - force logout and redirect
                 if (result.status === 401) {
@@ -46,13 +65,13 @@ export async function withRealFallback<T>(
                     }
                     return options.fallback;
                 }
-                
+
                 if (!result.ok) {
                     throw new Error(`API Signal Failure: ${result.status} (${result.statusText})`);
                 }
-                
+
                 const data = await result.json();
-                
+
                 // Real-First Unwrapping: If backend uses the success_response wrapper, unwrap it.
                 if (data && typeof data === 'object' && data.success === true && 'data' in data) {
                     options.onSuccess?.(data.data);
@@ -65,16 +84,23 @@ export async function withRealFallback<T>(
                 options.onSuccess?.(result);
                 return result as T;
             }
-        } catch (error) {
+        } catch (error: any) {
             lastError = error;
-            console.error("[Real-First] Signal Failure:", error);
-            
+
+            // Don't log AbortError/timeout as a noisy error in the console — it's expected when server is down
+            if (error?.name === 'AbortError') {
+                console.warn(`[Real-First] Request timed out after ${timeoutMs}ms (${i + 1}/${maxRetries + 1})`);
+            } else {
+                console.error("[Real-First] Signal Failure:", error);
+            }
+
             if (i < maxRetries) {
-                console.warn(`Real-First: Retrying signal (${i + 1}/${maxRetries})...`);
-                await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
+                const delay = 1000 * Math.pow(2, i); // Exponential backoff: 1s, 2s, 4s
+                console.warn(`Real-First: Retrying signal (${i + 1}/${maxRetries}) in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
             } else {
                 if (options.onFallback) {
-                    options.onFallback(error as Error);
+                    options.onFallback(error);
                 }
             }
         }
@@ -86,7 +112,7 @@ export async function withRealFallback<T>(
             toast.error(options.errorMessage);
         }
     }
-    
+
     return options.fallback;
 }
 
@@ -99,12 +125,12 @@ export function useRealFirst<T>(initialData: T) {
     const [error, setError] = useState<any>(null);
 
     const execute = useCallback(async (
-        operation: () => Promise<T | Response>,
+        operation: (signal?: AbortSignal) => Promise<T | Response>,
         options: Omit<RealFirstOptions<T>, "fallback">
     ) => {
         setIsLoading(true);
         setError(null);
-        
+
         const result = await withRealFallback(operation, {
             ...options,
             fallback: data,
@@ -117,7 +143,7 @@ export function useRealFirst<T>(initialData: T) {
                 options.onSuccess?.(newData);
             }
         });
-        
+
         setIsLoading(false);
         return result;
     }, [data]);
