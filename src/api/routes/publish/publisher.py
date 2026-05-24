@@ -346,7 +346,7 @@ async def publish_video(
             raise HTTPException(
                 status_code=501,
                 detail=f"Publisher for platform '{platform_key}' is not yet implemented. "
-                f"Supported platforms: youtube, tiktok, instagram, facebook, x, linkedin",
+                "Supported platforms: youtube, tiktok, instagram, facebook, x, linkedin",
             )
 
         # Record history

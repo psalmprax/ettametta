@@ -72,7 +72,7 @@ class ConsistencySentinel:
     async def start(self):
         """Starts the background auditing + enforcement loop."""
         logger.info(
-            f"🛡️ [Sentinel] Starting Enforcement Loop "
+            "🛡️ [Sentinel] Starting Enforcement Loop "
             f"(Audit: {self.check_interval}s, Repair Cooldown: {self.repair_cooldown}s)"
         )
         while not self._stop_event.is_set():
@@ -150,7 +150,7 @@ class ConsistencySentinel:
                     sentinel_audit_pass.inc()
                     if db_counts:
                         logger.info(
-                            f"✅ [Sentinel] Audit PASSED. "
+                            "✅ [Sentinel] Audit PASSED. "
                             f"{len(db_counts)} cohorts in sync."
                         )
                 else:
@@ -175,13 +175,13 @@ class ConsistencySentinel:
         if elapsed < self.repair_cooldown:
             remaining = self.repair_cooldown - elapsed
             logger.info(
-                f"🕐 [Sentinel] Repair cooldown active. "
+                "🕐 [Sentinel] Repair cooldown active. "
                 f"Next repair eligible in {remaining:.0f}s"
             )
             return
 
         logger.warning(
-            f"🔧 [Sentinel] TRIGGERING AUTONOMOUS REPAIR. "
+            "🔧 [Sentinel] TRIGGERING AUTONOMOUS REPAIR. "
             f"{len(report.drifts)} drifts detected."
         )
 

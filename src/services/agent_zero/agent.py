@@ -111,7 +111,7 @@ class AgentZero(BaseEttamettaAgent):
                 await self.run_iteration()
                 self.current_step = "WAITING"
                 await self._log(
-                    f"Cycle Complete. Engine entering standby. Next run in 4 hours.",
+                    "Cycle Complete. Engine entering standby. Next run in 4 hours.",
                     "SUCCESS",
                 )
                 # The loop will naturally wait at the beginning of the next iteration
@@ -318,7 +318,7 @@ class AgentZero(BaseEttamettaAgent):
         self.current_step = "PUBLISHING"
         video_path = render_res.get("output_path", "")
         if video_path:
-            await self._log(f"Initiating Broadcast to Platform Mesh...", "SYSTEM")
+            await self._log("Initiating Broadcast to Platform Mesh...", "SYSTEM")
             publish_res = publish_tool.run(
                 video_path=video_path,
                 platform="YouTube",  # Optimized for primary node

@@ -67,7 +67,7 @@ class AgentZeroSkill(OpenClawBaseSkill):
                         else "Never"
                     )
                     return (
-                        f"🤖 **Agent Zero Status**\n"
+                        "🤖 **Agent Zero Status**\n"
                         f"• State: `{status}`\n"
                         f"• Current Step: `{step}`\n"
                         f"• Last Run: `{last_run}`"

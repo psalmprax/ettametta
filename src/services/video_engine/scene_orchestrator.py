@@ -384,7 +384,7 @@ class SceneBasedVideoOrchestrator:
                     concat_success = transformer.concatenate_videos(norm_paths, temp_output)
                     
                     if concat_success:
-                        logger.info(f"✅ [Orchestrator] FFmpeg Concatenation Complete. Mixing Audio with Ducking...")
+                        logger.info("✅ [Orchestrator] FFmpeg Concatenation Complete. Mixing Audio with Ducking...")
                         
                         # Use audio_plan or defaults
                         audio_plan = fusion_plan.get("audio_plan", {})
@@ -427,7 +427,7 @@ class SceneBasedVideoOrchestrator:
 
             # Create a text file describing what would be created
             with open(output_path.with_suffix(".txt"), "w") as f:
-                f.write(f"SCENE-BASED VIDEO FUSION PLAN\\n")
+                f.write("SCENE-BASED VIDEO FUSION PLAN\\n")
                 f.write(f"Segments: {len(segments)}\\n")
                 f.write(f"Total Duration: {fusion_plan.get('total_duration', 0)}s\\n")
                 f.write(f"Video Files Used: {len(video_files)}\\n")
@@ -527,7 +527,7 @@ class SceneBasedVideoOrchestrator:
             await asyncio.sleep(1)
 
             # Get file size (placeholder)
-            file_size = len(f"MOCK_FINAL_VIDEO_CONTENT") * 1024 * 1024  # Simulate ~1MB
+            file_size = len("MOCK_FINAL_VIDEO_CONTENT") * 1024 * 1024  # Simulate ~1MB
 
             # Copy/create final file
             import shutil

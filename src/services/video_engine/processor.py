@@ -280,7 +280,7 @@ class VideoProcessor:
                 asyncio.to_thread(VideoFileClip, input_path),
                 timeout=self.video_load_timeout,
             )
-            logging.info(f"[VideoProcessor] Video loaded successfully via MoviePy")
+            logging.info("[VideoProcessor] Video loaded successfully via MoviePy")
 
             # Pre-iterate frames to ensure video is readable (handles ARM64 issues)
             try:
@@ -351,7 +351,7 @@ class VideoProcessor:
             clip = await asyncio.wait_for(
                 asyncio.to_thread(VideoFileClip, input_path), timeout=60
             )
-            logging.info(f"[VideoProcessor] Video loaded successfully on retry")
+            logging.info("[VideoProcessor] Video loaded successfully on retry")
             return clip
         except Exception as e:
             logging.error(f"[VideoProcessor] Final video load attempt failed: {e}")

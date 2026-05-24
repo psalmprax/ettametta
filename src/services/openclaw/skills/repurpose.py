@@ -148,13 +148,13 @@ class RepurposeSkill(OpenClawBaseSkill):
                     results.append(f"❌ {platform}: Error - {e}")
 
             lines = [
-                f"🔄 **Content Repurposing**",
+                "🔄 **Content Repurposing**",
                 f"Source: `{source_job_id}` — {source_title}",
                 "",
             ]
             lines.extend(results)
             lines.append("")
-            lines.append(f"Use `/publish` on each job once rendering completes.")
+            lines.append("Use `/publish` on each job once rendering completes.")
             return "\n".join(lines)
 
         except Exception as e:
@@ -172,7 +172,7 @@ class RepurposeSkill(OpenClawBaseSkill):
                         "content": (
                             f"You are a viral content expert. Generate {count} distinct caption variants "
                             f"for {platform}. Each should have a different angle: emotional, curiosity-driven, "
-                            f"data-backed, contrarian, and story-based. Keep them platform-optimized."
+                            "data-backed, contrarian, and story-based. Keep them platform-optimized."
                         ),
                     },
                     {
@@ -212,9 +212,9 @@ class RepurposeSkill(OpenClawBaseSkill):
                         "role": "system",
                         "content": (
                             f"Generate {count} distinct hashtag sets for {platform} content in the '{niche}' niche. "
-                            f"Each set should have 10-15 hashtags mixing: 3-5 broad (1M+ posts), "
-                            f"5-7 medium (100K-1M), and 2-3 niche-specific (<100K). "
-                            f"Format each set as a clean block of hashtags."
+                            "Each set should have 10-15 hashtags mixing: 3-5 broad (1M+ posts), "
+                            "5-7 medium (100K-1M), and 2-3 niche-specific (<100K). "
+                            "Format each set as a clean block of hashtags."
                         ),
                     },
                     {

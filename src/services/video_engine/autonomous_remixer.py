@@ -157,7 +157,7 @@ class AutonomousVideoRemixer:
                 result = subprocess.run(
                     [
                         "yt-dlp",
-                        "-f", "best[ext=mp4]/best",
+                        "-", "best[ext=mp4]/best",
                         "--merge-output-format", "mp4",
                         "-o", str(output_path),
                         "--no-playlist",

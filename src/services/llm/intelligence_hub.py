@@ -389,7 +389,7 @@ class IntelligenceHub:
             if resp.status_code != 200:
                 if resp.status_code == 429:
                     raise RuntimeError(
-                        f"OpenAI error 429: Insufficient Quota or Rate Limit"
+                        "OpenAI error 429: Insufficient Quota or Rate Limit"
                     )
                 raise RuntimeError(f"OpenAI error {resp.status_code}: {resp.text}")
 

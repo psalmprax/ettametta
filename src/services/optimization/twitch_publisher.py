@@ -116,7 +116,7 @@ class TwitchPublisher(SocialPublisher):
             )
 
             if update_response.status_code == 200:
-                logger.info(f"[TwitchPublisher] Clip updated successfully")
+                logger.info("[TwitchPublisher] Clip updated successfully")
             else:
                 logger.warning(
                     f"[TwitchPublisher] Clip update failed: {update_response.text}"

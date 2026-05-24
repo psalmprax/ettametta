@@ -427,7 +427,7 @@ class NexusOrchestrator:
                 
                 await asyncio.to_thread(write_voiceover_list)
                 
-                await asyncio.to_thread(_run_subprocess, ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_path, "-c", "copy", master_voiceover])
+                await asyncio.to_thread(_run_subprocess, ["ffmpeg", "-y", "-", "concat", "-safe", "0", "-i", list_path, "-c", "copy", master_voiceover])
                 audio_uri = master_voiceover
             else:
                 audio_uri = voiceover_paths[0] if voiceover_paths else music_path
@@ -452,7 +452,7 @@ class NexusOrchestrator:
             word_timestamps = []
             if audio_uri and os.path.exists(audio_uri):
                 from src.services.audio.transcription_service import base_transcription_service
-                self.logger.info(f"[Nexus] Transcribing master audio for dynamic captions...")
+                self.logger.info("[Nexus] Transcribing master audio for dynamic captions...")
                 try:
                     # Transcribe to get word-level timing
                     transcript_data = await base_transcription_service.transcribe(audio_uri)
@@ -466,7 +466,7 @@ class NexusOrchestrator:
             os.makedirs("/tmp/ettametta/thumbnails", exist_ok=True)
             if visual_paths and os.path.exists(visual_paths[0]):
                 try:
-                    self.logger.info(f"[Nexus] Extracting thumbnail from first clip...")
+                    self.logger.info("[Nexus] Extracting thumbnail from first clip...")
                     await asyncio.to_thread(_run_subprocess, [
                         "ffmpeg", "-y", "-ss", "00:00:01.500", "-i", visual_paths[0],
                         "-frames:v", "1", "-q:v", "2", thumbnail_path

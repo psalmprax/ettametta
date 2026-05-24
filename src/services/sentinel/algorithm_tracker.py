@@ -67,7 +67,7 @@ class AlgorithmSentinel(BaseEttamettaAgent):
                 # 10/10 UX Stabilization: Only log if it's not a known exhaustion/empty state
                 is_exhausted = not response_content or "exhausted" in str(response_content).lower()
                 if not is_exhausted:
-                    await self._log(f"Structural recovery triggered for platform shift analysis", "INFO")
+                    await self._log("Structural recovery triggered for platform shift analysis", "INFO")
                     logger.warning(f"[SENTINEL] JSON Parse failed: {parse_err}. Content: {response_content[:100]}")
                 data = {}
 

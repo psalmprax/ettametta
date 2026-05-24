@@ -516,7 +516,7 @@ class TestAnalyticsService:
 
         generator = VisualGenerator()
         # Test prompt enhancement logic
-        enhanced = f"Professional cinematic high-impact visual for a viral social media video topic: test prompt. Dynamic lighting, 9:16 aspect ratio style, hyper-realistic."
+        enhanced = "Professional cinematic high-impact visual for a viral social media video topic: test prompt. Dynamic lighting, 9:16 aspect ratio style, hyper-realistic."
         assert "cinematic" in enhanced
         assert "9:16" in enhanced
 

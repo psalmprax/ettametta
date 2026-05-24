@@ -44,7 +44,7 @@ class MembershipStrategy(BaseMonetizationStrategy):
                 platform_uri = setting.value if setting else None
                 
                 if not platform_uri:
-                    logger.warning(f"[MembershipStrategy] No membership platform configured.")
+                    logger.warning("[MembershipStrategy] No membership platform configured.")
                     return []
                 
                 return [

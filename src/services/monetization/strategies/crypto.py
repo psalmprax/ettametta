@@ -24,7 +24,7 @@ class CryptoStrategy(BaseMonetizationStrategy):
             wallets_setting = result.scalar_one_or_none()
             
             if not wallets_setting or not wallets_setting.value:
-                logging.warning(f"[CryptoStrategy] No crypto wallets configured. Set 'crypto_wallets' in settings (format: BTC:addr,ETH:addr).")
+                logging.warning("[CryptoStrategy] No crypto wallets configured. Set 'crypto_wallets' in settings (format: BTC:addr,ETH:addr).")
                 return []
             
             # Parse wallets (format: BTC:addr,ETH:addr,USDT:addr)

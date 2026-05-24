@@ -1322,12 +1322,12 @@ class VideoLeadScanner:
             try:
                 prompt = (
                     f"Analyze this viral video in the '{_niche}' niche and identify 3-5 specific success factors "
-                    f"(hooks, emotional triggers, visual style, or messaging strategy) that made it go viral.\n"
+                    "(hooks, emotional triggers, visual style, or messaging strategy) that made it go viral.\n"
                     f"Title: {title}\n"
                     f"Views: {views}\n"
                     f"Likes: {likes}\n"
                     f"Description: {description[:500]}\n"
-                    f"Respond with a plain JSON list of strings."
+                    "Respond with a plain JSON list of strings."
                 )
                 
                 async with asyncio.timeout(30.0):
@@ -1371,10 +1371,10 @@ class VideoLeadScanner:
         if self.groq_client:
             try:
                 prompt = (
-                    f"Generate 3 creative, highly actionable suggestions for a content creator to repurpose or remix "
+                    "Generate 3 creative, highly actionable suggestions for a content creator to repurpose or remix "
                     f"this successful video format for their own channel in the '{_niche}' niche.\n"
                     f"Original Title: {title}\n"
-                    f"Respond with a plain JSON list of strings."
+                    "Respond with a plain JSON list of strings."
                 )
                 
                 async with asyncio.timeout(30.0):

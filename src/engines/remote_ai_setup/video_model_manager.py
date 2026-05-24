@@ -63,7 +63,7 @@ class VideoModelManager:
             while True:
                 time.sleep(60)
                 if self.pipe and (time.time() - self.last_active_time > self.vram_ttl_seconds):
-                    print(f"⏰ [SmartVRAM] TTL Expired. Purging pipeline...", flush=True)
+                    print("⏰ [SmartVRAM] TTL Expired. Purging pipeline...", flush=True)
                     with self.lock:
                         self.unload_all()
         threading.Thread(target=monitor, daemon=True).start()
@@ -117,7 +117,7 @@ class VideoModelManager:
             elif model_key == "wan_2_1_t2v":
                 # Assuming community support or recent diffusers addition
                 # Fallback to a placeholder link if not yet in main diffusers
-                print(f"⚠️ Wan 2.1 support in diffusers is experimental. Attempting load...", flush=True)
+                print("⚠️ Wan 2.1 support in diffusers is experimental. Attempting load...", flush=True)
                 self.pipe = DiffusionPipeline.from_pretrained(repo_id, torch_dtype=self.dtype).to(self.device_obj)
             
             # Common optimizations

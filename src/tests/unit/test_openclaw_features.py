@@ -91,7 +91,7 @@ def test_discovery_niche_trends():
         )
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ Niche trends retrieved")
+            print("✅ Niche trends retrieved")
             print(f"  Keywords: {data.get('top_keywords', [])[:5]}")
         else:
             assert False, f"Error: {response.status_code}"
@@ -114,7 +114,7 @@ def test_content_editor_providers():
             data = response.json()
             providers = data.get("providers", {})
 
-            print(f"✅ Providers retrieved:")
+            print("✅ Providers retrieved:")
             print(f"  Generation: {len(providers.get('generation', []))} providers")
             for p in providers.get("generation", [])[:5]:
                 print(f"    - {p.get('id')}: {p.get('name')} (free={p.get('free')})")
@@ -179,9 +179,9 @@ def test_video_providers_free():
                     f"  - {name}: {config.get('free_credits', 'N/A')} free credits/day"
                 )
         else:
-            assert False, f"Not found at /free-video/providers"
+            assert False, "Not found at /free-video/providers"
     except Exception as e:
-        print(f"❌ /free-video/providers not available (this is optional)")
+        print("❌ /free-video/providers not available (this is optional)")
         # This endpoint might not exist yet — treat as non-fatal
 
 

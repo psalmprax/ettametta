@@ -40,7 +40,8 @@ else:
 
 DIFFUSERS_AVAILABLE = check_module_available("diffusers")
 if DIFFUSERS_AVAILABLE:
-    import diffusers
+    import importlib
+    diffusers = importlib.import_module("diffusers")
 else:
     diffusers = None
 

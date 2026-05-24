@@ -199,7 +199,7 @@ class AuditSkill(OpenClawBaseSkill):
                             f"Followers: {followers:,}\n"
                             f"Total Views: {total_views:,}\n"
                             f"Content Count: {content_count}\n\n"
-                            f"Recent Content Performance:\n"
+                            "Recent Content Performance:\n"
                             f"- Average views per post: {avg_views:,.0f}\n"
                             f"- Average engagement score: {avg_engagement_score:.1f}%\n"
                             f"- Posts analyzed: {len(recent_content)}\n\n"
@@ -212,7 +212,7 @@ class AuditSkill(OpenClawBaseSkill):
                                 ]
                             )
                             + f"\n\nCurrent Monetization Readiness: {monetization.get('completion_percentage', 0):.0f}%\n\n"
-                            f"Generate a 2-week growth sprint plan to reach monetization."
+                            "Generate a 2-week growth sprint plan to reach monetization."
                         ),
                     },
                 ],
@@ -810,7 +810,7 @@ class AuditSkill(OpenClawBaseSkill):
                         "content": (
                             f"USER'S ACCOUNT AUDIT:\n{user_audit}\n\n"
                             f"COMPETITOR ANALYSIS:\n{competitor_analysis}\n\n"
-                            f"Provide a gap analysis and specific actions to beat this competitor."
+                            "Provide a gap analysis and specific actions to beat this competitor."
                         ),
                     },
                 ],

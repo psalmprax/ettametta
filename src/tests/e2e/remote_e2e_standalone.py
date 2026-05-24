@@ -154,7 +154,7 @@ async def main():
         print(f"❌ Video not found: {video_path}")
         return
 
-    print(f"=== REMOTE E2E TEST ===")
+    print("=== REMOTE E2E TEST ===")
     print(f"Video: {video_path}")
     print(f"Size: {os.path.getsize(video_path) / 1024 / 1024:.2f} MB")
 

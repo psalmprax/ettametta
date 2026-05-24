@@ -33,7 +33,7 @@ class StorageManager:
         logging.info(f"[StorageManager] Current outputs size: {current_size / (1024**3):.2f} GB / {self.threshold_gb} GB")
 
         if current_size > self.threshold_bytes:
-            logging.info(f"[StorageManager] Threshold exceeded. Starting migration.")
+            logging.info("[StorageManager] Threshold exceeded. Starting migration.")
             # Sort files by modification time (oldest first)
             files = []
             for dirpath, _, filenames in os.walk(self.output_dir):

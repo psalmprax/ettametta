@@ -146,7 +146,7 @@ class XPublisher(SocialPublisher):
                         logger.error(f"[XPublisher] Processing failed: {error}")
                         return None
 
-            logger.info(f"[XPublisher] FINALIZE ok, media ready")
+            logger.info("[XPublisher] FINALIZE ok, media ready")
 
             # Step 4: Create Tweet using v2 API
             tweet_url = "https://api.twitter.com/2/tweets"

@@ -45,10 +45,10 @@ class SecuritySkill(OpenClawBaseSkill):
                 )
                 threat_count = len(threats) if isinstance(threats, list) else 0
                 return (
-                    f"🛡️ **Security Status**\n"
+                    "🛡️ **Security Status**\n"
                     f"• Health Score: `{score}`\n"
                     f"• Recent Threats: `{threat_count}`\n"
-                    f"• Last Scan: Check dashboard for details"
+                    "• Last Scan: Check dashboard for details"
                 )
             else:
                 return f"⚠️ **Status Check Failed**: {response.status_code}"

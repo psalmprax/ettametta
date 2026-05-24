@@ -64,7 +64,7 @@ class StorageService:
                 client_kwargs["aws_secret_access_key"] = secret_key
             else:
                 logging.warning(
-                    f"[StorageService] No access keys provided. Attempting unsigned access."
+                    "[StorageService] No access keys provided. Attempting unsigned access."
                 )
                 client_kwargs["config"] = Config(signature_version=UNSIGNED)
 
@@ -73,7 +73,7 @@ class StorageService:
 
             self._s3_client = boto3.client(**client_kwargs)
             self._last_keys = current_keys
-            logging.info(f"[StorageService] Cloud client (re)initialized")
+            logging.info("[StorageService] Cloud client (re)initialized")
             return self._s3_client
 
         except Exception as e:

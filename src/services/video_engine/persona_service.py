@@ -39,7 +39,7 @@ class PersonaService:
                 audio_uri = data.get("audio_uri") or data.get("path")
                 if audio_uri:
                     logger.info(
-                        f"[PersonaService] TTS generated via voiceover microservice"
+                        "[PersonaService] TTS generated via voiceover microservice"
                     )
                     return audio_uri
         except Exception as e:
