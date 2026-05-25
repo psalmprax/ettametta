@@ -2,7 +2,18 @@ import asyncio
 import logging
 import os
 from typing import Any
-from playwright.async_api import async_playwright, Browser, Page
+
+try:
+    try:
+    from playwright.async_api import async_playwright, Browser, Page
+except ImportError:
+    async_playwright = None
+    Browser = None
+    Page = None
+except ImportError:
+    async_playwright = None
+    Browser = None
+    Page = None
 
 from .base_skill import OpenClawBaseSkill
 
