@@ -5,11 +5,8 @@ Provides unified email delivery via Mailchimp, ConvertKit, or SMTP fallback.
 Handles welcome emails, password resets, notifications, and marketing campaigns.
 """
 
-import os
 import logging
 import httpx
-from typing import Any
-from datetime import datetime
 from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
@@ -70,7 +67,7 @@ class MailchimpProvider(EmailProvider):
                 logger.error(f"Mailchimp send failed: {response.status_code} {response.text}")
                 return False
         except Exception as e:
-            logger.error(f"Mailchimp send error: {e}")
+            logger.exception(f"Mailchimp send error: {e}")
             return False
 
     async def add_subscriber(self, email: str, tags: list[str] | None = None) -> bool:
@@ -95,7 +92,7 @@ class MailchimpProvider(EmailProvider):
                 logger.error(f"Mailchimp subscribe failed: {response.status_code}")
                 return False
         except Exception as e:
-            logger.error(f"Mailchimp subscribe error: {e}")
+            logger.exception(f"Mailchimp subscribe error: {e}")
             return False
 
     async def remove_subscriber(self, email: str) -> bool:
@@ -113,7 +110,7 @@ class MailchimpProvider(EmailProvider):
                 )
                 return response.status_code in (200, 201)
         except Exception as e:
-            logger.error(f"Mailchimp unsubscribe error: {e}")
+            logger.exception(f"Mailchimp unsubscribe error: {e}")
             return False
 
 
@@ -148,7 +145,7 @@ class ConvertKitProvider(EmailProvider):
                 logger.error(f"ConvertKit subscribe failed: {response.status_code}")
                 return False
         except Exception as e:
-            logger.error(f"ConvertKit subscribe error: {e}")
+            logger.exception(f"ConvertKit subscribe error: {e}")
             return False
 
     async def remove_subscriber(self, email: str) -> bool:
@@ -161,7 +158,7 @@ class ConvertKitProvider(EmailProvider):
                 )
                 return response.status_code in (200, 201)
         except Exception as e:
-            logger.error(f"ConvertKit unsubscribe error: {e}")
+            logger.exception(f"ConvertKit unsubscribe error: {e}")
             return False
 
 

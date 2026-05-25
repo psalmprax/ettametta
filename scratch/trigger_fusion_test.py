@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import uuid
 from src.api.utils.database import async_session_factory
 from src.api.utils.models import NexusJobDB, UserDB, SystemJobStatus
 from src.api.routes.nexus import run_nexus_composition, NexusComposeRequest

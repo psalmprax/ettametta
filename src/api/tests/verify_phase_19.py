@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 from src.services.video_engine.processor import base_video_processor
 from src.services.video_engine.ocr_service import base_ocr_service
 
@@ -9,20 +8,8 @@ logging.basicConfig(level=logging.INFO)
 
 async def test_high_artistry():
     # 1. Mock Strategy
-    strategy = {
-        "speed_range": [1.02, 1.05],
-        "jitter_intensity": 1.5,
-        "recommended_filters": ["f6", "f7"],
-        "hook_points": [[2.0, 7.0], [12.0, 15.0]],  # We'll check if trimming works
-        "b_roll_keywords": ["mystery", "forest", "dark", "smoke"],
-    }
 
     # 2. Mock Transcript
-    transcript = [
-        {"start": 1.0, "end": 3.0, "text": "Something is hidden in the shadows."},
-        {"start": 4.0, "end": 8.0, "text": "They thought it was just a local myth."},
-        {"start": 13.0, "end": 16.0, "text": "But the truth is far more terrifying."},
-    ]
 
     # Identify a sample video to test with (local or previously downloaded)
     # For now, we'll just check if the methods exist and can be called

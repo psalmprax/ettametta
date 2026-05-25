@@ -6,10 +6,8 @@ Test Remotion Service on Remote
 
 import os
 import sys
-import asyncio
 import subprocess
 import json
-import shutil
 
 PROJECT_DIR = "/app" if os.path.exists("/app") else "/home/psalmprax/ALL_PROJECTS/ettametta"
 sys.path.insert(0, PROJECT_DIR)

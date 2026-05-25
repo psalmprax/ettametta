@@ -1,15 +1,13 @@
-from typing import Any
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import httpx
 import os
 import logging
 import datetime
-import json
 import asyncio
 
 from src.services.discovery.service import base_discovery_service
-from src.services.discovery.models import ContentCandidate, ViralPattern
+from src.services.discovery.models import ContentCandidate
 from src.services.discovery.analysis_service import (
     extract_content_patterns,
     get_persisted_analysis_report,
@@ -17,7 +15,6 @@ from src.services.discovery.analysis_service import (
 from fastapi_cache.decorator import cache
 from src.api.utils.api_responses import (
     success_response,
-    Paginator,
     paginate_list,
     handle_exception,
 )
@@ -31,7 +28,7 @@ from src.api.config import settings
 from src.shared.enums import SystemJobStatus, CreditAction, ScanStatus
 from src.api.utils.models import ContentCandidateDB
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +62,7 @@ async def get_trends(
                     region=region,
                 )
             except Exception as scan_err:
-                logger.error(f"Scanner error for niche '{niche}': {scan_err}", exc_info=True)
+                logger.exception(f"Scanner error for niche '{niche}': {scan_err}", exc_info=True)
                 # Graceful degradation: return empty results instead of 500
                 return success_response(data={"trends": [], "page": page, "page_size": limit, "total": 0, "total_pages": 0})
         else:
@@ -76,14 +73,14 @@ async def get_trends(
                     region=region
                 )
             except Exception as scan_err:
-                logger.error(f"Global trending scan error: {scan_err}", exc_info=True)
+                logger.exception(f"Global trending scan error: {scan_err}", exc_info=True)
                 return success_response(data={"trends": [], "page": page, "page_size": limit, "total": 0, "total_pages": 0})
 
         paginated = paginate_list(trends, page=page, page_size=limit)
         paginated["trends"] = paginated["items"]
         return success_response(data=paginated)
     except Exception as e:
-        logger.error(f"Discovery trends failed: {e}", exc_info=True)
+        logger.exception(f"Discovery trends failed: {e}", exc_info=True)
         return handle_exception(e)
 
 
@@ -231,7 +228,7 @@ async def trigger_scan(
                         )
                         all_results.extend(results)
                     except Exception as inner_e:
-                        logger.error(
+                        logger.exception(
                             f"[Discovery] Fallback scan failed for {niche}: {inner_e}"
                         )
                         failed_niches.append(niche)
@@ -284,7 +281,7 @@ async def trigger_scan(
                                 ]
                             )
                         except Exception as swarm_e:
-                            logger.error(
+                            logger.exception(
                                 f"[Discovery] Video Lead Scanner failed for {niche}: {swarm_e}"
                             )
 
@@ -299,8 +296,8 @@ async def trigger_scan(
                 )
     except Exception as e:
         import traceback
-        logger.error(f"[Discovery] UNHANDLED EXCEPTION in trigger_scan: {e}")
-        logger.error(traceback.format_exc())
+        logger.exception(f"[Discovery] UNHANDLED EXCEPTION in trigger_scan: {e}")
+        logger.exception(traceback.format_exc())
         return handle_exception(e)
 
 
@@ -377,7 +374,7 @@ async def get_niche_trends(
                 )
         return success_response(data=trend)
     except Exception as e:
-        logger.error(f"Niche trends failed for {niche}: {e}")
+        logger.exception(f"Niche trends failed for {niche}: {e}")
         return handle_exception(e)
 
 
@@ -433,7 +430,6 @@ async def get_analysis_status(
     Get the status of an analysis task and return results when complete.
     """
     from src.api.utils.celery import celery_app
-    from src.services.discovery.tasks import analyze_viral_pattern_task
 
     try:
         # Get task result
@@ -526,7 +522,7 @@ async def create_video_from_analysis(
                 user_id=current_user.id,
             )
         except Exception as task_err:
-            logger.error(f"Task dispatch failure: {task_err}")
+            logger.exception(f"Task dispatch failure: {task_err}")
             raise HTTPException(status_code=503, detail="Task queue unavailable")
 
         # Consume credits
@@ -616,12 +612,10 @@ async def auto_transform(
     One-shot pipeline: Discover best content → Create video transformation.
     Combines discovery and video creation into 1 call for autonomous operation.
     """
-    from src.api.utils.celery import celery_app
     from src.services.video_engine.tasks import download_and_process_task
     from src.api.utils.models import VideoJobDB
     from shared.enums import SystemJobStatus
 
-    credits_needed = 2  # 分析 + video creation
 
     try:
         # Step 1: Discover top content for the niche
@@ -701,7 +695,7 @@ async def auto_transform(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[Auto-Transform] Pipeline failed: {e}")
+        logger.exception(f"[Auto-Transform] Pipeline failed: {e}")
         return handle_exception(e)
 
 
@@ -724,7 +718,6 @@ async def get_niche_insights(
     Uses Groq Llama-3 to generate high-fidelity, real-time advice based on the niche.
     """
     from src.services.llm.intelligence_hub import IntelligenceHub
-    import json
 
     # Default fallback data
     recommendation = "Use high-contrast visuals and rapid-fire segments. Maintain a high information density to maximize retention in the first 5 seconds."
@@ -755,7 +748,7 @@ async def get_niche_insights(
         filters = ai_data.get("filters_suggested", filters)
         confidence = ai_data.get("confidence", confidence)
     except Exception as e:
-        logger.error(f"[Discovery] Intelligence Hub Insight Failure: {e}")
+        logger.exception(f"[Discovery] Intelligence Hub Insight Failure: {e}")
 
     return success_response(
         data=InsightResponse(
@@ -787,7 +780,6 @@ async def opencli_search(
     can connect their own platform sessions via the /opencli/sessions
     endpoints, then use this to search with their authenticated session.
     """
-    from src.api.config import settings
     from src.services.opencli.scanner import OpenCLIScanner
 
     if not settings.ENABLE_OPENCLI:
@@ -811,7 +803,6 @@ async def opencli_feed(
 
     feed_type options: feed, trending, hot, top, explore
     """
-    from src.api.config import settings
     from src.services.opencli.scanner import OpenCLIScanner
 
     if not settings.ENABLE_OPENCLI:
@@ -834,7 +825,6 @@ async def opencli_scan(
     This merges opencli-rs results with the standard discovery pipeline,
     giving the current_user content discovered through their own authenticated sessions.
     """
-    from src.api.config import settings
     from src.services.opencli.scanner import OpenCLIScanner
 
     if not settings.ENABLE_OPENCLI:
@@ -914,7 +904,7 @@ async def record_interaction(
             }
         )
     except Exception as e:
-        logger.error(f"Interaction record failed: {e}")
+        logger.exception(f"Interaction record failed: {e}")
         return handle_exception(e)
 
 
@@ -978,7 +968,7 @@ async def get_content_analysis(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"Analysis failed: {e}")
+        logger.exception(f"Analysis failed: {e}")
         return handle_exception(e)
 
 
@@ -1054,7 +1044,7 @@ async def get_content_velocity(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Velocity calculation failed: {e}")
+        logger.exception(f"Velocity calculation failed: {e}")
         return handle_exception(e)
 
 
@@ -1113,7 +1103,7 @@ async def get_content_reuploads(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Reupload search failed: {e}")
+        logger.exception(f"Reupload search failed: {e}")
         return handle_exception(e)
 
 
@@ -1136,7 +1126,6 @@ async def refresh_discovery(
     Clears Redis cache and triggers new scans.
     """
     import redis
-    from src.api.config import settings
 
     try:
         # Connect to Redis
@@ -1177,7 +1166,7 @@ async def refresh_discovery(
         )
 
     except Exception as e:
-        logger.error(f"Refresh failed: {e}")
+        logger.exception(f"Refresh failed: {e}")
         return handle_exception(e)
 
 
@@ -1276,7 +1265,7 @@ async def export_discovery(
             )
 
     except Exception as e:
-        logger.error(f"Export failed: {e}")
+        logger.exception(f"Export failed: {e}")
         return handle_exception(e)
 
 
@@ -1296,7 +1285,7 @@ async def get_niche_alerts(
     try:
         stmt = select(DiscoveryAlertDB).filter(
             DiscoveryAlertDB.user_id == current_user.id,
-            DiscoveryAlertDB.is_active == True,
+            DiscoveryAlertDB.is_active,
         )
         result = await db.execute(stmt)
         alerts = result.scalars().all()
@@ -1317,7 +1306,7 @@ async def get_niche_alerts(
             }
         )
     except Exception as e:
-        logger.error(f"Get alerts failed: {e}")
+        logger.exception(f"Get alerts failed: {e}")
         return handle_exception(e)
 
 
@@ -1380,7 +1369,7 @@ async def create_niche_alert(
         )
     except Exception as e:
         await db.rollback()
-        logger.error(f"Create alert failed: {e}")
+        logger.exception(f"Create alert failed: {e}")
         return handle_exception(e)
 
 
@@ -1406,7 +1395,7 @@ async def delete_niche_alert(
         raise
     except Exception as e:
         await db.rollback()
-        logger.error(f"Delete alert failed: {e}")
+        logger.exception(f"Delete alert failed: {e}")
         return handle_exception(e)
 
 
@@ -1458,7 +1447,7 @@ async def bulk_favorites(
         )
     except Exception as e:
         await db.rollback()
-        logger.error(f"Bulk favorite failed: {e}")
+        logger.exception(f"Bulk favorite failed: {e}")
         return handle_exception(e)
 
 
@@ -1498,7 +1487,7 @@ async def get_favorites(
             }
         )
     except Exception as e:
-        logger.error(f"Get favorites failed: {e}")
+        logger.exception(f"Get favorites failed: {e}")
         return handle_exception(e)
 
 
@@ -1542,5 +1531,5 @@ async def get_scan_history(
             }
         )
     except Exception as e:
-        logger.error(f"Get history failed: {e}")
+        logger.exception(f"Get history failed: {e}")
         return handle_exception(e)

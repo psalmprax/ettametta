@@ -17,11 +17,7 @@ Configure via AI_VIDEO_PROVIDER env var:
 import os
 import logging
 import asyncio
-import time
 from typing import Any
-from pathlib import Path
-import uuid
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -765,7 +761,6 @@ class FreeVideoProviderService:
         Generate video using browser automation (no API key required).
         Falls back to Playwright automation for free video providers.
         """
-        import httpx
 
         logger.info(f"[FreeVideoProvider] Using browser automation for {provider}")
 

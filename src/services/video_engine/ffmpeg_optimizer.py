@@ -435,10 +435,10 @@ class FFmpegGraphOptimizer:
             logger.info("[FFmpegOptimizer] Graph executed successfully: %s", output_path)
             return True
         except subprocess.TimeoutExpired:
-            logger.error("[FFmpegOptimizer] Timeout after 600s")
+            logger.exception("[FFmpegOptimizer] Timeout after 600s")
             return False
         except Exception as e:
-            logger.error("[FFmpegOptimizer] Execution error: %s", e)
+            logger.exception("[FFmpegOptimizer] Execution error: %s", e)
             return False
 
     def set_audio_presence(self, has_audio: bool):

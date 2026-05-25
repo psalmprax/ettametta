@@ -9,7 +9,6 @@ Test script to verify OpenCLAW skills are working:
 import pytest
 import socket
 import requests
-import json
 import sys
 import os
 
@@ -180,7 +179,7 @@ def test_video_providers_free():
                 )
         else:
             assert False, "Not found at /free-video/providers"
-    except Exception as e:
+    except Exception:
         print("❌ /free-video/providers not available (this is optional)")
         # This endpoint might not exist yet — treat as non-fatal
 

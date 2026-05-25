@@ -73,11 +73,11 @@ class ScannerService:
                 breaker.record_success()
                 return result if isinstance(result, list) else []
             except asyncio.TimeoutExpired:
-                logger.error(f"[Scanner] {name} TIMEOUT after {timeout}s")
+                logger.exception(f"[Scanner] {name} TIMEOUT after {timeout}s")
                 breaker.record_failure()
                 return []
             except Exception as e:
-                logger.error(f"[Scanner] {name} FAILED: {e}")
+                logger.exception(f"[Scanner] {name} FAILED: {e}")
                 breaker.record_failure()
                 return []
 
@@ -149,7 +149,7 @@ class ScannerService:
                         await db.commit()
 
                 except Exception as e:
-                    logger.error(f"Failed to save candidate {candidate.id}: {e}")
+                    logger.exception(f"Failed to save candidate {candidate.id}: {e}")
                     await db.rollback()
             
             await db.commit()
@@ -176,7 +176,7 @@ def scan_trending_content():
         logger.info("[Scanner] Starting parallel trending content scan...")
 
         async with async_session_factory() as db:
-            stmt = select(MonitoredNiche).where(MonitoredNiche.is_active == True)
+            stmt = select(MonitoredNiche).where(MonitoredNiche.is_active)
             result = await db.execute(stmt)
             niches = result.scalars().all()
 
@@ -197,7 +197,7 @@ def scan_trending_content():
                     logger.info(f"[Scanner] Found {len(candidates)} candidates for '{niche}', saved {new_count} new")
 
             except Exception as e:
-                logger.error(f"[Scanner] Error scanning niche '{niche}': {e}")
+                logger.exception(f"[Scanner] Error scanning niche '{niche}': {e}")
 
         # Update timestamps
         async with async_session_factory() as db:
@@ -218,7 +218,7 @@ def scan_trending_content():
     try:
         return asyncio.run(run_scan())
     except Exception as e:
-        logger.error(f"[Scanner] Scan failed: {e}")
+        logger.exception(f"[Scanner] Scan failed: {e}")
         return {"status": "error", "error": str(e)}
 
 __all__ = ["scan_trending_content", "get_scanner_service", "ScannerService"]

@@ -1,7 +1,7 @@
 import sys
 import os
 import asyncio
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 # Add src to path
 sys.path.append(os.path.join(os.getcwd(), "src"))

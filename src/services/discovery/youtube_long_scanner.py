@@ -1,6 +1,5 @@
 from .scanner_base import DiscoveryScannerBase
 from .models import ContentCandidate
-import random
 import logging
 from src.api.config import settings
 from googleapiclient.discovery import build

@@ -4,7 +4,7 @@ Provides AI-powered analysis of content to extract topics, sentiment, viral pote
 """
 
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

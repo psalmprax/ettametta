@@ -15,5 +15,5 @@ def ettametta_polling_task():
         logger.info(f"[Celery] ettametta result: {result}")
         return result
     except Exception as e:
-        logger.error(f"[Celery] ettametta polling failed: {e}")
+        logger.exception(f"[Celery] ettametta polling failed: {e}")
         return str(e)

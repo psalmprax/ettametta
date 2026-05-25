@@ -47,7 +47,7 @@ async def run_compilation_test(niche="Motivation"):
             # Download
             raw_path = await base_downloader_service.download_video(url)
             if not raw_path:
-                print(f"  ❌ Download failed.")
+                print("  ❌ Download failed.")
                 continue
             
             print(f"  ✅ Downloaded: {raw_path}")
@@ -55,7 +55,7 @@ async def run_compilation_test(niche="Motivation"):
             # Normalize (1080x1920 + Originality)
             # We use the processor's apply_originality which ensures fixed resolution
             norm_path = os.path.join(processor.output_dir, f"norm_{uuid.uuid4().hex[:8]}.mp4")
-            print(f"  ⚙️ Normalizing...")
+            print("  ⚙️ Normalizing...")
             
             # Using the FFmpeg service directly for more control or the processor method
             from src.services.video_engine.ffmpeg_utils import base_ffmpeg_service
@@ -70,7 +70,7 @@ async def run_compilation_test(niche="Motivation"):
                 processed_segments.append(norm_path)
                 print(f"  ✨ Segment ready: {norm_path}")
             else:
-                print(f"  ❌ Normalization failed.")
+                print("  ❌ Normalization failed.")
                 
         except Exception as e:
             print(f"  ❌ Error processing segment: {e}")
@@ -93,7 +93,7 @@ async def run_compilation_test(niche="Motivation"):
     )
     
     if success:
-        print(f"\n✅ COMPILATION SUCCESSFUL!")
+        print("\n✅ COMPILATION SUCCESSFUL!")
         print(f"📍 FINAL VIDEO: {final_output}")
         
         # Link it to the local workspace for preview
@@ -104,7 +104,7 @@ async def run_compilation_test(niche="Motivation"):
         print(f"🔗 Local Preview Link: {preview_link}")
         
     else:
-        print(f"\n❌ Concatenation FAILED.")
+        print("\n❌ Concatenation FAILED.")
 
 if __name__ == "__main__":
     # Ensure storage exists

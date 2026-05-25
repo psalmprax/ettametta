@@ -11,9 +11,7 @@ from sqlalchemy import (
     Enum,
 )
 from .database import Base
-from .user_models import UserDB, UserRole, SubscriptionTier
 from datetime import datetime, timezone
-import enum
 import uuid
 from src.shared.enums import (
     SystemJobStatus,

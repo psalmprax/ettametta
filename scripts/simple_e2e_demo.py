@@ -7,7 +7,6 @@ Shows the complete video production workflow from discovery to preview
 with proper environment setup and realistic simulation.
 """
 
-import asyncio
 import os
 import sys
 from pathlib import Path
@@ -94,7 +93,7 @@ def demonstrate_complete_workflow():
     }
 
     print("✅ Scene analysis and planning operational")
-    print(f"   • Production plan: Generated")
+    print("   • Production plan: Generated")
     print(f"   • Fusion strategy: {planning_results['fusion_strategy']}")
     print(f"   • Quality score: {planning_results['quality_score']:.1f}/10")
     print(f"   • Videos selected: {planning_results['videos_selected']}")

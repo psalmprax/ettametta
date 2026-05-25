@@ -7,8 +7,6 @@ Creates real video by directly concatenating downloaded YouTube videos.
 """
 
 import asyncio
-import os
-import subprocess
 from pathlib import Path
 
 

@@ -1,4 +1,3 @@
-import sys
 
 file_path = "/home/psalmprax/ALL_PROJECTS/ettametta/src/services/discovery/service.py"
 with open(file_path, "r") as f:

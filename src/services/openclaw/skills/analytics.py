@@ -46,7 +46,7 @@ class AnalyticsSkill(OpenClawBaseSkill):
                 return f"⚠️ **Analytics Error**: Status {response.status_code}"
                 
         except Exception as e:
-            logger.error(f"Analytics Skill Error: {e}")
+            logger.exception(f"Analytics Skill Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
 
     def get_recent_posts(self, limit: int = 5) -> str:

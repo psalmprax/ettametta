@@ -33,7 +33,7 @@ class MessageDispatcher:
                 return await self.send_telegram(identifier, message)
 
         except Exception as e:
-            logger.error(f"Failed to dispatch message to {identifier}: {e}")
+            logger.exception(f"Failed to dispatch message to {identifier}: {e}")
             return False
 
     async def send_telegram(self, chat_id: str, text: str) -> bool:
@@ -59,7 +59,7 @@ class MessageDispatcher:
                 logger.error(f"Telegram broadcast failed: {response.text}")
                 return False
         except Exception as e:
-            logger.error(f"Telegram API request failed: {e}")
+            logger.exception(f"Telegram API request failed: {e}")
             return False
 
     async def send_whatsapp(self, phone_number: str, text: str) -> bool:

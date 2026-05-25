@@ -6,7 +6,6 @@ Create Date: 2026-05-01 15:35:00.000000
 
 """
 from alembic import op
-import sqlalchemy as sa
 from sqlalchemy.engine.reflection import Inspector
 
 revision = "e7b99c2d1f4a"

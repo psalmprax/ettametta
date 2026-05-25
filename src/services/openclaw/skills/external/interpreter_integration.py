@@ -3,7 +3,6 @@ import logging
 from typing import Any
 import subprocess
 import tempfile
-import shutil
 
 from src.api.config import settings
 
@@ -68,7 +67,7 @@ class OpenInterpreterService:
                     "execution_time": 0,
                 }
         except Exception as e:
-            logger.error(f"Code execution error: {e}")
+            logger.exception(f"Code execution error: {e}")
             return {
                 "success": False,
                 "output": "",

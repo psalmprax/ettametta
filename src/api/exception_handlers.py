@@ -127,7 +127,7 @@ async def global_exception_handler(request: Request, exc: Exception):
                 severity="CRITICAL"
             )
     except Exception as db_exc:
-        logger.error(f"Failed to persist fault audit or report incident: {db_exc}")
+        logger.exception(f"Failed to persist fault audit or report incident: {db_exc}")
 
     return error_response(
         code="INTERNAL_SERVER_ERROR",

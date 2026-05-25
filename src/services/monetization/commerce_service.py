@@ -1,7 +1,6 @@
 import logging
 import httpx
 from typing import Any
-from src.api.config import settings
 from src.api.utils.database import async_session_factory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

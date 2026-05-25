@@ -11,7 +11,6 @@ Scenarios:
 """
 
 import os
-import signal
 import random
 import asyncio
 import logging
@@ -68,7 +67,7 @@ class ChaosUtility:
             chaos_faults_injected.labels(fault_type="crash").inc()
             chaos_active.inc()
         except Exception as e:
-            logger.error(f"Chaos crash simulation failed: {e}")
+            logger.exception(f"Chaos crash simulation failed: {e}")
 
     async def induce_api_exhaustion(self, platform: str = "youtube"):
         """Mocks a 429 Rate Limit error state for a platform."""

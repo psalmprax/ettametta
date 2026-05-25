@@ -7,8 +7,6 @@ from src.services.monetization.service import base_monetization_service
 import json
 import logging
 import random
-import asyncio
-import time
 import redis
 from typing import Any
 from sqlalchemy import select
@@ -284,7 +282,7 @@ class OptimizationService:
                 platform=platform,
             )
         except Exception as e:
-            logging.error(f"Optimization Job Error: {e}")
+            logging.exception(f"Optimization Job Error: {e}")
             return self._get_fallback_package(niche, platform)
 
     def _get_fallback_package(self, niche, platform, product=None):
@@ -389,7 +387,7 @@ class OptimizationService:
     ) -> dict[str, Any]:
         """Fallback basic SEO optimization when AI is unavailable"""
         # Basic keyword insertion
-        niche_keywords = niche.lower().split()
+        niche.lower().split()
         optimized_title = f"{title} - {niche.title()} Tips"
 
         # Basic hashtags

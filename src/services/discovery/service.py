@@ -3,9 +3,7 @@ import redis
 import asyncio
 import datetime
 import os
-import logging
 from sqlalchemy import select, and_, or_
-from typing import Any
 from .models import ContentCandidate, ViralPattern
 from opentelemetry import trace
 from src.shared.observability import get_logger
@@ -44,7 +42,6 @@ from src.api.utils.models import (
     ContentCandidateDB,
     SystemSettings,
     NicheTrendDB,
-    MonitoredNiche,
 )
 from src.api.config import settings
 from src.api.utils.vault import get_secret
@@ -187,8 +184,8 @@ class DiscoveryService:
 
         except Exception as e:
             import traceback
-            logger.error(f"[Discovery] CRITICAL FAILURE in find_trending_content: {e}")
-            logger.error(traceback.format_exc())
+            logger.exception(f"[Discovery] CRITICAL FAILURE in find_trending_content: {e}")
+            logger.exception(traceback.format_exc())
             raise e
 
         return all_candidates
@@ -526,7 +523,7 @@ class DiscoveryService:
                     f"[Discovery] Successfully persisted {len(candidates)} candidates for {niche}."
                 )
             except Exception as e:
-                logger.error(f"[Discovery] Persistence Error: {e}")
+                logger.exception(f"[Discovery] Persistence Error: {e}")
                 await db.rollback()
 
     def _ingest_aggregate_signal(
@@ -549,7 +546,7 @@ class DiscoveryService:
             )
             logger.info(f"📡 [Discovery] Signal bus updated for '{niche}' with {len(candidates)} candidates.")
         except Exception as e:
-            logger.error(f"Failed to ingest signal to bus: {e}")
+            logger.exception(f"Failed to ingest signal to bus: {e}")
 
     async def _recalculate_viral_scores(
         self, candidates: list[ContentCandidate]
@@ -649,7 +646,7 @@ class DiscoveryService:
                     celery_app.send_task("discovery.scan_trends", args=[sn])
 
         except Exception as e:
-            logger.error(f"[Discovery] Recursive expansion error: {e}")
+            logger.exception(f"[Discovery] Recursive expansion error: {e}")
 
     async def _rank_candidates_with_ai(
         self, niche: str, candidates: list[ContentCandidate]
@@ -717,7 +714,7 @@ class DiscoveryService:
 
             return ranked
         except Exception as e:
-            logger.error(f"[Discovery] Neural Ranking Boost Error: {e}")
+            logger.exception(f"[Discovery] Neural Ranking Boost Error: {e}")
             return candidates
 
     async def deep_analyze_viral_patterns(
@@ -732,8 +729,6 @@ class DiscoveryService:
     async def _get_video_transcript(self, video_uri: str) -> str:
         """Extracts transcript from video via yt-dlp."""
         import yt_dlp
-        import os
-        import tempfile
 
         # We use yt-dlp to get automatic captions as a transcript
         ydl_opts = {
@@ -758,14 +753,13 @@ class DiscoveryService:
                 # Fallback to metadata if no transcript
                 return f"No transcript available. Analysis based on metadata: {info.get('title')} - {info.get('description', '')[:100]}..."
         except Exception as e:
-            logger.error(f"[Discovery] Transcript extraction failed: {e}")
+            logger.exception(f"[Discovery] Transcript extraction failed: {e}")
             return "Transcript extraction failed. Using fallback metadata analysis."
 
     async def aggregate_niche_trends(self, niche: str):
         """
         Processes discovered content to identify top keywords and engagement for a niche.
         """
-        from src.api.utils.models import NicheTrendDB
         from collections import Counter
         import re
         from sqlalchemy import select
@@ -857,7 +851,7 @@ class DiscoveryService:
         """
         Comprehensive search for content candidates across DB and Live Scanners.
         """
-        from sqlalchemy import and_, or_, select
+        from sqlalchemy import and_, select
 
         async with async_session_factory() as db:
             try:
@@ -957,7 +951,7 @@ class DiscoveryService:
 
                 return candidates[:limit]
             except Exception as e:
-                logger.error(f"[Discovery] Search failed: {e}")
+                logger.exception(f"[Discovery] Search failed: {e}")
                 return []
 
     async def get_global_trending(
@@ -1022,7 +1016,6 @@ class DiscoveryService:
         Returns:
             List of candidates that are likely reuploads
         """
-        from sqlalchemy import or_, func
 
         # Get original content
         async with async_session_factory() as db:
@@ -1176,7 +1169,6 @@ class DiscoveryService:
         High-speed asset procurement bridge.
         Downloads identified viral leads for the neural production engine.
         """
-        import os
         from pathlib import Path
 
         raw_dir = Path("local_downloads/raw")
@@ -1320,7 +1312,7 @@ class DiscoveryService:
                                                             "is_stock_fallback": True,
                                                         }
                                 except Exception as se:
-                                    logger.error(
+                                    logger.exception(
                                         f"   ⚠️ Stock download failed ({sc.platform}): {str(se)}"
                                     )
 
@@ -1341,7 +1333,7 @@ class DiscoveryService:
                     logger.error(f"   ❌ All procurement tiers failed for {video_id}.")
                     return None
             except Exception as e:
-                logger.error(f"   ⚠️ Procurement exception: {str(e)}")
+                logger.exception(f"   ⚠️ Procurement exception: {str(e)}")
                 return None
 
         # Execute procurement in a throttled swarm

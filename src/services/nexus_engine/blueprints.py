@@ -1,7 +1,5 @@
 import logging
-import asyncio
-import time
-from typing import Any, Dict, List, Protocol, Type
+from typing import Dict, Protocol, Type
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.models import BlueprintDB
@@ -73,21 +71,17 @@ async def dag_execute_blueprint(
         dict with status, results, and blueprint_id
     """
     from src.api.routes.ws import notify_nexus_job_update_sync
-    from src.services.video_engine.dag_executor import base_dag_compiler, base_dag_scheduler, base_dag_cache
+    from src.services.video_engine.dag_executor import base_dag_compiler, base_dag_scheduler
     from src.services.nexus_engine.dag_nodes import (
-        StockSearchNode,
-        VideoDownloadNode,
         ParallelAssetSourceNode,
         VisionAuditNode,
-        ColorGradeNode,
-        AudioMixNode,
         SceneRenderNode,
     )
 
     blueprint_id = blueprint.get("id", "unknown")
     composition_id = blueprint.get("composition_id", "ViralClip")
     niche = inputs.get("niche", "")
-    topic = inputs.get("topic", "") or niche
+    inputs.get("topic", "") or niche
 
     # Get scenes (from segments param, cognition results, or generate)
     scenes = segments or inputs.get("scenes", [])
@@ -220,7 +214,7 @@ async def dag_execute_blueprint(
         }
 
     except Exception as e:
-        logger.error("[DAG-Blueprint] Execution failed for job %s: %s", job_id, e)
+        logger.exception("[DAG-Blueprint] Execution failed for job %s: %s", job_id, e)
         notify_nexus_job_update_sync({
             "id": str(job_id),
             "status": "DAG_FAILED",
@@ -425,7 +419,7 @@ async def execute_blueprint(
     try:
         for i, node in enumerate(nodes):
             node_type = node.get("type", "unknown")
-            node_label = node.get("label", node_type)
+            node.get("label", node_type)
             progress = int(((i + 1) / len(nodes)) * 100)
 
             notify_nexus_job_update_sync({
@@ -461,7 +455,7 @@ async def execute_blueprint(
 
         return {"status": "success", "results": results, "blueprint_id": blueprint_id}
     except Exception as e:
-        logger.error(f"[Blueprint] Execution failed for job {job_id}: {e}")
+        logger.exception(f"[Blueprint] Execution failed for job {job_id}: {e}")
         return {"status": "failed", "error": str(e), "blueprint_id": blueprint_id}
 
 async def get_blueprint_by_id(db: AsyncSession, blueprint_id: str) -> dict | None:

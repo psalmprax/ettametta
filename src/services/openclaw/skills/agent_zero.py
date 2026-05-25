@@ -1,4 +1,3 @@
-import requests
 import logging
 from .base_skill import OpenClawBaseSkill
 
@@ -77,7 +76,7 @@ class AgentZeroSkill(OpenClawBaseSkill):
             else:
                 return "⚠️ Invalid action. Use: start, stop, status."
         except Exception as e:
-            logger.error(f"AgentZeroSkill Error: {e}")
+            logger.exception(f"AgentZeroSkill Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
 
 

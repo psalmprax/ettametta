@@ -1,7 +1,6 @@
 import os
 import logging
 from typing import Any
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +50,13 @@ class LangChainService:
         try:
             llm = self.ChatGroq(model=model_name)
 
-            prompt = ChatPromptTemplate.from_messages(
+            prompt = self.ChatPromptTemplate.from_messages(
                 [("system", system_prompt), ("human", "{input}")]
             )
 
-            return LLMChain(llm=llm, prompt=prompt)
+            return self.LLMChain(llm=llm, prompt=prompt)
         except Exception as e:
-            logger.error(f"Error creating LangChain: {e}")
+            logger.exception(f"Error creating LangChain: {e}")
             return None
 
     async def invoke_chain(self, chain: Any, input_text: str, **kwargs) -> str:
@@ -69,7 +68,7 @@ class LangChainService:
             result = await chain.ainvoke({"input": input_text}, **kwargs)
             return result.get("text", str(result))
         except Exception as e:
-            logger.error(f"Error invoking chain: {e}")
+            logger.exception(f"Error invoking chain: {e}")
             return f"Error: {str(e)}"
 
     async def create_sequence(
@@ -86,13 +85,13 @@ class LangChainService:
             chains = []
 
             for i, prompt in enumerate(prompts):
-                prompt_template = ChatPromptTemplate.from_template(prompt)
-                chain = LLMChain(llm=llm, prompt=prompt_template)
+                prompt_template = self.ChatPromptTemplate.from_template(prompt)
+                chain = self.LLMChain(llm=llm, prompt=prompt_template)
                 chains.append(chain)
 
             return SimpleSequentialChain(chains=chains)
         except Exception as e:
-            logger.error(f"Error creating sequence: {e}")
+            logger.exception(f"Error creating sequence: {e}")
             return None
 
 

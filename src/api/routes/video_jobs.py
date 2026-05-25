@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from src.api.utils.database import get_db
 from src.shared.enums import SystemJobStatus, CreditAction
@@ -9,6 +8,7 @@ from src.api.utils.user_models import UserDB, UserRole
 from src.api.utils.audit_service import audit_service
 from src.services.payment.credit_service import credit_service
 from src.services.video_engine.job_service import get_video_job_service, VideoJobService
+from src.api.utils.tracing import get_request_id
 from datetime import datetime, timedelta, timezone
 from src.api.utils.api_responses import success_response
 import logging
@@ -34,7 +34,7 @@ async def list_jobs(
         )
         return success_response(data=jobs)
     except Exception as e:
-        logger.error(f"Error listing jobs: {e}")
+        logger.exception(f"Error listing jobs: {e}")
         raise HTTPException(status_code=500, detail="Database error retrieving jobs")
 
 
@@ -66,7 +66,7 @@ async def abort_job(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error aborting job {job_id}: {e}")
+        logger.exception(f"Error aborting job {job_id}: {e}")
         raise HTTPException(status_code=500, detail="Database error aborting job")
 
 
@@ -74,6 +74,7 @@ async def abort_job(
 async def get_job_details(
     job_id: str,
     current_user: UserDB = Depends(get_current_user),
+    job_service: VideoJobService = Depends(get_video_job_service),
     db=Depends(get_db),
 ):
     """
@@ -133,7 +134,6 @@ async def get_job_details(
 
         # Calculate cost information
         engine = metadata["generation_details"].get("engine", "unknown")
-        from src.api.utils.subscription import get_provider_quota_info
 
         # Simple cost mapping (consistent with original)
         cost_mapping = {
@@ -158,7 +158,7 @@ async def get_job_details(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching metadata for {job_id}: {e}")
+        logger.exception(f"Error fetching metadata for {job_id}: {e}")
         raise HTTPException(status_code=500, detail="Database error fetching metadata")
 
 
@@ -174,7 +174,6 @@ async def retry_job(
     from src.services.video_engine.tasks import (
         download_and_process_task,
         generate_video_task,
-        generate_story_task,
     )
 
     try:
@@ -258,7 +257,7 @@ async def retry_job(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Retry failed for {job_id}: {e}")
+        logger.exception(f"Retry failed for {job_id}: {e}")
         raise HTTPException(status_code=500, detail="Database error retrying job")
 
 
@@ -312,5 +311,5 @@ async def get_video_quotas(
         )
 
     except Exception as e:
-        logger.error(f"Quota fetch failed for {current_user.id}: {e}")
+        logger.exception(f"Quota fetch failed for {current_user.id}: {e}")
         raise HTTPException(status_code=500, detail="Database error fetching quotas")

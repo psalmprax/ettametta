@@ -4,13 +4,12 @@ Provides statistical A/B testing with proper significance testing
 """
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.api.utils.models import ABTestDB
 from src.shared.enums import ABTestStatus
 from src.api.utils.auth import get_current_user
-from src.api.utils.user_models import UserDB, UserRole
+from src.api.utils.user_models import UserRole
 from pydantic import BaseModel
 from datetime import datetime, timezone
 import math

@@ -1,5 +1,4 @@
 import logging
-import json
 from src.api.utils.vault import get_secret
 import httpx
 import os
@@ -9,9 +8,7 @@ import shutil
 from pathlib import Path
 from src.api.config import settings
 import redis
-import time
 from contextlib import asynccontextmanager
-import tenacity
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 import importlib.util
@@ -88,7 +85,7 @@ class ModelManager:
             await self._download_model_from_hf(model_name, model_path)
             logging.info(f"[ModelManager] Download complete: {model_name}")
         except Exception as e:
-            logging.error(f"[ModelManager] Download failed for {model_name}: {e}")
+            logging.exception(f"[ModelManager] Download failed for {model_name}: {e}")
             # Fallback to touch (for testing)
             model_path.touch()
             logging.warning(f"[ModelManager] Using mock model for {model_name}")
@@ -121,7 +118,6 @@ class ModelManager:
 
         # Download in background thread to avoid blocking
         import concurrent.futures
-        import functools
 
         def download_sync():
             return hf_hub_download(
@@ -192,7 +188,7 @@ class GpuQueueManager:
                 self.redis.rpush(self.semaphore_key, *tokens)
                 self.redis.expire(self.semaphore_key, 604800)  # 7 days persistence
         except Exception as e:
-            logging.error(f"[GpuQueue] Initialization failed: {e}")
+            logging.exception(f"[GpuQueue] Initialization failed: {e}")
 
     @asynccontextmanager
     async def acquire_slot(self):
@@ -797,7 +793,6 @@ class GenerativeService:
         4K Lite Orchestrator: High-res image generation + Cinematic Parallax.
         Uses Pollinations.ai for zero-cost high-quality assets.
         """
-        import httpx
         import uuid
         import urllib.parse
         from .processor import VideoProcessor
@@ -887,7 +882,8 @@ class GenerativeService:
         Google Veo 3 (Gemini 1.5/Veo API) Integration.
         Falls back to remote GPU node, then to Lite4K image+parallax approach.
         """
-        import uuid, os
+        import uuid
+        import os
 
         job_id = f"veo3_{uuid.uuid4().hex[:8]}"
         output_dir = settings.REMOTE_STORAGE_OUTPUT_DIR
@@ -948,7 +944,8 @@ class GenerativeService:
         Open-Source Synthesis (Wan2.2 via SiliconFlow/Fal.ai or remote GPU).
         Falls back to Lite4K image+parallax.
         """
-        import uuid, os
+        import uuid
+        import os
 
         job_id = f"wan_{uuid.uuid4().hex[:8]}"
         output_dir = settings.REMOTE_STORAGE_OUTPUT_DIR
@@ -1015,7 +1012,6 @@ class GenerativeService:
         Checks for a RENDER_NODE_URL. If present, proxies the request to the
         external GPU server running the diffusers FastAPI app.
         """
-        import os
 
         render_node_url = settings.RENDER_NODE_URL
 
@@ -1046,7 +1042,7 @@ class GenerativeService:
                     f"Remote GPU node returned {response.status_code}: {response.text[:200]}"
                 )
             except Exception as e:
-                logging.error(
+                logging.exception(
                     f"[GenerativeService] Failed to contact Remote GPU Node: {e}"
                 )
                 # Fallback to mock
@@ -1151,7 +1147,6 @@ class GenerativeService:
         Pro strategy: Generate low-VRAM + enhance after for better quality.
         """
         import uuid
-        import os
         from pathlib import Path
 
         try:
@@ -1163,9 +1158,12 @@ class GenerativeService:
                     )
                     return video_path
 
-                from realesrgan import RealESRGANer
-                from basicsr.archs.rrdbnet_arch import RRDBNet
-            except (ImportError, ModuleNotFoundError) as e:
+                import importlib
+                realesrgan = importlib.import_module("realesrgan")
+                realesrgan_class = realesrgan.RealESRGANer
+                basicsr_arch = importlib.import_module("basicsr.archs.rrdbnet_arch")
+                rrdbnet_class = basicsr_arch.RRDBNet
+            except ImportError as e:
                 logging.warning(
                     f"[GenerativeService] Failed to import enhancement libraries: {e}. Skipping enhancement."
                 )
@@ -1181,7 +1179,7 @@ class GenerativeService:
             )
 
             # 3. Initialize Real-ESRGAN model
-            model = RRDBNet(
+            model = rrdbnet_class(
                 num_in_ch=3,
                 num_out_ch=3,
                 num_feat=64,
@@ -1189,7 +1187,7 @@ class GenerativeService:
                 num_grow_ch=32,
                 scale=4,
             )
-            upscaler = RealESRGANer(
+            upscaler = realesrgan_class(
                 scale=4,
                 model_path="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
                 model=model,
@@ -1329,7 +1327,7 @@ class GenerativeService:
                 return None
 
         except Exception as e:
-            logging.error(f"[GenerativeService] AnimateDiff synthesis failed: {e}")
+            logging.exception(f"[GenerativeService] AnimateDiff synthesis failed: {e}")
             return None
 
     def _get_comfy_workflow(self, model_type: str, prompt: str, params: dict) -> dict:
@@ -1413,7 +1411,7 @@ class GenerativeService:
             
             return downloaded_assets
         except Exception as e:
-            logging.error(f"[GenerativeService] Failed to pull stock for {niche}: {e}")
+            logging.exception(f"[GenerativeService] Failed to pull stock for {niche}: {e}")
             return []
 
 

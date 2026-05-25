@@ -112,7 +112,7 @@ class PlaywrightVideoSkill(OpenClawBaseSkill):
             }
 
         except Exception as e:
-            logger.error(f"[{self.engine_name}] Generation failed: {str(e)}")
+            logger.exception(f"[{self.engine_name}] Generation failed: {str(e)}")
             await self.cleanup()
             return {"status": "failed", "error": str(e), "engine": self.engine_name}
 

@@ -1,15 +1,12 @@
 import pytest
 import asyncio
-import os
 import shutil
-from unittest.mock import AsyncMock, MagicMock
 
 from src.services.video_engine.dag_executor import (
     BaseNode,
     DAGCompiler,
     Scheduler,
-    Cache,
-    ExecutionPlan
+    Cache
 )
 
 
@@ -193,6 +190,6 @@ async def test_scheduler_caching_and_invalidation(temp_cache_dir):
     # 4. Invalidate Cache
     await cache.invalidate()
     node_a_changed.executed_count = 0
-    res4 = await scheduler.run(plan2)
+    await scheduler.run(plan2)
     # Cache was invalidated, must run again
     assert node_a_changed.executed_count == 1

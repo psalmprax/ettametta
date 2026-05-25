@@ -1,7 +1,5 @@
 import os
 import re
-import glob
-from collections import defaultdict
 
 FRONTEND_DIR = "apps/dashboard/src"
 BACKEND_DIR = "api/routes"

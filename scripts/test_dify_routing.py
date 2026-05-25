@@ -1,5 +1,4 @@
 import asyncio
-import httpx
 import sys
 import os
 

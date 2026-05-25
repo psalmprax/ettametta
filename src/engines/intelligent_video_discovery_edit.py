@@ -11,7 +11,6 @@ WITH CONTENT TYPE DETECTION - Filters out talking head videos!
 import asyncio
 import os
 import sys
-import json
 import base64
 from pathlib import Path
 import httpx
@@ -539,7 +538,6 @@ Return as JSON array with these fields."""
             score_parts.append(f"Engagement: {engagement:.0%}")
 
             # Freshness
-            import datetime
 
             freshness = 0.7
             if video.get("published_at"):

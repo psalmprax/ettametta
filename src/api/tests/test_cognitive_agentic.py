@@ -1,17 +1,14 @@
 import pytest
-import asyncio
 from unittest.mock import MagicMock, patch
 from src.services.langchain.service import LangChainService
-from src.services.crewai.service import CrewAIService
 from src.services.decision_engine.service import StrategyService
-from src.services.nexus_engine.orchestrator import NexusOrchestrator
 
 @pytest.mark.asyncio
 async def test_langchain_vibe_analysis():
     """Verify LangChain service can analyze vibes and record success."""
     # Patch where the code looks for it
     with patch("services.langchain.service.LLMChain", create=True) as mock_chain, \
-         patch("services.langchain.service.ChatPromptTemplate", create=True) as mock_prompt:
+         patch("services.langchain.service.ChatPromptTemplate", create=True):
         
         mock_instance = mock_chain.return_value
         

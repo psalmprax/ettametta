@@ -1,4 +1,3 @@
-import re
 
 files_to_fix = [
     "src/api/utils/models.py",

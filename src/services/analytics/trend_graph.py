@@ -7,7 +7,7 @@ and strategic influence patterns.
 """
 
 import logging
-from typing import Any, Set
+from typing import Any
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)

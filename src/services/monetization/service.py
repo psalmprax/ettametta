@@ -1,15 +1,7 @@
 import logging
 import json
-import time
 from typing import Any
-from groq import AsyncGroq
 from src.api.config import settings
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-)
 
 from .orchestrator import base_monetization_orchestrator_service
 from src.services.llm.intelligence_hub import base_intelligence_service
@@ -125,7 +117,7 @@ class MonetizationEngine:
             }
 
         except Exception as e:
-            logging.error(f"[Monetization] Auto-insert failed: {e}")
+            logging.exception(f"[Monetization] Auto-insert failed: {e}")
             return {
                 "status": "error", 
                 "message": str(e),

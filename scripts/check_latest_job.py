@@ -1,6 +1,5 @@
 import asyncio
 import sys
-from pathlib import Path
 PROJECT_DIR = "/home/psalmprax/ALL_PROJECTS/ettametta"
 sys.path.insert(0, PROJECT_DIR)
 

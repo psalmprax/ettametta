@@ -8,7 +8,6 @@ fusion, and audio overlay for upload-ready content.
 
 from typing import Any
 import logging
-import asyncio
 
 from src.services.video_engine.scene_orchestrator import base_scene_orchestrator_service
 
@@ -46,7 +45,7 @@ class SceneBasedVideoSkill(OpenClawBaseSkill):
                 return res.get("message", "Success")
             return f"⚠️ Error: {res.get('error') if isinstance(res, dict) else str(res)}"
         except Exception as e:
-            logger.error(f"Scene-based video skill error: {e}")
+            logger.exception(f"Scene-based video skill error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     async def _produce_complete_video(self, params: dict[str, Any]) -> dict[str, Any]:

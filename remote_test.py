@@ -1,7 +1,6 @@
 import asyncio
 import os
 import sys
-from typing import Any
 
 # Ensure we can import from src
 sys.path.append(os.getcwd())
@@ -58,7 +57,7 @@ async def test_interpreter():
         if "error" in result:
             print(f"❌ Interpreter failed: {result['error']}")
         else:
-            print(f"✅ Interpreter successful.")
+            print("✅ Interpreter successful.")
     except Exception as e:
         print(f"❌ Interpreter crashed: {e}")
 

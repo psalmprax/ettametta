@@ -13,7 +13,6 @@ from src.services.payment.credit_service import credit_service
 from src.api.utils.limiter import limiter
 from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response
-from src.services.discovery.service import base_discovery_service
 from src.api.utils.models import ContentCandidateDB
 import logging
 import uuid
@@ -112,7 +111,7 @@ async def start_transformation(
                 task_id=task_id,
             )
         except Exception as task_err:
-            logger.error(f"Failed to dispatch transformation Celery task: {task_err}")
+            logger.exception(f"Failed to dispatch transformation Celery task: {task_err}")
             # Compensation workflow: mark job as failed and refund credits
             try:
                 stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
@@ -134,7 +133,7 @@ async def start_transformation(
                 await db.commit()
             except Exception as refund_err:
                 await db.rollback()
-                logger.error(f"Refund/fail update failed for transformation task: {refund_err}")
+                logger.exception(f"Refund/fail update failed for transformation task: {refund_err}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Task queue unavailable. Please try again later.",
@@ -156,7 +155,7 @@ async def start_transformation(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Transformation failed: {e}")
+        logger.exception(f"Transformation failed: {e}")
         raise HTTPException(status_code=503, detail="Video processing unavailable")
 
 
@@ -230,7 +229,7 @@ async def test_drive(
                 task_id=task_id,
             )
         except Exception as task_err:
-            logger.error(f"Failed to dispatch test-drive Celery task: {task_err}")
+            logger.exception(f"Failed to dispatch test-drive Celery task: {task_err}")
             try:
                 stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
                 res = await db.execute(stmt)
@@ -241,7 +240,7 @@ async def test_drive(
                 await db.commit()
             except Exception as update_err:
                 await db.rollback()
-                logger.error(f"Failed to update job status on test-drive celery dispatch failure: {update_err}")
+                logger.exception(f"Failed to update job status on test-drive celery dispatch failure: {update_err}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Task queue unavailable. Please try again later.",
@@ -253,7 +252,7 @@ async def test_drive(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Test drive failed: {e}")
+        logger.exception(f"Test drive failed: {e}")
         raise HTTPException(status_code=503, detail="Video processing unavailable")
 
 
@@ -312,5 +311,5 @@ async def auto_insert_affiliate_links(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Auto-insert links failed: {e}")
+        logger.exception(f"Auto-insert links failed: {e}")
         raise HTTPException(status_code=503, detail="Video processing unavailable")

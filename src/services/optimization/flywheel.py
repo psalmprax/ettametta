@@ -1,10 +1,8 @@
 import logging
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from src.api.utils.database import async_session_factory
-from src.api.utils.models import VideoJobDB, PerformanceSnapshotDB, PublishedContentDB
-from src.services.optimization.youtube_publisher import base_youtube_service
+from src.api.utils.models import VideoJobDB
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -121,7 +119,7 @@ class FlywheelService:
                 "source": "simulated_real_fallback"
             }
         except Exception as e:
-            logger.error(f"Error fetching metrics for {job_id}: {e}")
+            logger.exception(f"Error fetching metrics for {job_id}: {e}")
             return {"ctr": 0, "retention": 0, "watch_time_sec": 0, "error": str(e)}
 
     async def trigger_global_evolution(self) -> dict[str, Any]:
@@ -135,7 +133,7 @@ class FlywheelService:
             seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
             stmt = select(VideoJobDB.job_metadata["parent_id"].astext).where(
                 VideoJobDB.created_at >= seven_days_ago,
-                VideoJobDB.job_metadata["parent_id"].astext != None
+                VideoJobDB.job_metadata["parent_id"].astext is not None
             ).distinct()
             
             result = await db.execute(stmt)

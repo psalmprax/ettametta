@@ -1,7 +1,5 @@
 import logging
 import numpy as np
-from typing import Any
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from src.api.utils.database import AsyncSessionLocal
 from src.api.utils.models import DriftHistoryDB
@@ -31,7 +29,7 @@ class DriftDetector:
                 self.drift_history.reverse() # Keep temporal order
                 logger.info(f"🔄 [Drift] State Reconstructed: {len(self.drift_history)} entries loaded.")
             except Exception as e:
-                logger.error(f"Failed to sync drift state from DB: {e}")
+                logger.exception(f"Failed to sync drift state from DB: {e}")
 
     async def record_delta(self, predicted_retention: float, actual_retention: float):
         """
@@ -57,7 +55,7 @@ class DriftDetector:
                 await db.commit()
                 logger.info(f"📉 [Drift] Delta Recorded & Persisted: {delta:.4f}")
             except Exception as e:
-                logger.error(f"Failed to persist drift delta: {e}")
+                logger.exception(f"Failed to persist drift delta: {e}")
                 await db.rollback()
 
     def get_current_drift(self) -> float:

@@ -5,7 +5,6 @@ Handles callbacks from YouTube, TikTok, and other platforms with proper security
 
 from fastapi import APIRouter, Request, HTTPException, Header, Depends
 from pydantic import BaseModel, field_validator
-from typing import Any
 from src.api.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -167,7 +166,7 @@ async def youtube_upload_status(
 
     except Exception as e:
         await db.rollback()
-        logger.error(f"[Webhooks] Generic platform webhook error: {e}")
+        logger.exception(f"[Webhooks] Generic platform webhook error: {e}")
         raise HTTPException(status_code=503, detail="Webhook processing failed")
 
 
@@ -240,5 +239,5 @@ async def get_webhook_events(
             "offset": offset,
         }
     except Exception as e:
-        logger.error(f"Failed to fetch events: {e}")
+        logger.exception(f"Failed to fetch events: {e}")
         raise HTTPException(status_code=503, detail="Webhook processing failed")

@@ -126,7 +126,7 @@ class CryptoStrategy(BaseMonetizationStrategy):
                     if resp.status_code == 200:
                         return resp.json().get("balance", 0) / 10**18
         except Exception as e:
-            logging.error(f"[CryptoStrategy] Balance check failed for {symbol}: {e}")
+            logging.exception(f"[CryptoStrategy] Balance check failed for {symbol}: {e}")
         return None
 
     def _extract_wallet(self, wallet_str: str, symbol: str) -> str:

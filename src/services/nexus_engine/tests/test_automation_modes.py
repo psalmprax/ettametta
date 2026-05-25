@@ -12,7 +12,7 @@ Tests cover:
 
 import json
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, PropertyMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 pytestmark = pytest.mark.filterwarnings(
     "ignore::DeprecationWarning",
@@ -98,7 +98,7 @@ class TestResolveMode:
 
     def test_settings_no_attr_fallback_to_system_default(self):
         """When settings obj lacks AUTOMATION_MODE, falls through to system default."""
-        from src.services.video_engine.automation import AutomationMode, resolve_mode
+        from src.services.video_engine.automation import resolve_mode
 
         class EmptySettings:
             pass
@@ -427,7 +427,6 @@ class TestPartialMode:
     async def test_partial_approval_shows_preview(self):
         """PARTIAL mode generates DAG preview for user review."""
         from src.services.nexus_engine.auto_creator import AutoCreator
-        from src.services.video_engine.automation import AutomationMode
 
         creator = AutoCreator()
         mock_dag_segment = {
@@ -461,7 +460,6 @@ class TestPartialMode:
     async def test_approve_dag_api(self):
         """approve_dag() resolves the approval event correctly."""
         from src.services.nexus_engine.auto_creator import AutoCreator
-        from src.services.video_engine.automation import AutomationMode
 
         import asyncio
 
@@ -813,7 +811,7 @@ class TestBlueprintAutomationModes:
 
             mock_dag.return_value = {"status": "success", "results": {}, "blueprint_id": "test-bp"}
 
-            result = await execute_blueprint(
+            await execute_blueprint(
                 blueprint, {"niche": "test", "content": "test"}, "bp-partial",
                 use_dag=False,  # Should be overridden
                 automation_mode="partial",

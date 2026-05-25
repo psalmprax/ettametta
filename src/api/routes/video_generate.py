@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.database import get_db
 from src.shared.enums import SystemJobStatus, CreditAction
@@ -12,16 +11,9 @@ from src.api.utils.subscription import (
     daily_limit_reached,
     engine_access_required,
     credits_required,
-    check_daily_limit,
 )
 from src.services.video_engine.job_service import get_video_job_service, VideoJobService
 from src.services.video_engine.tasks import generate_video_task, generate_story_task
-from src.services.script_generator.service import base_script_service
-from src.services.decision_engine.hook_validator import base_validator_service
-from src.services.voiceover.service import base_voiceover_service
-from src.services.stock_media.service import base_stock_media_service
-from src.services.multiplatform.translator import base_multiplatform_service
-from src.services.nexus_engine.auto_creator import base_creator_service
 from src.api.utils.limiter import limiter
 from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response, handle_exception
@@ -173,7 +165,7 @@ async def generate_single_video(
                 )
                 task_ids.append(task_id)
             except Exception as task_err:
-                logger.error(f"Failed to dispatch variant {i} Celery task: {task_err}")
+                logger.exception(f"Failed to dispatch variant {i} Celery task: {task_err}")
                 # Compensation workflow: mark job as failed and refund credits
                 try:
                     stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
@@ -195,7 +187,7 @@ async def generate_single_video(
                     await db.commit()
                 except Exception as refund_err:
                     await db.rollback()
-                    logger.error(f"Refund/fail update failed for variant {i}: {refund_err}")
+                    logger.exception(f"Refund/fail update failed for variant {i}: {refund_err}")
 
         await audit_service.log(
             action=CreditAction.VIDEO_GENERATE_VARIANTS_START,
@@ -289,7 +281,7 @@ async def start_story_generation(
                 task_id=task_id,
             )
         except Exception as task_err:
-            logger.error(f"Failed to dispatch storytelling Celery task: {task_err}")
+            logger.exception(f"Failed to dispatch storytelling Celery task: {task_err}")
             # Compensation workflow: mark job as failed and refund credits
             try:
                 stmt = select(VideoJobDB).where(VideoJobDB.id == task_id)
@@ -311,7 +303,7 @@ async def start_story_generation(
                 await db.commit()
             except Exception as refund_err:
                 await db.rollback()
-                logger.error(f"Refund/fail update failed for storytelling task: {refund_err}")
+                logger.exception(f"Refund/fail update failed for storytelling task: {refund_err}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Task queue unavailable. Please try again later.",

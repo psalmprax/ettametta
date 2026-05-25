@@ -122,7 +122,7 @@ class TikTokPublisher(SocialPublisher):
                 return f"https://www.tiktok.com/@{open_id}/video/{publish_id}"
 
         except Exception as e:
-            logger.error(f"[TikTokPublisher] Upload failed: {e}")
+            logger.exception(f"[TikTokPublisher] Upload failed: {e}")
             return None
 
     async def _get_metrics_impl(
@@ -167,7 +167,7 @@ class TikTokPublisher(SocialPublisher):
                 return {"views": 0, "likes": 0, "comments": 0, "shares": 0}
 
             except Exception as e:
-                logger.error(f"[TikTokPublisher] Metrics fetch error: {e}")
+                logger.exception(f"[TikTokPublisher] Metrics fetch error: {e}")
                 return {"error": str(e)}
 
     async def _get_comments_impl(
@@ -217,7 +217,7 @@ class TikTokPublisher(SocialPublisher):
                 return formatted_comments
 
             except Exception as e:
-                logger.error(f"[TikTokPublisher] Comments fetch error: {e}")
+                logger.exception(f"[TikTokPublisher] Comments fetch error: {e}")
                 return []
 
     async def health_check(self, user_id: str) -> bool:

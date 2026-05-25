@@ -21,7 +21,7 @@ import pytest
 import os
 from pathlib import Path
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # Mock heavy dependencies BEFORE any service imports to allow tests to run in light environments
 import types
@@ -76,7 +76,6 @@ os.environ["GROQ_API_KEY"] = "test_groq_key"
 def test_db():
     """Create a test database."""
     from src.api.utils.database import Base, engine
-    from src.api.utils import models, user_models, credit_models  # Ensure models are registered
     
     # Create tables
     Base.metadata.create_all(bind=engine)

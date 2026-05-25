@@ -3,8 +3,7 @@ Unit tests for UnifiedLLMService - Core LLM routing service.
 Tests circuit breaker initialization, retry logic, and failover behavior.
 """
 import pytest
-import asyncio
-from unittest.mock import MagicMock, AsyncMock, patch, PropertyMock
+from unittest.mock import patch
 from src.services.llm.service import UnifiedLLMService, LLMProvider
 from src.api.utils.resilience import CircuitBreaker
 

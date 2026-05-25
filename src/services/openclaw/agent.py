@@ -2,11 +2,9 @@ import logging
 import json
 import requests
 import asyncio
-import time
 from groq import Groq
 from src.api.config import settings
 from typing import Any
-import httpx
 import yaml
 from pathlib import Path
 
@@ -40,7 +38,6 @@ from src.services.openclaw.skills import (
     self_improve_skill,
     repurpose_skill,
     trend_prediction_skill,
-    competitor_skill,
     audit_skill,
     notification_skill,
     workflow_skill,
@@ -210,7 +207,7 @@ class OpenClawAgent(BaseEttamettaAgent):
                 config = yaml.safe_load(f)
                 return config.get("skills", [])
         except Exception as e:
-            logger.error(f"[OpenClaw] Failed to load dynamic skills: {e}")
+            logger.exception(f"[OpenClaw] Failed to load dynamic skills: {e}")
             return []
 
     def _build_system_prompt(self) -> str:
@@ -551,7 +548,7 @@ class OpenClawAgent(BaseEttamettaAgent):
                 return response.json()
             return None
         except Exception as e:
-            logger.error(f"Error calling verification API: {e}")
+            logger.exception(f"Error calling verification API: {e}")
             return None
 
     async def process_message(self, identifier: str, message: str) -> str:
@@ -610,7 +607,7 @@ class OpenClawAgent(BaseEttamettaAgent):
                 return response_text
 
         except Exception as e:
-            logger.error(f"Error processing message: {e}")
+            logger.exception(f"Error processing message: {e}")
             return f"⚠️ Agent Error: {str(e)}"
 
     async def execute_tool(self, tool_call: dict[str, Any]) -> str:
@@ -652,7 +649,7 @@ class OpenClawAgent(BaseEttamettaAgent):
                     f"[OpenClaw] Skill {tool} lacks execute() method. Falling back to legacy dispatch."
                 )
             except Exception as e:
-                logger.error(f"[OpenClaw] Skill execution failed for {tool}: {e}")
+                logger.exception(f"[OpenClaw] Skill execution failed for {tool}: {e}")
                 return f"⚠️ Skill {tool} execution error: {str(e)}"
 
         return f"❓ Unknown or unhandled tool: {tool}"

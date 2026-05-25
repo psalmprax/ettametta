@@ -1,10 +1,6 @@
 import os
 import logging
-import shutil
-import time
 from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from src.api.config import settings
 from src.api.utils.models import VideoJobDB, NexusJobDB, ScheduledPostDB
 from sqlalchemy.ext.asyncio import AsyncSession
 from .service import base_storage_service
@@ -106,7 +102,7 @@ class StorageManager:
             return True
 
         except Exception as e:
-            logging.error(f"[StorageManager] Error moving {local_path} to cloud: {e}")
+            logging.exception(f"[StorageManager] Error moving {local_path} to cloud: {e}")
             db.rollback()
             return False
 
@@ -137,6 +133,6 @@ class StorageManager:
                             # This is complex because we don't want to break the UI, just show 'Asset Expired'
                             
         except Exception as e:
-            logging.error(f"[StorageManager] Error applying retention policy: {e}")
+            logging.exception(f"[StorageManager] Error applying retention policy: {e}")
 
 storage_manager = StorageManager()

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Security, status
 from fastapi.security import APIKeyHeader
-from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.database import get_db
 from src.api.utils.models import VideoJobDB
 from src.api.config import settings

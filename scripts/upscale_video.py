@@ -6,8 +6,6 @@ Uses Real-ESRGAN for upscaling and GFPGAN for face enhancement
 """
 
 import os
-import sys
-import time
 import argparse
 import subprocess
 
@@ -63,7 +61,6 @@ def load_enhancers(upscale_factor=4):
 def upscale_video(input_path, output_path, upscale_factor=4, enhance_face=True):
     """Upscale and enhance a video"""
     import cv2
-    import numpy as np
 
     face_enhancer, upscaler_model = load_enhancers(upscale_factor)
 

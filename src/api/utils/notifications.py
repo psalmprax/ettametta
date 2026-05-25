@@ -1,6 +1,4 @@
 import httpx
-from sqlalchemy.orm import Session
-from src.api.utils.database import get_db
 
 
 async def send_telegram_message(bot_token: str, chat_id: str, message: str) -> dict:

@@ -1,12 +1,13 @@
 import torch
-import os, uuid, logging, imageio, numpy as np
-from typing import Optional, List
+import os
+import uuid
+import imageio
+import numpy as np
+from typing import Optional
 from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 from diffusers import DiffusionPipeline
 import uvicorn
-import subprocess
-from pathlib import Path
 
 # --- COLAB ASYNCIO FIX ---
 try:

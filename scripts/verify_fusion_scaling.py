@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import asyncio
-import os
 import sys
 from pathlib import Path
 
@@ -70,7 +69,7 @@ async def test_fusion_engine_hardening():
     assert target_count >= 25, "Scaling logic too conservative for long-form!"
     print("   ✅ Scaling Logic OK.")
 
-    print(f"\n4. Testing FFmpeg Narrative Transitions...")
+    print("\n4. Testing FFmpeg Narrative Transitions...")
     # Verify FFmpeg transformer has the new methods
     from services.video_engine.ffmpeg_utils import ffmpeg_transformer
     assert hasattr(ffmpeg_transformer, 'apply_narrative_transition'), "FFmpeg transformer missing transitions!"

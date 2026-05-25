@@ -24,7 +24,7 @@ class InterpreterTool:
             return result
                 
         except Exception as e:
-            logger.error(f"InterpreterTool Error: {e}")
+            logger.exception(f"InterpreterTool Error: {e}")
             return {"error": str(e)}
 
 interpreter_tool = InterpreterTool()

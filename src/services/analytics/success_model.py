@@ -1,7 +1,5 @@
 import logging
-from typing import Any
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import update
 from src.api.utils.database import AsyncSessionLocal
 from src.api.utils.models import StrategyRegistryDB
 
@@ -51,14 +49,13 @@ class SuccessModel:
                 await db.execute(stmt)
                 await db.commit()
             except Exception as e:
-                logger.error(f"Failed to update strategy success in DB: {e}")
+                logger.exception(f"Failed to update strategy success in DB: {e}")
 
         logger.info(f"🏆 [Success] Strategy '{strategy_name}' Passed Validation (Avg Score: {avg_score:.2f}).")
         return status
 
     async def _kill_strategy(self, strategy_name: str, avg_score: float):
         """Communicates with Hermes and persists the forbidden status."""
-        from src.services.hermes.service import base_hermes_service
         
         # 1. Update Database (Source of Truth)
         async with AsyncSessionLocal() as db:
@@ -73,7 +70,7 @@ class SuccessModel:
                 await db.execute(stmt)
                 await db.commit()
             except Exception as e:
-                logger.error(f"Failed to persist strategy kill in DB: {e}")
+                logger.exception(f"Failed to persist strategy kill in DB: {e}")
 
         # 2. Inform Downstream Engine
         logger.warning(f"🧬 [Hermes] Purging failed strategy branch: {strategy_name}")

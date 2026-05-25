@@ -14,7 +14,6 @@ os.environ["DATABASE_URL"] = "sqlite:///./test_ettametta.db"
 def test_db():
     """Create a test database."""
     from src.api.utils.database import Base, engine
-    from src.api.utils import models, user_models, credit_models  # Ensure models are registered
     
     # Create tables
     Base.metadata.create_all(bind=engine)

@@ -1,10 +1,8 @@
-import os
 import datetime
 import base64
 import logging
 from cryptography.fernet import Fernet
-from src.api.utils.database import get_db, async_session_factory
-from sqlalchemy.ext.asyncio import AsyncSession
+from src.api.utils.database import async_session_factory
 from sqlalchemy import select
 from src.api.utils.models import SocialAccount
 from src.api.config import settings
@@ -33,7 +31,7 @@ class TokenManager:
         try:
             return self.fernet.decrypt(encrypted_text.encode()).decode()
         except Exception as e:
-            logger.error(f"[TokenManager] Decryption failed: {e}")
+            logger.exception(f"[TokenManager] Decryption failed: {e}")
             return None
 
     async def get_token(
@@ -233,7 +231,7 @@ class TokenManager:
                 )
                 return True
         except Exception as e:
-            logger.error(f"[TokenManager] Exception during {platform} refresh: {e}")
+            logger.exception(f"[TokenManager] Exception during {platform} refresh: {e}")
             return False
 
     async def is_token_expired(

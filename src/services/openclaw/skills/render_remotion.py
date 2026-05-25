@@ -1,4 +1,3 @@
-import os
 import json
 import subprocess
 import logging
@@ -83,12 +82,12 @@ class RemotionRenderSkill(OpenClawBaseSkill):
             subprocess.run(["npx", "--version"], check=True, capture_output=True)
 
             # Run the render in the project directory
-            result = subprocess.run(
+            subprocess.run(
                 cmd, cwd=self.project_path, check=True, capture_output=True, text=True
             )
             return f"🎬 **Remotion Render Success**\nComposition: `{composition}`\nOutput: {output_path}\nHardware: {'GPU' if use_gpu else 'CPU (Software)'}"
         except subprocess.CalledProcessError as e:
-            logger.error(f"Remotion Render Failed: {e.stderr}")
+            logger.exception(f"Remotion Render Failed: {e.stderr}")
             return f"⚠️ Remotion Render Failed: {e.stderr}"
         except FileNotFoundError:
             return "⚠️ Remotion CLI not found. Please ensure Node.js and @remotion/cli are installed."

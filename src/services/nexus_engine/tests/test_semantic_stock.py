@@ -361,7 +361,7 @@ class TestSemanticEdgeCases:
 
             from src.services.video_engine.semantic_stock import SemanticStockMatcher
             matcher = SemanticStockMatcher(max_candidates=6)
-            results = await matcher.search(query="obscure thing", niche="technology", count=1)
+            await matcher.search(query="obscure thing", niche="technology", count=1)
 
             # May return fallback results
             assert mock_stock.fetch_b_roll.call_count >= 1

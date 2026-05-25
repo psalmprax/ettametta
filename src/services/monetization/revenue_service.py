@@ -6,11 +6,11 @@ and integrating with external platform APIs where available.
 """
 
 import logging
-from typing import Dict, Any, List
+from typing import Any
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import select, func
+from sqlalchemy import select
 from src.api.utils.database import async_session_factory
-from src.api.utils.models import PublishedContentDB, UserDB
+from src.api.utils.models import PublishedContentDB
 
 logger = logging.getLogger(__name__)
 

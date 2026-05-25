@@ -4,7 +4,6 @@ import argparse
 import subprocess
 import time
 import httpx
-import json
 
 def run_command(cmd, env=None):
     print(f"🚀 [Orchestrator] Running: {' '.join(cmd)}")
@@ -65,7 +64,7 @@ def main():
         sys.exit(1)
 
     # 3. Registration
-    print(f"\n--- Phase 3: Cluster Registration ---")
+    print("\n--- Phase 3: Cluster Registration ---")
     registration_url = f"{args.gateway}/register"
     node_url = f"http://{args.ip}:8122"
     
@@ -87,7 +86,7 @@ def main():
         sys.exit(1)
 
     # 4. Final E2E Verification
-    print(f"\n--- Phase 4: Cluster-Wide Verification ---")
+    print("\n--- Phase 4: Cluster-Wide Verification ---")
     try:
         with httpx.Client() as client:
             resp = client.get(f"{args.gateway}/health")

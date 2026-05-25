@@ -1,6 +1,5 @@
 import httpx
 import logging
-import json
 import re
 import random
 from datetime import datetime

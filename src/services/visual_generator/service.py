@@ -44,7 +44,7 @@ class VisualGenerator:
                                     f.write(img_res.content)
                                 return f"images/{file_name}"
             except Exception as e:
-                logging.error(f"[VisualGenerator] OpenAI Exception: {e}. Falling back to Pollinations.")
+                logging.exception(f"[VisualGenerator] OpenAI Exception: {e}. Falling back to Pollinations.")
 
         # Fallback to Pollinations.ai (Free / No Key)
         try:
@@ -61,7 +61,7 @@ class VisualGenerator:
                         f.write(img_res.content)
                     return f"images/{file_name}"
         except Exception as e:
-            logging.error(f"[VisualGenerator] Pollinations Fallback Failed: {e}")
+            logging.exception(f"[VisualGenerator] Pollinations Fallback Failed: {e}")
             return None
 
     async def generate_batch(self, prompt: str, count: int = 4) -> list[str]:

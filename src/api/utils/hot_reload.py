@@ -1,5 +1,3 @@
-import asyncio
-import json
 import logging
 import redis.asyncio as redis
 from src.api.config import settings
@@ -28,17 +26,17 @@ async def start_hot_reload_listener():
                     from src.services.langchain.service import langchain_service
                     langchain_service.hot_reload()
                 except Exception as e:
-                    logger.error(f"Failed to reload LangChain: {e}")
+                    logger.exception(f"Failed to reload LangChain: {e}")
                 
                 # Reload CrewAI
                 try:
                     from src.services.crewai.service import crewai_service
                     crewai_service.hot_reload()
                 except Exception as e:
-                    logger.error(f"Failed to reload CrewAI: {e}")
+                    logger.exception(f"Failed to reload CrewAI: {e}")
                 
                 logger.info("✅ All systems hot-reloaded successfully.")
     except Exception as e:
-        logger.error(f"Hot-reload listener encountered an error: {e}")
+        logger.exception(f"Hot-reload listener encountered an error: {e}")
     finally:
         await pubsub.unsubscribe("system_config_reload")

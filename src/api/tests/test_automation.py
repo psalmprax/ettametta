@@ -7,7 +7,6 @@ Real-world validation of the discovery and synthesis pipeline.
 import pytest
 import os
 import httpx
-from fastapi import status
 from src.api.config import settings
 
 # Markers for E2E and External API tests

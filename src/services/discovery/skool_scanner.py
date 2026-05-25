@@ -83,8 +83,8 @@ class SkoolScanner:
                     )
                     for idx, card in enumerate(cards):
                         title = card.find("h3")
-                        desc = card.find("p")
-                        members = card.find(
+                        card.find("p")
+                        card.find(
                             "span", string=lambda t: t and "Members" in t
                         )
 
@@ -120,7 +120,7 @@ class SkoolScanner:
                 return candidates
 
         except Exception as e:
-            logger.error(f"[SkoolScanner] Scrape Error: {e}")
+            logger.exception(f"[SkoolScanner] Scrape Error: {e}")
             return []
 
     def _parse_json_state(
@@ -131,7 +131,6 @@ class SkoolScanner:
         This is a robust extraction logic for modern JS-heavy platforms.
         """
         import re
-        import json
 
         candidates = []
         try:
@@ -154,7 +153,7 @@ class SkoolScanner:
 
                 for idx, g in enumerate(groups[:10]):
                     name = g.get("name") or g.get("title")
-                    description = g.get("description") or g.get(
+                    g.get("description") or g.get(
                         "bio", "Community focused on growth"
                     )
                     slug = g.get("slug")
@@ -184,7 +183,7 @@ class SkoolScanner:
                             )
                         )
         except Exception as e:
-            logger.error(f"[SkoolScanner] JSON extraction failed: {e}")
+            logger.exception(f"[SkoolScanner] JSON extraction failed: {e}")
 
         return candidates
 

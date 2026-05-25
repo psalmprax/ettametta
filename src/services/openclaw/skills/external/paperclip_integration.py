@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from ..base_skill import OpenClawBaseSkill
 
@@ -44,7 +44,7 @@ class PaperclipOrganicSkill(OpenClawBaseSkill):
         
         views = metrics.get("views", 0)
         likes = metrics.get("likes", 0)
-        shares = metrics.get("shares", 0)
+        metrics.get("shares", 0)
         
         logger.info(f"Tracking organic performance for {job_id} on {platform}: {views} views")
         
@@ -65,7 +65,7 @@ class PaperclipOrganicSkill(OpenClawBaseSkill):
                 asyncio.create_task(base_hermes_service.reflect_and_crystallize(mock_job_data, metrics))
                 logger.info(f"💎 [Paperclip] Triggered Hermes Reflection for Job {job_id}")
             except Exception as e:
-                logger.error(f"Failed to trigger Hermes reflection: {e}")
+                logger.exception(f"Failed to trigger Hermes reflection: {e}")
         
         return f"📊 **Organic Tracking Update**\nJob: `{job_id}`\nPlatform: `{platform}`\nViews: {views}\nLikes: {likes}\nStatus: {status}"
 

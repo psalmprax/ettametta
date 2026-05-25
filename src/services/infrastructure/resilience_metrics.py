@@ -6,93 +6,111 @@ that power the Grafana "Reality Run" dashboard. Every subsystem
 (Sentinel, ChaosUtility, RecoveryService) increments these atomically.
 """
 
-from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import REGISTRY, Counter, Histogram, Gauge
+
+def safe_counter(name, documentation, labelnames=(), *args, **kwargs):
+    for registry_name in [name, f"{name}_total", f"{name}_created"]:
+        if registry_name in REGISTRY._names_to_collectors:
+            return REGISTRY._names_to_collectors[registry_name]
+    return Counter(name, documentation, labelnames, *args, **kwargs)
+
+def safe_gauge(name, documentation, labelnames=(), *args, **kwargs):
+    for registry_name in [name, f"{name}_created"]:
+        if registry_name in REGISTRY._names_to_collectors:
+            return REGISTRY._names_to_collectors[registry_name]
+    return Gauge(name, documentation, labelnames, *args, **kwargs)
+
+def safe_histogram(name, documentation, labelnames=(), *args, **kwargs):
+    for registry_name in [name, f"{name}_bucket", f"{name}_sum", f"{name}_count", f"{name}_created"]:
+        if registry_name in REGISTRY._names_to_collectors:
+            return REGISTRY._names_to_collectors[registry_name]
+    return Histogram(name, documentation, labelnames, *args, **kwargs)
 
 # ─── Job Lifecycle ────────────────────────────────────────────────
-jobs_submitted = Counter(
+jobs_submitted = safe_counter(
     "ettametta_jobs_submitted_total",
     "Total content jobs submitted to the pipeline",
 )
-jobs_completed = Counter(
+jobs_completed = safe_counter(
     "ettametta_jobs_completed_total",
     "Total content jobs that completed successfully",
 )
-jobs_failed = Counter(
+jobs_failed = safe_counter(
     "ettametta_jobs_failed_total",
     "Total content jobs that failed permanently",
 )
-jobs_duplicate_blocked = Counter(
+jobs_duplicate_blocked = safe_counter(
     "ettametta_jobs_duplicate_total",
     "Duplicate job execution attempts that were blocked by idempotency guard",
 )
 
 # ─── State Consistency ────────────────────────────────────────────
-state_drift_detected = Counter(
+state_drift_detected = safe_counter(
     "ettametta_state_drift_detected_total",
     "Number of Redis↔Postgres state drift events detected by Sentinel",
     ["drift_type"],  # "missing_from_cache", "count_mismatch"
 )
-state_repairs_triggered = Counter(
+state_repairs_triggered = safe_counter(
     "ettametta_state_repairs_total",
     "Number of autonomous repair cycles triggered by Sentinel",
 )
-recovery_duration = Histogram(
+recovery_duration = safe_histogram(
     "ettametta_recovery_duration_seconds",
     "Time taken for a full state recovery cycle",
     buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0],
 )
 
 # ─── Sentinel Auditing ───────────────────────────────────────────
-sentinel_audit_pass = Counter(
+sentinel_audit_pass = safe_counter(
     "ettametta_sentinel_audit_pass_total",
     "Number of audit cycles that found zero drift",
 )
-sentinel_audit_fail = Counter(
+sentinel_audit_fail = safe_counter(
     "ettametta_sentinel_audit_fail_total",
     "Number of audit cycles that detected drift",
 )
 
 # ─── Chaos Engineering ───────────────────────────────────────────
-chaos_faults_injected = Counter(
+chaos_faults_injected = safe_counter(
     "ettametta_chaos_faults_injected_total",
     "Total fault injection events by type",
     ["fault_type"],  # "latency", "crash", "exhaustion", "scenario"
 )
-chaos_scenarios_run = Counter(
+chaos_scenarios_run = safe_counter(
     "ettametta_chaos_scenarios_total",
     "Orchestrated chaos scenarios executed",
     ["scenario_name"],
 )
-chaos_active = Gauge(
+chaos_active = safe_gauge(
     "ettametta_chaos_active_faults",
     "Number of currently active chaos fault injections",
 )
 
 # ─── Event Bus Health ─────────────────────────────────────────────
-event_bus_messages_processed = Counter(
+event_bus_messages_processed = safe_counter(
     "ettametta_event_bus_messages_processed_total",
     "Total messages processed by the distributed event bus",
     ["stream"],
 )
-event_bus_dlq_total = Counter(
+event_bus_dlq_total = safe_counter(
     "ettametta_event_bus_dlq_total",
     "Messages sent to the Dead Letter Queue after max retries",
     ["stream"],
 )
 
 # ─── Remotion Rendering Engine ─────────────────────────────────────
-remotion_render_duration = Histogram(
+remotion_render_duration = safe_histogram(
     "ettametta_remotion_render_duration_seconds",
     "Time taken for a video render job",
     ["composition_id"],
     buckets=[1.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0],
 )
-remotion_renders = Counter(
+remotion_renders = safe_counter(
     "ettametta_remotion_renders_total",
     "Total video render attempts by status and composition",
     ["composition_id", "status"],  # status: "success", "transient_failure", "fatal_failure", "cancelled"
 )
-remotion_circuit_breaker_state = Gauge(
+remotion_circuit_breaker_state = safe_gauge(
     "ettametta_remotion_circuit_breaker_state",
     "Current state of the Remotion circuit breaker (0=Closed, 1=Half-Open, 2=Open)",
 )

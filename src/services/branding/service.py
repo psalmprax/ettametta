@@ -1,7 +1,6 @@
 import os
 import logging
 import httpx
-import json
 from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
@@ -78,7 +77,7 @@ class BrandingService:
                         and_(
                             BrandIdentityDB.user_id == user_id_str,
                             BrandIdentityDB.niche == niche,
-                            BrandIdentityDB.is_active == True,
+                            BrandIdentityDB.is_active,
                         )
                     )
                     res = await db.execute(stmt)
@@ -115,7 +114,7 @@ class BrandingService:
                     "status": "success_no_db",
                 }
         except Exception as e:
-            logger.error(f"[Branding] Failed to call OpenClaw: {e}")
+            logger.exception(f"[Branding] Failed to call OpenClaw: {e}")
             return {"status": "error", "message": str(e)}
 
     async def get_active_brand(
@@ -131,7 +130,7 @@ class BrandingService:
                 and_(
                     BrandIdentityDB.user_id == user_id_str,
                     BrandIdentityDB.niche == niche,
-                    BrandIdentityDB.is_active == True,
+                    BrandIdentityDB.is_active,
                 )
             )
             .order_by(BrandIdentityDB.created_at.desc())

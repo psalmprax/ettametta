@@ -78,13 +78,6 @@ async def demonstrate_video_editor_capabilities():
 
     try:
         # Simulate content analysis (normally uses AI)
-        mock_video_data = {
-            "title": "Top 10 AI Productivity Tools",
-            "views": 150000,
-            "likes": 8500,
-            "comments": 1200,
-            "description": "Complete guide to AI tools that boost productivity"
-        }
 
         # Mock analysis results
         analysis = {
@@ -213,7 +206,7 @@ async def demonstrate_video_editor_capabilities():
     try:
         from src.services.monetization.service import MonetizationEngine
 
-        engine = MonetizationEngine()
+        MonetizationEngine()
 
         # Demonstrate monetization planning
         monetization_plan = {

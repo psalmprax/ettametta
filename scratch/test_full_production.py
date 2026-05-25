@@ -24,7 +24,6 @@ os.environ["SECRET_KEY"] = "test_secret_key_for_testing_purposes_123"
 # Add project root to sys.path
 sys.path.insert(0, os.getcwd())
 
-from src.api.config import settings
 from src.api.utils.database import async_session_factory
 from src.api.utils.user_models import UserDB
 from src.api.utils.models import NexusJobDB

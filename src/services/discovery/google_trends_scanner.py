@@ -74,7 +74,7 @@ class GoogleTrendsScanner:
                         return candidates
                         
         except Exception as e:
-            logger.error(f"[GoogleTrends] Error fetching trends: {e}")
+            logger.exception(f"[GoogleTrends] Error fetching trends: {e}")
         
         return []
 

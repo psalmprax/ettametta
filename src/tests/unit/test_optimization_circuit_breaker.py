@@ -1,6 +1,5 @@
 import pytest
 import time
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.api.utils.resilience import CircuitBreaker

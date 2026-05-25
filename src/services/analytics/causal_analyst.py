@@ -85,7 +85,7 @@ class CausalAnalyst:
             logger.info(f"🧠 [Causal] Lessons crystallized: {result['causal_reason']}")
             return result
         except Exception as e:
-            logger.error(f"[Causal] Reflection Failed: {e}")
+            logger.exception(f"[Causal] Reflection Failed: {e}")
             return {"causal_reason": "Unknown", "explanation": "System error during reflection."}
 
     def _get_emotion_at(self, blueprint: dict[str, Any], t: int) -> str:

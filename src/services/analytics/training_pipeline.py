@@ -53,7 +53,7 @@ class TrainingPipeline:
                 # Move samples to archive or clear (for simple loop)
                 # os.remove(self.data_path) 
         except Exception as e:
-            logger.error(f"Training check failed: {e}")
+            logger.exception(f"Training check failed: {e}")
 
 # Singleton Instance
 base_training_pipeline = TrainingPipeline()

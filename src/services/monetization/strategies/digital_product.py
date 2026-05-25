@@ -28,7 +28,7 @@ class DigitalProductStrategy(BaseMonetizationStrategy):
                     "source": "digital_product"
                 } for product in products]
             except Exception as e:
-                logger.error(f"[DigitalProductStrategy] Error fetching assets: {e}")
+                logger.exception(f"[DigitalProductStrategy] Error fetching assets: {e}")
                 return []
 
     async def generate_cta(self, niche: str, context: str) -> str:

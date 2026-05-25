@@ -41,7 +41,7 @@ class VideoLeadSkill(OpenClawBaseSkill):
                 return res.get("message", "Success")
             return f"⚠️ Error: {res.get('error') if isinstance(res, dict) else str(res)}"
         except Exception as e:
-            logger.error(f"Video lead skill error: {e}")
+            logger.exception(f"Video lead skill error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     async def _discover_leads(self, params: dict[str, Any]) -> dict[str, Any]:

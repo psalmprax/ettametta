@@ -191,7 +191,7 @@ class SceneBasedVideoOrchestrator:
     ) -> dict[str, Any]:
         """Execute the actual video fusion based on the production plan with narrative awareness"""
         from .processor import VideoProcessor
-        processor = VideoProcessor(output_dir=str(self.output_dir))
+        VideoProcessor(output_dir=str(self.output_dir))
         try:
             if not self.can_process_video:
                 return {
@@ -268,7 +268,7 @@ class SceneBasedVideoOrchestrator:
                             logger.info(f"[Scene {idx+1}] Last resort stock acquired: {fallback_path}")
                             return (fallback_path, segment)
                 except Exception as e:
-                    logger.error(f"[Scene {idx+1}] All asset sources exhausted: {e}")
+                    logger.exception(f"[Scene {idx+1}] All asset sources exhausted: {e}")
                 
                 logger.error(f"[Scene {idx+1}] CRITICAL: No video asset could be acquired")
                 return None
@@ -287,7 +287,7 @@ class SceneBasedVideoOrchestrator:
 
             # 2. Production Assembly (MoviePy 2.x)
             try:
-                from moviepy import VideoFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
+                from moviepy import VideoFileClip, CompositeVideoClip
 
                 normalized_clips = []
                 target_w, target_h = 1080, 1920 # Default vertical
@@ -364,7 +364,7 @@ class SceneBasedVideoOrchestrator:
                         
                         normalized_clips.append(clip)
                     except Exception as clip_err:
-                        logger.error(f"Error processing clip {video_path}: {clip_err}")
+                        logger.exception(f"Error processing clip {video_path}: {clip_err}")
 
                 if normalized_clips:
                     # 3. Add Engagement CTA (Like/Follow)
@@ -419,7 +419,7 @@ class SceneBasedVideoOrchestrator:
                     }
 
             except Exception as e:
-                logger.error(f"Real video fusion failed: {e}")
+                logger.exception(f"Real video fusion failed: {e}")
                 raise e
 
             # Fallback: Create placeholder if no videos or processing failed
@@ -447,7 +447,7 @@ class SceneBasedVideoOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Video fusion failed: {e}")
+            logger.exception(f"Video fusion failed: {e}")
             return {"success": False, "error": str(e)}
 
     async def _add_audio_overlay(
@@ -502,7 +502,7 @@ class SceneBasedVideoOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Audio overlay failed: {e}")
+            logger.exception(f"Audio overlay failed: {e}")
             return {"success": False, "error": str(e), "video_path": video_path}
 
     async def _finalize_for_upload(
@@ -558,7 +558,7 @@ class SceneBasedVideoOrchestrator:
             }
 
         except Exception as e:
-            logger.error(f"Upload finalization failed: {e}")
+            logger.exception(f"Upload finalization failed: {e}")
             return {"success": False, "error": str(e)}
 
     async def _generate_monetization_plan(
@@ -596,7 +596,7 @@ class SceneBasedVideoOrchestrator:
             return monetization_plan
 
         except Exception as e:
-            logger.error(f"Monetization plan generation failed: {e}")
+            logger.exception(f"Monetization plan generation failed: {e}")
             return {"error": str(e)}
 
 
@@ -655,7 +655,7 @@ class SceneBasedVideoOrchestrator:
             
             return clips
         except Exception as e:
-            logger.error(f"Failed to inject CTA: {e}")
+            logger.exception(f"Failed to inject CTA: {e}")
             return clips
 
     async def _generate_video_thumbnail(self, video_path: str) -> str:
@@ -698,7 +698,7 @@ class SceneBasedVideoOrchestrator:
                 logger.error(f"FFmpeg failed to create thumbnail. Stderr: {result.stderr}")
                 return None
         except Exception as e:
-            logger.error(f"Thumbnail generation failed: {e}")
+            logger.exception(f"Thumbnail generation failed: {e}")
             return None
 
 # Global instance

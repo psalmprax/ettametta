@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import Dict, Any
 import logging
-import uuid
 from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.api_responses import success_response
@@ -36,7 +35,7 @@ async def ingest_knowledge(
         )
         return success_response(data={"document_id": doc_id, "status": "ingested"})
     except Exception as e:
-        logger.error(f"[Knowledge] Ingestion failed: {e}")
+        logger.exception(f"[Knowledge] Ingestion failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/query")
@@ -55,7 +54,7 @@ async def query_knowledge(
         )
         return success_response(data={"results": results})
     except Exception as e:
-        logger.error(f"[Knowledge] Query failed: {e}")
+        logger.exception(f"[Knowledge] Query failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/stats")
@@ -69,7 +68,7 @@ async def get_knowledge_stats(
         stats = await base_knowledge_service.get_stats(dataset_id="default")
         return success_response(data=stats)
     except Exception as e:
-        logger.error(f"[Knowledge] Stats retrieval failed: {e}")
+        logger.exception(f"[Knowledge] Stats retrieval failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/upload")
@@ -96,5 +95,5 @@ async def upload_document(
             "status": "ingested"
         })
     except Exception as e:
-        logger.error(f"[Knowledge] File upload failed: {e}")
+        logger.exception(f"[Knowledge] File upload failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to process file. Ensure it is a valid text file.")

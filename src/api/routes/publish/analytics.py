@@ -56,7 +56,7 @@ async def get_publish_jobs(
             ]
         )
     except Exception as e:
-        logger.error(f"Publish jobs failed: {e}")
+        logger.exception(f"Publish jobs failed: {e}")
         return success_response(data=[])
 
 
@@ -74,7 +74,7 @@ async def get_publish_history(
         history = result.scalars().all()
         return success_response(data=history)
     except Exception as e:
-        logger.error(f"Publish history failed: {e}")
+        logger.exception(f"Publish history failed: {e}")
         return success_response(data=[])
 
 
@@ -220,5 +220,5 @@ async def sync_content_metrics(
         raise
     except Exception as e:
         await db.rollback()
-        logger.error(f"Metrics sync failed: {e}")
+        logger.exception(f"Metrics sync failed: {e}")
         raise HTTPException(status_code=503, detail="Publishing service unavailable")

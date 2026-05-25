@@ -9,7 +9,6 @@ from src.api.utils.database import async_session_factory
 from sqlalchemy import select
 from src.api.utils.user_models import UserDB, UserRole, SubscriptionTier
 from src.api.utils.security import get_password_hash
-from src.api.config import settings
 
 
 async def repair_admin_async():

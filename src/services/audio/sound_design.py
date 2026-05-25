@@ -1,4 +1,3 @@
-from typing import Any
 """
 Sound Design Service - Any Tier 3 Enhancement
 
@@ -174,7 +173,7 @@ class SoundDesignService:
             return output_path
 
         except Exception as e:
-            logger.error(f"[SoundDesign] Error adding background music: {e}")
+            logger.exception(f"[SoundDesign] Error adding background music: {e}")
             if "video" in locals():
                 video.close()
             return None
@@ -264,7 +263,7 @@ class SoundDesignService:
             return output_path
 
         except Exception as e:
-            logger.error(f"[SoundDesign] Error adding SFX: {e}")
+            logger.exception(f"[SoundDesign] Error adding SFX: {e}")
             return None
 
     async def mix_audio_tracks(
@@ -336,7 +335,7 @@ class SoundDesignService:
             return output_path
 
         except Exception as e:
-            logger.error(f"[SoundDesign] Error mixing audio: {e}")
+            logger.exception(f"[SoundDesign] Error mixing audio: {e}")
             if "voice" in locals():
                 voice.close()
             return voice_path  # Fallback to original voiceover

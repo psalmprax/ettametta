@@ -3,7 +3,6 @@ from typing import Any
 import logging
 import redis
 import json
-import time
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -14,7 +13,6 @@ from googleapiclient.errors import HttpError as GoogleHttpError
 from src.api.config import settings
 from src.services.optimization.auth import token_manager
 from src.services.optimization.oracle_predictor import base_oracle_service
-from src.services.analytics.ledger import base_ledger_service
 from src.api.utils.resilience import CircuitBreaker
 import numpy as np
 
@@ -101,7 +99,6 @@ class AnalyticsService:
             watch_time = 0.0
             shares = 0
             comments = 0
-            retention_rate = 0.75
             avg_duration = 0.0
 
             if report_response.get("rows"):
@@ -121,7 +118,7 @@ class AnalyticsService:
                 "avg_duration": avg_duration,
             }
 
-        except Exception as e:
+        except Exception:
             self.youtube_circuit_breaker.record_failure()
             raise
 

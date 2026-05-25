@@ -56,7 +56,7 @@ class TestVideoIntegration:
             
             # This test requires authentication, so we mock the auth or use test client headers
             # Assuming INTERNAL_API_TOKEN works for these endpoints
-            token = os.getenv("INTERNAL_API_TOKEN", "test_master_token")
+            os.getenv("INTERNAL_API_TOKEN", "test_master_token")
             
             # Using a mock for the actual background task execution
             with patch("services.video_engine.tasks.generate_video_task.run") as mock_run:

@@ -5,10 +5,7 @@ Consolidated from the original monolithic publish.py to eliminate duplication
 and centralize reusable components.
 """
 
-import datetime
-import uuid
 import logging
-from fastapi import HTTPException
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)

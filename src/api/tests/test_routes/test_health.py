@@ -4,7 +4,6 @@ Health Check and Root Endpoint Tests
 Integration tests for health and root endpoints
 """
 
-import pytest
 from fastapi.testclient import TestClient
 
 

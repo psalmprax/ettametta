@@ -1,9 +1,8 @@
 import pytest
 import asyncio
 from src.api.utils.database import AsyncSessionLocal
-from src.api.utils.models import StrategyRegistryDB, ExperimentCohortDB
+from src.api.utils.models import StrategyRegistryDB
 from src.services.distribution.experiment_batcher import base_experiment_service
-from sqlalchemy import insert
 
 @pytest.fixture(autouse=True)
 async def cleanup_db():

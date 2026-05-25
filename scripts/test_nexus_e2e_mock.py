@@ -1,7 +1,5 @@
 import asyncio
-import os
 import sys
-import uuid
 import logging
 
 # Ensure we can import from src

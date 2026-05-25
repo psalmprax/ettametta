@@ -14,7 +14,6 @@ import torch
 import os
 import time
 import requests
-import json
 from src.api.config import settings
 from opentelemetry import trace
 from src.shared.observability import get_logger

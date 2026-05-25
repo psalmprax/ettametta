@@ -73,7 +73,7 @@ class VariantGenerator:
             return variants[:count]
 
         except Exception as e:
-            logger.error(f"Variant generation failed: {e}")
+            logger.exception(f"Variant generation failed: {e}")
             return [{"modified_prompt": original_prompt, "variant_name": "Original", "logic": "Fallback"}]
 
 base_variant_service = VariantGenerator()

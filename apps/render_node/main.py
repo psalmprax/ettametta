@@ -1,8 +1,7 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 import os
 import logging
-import uuid
 import uuid
 
 # Fast setting up logging

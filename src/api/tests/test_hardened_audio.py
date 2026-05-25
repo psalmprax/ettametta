@@ -1,5 +1,4 @@
 import pytest
-import os
 from unittest.mock import patch, AsyncMock, MagicMock
 from src.services.audio.sound_design import SoundDesignService
 from src.services.voiceover.service import VoiceoverService

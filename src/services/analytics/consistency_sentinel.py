@@ -83,7 +83,7 @@ class ConsistencySentinel:
                 if len(self._audit_history) > 100:
                     self._audit_history = self._audit_history[-100:]
             except Exception as e:
-                logger.error(f"[Sentinel] Audit loop error: {e}", exc_info=True)
+                logger.exception(f"[Sentinel] Audit loop error: {e}", exc_info=True)
             await asyncio.sleep(self.check_interval)
 
     async def audit_experiment_state(self) -> DriftReport:
@@ -159,7 +159,7 @@ class ConsistencySentinel:
                     await self._attempt_repair(report)
 
             except Exception as e:
-                logger.error(f"Consistency Audit failed: {e}", exc_info=True)
+                logger.exception(f"Consistency Audit failed: {e}", exc_info=True)
                 sentinel_audit_fail.inc()
 
         return report
@@ -207,7 +207,7 @@ class ConsistencySentinel:
                 f"Total repairs this session: {self._total_repairs}"
             )
         except Exception as e:
-            logger.error(f"[Sentinel] Repair FAILED: {e}", exc_info=True)
+            logger.exception(f"[Sentinel] Repair FAILED: {e}", exc_info=True)
 
     def get_status(self) -> dict[str, Any]:
         """Returns the current sentinel health summary."""

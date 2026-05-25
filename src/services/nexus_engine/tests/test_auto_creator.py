@@ -3,7 +3,7 @@ Tests for Nexus Engine AutoCreator — Script Generation, Pipeline Orchestration
 """
 import json
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, PropertyMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 pytestmark = pytest.mark.filterwarnings(
     "ignore::DeprecationWarning",

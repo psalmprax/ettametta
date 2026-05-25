@@ -1,8 +1,6 @@
-import logging
 import json
-import asyncio
-from typing import Any, List, Optional, Literal
-from pydantic import BaseModel, Field, validator
+from typing import List, Optional, Literal
+from pydantic import BaseModel, Field
 from src.services.llm.intelligence_hub import base_intelligence_service
 from src.services.video_engine.scene_orchestrator import base_scene_orchestrator_service
 from src.api.utils.tracing import setup_tracing_logger
@@ -81,7 +79,7 @@ class TopicFusionOrchestrator:
             return [s.dict() for s in plan.scenes]
             
         except Exception as e:
-            logger.error(f"Top-notch decomposition failed for '{topic}': {e}")
+            logger.exception(f"Top-notch decomposition failed for '{topic}': {e}")
             # Intelligent Fallback
             return self._get_fallback_scenes(topic)
 

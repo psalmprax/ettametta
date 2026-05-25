@@ -46,7 +46,7 @@ class QualityControl:
             return audit_report
             
         except Exception as e:
-            logger.error(f"❌ [QC] Audit failed: {e}")
+            logger.exception(f"❌ [QC] Audit failed: {e}")
             return {"passed": True, "score": 7.0, "feedback": f"Audit error: {e}. Defaulting to pass."}
 
 base_qc_service = QualityControl()

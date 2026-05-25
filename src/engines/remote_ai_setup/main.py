@@ -1,33 +1,21 @@
 import time
 import threading
-import uuid
-import base64
-import io
 import os
 import gc
-import shutil
-import asyncio
 import warnings
 import torch
-import imageio
-import numpy as np
-import soundfile as sf
-import traceback
 import subprocess
-from fastapi import FastAPI, BackgroundTasks, Request, Header
+from fastapi import FastAPI, BackgroundTasks, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from diffusers import (
-    DiffusionPipeline,
     LTXPipeline,
     LTXImageToVideoPipeline,
     AutoencoderKLLTXVideo,
-    LTXVideoTransformer3DModel,
     LTX2VideoTransformer3DModel,
 )
 from diffusers.models.transformers.transformer_ltx2 import LTX2VideoTransformer3DModel
-from diffusers.pipelines.ltx2.latent_upsampler import LTX2LatentUpsamplerModel
 from transformers import (
     T5EncoderModel,
     AutoModelForCausalLM,
@@ -35,10 +23,6 @@ from transformers import (
     pipeline,
     BitsAndBytesConfig,
 )
-from diffusers.utils import export_to_video
-import traceback
-from PIL import Image
-import cv2
 import torch.hub
 from hardware_manager import hardware_manager
 from video_model_manager import model_manager
@@ -72,7 +56,6 @@ except ImportError:
     print("⚠️ Basicsr not available")
 
 # Patch to handle rope_interpolation_scale parameter
-from diffusers.models.transformers.transformer_ltx2 import LTX2VideoTransformer3DModel
 import torch
 
 _original_ltx2_forward = LTX2VideoTransformer3DModel.forward
@@ -143,7 +126,6 @@ LTX2VideoTransformer3DModel.forward = _patched_ltx2_forward
 print("✅ LTX2 Consolidated Forward Patch Applied (Audio + Rope fix)")
 
 # Patch LTX Pipelines to accept audio conditioning
-from diffusers import LTXPipeline, LTXImageToVideoPipeline
 
 
 def _patch_pipeline_call(pipeline_class):
@@ -335,7 +317,6 @@ BEST_ENCODER = model_manager.encoder
 print(f"🎞️ Hardware Encoding: {BEST_ENCODER}")
 
 # --- SECURITY MIDDLEWARE ---
-from fastapi import Header
 
 WORKER_SECRET = os.environ.get("AI_CLUSTER_SECRET")
 
@@ -479,7 +460,6 @@ def load_ltx_base_components():
 def encode_prompt_ltx2(prompt, negative_prompt, tokenizer):
     """Phase 1: Encode with T5 then EVICT from VRAM"""
     print(f"📥 Phase 1: Encoding with T5 ('{prompt[:40]}')...", flush=True)
-    from transformers import T5EncoderModel
 
     t5 = T5EncoderModel.from_pretrained(
         "Lightricks/LTX-Video",
@@ -494,7 +474,7 @@ def encode_prompt_ltx2(prompt, negative_prompt, tokenizer):
         .to(hardware_manager.get_device_obj())
     )
 
-    def get_embeds(p):
+    def get_embeds(p, t5_model, proj_layer):
         inputs = tokenizer(
             p,
             return_tensors="pt",
@@ -503,18 +483,17 @@ def encode_prompt_ltx2(prompt, negative_prompt, tokenizer):
             truncation=True,
         ).to(DEVICE)
         with torch.no_grad():
-            output = t5(inputs.input_ids, attention_mask=inputs.attention_mask)
+            output = t5_model(inputs.input_ids, attention_mask=inputs.attention_mask)
             hidden = output.last_hidden_state
-            projected = text_projection(hidden)
+            projected = proj_layer(hidden)
         return projected, inputs.attention_mask
 
-    p_embeds, p_mask = get_embeds(prompt)
-    n_embeds, n_mask = get_embeds(negative_prompt)
+    p_embeds, p_mask = get_embeds(prompt, t5, text_projection)
+    n_embeds, n_mask = get_embeds(negative_prompt, t5, text_projection)
 
     print("🧹 Phase 1 Complete. Evicting T5 & Projection Layer...", flush=True)
     del t5, text_projection
     clear_gpu()
-    import gc
 
     gc.collect()
     return p_embeds, p_mask, n_embeds, n_mask
@@ -1071,7 +1050,6 @@ async def generate_animatediff(
 # STARTUP
 # =========================
 if __name__ == "__main__":
-    import sys
 
     print("🚀 ettametta Remote AI Engine starting...")
 

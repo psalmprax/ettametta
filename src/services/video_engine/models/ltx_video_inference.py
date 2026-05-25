@@ -46,12 +46,12 @@ def load_ltx_local(quantization: str = None):
         # Determine dtype based on quantization
         if quant_mode == "int8":
             # INT8 quantization for linear layers only
-            torch_dtype = torch.float16  # Keep in FP16, quantize after load
+            pass  # Keep in FP16, quantize after load
         elif quant_mode == "int4":
             # INT4 requires special handling
-            torch_dtype = torch.float16
+            pass
         else:
-            torch_dtype = torch.float16  # Default FP16
+            pass  # Default FP16
 
         _ltx_pipe = DiffusionPipeline.from_pretrained(
             "Lightricks/LTX-Video",
@@ -86,7 +86,6 @@ def apply_quantization(pipe, quant_mode: str = "int8"):
     if quant_mode == "int8":
         # Apply dynamic quantization to linear layers
         from torchao.quantization import quantize_
-        from torchao.quantization.quant_api import Int8DynActInt8WeightQuantizer
 
         for name, module in pipe.named_modules():
             if isinstance(module, torch.nn.Linear):

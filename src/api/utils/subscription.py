@@ -1,8 +1,7 @@
 from fastapi import HTTPException, status, Depends
 from src.api.utils.database import get_db
-from src.api.utils.user_models import UserDB, UserRole, SubscriptionTier
+from src.api.utils.user_models import UserDB, SubscriptionTier
 from sqlalchemy.ext.asyncio import AsyncSession
-from functools import wraps
 from src.shared.enums import CreditAction
 
 

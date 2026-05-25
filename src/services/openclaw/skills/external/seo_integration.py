@@ -1,7 +1,5 @@
 import os
 import logging
-import requests
-import aiohttp
 from typing import Any
 from datetime import datetime
 import random

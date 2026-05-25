@@ -1,6 +1,4 @@
-import asyncio
 import logging
-from typing import Any
 from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
@@ -44,7 +42,7 @@ class BrowserSkill(OpenClawBaseSkill):
             else:
                 return f"⚠️ Unknown action or missing params for Browser: {action}"
         except Exception as e:
-            logger.error(f"Browser Skill Error: {e}")
+            logger.exception(f"Browser Skill Error: {e}")
             return f"⚠️ Browser Error: {str(e)}"
 
 browser_skill = BrowserSkill()

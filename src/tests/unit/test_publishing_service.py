@@ -1,11 +1,8 @@
 import pytest
-import os
 import json
 import shutil
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import google.oauth2.credentials
 from src.services.publishing.service import YouTubePublisher, PublishingService
 import src.services.publishing.service as publishing_module
 
@@ -103,7 +100,7 @@ async def test_youtube_upload_success(temp_token_dir, tmp_path):
     # Mock the API build and GOOGLE_API_AVAILABLE
     with patch("src.services.publishing.service.GOOGLE_API_AVAILABLE", True), \
          patch("src.services.publishing.service.build", return_value=mock_youtube_client), \
-         patch("src.services.publishing.service.MediaFileUpload") as mock_media:
+         patch("src.services.publishing.service.MediaFileUpload"):
 
         res = await publisher.upload_video(
             user_id="user123",

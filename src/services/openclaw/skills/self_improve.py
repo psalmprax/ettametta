@@ -1,14 +1,11 @@
 import json
 import logging
-import os
 import re
 from datetime import datetime
 from typing import Any
 from pathlib import Path
 
-import requests
 
-from src.api.config import settings
 from .base_skill import OpenClawBaseSkill
 try:
     from .memory import memory_skill

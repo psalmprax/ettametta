@@ -3,7 +3,6 @@ import os
 import sys
 import uuid
 import logging
-from pathlib import Path
 
 # Add project root to path
 PROJECT_DIR = "/home/psalmprax/ALL_PROJECTS/ettametta"

@@ -8,7 +8,7 @@ Integrates with email/SMS providers, CRM systems, and A/B testing frameworks.
 import logging
 import asyncio
 from typing import Any
-from datetime import datetime, timedelta
+from datetime import datetime
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)

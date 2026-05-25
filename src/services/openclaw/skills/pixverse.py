@@ -3,7 +3,6 @@ import logging
 import os
 from playwright.async_api import async_playwright, Browser, Page
 from typing import Any
-import uuid
 from src.api.config import settings
 
 from .base_skill import OpenClawBaseSkill
@@ -144,7 +143,7 @@ class PixVerseSkill(OpenClawBaseSkill):
             }
 
         except Exception as e:
-            logger.error(f"[PixVerse] Generation failed: {str(e)}")
+            logger.exception(f"[PixVerse] Generation failed: {str(e)}")
             await self.cleanup()
             return {"status": "failed", "error": str(e), "engine": "pixverse"}
 

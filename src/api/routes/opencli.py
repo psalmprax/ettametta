@@ -6,13 +6,11 @@ Endpoints for users to connect/manage their opencli-rs platform sessions.
 Each user provides their own Chrome cookies via the opencli Chrome extension.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Any
 from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
 from src.api.utils.database import get_db
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from src.api.utils.models import OpenCLISessionDB
 from src.shared.enums import SessionStatus
@@ -84,7 +82,7 @@ async def get_my_sessions(
                 OpenCLISessionDB.platform == session_info["platform"],
             )
             result = await db.execute(stmt)
-            db_session = result.scalar_one_or_none()
+            result.scalar_one_or_none()
     finally:
         pass
 

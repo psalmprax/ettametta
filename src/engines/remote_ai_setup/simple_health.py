@@ -3,7 +3,6 @@
 Super minimal health server using only stdlib
 """
 
-import json
 import socket
 import threading
 

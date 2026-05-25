@@ -3,7 +3,6 @@ import logging
 import time
 import json
 from typing import Any
-from datetime import datetime
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -77,7 +76,7 @@ class LangChainService:
             )
             logger.info("[LangChain] Service hot-reloaded successfully")
         except Exception as e:
-            logger.error(f"[LangChain] Failed to hot-reload: {e}")
+            logger.exception(f"[LangChain] Failed to hot-reload: {e}")
             self.enabled = False
     
     def is_enabled(self) -> bool:
@@ -116,7 +115,7 @@ class LangChainService:
             return data
         except Exception as e:
             self.circuit_breaker.record_failure()
-            logger.error(f"[LangChain] Vibe Analysis Failed: {e}")
+            logger.exception(f"[LangChain] Vibe Analysis Failed: {e}")
             return {}
     
     async def chain_prompt(
@@ -280,7 +279,7 @@ class LangChainService:
             
         except Exception as e:
             self.circuit_breaker.record_failure()
-            logger.error(f"[LangChain] Virality prediction failed: {e}")
+            logger.exception(f"[LangChain] Virality prediction failed: {e}")
             return {"error": str(e), "viral_score": 0}
         finally:
             logger.info(f"[LangChain] Virality prediction completed in {time.time() - start_time:.2f}s")

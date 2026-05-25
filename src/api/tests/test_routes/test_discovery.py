@@ -4,10 +4,9 @@ Discovery Endpoint Tests
 Integration tests for discovery routes
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from fastapi import status
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 
 
 class TestDiscoveryTrends:

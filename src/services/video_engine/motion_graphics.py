@@ -1,4 +1,3 @@
-from typing import Any
 
 """
 Motion Graphics Service - Any Tier 3 Enhancement
@@ -10,7 +9,6 @@ Disabled by default - enable via ENABLE_MOTION_GRAPHICS=true
 import os
 import logging
 import random
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +94,7 @@ class MotionGraphicsService:
             return rendered_path
 
         except Exception as e:
-            logger.error(f"[MotionGraphics] Remotion render failed: {e}")
+            logger.exception(f"[MotionGraphics] Remotion render failed: {e}")
             return None
 
     async def add_animated_overlay(
@@ -170,7 +168,7 @@ class MotionGraphicsService:
                 return video_path  # Return original on failure
 
         except Exception as e:
-            logger.error(f"[MotionGraphics] Error adding overlay: {e}")
+            logger.exception(f"[MotionGraphics] Error adding overlay: {e}")
             return None
 
     async def add_watermark(
@@ -204,7 +202,7 @@ class MotionGraphicsService:
             return video_path  # Placeholder
 
         except Exception as e:
-            logger.error(f"[MotionGraphics] Error adding watermark: {e}")
+            logger.exception(f"[MotionGraphics] Error adding watermark: {e}")
             return video_path
 
     def get_available_styles(self) -> list[str]:

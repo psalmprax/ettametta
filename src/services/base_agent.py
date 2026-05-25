@@ -1,9 +1,5 @@
 import logging
-import asyncio
-import json
 import os
-import requests
-from typing import Any
 from src.api.config import settings
 
 logger = logging.getLogger(__name__)

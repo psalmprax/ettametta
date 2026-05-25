@@ -10,8 +10,6 @@ import sys
 import json
 import re
 import subprocess
-from pathlib import Path
-from typing import Any
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -723,7 +721,6 @@ async def discover_multi_platform(query: str, max_per_platform: int = 2, session
 
     # Wave 2: Concurrent Multi-Platform Swarm
     print(f"  [DISCOVERY] Launching Discovery Swarm ({len(search_swarm)} variations x 11 platforms)...")
-    import sys
     sys.stdout.flush()
     
     import random
@@ -912,11 +909,6 @@ async def main():
     topic = "AI productivity tools viral 2026"
 
     # Alternative topics to try if no fresh content:
-    alt_topics = [
-        "AI tools tutorial 2026",
-        "viral shorts trending",
-        "chatgpt tutorial viral",
-    ]
 
     # Step 1: Discover content from MULTIPLE PLATFORMS
     print(f"\n[1/4] DISCOVERING videos for: {topic}")

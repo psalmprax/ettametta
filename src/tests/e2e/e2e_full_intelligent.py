@@ -13,7 +13,6 @@ import os
 import sys
 import json
 import subprocess
-import asyncio
 import shutil
 
 sys.path.insert(0, "/home/psalmprax/ALL_PROJECTS/ettametta")
@@ -134,7 +133,6 @@ def step4_vlm(video_path):
 
 def step5_process(video_path):
     """Step 5: Process with Remotion titles"""
-    import shutil
 
     # Upload video first
     print("  Uploading video to remote...")
@@ -236,21 +234,21 @@ def main():
     # For full test, just render titles without video
     print("  Using local video processing fallback")
 
-    output = os.path.join(OUTPUT_DIR, "final_output.mp4")
+    os.path.join(OUTPUT_DIR, "final_output.mp4")
 
     # Use local Remotion if available, else ffmpeg
     result = subprocess.run(
         [
             "python3",
             "-c",
-            f"""
+            """
 import sys
 sys.path.insert(0, '/home/psalmprax/ALL_PROJECTS/ettametta')
 from src.services.video_engine.base_remotion_service import base_remotion_service
 import asyncio
 result = asyncio.run(base_remotion_service.render_video(
     'CinematicMinimal',
-    {{'title': 'AI Productivity 2026', 'subtitle': 'Viral Content'}},
+    {'title': 'AI Productivity 2026', 'subtitle': 'Viral Content'},
     'e2e_test.mp4'
 ))
 print(result)

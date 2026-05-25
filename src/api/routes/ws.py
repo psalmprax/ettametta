@@ -2,9 +2,8 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import json
 import asyncio
 import logging
-import random
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import redis.asyncio as redis
 import redis as redis_sync
 from src.api.config import settings
@@ -80,7 +79,7 @@ class ConnectionManager:
                         })
                         await self.broadcast(wrapped)
         except Exception as e:
-            logging.error(f"Redis pubsub error: {e}")
+            logging.exception(f"Redis pubsub error: {e}")
         finally:
             await pubsub.unsubscribe("job_updates", "system_logs")
             self.pubsub_task = None
@@ -89,7 +88,7 @@ class ConnectionManager:
         for connection in self.active_connections:
             try:
                 await connection.send_text(message)
-            except Exception as e:
+            except Exception:
                 # Silently handle disconnected clients; they will be removed by the endpoint
                 pass
 
@@ -104,7 +103,7 @@ async def websocket_jobs_endpoint(websocket: WebSocket):
         await manager.city_connect(websocket)
         logging.info("[WS] Jobs Connection Accepted")
     except Exception as conn_err:
-        logging.error(f"[WS] Jobs Connection Failed: {conn_err}", exc_info=True)
+        logging.exception(f"[WS] Jobs Connection Failed: {conn_err}", exc_info=True)
         try:
             await websocket.close(code=1011)
         except Exception:
@@ -123,7 +122,7 @@ async def websocket_jobs_endpoint(websocket: WebSocket):
         logging.info("[WS] Jobs Disconnected (Client Closed)")
         manager.disconnect(websocket)
     except Exception as e:
-        logging.error(f"[WS] Jobs Error: {e}")
+        logging.exception(f"[WS] Jobs Error: {e}")
         manager.disconnect(websocket)
 
 
@@ -137,7 +136,7 @@ async def websocket_logs_endpoint(websocket: WebSocket):
         await manager.city_connect(websocket)
         logging.info("[WS] Logs Connection Accepted")
     except Exception as conn_err:
-        logging.error(f"[WS] Logs Connection Failed: {conn_err}", exc_info=True)
+        logging.exception(f"[WS] Logs Connection Failed: {conn_err}", exc_info=True)
         try:
             await websocket.close(code=1011)
         except Exception:
@@ -163,7 +162,7 @@ async def websocket_logs_endpoint(websocket: WebSocket):
         logging.info("[WS] Logs Disconnected (Client Closed)")
         manager.disconnect(websocket)
     except Exception as e:
-        logging.error(f"[WS] Logs Error: {e}")
+        logging.exception(f"[WS] Logs Error: {e}")
         manager.disconnect(websocket)
 
 
@@ -174,7 +173,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
         await manager.city_connect(websocket)
         logging.info("[WS] Telemetry Connection Accepted")
     except Exception as conn_err:
-        logging.error(f"[WS] Telemetry Connection Failed: {conn_err}", exc_info=True)
+        logging.exception(f"[WS] Telemetry Connection Failed: {conn_err}", exc_info=True)
         try:
             await websocket.close(code=1011)
         except Exception:
@@ -189,8 +188,6 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
     )
     from sqlalchemy import select, func
     from src.api.utils.database import async_session_factory
-    from src.services.analytics.drift_monitor import base_monitor_service
-    from src.services.analytics.signal_bus import base_signal_bus
     import psutil
 
     try:
@@ -242,7 +239,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     res_likes = await db.execute(stmt_likes)
                     total_likes = res_likes.scalar() or 0
             except Exception as db_err:
-                logging.error(f"[WS] Telemetry DB Error: {db_err}")
+                logging.exception(f"[WS] Telemetry DB Error: {db_err}")
                 active_jobs = 0
                 total_published = 0
                 total_discovered = 0
@@ -253,7 +250,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
 
             # Derive metrics from real system state
             try:
-                cpu_usage = psutil.cpu_percent(interval=None)
+                psutil.cpu_percent(interval=None)
 
                 # 10/10 INTELLIGENCE BRIDGE: Pull real metrics from the Signal Bus
                 drift_report = base_monitor_service.audit_system_honesty()
@@ -277,7 +274,7 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
                     drift_report["current_mae"] * 100
                 )  # Simulation of compute pressure
             except Exception as metric_err:
-                logging.error(f"[WS] Telemetry Metric Derivation Error: {metric_err}")
+                logging.exception(f"[WS] Telemetry Metric Derivation Error: {metric_err}")
                 bitrate = 400.0
                 latency = 20.0
                 signal_strength = 0.5
@@ -348,8 +345,8 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
     except Exception as e:
         import traceback
-        logging.error(f"[WS] Telemetry Fatal Error: {e}")
-        logging.error(traceback.format_exc())
+        logging.exception(f"[WS] Telemetry Fatal Error: {e}")
+        logging.exception(traceback.format_exc())
         manager.disconnect(websocket)
 
 
@@ -380,7 +377,7 @@ def notify_system_log_sync(message: str, level: str = "INFO", module: str = "SYS
     try:
         asyncio.run(_db_log())
     except Exception as e:
-        logging.error(f"Failed to persist system log: {e}")
+        logging.exception(f"Failed to persist system log: {e}")
 
     # Broadcast via Redis
     try:
@@ -396,7 +393,7 @@ def notify_system_log_sync(message: str, level: str = "INFO", module: str = "SYS
         )
         r.publish("system_logs", message_data)
     except Exception as e:
-        logging.error(f"Failed to broadcast system log: {e}")
+        logging.exception(f"Failed to broadcast system log: {e}")
 
 
 async def notify_system_log_async(
@@ -417,7 +414,7 @@ async def notify_system_log_async(
             db.add(log_entry)
             await db.commit()
     except Exception as e:
-        logging.error(f"Failed to persist system log (async): {e}")
+        logging.exception(f"Failed to persist system log (async): {e}")
 
     # Broadcast via Redis
     try:
@@ -433,7 +430,7 @@ async def notify_system_log_async(
         )
         await r.publish("system_logs", message_data)
     except Exception as e:
-        logging.error(f"Failed to broadcast system log (async): {e}")
+        logging.exception(f"Failed to broadcast system log (async): {e}")
 
 
 def notify_nexus_job_update_sync(job_data: dict):

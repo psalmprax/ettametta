@@ -6,11 +6,8 @@ Upgraded Neural Engine using PyTorch to predict multi-point
 retention curves based on deep multimodal embeddings.
 """
 
-import os
 import numpy as np
 import logging
-import json
-from typing import Any
 from pathlib import Path
 from src.services.optimization.model_registry import base_registry_service
 
@@ -100,7 +97,7 @@ class NeuralOracle:
                 self.model.eval()
                 logger.info(f"Neural Oracle weights loaded from {self.model_path.name}")
             except Exception as e:
-                logger.error(f"Failed to load Neural Oracle from {self.model_path}: {e}")
+                logger.exception(f"Failed to load Neural Oracle from {self.model_path}: {e}")
 
     def reload_champion(self):
         self.model_path = Path(base_registry_service.get_champion_path())

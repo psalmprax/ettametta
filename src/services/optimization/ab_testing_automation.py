@@ -5,8 +5,7 @@ Handles automatic winner determination and optimization
 
 import asyncio
 import logging
-from datetime import datetime, timedelta, timezone
-from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 from src.api.utils.database import async_session_factory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,7 +66,7 @@ class ABTestingAutomation:
                     await self._evaluate_test(test, db)
 
             except Exception as e:
-                logger.error(f"[ABTestingAutomation] Error checking tests: {e}")
+                logger.exception(f"[ABTestingAutomation] Error checking tests: {e}")
 
     async def _evaluate_test(self, test: ABTestDB, db: AsyncSession):
         """Evaluate a single A/B test for winner determination"""
@@ -151,7 +150,7 @@ class ABTestingAutomation:
                 )
 
         except Exception as e:
-            logger.error(f"[ABTestingAutomation] Error evaluating test {test.id}: {e}")
+            logger.exception(f"[ABTestingAutomation] Error evaluating test {test.id}: {e}")
 
     async def _apply_winner_optimization(self, test: ABTestDB, winner: str):
         """Apply the winning variant to future content"""
@@ -169,7 +168,7 @@ class ABTestingAutomation:
             )
 
         except Exception as e:
-            logger.error(f"[ABTestingAutomation] Error applying optimization: {e}")
+            logger.exception(f"[ABTestingAutomation] Error applying optimization: {e}")
 
 
 # Global instance

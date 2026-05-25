@@ -4,7 +4,6 @@ Handles video uploads to Snapchat Spotlight via Snapchat Marketing API
 Features: Retry logic, rate limiting, file validation, proper logging
 """
 
-import asyncio
 import os
 import httpx
 import logging

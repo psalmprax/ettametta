@@ -6,8 +6,6 @@ Runs fully automated test on remote
 
 import asyncio
 import requests
-import sys
-import os
 
 API_URL = "http://api:8000"
 DISCOVERY_GO_URL = "http://discovery-go:8080"

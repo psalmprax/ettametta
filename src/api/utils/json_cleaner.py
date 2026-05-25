@@ -71,5 +71,5 @@ def repair_and_load_json(text: str) -> Any:
             repaired = repair_json(text)
             return json.loads(repaired)
         except Exception:
-            logger.error(f"Failed to load JSON even after all repair attempts: {e}")
+            logger.exception(f"Failed to load JSON even after all repair attempts: {e}")
             return None

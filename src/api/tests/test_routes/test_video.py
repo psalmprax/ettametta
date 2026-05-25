@@ -4,7 +4,6 @@ Video Pipeline Endpoint Tests
 Integration tests for video transformation and generation routes
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from fastapi import status
 from unittest.mock import patch, AsyncMock, MagicMock

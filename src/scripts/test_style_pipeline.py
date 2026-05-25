@@ -7,7 +7,6 @@ Usage: python3 test_style_pipeline.py <STYLE_NAME> [duration_seconds]
 import sys
 import os
 import asyncio
-import json
 import uuid
 import shutil
 import logging
@@ -99,7 +98,7 @@ async def test_style(style: str, topic: str, niche: str, duration_seconds: int =
             return None
 
     except Exception as e:
-        logger.error(f"[{style}] Pipeline FAILED: {e}")
+        logger.exception(f"[{style}] Pipeline FAILED: {e}")
         import traceback
         traceback.print_exc()
         print("RESULT_PATH:None")

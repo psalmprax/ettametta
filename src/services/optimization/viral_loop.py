@@ -1,13 +1,10 @@
 import logging
-import asyncio
 from src.services.discovery.service import base_discovery_service
 from src.services.video_engine.tasks import download_and_process_task
 from src.api.utils.database import async_session_factory
 from sqlalchemy import select
 from src.shared.enums import SystemJobStatus
 from src.api.utils.models import (
-    SystemSettings,
-    ContentCandidateDB,
     VideoJobDB,
 )
 

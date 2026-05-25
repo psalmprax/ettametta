@@ -32,7 +32,7 @@ class IncidentReportingService:
         }
         
         async with AsyncSessionLocal() as db:
-            stmt = select(IncidentWebhookDB).where(IncidentWebhookDB.is_active == True)
+            stmt = select(IncidentWebhookDB).where(IncidentWebhookDB.is_active)
             result = await db.execute(stmt)
             webhooks = result.scalars().all()
             
@@ -64,7 +64,7 @@ class IncidentReportingService:
                             logger.error(f"Failed to send incident report to {webhook.url}: {resp.status_code}")
                             
                     except Exception as e:
-                        logger.error(f"Error triggering webhook {webhook.url}: {e}")
+                        logger.exception(f"Error triggering webhook {webhook.url}: {e}")
 
     def trigger_incident_sync(self, incident_type: str, details: dict[str, Any], severity: str = "CRITICAL"):
         """Sync wrapper for use in Celery or non-async contexts."""

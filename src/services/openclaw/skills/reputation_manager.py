@@ -1,6 +1,4 @@
 import logging
-import requests
-from src.api.config import settings
 from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)

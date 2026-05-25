@@ -15,7 +15,6 @@ from .dispatcher import base_dispatcher_service
 import uvicorn
 from fastapi import FastAPI, BackgroundTasks, Request, Response
 from pydantic import BaseModel
-import time
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -82,7 +81,7 @@ class BotManager:
 
         except Exception as e:
             self.api_circuit_breaker.record_failure()
-            logger.error(f"Error fetching users: {e}")
+            logger.exception(f"Error fetching users: {e}")
             raise
 
     async def start_bot(self, user_id: str, token: str):
@@ -127,7 +126,7 @@ class BotManager:
             self.apps[user_id] = application
             logger.info(f"Bot for user {user_id} started successfully.")
         except Exception as e:
-            logger.error(f"Failed to start bot for user {user_id}: {e}")
+            logger.exception(f"Failed to start bot for user {user_id}: {e}")
         finally:
             if user_id in self._starting_ids:
                 self._starting_ids.remove(user_id)
@@ -141,7 +140,7 @@ class BotManager:
                 await app.stop()
                 await app.shutdown()
             except Exception as e:
-                logger.error(f"Error during stop_bot: {e}")
+                logger.exception(f"Error during stop_bot: {e}")
             finally:
                 del self.apps[user_id]
 
@@ -175,7 +174,7 @@ class BotManager:
                         f"Failed to fetch users (Attempt {attempt + 1}/{max_retries})"
                     )
             except Exception as e:
-                logger.error(
+                logger.exception(
                     f"Error initializing bots (Attempt {attempt + 1}/{max_retries}): {e}"
                 )
 
@@ -252,9 +251,9 @@ async def whatsapp_webhook(request: Request):
         return Response(content=twiml, media_type="application/xml")
 
     except Exception as e:
-        logger.error(f"WhatsApp Webhook Error: {e}")
+        logger.exception(f"WhatsApp Webhook Error: {e}")
         # Return generic error in TwiML
-        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+        twiml = """<?xml version="1.0" encoding="UTF-8"?>
         <Response>
             <Message>⚠️ Agent encountered an internal error processing your WhatsApp message.</Message>
         </Response>"""
@@ -292,7 +291,7 @@ async def broadcast_message(
             "message": f"Broadcast queued for {success_count} users.",
         }
     except Exception as e:
-        logger.error(f"Broadcast Error: {e}")
+        logger.exception(f"Broadcast Error: {e}")
         return {"status": "error", "message": str(e)}
 
 
@@ -318,7 +317,7 @@ async def execute_tool(request: ToolRequest):
         })
         return {"status": "success", "result": result}
     except Exception as e:
-        logger.error(f"Tool Execution Error: {e}")
+        logger.exception(f"Tool Execution Error: {e}")
         return {"status": "error", "message": str(e)}
 
 

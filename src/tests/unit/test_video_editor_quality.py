@@ -241,7 +241,7 @@ async def test_video_editor_quality():
 
         # Test skill actions
         result = await skill.execute({"action": "unknown"})
-        assert result["success"] == False
+        assert not result["success"]
         assert "available_actions" in result
 
         print("✅ VideoLeadSkill properly integrated")

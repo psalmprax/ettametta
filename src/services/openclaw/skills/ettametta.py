@@ -1,6 +1,5 @@
 import logging
 import requests
-import json
 from typing import Any
 from src.api.config import settings
 from .base_skill import OpenClawBaseSkill

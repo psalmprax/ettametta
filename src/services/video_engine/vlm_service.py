@@ -153,7 +153,7 @@ class VLMService:
                 text = text.split("```json")[1].split("```")[0].strip()
             return json.loads(text)
         except Exception as e:
-            logging.error(f"[VLMService] Gemini failed: {e}")
+            logging.exception(f"[VLMService] Gemini failed: {e}")
             return None
 
 base_vlm_service = VLMService()

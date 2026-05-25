@@ -10,8 +10,6 @@ async def test_full_pipeline():
     
     # Initialize Database Tables
     from api.utils.database import engine, Base
-    from services.discovery import db_models
-    from services.optimization import db_models as opt_models
     Base.metadata.create_all(bind=engine)
     print("✅ Database Tables Initialized.")
     
@@ -35,8 +33,8 @@ async def test_full_pipeline():
                 print(f"✅ Scanner triggered. Response: {resp.json().get('message')}")
             else:
                 print(f"❌ Scanner Bridge Failed: {resp.text}")
-    except Exception as e:
-        print(f"⚠️ API not running locally? (This test assumes uvicorn is running on port 8000)")
+    except Exception:
+        print("⚠️ API not running locally? (This test assumes uvicorn is running on port 8000)")
 
     # 4. Check Monetization (Auto-Merch & Affiliate)
     print("\n[Step 4] Verifying Monetization (Hardened)...")
@@ -46,7 +44,7 @@ async def test_full_pipeline():
     merch = AutoMerchService()
     affiliate = AffiliateService()
     
-    print(f"✅ AutoMerch initialized. Ready for Printful pushing.")
+    print("✅ AutoMerch initialized. Ready for Printful pushing.")
     if affiliate.is_enabled():
         print("✅ Affiliate service enabled.")
     else:

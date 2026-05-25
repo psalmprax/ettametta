@@ -61,7 +61,7 @@ class RedditScanner:
                             candidates.append(candidate)
                             
                 except Exception as e:
-                    logging.error(f"[Reddit] Error scanning /r/{sub}: {e}")
+                    logging.exception(f"[Reddit] Error scanning /r/{sub}: {e}")
                     
         return candidates
 

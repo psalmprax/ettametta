@@ -11,7 +11,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 from src.services.nexus_engine.auto_creator import base_creator_service
-from src.services.nexus_engine.style_library import NexusStyle
 from src.services.llm.intelligence_hub import base_intelligence_service
 
 # Monkeypatch IntelligenceHub to force provider if requested
@@ -37,7 +36,7 @@ async def test_creation(topic: str, style: str):
             duration_seconds=30
         )
         
-        print(f"✅ Creation Successful!")
+        print("✅ Creation Successful!")
         print(f"🎬 Video Path: {output_path}")
         if os.path.exists(output_path):
             print(f"📁 Verification: File exists ({os.path.getsize(output_path)} bytes)")

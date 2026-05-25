@@ -11,7 +11,6 @@ and this scanner will use their session to search/fetch content.
 """
 
 import logging
-from typing import Any
 from src.services.discovery.models import ContentCandidate
 
 logger = logging.getLogger(__name__)

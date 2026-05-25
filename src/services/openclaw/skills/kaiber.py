@@ -134,7 +134,7 @@ class KaiberSkill(OpenClawBaseSkill):
             }
 
         except Exception as e:
-            logger.error(f"[Kaiber] Generation failed: {str(e)}")
+            logger.exception(f"[Kaiber] Generation failed: {str(e)}")
             await self.cleanup()
             return {"status": "failed", "error": str(e), "engine": "kaiber"}
 

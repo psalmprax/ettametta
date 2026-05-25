@@ -2,11 +2,9 @@ import pytest
 import asyncio
 from sqlalchemy import select
 from src.api.utils.database import AsyncSessionLocal
-from src.api.utils.models import DriftHistoryDB, ExperimentCohortDB, StrategyRegistryDB
+from src.api.utils.models import DriftHistoryDB, ExperimentCohortDB
 from src.services.analytics.drift_detector import base_drift_service
 from src.services.distribution.experiment_batcher import base_experiment_service
-from src.services.analytics.success_model import SuccessModel
-from src.services.infrastructure.recovery_service import base_recovery_service
 
 @pytest.fixture(autouse=True)
 async def cleanup_db():

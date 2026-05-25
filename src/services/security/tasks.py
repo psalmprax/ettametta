@@ -1,6 +1,5 @@
 from src.api.utils.celery import celery_app
 from src.services.security.service import base_security_service
-import asyncio
 import logging
 
 logger = logging.getLogger(__name__)

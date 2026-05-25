@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 from src.api.config import settings
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class CodeInterpreterService:
             self.interpreter = interpreter
             logger.info("🤖 [CodeInterpreter] Initialized with local Ollama support.")
         except Exception as e:
-            logger.error(f"❌ [CodeInterpreter] Initialization failed: {e}")
+            logger.exception(f"❌ [CodeInterpreter] Initialization failed: {e}")
             self.interpreter = None
 
     async def execute(self, command: str) -> Dict[str, Any]:
@@ -63,7 +63,7 @@ class CodeInterpreterService:
                 "status": "success"
             }
         except Exception as e:
-            logger.error(f"❌ [CodeInterpreter] Execution failed: {e}")
+            logger.exception(f"❌ [CodeInterpreter] Execution failed: {e}")
             return {"error": str(e), "status": "failed"}
 
 # Singleton instance

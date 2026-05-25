@@ -1,6 +1,5 @@
 import httpx
 import logging
-import asyncio
 from src.api.config import settings
 
 logger = logging.getLogger("InternalJobClient")

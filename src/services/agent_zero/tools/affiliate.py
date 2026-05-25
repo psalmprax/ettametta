@@ -26,7 +26,7 @@ class AffiliateTool:
                 return {"error": f"API Error: {response.status_code}", "detail": response.text}
                 
         except Exception as e:
-            logger.error(f"AffiliateTool Recommend Error: {e}")
+            logger.exception(f"AffiliateTool Recommend Error: {e}")
             return {"error": str(e)}
 
     def create_link(self, product_name: str, niche: str, link: str, cta_text: str = "Check link in bio") -> dict[str, Any]:
@@ -48,7 +48,7 @@ class AffiliateTool:
                 return {"error": f"API Error: {response.status_code}", "detail": response.text}
                 
         except Exception as e:
-            logger.error(f"AffiliateTool Create Error: {e}")
+            logger.exception(f"AffiliateTool Create Error: {e}")
             return {"error": str(e)}
 
 affiliate_tool = AffiliateTool()

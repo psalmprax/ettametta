@@ -95,7 +95,7 @@ class PublishingSkill(OpenClawBaseSkill):
                 return f"⚠️ **Publishing Failed**: {pub_response.text}"
 
         except Exception as e:
-            logger.error(f"Publishing Skill Error: {e}")
+            logger.exception(f"Publishing Skill Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
 
 

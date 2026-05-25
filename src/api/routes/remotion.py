@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel
 from typing import Any
 from src.services.video_engine.remotion_service import RemotionService
@@ -34,7 +34,7 @@ async def run_render_task(composition_id: str, props: dict[str, Any], job_id: st
         else:
             logger.error(f"Render task failed for job {job_id}")
     except Exception as e:
-        logger.error(f"Error in background render task: {e}")
+        logger.exception(f"Error in background render task: {e}")
 
 
 @router.post("/render")

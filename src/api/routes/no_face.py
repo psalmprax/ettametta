@@ -10,7 +10,6 @@ from src.services.voiceover.service import base_voiceover_service
 from src.services.stock_media.service import base_stock_media_service
 from src.services.visual_generator.service import base_visual_generator_service
 from src.services.multiplatform.translator import base_multiplatform_service
-from src.services.scheduler.empire_mode import base_scheduler_service
 from src.services.sentinel.algorithm_tracker import base_algorithm_service
 from src.api.utils.auth import get_current_user
 from src.api.utils.api_responses import success_response
@@ -51,7 +50,7 @@ async def generate_script(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Script generation failed: {e}")
+        logging.exception(f"Script generation failed: {e}")
         raise HTTPException(status_code=503, detail="Script generation service unavailable")
 
 
@@ -66,7 +65,7 @@ async def validate_hook(request: HookRequest, current_user=Depends(get_current_u
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Hook validation failed: {e}")
+        logging.exception(f"Hook validation failed: {e}")
         raise HTTPException(status_code=503, detail="Hook validation service unavailable")
 
 
@@ -184,7 +183,7 @@ async def launch_automated_video(
             "script": script
         })
     except Exception as e:
-        logging.error(f"Cinema launch failed: {e}")
+        logging.exception(f"Cinema launch failed: {e}")
         raise HTTPException(status_code=503, detail=f"Cinema engine currently offline: {str(e)}")
 
 

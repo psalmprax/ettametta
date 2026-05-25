@@ -6,11 +6,8 @@ import logging
 import uuid
 from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
-from src.api.utils.limiter import limiter
 from src.api.utils.database import get_db
-from src.services.llm.service import UnifiedLLMService
 from src.services.llm.intelligence_hub import IntelligenceHub
-from src.services.video_engine.tasks import download_and_process_task
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Request
 
@@ -98,7 +95,7 @@ async def chat_with_agent(
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"[Agent] Chat failed: {type(e).__name__}: {e}")
+        logger.exception(f"[Agent] Chat failed: {type(e).__name__}: {e}")
         raise HTTPException(status_code=503, detail="AI agent service unavailable")
 
 
@@ -135,7 +132,7 @@ async def analyze_code(
             }
         )
     except Exception as e:
-        logger.error(f"[Agent] Code analysis failed: {e}")
+        logger.exception(f"[Agent] Code analysis failed: {e}")
         raise HTTPException(status_code=503, detail=str(e))
 
 
@@ -300,7 +297,7 @@ async def account_audit(
             }
         )
     except Exception as e:
-        logger.error(f"Account audit failed: {e}")
+        logger.exception(f"Account audit failed: {e}")
         raise HTTPException(status_code=503, detail=f"Audit service failure: {str(e)}")
 
 
@@ -335,5 +332,5 @@ async def sandbox_execute(
             }
         )
     except Exception as e:
-        logger.error(f"Sandbox execution failed: {e}")
+        logger.exception(f"Sandbox execution failed: {e}")
         raise HTTPException(status_code=503, detail="Sandbox engine failure")

@@ -63,7 +63,7 @@ class CourseStrategy(BaseMonetizationStrategy):
             return ""
         
         platform_uri = assets[0].get("url", "")
-        course_name = assets[0].get("name", f"{niche} course")
+        assets[0].get("name", f"{niche} course")
         
         options = [
             f"Want to master {niche}? Check out my comprehensive course: \n🔗 {platform_uri}",

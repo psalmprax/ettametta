@@ -1,4 +1,3 @@
-import json
 import logging
 import requests
 from datetime import datetime
@@ -97,7 +96,7 @@ class AuditSkill(OpenClawBaseSkill):
             else:
                 return f"⚠️ Unsupported platform: {platform}. Supported: youtube, tiktok, instagram, facebook, x, linkedin, snapchat, twitch"
         except Exception as e:
-            logger.error(f"{platform} Audit Error: {e}")
+            logger.exception(f"{platform} Audit Error: {e}")
             return f"⚠️ {platform} Audit Error: {e}"
 
     def _get_user_token(self, platform: str, user_id: str) -> str | None:
@@ -109,7 +108,7 @@ class AuditSkill(OpenClawBaseSkill):
             token = asyncio.run(token_manager.get_token(platform, user_id=user_id))
             return token
         except Exception as e:
-            logger.error(f"Error getting {platform} token: {e}")
+            logger.exception(f"Error getting {platform} token: {e}")
             return None
 
     def _fetch_platform_data(
@@ -234,7 +233,7 @@ class AuditSkill(OpenClawBaseSkill):
                 return f"⚠️ Strategy generation failed: {groq_resp.status_code}"
 
         except Exception as e:
-            logger.error(f"Growth strategy error for {platform}: {e}")
+            logger.exception(f"Growth strategy error for {platform}: {e}")
             return f"⚠️ Strategy generation error: {e}"
 
     def _format_audit_report(
@@ -450,7 +449,7 @@ class AuditSkill(OpenClawBaseSkill):
                 return channels_response["items"][0]
             return {}
         except Exception as e:
-            logger.error(f"Error fetching YouTube data: {e}")
+            logger.exception(f"Error fetching YouTube data: {e}")
             return {}
 
     def _fetch_tiktok_data(self, access_token: str) -> dict:
@@ -467,7 +466,7 @@ class AuditSkill(OpenClawBaseSkill):
                 "total_views": 150000,
             }
         except Exception as e:
-            logger.error(f"Error fetching TikTok data: {e}")
+            logger.exception(f"Error fetching TikTok data: {e}")
             return {}
 
     def _fetch_instagram_data(self, access_token: str) -> dict:
@@ -483,7 +482,7 @@ class AuditSkill(OpenClawBaseSkill):
                 "total_views": 75000,
             }
         except Exception as e:
-            logger.error(f"Error fetching Instagram data: {e}")
+            logger.exception(f"Error fetching Instagram data: {e}")
             return {}
 
     def _fetch_facebook_data(self, access_token: str) -> dict:
@@ -552,7 +551,7 @@ class AuditSkill(OpenClawBaseSkill):
 
             return []
         except Exception as e:
-            logger.error(f"Error fetching YouTube videos: {e}")
+            logger.exception(f"Error fetching YouTube videos: {e}")
             return []
 
     def _fetch_tiktok_videos(
@@ -563,7 +562,7 @@ class AuditSkill(OpenClawBaseSkill):
             # TikTok API integration would go here
             return []
         except Exception as e:
-            logger.error(f"Error fetching TikTok videos: {e}")
+            logger.exception(f"Error fetching TikTok videos: {e}")
             return []
 
     def _fetch_instagram_posts(
@@ -574,7 +573,7 @@ class AuditSkill(OpenClawBaseSkill):
             # Instagram Graph API integration would go here
             return []
         except Exception as e:
-            logger.error(f"Error fetching Instagram posts: {e}")
+            logger.exception(f"Error fetching Instagram posts: {e}")
             return []
 
     # Monetization analysis methods
@@ -833,7 +832,7 @@ class AuditSkill(OpenClawBaseSkill):
                 return f"⚠️ Gap analysis failed: {groq_resp.status_code}"
 
         except Exception as e:
-            logger.error(f"Competitor comparison error: {e}")
+            logger.exception(f"Competitor comparison error: {e}")
             return f"⚠️ Comparison error: {e}"
 
 

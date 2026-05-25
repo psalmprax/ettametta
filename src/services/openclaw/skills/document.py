@@ -1,6 +1,5 @@
 import logging
 import requests
-from typing import Any
 from .base_skill import OpenClawBaseSkill
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ class DocumentSkill(OpenClawBaseSkill):
 
             return f"⚠️ Document processing for {type}/{action} is not yet supported. Only type='pdf' with action='extract' is available."
         except Exception as e:
-            logger.error(f"Document Skill Error: {e}")
+            logger.exception(f"Document Skill Error: {e}")
             return f"⚠️ Document Error: {str(e)}"
 
 

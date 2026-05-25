@@ -10,7 +10,6 @@ This complements the automated discovery and planning system.
 import json
 from pathlib import Path
 from typing import Any
-import os
 
 
 class VideoProductionAssistant:
@@ -132,7 +131,7 @@ class VideoProductionAssistant:
 
         fusion_plan = production_plan.get("fusion_plan", {})
         segments = fusion_plan.get("segments", [])
-        audio_plan = production_plan.get("audio_plan", {})
+        production_plan.get("audio_plan", {})
 
         commands = []
 

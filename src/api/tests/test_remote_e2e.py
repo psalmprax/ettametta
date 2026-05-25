@@ -1,6 +1,5 @@
 import httpx
 import time
-import os
 import sys
 
 # Define constants

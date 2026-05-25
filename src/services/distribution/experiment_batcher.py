@@ -1,8 +1,6 @@
 import logging
-import random
 from typing import Any
 from datetime import datetime
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from src.api.utils.database import AsyncSessionLocal
 from src.api.utils.models import ExperimentCohortDB
@@ -40,7 +38,7 @@ class ExperimentBatcher:
                 ]
                 logger.info(f"🧪 [Batcher] State Reconstructed: {len(self.active_batches)} active cohorts loaded.")
             except Exception as e:
-                logger.error(f"Failed to sync batcher state from DB: {e}")
+                logger.exception(f"Failed to sync batcher state from DB: {e}")
 
     async def create_cohort_batch(self, strategy_name: str, size: int = 5) -> dict[str, Any]:
         """
@@ -91,7 +89,7 @@ class ExperimentBatcher:
                 logger.info(f"🧪 [Batcher] Persistent Cohort Created: {batch_id}")
                 return batch_data
             except Exception as e:
-                logger.error(f"Failed to create persistent cohort: {e}")
+                logger.exception(f"Failed to create persistent cohort: {e}")
                 await db.rollback()
                 return {}
 
@@ -127,7 +125,7 @@ class ExperimentBatcher:
                         logger.info(f"🧪 [Batcher] Assigned {video_id} to cohort {batch['batch_id']}. Fill: {len(batch['participants'])}/{batch['size']}")
                         return batch["batch_id"]
                     except Exception as e:
-                        logger.error(f"Failed to update cohort participants in DB: {e}")
+                        logger.exception(f"Failed to update cohort participants in DB: {e}")
                         await db.rollback()
         return None
 

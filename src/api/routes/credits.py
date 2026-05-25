@@ -147,7 +147,7 @@ async def purchase_credits(
     try:
         payment_service = get_payment_service()
     except ValueError as e:
-        logger.error(f"[Credits] Stripe not configured: {e}")
+        logger.exception(f"[Credits] Stripe not configured: {e}")
         raise HTTPException(
             status_code=503,
             detail="Payment service unavailable. Please contact support.",
@@ -219,7 +219,7 @@ async def purchase_credits(
             }
         )
     except stripe.error.StripeError as e:
-        logger.error(f"[Credits] Stripe error: {e}")
+        logger.exception(f"[Credits] Stripe error: {e}")
         raise HTTPException(
             status_code=502, detail=f"Payment processing error: {str(e)}"
         )

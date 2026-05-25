@@ -55,11 +55,11 @@ class FFmpegTransformer:
 
     def _run_cmd(self, cmd: list) -> bool:
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
             return True
         except subprocess.CalledProcessError as e:
-            logging.error(f"[FFmpeg] Command Failed: {' '.join(cmd)}")
-            logging.error(f"[FFmpeg] Error: {e.stderr}")
+            logging.exception(f"[FFmpeg] Command Failed: {' '.join(cmd)}")
+            logging.exception(f"[FFmpeg] Error: {e.stderr}")
             return False
 
     def apply_originality(self, input_path: str, output_path: str, mirror: bool = False, zoom: float = 1.05, contrast: float = 1.05, brightness: float = 0.0, start_offset: float = 0.0, duration: float = None, lut_path: str = None, quality_mode: str = "ELITE") -> bool:
@@ -90,7 +90,7 @@ class FFmpegTransformer:
         elif lut_path:
             filters.append("curves=preset=vintage")
             
-        filter_str = ",".join(filters) if filters else "copy"
+        ",".join(filters) if filters else "copy"
         
         # Check for audio presence to prevent mapping errors
         has_audio = self._has_audio(input_path)
@@ -405,7 +405,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 current_offset += durations[i] - trans_duration
 
         # Build audio filtergraph (acrossfade)
-        current_a_offset = durations[0] - trans_duration
+        durations[0] - trans_duration
         a_inputs = "[0:a][1:a]"
         for i in range(1, len(video_paths)):
             filter_complex += f"{a_inputs}acrossfade=d={trans_duration}[a{i}];"
