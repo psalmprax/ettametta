@@ -1,7 +1,5 @@
 import pytest
 import uuid
-from datetime import datetime
-from sqlalchemy.ext.asyncio import AsyncSession
 from src.services.discovery.analysis_service import extract_content_patterns
 from src.api.utils.models import ContentCandidateDB
 

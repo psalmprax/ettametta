@@ -5,7 +5,6 @@ Tests database transactions, service integrations, and cross-endpoint flows
 
 import pytest
 import requests
-from unittest.mock import patch, MagicMock
 
 BASE_URL = "http://149.104.110.122:7201"
 TEST_USER = "samuelolle"
@@ -173,7 +172,7 @@ class TestAnalyticsIntegration:
         ).json()
 
         # Jobs
-        jobs = requests.get(
+        requests.get(
             f"{BASE_URL}/api/v1/video/jobs/",
             headers={"Authorization": f"Bearer {token}"},
         ).json()

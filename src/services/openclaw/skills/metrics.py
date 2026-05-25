@@ -61,7 +61,7 @@ class SocialMetricsSkill(OpenClawBaseSkill):
                 return f"⚠️ Error: {response.status_code}"
 
         except Exception as e:
-            logger.error(f"X Metrics Error: {e}")
+            logger.exception(f"X Metrics Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     def get_reddit_stats(self, subreddit: str) -> str:
@@ -85,7 +85,7 @@ class SocialMetricsSkill(OpenClawBaseSkill):
                 return f"⚠️ Error: {response.status_code}"
 
         except Exception as e:
-            logger.error(f"Reddit Stats Error: {e}")
+            logger.exception(f"Reddit Stats Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     def get_youtube_channel(self, channel_url: str) -> str:
@@ -115,7 +115,7 @@ class SocialMetricsSkill(OpenClawBaseSkill):
                 return f"⚠️ Error: {response.status_code}"
 
         except Exception as e:
-            logger.error(f"Instagram Error: {e}")
+            logger.exception(f"Instagram Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     def get_github_stats(self, username: str) -> str:
@@ -140,7 +140,7 @@ class SocialMetricsSkill(OpenClawBaseSkill):
                 return f"⚠️ Error: {response.status_code}"
 
         except Exception as e:
-            logger.error(f"GitHub Error: {e}")
+            logger.exception(f"GitHub Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     def get_multi_platform(self, handles: dict[str, str]) -> str:

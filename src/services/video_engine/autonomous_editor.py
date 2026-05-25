@@ -6,11 +6,9 @@ Handles cutting, transitions, B-roll insertion, auto-captions, audio mixing, and
 """
 
 import logging
-import asyncio
 from pathlib import Path
 from typing import Any
 import subprocess
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +42,6 @@ class AutonomousVideoEditor:
         6. Mix audio (ducking, leveling)
         7. Render final video
         """
-        from moviepy import VideoFileClip, AudioFileClip, CompositeVideoClip, concatenate_videoclips
-        from moviepy.video.tools.subtitles import SubtitlesClip
 
         logger.info(f"[AutoEdit] Starting autonomous edit for {len(script_segments)} segments")
 
@@ -157,7 +153,6 @@ class AutonomousVideoEditor:
         output_filename: str | None,
     ) -> Path:
         """Render final video using FFmpeg with all edits applied."""
-        import tempfile
 
         output_name = output_filename or f"auto_edited_{hash(str(timeline)) % 10000}.mp4"
         output_path = self.output_dir / output_name

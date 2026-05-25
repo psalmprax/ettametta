@@ -8,7 +8,6 @@ Receives code via stdin, executes safely, returns JSON to stdout.
 import sys
 import json
 import io
-import traceback
 
 # Capture stdout
 old_stdout = sys.stdout

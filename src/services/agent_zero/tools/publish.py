@@ -32,7 +32,7 @@ class PublishTool:
                 return {"error": f"API Error: {response.status_code}", "detail": response.text}
                 
         except Exception as e:
-            logger.error(f"PublishTool Error: {e}")
+            logger.exception(f"PublishTool Error: {e}")
             return {"error": str(e)}
 
 publish_tool = PublishTool()

@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime, timezone
-from typing import Any
 
 
 class ContentCandidate(BaseModel):

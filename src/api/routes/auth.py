@@ -1,16 +1,12 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from src.api.utils.database import get_db
 from src.api.utils.auth import (
     verify_password,
     get_password_hash,
     create_access_token,
-    decode_access_token,
     sign_oauth_state,
     verify_oauth_state,
     get_current_user,
-    admin_required,
     oauth2_scheme,
 )
 from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
@@ -28,7 +24,6 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from authlib.integrations.base_client import OAuthError
 import secrets
-import redis
 import redis.asyncio as redis_async
 import logging
 
@@ -104,9 +99,6 @@ class Token(BaseModel):
     token_type: str
 
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from src.api.utils.database import get_db
 
 
 @router.post("/register")
@@ -153,7 +145,7 @@ async def register(user: UserCreate, db=Depends(get_db)):
         await db.refresh(new_user)
     except Exception as e:
         await db.rollback()
-        logger.error(f"Registration failure: {e}")
+        logger.exception(f"Registration failure: {e}")
         raise APIError(message="Could not complete registration", status_code=500)
 
     return success_response(
@@ -219,7 +211,7 @@ async def login(
     try:
         password_valid = verify_password(password, user.hashed_password)
     except Exception as e:
-        logger.error(f"[LOGIN] Password verification error: {type(e).__name__}: {e}")
+        logger.exception(f"[LOGIN] Password verification error: {type(e).__name__}: {e}")
         raise
     
     if not password_valid:
@@ -256,7 +248,6 @@ async def google_auth():
 
 @router.post("/logout")
 async def logout(token: str = Depends(oauth2_scheme)):
-    import redis.asyncio as redis_async
 
     redis_client = redis_async.from_url(settings.REDIS_URL, decode_responses=True)
     try:
@@ -363,7 +354,7 @@ async def get_users_with_bots(request: Request, db=Depends(get_db)):
 
     # Get all users with telegram_bot_token set
     result = await db.execute(
-        select(UserDB).where(UserDB.telegram_token != None, UserDB.telegram_token != "")
+        select(UserDB).where(UserDB.telegram_token is not None, UserDB.telegram_token != "")
     )
     users = result.scalars().all()
 

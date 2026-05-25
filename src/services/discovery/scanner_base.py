@@ -16,7 +16,6 @@ class DiscoveryScannerBase(ABC):
         Default implementation: views per hour based on published_at or scanned_at.
         Can be overridden by scanners with more accurate data (like YouTube API).
         """
-        import time
 
         # Try to get publication date from various sources
         pub_date = None

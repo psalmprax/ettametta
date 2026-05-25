@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 from typing import Any
-import uuid
 
 from .base_skill import OpenClawBaseSkill
 
@@ -119,7 +118,7 @@ class LumaSkill(OpenClawBaseSkill):
             }
 
         except Exception as e:
-            logger.error(f"[Luma] Generation failed: {str(e)}")
+            logger.exception(f"[Luma] Generation failed: {str(e)}")
             return {"status": "failed", "error": str(e), "engine": "luma"}
 
 

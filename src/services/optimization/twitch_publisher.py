@@ -4,8 +4,6 @@ Handles video uploads to Twitch Clips via Twitch Helix API
 Features: Retry logic, rate limiting, file validation, proper logging
 """
 
-import asyncio
-import os
 import httpx
 import logging
 
@@ -90,7 +88,7 @@ class TwitchPublisher(SocialPublisher):
             clip_result = clip_response.json()
             clip_data_response = clip_result.get("data", [{}])[0]
             clip_id = clip_data_response.get("id")
-            edit_url = clip_data_response.get("edit_url")
+            clip_data_response.get("edit_url")
 
             if not clip_id:
                 logger.error("[TwitchPublisher] No clip ID in response")

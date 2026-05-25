@@ -11,7 +11,6 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
-from src.api.utils.api_responses import success_response
 
 from .common import OpenCLIPostRequest
 

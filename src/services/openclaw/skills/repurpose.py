@@ -158,7 +158,7 @@ class RepurposeSkill(OpenClawBaseSkill):
             return "\n".join(lines)
 
         except Exception as e:
-            logger.error(f"Repurpose Skill Error: {e}")
+            logger.exception(f"Repurpose Skill Error: {e}")
             return f"⚠️ Repurpose Error: {e}"
 
     def generate_caption_variants(
@@ -199,7 +199,7 @@ class RepurposeSkill(OpenClawBaseSkill):
             else:
                 return f"⚠️ Caption generation failed: {resp.status_code}"
         except Exception as e:
-            logger.error(f"Caption Variant Error: {e}")
+            logger.exception(f"Caption Variant Error: {e}")
             return f"⚠️ Caption Error: {e}"
 
     def generate_hashtag_sets(
@@ -241,7 +241,7 @@ class RepurposeSkill(OpenClawBaseSkill):
             else:
                 return f"⚠️ Hashtag generation failed: {resp.status_code}"
         except Exception as e:
-            logger.error(f"Hashtag Generation Error: {e}")
+            logger.exception(f"Hashtag Generation Error: {e}")
             return f"⚠️ Hashtag Error: {e}"
 
     def repurpose_script_to_posts(self, script: str, platforms: list = None) -> str:
@@ -286,7 +286,7 @@ class RepurposeSkill(OpenClawBaseSkill):
             else:
                 return f"⚠️ Script repurposing failed: {resp.status_code}"
         except Exception as e:
-            logger.error(f"Script Repurpose Error: {e}")
+            logger.exception(f"Script Repurpose Error: {e}")
             return f"⚠️ Repurpose Error: {e}"
 
 

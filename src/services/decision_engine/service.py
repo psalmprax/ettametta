@@ -1,7 +1,6 @@
 import json
 import logging
 from typing import Any, Optional
-from src.api.config import settings
 from src.api.utils.vault import get_secret
 from pydantic import BaseModel
 
@@ -139,7 +138,7 @@ class StrategyService:
             data = json.loads(response.choices[0].message.content)
             return StoryScript(**data)
         except Exception as e:
-            logging.error(f"[StrategyService] Screenplay Error: {e}")
+            logging.exception(f"[StrategyService] Screenplay Error: {e}")
             raise
 
     async def generate_visual_strategy(
@@ -231,7 +230,7 @@ VIRAL PATTERN ANALYSIS:
             data = json.loads(response.choices[0].message.content)
             return VideoStrategy(**data)
         except Exception as e:
-            logging.error(f"[StrategyService] Error: {e}")
+            logging.exception(f"[StrategyService] Error: {e}")
             return VideoStrategy()
 
 

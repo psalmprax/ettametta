@@ -9,8 +9,6 @@ import os
 import time
 from PIL import Image
 from diffusers import (
-    StableDiffusionXLPipeline,
-    StableDiffusionPipeline,
     MotionAdapter,
     EulerDiscreteScheduler
 )

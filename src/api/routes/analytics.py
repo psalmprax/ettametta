@@ -5,22 +5,12 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from src.services.analytics.service import base_analytics_service
 from src.services.analytics.service_extended import AnalyticsServiceExtended
-from src.services.analytics.models import ContentPerformance
 from src.api.utils.auth import get_current_user
-from src.api.utils.user_models import UserDB, UserRole
+from src.api.utils.user_models import UserDB
 import datetime
 from fastapi_cache.decorator import cache
 from src.api.utils.database import get_db
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from src.shared.enums import SystemJobStatus, ContentPublishStatus
-from src.api.utils.api_responses import success_response, Paginator, paginate_list
-from src.api.utils.models import (
-    PublishedContentDB,
-    VideoJobDB,
-    NicheTrendDB,
-    ABTestDB,
-)
+from src.api.utils.api_responses import success_response
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +50,7 @@ async def list_analytics_posts(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Content metrics failed: {e}")
+        logger.exception(f"Content metrics failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
@@ -81,7 +71,7 @@ async def get_analytics_report(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Analytics report failed: {e}")
+        logger.exception(f"Analytics report failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
@@ -125,7 +115,7 @@ async def get_report(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Trend analysis failed: {e}")
+        logger.exception(f"Trend analysis failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
@@ -154,7 +144,7 @@ async def get_insights(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Performance analysis failed: {e}")
+        logger.exception(f"Performance analysis failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
@@ -187,7 +177,7 @@ async def get_monetization_suggestions(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Comparative analysis failed: {e}")
+        logger.exception(f"Comparative analysis failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
@@ -205,7 +195,7 @@ async def get_stats_summary(
         )
         return success_response(data=stats)
     except Exception as e:
-        logger.error(f"Stats summary failed: {e}")
+        logger.exception(f"Stats summary failed: {e}")
         return success_response(
             data={
                 "active_trends": 0,
@@ -230,7 +220,7 @@ async def get_storage_stats(current_user: UserDB = Depends(get_current_user)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"A/B test metrics failed: {e}")
+        logger.exception(f"A/B test metrics failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
@@ -249,7 +239,7 @@ async def get_ab_results(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"AB test results failed: {e}")
+        logger.exception(f"AB test results failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
@@ -267,7 +257,7 @@ async def get_report_history(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Dashboard metrics failed: {e}")
+        logger.exception(f"Dashboard metrics failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
@@ -293,7 +283,7 @@ async def inject_pattern(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"ROI analysis failed: {e}")
+        logger.exception(f"ROI analysis failed: {e}")
         raise HTTPException(status_code=503, detail="Analytics service unavailable")
 
 
@@ -301,8 +291,6 @@ async def inject_pattern(
 async def export_analytics(
     current_user: UserDB = Depends(get_current_user), db=Depends(get_db)
 ):
-    import io
-    from fastapi.responses import StreamingResponse
 
     try:
         analytics_service = AnalyticsServiceExtended(db)
@@ -342,5 +330,5 @@ async def export_analytics(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Export failed: {e}")
+        logger.exception(f"Export failed: {e}")
         raise HTTPException(status_code=503, detail="Export service unavailable")

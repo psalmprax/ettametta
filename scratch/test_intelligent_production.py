@@ -8,7 +8,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.engines.real_video_fusion_engine import RealVideoFusionEngine
 from src.engines.intelligent_video_workflow import discover_multi_platform
-from src.api.utils.database import async_session_factory
 
 async def test_intelligent_production():
     print("\n🚀 INITIATING INTELLIGENT NEURAL PRODUCTION")
@@ -30,7 +29,7 @@ async def test_intelligent_production():
     print(f"   ✅ Found {len(candidates)} candidate leads.")
 
     # Step 2: Intelligent Production (Narrative Planning + Neural Fusion)
-    print(f"\n[2/5] 🧠 Orchestrating Narrative Reasoning & Neural Fusion...")
+    print("\n[2/5] 🧠 Orchestrating Narrative Reasoning & Neural Fusion...")
     print("      (This includes: Scripting, CLIP Analysis, Beat-Snapping, and Emotional Mapping)")
     
     # We use a 30s duration for a fast test cycle

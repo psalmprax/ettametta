@@ -53,7 +53,6 @@ class VideoJobService:
         Aggregates results from both standard Video engine and Nexus high-fidelity engine.
         Returns (unified_jobs, total_count).
         """
-        from sqlalchemy import func
         from src.api.utils.models import NexusJobDB
         
         # 1. Fetch Video Jobs
@@ -95,7 +94,7 @@ class VideoJobService:
                     "engine": "video_transform"
                 })
             except Exception as e:
-                logger.error(f"[JobService] Error normalizing video job {v.id if hasattr(v, 'id') else 'unknown'}: {e}")
+                logger.exception(f"[JobService] Error normalizing video job {v.id if hasattr(v, 'id') else 'unknown'}: {e}")
                 continue
             
         for n in nexus_jobs:
@@ -117,7 +116,7 @@ class VideoJobService:
                     "engine": "nexus_compose"
                 })
             except Exception as e:
-                logger.error(f"[JobService] Error normalizing nexus job {n.id if hasattr(n, 'id') else 'unknown'}: {e}")
+                logger.exception(f"[JobService] Error normalizing nexus job {n.id if hasattr(n, 'id') else 'unknown'}: {e}")
                 continue
             
         # 4. Sort and Paginate
@@ -203,7 +202,7 @@ class VideoJobService:
                 return True
             except Exception as e:
                 await self.db.rollback()
-                logger.error(f"[JobService] Failed to commit status update: {e}")
+                logger.exception(f"[JobService] Failed to commit status update: {e}")
                 return False
         return False
 
@@ -294,7 +293,7 @@ class VideoJobService:
             
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"[JobService] Failed to abort job {job_id}: {e}")
+            logger.exception(f"[JobService] Failed to abort job {job_id}: {e}")
             return False
 
     async def count_user_jobs(self, user_id: str) -> int:

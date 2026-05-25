@@ -7,12 +7,9 @@ Works with SDXL (recommended) or SD 1.5 for generating animated videos.
 import torch
 import os
 import time
-import numpy as np
 from PIL import Image
 from hardware_manager import hardware_manager
 from diffusers import (
-    StableDiffusionXLPipeline, 
-    StableDiffusionPipeline,
     EulerDiscreteScheduler,
     MotionAdapter
 )

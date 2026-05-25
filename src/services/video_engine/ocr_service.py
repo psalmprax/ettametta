@@ -1,4 +1,3 @@
-import os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,7 +41,7 @@ class OCRService:
                 self.reader = easyocr.Reader(['en'], gpu=False)
                 logger.info("[OCRService] EasyOCR initialized.")
             except Exception as e:
-                logger.error(f"[OCRService] Failed to initialize EasyOCR: {e}")
+                logger.exception(f"[OCRService] Failed to initialize EasyOCR: {e}")
                 self.reader = None
 
     def get_dependency_report(self):
@@ -73,7 +72,7 @@ class OCRService:
         import cv2
         cap = cv2.VideoCapture(video_path)
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
         all_detections = []

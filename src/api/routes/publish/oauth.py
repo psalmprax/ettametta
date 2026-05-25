@@ -110,7 +110,7 @@ async def auth_youtube_callback(
             f"Decoded State: user_id={user_id}, has_verifier={bool(code_verifier)}"
         )
     except Exception as e:
-        logger.error(f"Failed to decode OAuth state: {str(e)}")
+        logger.exception(f"Failed to decode OAuth state: {str(e)}")
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
 
     # Allow insecure transport for development/local sslip.io setups if using HTTP
@@ -139,7 +139,7 @@ async def auth_youtube_callback(
     try:
         await asyncio.to_thread(flow.fetch_token, code=code)
     except Exception as e:
-        logger.error(f"YouTube Token Exchange Failed: {str(e)}", exc_info=True)
+        logger.exception(f"YouTube Token Exchange Failed: {str(e)}", exc_info=True)
         error_detail = str(e)
         if "redirect_uri_mismatch" in error_detail.lower():
             error_detail = f"Redirect URI Mismatch. Check if {flow.redirect_uri} is registered in Google Cloud Console."

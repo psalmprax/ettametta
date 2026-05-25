@@ -8,7 +8,6 @@ sys.path.append(os.getcwd())
 from sqlalchemy import select
 from src.api.utils.database import async_session_factory
 from src.api.utils.models import NexusJobDB
-from src.shared.enums import SystemJobStatus
 
 async def check_nexus_jobs():
     async with async_session_factory() as session:
@@ -16,7 +15,7 @@ async def check_nexus_jobs():
         result = await session.execute(stmt)
         jobs = result.scalars().all()
         
-        print(f"Checking latest 5 Nexus jobs...")
+        print("Checking latest 5 Nexus jobs...")
         for job in jobs:
             print(f"ID: {job.id}")
             print(f"  Status: {job.status}")

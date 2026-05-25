@@ -1,8 +1,7 @@
 import psutil
 import logging
 import subprocess
-import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from .notifications import notification_skill
 from .memory import memory_skill
 
@@ -67,7 +66,7 @@ class SelfHealingSkill(OpenClawBaseSkill):
             return f"✅ Started monitoring '{name}' (PID: {process.pid})"
         except Exception as e:
             self.monitored_processes[name]["status"] = "failed"
-            logger.error(f"Failed to start process '{name}': {e}")
+            logger.exception(f"Failed to start process '{name}': {e}")
             return f"❌ Failed to start '{name}': {str(e)}"
 
     def check_process_health(self, name: str) -> dict:
@@ -112,7 +111,7 @@ class SelfHealingSkill(OpenClawBaseSkill):
         except psutil.NoSuchProcess:
             return {"status": "process_gone", "healthy": False}
         except Exception as e:
-            logger.error(f"Health check failed for '{name}': {e}")
+            logger.exception(f"Health check failed for '{name}': {e}")
             return {"status": "check_failed", "healthy": False, "error": str(e)}
 
     def restart_process(self, name: str) -> str:

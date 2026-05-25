@@ -84,7 +84,6 @@ class HardwareDetector:
         elif self.device == "xpu":
             try:
                 # Intel XPU detection
-                import intel_extension_for_pytorch as ipex
 
                 if hasattr(torch.xpu, "get_device_properties"):
                     props = torch.xpu.get_device_properties(0)

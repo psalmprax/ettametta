@@ -59,7 +59,7 @@ class HaiperSkill(PlaywrightVideoSkill):
                 "prompt": prompt,
             }
         except Exception as e:
-            logger.error(f"[Haiper] Generation failed: {str(e)}")
+            logger.exception(f"[Haiper] Generation failed: {str(e)}")
             await self.cleanup()
             return {"status": "failed", "error": str(e), "engine": self.engine_name}
 

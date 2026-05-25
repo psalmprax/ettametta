@@ -1,7 +1,6 @@
 import torch
 import os
 import time
-from diffusers import HunyuanVideo15Pipeline
 from diffusers.utils import export_to_video
 from huggingface_hub import InferenceClient
 from hardware_manager import hardware_manager
@@ -38,7 +37,6 @@ def load_hunyuan_model(model_type: str = "480p", quantize: bool = True, force_re
         return _hunyuan_pipe
     
     from diffusers import DiffusionPipeline
-    import torch
     
     # Get model path from dictionary
     model_path = HUNYUAN_MODELS.get(model_type, HUNYUAN_MODELS["480p"])

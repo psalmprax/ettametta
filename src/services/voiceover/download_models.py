@@ -1,4 +1,3 @@
-import os
 import subprocess
 import logging
 from pathlib import Path
@@ -24,7 +23,7 @@ def download_models():
         ], check=True)
         logger.info("✅ Model download complete.")
     except Exception as e:
-        logger.error(f"❌ Failed to download models: {e}")
+        logger.exception(f"❌ Failed to download models: {e}")
         # Fallback to wget or manual instruction if cli fails
         logger.info("Manual download required: https://huggingface.co/fishaudio/fish-speech-1.5")
 

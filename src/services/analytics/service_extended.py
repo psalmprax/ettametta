@@ -5,7 +5,7 @@ Follows Clean Architecture principles for better testability and separation of c
 """
 
 from typing import Any, Dict, List, Optional, Tuple
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.utils.models import (
     PublishedContentDB,
@@ -14,8 +14,7 @@ from src.api.utils.models import (
     ABTestDB,
 )
 from src.shared.enums import SystemJobStatus, ContentPublishStatus
-from src.api.utils.user_models import UserDB, UserRole
-from src.api.utils.api_responses import success_response
+from src.api.utils.user_models import UserRole
 import logging
 import datetime
 

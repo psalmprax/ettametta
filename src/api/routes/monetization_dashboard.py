@@ -5,7 +5,6 @@ Endpoints for tracking earnings and monetization performance.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from typing import Any
 
 from src.api.utils.auth import get_current_user

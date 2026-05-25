@@ -2,12 +2,11 @@ import asyncio
 import aiohttp
 import base64
 import os
-import time
-import json
 import logging
 import subprocess
 import shutil
 from pathlib import Path
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger("StoryboardService")
 logging.basicConfig(level=logging.INFO)
@@ -38,7 +37,7 @@ class StoryboardService:
                 async with session.get(search_url, headers=headers) as resp:
                     if resp.status == 200:
                         html = await resp.text()
-                        soup = BeautifulSoup(html, 'html.parser')
+                        BeautifulSoup(html, 'html.parser')
                         # Note: DuckDuckGo HTML restricts pure image search, standard HTML limits image parsing.
                         # For production reliability without API keys, we hit Wikipedia or IMDB directly if DDG fails,
                         # but for this POC we will use a known reliable static fallback URL if we cant reliably parse DDG HTML.
@@ -54,7 +53,7 @@ class StoryboardService:
                                 logger.info(f"   => Successfully downloaded and base64 encoded portrait ({len(b64_encoded)} bytes)")
                                 return b64_encoded
         except Exception as e:
-            logger.error(f"Failed to fetch likeness for {character_name}: {e}")
+            logger.exception(f"Failed to fetch likeness for {character_name}: {e}")
         
         return ""
 
@@ -92,7 +91,7 @@ class StoryboardService:
                         logger.error(f"   => ❌ Error starting job: HTTP {r.status} - {await r.text()}")
                         return None
         except Exception as e:
-            logger.error(f"   => ❌ API Request failed: {e}")
+            logger.exception(f"   => ❌ API Request failed: {e}")
             return None
 
     async def poll_and_download(self, job_id: str, output_path: str):
@@ -136,14 +135,13 @@ class StoryboardService:
             subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
             logger.info(f"🌟 Master Sequence Completed Successfully: {final_output}")
         except subprocess.CalledProcessError as e:
-            logger.error(f"❌ Error during multi-shot assembly: {e}")
+            logger.exception(f"❌ Error during multi-shot assembly: {e}")
         finally:
             if list_file.exists():
                 os.remove(list_file)
 
 if __name__ == "__main__":
     # Internal Test Routine
-    import sys
     async def main_test():
         composer = StoryboardService()
         

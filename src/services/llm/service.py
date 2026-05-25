@@ -7,12 +7,9 @@ Hardened with Circuit Breakers and Retry logic.
 
 import os
 import logging
-import time
-import asyncio
 import httpx
 from typing import Any
 from enum import Enum
-import tenacity
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from src.api.config import settings
 from src.api.utils.resilience import CircuitBreaker

@@ -67,7 +67,6 @@ async def poll_job_status(job_id: str):
 async def main():
     logger.info("🏁 Starting Nexus E2E Test...")
     
-    from src.services.nexus_engine.auto_creator import base_creator_service
     
     # Define test parameters
     test_user_id = "4e8c3e12-ad08-48bc-9672-448d0ce83baa" # Existing user on test server

@@ -1,13 +1,11 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-import stripe
-from datetime import datetime, timezone
 
 from src.api.utils.database import AsyncSessionLocal
 from src.api.utils.user_models import UserDB, SubscriptionTier
-from src.api.utils.credit_models import UserCreditDB, CreditTransactionDB
+from src.api.utils.credit_models import UserCreditDB
 from src.services.payment.credit_service import CreditService
-from src.services.payment.stripe_service import PaymentService, SUBSCRIPTION_TIERS
+from src.services.payment.stripe_service import PaymentService
 from src.api.config import settings
 
 

@@ -1,7 +1,6 @@
 import logging
 import json
 from typing import Any, Optional
-from src.api.config import settings
 from src.api.utils.vault import get_secret
 from .commerce_service import base_commerce_service
 
@@ -95,7 +94,7 @@ class PromoGenerator:
                 
             return script_data
         except Exception as e:
-            logging.error(f"Promo Generation Error: {e}")
+            logging.exception(f"Promo Generation Error: {e}")
             return {"error": str(e), "segments": []}
 
 base_promo_service = PromoGenerator()

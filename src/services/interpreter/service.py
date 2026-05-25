@@ -67,7 +67,7 @@ class InterpreterService:
                 f"Interpreter service initialized (sandbox={self.sandbox_mode})"
             )
         except Exception as e:
-            logger.error(f"Failed to initialize Interpreter: {e}")
+            logger.exception(f"Failed to initialize Interpreter: {e}")
             self.enabled = False
 
     def is_enabled(self) -> bool:
@@ -150,7 +150,7 @@ class InterpreterService:
             }
 
         except Exception as e:
-            logger.error(f"Code execution error: {e}")
+            logger.exception(f"Code execution error: {e}")
             return {
                 "success": False,
                 "error": str(e),

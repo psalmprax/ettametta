@@ -115,7 +115,7 @@ class NeuralVisionAnalyzer:
                 self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
                 logger.info("[Vision] CLIP Model loaded successfully.")
             except Exception as e:
-                logger.error(f"[Vision] Failed to load CLIP model: {e}")
+                logger.exception(f"[Vision] Failed to load CLIP model: {e}")
 
     def get_text_embedding(self, text: str) -> np.ndarray | None:
         """Generates an embedding vector for a piece of text"""
@@ -135,7 +135,7 @@ class NeuralVisionAnalyzer:
                 embedding = np.array(text_features[0]).flatten()[:512].astype('float32')
             return embedding / np.linalg.norm(embedding)
         except Exception as e:
-            logger.error(f"[Vision] Text embedding failed: {e}")
+            logger.exception(f"[Vision] Text embedding failed: {e}")
             return None
 
     def analyze_scene(self, clip_path: str, thumbnail: Image.Image, timestamp: float = 0.0, motion_frame: Image.Image = None) -> dict[str, Any]:
@@ -184,7 +184,7 @@ class NeuralVisionAnalyzer:
             
             return {"id": clip_id, "embedding": embedding, "motion_score": motion_score}
         except Exception as e:
-            logger.error(f"[Vision] Scene analysis failed: {e}")
+            logger.exception(f"[Vision] Scene analysis failed: {e}")
             return {}
 
     def find_top_k_matches(self, query: str, k: int = 5, candidate_paths: list[str] = None) -> list[dict[str, Any]]:

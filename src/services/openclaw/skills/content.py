@@ -93,7 +93,7 @@ class ContentSkill(OpenClawBaseSkill):
                 return f"⚠️ **Creation Failed**: server returned {response.status_code}"
 
         except Exception as e:
-            logger.error(f"Content Skill Error: {e}")
+            logger.exception(f"Content Skill Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
 
 

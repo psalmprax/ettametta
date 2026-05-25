@@ -3,7 +3,6 @@ import aiofiles
 import os
 import logging
 import random
-import tenacity
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from src.api.utils.vault import get_secret
 from src.api.config import settings

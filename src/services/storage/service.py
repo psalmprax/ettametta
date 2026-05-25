@@ -77,7 +77,7 @@ class StorageService:
             return self._s3_client
 
         except Exception as e:
-            logging.error(f"[StorageService] Failed to initialize cloud client: {e}")
+            logging.exception(f"[StorageService] Failed to initialize cloud client: {e}")
             return None
 
     def upload_file(self, file_path: str, object_name: str | None = None) -> str:
@@ -133,7 +133,7 @@ class StorageService:
             )
             return object_name
         except Exception as e:
-            logging.error(f"[StorageService] Cloud upload failed: {e}")
+            logging.exception(f"[StorageService] Cloud upload failed: {e}")
             return None
 
     def get_file_url(self, object_key_or_path: str, expiration: int = 3600) -> str:
@@ -157,7 +157,7 @@ class StorageService:
                 )
                 return response
             except Exception as e:
-                logging.error(
+                logging.exception(
                     f"[StorageService] Failed to generate presigned URL for {self.provider}: {e}"
                 )
                 return object_key_or_path

@@ -25,7 +25,7 @@ def init_pipeline():
             pipe = DiffusionPipeline.from_pretrained(MODEL_ID)
             # Any: pipe.to("cuda") if not handled automatically
         except Exception as e:
-            logging.error(f"Failed to load diffusion pipeline: {e}")
+            logging.exception(f"Failed to load diffusion pipeline: {e}")
 
 @app.task(name="video.synthesize_local")
 def synthesize_local_task(prompt: str, duration_seconds: int = 5) -> str:
@@ -89,7 +89,7 @@ def synthesize_local_task(prompt: str, duration_seconds: int = 5) -> str:
         
     except Exception as e:
         error_msg = f"Synthesis failed: {str(e)}"
-        logging.error(error_msg)
+        logging.exception(error_msg)
         return error_msg
 
 if __name__ == '__main__':

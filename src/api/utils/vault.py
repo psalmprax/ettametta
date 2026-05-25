@@ -4,7 +4,6 @@ from src.api.utils.database import async_session_factory
 from src.api.utils.models import SystemSettings, UserSetting
 from src.api.config import settings
 import logging
-import asyncio
 
 logger = logging.getLogger(__name__)
 

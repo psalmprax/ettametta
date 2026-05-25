@@ -1,7 +1,6 @@
 import os
 import asyncio
 import json
-import logging
 import time
 import httpx
 from typing import Any
@@ -210,7 +209,7 @@ class IntelligenceHub:
                 elif self.provider_health[p]["errors"] >= 3:
                     self.provider_health[p]["status"] = "degraded"
 
-                logger.error(
+                logger.exception(
                     json.dumps(
                         {
                             "event": "provider_error",
@@ -288,7 +287,6 @@ class IntelligenceHub:
     async def _call_ollama(
         self, prompt: str, system: str, rid: str, json_mode: bool, rag_context: str | None = None
     ) -> dict[str, Any]:
-        url = self.ollama_url
         
         # Standard: RAG Context Injection
         effective_prompt = prompt
@@ -490,7 +488,7 @@ class IntelligenceHub:
             data = resp.json()
             try:
                 content = data["candidates"][0]["content"]["parts"][0]["text"]
-            except (KeyError, IndexError) as e:
+            except (KeyError, IndexError):
                 raise RuntimeError(f"Gemini invalid response format: {data}")
 
             return {
@@ -584,7 +582,7 @@ class IntelligenceHub:
                 "message_id": response.get("id")
             }
         except Exception as e:
-            logger.error(f"Dify provider call failed: {e}")
+            logger.exception(f"Dify provider call failed: {e}")
             raise
 
 

@@ -50,7 +50,7 @@ async def run_full_pipeline(niche="AI Technology"):
             # Download
             raw_path = await base_downloader_service.download_video(lead.url)
             if not raw_path:
-                print(f"     ❌ Download failed.")
+                print("     ❌ Download failed.")
                 continue
                 
             # Normalize + Originality
@@ -66,7 +66,7 @@ async def run_full_pipeline(niche="AI Technology"):
                 processed_paths.append(norm_path)
                 print(f"     ✅ Normalized: {norm_path}")
             else:
-                print(f"     ❌ Normalization failed.")
+                print("     ❌ Normalization failed.")
         except Exception as e:
             print(f"     ❌ Error: {e}")
 
@@ -87,7 +87,7 @@ async def run_full_pipeline(niche="AI Technology"):
     )
     
     if success:
-        print(f"\n✨ PIPELINE COMPLETE!")
+        print("\n✨ PIPELINE COMPLETE!")
         print(f"🏆 FINAL PRODUCTION: {final_video}")
         
         # Link for local preview

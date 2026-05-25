@@ -284,7 +284,7 @@ class Scheduler:
                     await self.cache.set(ck, result)
                     return n.id, result
                 except Exception as e:
-                    logger.error(
+                    logger.exception(
                         "[DAG Scheduler] Node '%s' failed: %s",
                         n.id,
                         e,

@@ -2,7 +2,6 @@ import os
 import httpx
 import logging
 import importlib
-import tenacity
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from src.api.utils.vault import get_secret
 from src.api.config import settings
@@ -89,7 +88,7 @@ class VoiceoverService:
                         logger.info(f"[VoiceoverService] Fish Speech Success: {file_path}")
                         return f"outputs/audio/{file_name}"
             except Exception as e:
-                logger.error(f"[VoiceoverService] Fish Speech failure: {e}")
+                logger.exception(f"[VoiceoverService] Fish Speech failure: {e}")
                 self.breakers["fish"].record_failure()
                 # If Fish fails, we continue to ElevenLabs or gTTS
 
@@ -98,7 +97,6 @@ class VoiceoverService:
             logger.info("[VoiceoverService] Attempting ElevenLabs...")
             voice_id = voice_id or self.default_voice_id
             url = f"{self.elevenlabs_url}/text-to-speech/{voice_id}"
-            headers = {"xi-api-key": self.elevenlabs_key, "Content-Type": "application/json"}
             data = {
                 "text": text,
                 "model_id": "eleven_monolingual_v1",
@@ -116,7 +114,7 @@ class VoiceoverService:
                     logger.info(f"[VoiceoverService] ElevenLabs Success: {file_path}")
                     return f"outputs/audio/{file_name}"
             except Exception as e:
-                logger.error(f"[VoiceoverService] ElevenLabs failure: {e}")
+                logger.exception(f"[VoiceoverService] ElevenLabs failure: {e}")
                 self.breakers["elevenlabs"].record_failure()
 
         # 3. Fallback to gTTS (Free)
@@ -129,7 +127,7 @@ class VoiceoverService:
                 logger.info(f"[VoiceoverService] gTTS Success: {file_path}")
                 return f"outputs/audio/{file_name}"
             except Exception as e:
-                logger.error(f"[VoiceoverService] gTTS Fallback Failed: {e}")
+                logger.exception(f"[VoiceoverService] gTTS Fallback Failed: {e}")
         else:
             logger.warning("[VoiceoverService] gTTS not available, skipping fallback")
         

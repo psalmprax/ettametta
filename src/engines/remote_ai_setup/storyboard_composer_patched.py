@@ -1,11 +1,9 @@
 import time
 import requests
-import json
 import os
 import subprocess
 import sys
 import base64
-from pathlib import Path
 
 # ==========================================
 # CONFIGURATION

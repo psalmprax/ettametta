@@ -1,7 +1,6 @@
 import os
 import logging
 from typing import Any
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +55,7 @@ class CrewAIService:
                 verbose=verbose,
             )
         except Exception as e:
-            logger.error(f"Error creating agent: {e}")
+            logger.exception(f"Error creating agent: {e}")
             return None
 
     def create_task(
@@ -71,7 +70,7 @@ class CrewAIService:
                 description=description, agent=agent, expected_output=expected_output
             )
         except Exception as e:
-            logger.error(f"Error creating task: {e}")
+            logger.exception(f"Error creating task: {e}")
             return None
 
     async def run_crew(
@@ -87,7 +86,7 @@ class CrewAIService:
             result = crew.kickoff()
             return str(result)
         except Exception as e:
-            logger.error(f"Error running crew: {e}")
+            logger.exception(f"Error running crew: {e}")
             return f"Error: {str(e)}"
 
 
@@ -149,7 +148,7 @@ class EttamettaCrew:
 
             return str(crew.kickoff())
         except Exception as e:
-            logger.error(f"Error running content team: {e}")
+            logger.exception(f"Error running content team: {e}")
             return f"Error: {str(e)}"
 
     @staticmethod
@@ -193,7 +192,7 @@ class EttamettaCrew:
 
             return str(crew.kickoff())
         except Exception as e:
-            logger.error(f"Error running affiliate campaign: {e}")
+            logger.exception(f"Error running affiliate campaign: {e}")
             return f"Error: {str(e)}"
 
 

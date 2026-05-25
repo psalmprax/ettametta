@@ -6,10 +6,9 @@ Bypasses official API restrictions by simulating human interaction.
 """
 
 import logging
-import os
 from pathlib import Path
-from typing import Optional, Dict, Any
-from playwright.async_api import async_playwright, Browser, Page
+from typing import Optional, Any
+from playwright.async_api import async_playwright, Browser
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +119,7 @@ class PlaywrightPublisher:
                 raise Exception("Post button not found. UI may have changed.")
                 
         except Exception as e:
-            logger.error(f"TikTok automation failed: {str(e)}")
+            logger.exception(f"TikTok automation failed: {str(e)}")
             raise Exception(f"TikTok automation failed: {str(e)}")
 
     async def post_to_instagram(
@@ -196,7 +195,7 @@ class PlaywrightPublisher:
             raise Exception("Could not find upload interface.")
                 
         except Exception as e:
-            logger.error(f"Instagram automation failed: {str(e)}")
+            logger.exception(f"Instagram automation failed: {str(e)}")
             raise Exception(f"Instagram automation failed: {str(e)}")
 
 

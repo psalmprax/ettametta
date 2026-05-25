@@ -7,7 +7,6 @@ and manages the hand-off to social media platforms.
 """
 
 import logging
-import json
 import asyncio
 from typing import Any
 from src.services.script_generator.service import base_script_service

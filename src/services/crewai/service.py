@@ -1,6 +1,4 @@
-import os
 import logging
-import time
 import json
 from typing import Any
 from datetime import datetime, timezone
@@ -66,7 +64,7 @@ class CrewAIService:
                 self.llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key)
                 logger.info("[CrewAI] Initialized with OpenAI fallback")
             except Exception as e:
-                logger.error(f"[CrewAI] Failed fallback to OpenAI: {e}")
+                logger.exception(f"[CrewAI] Failed fallback to OpenAI: {e}")
                 self.enabled = False
                 return
 
@@ -163,7 +161,7 @@ class CrewAIService:
             raise RuntimeError("CrewAI circuit breaker is OPEN")
 
         try:
-            from crewai import Crew, Task, Agent
+            from crewai import Crew, Task
             
             # 1. Generate dynamic tasks
             task_specs = await self._generate_dynamic_tasks(topic, platform)
@@ -209,7 +207,7 @@ class CrewAIService:
             
         except Exception as e:
             self.circuit_breaker.record_failure()
-            logger.error(f"[CrewAI] Workflow failed: {e}")
+            logger.exception(f"[CrewAI] Workflow failed: {e}")
             raise
 
 # Singleton instance

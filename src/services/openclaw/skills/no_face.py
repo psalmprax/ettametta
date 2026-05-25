@@ -53,7 +53,7 @@ class NoFaceSkill(OpenClawBaseSkill):
                 return f"⚠️ **Script Generation Failed**: server returned {response.status_code}"
 
         except Exception as e:
-            logger.error(f"NoFace Skill Error: {e}")
+            logger.exception(f"NoFace Skill Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
 
     def generate_hook(self, topic: str) -> str:

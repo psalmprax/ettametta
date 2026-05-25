@@ -1,9 +1,8 @@
 import pytest
 import time
 import asyncio
-import os
 import httpx
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from src.api.utils.resilience import CircuitBreaker
 from src.services.llm.service import UnifiedLLMService, LLMProvider
 from src.services.llm.intelligence_hub import IntelligenceHub

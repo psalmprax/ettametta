@@ -1,5 +1,4 @@
 import asyncio
-import os
 import sys
 
 # Add /app to sys.path if running inside docker

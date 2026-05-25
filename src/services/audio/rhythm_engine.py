@@ -70,7 +70,7 @@ class RhythmEngine:
             }
 
         except Exception as e:
-            logger.error(f"[Rhythm] Analysis failed: {e}")
+            logger.exception(f"[Rhythm] Analysis failed: {e}")
             return {"bpm": 0, "beats": [], "onsets": [], "error": str(e)}
 
     def find_nearest_beat(self, timestamp: float, beat_markers: list[float], tolerance: float = 0.5) -> float:

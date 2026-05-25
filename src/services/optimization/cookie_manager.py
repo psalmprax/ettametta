@@ -34,7 +34,7 @@ class CookieManager:
             
             logger.info(f"[CookieManager] Successfully parsed {len(cookies)} cookies from {file_path}")
         except Exception as e:
-            logger.error(f"[CookieManager] Failed to parse {file_path}: {e}")
+            logger.exception(f"[CookieManager] Failed to parse {file_path}: {e}")
             
         return cookies
 

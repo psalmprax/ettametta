@@ -1,4 +1,3 @@
-from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from typing import Any
 from datetime import datetime, timezone

@@ -11,7 +11,6 @@ End-to-end workflow that:
 This creates a fully automated content pipeline from discovery to creation.
 """
 
-import asyncio
 import logging
 from typing import Any, Dict, List, Optional
 from datetime import datetime
@@ -20,8 +19,7 @@ from src.services.discovery.cloak_scanner import CloakBrowserScanner
 from src.services.discovery.analysis_service import extract_content_patterns
 from src.services.video_engine.free_video_providers import free_video_provider
 from src.services.video_engine.scene_orchestrator import base_scene_orchestrator_service
-from src.services.video_engine.semantic_stock import base_semantic_stock_matcher
-from src.shared.state_machine import base_state_machine, JobState
+from src.shared.state_machine import base_state_machine
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +97,7 @@ class ViralContentPipeline:
                 logger.info(f"Analyzed content: {content.title} -> {analysis_results.get('niches', [])}")
                 
             except Exception as e:
-                logger.error(f"Failed to analyze content {content.id}: {e}")
+                logger.exception(f"Failed to analyze content {content.id}: {e}")
                 continue
                 
         return analyzed_content
@@ -182,7 +180,7 @@ class ViralContentPipeline:
                 return None
                 
         except Exception as e:
-            logger.error(f"Failed to generate AI video from insights: {e}")
+            logger.exception(f"Failed to generate AI video from insights: {e}")
             return None
 
     async def discover_and_create_video(
@@ -313,7 +311,7 @@ class ViralContentPipeline:
                 return video_clips[0] if video_clips else None
                 
         except Exception as e:
-            logger.error(f"Failed to create compiled video: {e}")
+            logger.exception(f"Failed to create compiled video: {e}")
             return None
 
 

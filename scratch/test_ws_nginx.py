@@ -1,6 +1,5 @@
 import asyncio
 import websockets
-import sys
 
 async def test_ws():
     uri = "ws://localhost:7200/ws/telemetry"

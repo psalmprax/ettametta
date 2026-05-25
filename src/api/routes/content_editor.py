@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
-from src.api.utils.database import get_db
 from src.api.utils.auth import get_current_user
 from src.api.utils.user_models import UserDB
+from src.services.openclaw.skills.content_editor import content_editor_skill
 import logging
 
 router = APIRouter(prefix="/content-editor", tags=["Content Editor"])
@@ -48,8 +47,6 @@ async def find_content(
     Find content from YouTube, TikTok, or Reddit for remixing.
     """
     try:
-        from src.services.openclaw.skills.content_editor import content_editor_skill
-
         result = await content_editor_skill.find_content(
             source=body.source,
             query=body.query,
@@ -60,7 +57,7 @@ async def find_content(
         return result
 
     except Exception as e:
-        logger.error(f"[ContentEditor] Find failed: {e}")
+        logger.exception(f"[ContentEditor] Find failed: {e}")
         raise HTTPException(
             status_code=503, detail="Content search service unavailable"
         )
@@ -76,8 +73,6 @@ async def create_viral_edit(
     Create viral content: find → cut → remix → polish with Remotion.
     """
     try:
-        from src.services.openclaw.skills.content_editor import content_editor_skill
-
         result = await content_editor_skill.create_viral_with_remotion(
             source=body.source,
             url_or_query=body.url_or_query,
@@ -89,7 +84,7 @@ async def create_viral_edit(
         return result
 
     except Exception as e:
-        logger.error(f"[ContentEditor] Viral creation failed: {e}")
+        logger.exception(f"[ContentEditor] Viral creation failed: {e}")
         raise HTTPException(
             status_code=503, detail="Content processing service unavailable"
         )
@@ -157,7 +152,7 @@ async def generate_video(
         return result
 
     except Exception as e:
-        logger.error(f"[ContentEditor] Generation failed: {e}")
+        logger.exception(f"[ContentEditor] Generation failed: {e}")
         raise HTTPException(
             status_code=503, detail="Content generation service unavailable"
         )

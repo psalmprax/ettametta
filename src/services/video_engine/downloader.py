@@ -2,7 +2,6 @@ import os
 import uuid
 import logging
 import asyncio
-from pathlib import Path
 
 import yt_dlp
 
@@ -122,7 +121,7 @@ class VideoDownloader:
         try:
             os.makedirs(self.download_dir, exist_ok=True)
         except Exception as e:
-            logger.error(f"Failed to prepare download dir: {e}")
+            logger.exception(f"Failed to prepare download dir: {e}")
 
     def _find_cookies_dir(self) -> str | None:
         """Find cookies directory across possible mount locations."""
@@ -241,7 +240,7 @@ class VideoDownloader:
                     logger.info(f"Download complete: {final_path} ({size_mb:.1f} MB)")
                     return final_path
         except Exception as e:
-            logger.error(f"yt-dlp error: {e}")
+            logger.exception(f"yt-dlp error: {e}")
             raise
         return None
 

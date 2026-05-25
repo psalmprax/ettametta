@@ -87,7 +87,7 @@ async def get_youtube_streaming_url(
         logger.warning(f"[YouTube API] No streaming data found for video {video_id}")
         return None
     except Exception as e:
-        logger.error(f"[YouTube API] Exception fetching video {video_id}: {e}")
+        logger.exception(f"[YouTube API] Exception fetching video {video_id}: {e}")
         return None
 
 

@@ -8,10 +8,9 @@ import torch
 import threading
 import time
 import subprocess
-from typing import Any
-from huggingface_hub import snapshot_download, hf_hub_download
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+import traceback
 from hardware_manager import hardware_manager
+from diffusers import DiffusionPipeline
 
 # Model registry
 VIDEO_MODELS = {

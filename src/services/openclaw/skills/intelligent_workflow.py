@@ -8,7 +8,6 @@ produce high-fidelity narrative videos autonomously.
 
 from typing import Any
 import logging
-import asyncio
 
 from src.engines.intelligent_video_workflow import discover_multi_platform
 from src.services.video_engine.tasks import narrative_fusion_task
@@ -47,7 +46,7 @@ class IntelligentWorkflowSkill(OpenClawBaseSkill):
                 return res.get("message", "Success")
             return f"⚠️ Error: {res.get('error') if isinstance(res, dict) else str(res)}"
         except Exception as e:
-            logger.error(f"Intelligent workflow skill error: {e}")
+            logger.exception(f"Intelligent workflow skill error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     async def _intelligent_scan(self, params: dict[str, Any]) -> dict[str, Any]:

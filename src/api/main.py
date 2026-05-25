@@ -164,7 +164,7 @@ async def seed_monitored_niches():
                     db.add(MonitoredNiche(niche=n, is_active=True))
                 await db.commit()
         except Exception as e:
-            logger.error(f"[Startup] Error seeding niches: {e}")
+            logger.exception(f"[Startup] Error seeding niches: {e}")
             await db.rollback()
 
 
@@ -264,7 +264,7 @@ async def report_frontend_error(request: Request):
             f"Component: {body.get('componentStack', 'N/A')[:200]}"
         )
     except Exception as e:
-        logger.error(f"Failed to parse frontend error report: {e}")
+        logger.exception(f"Failed to parse frontend error report: {e}")
     return {"status": "logged"}
 
 

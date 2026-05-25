@@ -12,7 +12,6 @@ Run: python scratch/test_dag_pipeline.py
 """
 
 import asyncio
-import json
 import os
 import sys
 import tempfile
@@ -66,8 +65,8 @@ async def test_compilation():
 
     assert plan2.total_nodes() == 3, f"Expected 3 nodes, got {plan2.total_nodes()}"
     assert len(batches2) == 2, f"Expected 2 batches (A then B+C), got {len(batches2)}"
-    assert batches2[0][0].id == "A", f"Batch 1 should be A"
-    assert len(batches2[1]) == 2, f"Batch 2 should have 2 parallel nodes"
+    assert batches2[0][0].id == "A", "Batch 1 should be A"
+    assert len(batches2[1]) == 2, "Batch 2 should have 2 parallel nodes"
     print("  ✓ Parallel DAG: A → B, A → C correctly batches B+C together")
 
     # Cycle detection
@@ -177,7 +176,7 @@ async def test_parallel_execution():
         # Batch 1: A | Batch 2: B, C (parallel) | Batch 3: D
         batches = plan2.get_batches()
         assert len(batches) == 3, f"Expected 3 batches, got {len(batches)}"
-        assert len(batches[1]) == 2, f"Batch 2 should have 2 parallel nodes (B, C)"
+        assert len(batches[1]) == 2, "Batch 2 should have 2 parallel nodes (B, C)"
 
         start = time.time()
         context2 = await scheduler.run(plan2)

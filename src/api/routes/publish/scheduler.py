@@ -17,7 +17,6 @@ from src.api.utils.user_models import UserDB
 from src.api.utils.database import get_db
 from src.api.utils.models import ScheduledPostDB
 from src.api.utils.api_responses import success_response
-from src.shared.enums import CreditAction
 from src.api.utils.subscription import credits_required
 from src.services.payment.credit_service import credit_service
 from src.services.optimization.service import base_optimization_service
@@ -113,7 +112,7 @@ async def schedule_post(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Schedule post failed: {e}")
+        logger.exception(f"Schedule post failed: {e}")
         raise HTTPException(status_code=503, detail="Publishing service unavailable")
 
 
@@ -145,7 +144,7 @@ async def cancel_scheduled_post(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Cancel scheduled post failed: {e}")
+        logger.exception(f"Cancel scheduled post failed: {e}")
         raise HTTPException(status_code=503, detail="Failed to cancel scheduled post")
 
 
@@ -161,7 +160,7 @@ async def get_suggested_times(
         )
         return {"suggestions": suggestions}
     except Exception as e:
-        logger.error(f"Error getting suggested times: {e}")
+        logger.exception(f"Error getting suggested times: {e}")
         raise HTTPException(
             status_code=500, detail="Failed to calculate optimal windows"
         )

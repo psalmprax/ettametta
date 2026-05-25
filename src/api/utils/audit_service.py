@@ -1,9 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
-from typing import Any
 from src.api.utils.models import AuditLogDB
 from src.api.utils.database import async_session_factory
-import json
 
 
 class AuditService:

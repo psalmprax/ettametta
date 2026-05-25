@@ -4,7 +4,6 @@ Authentication Endpoint Tests
 Integration tests for authentication routes
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from fastapi import status
 

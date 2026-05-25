@@ -7,9 +7,7 @@ import sys
 sys.path.append(os.getcwd())
 
 from api.utils.database import SessionLocal
-from api.utils.models import SystemSettings, AffiliateLinkDB
-from services.discovery.service import base_discovery_service
-from services.optimization.service import base_optimization_service
+from api.utils.models import SystemSettings
 
 async def verify_hardening():
     db = SessionLocal()

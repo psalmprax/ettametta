@@ -1,7 +1,5 @@
 from .scanner_base import DiscoveryScannerBase
 from .models import ContentCandidate
-import random
-from src.api.config import settings
 from googleapiclient.discovery import build
 import datetime
 import re
@@ -113,7 +111,7 @@ class YouTubeShortsScanner(DiscoveryScannerBase):
             return candidates
 
         except Exception as e:
-            logger.error(f"YouTube scanning failed: {str(e)}")
+            logger.exception(f"YouTube scanning failed: {str(e)}")
             return []
 
     def _calculate_engagement(self, stats: dict) -> float:

@@ -349,7 +349,7 @@ class TestGetBlueprints:
     @pytest.mark.asyncio
     async def test_get_blueprint_by_id_falls_back_to_first(self):
         """get_blueprint_by_id returns first fallback when ID not found in DB or fallbacks."""
-        from src.services.nexus_engine.blueprints import get_blueprint_by_id, FALLBACK_BLUEPRINTS
+        from src.services.nexus_engine.blueprints import get_blueprint_by_id
 
         mock_db = AsyncMock()
         mock_db_result = MagicMock()

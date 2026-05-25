@@ -81,7 +81,6 @@ class SecuritySentinel:
             6379,
             27017,
         ]  # SSH, Telnet, DBs, Redis, Mongo
-        import socket
 
         for port in dangerous_ports:
             try:
@@ -97,7 +96,7 @@ class SecuritySentinel:
             except socket.error as e:
                 logger.debug(f"Port scan failed for {port}: {e}")
             except Exception as e:
-                logger.error(f"Unexpected error during port scan: {e}")
+                logger.exception(f"Unexpected error during port scan: {e}")
 
         report = {
             "score": max(0, score),
@@ -196,7 +195,7 @@ class SecuritySentinel:
         try:
             self.redis_client.ping()
         except Exception as e:
-            logger.error(f"Redis connectivity failed: {e}")
+            logger.exception(f"Redis connectivity failed: {e}")
             penalties += 30  # Redis down is critical
 
         return max(0, base_score - penalties)
@@ -209,7 +208,7 @@ class SecuritySentinel:
         try:
             self.redis_client.ping()
         except Exception as e:
-            logger.error(f"Redis health check failed: {e}")
+            logger.exception(f"Redis health check failed: {e}")
             issues.append("Redis connectivity failed")
 
         # Check database
@@ -223,7 +222,7 @@ class SecuritySentinel:
 
             asyncio.run(check_db())
         except Exception as e:
-            logger.error(f"Database health check failed: {e}")
+            logger.exception(f"Database health check failed: {e}")
             issues.append("Database connectivity failed")
 
         # Check file system
@@ -232,7 +231,7 @@ class SecuritySentinel:
                 f.write("ok")
             os.remove("/tmp/sentinel_health_check")
         except Exception as e:
-            logger.error(f"File system health check failed: {e}")
+            logger.exception(f"File system health check failed: {e}")
             issues.append("File system write permissions issue")
 
         if not issues:
@@ -247,7 +246,7 @@ class SecuritySentinel:
         # Rate limiting check
         if hasattr(request, "client") and request.client:
             client_ip = request.client.host
-            current_time = datetime.datetime.now().timestamp()
+            datetime.datetime.now().timestamp()
 
             # Track requests per IP
             ip_key = f"security:requests:{client_ip}"
@@ -329,7 +328,7 @@ class SecuritySentinel:
                 }
             )
 
-        report = {
+        {
             "scan_timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "vulnerabilities_found": len(vulnerabilities),
             "vulnerabilities": vulnerabilities,

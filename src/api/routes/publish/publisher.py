@@ -12,13 +12,12 @@ import logging
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select
 
-from src.api.config import settings
 from src.api.utils.auth import get_current_user
-from src.api.utils.user_models import UserDB, UserRole
+from src.api.utils.user_models import UserDB
 from src.api.utils.database import get_db
 from src.api.utils.models import PublishedContentDB, ABTestDB, AffiliateLinkDB
 from src.api.utils.api_responses import success_response
-from src.shared.enums import ContentPublishStatus, CreditAction
+from src.shared.enums import ContentPublishStatus
 from src.api.utils.subscription import credits_required
 from src.services.payment.credit_service import credit_service
 from src.services.optimization.service import base_optimization_service
@@ -63,7 +62,7 @@ async def generate_package(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Package generation failed: {e}")
+        logger.exception(f"Package generation failed: {e}")
         raise HTTPException(status_code=503, detail="Publishing service unavailable")
 
 
@@ -177,7 +176,7 @@ async def retry_publish(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Retry publishing failed: {e}")
+        logger.exception(f"Retry publishing failed: {e}")
         raise HTTPException(status_code=503, detail="Publishing service unavailable")
 
 
@@ -387,7 +386,7 @@ async def publish_video(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Publishing failed: {e}")
+        logger.exception(f"Publishing failed: {e}")
         raise HTTPException(status_code=503, detail="Publishing service unavailable")
 
 
@@ -464,7 +463,7 @@ async def publish_multi_platform(
                                 request.video_path, metadata, user_id=current_user.id
                             )
                     except Exception as e:
-                        logging.error(f"Multi-platform upload failed for {platform_key}: {e}")
+                        logging.exception(f"Multi-platform upload failed for {platform_key}: {e}")
 
                     if url:
                         new_post = PublishedContentDB(
@@ -533,7 +532,7 @@ async def publish_multi_platform(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Multi-platform publishing failed: {e}")
+        logger.exception(f"Multi-platform publishing failed: {e}")
         raise HTTPException(status_code=503, detail="Publishing service unavailable")
 
 
@@ -561,5 +560,5 @@ async def auto_broadcast(
         )
 
     except Exception as e:
-        logger.error(f"Auto-broadcast failed: {e}")
+        logger.exception(f"Auto-broadcast failed: {e}")
         raise HTTPException(status_code=503, detail="Broadcast pattern injection failed")

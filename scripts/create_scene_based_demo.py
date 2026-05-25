@@ -19,7 +19,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 os.environ["DEBUG"] = "false"
 
 from services.video_engine.scene_orchestrator import scene_based_orchestrator
-from services.discovery.video_lead_scanner import video_lead_scanner
 
 
 async def create_scene_based_demo_video():

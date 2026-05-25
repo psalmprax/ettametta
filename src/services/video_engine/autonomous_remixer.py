@@ -6,8 +6,6 @@ Takes a topic/niche and produces a polished video using discovered viral footage
 """
 
 import logging
-import asyncio
-import tempfile
 from pathlib import Path
 from typing import Any
 import subprocess
@@ -97,7 +95,7 @@ class AutonomousVideoRemixer:
             }
 
         except Exception as e:
-            logger.error(f"[Remix] Failed: {str(e)}", exc_info=True)
+            logger.exception(f"[Remix] Failed: {str(e)}", exc_info=True)
             raise
 
     async def _discover_viral_videos(self, topic: str, niche: str | None) -> list[dict]:

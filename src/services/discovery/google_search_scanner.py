@@ -1,6 +1,5 @@
 import aiohttp
 import logging
-import json
 import random
 from .models import ContentCandidate
 from datetime import datetime
@@ -108,7 +107,7 @@ class GoogleSearchScanner:
                         return candidates
 
         except Exception as e:
-            logger.error(f"[GoogleSearch] Error: {e}")
+            logger.exception(f"[GoogleSearch] Error: {e}")
 
         return await self._scan_with_scrape(niche)
 
@@ -205,7 +204,7 @@ class GoogleSearchScanner:
                 return candidates[:10]
 
         except Exception as e:
-            logger.error(f"[GoogleSearch] Scrape error: {e}")
+            logger.exception(f"[GoogleSearch] Scrape error: {e}")
 
         return []
 

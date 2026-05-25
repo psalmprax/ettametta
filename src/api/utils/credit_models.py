@@ -6,13 +6,11 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
-    Float,
     DateTime,
     JSON,
     ForeignKey,
     Boolean,
 )
-from sqlalchemy.orm import relationship
 from .database import Base
 from datetime import datetime, timezone
 import uuid

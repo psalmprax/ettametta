@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Unit tests for scripts/validate_patch_targets.py — the CI patch-target validator."""
 
-import os
 import sys
 from pathlib import Path
 from typing import Dict, List
 from unittest.mock import patch as mock_patch
 
-import pytest
 
 # Ensure we can import the script
 PROJECT_ROOT = Path(__file__).resolve().parent.parent

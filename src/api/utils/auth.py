@@ -1,10 +1,6 @@
-from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from src.api.config import settings
-from authlib.integrations.base_client import OAuthError
 from authlib.integrations.httpx_client import AsyncOAuth2Client
-import redis
 import hmac
 import hashlib
 import base64
@@ -15,7 +11,7 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 
-from src.api.utils.security import verify_password, get_password_hash, create_access_token, pwd_context, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from src.api.utils.security import SECRET_KEY, ALGORITHM
 
 
 import redis.asyncio as redis_async
@@ -39,10 +35,10 @@ async def decode_access_token(token: str):
             logger.warning(f"JWT decode error for token {token[:10]}...: {str(e)}")
             return None
         except Exception as e:
-            logger.error(f"Internal error during JWT decode: {str(e)}")
+            logger.exception(f"Internal error during JWT decode: {str(e)}")
             return None
     except Exception as e:
-        logger.error(f"Redis error during token decode: {str(e)}")
+        logger.exception(f"Redis error during token decode: {str(e)}")
         return None
 
 

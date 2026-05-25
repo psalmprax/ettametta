@@ -33,7 +33,7 @@ def fix_datetime_utcnow(content: str) -> tuple[str, bool]:
     if not has_module_import and not has_from_import:
         # Suspect datetime.utcnow but no import — skip, could be dynamic
         if 'datetime.utcnow' in content or 'datetime.datetime.utcnow' in content:
-            print(f"  ⚠️  'datetime.utcnow' found but no datetime import detected — needs manual check")
+            print("  ⚠️  'datetime.utcnow' found but no datetime import detected — needs manual check")
         return content, False
 
     if has_module_import:

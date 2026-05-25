@@ -8,7 +8,7 @@ Each video must pass ALL requirements to be eligible for use.
 """
 
 from typing import Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -325,7 +325,7 @@ class VideoEligibilityChecker:
             passed.append("visual_quality")
 
         # 3. RESOLUTION CHECK - MINIMUM 1080p (4K preferred)
-        resolution = video_analysis.get("resolution", "4K")
+        video_analysis.get("resolution", "4K")
         resolution_height = video_analysis.get("resolution_height", 0)
 
         if resolution_height > 0:

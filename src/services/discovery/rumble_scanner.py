@@ -96,7 +96,7 @@ class RumbleScanner:
                 
                 # Try alternate pattern - video items in HTML
                 if not candidates:
-                    video_items = re.findall(
+                    re.findall(
                         r'<a[^>]*href="(/[^"]+)"[^>]*class="[^"]*video[^"]*"[^>]*>(.*?)</a>',
                         response.text,
                         re.DOTALL

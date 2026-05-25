@@ -10,12 +10,10 @@ import os
 import json
 import asyncio
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from datetime import datetime, timezone
-import tenacity
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from src.api.config import settings
 from src.api.utils.resilience import CircuitBreaker
 
 # Google API imports (for YouTube)
@@ -67,7 +65,7 @@ class YouTubePublisher:
             )
             return creds
         except Exception as e:
-            logger.error(f"Failed to load credentials: {e}")
+            logger.exception(f"Failed to load credentials: {e}")
             return None
 
     @retry(
@@ -144,7 +142,7 @@ class YouTubePublisher:
 
         except Exception as e:
             self.breaker.record_failure()
-            logger.error(f"[YouTube] Upload failed: {str(e)}")
+            logger.exception(f"[YouTube] Upload failed: {str(e)}")
             raise
 
 
@@ -178,7 +176,7 @@ class PublishingService:
                     privacy_status=metadata.get("privacy", "private")
                 )
             except Exception as e:
-                logger.error(f"[Publishing] YouTube publication failed: {e}")
+                logger.exception(f"[Publishing] YouTube publication failed: {e}")
                 return {
                     "platform": "youtube",
                     "status": "failed",

@@ -4,7 +4,6 @@ Handles video uploads to YouTube via Data API v3
 Features: Circuit breaker, token refresh, resumable uploads, proper logging
 """
 
-import os
 import logging
 
 from .publisher_base import SocialPublisher, RetryConfig, RateLimitConfig
@@ -76,7 +75,7 @@ class YouTubePublisher(SocialPublisher):
             return None
 
         except Exception as e:
-            logger.error(f"[YouTubePublisher] Upload failed: {e}")
+            logger.exception(f"[YouTubePublisher] Upload failed: {e}")
             return None
 
     async def _get_metrics_impl(
@@ -114,7 +113,7 @@ class YouTubePublisher(SocialPublisher):
                 "shares": 0,
             }
         except Exception as e:
-            logger.error(f"[YouTubePublisher] Metrics fetch failed: {e}")
+            logger.exception(f"[YouTubePublisher] Metrics fetch failed: {e}")
             return {"error": str(e)}
 
     async def health_check(self, user_id: str) -> bool:

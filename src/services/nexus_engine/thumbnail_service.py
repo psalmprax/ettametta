@@ -3,9 +3,7 @@ import httpx
 import logging
 import os
 import uuid
-from pathlib import Path
 from src.services.storage.service import base_storage_service
-from src.api.config import settings
 
 class ThumbnailGenerator:
     def __init__(self, output_dir: str = "outputs/thumbnails"):
@@ -52,7 +50,7 @@ class ThumbnailGenerator:
                 return public_url
                 
         except Exception as e:
-            logging.error(f"[Thumbnail] Generation Failed: {e}")
+            logging.exception(f"[Thumbnail] Generation Failed: {e}")
             # Return original Pollinations URL as a non-breaking fallback
             return image_uri
 

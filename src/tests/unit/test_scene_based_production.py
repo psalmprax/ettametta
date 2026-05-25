@@ -11,7 +11,6 @@ Comprehensive test demonstrating the enhanced video editor capabilities:
 """
 
 import asyncio
-import json
 from pathlib import Path
 
 # Add project root

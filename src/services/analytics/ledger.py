@@ -10,7 +10,6 @@ import json
 import os
 import logging
 from datetime import datetime
-from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class PerformanceLedger:
                 
             logger.info(f"📗 [Ledger] Logged {video_id} ({niche}): Err={entry['error']:.4f}")
         except Exception as e:
-            logger.error(f"Ledger log failed: {e}")
+            logger.exception(f"Ledger log failed: {e}")
 
     def get_accuracy_report(self) -> dict:
         """Dashboard Report: How honest is the system?"""

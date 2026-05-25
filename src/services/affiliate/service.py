@@ -13,15 +13,11 @@ Used for product recommendations in video descriptions.
 
 import os
 import logging
-import asyncio
-import uuid
 import hashlib
 import json
 from typing import Any
 from datetime import datetime, timezone
-import aiohttp
 import httpx
-import time
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -131,7 +127,6 @@ class AffiliateService:
             self.logger.warning("Amazon PA-API circuit breaker is OPEN")
             return []
 
-        import uuid
         from botocore.auth import SigV4
         from botocore.awsrequest import AWSRequest
         from botocore.credentials import Credentials

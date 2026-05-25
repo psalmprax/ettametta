@@ -6,8 +6,6 @@ Minimal Video Fusion Test for Remote Server
 Tests video fusion capabilities without full API dependencies.
 """
 
-import os
-import sys
 from pathlib import Path
 import pytest
 

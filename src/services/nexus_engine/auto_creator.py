@@ -4,10 +4,8 @@ import os
 import asyncio
 import cv2
 from typing import List, Dict, Any
-import tenacity
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from src.api.config import settings
 from src.api.utils.resilience import CircuitBreaker
 from src.services.llm.service import LLMProvider
 from src.services.video_engine.automation import AutomationMode, is_at_least

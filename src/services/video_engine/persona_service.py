@@ -97,7 +97,7 @@ class PersonaService:
                 )
 
         except Exception as e:
-            logger.error(f"Error connecting to render node for persona: {e}")
+            logger.exception(f"Error connecting to render node for persona: {e}")
             raise RuntimeError(f"Failed to connect to render node: {e}")
 
 

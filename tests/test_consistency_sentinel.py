@@ -7,7 +7,6 @@ Uses sys.modules patching to avoid deep dependency chain (aioredis).
 """
 
 import sys
-import asyncio
 import time
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -146,7 +145,7 @@ class TestSentinelRepairCooldown:
         mock_recovery_svc.sync_all_vitals = AsyncMock()
         with patch.dict(
             "sys.modules",
-            {"services.infrastructure.recovery_service": MagicMock(
+            {"src.services.infrastructure.recovery_service": MagicMock(
                 base_recovery_service=mock_recovery_svc
             )},
         ):
@@ -162,12 +161,14 @@ class TestSentinelRepairCooldown:
         sentinel = ConsistencySentinel(repair_cooldown=0)
         sentinel._last_repair_time = 0
 
-        with patch(
-            "services.analytics.consistency_sentinel.base_recovery_service",
-            create=True,
-        ) as mock_recovery:
-            mock_recovery.sync_all_vitals = AsyncMock()
-            
+        mock_recovery_svc = MagicMock()
+        mock_recovery_svc.sync_all_vitals = AsyncMock()
+        with patch.dict(
+            "sys.modules",
+            {"src.services.infrastructure.recovery_service": MagicMock(
+                base_recovery_service=mock_recovery_svc
+            )},
+        ):
             for i in range(3):
                 report = DriftReport()
                 report.drifts.append({"cohort_id": f"x{i}", "type": "count_mismatch"})
@@ -193,7 +194,7 @@ class TestSentinelAudit:
         with patch(
             "services.analytics.consistency_sentinel.AsyncSessionLocal"
         ) as mock_session_cls, patch(
-            "services.analytics.consistency_sentinel.base_experiment_batcher"
+            "services.analytics.consistency_sentinel.base_experiment_service"
         ) as mock_batcher:
             mock_db = AsyncMock()
             mock_result = MagicMock()
@@ -224,7 +225,7 @@ class TestSentinelAudit:
         with patch(
             "services.analytics.consistency_sentinel.AsyncSessionLocal"
         ) as mock_session_cls, patch(
-            "services.analytics.consistency_sentinel.base_experiment_batcher"
+            "services.analytics.consistency_sentinel.base_experiment_service"
         ) as mock_batcher:
             mock_db = AsyncMock()
             mock_result = MagicMock()
@@ -254,7 +255,7 @@ class TestSentinelAudit:
         with patch(
             "services.analytics.consistency_sentinel.AsyncSessionLocal"
         ) as mock_session_cls, patch(
-            "services.analytics.consistency_sentinel.base_experiment_batcher"
+            "services.analytics.consistency_sentinel.base_experiment_service"
         ) as mock_batcher:
             mock_db = AsyncMock()
             mock_result = MagicMock()

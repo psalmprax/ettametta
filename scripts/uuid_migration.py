@@ -2,12 +2,11 @@ import sqlite3
 import uuid
 import os
 import sys
-from datetime import datetime, timezone
 
 # Add the project root to sys.path to import our models
 sys.path.append(os.getcwd())
 
-from api.utils.database import Base, engine, SessionLocal
+from api.utils.database import Base
 from api.utils.models import *
 from api.utils.user_models import *
 from api.utils.credit_models import *

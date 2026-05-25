@@ -58,7 +58,7 @@ class LeiaPixSkill(PlaywrightVideoSkill):
                 "input_image": image_uri,
             }
         except Exception as e:
-            logger.error(f"[LeiaPix] Generation failed: {str(e)}")
+            logger.exception(f"[LeiaPix] Generation failed: {str(e)}")
             await self.cleanup()
             return {"status": "failed", "error": str(e), "engine": self.engine_name}
 

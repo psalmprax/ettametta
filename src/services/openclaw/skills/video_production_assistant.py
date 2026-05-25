@@ -8,7 +8,6 @@ Complements the automated scene-based video production system.
 
 from typing import Any
 import logging
-import asyncio
 
 from .base_skill import OpenClawBaseSkill
 from src.services.video_engine.video_production_assistant import (
@@ -61,7 +60,7 @@ class VideoProductionAssistantSkill(OpenClawBaseSkill):
                 return f"✅ **Production Assistance ({act})**\n{res.get('message', '')}"
             return f"⚠️ Error: {res.get('error') if isinstance(res, dict) else str(res)}"
         except Exception as e:
-            logger.error(f"Video production assistant error: {e}")
+            logger.exception(f"Video production assistant error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     async def _generate_editing_instructions(

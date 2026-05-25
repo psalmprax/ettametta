@@ -6,7 +6,6 @@ import shutil
 import uuid
 import json
 from pathlib import Path
-from typing import Any
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent.parent

@@ -4,7 +4,7 @@ Tests for the viral content discovery to AI video generation pipeline.
 
 import asyncio
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import patch
 
 from src.services.discovery.video_content_pipeline import (
     ViralContentPipeline,
@@ -279,7 +279,7 @@ if __name__ == "__main__":
         # This would normally require actual API keys and services
         # For demo purposes, we'll show the structure
         
-        pipeline = ViralContentPipeline()
+        ViralContentPipeline()
         print("✅ Pipeline instantiated successfully")
         print("📋 Pipeline includes:")
         print("   - CloakBrowser discovery")

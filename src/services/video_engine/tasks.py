@@ -10,7 +10,7 @@ import logging
 import os
 from src.api.config import settings
 from src.shared.internal_client import internal_job_client
-from src.api.utils.tracing import set_request_id, setup_tracing_logger
+from src.api.utils.tracing import set_request_id
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ def cleanup_local_files(*paths):
                 os.remove(path)
                 logging.info(f"[Cleanup] Deleted temporary file: {path}")
             except Exception as e:
-                logging.error(f"[Cleanup] Failed to delete {path}: {e}")
+                logging.exception(f"[Cleanup] Failed to delete {path}: {e}")
 
 
 @celery_app.task(
@@ -81,13 +81,11 @@ def download_and_process_task(
     - enhanced: Tier 2 + sound design
     - premium: Tier 3 full processing (sound + motion graphics)
     """
-    from src.api.utils.database import get_async_db_url, AsyncSession, async_session_factory
-    from src.api.utils.models import VideoJobDB
+    from src.api.utils.database import get_async_db_url, AsyncSession
     from sqlalchemy import select
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
     from src.api.config import settings
     import uuid
-    import asyncio
 
     task_id = self.request.id
     set_request_id(request_id or task_id)
@@ -187,20 +185,18 @@ def download_and_process_task(
 
         # C. Render with Full Pipeline
         processor = VideoProcessor()
-        output_name = f"{uuid.uuid4()}.mp4"
+        f"{uuid.uuid4()}.mp4"
 
         from src.api.utils.models import VideoFilterDB
-        from sqlalchemy import select
 
         # Fetch enabled filters safely
         try:
             async with _task_session_factory() as db:
-                stmt = select(VideoFilterDB).where(VideoFilterDB.enabled == True)
+                stmt = select(VideoFilterDB).where(VideoFilterDB.enabled)
                 result = await db.execute(stmt)
-                enabled_filters = [f.id for f in result.scalars().all()]
+                [f.id for f in result.scalars().all()]
         except Exception as db_err:
             logging.warning(f"[Task] DB Filter fetch failed: {db_err}. Using default filters.")
-            enabled_filters = []
 
         processed_path = await processor.process_full_pipeline(
             video_path,
@@ -353,7 +349,7 @@ def download_and_process_task(
 
         if not is_retryable or self.request.retries >= self.max_retries:
             status = SystemJobStatus.FAILED
-            logging.error(f"[Celery Task] Non-retryable ERROR: {e}")
+            logging.exception(f"[Celery Task] Non-retryable ERROR: {e}")
             # Mark as non-retryable to prevent further retries
             self.request.retries = self.max_retries
         else:
@@ -418,11 +414,8 @@ def generate_video_task(
     Background task for AI Video Synthesis (T2V).
     Simplified sync version for demo.
     """
-    from src.api.utils.models import VideoJobDB
-    from src.api.utils.database import async_session_factory
     from src.services.storage.service import base_storage_service
     from .synthesis_service import base_generative_service
-    import uuid
 
     task_id = self.request.id
     set_request_id(request_id or task_id)
@@ -533,7 +526,7 @@ def generate_video_task(
 
         if not is_retryable or self.request.retries >= self.max_retries:
             status = SystemJobStatus.FAILED
-            logging.error(f"[Synthesis Task] Non-retryable ERROR: {e}")
+            logging.exception(f"[Synthesis Task] Non-retryable ERROR: {e}")
             self.request.retries = self.max_retries
         else:
             status = SystemJobStatus.RETRYING
@@ -566,9 +559,6 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: str
     """
     Orchestrates the synthesis of a multi-scene narrative story.
     """
-    from src.api.utils.database import async_session_factory
-    from src.api.utils.models import VideoJobDB
-    from sqlalchemy import select
     from src.services.decision_engine.service import base_strategy_service
     from src.services.video_engine.synthesis_service import base_generative_service
     from src.services.voiceover.service import base_voiceover_service
@@ -671,7 +661,7 @@ def generate_story_task(self, prompt: str, engine: str, style: str, user_id: str
 
         if not is_retryable or self.request.retries >= self.max_retries:
             status = SystemJobStatus.FAILED
-            logging.error(f"[Story Task] Non-retryable ERROR: {e}")
+            logging.exception(f"[Story Task] Non-retryable ERROR: {e}")
             self.request.retries = self.max_retries
         else:
             status = SystemJobStatus.RETRYING
@@ -702,9 +692,6 @@ def narrative_fusion_task(self, niche: str, duration_sec: int = 60, user_id: str
     Tier 10 Autonomous Narrative Fusion task.
     Discovers multiple assets from 15+ platforms and fuses them into a cinematic narrative.
     """
-    from src.api.utils.database import async_session_factory
-    from src.api.utils.models import VideoJobDB
-    from sqlalchemy import select
     from src.engines.real_video_fusion_engine import RealVideoFusionEngine
     from src.engines.intelligent_video_workflow import (
         discover_multi_platform,

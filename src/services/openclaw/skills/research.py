@@ -61,7 +61,7 @@ class ResearchSkill(OpenClawBaseSkill):
                 return f"⚠️ API Error: {response.status_code}"
 
         except Exception as e:
-            logger.error(f"Research Skill Error: {e}")
+            logger.exception(f"Research Skill Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     def search_trends(self, topic: str) -> str:
@@ -79,7 +79,7 @@ class ResearchSkill(OpenClawBaseSkill):
                 return f"⚠️ Error: {response.status_code}"
 
         except Exception as e:
-            logger.error(f"Research Trend Error: {e}")
+            logger.exception(f"Research Trend Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
 

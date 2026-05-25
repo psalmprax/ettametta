@@ -1,8 +1,8 @@
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 from src.services.discovery.scanner_service import ScannerService
 from src.services.discovery.models import ContentCandidate
-from src.api.utils.models import ContentCandidateDB, NexusJobDB
+from src.api.utils.models import ContentCandidateDB
 
 @pytest.mark.asyncio
 async def test_autonomous_flow_discovery_to_nexus(test_db):

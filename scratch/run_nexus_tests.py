@@ -33,7 +33,6 @@ for name in mock_names:
 
 async def run_tests():
     from src.api.utils.database import Base, engine
-    from src.api.utils import models, user_models
     
     # Create tables in test DB
     Base.metadata.create_all(bind=engine)

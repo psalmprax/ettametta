@@ -8,7 +8,6 @@ bridging Signal Ingestion and Performance Analytics.
 
 import logging
 import asyncio
-import torch
 import numpy as np
 from typing import Any
 from src.services.analytics.signal_bus import base_signal_bus

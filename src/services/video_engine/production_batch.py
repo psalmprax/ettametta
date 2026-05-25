@@ -6,11 +6,9 @@ Uses Python's multiprocessing to saturate CPU cores with
 parallel FFmpeg production variants for high-velocity scaling.
 """
 
-import os
 import logging
 import concurrent.futures
 import subprocess
-from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -43,11 +41,11 @@ class ProductionBatchRenderer:
         try:
             logger.info(f"🏗️  [ProductionBatch] Starting render: {video_path}")
             # Run FFmpeg command
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
             return {"success": True, "path": video_path, "variant_id": variant_data.get("variant_id")}
         except subprocess.CalledProcessError as e:
-            logger.error(f"❌ [ProductionBatch] Render Failed: {video_path}")
-            logger.error(f"Error: {e.stderr}")
+            logger.exception(f"❌ [ProductionBatch] Render Failed: {video_path}")
+            logger.exception(f"Error: {e.stderr}")
             return {"success": False, "error": e.stderr, "variant_id": variant_data.get("variant_id")}
 
     def render_batch(self, variants: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -10,12 +10,11 @@ import asyncio
 import httpx
 from typing import Any, Optional
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 import json
 
 from src.api.utils.vault import get_secret
-from src.api.config import settings
 from groq import Groq
 logger = logging.getLogger(__name__)
 

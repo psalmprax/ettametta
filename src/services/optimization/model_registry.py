@@ -3,8 +3,6 @@ import json
 import time
 import shutil
 import logging
-from typing import Any
-from src.api.config import settings
 
 logger = logging.getLogger("ModelRegistry")
 
@@ -58,7 +56,7 @@ class ModelRegistry:
             logger.info(f"[Registry] Registered new version: {version_id} (MAE: {mae})")
             return True
         except Exception as e:
-            logger.error(f"[Registry] Failed to register version {version_id}: {e}")
+            logger.exception(f"[Registry] Failed to register version {version_id}: {e}")
             return False
 
     def promote_to_champion(self, version_id: str):

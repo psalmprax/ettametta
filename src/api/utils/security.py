@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from jose import JWTError, jwt
+from jose import jwt
 import bcrypt
 import logging
 from src.api.config import settings

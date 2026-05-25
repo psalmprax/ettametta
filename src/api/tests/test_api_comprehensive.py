@@ -1,16 +1,14 @@
 import pytest
-from fastapi.testclient import TestClient
 from fastapi import Depends
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from src.api.main import app
 from src.api.utils.database import SessionLocal, get_db
-from src.api.utils.models import UserDB, VideoJobDB, SubscriptionTier, UserRole
+from src.api.utils.models import UserDB, SubscriptionTier, UserRole
 from src.api.utils.credit_models import UserCreditDB, CreditTransactionDB
 from src.api.utils.auth import get_current_user
 from sqlalchemy import select
 import uuid
-import json
 
 # Initialize FastAPICache with InMemoryBackend to support cached routes without Redis
 FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")

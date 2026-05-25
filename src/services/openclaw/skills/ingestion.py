@@ -71,7 +71,7 @@ class DataIngestionSkill(OpenClawBaseSkill):
             return summary
 
         except Exception as e:
-            logger.error(f"RSS Error: {e}")
+            logger.exception(f"RSS Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     def reddit_hot(self, subreddit: str, limit: int = 5) -> str:
@@ -105,7 +105,7 @@ class DataIngestionSkill(OpenClawBaseSkill):
                 return f"⚠️ Reddit Error: {response.status_code}"
 
         except Exception as e:
-            logger.error(f"Reddit Error: {e}")
+            logger.exception(f"Reddit Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     def github_trending(
@@ -155,7 +155,7 @@ class DataIngestionSkill(OpenClawBaseSkill):
             return summary
 
         except Exception as e:
-            logger.error(f"GitHub Error: {e}")
+            logger.exception(f"GitHub Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     def youtube_trending(self, region: str = "US") -> str:
@@ -169,7 +169,7 @@ class DataIngestionSkill(OpenClawBaseSkill):
                 "📺 YouTube trending requires a valid GOOGLE_API_KEY. Feature locked."
             )
         except Exception as e:
-            logger.error(f"YouTube Error: {e}")
+            logger.exception(f"YouTube Error: {e}")
             return f"⚠️ Error: {str(e)}"
 
     def ingest_multi_source(self, sources: list[str]) -> str:

@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 import os
 from src.services.interpreter.service import interpreter_service
 

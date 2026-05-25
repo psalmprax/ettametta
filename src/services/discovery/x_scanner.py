@@ -99,7 +99,7 @@ class XScanner:
                 
                 # Alternative: Look for other data patterns
                 if not candidates:
-                    script_matches = re.findall(
+                    re.findall(
                         r'<script[^>]*data-testid="tweet"[^>]*>(.*?)</script>',
                         response.text,
                         re.DOTALL

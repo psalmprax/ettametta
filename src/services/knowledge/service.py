@@ -59,7 +59,7 @@ class KnowledgeService:
                 data = response.json()
                 return data.get("document", {}).get("id", "unknown-id")
             except Exception as e:
-                logger.error(f"Dify ingestion failed: {e}")
+                logger.exception(f"Dify ingestion failed: {e}")
                 return "error-id"
     
     async def query(self, text: str, dataset_id: str, limit: int = 3) -> List[Dict[str, Any]]:
@@ -98,7 +98,7 @@ class KnowledgeService:
                     })
                 return formatted
             except Exception as e:
-                logger.error(f"Dify query failed: {e}")
+                logger.exception(f"Dify query failed: {e}")
                 return []
     
     async def get_stats(self, dataset_id: str) -> Dict[str, Any]:

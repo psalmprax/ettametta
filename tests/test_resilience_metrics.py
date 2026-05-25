@@ -4,7 +4,6 @@ Validates that Prometheus counters, histograms, and gauges are properly
 defined and can be incremented/observed without errors.
 """
 
-import pytest
 from services.infrastructure.resilience_metrics import (
     jobs_submitted,
     jobs_completed,

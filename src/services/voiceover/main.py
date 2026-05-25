@@ -1,6 +1,5 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
-import torch
 import os
 
 app = FastAPI(title="ettametta Voiceover Service (Fish Speech)")

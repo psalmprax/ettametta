@@ -3,8 +3,7 @@ Unit tests for GenerativeService - Video synthesis service.
 Tests circuit breaker, model management, and GPU queue functionality.
 """
 import pytest
-import asyncio
-from unittest.mock import MagicMock, AsyncMock, patch, PropertyMock
+from unittest.mock import patch
 from src.services.video_engine.synthesis_service import GenerativeService, CircuitBreaker
 
 
@@ -239,7 +238,7 @@ class TestModelManager:
             
             # Acquire a model (will use mock fallback)
             try:
-                path = await mm.acquire_model("test_model")
+                await mm.acquire_model("test_model")
                 
                 # Check usage was incremented
                 assert mm.active_usage.get("test_model", 0) >= 1

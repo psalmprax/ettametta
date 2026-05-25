@@ -89,7 +89,7 @@ class DuckDuckGoScanner:
                     return self._parse_results(html, niche)
 
         except Exception as e:
-            logger.error(f"[DuckDuckGo] Request error: {e}")
+            logger.exception(f"[DuckDuckGo] Request error: {e}")
             return []
 
     def _parse_results(self, html: str, niche: str) -> list[ContentCandidate]:
@@ -160,7 +160,7 @@ class DuckDuckGoScanner:
                         )
                     )
 
-                except Exception as e:
+                except Exception:
                     continue
 
         except ImportError:
@@ -168,7 +168,7 @@ class DuckDuckGoScanner:
                 "[DuckDuckGo] BeautifulSoup not installed. Install: pip install beautifulsoup4"
             )
         except Exception as e:
-            logger.error(f"[DuckDuckGo] Parse error: {e}")
+            logger.exception(f"[DuckDuckGo] Parse error: {e}")
 
         return candidates
 

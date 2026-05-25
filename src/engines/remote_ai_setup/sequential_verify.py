@@ -2,7 +2,6 @@
 import torch
 import gc
 import os
-import time
 from hunyuan_inference import generate_hunyuan_video
 from animatediff_inference import generate_animatediff_video
 
@@ -42,7 +41,6 @@ def run_verification():
         print("📥 LTX-2 Load Test initiating...")
         # Since we're in a standalone script, we'd normally import from main.py 
         # but to keep it clean we'll just check if we can run a minimal generation via the model manager
-        from video_model_manager import model_manager
         # (Assuming model_manager is configured for LTX)
         print("✅ LTX-2 Layer Load Logic Verified (Simulated for speed in this script)")
     except Exception as e:

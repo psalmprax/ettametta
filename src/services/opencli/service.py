@@ -18,12 +18,10 @@ stackoverflow, wikipedia, notion, discord, telegram, twitch,
 pinterest, linkedin, threads, bluesky, snapchat, github, etc.
 """
 
-import os
 import json
 import asyncio
 import logging
 import subprocess
-import time
 from typing import Any
 from pathlib import Path
 from datetime import datetime, timezone
@@ -192,7 +190,7 @@ class OpenCLIService:
             )
             return True
         except Exception as e:
-            logger.error(f"[OpenCLI] Failed to save cookies: {e}")
+            logger.exception(f"[OpenCLI] Failed to save cookies: {e}")
             return False
 
     async def verify_user_session(self, user_id: str, platform: str) -> dict[str, Any]:
@@ -249,7 +247,7 @@ class OpenCLIService:
     async def get_user_sessions(self, user_id: str) -> list[dict[str, Any]]:
         """Get all platform session statuses for a user."""
         sessions = []
-        user_dir = self._user_session_dir(user_id)
+        self._user_session_dir(user_id)
 
         for platform in PLATFORM_CAPABILITIES:
             cookie_path = self._cookie_path(user_id, platform)
@@ -280,7 +278,7 @@ class OpenCLIService:
                 )
             return True
         except Exception as e:
-            logger.error(f"[OpenCLI] Failed to disconnect: {e}")
+            logger.exception(f"[OpenCLI] Failed to disconnect: {e}")
             return False
 
     @retry(
@@ -354,14 +352,14 @@ class OpenCLIService:
 
         except asyncio.TimeoutError:
             self.circuit_breaker.record_failure()
-            logger.error(f"[OpenCLI] Command timed out after {timeout}s")
+            logger.exception(f"[OpenCLI] Command timed out after {timeout}s")
             return None
         except json.JSONDecodeError:
             logger.warning(f"[OpenCLI] Non-JSON output: {output[:200]}")
             return {"raw": output}
         except Exception as e:
             self.circuit_breaker.record_failure()
-            logger.error(f"[OpenCLI] Execution error: {e}")
+            logger.exception(f"[OpenCLI] Execution error: {e}")
             return None
 
     # ─── Discovery Integration ─────────────────────────────────────────

@@ -13,7 +13,6 @@ Complete workflow test from content discovery to video preview:
 import asyncio
 import sys
 import os
-import json
 from pathlib import Path
 from typing import Any
 

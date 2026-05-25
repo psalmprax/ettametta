@@ -1,6 +1,5 @@
 import os
 import logging
-import json
 import asyncio
 import time
 import random
@@ -27,8 +26,6 @@ from tenacity import (
 from opentelemetry import trace
 from src.api.config import settings
 from src.api.utils.resilience import CircuitBreaker
-from src.services.video_engine.processor import base_video_processor
-from src.services.nexus_engine.audio_mixer import base_audio_mixer
 from src.services.nexus_engine.style_library import get_style
 from src.shared.observability import get_logger
 from src.shared.state_machine import base_state_machine, JobState

@@ -10,7 +10,6 @@ import os
 import time
 import logging
 import requests
-from PIL import Image
 from src.api.config import settings
 
 logger = logging.getLogger(__name__)
@@ -41,7 +40,7 @@ def load_wan_t2v():
         logger.info("✅ Wan 2.2 T2V loaded successfully")
         return _wan_t2v_pipe
     except Exception as e:
-        logger.error(f"⚠️ Wan 2.2 T2V not available: {e}")
+        logger.exception(f"⚠️ Wan 2.2 T2V not available: {e}")
         return None
 
 
@@ -66,7 +65,7 @@ def load_wan_v2v():
         logger.info("✅ Wan 2.2 V2V loaded successfully")
         return _wan_v2v_pipe
     except Exception as e:
-        logger.error(f"⚠️ Wan 2.2 V2V not available: {e}")
+        logger.exception(f"⚠️ Wan 2.2 V2V not available: {e}")
         return None
 
 
@@ -162,7 +161,6 @@ def generate_wan_v2v(
 
 def generate_wan_api(prompt: str, output_dir: str) -> tuple[str, str]:
     """Generate video using real API call to remote GPU node"""
-    import json
 
     job_id = f"wan_api_{int(time.time())}"
     output_path = os.path.join(output_dir, f"{job_id}.mp4")

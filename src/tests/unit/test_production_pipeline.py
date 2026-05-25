@@ -8,10 +8,8 @@ Shows what the system can achieve with available dependencies vs full capabiliti
 """
 
 import asyncio
-import os
 import sys
 from pathlib import Path
-from typing import Any
 
 # Add project root
 sys.path.insert(0, str(Path(__file__).parent))
@@ -126,13 +124,6 @@ async def test_production_pipeline():
 
     try:
         # Test video analysis capabilities
-        mock_video_data = {
-            "title": "Top 10 AI Tools 2024",
-            "views": 150000,
-            "likes": 8500,
-            "comments": 1200,
-            "duration": 480
-        }
 
         # Simulate analysis
         analysis_result = {
@@ -281,7 +272,7 @@ async def test_production_pipeline():
         }
 
         working_capabilities = sum(production_capabilities.values())
-        total_capabilities = len(production_capabilities)
+        len(production_capabilities)
 
         print("✅ Production planning operational")
         print("   ✓ Content planning and strategy generation")

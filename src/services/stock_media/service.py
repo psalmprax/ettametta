@@ -55,7 +55,7 @@ class StockMediaService:
                     logging.error(f"[StockMediaService] API Error: {response.text}")
                     return []
         except Exception as e:
-            logging.error(f"[StockMediaService] Exception: {e}")
+            logging.exception(f"[StockMediaService] Exception: {e}")
             return []
 
 

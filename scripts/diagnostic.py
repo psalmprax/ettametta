@@ -10,7 +10,6 @@ load_dotenv()
 
 from services.discovery.youtube_scanner import YouTubeShortsScanner
 from services.discovery.tiktok_scanner import TikTokScanner
-from services.discovery.youtube_long_scanner import YouTubeLongScanner
 from groq import Groq
 
 async def test_groq():

@@ -1,5 +1,4 @@
-import pytest
-from src.services.video_engine.stochastic_modulator import StochasticModulator, modulate_style, THEME_PRESETS
+from src.services.video_engine.stochastic_modulator import StochasticModulator, modulate_style
 
 def test_stochastic_modulator_determinism():
     """Verify that the same seed produces identical modulated configs, while different seeds vary."""

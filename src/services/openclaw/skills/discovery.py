@@ -1,7 +1,5 @@
 import requests
 import logging
-import json
-from typing import Any
 from src.api.config import settings
 from .base_skill import OpenClawBaseSkill
 
@@ -100,7 +98,7 @@ class DiscoverySkill(OpenClawBaseSkill):
                 return f"⚠️ API Error: {response.status_code} - {response.text}"
 
         except Exception as e:
-            logger.error(f"Discovery Skill Error: {e}")
+            logger.exception(f"Discovery Skill Error: {e}")
             return f"⚠️ Skill Error: {str(e)}"
 
     def get_trending_content(self, niche: str, min_viral_score: int = 75) -> str:
@@ -141,7 +139,7 @@ class DiscoverySkill(OpenClawBaseSkill):
                 return f"⚠️ API Error: {response.status_code}"
 
         except Exception as e:
-            logger.error(f"Trending content error: {e}")
+            logger.exception(f"Trending content error: {e}")
             return f"⚠️ Error getting trending content: {str(e)}"
 
     def scan_for_opportunities(self, niche: str, deep: bool = False) -> str:
@@ -177,7 +175,7 @@ class DiscoverySkill(OpenClawBaseSkill):
                 return f"⚠️ Scan failed: {response.status_code}"
 
         except Exception as e:
-            logger.error(f"Scan error: {e}")
+            logger.exception(f"Scan error: {e}")
             return f"⚠️ Scan error: {str(e)}"
 
     def analyze_competitor_strategy(self, competitor_url: str) -> str:
@@ -186,7 +184,6 @@ class DiscoverySkill(OpenClawBaseSkill):
         """
         try:
             # This would call the competitor analysis endpoint
-            payload = {"url": competitor_url}
             response = requests.post(
                 f"{settings.API_URL}/agent/crew",
                 json={
@@ -211,7 +208,7 @@ class DiscoverySkill(OpenClawBaseSkill):
                 return f"⚠️ Competitor analysis failed: {response.status_code}"
 
         except Exception as e:
-            logger.error(f"Competitor analysis error: {e}")
+            logger.exception(f"Competitor analysis error: {e}")
             return f"⚠️ Competitor analysis error: {str(e)}"
 
     def predict_trends(self, niche: str, timeframe: str = "1week") -> str:
@@ -247,7 +244,7 @@ Provide 3 specific trend predictions with reasoning. Format as:
             return f"🔮 **Trend Predictions for '{niche}' (Next {timeframe}):**\n\n{prediction}"
 
         except Exception as e:
-            logger.error(f"Trend prediction error: {e}")
+            logger.exception(f"Trend prediction error: {e}")
             return f"⚠️ Trend prediction failed: {str(e)}"
 
     def _analyze_trends(self, trends: list[dict], niche: str) -> str:
@@ -284,7 +281,7 @@ Provide a brief analysis (2-3 sentences) on:
             return response.choices[0].message.content
 
         except Exception as e:
-            logger.error(f"Trend analysis error: {e}")
+            logger.exception(f"Trend analysis error: {e}")
             return "AI analysis temporarily unavailable."
 
     def generate_content_ideas(self, niche: str, num_ideas: int = 5) -> str:
@@ -319,7 +316,7 @@ etc."""
             return f"💡 **Content Ideas for '{niche}':**\n\n{ideas}"
 
         except Exception as e:
-            logger.error(f"Content ideation error: {e}")
+            logger.exception(f"Content ideation error: {e}")
             return f"⚠️ Content ideation failed: {str(e)}"
 
 
