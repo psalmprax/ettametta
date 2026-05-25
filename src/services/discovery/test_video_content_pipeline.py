@@ -9,9 +9,11 @@ from unittest.mock import patch
 from src.services.discovery.video_content_pipeline import (
     ViralContentPipeline,
     discover_analyze_and_generate,
-    discover_analyze_generate_compile
+    discover_analyze_generate_compile,
+    viral_content_pipeline,
 )
 from src.services.discovery.cloak_scanner import ContentCandidate
+from src.services.video_engine.free_video_providers import free_video_provider
 
 
 class TestViralContentPipeline:

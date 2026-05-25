@@ -13,7 +13,7 @@ This creates a fully automated content pipeline from discovery to creation.
 
 import logging
 from typing import Any, Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.services.discovery.cloak_scanner import CloakBrowserScanner
 from src.services.discovery.analysis_service import extract_content_patterns
