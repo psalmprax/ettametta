@@ -70,8 +70,6 @@ async def smart_broll_insertion(
     try:
         result_path = await base_autonomous_editor.add_smart_broll(
             main_clip=request.main_clip,
-            broll_library=request.broll_library,
-            keywords=request.keywords,
         )
         return success_response(data={"output_path": result_path})
     except Exception as e:
