@@ -6,6 +6,7 @@ Handles cutting, transitions, B-roll insertion, auto-captions, audio mixing, and
 """
 
 import logging
+import asyncio
 from pathlib import Path
 from typing import Any
 import subprocess
@@ -46,13 +47,13 @@ class AutonomousVideoEditor:
         logger.info(f"[AutoEdit] Starting autonomous edit for {len(script_segments)} segments")
 
         # Step 1: Build timeline from script + clips
-        timeline = await self._build_timeline(script_segments, video_clips, style)
+        timeline = self._build_timeline(script_segments, video_clips, style)
 
         # Step 2: Generate captions
         caption_file = await self._generate_captions(script_segments)
 
         # Step 3: Apply edits using FFmpeg/MoviePy
-        output_path = await self._render_video(timeline, caption_file, audio_track, background_music, output_filename)
+        output_path = await self._render_video(timeline, caption_file, output_filename)
 
         return {
             "status": "completed",
@@ -63,7 +64,7 @@ class AutonomousVideoEditor:
             "style_applied": style,
         }
 
-    async def _build_timeline(
+    def _build_timeline(
         self, script_segments: list[dict], video_clips: list[dict], style: str
     ) -> list[dict]:
         """Intelligently match clips to script segments with pacing adjustments."""
@@ -109,16 +110,13 @@ class AutonomousVideoEditor:
         if any(w in text_lower for w in ["important", "key", "critical"]):
             effects.append("highlight_text")
         if any(w in text_lower for w in ["shocking", "surprising", "wow"]):
-            effects.append("zoom_in", "screen_shake")
+            effects.extend(["zoom_in", "screen_shake"])
         if style == "dynamic":
             effects.append("subtle_motion")
 
         return effects
 
-    async def _generate_captions(self, script_segments: list[dict]) -> str:
-        """Generate SRT caption file from script segments."""
-        caption_path = self.output_dir / "captions.srt"
-
+    def _write_srt_file(self, caption_path: Path, script_segments: list[dict]) -> None:
         with open(caption_path, "w") as f:
             current_time = 0.0
             for i, segment in enumerate(script_segments):
@@ -133,6 +131,10 @@ class AutonomousVideoEditor:
 
                 current_time = end_time
 
+    async def _generate_captions(self, script_segments: list[dict]) -> str:
+        """Generate SRT caption file from script segments."""
+        caption_path = self.output_dir / "captions.srt"
+        await asyncio.to_thread(self._write_srt_file, caption_path, script_segments)
         return str(caption_path)
 
     @staticmethod
@@ -148,8 +150,6 @@ class AutonomousVideoEditor:
         self,
         timeline: list[dict],
         caption_file: str,
-        audio_track: str | None,
-        background_music: str | None,
         output_filename: str | None,
     ) -> Path:
         """Render final video using FFmpeg with all edits applied."""
@@ -169,10 +169,10 @@ class AutonomousVideoEditor:
         ]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True, timeout=300)
             if result.returncode != 0:
                 logger.error(f"[AutoEdit] FFmpeg error: {result.stderr}")
-                raise Exception(f"FFmpeg failed: {result.stderr[:200]}")
+                raise RuntimeError(f"FFmpeg failed: {result.stderr[:200]}")
         except FileNotFoundError:
             logger.warning("[AutoEdit] FFmpeg not found, returning mock path")
             # Fallback for dev environments without FFmpeg
@@ -181,11 +181,12 @@ class AutonomousVideoEditor:
         return output_path
 
     async def add_smart_broll(
-        self, main_clip: str, broll_library: list[str], keywords: list[str]
+        self, main_clip: str
     ) -> str:
         """Intelligently insert B-roll footage based on keyword matching."""
         # Would integrate with stock footage APIs or local library
         # For now, returns the main clip unchanged
+        await asyncio.sleep(0)
         return main_clip
 
 
