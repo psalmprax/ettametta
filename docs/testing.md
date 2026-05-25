@@ -4,47 +4,60 @@ This document outlines the testing infrastructure, locations, and execution proc
 
 ---
 
-## 1. Backend & Unit Tests (Python)
+## 1. Production Smoke Tests
 
-All backend tests are located in the `api/tests/` directory and use the `pytest` framework.
+Run the canonical remote-server test ladder from the repository root:
+
+```bash
+python3 scripts/production_smoke_test.py \
+  --api-url http://localhost:7201 \
+  --dashboard-url http://localhost:7200 \
+  --docker
+```
+
+Add `--e2e` for Playwright and `--video-scenario 0` for a controlled render smoke. Full details live in `docs/production_smoke_testing.md`.
+
+---
+
+## 2. Backend & Unit Tests (Python)
+
+Backend tests are located in `src/api/tests/` and use the `pytest` framework.
 
 ### 📂 Directory Structure
-- `api/tests/test_config.py`: Hardened environment and "Startup Shield" validation.
-- `api/tests/test_services.py`: Internal business logic (Agents, LangChain, etc.).
-- `api/tests/test_routes/`: Comprehensive coverage for FastAPI endpoints (`auth`, `video`, `discovery`).
-- `api/tests/test_integration_discovery.py`: **Integration** - Bridge to the high-speed Go scanner.
-- `api/tests/test_integration_video.py`: **Integration** - Virtualized MoviePy/FFmpeg pipeline.
-- `api/tests/test_automation.py`: **E2E** - The full autonomous "Search -> Download -> Process" loop.
+- `src/api/tests/test_config.py`: Hardened environment and startup validation.
+- `src/api/tests/test_routes/`: FastAPI endpoint coverage (`auth`, `video`, `discovery`, `health`).
+- `src/api/tests/test_integration_discovery.py`: Integration bridge to discovery scanners.
+- `src/api/tests/test_integration_video.py`: Virtualized MoviePy/FFmpeg pipeline.
+- `src/api/tests/test_automation.py`: E2E autonomous "Search -> Download -> Process" loop.
 
 ### 🚀 Execution
-Run all backend tests from the `api/` directory:
+Run backend tests from the repository root:
 ```bash
-cd api
-pytest tests/ -v
+pytest src/api/tests -v --tb=short
 ```
 
 ---
 
-## 2. Frontend & User Flow Tests (Playwright)
+## 3. Frontend & User Flow Tests (Playwright)
 
-End-to-end (E2E) browser tests are located in the `e2e/` directory.
+End-to-end (E2E) browser tests are located in `src/tests/e2e/`.
 
 ### 📂 Directory Structure
-- `e2e/tests/auth/`: Login and OAuth redirection flows.
-- `e2e/tests/creation/`: Content generation and dashboard interaction.
-- `e2e/conftest.ts`: Playwright global configuration and fixtures.
+- `src/tests/e2e/tests/auth/`: Login and OAuth redirection flows.
+- `src/tests/e2e/tests/creation/`: Content generation and dashboard interaction.
+- `src/tests/e2e/playwright.config.ts`: Playwright configuration and fixtures.
 
 ### 🚀 Execution
-Run the E2E suite from the `e2e/` directory:
+Run the E2E suite against the remote dashboard:
 ```bash
-cd e2e
+cd src/tests/e2e
 npm install
-npm test
+SKIP_WEB_SERVER=1 BASE_URL=http://localhost:7200 npm test
 ```
 
 ---
 
-## 3. CI/CD Integration
+## 4. CI/CD Integration
 
 The testing suite is fully integrated into the **Jenkins CI/CD Pipeline**.
 
@@ -54,7 +67,7 @@ The testing suite is fully integrated into the **Jenkins CI/CD Pipeline**.
 
 ---
 
-## 4. Manual / Scripted Stubs
+## 5. Manual / Scripted Stubs
 
 For rapid local iteration, specialized scripts are available in the `scripts/` folder:
 - `scripts/test_discovery_search.py`: CLI-based scanner testing.

@@ -1,3 +1,4 @@
+# Databricks notebook source
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -14,6 +15,7 @@ from src.api.utils.subscription import (
 )
 from src.services.video_engine.job_service import get_video_job_service, VideoJobService
 from src.services.video_engine.tasks import generate_video_task, generate_story_task
+from src.services.video_engine.engine_config import get_engine_action
 from src.api.utils.limiter import limiter
 from src.api.utils.audit_service import audit_service
 from src.api.utils.api_responses import success_response, handle_exception
@@ -57,22 +59,25 @@ async def generate_single_video(
         # Engine access check still manual because it depends on request body
         await engine_access_required(body.engine)(current_user)
         # daily_limit_reached dependency already checked via Depends
+        # Engine-specific billing action mapping
+        engine_action = get_engine_action(body.engine)
+        unit_cost = await credits_required(engine_action)(current_user, db)
 
-        # Logic for engine-to-action mapping
-        # Since engine_config is missing, we implement a resilient fallback here
-        ENGINE_TO_ACTION = {
-            "veo3": CreditAction.VIDEO_GENERATION,
-            "flux": CreditAction.VIDEO_GENERATION,
-            "kling": CreditAction.VIDEO_GENERATION,
-            "luma": CreditAction.VIDEO_GENERATION,
-        }
-        
-        def get_credit_action(engine_name: str) -> CreditAction:
-            return ENGINE_TO_ACTION.get(engine_name, CreditAction.VIDEO_GENERATION)
-            
-        action = get_credit_action(body.engine)
-        credits_cost = await credits_required(action)(current_user, db)
+        num_variants = body.num_variants if body.num_variants > 0 else 1
+        total_credits_cost = unit_cost * num_variants
 
+        if total_credits_cost > 0 and not await credit_service.has_sufficient_credits(
+            current_user.id,
+            total_credits_cost,
+            db,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=f"Insufficient credits. Need {total_credits_cost} credits for {num_variants} variant(s) using engine '{body.engine}'.",
+            )
+        action = engine_action
+        credits_cost = unit_cost
+        variant_strategy = body.variant_strategy or "hook_variation"
         # --- ELITE GROWTH LOOP: MULTI-VARIANT GENERATION ---
         num_variants = body.num_variants if body.num_variants > 0 else 1
         variant_strategy = body.variant_strategy or "hook_variation"
@@ -141,7 +146,6 @@ async def generate_single_video(
                 variant_info.append((task_id, variant, i))
 
             await db.commit()
-
         except Exception as e:
             await db.rollback()
             raise e
@@ -263,7 +267,6 @@ async def start_story_generation(
             )
             db.add(new_job)
             await db.commit()
-
         except Exception as e:
             await db.rollback()
             raise e
@@ -315,6 +318,7 @@ async def start_story_generation(
             resource_type="VIDEO",
             resource_id=task_id,
             db=db,
+            data={"message": "Storytelling started", "task_id": task_id},
         )
 
         return success_response(
@@ -483,7 +487,6 @@ async def list_video_jobs(
             limit = 10
 
         offset = (page - 1) * limit
-
         jobs, total_jobs = await job_service.get_user_jobs(
             user_id=current_user.id, limit=limit, offset=offset
         )
@@ -507,6 +510,8 @@ async def list_video_jobs(
                 "total": total_jobs,
                 "pages": (total_jobs + limit - 1) // limit,
             },
+
         })
-    except Exception as e:
-        return handle_exception(e)
+
+
+    except Exception as e:        return handle_exception(e)

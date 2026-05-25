@@ -133,13 +133,23 @@ openclaw pairing approve telegram <PAIRING_CODE>
 
 ## 🧪 Testing (Playwright)
 
-We use Playwright for end-to-end system verification. All tests are consolidated in `src/tests/e2e`.
+We use a staged production smoke runner plus Playwright for end-to-end system verification.
+
+### Run Production Smoke Tests
+```bash
+python3 scripts/production_smoke_test.py \
+  --api-url http://localhost:7201 \
+  --dashboard-url http://localhost:7200 \
+  --docker
+```
+
+See `docs/production_smoke_testing.md` for browser E2E and video render smoke checks.
 
 ### Run E2E Tests
 ```bash
 cd src/tests/e2e
 npm install
-BASE_URL=http://localhost:3000 npx playwright test
+SKIP_WEB_SERVER=1 BASE_URL=http://localhost:7200 npx playwright test
 ```
 
 ### View Test Report

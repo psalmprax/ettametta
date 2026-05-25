@@ -1,3 +1,4 @@
+# Databricks notebook source
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from src.api.utils.api_responses import success_response
@@ -55,7 +56,7 @@ async def get_security_status(current_user=Depends(get_current_user)):
 async def trigger_security_audit(current_user=Depends(admin_required)):
     """
     Manually triggers a full system integrity audit.
-    Requires authentication (admin recommended).
+    Requires administrative privileges.
     """
     try:
         report = base_security_service.audit_system_integrity()
