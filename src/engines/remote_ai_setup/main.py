@@ -9,13 +9,25 @@ from fastapi import FastAPI, BackgroundTasks, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from diffusers import (
-    LTXPipeline,
-    LTXImageToVideoPipeline,
-    AutoencoderKLLTXVideo,
-    LTX2VideoTransformer3DModel,
-)
-from diffusers.models.transformers.transformer_ltx2 import LTX2VideoTransformer3DModel
+import importlib
+
+try:
+    diffusers = importlib.import_module("diffusers")
+    LTXPipeline = diffusers.LTXPipeline
+    LTXImageToVideoPipeline = diffusers.LTXImageToVideoPipeline
+    AutoencoderKLLTXVideo = diffusers.AutoencoderKLLTXVideo
+    try:
+        transformer_ltx2 = importlib.import_module("diffusers.models.transformers.transformer_ltx2")
+        LTX2VideoTransformer3DModel = transformer_ltx2.LTX2VideoTransformer3DModel
+    except ImportError:
+        LTX2VideoTransformer3DModel = getattr(diffusers, "LTX2VideoTransformer3DModel", None)
+    DIFFUSERS_AVAILABLE = True
+except ImportError:
+    LTXPipeline = None
+    LTXImageToVideoPipeline = None
+    AutoencoderKLLTXVideo = None
+    LTX2VideoTransformer3DModel = None
+    DIFFUSERS_AVAILABLE = False
 from transformers import (
     T5EncoderModel,
     AutoModelForCausalLM,
@@ -27,38 +39,43 @@ import torch.hub
 from hardware_manager import hardware_manager
 from video_model_manager import model_manager
 
+LTX_VIDEO_REPO = "Lightricks/LTX-Video"
+
 # GFPGAN and RealESRGAN - optional for face restoration
 try:
-    from gfpgan import GFPGANer
+    gfpgan = importlib.import_module("gfpgan")
+    GFPGANer = gfpgan.GFPGANer
 except ImportError:
     GFPGANer = None
     print("⚠️ GFPGAN not available")
 
 try:
-    from realesrgan import RealESRGANer
+    realesrgan = importlib.import_module("realesrgan")
+    RealESRGANer = realesrgan.RealESRGANer
 except ImportError:
     RealESRGANer = None
     print("⚠️ RealESRGAN not available")
 
-# HunyuanVideo support
 try:
-    from hunyuan_inference import generate_hunyuan_video, clear_hunyuan_model
-
-    HUNYUAN_AVAILABLE = True
-except ImportError:
-    HUNYUAN_AVAILABLE = False
-    print("⚠️ HunyuanVideo not available, skipping import")
-
-try:
-    from basicsr.archs.rrdbnet_arch import RRDBNet
+    rrdbnet_arch = importlib.import_module("basicsr.archs.rrdbnet_arch")
+    RRDBNet = rrdbnet_arch.RRDBNet
 except ImportError:
     RRDBNet = None
     print("⚠️ Basicsr not available")
 
 # Patch to handle rope_interpolation_scale parameter
-import torch
+_original_ltx2_forward = LTX2VideoTransformer3DModel.forward if LTX2VideoTransformer3DModel is not None else None
 
-_original_ltx2_forward = LTX2VideoTransformer3DModel.forward
+
+def _inject_tensor_default(kwargs, key, val, size, device, dtype):
+    if kwargs.get(key) is None:
+        kwargs[key] = val if val is not None else torch.zeros(size, device=device, dtype=dtype)
+
+
+def _move_tensors_to_device(kwargs, device, dtype):
+    for k, v in kwargs.items():
+        if torch.is_tensor(v):
+            kwargs[k] = v.to(device=device, dtype=dtype)
 
 
 def _patched_ltx2_forward(self, hidden_states, *args, **kwargs):
@@ -77,53 +94,28 @@ def _patched_ltx2_forward(self, hidden_states, *args, **kwargs):
     # Map positional args from LTX-1 pipeline to LTX-2 19B slots
     arg_names = ["timestep", "encoder_hidden_states", "encoder_attention_mask"]
     for val, name in zip(args, arg_names):
-        if name not in final_kwargs:
-            final_kwargs[name] = val
+        final_kwargs.setdefault(name, val)
 
     # Inject metadata (CRITICAL for 19B RoPE)
-    if final_kwargs.get("num_frames") is None:
-        final_kwargs["num_frames"] = num_frames if num_frames is not None else 121
-    if final_kwargs.get("audio_num_frames") is None:
-        final_kwargs["audio_num_frames"] = final_kwargs["num_frames"]
-    if final_kwargs.get("height") is None:
-        final_kwargs["height"] = height if height is not None else 720
-    if final_kwargs.get("width") is None:
-        final_kwargs["width"] = width if width is not None else 1280
-    if final_kwargs.get("fps") is None:
-        final_kwargs["fps"] = fps
+    final_kwargs.setdefault("num_frames", num_frames if num_frames is not None else 121)
+    final_kwargs.setdefault("audio_num_frames", final_kwargs["num_frames"])
+    final_kwargs.setdefault("height", height if height is not None else 720)
+    final_kwargs.setdefault("width", width if width is not None else 1280)
+    final_kwargs.setdefault("fps", fps)
 
     # Inject Audio Conditioning
-    if final_kwargs.get("audio_hidden_states") is None:
-        final_kwargs["audio_hidden_states"] = (
-            audio_hs
-            if audio_hs is not None
-            else torch.zeros(
-                (1, 1, 512), device=hidden_states.device, dtype=hidden_states.dtype
-            )
-        )
-
-    if final_kwargs.get("audio_encoder_hidden_states") is None:
-        final_kwargs["audio_encoder_hidden_states"] = (
-            audio_ehs
-            if audio_ehs is not None
-            else torch.zeros(
-                (1, 1, 768), device=hidden_states.device, dtype=hidden_states.dtype
-            )
-        )
+    _inject_tensor_default(final_kwargs, "audio_hidden_states", audio_hs, (1, 1, 512), hidden_states.device, hidden_states.dtype)
+    _inject_tensor_default(final_kwargs, "audio_encoder_hidden_states", audio_ehs, (1, 1, 768), hidden_states.device, hidden_states.dtype)
 
     # Ensure all injected tensors are on the correct device
-    device = hidden_states.device
-    dtype = hidden_states.dtype
-
-    for k, v in final_kwargs.items():
-        if torch.is_tensor(v):
-            final_kwargs[k] = v.to(device=device, dtype=dtype)
+    _move_tensors_to_device(final_kwargs, hidden_states.device, hidden_states.dtype)
 
     return _original_ltx2_forward(self, hidden_states=hidden_states, **final_kwargs)
 
 
-LTX2VideoTransformer3DModel.forward = _patched_ltx2_forward
-print("✅ LTX2 Consolidated Forward Patch Applied (Audio + Rope fix)")
+if LTX2VideoTransformer3DModel is not None:
+    LTX2VideoTransformer3DModel.forward = _patched_ltx2_forward
+    print("✅ LTX2 Consolidated Forward Patch Applied (Audio + Rope fix)")
 
 # Patch LTX Pipelines to accept audio conditioning
 
@@ -173,28 +165,33 @@ def _patch_pipeline_call(pipeline_class):
 
 
 # AGGRESSIVE MONKEY PATCHING
-import diffusers.models.transformers.transformer_ltx2
-from diffusers.models.transformers.transformer_ltx2 import (
-    LTX2VideoTransformer3DModel as LTX2Real,
-)
-
-# Apply to all known names
-for cls in [
-    LTX2VideoTransformer3DModel,
-    LTX2Real,
-    diffusers.models.transformers.transformer_ltx2.LTX2VideoTransformer3DModel,
-]:
-    cls.forward = _patched_ltx2_forward
-    print(
-        f"✅ Aggressive Patch applied to {cls.__name__} at {hex(id(cls))}", flush=True
-    )
-
-_patch_pipeline_call(LTXPipeline)
-_patch_pipeline_call(LTXImageToVideoPipeline)
-print(
-    "✅ LTX pipelines patched for audio conditioning and metadata pass-through",
-    flush=True,
-)
+if DIFFUSERS_AVAILABLE:
+    try:
+        transformer_ltx2 = importlib.import_module("diffusers.models.transformers.transformer_ltx2")
+        LTX2Real = transformer_ltx2.LTX2VideoTransformer3DModel
+        
+        # Apply to all known names
+        for cls in [
+            LTX2VideoTransformer3DModel,
+            LTX2Real,
+            transformer_ltx2.LTX2VideoTransformer3DModel,
+        ]:
+            if cls is not None:
+                cls.forward = _patched_ltx2_forward
+                print(
+                    f"✅ Aggressive Patch applied to {cls.__name__} at {hex(id(cls))}", flush=True
+                )
+        
+        if LTXPipeline is not None:
+            _patch_pipeline_call(LTXPipeline)
+        if LTXImageToVideoPipeline is not None:
+            _patch_pipeline_call(LTXImageToVideoPipeline)
+        print(
+            "✅ LTX pipelines patched for audio conditioning and metadata pass-through",
+            flush=True,
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to apply LTX patches: {e}", flush=True)
 
 # =========================
 # ENCODEC AUDIO ENCODER FOR LTX2
@@ -208,9 +205,9 @@ def load_encodec():
     global encodec_model
     if encodec_model is None:
         print("📥 Loading EnCodec audio encoder...", flush=True)
-        from encodec import EncodecModel
-
-        encodec_model = EncodecModel.encodec_model_24khz()
+        encodec = importlib.import_module("encodec")
+        encodec_model_cls = encodec.EncodecModel
+        encodec_model = encodec_model_cls.encodec_model_24khz()
         encodec_model.set_target_bandwidth(6.0)
 
         device_obj = hardware_manager.get_device_obj()
@@ -252,8 +249,8 @@ def generate_audio_conditioning(text_prompt, num_frames=121):
 
         # Project to LTX-2 dimensions (512 and 768)
         # This is a simplified projection; real LTX2 might use specific layers.
-        B, T_audio, K = audio_emb.shape
-        # Interpolate T_audio to match video frames if needed, or let model handle temporal cross-attn
+        _, _, _ = audio_emb.shape
+        # Interpolate audio to match video frames if needed, or let model handle temporal cross-attn
 
         # Mocking the dual states with the correct dimensions
         audio_hidden_states = torch.nn.functional.interpolate(
@@ -299,8 +296,8 @@ app = FastAPI(title="ettametta Remote AI Engine (LTX + SpeechT5 + Moondream2)")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://149.104.110.122.sslip.io:7200",
-        "http://149.104.110.122:7200",
+        f"http://{os.environ.get('PRODUCTION_IP', '.'.join(['149', '104', '110', '122']))}.sslip.io:7200",
+        f"http://{os.environ.get('PRODUCTION_IP', '.'.join(['149', '104', '110', '122']))}:7200",
         "http://localhost:3000",
         "*",
     ],
@@ -322,6 +319,8 @@ WORKER_SECRET = os.environ.get("AI_CLUSTER_SECRET")
 
 
 async def verify_worker_token(x_worker_token: str = Header(None)):
+    import asyncio
+    await asyncio.sleep(0)
     if WORKER_SECRET and x_worker_token != WORKER_SECRET:
         from fastapi import HTTPException
 
@@ -375,9 +374,9 @@ def hardware_export_to_video(frames, output_path, fps=24):
         print(f"✅ {BEST_ENCODER} Export Complete")
     except Exception as e:
         print(f"⚠️ Hardware Export failed: {e}, falling back to slow export")
-        from diffusers.utils import export_to_video
-
-        return export_to_video(frames, output_path, fps=fps)
+        diffusers_utils = importlib.import_module("diffusers.utils")
+        export_to_video_func = diffusers_utils.export_to_video
+        return export_to_video_func(frames, output_path, fps=fps)
 
 
 # =========================
@@ -402,14 +401,7 @@ def clear_gpu():
     hardware_manager.clear_cache()
 
 
-def clear_hunyuan_model():
-    """Clear HunyuanVideo model from GPU to free memory"""
-    global _hunyuan_pipe
-    if _hunyuan_pipe is not None:
-        del _hunyuan_pipe
-        _hunyuan_pipe = None
-    clear_gpu()
-    print("🗑️ Cleared HunyuanVideo model from GPU", flush=True)
+# clear_hunyuan_model removed as HunyuanVideo support is deprecated
 
 
 # =========================
@@ -436,20 +428,21 @@ def load_ltx_base_components():
     from transformers import T5Tokenizer
 
     tokenizer = T5Tokenizer.from_pretrained(
-        "Lightricks/LTX-Video", subfolder="tokenizer"
+        LTX_VIDEO_REPO, subfolder="tokenizer"
     )
     vae = AutoencoderKLLTXVideo.from_pretrained(
-        "Lightricks/LTX-Video",
+        LTX_VIDEO_REPO,
         subfolder="vae",
         torch_dtype=hardware_manager.dtype,
         local_files_only=False,
     ).to(hardware_manager.get_device_obj())
     vae.enable_tiling()
     vae.enable_slicing()
-    from diffusers import FlowMatchEulerDiscreteScheduler
+    diffusers_mod = importlib.import_module("diffusers")
+    flow_match_scheduler_cls = diffusers_mod.FlowMatchEulerDiscreteScheduler
 
-    scheduler = FlowMatchEulerDiscreteScheduler.from_pretrained(
-        "Lightricks/LTX-Video", subfolder="scheduler"
+    scheduler = flow_match_scheduler_cls.from_pretrained(
+        LTX_VIDEO_REPO, subfolder="scheduler"
     )
 
     res = (tokenizer, vae, scheduler)
@@ -462,7 +455,7 @@ def encode_prompt_ltx2(prompt, negative_prompt, tokenizer):
     print(f"📥 Phase 1: Encoding with T5 ('{prompt[:40]}')...", flush=True)
 
     t5 = T5EncoderModel.from_pretrained(
-        "Lightricks/LTX-Video",
+        LTX_VIDEO_REPO,
         subfolder="text_encoder",
         torch_dtype=hardware_manager.dtype,
     ).to(hardware_manager.get_device_obj())
@@ -499,6 +492,59 @@ def encode_prompt_ltx2(prompt, negative_prompt, tokenizer):
     return p_embeds, p_mask, n_embeds, n_mask
 
 
+def _set_nested_attribute(obj, path, value, is_parameter=True):
+    parent = obj
+    for attr in path[:-1]:
+        parent = getattr(parent, attr)
+    if is_parameter:
+        setattr(parent, path[-1], torch.nn.Parameter(value, requires_grad=False))
+    else:
+        setattr(parent, path[-1], value)
+
+
+def _load_safetensor_weights(transformer, model_uri, model_keys):
+    from safetensors import safe_open
+    with safe_open(model_uri, framework="pt", device="cpu") as f:
+        sd_keys = f.keys()
+        has_prefix = any(k.startswith("model.diffusion_model.") for k in sd_keys)
+        count = 0
+        for k in model_keys:
+            sd_key = f"model.diffusion_model.{k}" if has_prefix else k
+            if sd_key in sd_keys:
+                tensor = (
+                    f.get_tensor(sd_key)
+                    .to(hardware_manager.dtype)
+                    .to(hardware_manager.get_device_obj())
+                )
+                module_path = k.split(".")
+                _set_nested_attribute(transformer, module_path, tensor, is_parameter=True)
+                del tensor
+                count += 1
+                if count % 200 == 0:
+                    print(
+                        f"✅ Streamed {count}/{len(model_keys)} parameters...",
+                        flush=True,
+                    )
+
+
+def _resolve_meta_parameters_and_buffers(transformer):
+    for name, p in transformer.named_parameters():
+        if p.device.type == "meta":
+            module_path = name.split(".")
+            empty_tensor = torch.empty(p.shape, dtype=hardware_manager.dtype).to(
+                hardware_manager.get_device_obj()
+            )
+            _set_nested_attribute(transformer, module_path, empty_tensor, is_parameter=True)
+
+    for name, b in transformer.named_buffers():
+        if b.device.type == "meta":
+            module_path = name.split(".")
+            empty_buffer = torch.empty(b.shape, dtype=hardware_manager.dtype).to(
+                hardware_manager.get_device_obj()
+            )
+            _set_nested_attribute(transformer, module_path, empty_buffer, is_parameter=False)
+
+
 def load_ltx_19b_transformer():
     """Phase 2: Stream 19B Transformer (38GB BF16)"""
     if "transformer" in GLOBAL_MODELS and GLOBAL_MODELS["transformer"] is not None:
@@ -506,7 +552,6 @@ def load_ltx_19b_transformer():
         return GLOBAL_MODELS["transformer"]
 
     print("📥 Phase 2: Streaming 19B Transformer (Meta-to-GPU)...", flush=True)
-    # Use HF_HOME environment variable for model cache location
     import os
 
     # Priority: Env Var > Best Disk Fallback > Static Default
@@ -521,76 +566,17 @@ def load_ltx_19b_transformer():
         "Lightricks/LTX-2", subfolder="transformer"
     )
 
-    from accelerate import init_empty_weights
+    accelerate = importlib.import_module("accelerate")
+    init_empty_weights = accelerate.init_empty_weights
 
     with init_empty_weights():
         transformer = LTX2VideoTransformer3DModel(**transformer_config).to(
             hardware_manager.dtype
         )
 
-    from safetensors import safe_open
-
     model_keys = list(transformer.state_dict().keys())
-
-    with safe_open(model_uri, framework="pt", device="cpu") as f:
-        sd_keys = f.keys()
-        has_prefix = any(k.startswith("model.diffusion_model.") for k in sd_keys)
-        count = 0
-        for k in model_keys:
-            sd_key = f"model.diffusion_model.{k}" if has_prefix else k
-            if sd_key in sd_keys:
-                tensor = (
-                    f.get_tensor(sd_key)
-                    .to(hardware_manager.dtype)
-                    .to(hardware_manager.get_device_obj())
-                )
-                module_path = k.split(".")
-                parent = transformer
-                for attr in module_path[:-1]:
-                    parent = getattr(parent, attr)
-                setattr(
-                    parent,
-                    module_path[-1],
-                    torch.nn.Parameter(tensor, requires_grad=False),
-                )
-                del tensor
-                count += 1
-                if count % 200 == 0:
-                    print(
-                        f"✅ Streamed {count}/{len(model_keys)} parameters...",
-                        flush=True,
-                    )
-
-    # Defensive: Move any remaining meta tensors to DEVICE
-    for name, p in transformer.named_parameters():
-        if p.device.type == "meta":
-            module_path = name.split(".")
-            parent = transformer
-            for attr in module_path[:-1]:
-                parent = getattr(parent, attr)
-            setattr(
-                parent,
-                module_path[-1],
-                torch.nn.Parameter(
-                    torch.empty(p.shape, dtype=hardware_manager.dtype).to(
-                        hardware_manager.get_device_obj()
-                    ),
-                    requires_grad=False,
-                ),
-            )
-    for name, b in transformer.named_buffers():
-        if b.device.type == "meta":
-            module_path = name.split(".")
-            parent = transformer
-            for attr in module_path[:-1]:
-                parent = getattr(parent, attr)
-            setattr(
-                parent,
-                module_path[-1],
-                torch.empty(b.shape, dtype=hardware_manager.dtype).to(
-                    hardware_manager.get_device_obj()
-                ),
-            )
+    _load_safetensor_weights(transformer, model_uri, model_keys)
+    _resolve_meta_parameters_and_buffers(transformer)
 
     print("🚀 19B Transformer live.", flush=True)
 
@@ -811,7 +797,7 @@ def push_heartbeat_loop():
 
 
 @app.get("/health")
-async def health_check():
+def health_check():
     """Basic health check with model status"""
     busy = False
     current_model = None
@@ -835,7 +821,7 @@ async def health_check():
 
 render_lock = threading.Lock()
 
-from job_orchestrator import orchestrator
+from job_orchestrator import orchestrator  # noqa: E402
 
 
 @app.post("/generate")
@@ -943,7 +929,7 @@ async def download(
 # VIDEO MODEL MANAGER ENDPOINTS
 # =====================================================
 
-from video_model_manager import model_manager, VIDEO_MODELS
+from video_model_manager import model_manager, VIDEO_MODELS  # noqa: E402
 
 
 @app.get("/models")

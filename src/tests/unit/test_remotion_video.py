@@ -23,6 +23,12 @@ def test_video_overlay():
 
     # Use HTTP URL to serve video
     video_uri = "http://172.16.1.37:3001/test_video.mp4"
+    import urllib.request
+    import pytest
+    try:
+        urllib.request.urlopen(video_uri, timeout=2)
+    except Exception:
+        pytest.skip(f"Mock video server {video_uri} is not reachable")
 
     print("=== REMOTION VIDEO OVERLAY TEST ===")
     print(f"Video URL: {video_uri}")
@@ -67,13 +73,9 @@ def test_video_overlay():
         stderr_lines = result.stderr.split("\n")[:10]
         print(f"STDERR:\n{chr(10).join(stderr_lines)}")
 
-    if result.returncode == 0 and os.path.exists(output_path):
-        size = os.path.getsize(output_path) / 1024 / 1024
-        print(f"\n✅ SUCCESS: {output_path} ({size:.2f} MB)")
-        return output_path
-    else:
-        print("\n❌ FAILED")
-        return None
+    assert result.returncode == 0 and os.path.exists(output_path)
+    size = os.path.getsize(output_path) / 1024 / 1024
+    print(f"\n✅ SUCCESS: {output_path} ({size:.2f} MB)")
 
 
 if __name__ == "__main__":
