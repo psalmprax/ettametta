@@ -39,7 +39,7 @@ celery_app.conf.update(
             "schedule": 14400.0,  # Every 4 hours
         },
         "scan-trending-content-2h": {
-            "task": "src.services.discovery.scanner_service.scan_trending_content",
+            "task": "services.discovery.scanner_service.scan_trending_content",
             "schedule": 7200.0,  # Every 2 hours
         },
         "check-scheduled-posts-5m": {

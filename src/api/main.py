@@ -242,6 +242,7 @@ v1_router.include_router(monetization_dashboard.router, tags=["Monetization Dash
 v1_router.include_router(notifications.router, tags=["Notifications"])
 
 app.include_router(v1_router, prefix="/api")
+app.include_router(health.router)
 
 
 @app.get("/")
