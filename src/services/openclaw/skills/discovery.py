@@ -77,7 +77,7 @@ class DiscoverySkill(OpenClawBaseSkill):
                 )
 
                 if not results:
-                    return f"No trends found for '{topic}'."
+                    return f"No trends found for '{niche}'."
 
                 summary = f"🔎 **Discovery Results for '{niche}':**\n"
                 for i, item in enumerate(results[:limit], 1):

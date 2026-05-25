@@ -72,7 +72,7 @@ def execute(code: str) -> dict:
         }
 
         # Add safe builtins
-        restricted_builtins["__builtins__"]["print"] = lambda *args, **kwargs: print(
+        restricted_globals["__builtins__"]["print"] = lambda *args, **kwargs: print(
             *args, **kwargs
         )
 

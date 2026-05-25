@@ -95,3 +95,14 @@ async def get_async_session():
         finally:
             await session.close()
             await local_engine.dispose()
+
+
+# Import all models to ensure they register with Base.metadata
+# We do this at the bottom to avoid circular import issues
+try:
+    from src.api.utils import user_models
+    from src.api.utils import models
+    from src.api.utils import credit_models
+except ImportError:
+    pass
+
